@@ -3098,7 +3098,7 @@ function isDocumentRawHTML(doc) {
 function isMarkedIgnore(element) {
     return ( (element.nodeType == element.ELEMENT_NODE) &&
              //?element.hasAttributeNS(XPointerService.XPOINTERLIB_NS, XPointerService.DOM_IGNORE_ELEMENT_ATTRIBUTE) &&
-             element.getAttributeNS(XPointerService.XPOINTERLIB_NS, XPointerService.DOM_IGNORE_ELEMENT_ATTRIBUTE) == "true");
+             (element.classList.contains("st-annotation") || element.getAttributeNS(XPointerService.XPOINTERLIB_NS, XPointerService.DOM_IGNORE_ELEMENT_ATTRIBUTE) == "true"));
 }
 
 function isMarkedHide(element) {

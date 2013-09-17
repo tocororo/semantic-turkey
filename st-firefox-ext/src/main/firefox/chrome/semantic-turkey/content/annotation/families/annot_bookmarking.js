@@ -58,7 +58,6 @@ art_semanticturkey.annotation.bookmarking.annotation2ranges = function(
 	}
 
 	return ranges;
-
 };
 
 art_semanticturkey.annotation.bookmarking.furtherAnn = function(event) {

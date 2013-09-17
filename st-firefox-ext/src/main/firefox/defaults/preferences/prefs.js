@@ -15,6 +15,7 @@ pref("extensions.semturkey.hints.defaultProject", true);
 pref("extensions.semturkey.skos.humanReadable", false);
 pref("extensions.semturkey.skos.enabled", true);
 pref("extensions.semturkey.annotation.checkAnnotation", true);
+pref("extensions.semturkey.annotation.colorsEnabled", true);
 
 
 

@@ -3,12 +3,15 @@ EXPORTED_SYMBOLS = [ "annotation" ];
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm");
+Components.utils.import("resource://stservices/SERVICE_Resource.jsm");
 Components.utils.import("resource://stservices/SERVICE_Cls.jsm");
 Components.utils.import("resource://stservices/SERVICE_SKOS.jsm");
 
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/AnnotationManager.jsm");
 Components.utils.import("resource://stmodules/Preferences.jsm");
+
+Components.utils.import("resource://gre/modules/Dict.jsm");
 
 if (typeof annotation == "undefined") {
 	var annotation = {};
@@ -17,10 +20,9 @@ if (typeof annotation == "undefined") {
 annotation.commons = {};
 
 /*
- * Common event handlers. They are assumed to be invoked in the context of a
- * family i.e. this instanceof Family). The family is assumed to have the
- * function furtherAnn(event) for the creation of a new annotation of the
- * resource in the event.
+ * Common event handlers. They are assumed to be invoked in the context of a family i.e. this instanceof
+ * Family). The family is assumed to have the function furtherAnn(event) for the creation of a new annotation
+ * of the resource in the event.
  */
 
 annotation.commons.handlers = {};
@@ -53,7 +55,7 @@ annotation.commons.handlers.valueForProperty = function(event, parentWindow) {
 	parameters.lexicalization = event.selection.toString();
 	parameters.functors = {};
 	parameters.parentWindow = parentWindow;
-	
+
 	if (typeof event.skos != "undefined") {
 		parameters.skos = Object.create(event.skos);
 	}
@@ -101,32 +103,29 @@ annotation.commons.handlers.createInstance = function(event, parentWindow) {
 	var response1 = STRequests.Cls.addIndividual(event.resource.getURI(), event.selection.toString());
 	var event2 = Object.create(event);
 	event2.resource = response1.instance;
-	
+
 	// We assume that additional information is provided by the caller
 	var tree = parentWindow.document.getElementById("classesTree");
 	if (tree != null) {
-		parentWindow.art_semanticturkey.classDragDrop_RESPONSE(response1,tree,true, event.addons.domEvent);	
+		parentWindow.art_semanticturkey.classDragDrop_RESPONSE(response1, tree, true, event.addons.domEvent);
 	}
-	
+
 	this.furtherAnn(event2);
 };
 
 /*
- * Common conventional functions. They are assumed to be invoked in the context
- * of a family i.e. this instanceof Family).
+ * Common conventional functions. They are assumed to be invoked in the context of a family i.e. this
+ * instanceof Family).
  * 
- * A concrete family is assumed to provide just the following conventional
- * functions.
+ * A concrete family is assumed to provide just the following conventional functions.
  * 
- * checkAnnotationsForContent: to check the existence of any annotation for the
- * given content resource
+ * checkAnnotationsForContent: to check the existence of any annotation for the given content resource
  * 
  * getAnnotationsForContent: to retrieve the annotations for a content resource
  * 
  * deleteAnnotation: to delete an annotation
  * 
- * annotation2ranges: to produce DOM ranges for the presentation of a Web
- * annotation
+ * annotation2ranges: to produce DOM ranges for the presentation of a Web annotation
  * 
  * furtherAnn: to create a further annotation
  * 
@@ -134,10 +133,56 @@ annotation.commons.handlers.createInstance = function(event, parentWindow) {
  */
 annotation.commons.conventions = {};
 
+// Initializes the default color map for the highlights. Each resource is assigned a perceptually unique
+// color, represented in HSV as per CSS specs. TODO: obtain the color from the server.
+annotation.commons.conventions.initializeColorMap = function(annotations /* not used at moment */) {
+	var colorsEnabled = Preferences.get("extensions.semturkey.annotation.colorsEnabled", true);
+	
+	if (colorsEnabled) {
+		var colorMap = new Dict();
+		
+		return {
+			getColor : function (resource) {
+				if (colorMap.has(resource)) {
+					return colorMap.get(resource);
+				} else {
+					var n = colorMap.count;
+					var hue = 0;
+					var delta = 180;
+					while (n != 0) {
+						hue = hue + (n % 2) * delta;
+						delta = delta / 2;
+						n = n / 2;
+					}
+					
+					var newColor = "hsl(" + hue + ", 20%, 50%)";
+					colorMap.set(resource, newColor);
+					return newColor;
+				}
+			},
+			isEnabled : function() {
+				return colorsEnabled;
+			}
+		}
+	} else {
+		return {
+			getColor : function (resource) {
+				return "hsl(60, 100, 50)";
+			}
+		}
+	}
+};
+
 // Decorates a content resource with annotations attached to it. This
 // conventional functions depends on the availability of the conventional
 // functions "annotation2ranges", "viewAnnotation" and "viewResource"
 annotation.commons.conventions.decorateContent = function(document, annotations) {
+	// Get the color map
+	var colorMap = this.initializeColorMap(annotations);
+	
+	var xptrService = Components.classes["@mozilla.org/xpointer-service;1"].getService();
+	xptrService = xptrService.QueryInterface(Components.interfaces.nsIXPointerService);
+
 	// A Browser Window: needed for accessing eventObjects and rangy (because
 	// they are not modules)
 	var window = Services.wm.getMostRecentWindow("navigator:browser");
@@ -220,7 +265,17 @@ annotation.commons.conventions.decorateContent = function(document, annotations)
 	// Initialize rangy
 	window.rangy.init();
 
-	// Delete previous annotations
+	// Delete previous annotations. By first, we must remove the attribute style, which defines the background
+	// color, otherwise rangy will not be able to completely remove the range.
+	var oldSpans = document.querySelectorAll(".st-annotation");
+	for (var i = 0 ; i < oldSpans.length ; i++) {
+		if (oldSpans.item(i).hasAttribute("style")) {
+			oldSpans.item(i).removeAttribute("style");
+		}
+	}
+
+	// Then use rangy to remove old annotations.
+	
 	var bodyRange = window.rangy.createRange();
 	bodyRange.selectNode(document.body);
 	var cssApplier = window.rangy.createCssClassApplier("st-annotation", {
@@ -231,15 +286,27 @@ annotation.commons.conventions.decorateContent = function(document, annotations)
 
 	window.setTimeout(function() {
 		// Highlight annotations
-		for ( var i = 0; i < annotations.length; i++) {
+		for (var i = 0; i < annotations.length; i++) {
 			var ann = annotations[i];
+			// FIXME: dispatch pending events on the event loop. It seems that in case of bookmarking
+			// annotations there are pending events that need to be dispatched before the function
+			// annotation2ranges can be invoked again.
+			var thread = Components.classes["@mozilla.org/thread-manager;1"]
+					.getService(Components.interfaces.nsIThreadManager).currentThread;
+			thread.processNextEvent(true);
+			
 			// Get DOM ranges for i-th annotations
 			var ranges = this.annotation2ranges(document, ann);
 
+			// FIXME: we need to represent the ranges associated with an annotation as XPointers because
+			// ranges might be temporarily (until control returns to the event loop) invalid.
+			var xpointers = ranges.map(function(r) {
+				return xptrService.createXPointerFromRange(r, document);
+			});
+						
 			// Highlight each range
-			for ( var k = 0; k < ranges.length; k++) {
-				var range = ranges[k];
-
+			for (var k = 0; k < xpointers.length; k++) {
+				var range = xptrService.parseXPointerToRange(xpointers[k], document);
 				var range2 = window.rangy.createRangyRange(document);
 				range2.setStart(range.startContainer, range.startOffset);
 				range2.setEnd(range.endContainer, range.endOffset);
@@ -251,10 +318,17 @@ annotation.commons.conventions.decorateContent = function(document, annotations)
 					}
 				});
 
-				cssApplier.applyToRange(range2);
-
-				range.detach();
-				range2.detach();
+				cssApplier.applyToRange(range2);				
+	
+				// Get the span created by range
+				var spans = range2.getNodes([3]).map(function(n){return n.parentElement;}).filter(function(e){return e.classList.contains("st-annotation");});
+				
+				var colorForResource = colorMap.getColor(ann.resource);
+				
+				// Apply the background color
+				for (var m = 0 ; m < spans.length ; m++) {
+					spans[m].style.backgroundColor = colorForResource;
+				}
 			}
 		}
 	}.bind(this), 0);
@@ -271,11 +345,25 @@ annotation.commons.conventions.decorateContent = function(document, annotations)
 				// annotation for the deleted ID
 				return ann.id == rangeAnnotationDeletedObj.getId();
 			}).forEach(function(ann) { // Process those annotations
-				self.annotation2ranges(document, ann).forEach(function(range) {
+				var ranges = self.annotation2ranges(document, ann);
+				// FIXME: we need to represent the ranges associated with an annotation as XPointers because
+				// ranges might be temporarily (until control returns to the event loop) invalid.
+				var xpointers = ranges.map(function(r) {
+					return xptrService.createXPointerFromRange(r, document);
+				});
+
+				xpointers.forEach(function(xptr) {
+					var range = xptrService.parseXPointerToRange(xptr, document);
 					var rangyRange = window.rangy.createRangyRange();
 					rangyRange.setStart(range.startContainer, range.startOffset);
 					rangyRange.setEnd(range.endContainer, range.endOffset);
 
+					var spans = rangyRange.getNodes([3]).map(function(n){return n.parentElement;}).filter(function(e){return e.classList.contains("st-annotation");});
+					
+					for (var i = 0 ; i < spans.length ; i++) {
+						spans[i].removeAttribute("style");
+					}
+					
 					var cssApplier = window.rangy.createCssClassApplier("st-annotation", {
 						normalize : false
 					});
@@ -286,25 +374,30 @@ annotation.commons.conventions.decorateContent = function(document, annotations)
 				});
 			});
 		} catch (e) {
-			alert(e.message + ":" + e.lineNumber);
+			window.alert(e.message + ":" + e.lineNumber);
 		}
 	}, null);
 };
 
+/*
+ * In the following viewXXX functions the property isFirstEditor has been set to false, in order to prevent
+ * the editor panel from accessing the property sourceElement which is undefined.
+ */
+
 annotation.commons.conventions.viewAnnotation = function(annotationId, window) {
 	var parameters = {
 		sourceElement : null, // elemento contenente i dati della riga
-								// corrente
-		sourceType : "resource", // tipo di editor: clss, ..., determina le
-									// funzioni custom ed il titolo della
-									// finestra
+		// corrente
+		sourceType : "individual", // tipo di editor: clss, ..., determina le
+		// funzioni custom ed il titolo della
+		// finestra
 		sourceElementName : annotationId, // nome dell'elemento corrente
-											// (quello usato per
-											// identificazione: attualmente il
-											// qname)
+		// (quello usato per
+		// identificazione: attualmente il
+		// qname)
 		sourceParentElementName : "", // nome dell'elemento genitore
-		isFirstEditor : true, // l'editor è stato aperto direttamente dall
-								// class/... tree o da un altro editor?
+		isFirstEditor : false, // l'editor è stato aperto direttamente dall
+		// class/... tree o da un altro editor?
 		deleteForbidden : false, // cancellazione vietata
 		parentWindow : window, // finestra da cui viene aperto l'editor
 	// skos : {selectedScheme : this.conceptScheme}
@@ -314,18 +407,19 @@ annotation.commons.conventions.viewAnnotation = function(annotationId, window) {
 };
 
 annotation.commons.conventions.viewResource = function(resourceId, window) {
+	var resourceRole = STRequests.Resource.getRole(resourceId);
 	var parameters = {
 		sourceElement : null, // elemento contenente i dati della riga
-								// corrente
-		sourceType : "resource", // tipo di editor: clss, ..., determina le
-									// funzioni custom ed il titolo della
-									// finestra
+		// corrente
+		sourceType : resourceRole, // tipo di editor: clss, ..., determina le
+		// funzioni custom ed il titolo della
+		// finestra
 		sourceElementName : resourceId, // nome dell'elemento corrente (quello
-										// usato per identificazione:
-										// attualmente il qname)
+		// usato per identificazione:
+		// attualmente il qname)
 		sourceParentElementName : "", // nome dell'elemento genitore
-		isFirstEditor : true, // l'editor è stato aperto direttamente dall
-								// class/... tree o da un altro editor?
+		isFirstEditor : false, // l'editor è stato aperto direttamente dall
+		// class/... tree o da un altro editor?
 		deleteForbidden : false, // cancellazione vietata
 		parentWindow : window, // finestra da cui viene aperto l'editor
 	// skos : {selectedScheme : this.conceptScheme}
@@ -347,6 +441,7 @@ annotation.commons.registerCommonHandlers = function(family) {
 	family.addSelectionOverResourceHandler("Further annotation",
 			"as a further annotation of {target-resource}", annotation.commons.handlers.furtherAnn);
 
+	family.initializeColorMap = annotation.commons.conventions.initializeColorMap;
 	family.decorateContent = annotation.commons.conventions.decorateContent;
 	family.viewAnnotation = annotation.commons.conventions.viewAnnotation;
 	family.viewResource = annotation.commons.conventions.viewResource;
