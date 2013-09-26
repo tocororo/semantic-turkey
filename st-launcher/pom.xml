@@ -277,6 +277,7 @@
 									<directory>src/main/build</directory>
 									<filtering>false</filtering>
 									<excludes>
+									    <exclude>**/.gitignore</exclude>
 										<exclude>components/data/sturkey.properties</exclude>
 										<exclude>configurations/services/org.ops4j.pax.logging.properties</exclude>
 									</excludes>
