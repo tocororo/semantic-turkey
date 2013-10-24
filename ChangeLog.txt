@@ -1,3 +1,8 @@
+version 0.9.1
+date: 01-07-2013
+  * performance improvements of some property methods
+  * UI improvements
+
 version 0.9.0
 date: 01-07-2013
   * introduced Spring framework! services are still based on a wrapper from spring to the old modality
