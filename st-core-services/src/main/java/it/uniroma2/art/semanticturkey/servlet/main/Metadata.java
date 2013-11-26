@@ -71,7 +71,7 @@ import org.w3c.dom.Element;
  * @author Andrea Turbati <turbati@info.uniroma2.it>
  */
 @Component
-public class Metadata extends Resource {
+public class Metadata extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(Metadata.class);
 	public String XSLpath = Resources.getXSLDirectoryPath() + "createClassForm.xsl";

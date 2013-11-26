@@ -87,7 +87,7 @@ import com.google.common.collect.Iterators;
  * @author Andrea Turbati
  */
 @Component
-public class Property extends Resource {
+public class Property extends ResourceOld {
 
 	public static class Req {
 
@@ -222,8 +222,8 @@ public class Property extends Resource {
 				String roleString = setHttpPar(Par.role);
 				RDFResourceRolesEnum role = (roleString != null) ? RDFResourceRolesEnum.valueOf(roleString)
 						: null;
-				String rootProps = setHttpPar(Resource.Par.subPropOf);
-				String excludedRootProps = setHttpPar(Resource.Par.notSubPropOf);
+				String rootProps = setHttpPar(ResourceOld.Par.subPropOf);
+				String excludedRootProps = setHttpPar(ResourceOld.Par.notSubPropOf);
 				checkRequestParametersAllNotNull(Par.classes);
 				return getPropertiesForDomains(classNames, role, rootProps, excludedRootProps);
 
@@ -231,8 +231,8 @@ public class Property extends Resource {
 				String roleString = setHttpPar(Par.role);
 				RDFResourceRolesEnum role = (roleString != null) ? RDFResourceRolesEnum.valueOf(roleString)
 						: null;
-				String rootProps = setHttpPar(Resource.Par.subPropOf);
-				String excludedRootProps = setHttpPar(Resource.Par.notSubPropOf);
+				String rootProps = setHttpPar(ResourceOld.Par.subPropOf);
+				String excludedRootProps = setHttpPar(ResourceOld.Par.notSubPropOf);
 				return getPropertyList(role, rootProps, excludedRootProps);
 			}
 
@@ -513,7 +513,7 @@ public class Property extends Resource {
 	 * 
 	 * @param SesameOWLModelImpl
 	 *            ontModel
-	 * @param Resource
+	 * @param NewResource
 	 *            resource
 	 * @param Element
 	 *            element :elemento xml padre delle classi (le sottoclassi e le istanze vengono aggiunte
@@ -782,7 +782,7 @@ public class Property extends Resource {
 				STRDFResource stProperty = STRDFNodeFactory.createSTRDFResource(ontModel, property,
 						ModelUtilities.getResourceRole(property, ontModel),
 						servletUtilities.checkWritable(ontModel, property, wgraph), false);
-				Cls.setRendering(ontModel, stProperty, null, null, graphs);
+				ClsOld.setRendering(ontModel, stProperty, null, null, graphs);
 				RDFXMLHelp.addRDFNode(propertyElement, stProperty);
 
 				if (superPropertyQName != null) {
@@ -790,7 +790,7 @@ public class Property extends Resource {
 					STRDFResource stSuperProperty = STRDFNodeFactory.createSTRDFResource(ontModel,
 							superProperty, ModelUtilities.getResourceRole(superProperty, ontModel),
 							servletUtilities.checkWritable(ontModel, property, wgraph), false);
-					Cls.setRendering(ontModel, stSuperProperty, null, null, graphs);
+					ClsOld.setRendering(ontModel, stSuperProperty, null, null, graphs);
 					RDFXMLHelp.addRDFNode(superPropertyElement, stSuperProperty);
 				}
 
@@ -1104,7 +1104,7 @@ public class Property extends Resource {
 	 * @return Response tree
 	 */
 	public Response getDomainClassesTreeXML(String propertyQName) {
-		Cls cls = new Cls("cls");
+		ClsOld cls = new ClsOld("cls");
 		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
 		ARTURIResource property;
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
@@ -1132,7 +1132,7 @@ public class Property extends Resource {
 	 * @return Response tree
 	 */
 	public Response getRangeClassesTreeXML(String propertyQName) {
-		Cls cls = new Cls("cls");
+		ClsOld cls = new ClsOld("cls");
 		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
 		ARTURIResource property;
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(

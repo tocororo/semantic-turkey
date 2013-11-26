@@ -84,7 +84,7 @@ import com.google.common.collect.Iterators;
  * @author Andrea Turbati (moved the service to OSGi extension framework)
  */
 @Component
-public class Annotation extends ServiceAdapter {
+public class AnnotationOld extends ServiceAdapter {
 
 	public static final String getPageAnnotationsRequest = "getPageAnnotations";
 	public static final String getAnnotatedContentResourcesRequest = "getAnnotatedContentResources";
@@ -124,7 +124,7 @@ public class Annotation extends ServiceAdapter {
 	public static final String bindCreate = "bindCreate";
 	public static final String bindAnnot = "bindAnnot";
 
-	protected static Logger logger = LoggerFactory.getLogger(Annotation.class);
+	protected static Logger logger = LoggerFactory.getLogger(AnnotationOld.class);
 
 	private static String datePropName = "http://purl.org/dc/terms/date";
 
@@ -137,7 +137,7 @@ public class Annotation extends ServiceAdapter {
 	 * @param id
 	 */
 	@Autowired
-	public Annotation(@Value("Annotation") String id) {
+	public AnnotationOld(@Value("Annotation") String id) {
 		super(id);
 		servletUtilities = ServletUtilities.getService();
 	}
@@ -662,8 +662,8 @@ public class Annotation extends ServiceAdapter {
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
 					ModelUtilities.getResourceRole(cls, ontModel), 
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
-			Cls.decorateWithNumberOfIstances(ontModel, stClass, graphs);
-			Cls.setRendering(ontModel, stClass, null, null, graphs);
+			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
+			ClsOld.setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);
 			
 			Element instanceElement = XMLHelp.newElement(dataElement, "Instance");
@@ -671,7 +671,7 @@ public class Annotation extends ServiceAdapter {
 			STRDFResource stInstance = STRDFNodeFactory.createSTRDFResource(ontModel, instanceRes,
 					ModelUtilities.getResourceRole(instanceRes, ontModel), 
 					servletUtilities.checkWritable(ontModel, instanceRes, wgraph), false);
-			Cls.setRendering(ontModel, stInstance, null, null, graphs);
+			ClsOld.setRendering(ontModel, stInstance, null, null, graphs);
 			RDFXMLHelp.addRDFNode(instanceElement, stInstance);
 			return response;
 		} catch (ModelAccessException e) {

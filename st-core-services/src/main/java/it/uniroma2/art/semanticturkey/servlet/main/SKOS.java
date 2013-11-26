@@ -67,7 +67,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 @Component
-public class SKOS extends Resource {
+public class SKOS extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(SKOS.class);
 

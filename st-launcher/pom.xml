@@ -184,6 +184,16 @@
 									<artifactId>pax-logging-service</artifactId>
 									<version>1.6.9</version>
 								</artifactItem>
+								<artifactItem>
+									<groupId>org.aspectj</groupId>
+									<artifactId>com.springsource.org.aspectj.weaver</artifactId>
+									<version>1.6.8.RELEASE</version>
+								</artifactItem>
+								<artifactItem>
+									<groupId>org.aspectj</groupId>
+									<artifactId>com.springsource.org.aspectj.runtime</artifactId>
+									<version>1.6.8.RELEASE</version>
+								</artifactItem>
 							</artifactItems>
 						</configuration>
 					</execution>
@@ -277,7 +287,7 @@
 									<directory>src/main/build</directory>
 									<filtering>false</filtering>
 									<excludes>
-									    <exclude>**/.gitignore</exclude>
+										<exclude>**/.gitignore</exclude>
 										<exclude>components/data/sturkey.properties</exclude>
 										<exclude>configurations/services/org.ops4j.pax.logging.properties</exclude>
 									</excludes>

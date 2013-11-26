@@ -39,7 +39,7 @@ import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.generation.annotation.STService;
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -162,7 +162,7 @@ public class Delete extends ServiceAdapter {
 					ModelUtilities.getResourceRole(cls, ontModel), 
 					servletUtilities.checkWritable(ontModel, cls, wgraph),
 					false);
-			Cls.setRendering(ontModel, stClass, null, null, graphs);
+			ClsOld.setRendering(ontModel, stClass, null, null, graphs);
 			ontModel.deleteTriple(NodeFilters.ANY, NodeFilters.ANY, cls); // 1) removes all the incoming edges
 			// beware! only applicable if the application has already checked
 			// that the class has no subclasses nor instances!, otherwise some
@@ -197,7 +197,7 @@ public class Delete extends ServiceAdapter {
 					ModelUtilities.getResourceRole(resource, ontModel), 
 					servletUtilities.checkWritable(ontModel, resource, wgraph),
 					false);
-			Cls.setRendering(ontModel, stInstance, null, null,graphs);
+			ClsOld.setRendering(ontModel, stInstance, null, null,graphs);
 			if (deletePropertyPropagationTree == null)
 				initializeDeletePropertyPropagationTree();
 			ModelUtilities.deepDeleteIndividual(resource, ontModel, deletePropertyPropagationTree);
@@ -234,7 +234,7 @@ public class Delete extends ServiceAdapter {
 					ModelUtilities.getResourceRole(property, ontModel), 
 					servletUtilities.checkWritable(ontModel, property, wgraph),
 					false);
-			Cls.setRendering(ontModel, stProperty, null, null, graphs);
+			ClsOld.setRendering(ontModel, stProperty, null, null, graphs);
 			ontModel.deleteTriple(NodeFilters.ANY, NodeFilters.ANY, property); // 1) removes all the incoming
 			// edges //beware! only applicable if the application
 			// has already checked that the class has no subclasses nor

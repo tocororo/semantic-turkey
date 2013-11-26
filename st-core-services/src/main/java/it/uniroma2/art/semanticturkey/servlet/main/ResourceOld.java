@@ -108,7 +108,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 
 @Component
-public class Resource extends ServiceAdapter {
+public class ResourceOld extends ServiceAdapter {
 
 	/**
 	 * a property filter which removes base language properties such as rdf:type, rdfs:subClassOf and
@@ -119,7 +119,7 @@ public class Resource extends ServiceAdapter {
 	protected ArrayList<ARTURIResource> bannedPredicatesForResourceDescription;
 
 	@Autowired
-	public Resource(@Value("Resource") String id) {
+	public ResourceOld(@Value("Resource") String id) {
 		super(id);
 		basePropertyPruningPredicates = new ArrayList<Predicate<ARTResource>>();
 		basePropertyPruningPredicates.add(NoTypePredicate.noTypePredicate);
@@ -128,7 +128,7 @@ public class Resource extends ServiceAdapter {
 
 	}
 
-	protected static Logger logger = LoggerFactory.getLogger(Resource.class);
+	protected static Logger logger = LoggerFactory.getLogger(ResourceOld.class);
 	public static final String templateandvalued = "templateandvalued";
 
 	public static final String propertyDescriptionRequest = "getPropDescription";
@@ -1368,7 +1368,7 @@ public class Resource extends ServiceAdapter {
 		for (ARTResource superType : directSuperTypes) {
 			STRDFResource res = STRDFNodeFactory.createSTRDFResource(ontModel, superType, true,
 					directExplicitSuperTypes.contains(superType), true);
-			Cls.setRendering(ontModel, res, null, null, graphs);
+			ClsOld.setRendering(ontModel, res, null, null, graphs);
 			superTypes.add(res);
 		}
 

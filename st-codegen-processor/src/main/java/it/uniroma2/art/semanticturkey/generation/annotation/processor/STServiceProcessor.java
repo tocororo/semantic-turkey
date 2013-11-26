@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor;
 
-import it.uniroma2.art.semanticturkey.generation.annotation.STService;
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -29,7 +29,7 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 
 
-@SupportedAnnotationTypes("it.uniroma2.art.semanticturkey.generation.annotation.STService")
+@SupportedAnnotationTypes("it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController")
 @SupportedSourceVersion(SourceVersion.RELEASE_6)
 public class STServiceProcessor extends AbstractProcessor {
 
@@ -42,7 +42,7 @@ public class STServiceProcessor extends AbstractProcessor {
 			RoundEnvironment roundEnv) {
 		System.out.println("generating:");
 		for (Element i : roundEnv
-				.getElementsAnnotatedWith(STService.class)) {
+				.getElementsAnnotatedWith(GenerateSTServiceController.class)) {
 			if (i.getKind() != ElementKind.CLASS)
 				continue;
 
@@ -63,7 +63,7 @@ public class STServiceProcessor extends AbstractProcessor {
 			packageName = packageElement.getQualifiedName().toString();
 
 			for (Element e : roundEnv
-					.getElementsAnnotatedWith(STService.class)) {
+					.getElementsAnnotatedWith(GenerateSTServiceController.class)) {
 				if (e.getKind() == ElementKind.FIELD) {
 					
 					System.out.println(fqClassName+" "+(TypeElement) e.getEnclosingElement());

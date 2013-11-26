@@ -44,7 +44,7 @@ import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.generation.annotation.STService;
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -66,7 +66,7 @@ import org.w3c.dom.Element;
  * @author Armando Stellato Contributor(s): Andrea Turbati
  */
 @Component
-public class Individual extends Resource {
+public class Individual extends ResourceOld {
 	protected static Logger logger = LoggerFactory.getLogger(Individual.class);
 	public String XSLpath = Resources.getXSLDirectoryPath() + "createClassForm.xsl";
 
@@ -169,7 +169,7 @@ public class Individual extends Resource {
 			STRDFResource stIndividual = STRDFNodeFactory.createSTRDFResource(ontModel, individual, 
 					ModelUtilities.getResourceRole(individual, ontModel), 
 					servletUtilities.checkWritable(ontModel, individual, wgraph), false);
-			Cls.setRendering(ontModel, stIndividual, null, null, graphs);
+			ClsOld.setRendering(ontModel, stIndividual, null, null, graphs);
 			RDFXMLHelp.addRDFNode(instanceElement, stIndividual);
 			
 			Element typesElement = XMLHelp.newElement(dataElement, "Types");
@@ -180,7 +180,7 @@ public class Individual extends Resource {
 					STRDFResource stType = STRDFNodeFactory.createSTRDFResource(ontModel, type, 
 							ModelUtilities.getResourceRole(type, ontModel), 
 							servletUtilities.checkWritable(ontModel, type, wgraph), false);
-					Cls.setRendering(ontModel, stType, null, null, graphs);
+					ClsOld.setRendering(ontModel, stType, null, null, graphs);
 					types.add(stType);
 				}
 			}
@@ -227,7 +227,7 @@ public class Individual extends Resource {
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(model, typeCls,
 					ModelUtilities.getResourceRole(typeCls, model), 
 					servletUtilities.checkWritable(model, typeCls, wgraph), false);
-			Cls.setRendering(model, stClass, null, null, graphs);
+			ClsOld.setRendering(model, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(typeElement, stClass);
 			
 			Element instanceElement = XMLHelp.newElement(dataElement, "Instance");
@@ -235,7 +235,7 @@ public class Individual extends Resource {
 			STRDFResource stInstance = STRDFNodeFactory.createSTRDFResource(model, instanceRes,
 					ModelUtilities.getResourceRole(instanceRes, model), 
 					servletUtilities.checkWritable(model, instanceRes, wgraph), false);
-			Cls.setRendering(model, stInstance, null, null, graphs);
+			ClsOld.setRendering(model, stInstance, null, null, graphs);
 			RDFXMLHelp.addRDFNode(instanceElement, stInstance);
 			
 			return response;
@@ -286,8 +286,8 @@ public class Individual extends Resource {
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(model, typeCls,
 					ModelUtilities.getResourceRole(typeCls, model), 
 					servletUtilities.checkWritable(model, typeCls, wgraph), false);
-			Cls.setRendering(model, stClass, null, null, graphs);
-			Cls.decorateWithNumberOfIstances(model, stClass, graphs);
+			ClsOld.setRendering(model, stClass, null, null, graphs);
+			ClsOld.decorateWithNumberOfIstances(model, stClass, graphs);
 			RDFXMLHelp.addRDFNode(typeElement, stClass);
 			
 			Element instanceElement = XMLHelp.newElement(dataElement, "Instance");
@@ -295,7 +295,7 @@ public class Individual extends Resource {
 			STRDFResource stInstance = STRDFNodeFactory.createSTRDFResource(model, instanceRes,
 					ModelUtilities.getResourceRole(instanceRes, model), 
 					servletUtilities.checkWritable(model, instanceRes, wgraph), false);
-			Cls.setRendering(model, stInstance, null, null, graphs);
+			ClsOld.setRendering(model, stInstance, null, null, graphs);
 			RDFXMLHelp.addRDFNode(instanceElement, stInstance);
 			
 			return response;

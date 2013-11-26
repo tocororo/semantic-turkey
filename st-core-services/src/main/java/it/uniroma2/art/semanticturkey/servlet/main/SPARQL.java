@@ -14,7 +14,7 @@ import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.query.io.TupleBindingsWriterException;
 import it.uniroma2.art.owlart.query.io.TupleBindingsWritingFormat;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.generation.annotation.STService;
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;

@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(value = RetentionPolicy.SOURCE)
 @Target(value = { ElementType.TYPE, ElementType.METHOD })
-public @interface STService {
+public @interface GenerateSTServiceController {
 
 }

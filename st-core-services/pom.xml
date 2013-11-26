@@ -64,21 +64,43 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>org.springframework.aop</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>com.springsource.org.aspectj.weaver</artifactId>
+			<version>1.6.8.RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>com.springsource.org.aspectj.runtime</artifactId>
+			<version>1.6.8.RELEASE</version>
+		</dependency>
+
+
+
 	</dependencies>
 
 	<build>
-		
+
 		<resources>
 			<resource>
-				<!-- we had problems in using standard wab deployment (referencing the WEB-INF/classes from depending wabs)-->
-				<!-- thus we have manually managed the webapp directory and we still put the classes in the . position-->
+				<!-- we had problems in using standard wab deployment (referencing the 
+					WEB-INF/classes from depending wabs) -->
+				<!-- thus we have manually managed the webapp directory and we still 
+					put the classes in the . position -->
 				<directory>src/main/webapp</directory>
-			</resource>		
+			</resource>
 			<resource>
 				<directory>src/main/resources</directory>
-			</resource>		
+			</resource>
 		</resources>
-		
+
 		<plugins>
 			<plugin>
 				<groupId>org.apache.felix</groupId>
@@ -87,9 +109,10 @@
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
-<!-- 						<_wab>src/main/webapp</_wab>  could also use src/main/resources if you like -->
- 						<Webapp-Context>semantic_turkey</Webapp-Context>
- 						<Web-ContextPath>semantic_turkey</Web-ContextPath>
+						<!-- <_wab>src/main/webapp</_wab> could also use src/main/resources 
+							if you like -->
+						<Webapp-Context>semantic_turkey</Webapp-Context>
+						<Web-ContextPath>semantic_turkey</Web-ContextPath>
 						<Export-Package>
 							<!-- The following is required to make core service classes (SKOS[XL], 
 								...) available for extensions -->
@@ -145,7 +168,7 @@
 							javax.servlet.http,
 							*;resolution:=optional
 						</Import-Package>
-<!-- 						<Bundle-ClassPath>.</Bundle-ClassPath> -->
+						<!-- <Bundle-ClassPath>.</Bundle-ClassPath> -->
 					</instructions>
 				</configuration>
 			</plugin>

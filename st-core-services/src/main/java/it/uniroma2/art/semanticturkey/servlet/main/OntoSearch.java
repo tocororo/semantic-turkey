@@ -297,7 +297,7 @@ public class OntoSearch extends ServiceAdapter {
 				STRDFResource stResult = STRDFNodeFactory.createSTRDFResource(rep, result._resource, 
 						result._type,  servletUtilities.checkWritable(rep, result._resource, wgraph),
 						false);
-				Cls.setRendering((RDFSModel)rep, stResult, null, null, graphs);
+				ClsOld.setRendering((RDFSModel)rep, stResult, null, null, graphs);
 				resultsCollection.add(stResult);
 			}
 			RDFXMLHelp.addRDFNodes(response, resultsCollection);
