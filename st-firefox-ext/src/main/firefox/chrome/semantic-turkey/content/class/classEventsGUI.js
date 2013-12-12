@@ -179,7 +179,7 @@ art_semanticturkey.parsingSubClass = function(classNode, node, isRootNode) {
 	if(deleteForbidden == null)
 		deleteForbidden = false;
 	tc.setAttribute("deleteForbidden", deleteForbidden);
-	if (deleteForbidden == "true")
+	if (deleteForbidden == "true" || classNode.explicit == "false")
 		tc.setAttribute("properties", "basetrue");
 	
 	tc.setAttribute("isRootNode", isRootNode);
