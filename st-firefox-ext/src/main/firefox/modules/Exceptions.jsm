@@ -45,7 +45,7 @@ STError.prototype.constructor = STError;
 
 // a javascript error for Java Exceptions (exceptions caught by the services) with an additional parameter
 // for specifying the java exception which was reported in the STResponse. 
-function STException(message) {
+function STException(javaException, message) {
   this.name = "STException";
   this.javaException = javaException;
   this.message = message || "";
