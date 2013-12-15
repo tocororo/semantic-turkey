@@ -156,6 +156,7 @@
 							org.springframework.validation.annotation,
 							org.jsoup,
 							org.springframework.aop.framework,
+							org.springframework.aop.framework.autoproxy,
 							org.springframework.aop,
 							javax.validation.bootstrap,
 							javax.validation.constraints,

@@ -13,7 +13,9 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
@@ -24,41 +26,40 @@ import java.util.Collection;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-@GenerateSTServiceController
+//@GenerateSTServiceController
 @Validated
 @Component
 public class Resource extends STServiceAdapter {
 
 	@GenerateSTServiceController
-	public Response getPropertyValues(@Existing ARTResource subject, ARTURIResource predicate) {
+	@AutoRendering
+	public Collection<STRDFNode> getPropertyValues(@Existing ARTResource subject, ARTURIResource predicate) throws ModelAccessException {
 		OWLModel model = getOWLModel();
 		ARTResource[] graphs;
-		try {
-			graphs = getUserNamedGraphs();
-			ARTNodeIterator it = model.listValuesOfSubjPredPair(subject, predicate, true, graphs);
+		graphs = getUserNamedGraphs();
+		ARTNodeIterator it = model.listValuesOfSubjPredPair(subject, predicate, true, graphs);
 
-			Collection<ARTNode> explicitValues = RDFIterators.getCollectionFromIterator(model
-					.listValuesOfSubjPredPair(subject, predicate, false, getWorkingGraph()));
+		Collection<ARTNode> explicitValues = RDFIterators.getCollectionFromIterator(model
+				.listValuesOfSubjPredPair(subject, predicate, false, getWorkingGraph()));
 
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("getPropertyValues", RepliesStatus.ok);
-
-			Collection<STRDFNode> values = STRDFNodeFactory.createEmptyNodeCollection();
-			while (it.streamOpen()) {
-				ARTNode next = it.getNext();
-				boolean explicit;
-				if (explicitValues.contains(next))
-					explicit = true;
-				else
-					explicit = false;
-				values.add(STRDFNodeFactory.createSTRDFNode(model, next, true, explicit, true));
-			}
-			it.close();
-			RDFXMLHelp.addRDFNodes(response, values);
-			return response;
-
-		} catch (ModelAccessException e) {
-			return logAndSendException(e);
+		Collection<STRDFNode> values = STRDFNodeFactory.createEmptyNodeCollection();
+		while (it.streamOpen()) {
+			ARTNode next = it.getNext();
+			boolean explicit;
+			if (explicitValues.contains(next))
+				explicit = true;
+			else
+				explicit = false;
+			values.add(STRDFNodeFactory.createSTRDFNode(model, next, true, explicit, false)); // disables rendering
 		}
+		it.close();
+		
+		return values;
+	}
+	
+	@Override
+	public OWLModel getOWLModel() {
+		return ProjectManager.getCurrentProject().getOWLModel();
 	}
 	
 	public ARTResource[] getUserNamedGraphs() {
@@ -70,39 +71,4 @@ public class Resource extends STServiceAdapter {
 		return NodeFilters.MAINGRAPH;
 	}
 	
-	// public Response getPropertyValues(String resourceName, String propertyName) {
-	// OWLModel model = getOWLModel();
-	// ARTResource[] graphs;
-	// try {
-	// graphs = getUserNamedGraphs();
-	// ARTResource resource = retrieveExistingResource(model, resourceName, graphs);
-	// ARTURIResource property = model.createURIResource(propertyName);
-	// ARTNodeIterator it = model.listValuesOfSubjPredPair(resource, property, true, graphs);
-	//
-	// Collection<ARTNode> explicitValues = RDFIterators.getCollectionFromIterator(model
-	// .listValuesOfSubjPredPair(resource, property, false, getWorkingGraph()));
-	//
-	// XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-	//
-	// Collection<STRDFNode> values = STRDFNodeFactory.createEmptyNodeCollection();
-	// while (it.streamOpen()) {
-	// ARTNode next = it.getNext();
-	// boolean explicit;
-	// if (explicitValues.contains(next))
-	// explicit = true;
-	// else
-	// explicit = false;
-	// values.add(STRDFNodeFactory.createSTRDFNode(model, next, true, explicit, true));
-	// }
-	// it.close();
-	// RDFXMLHelp.addRDFNodes(response, values);
-	// return response;
-	//
-	// } catch (ModelAccessException e) {
-	// return logAndSendException(e);
-	// } catch (NonExistingRDFResourceException e) {
-	// return logAndSendException(e);
-	// }
-	// }
-
 }
