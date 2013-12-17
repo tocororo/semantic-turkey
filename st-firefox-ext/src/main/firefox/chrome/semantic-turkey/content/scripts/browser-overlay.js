@@ -222,8 +222,8 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 			true);
 	document.getElementById("SKOSToolBarButton").addEventListener("command",
 			art_semanticturkey.toggleSidebar3, true);
-	document.getElementById("graphBarButton").addEventListener("command", art_semanticturkey.semnavigation,
-			true);
+	//document.getElementById("graphBarButton").addEventListener("command", art_semanticturkey.semnavigation,
+	//		true);
 
 	document.getElementById("humanReadableButton").addEventListener("command",
 			art_semanticturkey.humanReadableButtonClick, true);
@@ -322,7 +322,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("ontPanelToolBarButton").hidden = false;
 		document.getElementById("importsToolBarButton").hidden = false;
 		document.getElementById("SPARQLToolBarButton").hidden = false;
-		document.getElementById("graphBarButton").hidden = false;
+		//document.getElementById("graphBarButton").hidden = false;
 		document.getElementById("save_project").setAttribute("label", "Save " + projectName);
 		if (art_semanticturkey.CurrentProject.isContinuosEditing() == false)
 			document.getElementById("save_project").disabled = false;
@@ -344,7 +344,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("ontPanelToolBarButton").disabled = false;
 		document.getElementById("importsToolBarButton").disabled = false;
 		document.getElementById("SPARQLToolBarButton").disabled = false;
-		document.getElementById("graphBarButton").disabled = false;
+		//document.getElementById("graphBarButton").disabled = false;
 		document.getElementById("SKOSToolBarButton").disabled = false;
 		if (projectInfo.getType().indexOf("SKOS") != -1) {
 			document.getElementById("SKOSToolBarButton").hidden = false;
@@ -402,7 +402,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("ontPanelToolBarButton").disabled = true;
 		document.getElementById("importsToolBarButton").disabled = true;
 		document.getElementById("SPARQLToolBarButton").disabled = true;
-		document.getElementById("graphBarButton").disabled = true;
+		//document.getElementById("graphBarButton").disabled = true;
 		document.getElementById("SKOSToolBarButton").disabled = true;
 
 		if (typeof art_semanticturkey.skosStateManagemenet.stEventArray != "undefined") {
