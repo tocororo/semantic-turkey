@@ -71,6 +71,15 @@
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
 	</bean>
+	
+	
+	<!-- TEST SHOWER -->
+	<bean class="it.uniroma2.art.semanticturkey.shower.ShowerManager">
+		<property name="showerImpl">
+			<bean class="it.uniroma2.art.semanticturkey.shower.impl.ShowerLabels">
+			</bean>
+		</property>
+	</bean>
 
 	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/>	 -->
 </beans>

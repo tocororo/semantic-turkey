@@ -33,6 +33,11 @@ public class ResourceController implements ApplicationContextAware {
 		Resource fun = (Resource) context.getBean(Resource.class);
 		Collection<STRDFNode> response = fun.getPropertyValues(subject, predicate);
 
+		//test to see the show
+		for(STRDFNode strdfNode : response){
+			System.out.println("&&&&&&&&& rendering = "+strdfNode.getRendering());
+		}
+		
 		return response.toString();
 	}
 }
