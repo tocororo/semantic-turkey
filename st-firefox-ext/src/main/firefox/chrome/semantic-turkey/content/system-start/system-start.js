@@ -25,7 +25,9 @@ art_semanticturkey.startST = function() {
 	} catch (e) {
 		if (e instanceof art_semanticturkey.HTTPError) {
 			alert("no server found! pls check that a server is listening on: "
-					+ art_semanticturkey.HttpMgr.getAuthority());
+					+ art_semanticturkey.HttpMgr.getAuthority()+"\n\n"+
+					"Semantic Turkey server can be downloaded from here:\n"+
+					"https://bitbucket.org/art-uniroma2/semantic-turkey/downloads");
 			return;	// Leave ST unstarted
 		} // Otherwise, the server is on but no project has been loaded yet
 	}
