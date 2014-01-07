@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Stack;
 
 /**
- * @author Armando Stellato
+ * @author Armando Stellato Contributor(s): Andrea Turbati
  * 
  */
 public class Utilities {
@@ -470,12 +470,15 @@ public class Utilities {
 			File[] fileList = current.listFiles();
 			if (fileList != null) {
 				for (File entry : fileList) {
-					if (entry.isFile() && includeFiles) {
-						if (entry.canRead()) {
-							list.add(entry);
-						} else {
-							System.err.println("File " + entry.getPath() + " is unreadable");
-							throw new IOException("Can't read file: " + entry.getPath());
+					//if (entry.isFile() && includeFiles) { // old bugged version
+					if (entry.isFile()) {
+						if (includeFiles) {
+							if (entry.canRead()) {
+								list.add(entry);
+							} else {
+								System.err.println("File " + entry.getPath() + " is unreadable");
+								throw new IOException("Can't read file: " + entry.getPath());
+							}
 						}
 					} else if (entry.isDirectory()) {
 						if (includeDirs)
