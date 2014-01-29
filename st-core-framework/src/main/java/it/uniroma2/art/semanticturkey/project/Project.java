@@ -373,8 +373,21 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
+	/**
+	 * Registers the plugin with name <code>pluginName</code> to this project.<br/>
+	 * The plugin is registered by adding its name to the column-separated property "plugins" stored in the
+	 * project property file.
+	 * 
+	 * @param pluginName
+	 * @throws DuplicatedResourceException
+	 * @throws ProjectUpdateException
+	 */
 	public void registerPlugin(String pluginName) throws DuplicatedResourceException, ProjectUpdateException {
 
+		// loads the string with all previously registered plugin names, and if there is no plugin,
+		// istantiates the string with the new one, otherwise reparses this string to get all previous
+		// plugins (to check that the new plugin to be registered is not already present among any of the
+		// previous ones), then adds the new one and then stores again the string
 		String pluginsString = stp_properties.getProperty(PLUGINS_PROP);
 		if (pluginsString == null) {
 			pluginsString = pluginName;
@@ -382,6 +395,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			String[] plugins = pluginsString.split(SEPARATION_SYMBOL);
 			if (plugins.length == 0)
 				pluginsString = pluginName;
+			// checks that the plugin has not already been registered for this project
 			else {
 				for (int i = 0; i < plugins.length; i++) {
 					if (plugins[i].equals(pluginName))
@@ -406,6 +420,14 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			return propValue + SEPARATION_SYMBOL + pluginName;
 	}
 
+	/**
+	 * removes the plugin with name <code>pluginName</code> from this project. If the project does not contain
+	 * any registered plugin, or if the plugin is not registered among the reigistered ones, than a
+	 * {@link ProjectUpdateException} is thrown, with an appropriate message
+	 * 
+	 * @param pluginName
+	 * @throws ProjectUpdateException
+	 */
 	public void deregisterPlugin(String pluginName) throws ProjectUpdateException {
 
 		boolean modified = false;
@@ -413,13 +435,13 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 		if (pluginsString == null)
 			throw new ProjectUpdateException("unable to deregister plugin: " + pluginName
-					+ " because it does not appear to be associated to this project");
+					+ " actually it seems there is no plugin associated to this project");
 
 		String[] plugins = pluginsString.split(SEPARATION_SYMBOL);
 
 		if (plugins.length == 0)
 			throw new ProjectUpdateException("unable to deregister plugin: " + pluginName
-					+ " because it does not appear to be associated to this project");
+					+ " actually it seems there is no plugin associated to this project");
 
 		pluginsString = "";
 		for (int i = 0; i < plugins.length; i++) {
@@ -440,6 +462,11 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
+	/**
+	 * returns the list of registered plugins
+	 *  
+	 * @return a List containing the names of the registered plugins
+	 */
 	public List<String> getRegisteredPlugins() {
 		String pluginsString = stp_properties.getProperty(PLUGINS_PROP);
 		if (pluginsString == null) {
