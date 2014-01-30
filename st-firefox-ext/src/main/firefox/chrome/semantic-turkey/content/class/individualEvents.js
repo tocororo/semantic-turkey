@@ -21,6 +21,11 @@
  */
 //netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
 
+if (typeof art_semanticturkey == 'undefined')
+	var art_semanticturkey = {};
+
+Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
+
 art_semanticturkey.associateEventsOnIndividualGraphicElements = function() {
 
 	document.getElementById("IndividualsList").addEventListener("dblclick",
@@ -154,9 +159,17 @@ art_semanticturkey.listdblclick = function(event) {
 	parameters.list = document.getElementById('IndividualsList');
 	parameters.tree = document.getElementById('classesTree');
 	parameters.isFirstEditor = true;
+	
+	//NEWEDITOR TEST
+	if(art_semanticturkey.Preferences.get("extensions.semturkey.useNewEditor", false) == true){
+		window.openDialog("chrome://semantic-turkey/content/editorsNew/editorPanel.xul",
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
+			parameters);
+	} else {
 	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
 			parameters);
+	}	
 };
 // vedere se in enrich crea problemi il fatto che è stata spostata in
 // browser-overlay.js

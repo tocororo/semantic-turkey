@@ -1,5 +1,8 @@
 
 
+Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey);
+
+
 /**
  * Created a new class in the ontology
  * @param {} classRes
@@ -280,7 +283,7 @@ art_semanticturkey.genericEventClass = function(){
 
 
 /**
- * This class is the one that should be used to register an object for a particuar event
+ * This class is the one that should be used to register an object for a particular event
  * @param {} eventId
  * @param {} registeringFunction
  * @param {} unregisteringFunction
@@ -308,7 +311,7 @@ art_semanticturkey.eventListener = function(eventId, registeringFunction, unregi
 
 /**
  * This class should be used when someone wants to register more than one listener (even for different events)
- * and there is non reason to keep track of the different listener
+ * and there is no reason to keep track of the different listeners
  */
 art_semanticturkey.eventListenerArrayClass = function(){
 	var arrayListener = new Array();

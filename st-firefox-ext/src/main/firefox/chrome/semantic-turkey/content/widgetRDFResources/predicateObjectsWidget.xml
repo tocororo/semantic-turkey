@@ -19,24 +19,29 @@
 			<field name="rdfPredicate" />
 			<field name="rdfResourcesArray" />
 			<field name="operations" />
+			<field name="showSubjInGUI" />
 			<constructor>
 				<![CDATA[
 					if (typeof art_semanticturkey == 'undefined')
 						var art_semanticturkey = {};
-						Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
-					
+					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+						
 					if(typeof this.rdfSubject != "undefined"){
 						var subjectShow = this.rdfSubject.getShow();
 						if(typeof subjectShow != "undefined")
-							document.getAnonymousElementByAttribute(this, "anonid", "labelSubjId")
-								.setAttribute("value", "subject: "+subjectShow);
+							if(typeof showSubjInGUI == "undefined" || showSubjInGUI==true)
+								document.getAnonymousElementByAttribute(this, "anonid", "labelSubjId")
+									.setAttribute("value", "subject: "+subjectShow);
 					}
 					
 					if(typeof this.rdfPredicate != "undefined"){
 						var predicateURI = this.rdfPredicate.getShow();
 						if(typeof predicateURI != "undefined")
+							//document.getAnonymousElementByAttribute(this, "anonid", "labelPredId")
+							//	.setAttribute("value", "predicate: "+predicateURI);
 							document.getAnonymousElementByAttribute(this, "anonid", "labelPredId")
-								.setAttribute("value", "predicate: "+predicateURI);
+								.setAttribute("value", predicateURI);
 					}
 					
 					if(typeof this.operations != "undefined"){
@@ -50,34 +55,37 @@
 							document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW")
 								.appendChild(button);
 						}
-						if(this.operations.contains("remove") && this.rdfResourcesArray.length>=10){
-							var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource, "remove");
-							var button = document.createElement("button");
-							button.setAttribute("label", "remove");
-							button.setAttribute("image", imageSrc);
+						
+						if(typeof this.rdfResourcesArray != "undefined" && this.rdfResourcesArray != null){
+							if(this.operations.contains("remove") && this.rdfResourcesArray.length>=5){
+								var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource, "remove");
+								var button = document.createElement("button");
+								button.setAttribute("label", "remove");
+								button.setAttribute("image", imageSrc);
+								document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW")
+									.appendChild(button);
+							}
+							
+							var spacer = document.createElement("spacer");
+							spacer.setAttribute("flex", "1");
 							document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW")
-								.appendChild(button);
+									.appendChild(spacer);
+							
+							/*
+							var operationsArray = this.operations.split(';');
+							for (var i = 0; i < operationsArray.length; i++) {
+								var operation = operationsArray[i];
+								var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource,
+							    					operation);
+								//var button = document.getAnonymousElementByAttribute(this, "anonid", "boxbuttonId");
+								var button = document.createElement("button");
+								button.setAttribute("label", operation);
+								button.setAttribute("image", imageSrc);
+								document.getAnonymousElementByAttribute(this, "anonid", "innerPOWBoxId")
+									.appendChild(button);
+							}
+							*/
 						}
-						
-						var spacer = document.createElement("spacer");
-						spacer.setAttribute("flex", "1");
-						document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW")
-								.appendChild(spacer);
-						
-						/*
-						var operationsArray = this.operations.split(';');
-						for (var i = 0; i < operationsArray.length; i++) {
-							var operation = operationsArray[i];
-							var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource,
-						    					operation);
-							//var button = document.getAnonymousElementByAttribute(this, "anonid", "boxbuttonId");
-							var button = document.createElement("button");
-							button.setAttribute("label", operation);
-							button.setAttribute("image", imageSrc);
-							document.getAnonymousElementByAttribute(this, "anonid", "innerPOWBoxId")
-								.appendChild(button);
-						}
-						*/
 					}
 					
 					var mainOLWbox = document.getAnonymousElementByAttribute(this, "anonid", "mainPOWboxId");
@@ -86,6 +94,7 @@
 					mainOLWbox.operations = this.operations;
 					mainOLWbox.addRemoveButton = false;
 					mainOLWbox.setAttribute("class","object-list-widget");
+					
 				]]>
 			</constructor>
 			<method name="getSubject">
@@ -113,6 +122,10 @@
 		<handlers>
 			<handler event="command">
 				<![CDATA[
+					if (typeof art_semanticturkey == 'undefined')
+						var art_semanticturkey = {};
+					Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+						
 					/*alert("rdfnode-container-widget: command");
 					var target = event.target;
 					alert("tag name = "+target.tagName+"\nclass = "+target.getAttribute("class"));*/
@@ -155,6 +168,7 @@
 							event.originalTarget.dispatchEvent(customEvent);
 						}
 					}
+					
 				]]>
 			</handler>
 			<handler event="rdfnodeContainerEvent">

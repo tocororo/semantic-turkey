@@ -257,7 +257,7 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 				"st_started", art_semanticturkey.enableSTToolbarButtons, null);
 	}
 
-	// Adding an three ojbects waiting for the events projectOpened ,
+	// Adding three objects waiting for the events projectOpened ,
 	// projectClosed and projectChangedName
 	art_semanticturkey.eventListenerBrowserOverlayArrayObject.addEventListenerToArrayAndRegister(
 			"projectOpened", art_semanticturkey.changeProjectObj, null);

@@ -11,7 +11,24 @@ var Deserializer = new Object();
 function createRDFArray(response){
 	var collectionElement = response.getElementsByTagName('collection')[0];
 	var childElements = collectionElement.childNodes;
+	
+	return createRDFArrayGivenList(childElements);
+	
+	/*var collectionArray = new Array(); 
+	for (var i = 0; i < childElements.length; i++){
+		if(childElements[i].nodeType == 1) {// == ELEMENT_NODE
+			collectionArray.push(createRDFNode(childElements[i]));
+		}
+	}
+	return collectionArray;*/
+};
+
+function createRDFArrayGivenList(childElements){
+	//var collectionElement = response.getElementsByTagName('collection')[0];
+	//var childElements = collectionElement.childNodes;
 	var collectionArray = new Array(); 
+	if(typeof childElements.length == "undefined")
+		return null;
 	for (var i = 0; i < childElements.length; i++){
 		if(childElements[i].nodeType == 1) {// == ELEMENT_NODE
 			collectionArray.push(createRDFNode(childElements[i]));
@@ -127,6 +144,7 @@ function createPropertyValue(response){
 
 
 Deserializer.createRDFArray = createRDFArray;
+Deserializer.createRDFArrayGivenList = createRDFArrayGivenList;
 Deserializer.createURI = createURI;
 Deserializer.createBlankNode = createBlankNode;
 Deserializer.createLiteral = createLiteral;

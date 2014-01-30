@@ -24,6 +24,12 @@
  *         elements it is invokes by window.onload in main script class.js
  */
 
+if (typeof art_semanticturkey == 'undefined')
+	var art_semanticturkey = {};
+
+Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
+
+
 art_semanticturkey.associateEventsOnGraphicElementsClasses = function() {
 	document.getElementById("classesTree").addEventListener("dblclick",
 			art_semanticturkey.classesTreedoubleClick, true);
@@ -870,11 +876,22 @@ art_semanticturkey.classesTreedoubleClick = function(event) {
 	parameters.tree = document.getElementById('classesTree');
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
-	window.openDialog(
+	
+	//NEWEDITOR TEST
+	if(art_semanticturkey.Preferences.get("extensions.semturkey.useNewEditor", false) == true){
+		window.openDialog(
+			"chrome://semantic-turkey/content/editorsNew/editorPanel.xul",
+			"_blank",
+			"chrome,dependent,dialog,modal=yes,resizable,centerscreen",
+			parameters);
+	} else {
+		window.openDialog(
 			"chrome://semantic-turkey/content/editors/editorPanel.xul",
 			"_blank",
 			"chrome,dependent,dialog,modal=yes,resizable,centerscreen",
 			parameters);
+	}
+
 };
 
 /**

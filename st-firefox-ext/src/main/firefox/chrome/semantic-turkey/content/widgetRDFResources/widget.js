@@ -37,7 +37,7 @@ window.onload = function(){
 	
 	var boxForLabel1 = document.createElement("hbox");
 	var label1 = document.createElement("label");
-	label1.setAttribute("value", "object-list-widget with less than 10 elements");
+	label1.setAttribute("value", "object-list-widget with less than 5 elements");
 	label1.setAttribute("font-size", "large");
 	var spacerForLabel1Before = document.createElement("spacer");
 	spacerForLabel1Before.setAttribute("flex", "1");
@@ -56,7 +56,7 @@ window.onload = function(){
 	rdfResArray1[3] = new art_semanticturkey.ARTLiteral("dog", "", "en", false);
 	//widgetBoxOLW1.labelValue = "Few Resources";
 	widgetBoxOLW1.rdfResourcesArray = rdfResArray1;
-	widgetBoxOLW1.operations = "remove"
+	widgetBoxOLW1.operations = "remove";
 	widgetBoxOLW1.addEventListener("rdfnodeBaseEvent", art_semanticturkey.rdfnodeBaseEventHandler);
 	//widgetBoxOLW1.addEventListener("rdfnodeContainerEvent", function(e) {alert("test")});
 	widgetBoxOLW1.addEventListener("rdfnodeContainerEvent", art_semanticturkey.rdfnodeContainerEventHandler);
@@ -69,7 +69,7 @@ window.onload = function(){
 	
 	var boxForLabel2 = document.createElement("hbox");
 	var label2 = document.createElement("label");
-	label2.setAttribute("value", "object-list-widget with more than 10 elements");
+	label2.setAttribute("value", "object-list-widget with 5 or more elements");
 	label2.setAttribute("font-size", "large");
 	var spacerForLabel2Before = document.createElement("spacer");
 	spacerForLabel2Before.setAttribute("flex", "1");
@@ -113,7 +113,7 @@ window.onload = function(){
 	
 	var boxForLabel3 = document.createElement("hbox");
 	var label3 = document.createElement("label");
-	label3.setAttribute("value", "predicate-objects-widget with less than 10 elements");
+	label3.setAttribute("value", "predicate-objects-widget with less than 5 elements");
 	label3.setAttribute("font-size", "large");
 	var spacerForLabel3Before = document.createElement("spacer");
 	spacerForLabel3Before.setAttribute("flex", "1");
@@ -127,11 +127,9 @@ window.onload = function(){
 	var widgetBoxOLW3 = document.createElement("box");
 	var rdfResArray3 = new Array();
 	rdfResArray3[0] = new art_semanticturkey.ARTURIResource("pippo1", "concept", "http://test#pippo1");
-	rdfResArray3[1] = new art_semanticturkey.ARTURIResource("pippo6", "concept", "http://test#pippo6");
-	rdfResArray3[2] = new art_semanticturkey.ARTBNode("_:p1");
-	rdfResArray3[3] = new art_semanticturkey.ARTLiteral("Acqua", "", "it", false);
-	rdfResArray3[4] = new art_semanticturkey.ARTLiteral("Water", "", "en", false);
-	rdfResArray3[5] = new art_semanticturkey.ARTLiteral("123456", "http://type#integer", "", true);
+	rdfResArray3[1] = new art_semanticturkey.ARTBNode("_:p1");
+	rdfResArray3[2] = new art_semanticturkey.ARTLiteral("Acqua", "", "it", false);
+	rdfResArray3[3] = new art_semanticturkey.ARTLiteral("123456", "http://type#integer", "", true);
 	//widgetBoxOLW3.labelValue = "More Resources (predicate-objects-widget)";
 	widgetBoxOLW3.operations = "add;remove";
 	widgetBoxOLW3.rdfResourcesArray = rdfResArray3;
@@ -156,7 +154,7 @@ window.onload = function(){
 	
 	var boxForLabel4 = document.createElement("hbox");
 	var label4 = document.createElement("label");
-	label4.setAttribute("value", "predicate-objects-widget with more than 10 elements");
+	label4.setAttribute("value", "predicate-objects-widget with 5 or more elements");
 	label4.setAttribute("font-size", "large");
 	var spacerForLabel4Before = document.createElement("spacer");
 	spacerForLabel4Before.setAttribute("flex", "1");
@@ -171,18 +169,14 @@ window.onload = function(){
 	var rdfResArray4 = new Array();
 	rdfResArray4[0] = new art_semanticturkey.ARTURIResource("pippo1", "concept", "http://test#pippo1");
 	rdfResArray4[1] = new art_semanticturkey.ARTURIResource("pippo2", "concept", "http://test#pippo2");
-	rdfResArray4[2] = new art_semanticturkey.ARTURIResource("pippo3", "concept", "http://test#pippo3");
-	rdfResArray4[3] = new art_semanticturkey.ARTURIResource("pippo4", "concept", "http://test#pippo4");
-	rdfResArray4[4] = new art_semanticturkey.ARTURIResource("pippo5", "concept", "http://test#pippo5");
-	rdfResArray4[5] = new art_semanticturkey.ARTURIResource("pippo6", "concept", "http://test#pippo6");
-	rdfResArray4[6] = new art_semanticturkey.ARTBNode("_:p1");
-	rdfResArray4[7] = new art_semanticturkey.ARTLiteral("Acqua", "", "it", false);
-	rdfResArray4[8] = new art_semanticturkey.ARTLiteral("Water", "", "en", false);
-	rdfResArray4[9] = new art_semanticturkey.ARTLiteral("cane", "", "sp", false);
-	rdfResArray4[10] = new art_semanticturkey.ARTLiteral("123456", "http://type#integer", "", true);
-	rdfResArray4[11] = new art_semanticturkey.ARTLiteral("food", "http://type@string", "", true);
+	rdfResArray4[2] = new art_semanticturkey.ARTBNode("_:p1");
+	rdfResArray4[3] = new art_semanticturkey.ARTLiteral("Acqua", "", "it", false);
+	rdfResArray4[4] = new art_semanticturkey.ARTLiteral("Water", "", "en", false);
+	rdfResArray4[5] = new art_semanticturkey.ARTLiteral("cane", "", "sp", false);
+	rdfResArray4[6] = new art_semanticturkey.ARTLiteral("123456", "http://type#integer", "", true);
+	rdfResArray4[7] = new art_semanticturkey.ARTLiteral("food", "http://type@string", "", true);
 	//widgetBoxOLW3.labelValue = "More Resources (predicate-objects-widget)";
-	widgetBoxOLW4.operations = "add;remove";
+	widgetBoxOLW4.operations = "add;remove2";
 	widgetBoxOLW4.rdfResourcesArray = rdfResArray4;
 	widgetBoxOLW4.rdfSubject = new art_semanticturkey.ARTURIResource("subjectTest2", "concept", 
 			"http://test#subjectTest2");
@@ -191,15 +185,60 @@ window.onload = function(){
 	
 	
 	widgetBoxOLW4.addEventListener("rdfnodeBaseEvent", art_semanticturkey.rdfnodeBaseEventHandler);
-	widgetBoxOLW4.addEventListener("rdfnodeContainerEvent", art_semanticturkey.rdfnodeContainerEventHandler, true);
+	
+	//test from here ...
+	//var testObj = new art_semanticturkey.testObject();
+	//testObj.functionAdd = art_semanticturkey.rdfnodeBaseEventHandler;
+	//widgetBoxOLW4.addEventListener("rdfnodeBaseEvent", testObj.rdfnodeBaseEventHandler, true);
+	
+	//... to here
+	
+	//widgetBoxOLW4.addEventListener("rdfnodeContainerEvent", art_semanticturkey.rdfnodeContainerEventHandler, true);
 	widgetBoxOLW4.addEventListener("predicateObjectsEvent", art_semanticturkey.predicateObjectsEventHandler);
 	widgetBoxOLW4.setAttribute("class","predicate-objects-widget");
 	tempBox.appendChild(widgetBoxOLW4);
+	
+	
 	
 
 	//widgetBoxOLW2.addEventListener("rdfnodeBaseEvent", function(e) {alert("evento rdfnodeBaseEvent")});
 	//widgetBoxOLW2.addEventListener("dblclick", function(e) {alert("evento dblclick")});
 	
+	
+	var spacer4 = document.createElement("spacer");
+	spacer4.setAttribute("height", "40");
+	tempBox.appendChild(spacer4);
+	
+	
+	var boxForLabel5 = document.createElement("hbox");
+	var label5 = document.createElement("label");
+	label5.setAttribute("value", "predicate-objects-widget with more than 0 elements");
+	label5.setAttribute("font-size", "large");
+	var spacerForLabel5Before = document.createElement("spacer");
+	spacerForLabel5Before.setAttribute("flex", "1");
+	var spacerForLabel5After = document.createElement("spacer");
+	spacerForLabel5After.setAttribute("flex", "1");
+	boxForLabel5.appendChild(spacerForLabel5Before);
+	boxForLabel5.appendChild(label5);
+	boxForLabel5.appendChild(spacerForLabel5After);
+	tempBox.appendChild(boxForLabel5);
+	
+	var widgetBoxOLW5 = document.createElement("box");
+	var rdfResArray5 = new Array();
+	//widgetBoxOLW3.labelValue = "More Resources (predicate-objects-widget)";
+	widgetBoxOLW5.operations = "add;remove";
+	widgetBoxOLW5.rdfSubject = new art_semanticturkey.ARTURIResource("subjectTest3", "concept", 
+			"http://test#subjectTest3");
+	widgetBoxOLW5.rdfPredicate = new art_semanticturkey.ARTURIResource("predicateTest3", "concept", 
+			"http://test#predicateTest3");
+	widgetBoxOLW5.addEventListener("predicateObjectsEvent", art_semanticturkey.predicateObjectsEventHandler);
+	widgetBoxOLW5.setAttribute("class","predicate-objects-widget");
+	tempBox.appendChild(widgetBoxOLW5);
+	
+}
+
+art_semanticturkey.rdfnodeBaseEventHandler2 = function(event, pippo){
+	alert("pippo = "+pippo);
 }
 
 art_semanticturkey.rdfnodeBaseEventHandler = function(event){
@@ -317,4 +356,18 @@ art_semanticturkey.testFunc = function(){
 	
 	//anonButton = document.getAnonymousElementByAttribute(mainBox, "anonid", "buttonForRequest")
 	//alert(anonButton.getAttribute("label"));
+}
+
+art_semanticturkey.testObject = function(){
+	var nome = "mio Computer";
+	var that = this;
+	
+	this.rdfnodeBaseEventHandler = function(event){
+		alert("dentro rdfnodeBaseEventHandler di testObject");
+		alert("nome = "+nome);
+		that.functionAdd(event);
+	}
+	
+	//this function should be overidden
+	this.functionAdd = function(event){}
 }
