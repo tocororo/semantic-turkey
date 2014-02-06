@@ -46,7 +46,7 @@
 
 	<target name="create_embedded" depends="xpi_client" description="Create the EMBEDDED distribution folder">
 		<copy todir="../${dist.embedded}">
-			<fileset dir="../${dist.server}"/>
+			<fileset dir="../${dist.karaf}"/>
 			<!-- <mapper type="glob" /> -->
 		</copy>
 		<copy todir="../${dist.embedded}">

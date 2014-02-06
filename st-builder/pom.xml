@@ -1,0 +1,226 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>it.uniroma2.art.semanticturkey</groupId>
+		<artifactId>semanticturkey</artifactId>
+		<version>0.9.2-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>st-builder</artifactId>
+	<name>Semantic Turkey Builder</name>
+	<packaging>pom</packaging>
+	<description>Semantic turkey builder subproject. It creates the karaf archive with the application already deployed.</description>
+
+
+	<properties>
+		<karaf.version>2.3.3</karaf.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.karaf</groupId>
+			<artifactId>apache-karaf</artifactId>
+			<version>2.3.3</version>
+			<type>zip</type>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.karaf.assemblies.features</groupId>
+			<artifactId>standard</artifactId>
+			<version>2.3.3</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>${project.basedir}/src/main/filtered-resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/*</include>
+				</includes>
+			</resource>
+		</resources>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>filter</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>resources</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- This goal attaches the feature file semanticturkey.xml as an additional 
+				artifact to this compilation unit so that it can be referenced thtough Maven. -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-artifact</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>attach-artifact</goal>
+						</goals>
+						<configuration>
+							<artifacts>
+								<artifact>
+									<file>${project.basedir}/target/classes/semanticturkey.xml</file>
+									<type>xml</type>
+									<classifier>features</classifier>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- This goal has been dictated by the same principle of the previous 
+				"attach-artifact" one. The difference is that normally attached artifacts 
+				may be declared in any phase, but are actually installed during the install 
+				phase. This is ok for the semanticturkey.xml file, while we need the files 
+				listed here to be available for the following tasks (carried on during the 
+				prepackage and package phases). For this reason, we force here their install 
+				during the compile phase. -->
+			<plugin>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>2.3.1</version>
+				<executions>
+					<execution>
+						<id>install-pax-file</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/target/classes/org.ops4j.pax.web.cfg</file>
+							<groupId>it.uniroma2.art.semanticturkey</groupId>
+							<artifactId>${project.artifactId}</artifactId>
+							<version>${project.version}</version>
+							<packaging>cfg</packaging>
+							<classifier>pax</classifier>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install-st-file</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/target/classes/${project.groupId}.cfg</file>
+							<groupId>it.uniroma2.art.semanticturkey</groupId>
+							<artifactId>${project.artifactId}</artifactId>
+							<version>${project.version}</version>
+							<packaging>cfg</packaging>
+							<classifier>st</classifier>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install-prp-file</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/target/classes/config.properties</file>
+							<groupId>it.uniroma2.art.semanticturkey</groupId>
+							<artifactId>${project.artifactId}</artifactId>
+							<version>${project.version}</version>
+							<packaging>properties</packaging>
+							<classifier>prp</classifier>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<!-- Uncompress the standard Karaf distribution -->
+						<id>unpack</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.apache.karaf</groupId>
+									<artifactId>apache-karaf</artifactId>
+									<type>zip</type>
+									<outputDirectory>${project.basedir}/target/dependencies</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.karaf.tooling</groupId>
+				<artifactId>features-maven-plugin</artifactId>
+				<version>2.3.3</version>
+				<executions>
+					<execution>
+						<id>add-features-to-repo</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>add-features-to-repo</goal>
+						</goals>
+						<configuration>
+							<descriptors>
+								<descriptor>mvn:org.apache.karaf.assemblies.features/standard/2.3.3/xml/features</descriptor>
+								<descriptor>file:${project.basedir}/target/classes/semanticturkey.xml</descriptor>
+							</descriptors>
+							<features>
+								<feature>semantic_turkey</feature>
+							</features>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<executions>
+					<execution>
+						<id>bin</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
+							<outputDirectory>
+								${project.parent.basedir}/target/st-karaf
+							</outputDirectory>
+							<descriptors>
+								<descriptor>src/main/descriptors/bin.xml</descriptor>
+							</descriptors>
+							<appendAssemblyId>false</appendAssemblyId>
+							<tarLongFileMode>gnu</tarLongFileMode>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>

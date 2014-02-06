@@ -64,7 +64,7 @@
 						<phase>install</phase>
 						<configuration>
 								<target>
-									<copy todir="../${dist.server.extensions.core}">
+									<copy todir="../${dist.karaf.bundles}">
 										<fileset dir="${project.build.directory}" includes="*.jar" />
 									</copy>
 								</target>

@@ -48,6 +48,7 @@ public class Config {
 	private static File propFile = null;
 	private static String adminStatusPropName = "adminStatus";
 	private static String versionNumberPropName = "version";
+	private static String dataDirPropName = "data.dir";
 
 	private static void updatePropertyFile() {
 		FileOutputStream os;
@@ -117,6 +118,14 @@ public class Config {
 	public static VersionNumber getVersionNumber() {
 		String versionCode = stProperties.getProperty(versionNumberPropName);
 		return new VersionNumber(versionCode);
+	}
+	
+	public static File getDataDir() {
+		return new File(stProperties.getProperty(dataDirPropName));
+	}
+	
+	public static void setDataDirProp(String dataDirPath) throws ConfigurationUpdateException {
+		stProperties.setProperty(dataDirPropName, dataDirPath);
 	}
 
 }

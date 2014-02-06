@@ -1053,7 +1053,7 @@ public class ResourceOld extends ServiceAdapter {
 		Element dataElement = response.getDataElement();
 		dataElement.setAttribute("type", method);
 
-		System.out.println("method = " + method);
+		logger.info("method = " + method);
 		if (method.equals(templateandvalued)) {
 			try {
 

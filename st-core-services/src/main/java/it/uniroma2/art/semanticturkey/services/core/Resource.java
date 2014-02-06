@@ -10,16 +10,11 @@ import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.semanticturkey.constraints.Existing;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
 import java.util.Collection;
 
@@ -28,7 +23,8 @@ import org.springframework.validation.annotation.Validated;
 
 //@GenerateSTServiceController
 @Validated
-@Component
+// @Component
+// this annotation is commented; it does not work on the new environment
 public class Resource extends STServiceAdapter {
 
 	@GenerateSTServiceController

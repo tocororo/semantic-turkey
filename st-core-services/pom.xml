@@ -67,7 +67,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>org.springframework.aop</artifactId>
-			<version>3.1.2.RELEASE</version>
+			<version>${spring.version}</version>
 		</dependency>
 
 		<dependency>
@@ -182,7 +182,7 @@
 						<phase>install</phase>
 						<configuration>
 							<target>
-								<copy todir="../${dist.server.extensions.service}">
+								<copy todir="../${dist.karaf.bundles}">
 									<fileset dir="${project.build.directory}" includes="*.jar" />
 								</copy>
 							</target>
