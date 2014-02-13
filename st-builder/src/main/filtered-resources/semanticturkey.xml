@@ -29,7 +29,7 @@
 		<bundle>mvn:javax.inject/com.springsource.javax.inject/1.0.0</bundle>
 		<bundle>mvn:javax.persistence/com.springsource.javax.persistence/2.0.0</bundle>
 		<bundle>mvn:com.google.guava/guava/15.0</bundle>
-		<bundle>mvn:com.wcohen.ss.art.uniroma2.it/secondstring-osgi/1.0.0</bundle>
+		<bundle>mvn:com.wcohen.ss.art.uniroma2.it/secondstring-osgi/2006.06.15</bundle>
 		<bundle>mvn:net.sourceforge.cglib/com.springsource.net.sf.cglib/2.2.0</bundle>
 		<bundle>mvn:org.aopalliance/com.springsource.org.aopalliance/1.0.0</bundle>
 		<bundle>mvn:javax.el/com.springsource.javax.el/1.0.0</bundle>

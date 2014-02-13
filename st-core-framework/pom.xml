@@ -63,11 +63,11 @@
 					<execution>
 						<phase>install</phase>
 						<configuration>
-								<target>
-									<copy todir="../${dist.karaf.bundles}">
-										<fileset dir="${project.build.directory}" includes="*.jar" />
-									</copy>
-								</target>
+							<target>
+								<copy todir="../${dist.karaf.bundles}">
+									<fileset dir="${project.build.directory}" includes="*.jar" />
+								</copy>
+							</target>
 						</configuration>
 						<goals>
 							<goal>run</goal>
@@ -88,7 +88,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.wcohen.ss.art.uniroma2.it</groupId>
-			<artifactId>secondstring</artifactId>
+			<artifactId>secondstring-osgi</artifactId>
 			<version>2006.06.15</version>
 		</dependency>
 		<dependency>
@@ -126,7 +126,8 @@
 			<artifactId>json</artifactId>
 			<version>20090211</version>
 		</dependency>
-<!-- The dependency to javax.validation is required for the definition of constraints and validators -->
+<!-- The dependency to javax.validation is required for the definition of 
+			constraints and validators -->
 		<dependency>
 			<groupId>javax.validation</groupId>
 			<artifactId>com.springsource.javax.validation</artifactId>
@@ -136,7 +137,7 @@
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
 			<version>4.2.0.Final</version>
-<!-- 			<scope>provided</scope> -->
-		</dependency>				
+			<!-- <scope>provided</scope> -->
+		</dependency>
 	</dependencies>
 </project>
