@@ -171,9 +171,12 @@
 			</plugin>
 
 			<plugin>
+				<!-- This plugin was downgraded because later versions seem to be 
+					incompatible with Maven 3 -->
 				<groupId>org.apache.karaf.tooling</groupId>
 				<artifactId>features-maven-plugin</artifactId>
-				<version>2.3.3</version>
+				<version>2.1.6</version>
+				<!-- <version>2.3.3</version> -->
 				<executions>
 					<execution>
 						<id>add-features-to-repo</id>
@@ -189,6 +192,8 @@
 							<features>
 								<feature>semantic_turkey</feature>
 							</features>
+							<!-- In 2.3.3 this property defaults to ${project.build.directory}/features-repo -->
+							<repository>${project.build.directory}/features-repo</repository>
 						</configuration>
 					</execution>
 				</executions>
