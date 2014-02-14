@@ -23,8 +23,7 @@ import org.springframework.validation.annotation.Validated;
 
 //@GenerateSTServiceController
 @Validated
-// @Component
-// this annotation is commented; it does not work on the new environment
+@Component
 public class Resource extends STServiceAdapter {
 
 	@GenerateSTServiceController

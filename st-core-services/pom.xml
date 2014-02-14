@@ -158,6 +158,10 @@
 							org.springframework.aop.framework,
 							org.springframework.aop.framework.autoproxy,
 							org.springframework.aop,
+							<!-- The imports org.springframework.cglib.* seem necessary after the move to Karaf -->
+							org.springframework.cglib.proxy,
+							org.springframework.cglib.core,
+							org.springframework.cglib.reflect,
 							javax.validation.bootstrap,
 							javax.validation.constraints,
 							javax.validation.spi,
