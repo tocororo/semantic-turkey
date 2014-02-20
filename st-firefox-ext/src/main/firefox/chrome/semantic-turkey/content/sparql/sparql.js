@@ -22,8 +22,8 @@
 
 /*
  * The ST SPARQL Editor is built on the Flint SPARQL Editor
- * (http://openuplabs.tso.co.uk/demos/sparqleditor) as per the commit e88ec79911
- * (https://github.com/TSO-Openup/FlintSparqlEditor/commit/e88ec79911e9c933171ca6c11c59d6ede833b88b).
+ * (http://openuplabs.tso.co.uk/demos/sparqleditor) as per tag 1.0.3
+ * (https://github.com/TSO-Openup/FlintSparqlEditor/tree/v1.0.3).
  */
 
 if (typeof art_semanticturkey == 'undefined')
@@ -50,6 +50,11 @@ window.onload = function() {
 	document.getElementById("SPARQLTree").addEventListener("dblclick",
 			art_semanticturkey.SPARQLResourcedblClick, false);
 
+	document.getElementById("modeSelector").addEventListener("select",
+			function(event) {
+				art_semanticturkey.cm.setOption("mode", event.target.selectedItem.value);
+			}, false);
+	
 	var isNull = art_semanticturkey.CurrentProject.isNull();
 	if (isNull == false)
 		art_semanticturkey.enableSPARQLSubmitQuery();
@@ -75,73 +80,69 @@ window.onload = function() {
 	// so that it can underly errors.
 	
 	var clearError = null;
-	var markerHandle = null;
+	var markerHandle = null;	
 	
-	var cmUpdate = function() {
-		if (cm != undefined) {
-			var queryValid = true;
-			if (clearError != null) {
-				clearError.clear();
-				clearError = null
-			}
-			;
-			if (markerHandle != null)
-				cm.clearMarker(markerHandle);
-			var state;
-			for ( var l = 0; l < cm.lineCount(); ++l) {
-				state = cm.getTokenAt({
+	function cmUpdate() {
+
+		if (clearError !== null) {
+			clearError.clear(); // replaced clearError()
+			clearError = null;
+		}
+
+		if (markerHandle !== null) {
+			cm.clearMarker(markerHandle);
+		}
+		var state;
+		var l;
+		for (l = 0; l < cm.lineCount(); ++l) {
+			state = cm.getTokenAt({
+				line : l,
+				ch : cm.getLine(l).length
+			}).state;
+			if (state.OK === false) {
+				markerHandle = cm
+						.setMarker(l,
+								"<span style=\"color: #f00 ; font-size: large;\">&#8594;</span> %N%"); // replaced &rarr;
+				clearError = cm.markText({
 					line : l,
-					ch : cm.getLine(l).length
-				}).state;
-				if (state.OK == false) {
-					markerHandle = cm
-							.setMarker(l,
-									"<span style=\"color: #f00 ; font-size: large;\">&#8594;</span> %N%");
-					clearError = cm.markText({
-						line : l,
-						ch : state.errorStartPos
-					}, {
-						line : l,
-						ch : state.errorEndPos
-					}, "cm-sp-error");
-					queryValid = false;
-					break;
-				}
-			}
-			var stack = state.stack, len = state.stack.length;
-			// Because incremental parser doesn't receive end-of-input
-			// it can't clear stack, so we have to check that whatever
-			// is left on the stack is nillable
-			if (len > 1)
-				queryValid = false;
-			else if (len == 1) {
-				if (stack[0] != "solutionModifier"
-						&& stack[0] != "?limitOffsetClauses"
-						&& stack[0] != "?offsetClause")
-					queryValid = false;
-			}
-
-			if (queryValid) {
-				document.getElementById("submitQuery").tooltipText = "";
-				document.getElementById("submitQuery").style.opacity = 1.0;
-				// submitItemCoolbar.enable();
-				// submitItemEndpointBar.enable();
-				// datasetMimeTypeItem.setDisableElements(state.queryType);
-				// endpointMimeTypeItem.setDisableElements(state.queryType);
-				// statusArea.setQueryValid(true);
-				// statusArea.updateStatus();
-			} else {
-				document.getElementById("submitQuery").tooltipText = "Query contains errors";
-				document.getElementById("submitQuery").style.opacity = 0.6;
-
-				// submitItemCoolbar.disable();
-				// submitItemEndpointBar.disable();
-				// datasetMimeTypeItem.setDisableElements(state.queryType);
-				// endpointMimeTypeItem.setDisableElements(state.queryType);
-				// statusArea.setQueryValid(false);
-				// statusArea.updateStatus();
+					ch : state.errorStartPos
+				}, {
+					line : l,
+					ch : state.errorEndPos
+				}, "cm-sp-error");  // replaced sp-error
+				break;
 			}
 		}
+
+		if (state.complete) {
+			document.getElementById("submitQuery").setAttribute("disabled", "false");
+		} else {
+			document.getElementById("submitQuery").setAttribute("disabled", "true");
+		}
+
+
+//		if (state.complete) {
+//			// Coolbar submit item
+//			flint.getCoolbar().getItems()[2].enable();
+//			// Endpoint bar submit item
+//			flint.getEndpointBar().getItems()[1].enable();
+//			flint.getStatusArea().setQueryValid(true);
+//		} else {
+//			flint.getCoolbar().getItems()[2].disable();
+//			flint.getEndpointBar().getItems()[1].disable();
+//			flint.getStatusArea().setQueryValid(false);
+//		}
+
+//		// Dataset bar MIME type selection
+//		flint.getCoolbar().getItems()[3].setQueryType(state.queryType);
+//		// Endpoint bar MIME type selection
+//		flint.getEndpointBar().getItems()[3].setQueryType(state.queryType);
+//		flint.getStatusArea().updateStatus();
+//		if (state.queryType) {
+//			queryType = state.queryType.toUpperCase();
+//		} else {
+//			queryType = "";
+//		}
 	}
 	// End of error marking code
 
@@ -200,9 +201,9 @@ window.onload = function() {
 	// based on cursor position
 	function getPossiblesAtCursor() {
 		// We want a single cursor position.
-		if (cm.somethingSelected())
+		if (cm.somethingSelected()) {
 			return;
-
+		}
 		// Find the token at the cursor
 		var cur = cm.getCursor(false);
 		var cur1 = {
@@ -223,14 +224,12 @@ window.onload = function() {
 		// - if we ask CodeMirror for token at this position, we don't
 		// get back the token at the beginning of the line
 		// - hence use adjusted position cur1 to recover this token.
-		if (cur1.ch == 0 && cm.lineInfo(cur1.line).text.length > 0)
+		if (cur1.ch == 0 && cm.lineInfo(cur1.line).text.length > 0) {
 			cur1.ch = 1;
-
+		}
 		var token = cm.getTokenAt(cur1);
-
 		var charAfter;
-		var possibles;
-
+		var possibles = null;
 		var start = token.string.toLowerCase();
 		var insertPos = null;
 		var insertEnd = false;
@@ -241,7 +240,6 @@ window.onload = function() {
 		// into space, rather than replacing it.
 		if (token.className == "sp-ws") {
 			start = "";
-
 			// charAfter is char after cursor
 			charAfter = cm.getRange({
 				line : cur.line,
@@ -260,7 +258,6 @@ window.onload = function() {
 				line : cur.line,
 				ch : token.end + 1
 			});
-
 			if (token.className != "sp-invalid"
 					&& token.className != "sp-prefixed"
 					&& (token.string != "<" || !memberChk("IRI_REF",
@@ -279,29 +276,33 @@ window.onload = function() {
 			}
 		}
 
-		if (token.className == "sp-comment")
+		if (token.className === "sp-comment") {
 			possibles = [];
-		else if (cur1.ch > 0 && !insertEnd) {
-			possibles = token.state.possibleCurrent;
 		} else {
-			possibles = token.state.possibleNext;
+			if (cur1.ch > 0 && !insertEnd) {
+				possibles = token.state.possibleCurrent;
+			} else {
+				possibles = token.state.possibleNext;
+			}
 		}
 
 		return {
 			"token" : token, // codemirror token object
 			"possibles" : possibles, // array of possibles terminals from
-										// grammar
-			"insertPos" : insertPos, // Position in line to insert text, or
-										// null if replacing existing text
+			// grammar
+			"insertPos" : insertPos, // Position in line to insert text,
+			// or null if replacing existing
+			// text
 			"insertStart" : insertStart, // true if position of insert
-											// adjacent to start of a non-ws
-											// token
+			// adjacent to start of a non-ws
+			// token
 			"insertEnd" : insertEnd, // true if ... ... end of a ...
 			"charAfter" : charAfter, // char found straight after cursor
-			"cur" : cur, // codemirror {line,ch} object giving pos of cursor
+			"cur" : cur, // codemirror {line,ch} object giving pos of
+			// cursor
 			"start" : start
 		// Start of token for autocompletion
-		}
+		};
 	}
 
 	// Initializes the completion popup. 
@@ -395,16 +396,34 @@ window.onload = function() {
 		return true;
 	}
 
-	var allKeywords = this.allKeywords;
-
-	// FIXME: This is duplicated from elsewhere, and it shouldn't be!
-	var keywords = /^(BASE|PREFIX|SELECT|CONSTRUCT|DESCRIBE|ASK|FROM|NAMED|ORDER|BY|LIMIT|ASC|DESC|OFFSET|DISTINCT|REDUCED|WHERE|GRAPH|OPTIONAL|UNION|FILTER|STR|LANG|LANGMATCHES|DATATYPE|BOUND|SAMETERM|ISIRI|ISURI|ISBLANK|ISLITERAL|REGEX|TRUE|FALSE)$/i;
-	// Punctuation omits "a" and "<"
-	// - because we might want to autocomplete a URI
-	var punct = /^(\*|\.|\{|\}|,|\(|\)|;|\[|\]|\|\||&&|=|!=|!|<=|>=|>|\+|-|\/|\^\^)$/
-
+	var keywords = /^(GROUP_CONCAT|DATATYPE|BASE|PREFIX|SELECT|CONSTRUCT|DESCRIBE|ASK|FROM|NAMED|ORDER|BY|LIMIT|ASC|DESC|OFFSET|DISTINCT|REDUCED|WHERE|GRAPH|OPTIONAL|UNION|FILTER|GROUP|HAVING|AS|VALUES|LOAD|CLEAR|DROP|CREATE|MOVE|COPY|SILENT|INSERT|DELETE|DATA|WITH|TO|USING|NAMED|MINUS|BIND|LANGMATCHES|LANG|BOUND|SAMETERM|ISIRI|ISURI|ISBLANK|ISLITERAL|REGEX|TRUE|FALSE|UNDEF|ADD|DEFAULT|ALL|SERVICE|INTO|IN|NOT|IRI|URI|BNODE|RAND|ABS|CEIL|FLOOR|ROUND|CONCAT|STRLEN|UCASE|LCASE|ENCODE_FOR_URI|CONTAINS|STRSTARTS|STRENDS|STRBEFORE|STRAFTER|YEAR|MONTH|DAY|HOURS|MINUTES|SECONDS|TIMEZONE|TZ|NOW|UUID|STRUUID|MD5|SHA1|SHA256|SHA384|SHA512|COALESCE|IF|STRLANG|STRDT|ISNUMERIC|SUBSTR|REPLACE|EXISTS|COUNT|SUM|MIN|MAX|AVG|SAMPLE|SEPARATOR|STR)$/i;
+	var punct = /^(\*|\.|\{|\}|,|\(|\)|;|\[|\]|\|\||&&|=|!=|!|<=|>=|<|>|\+|-|\/|\^\^|\?|\||\^)$/;
 	function getCompletions(token, start, possibles) {
+
 		var found = [];
+
+		var state = token.state;
+		var stack = state.stack;
+		var top = stack.length - 1;
+		var topSymbol = stack[top];
+
+		// Skip optional clutter
+		while (/^(\*|\?).*/.test(topSymbol) && top > 0) {
+			topSymbol = stack[--top];
+		}
+
+		var lastProperty = token.state.lastProperty;
+		// Is a class expected in this position?
+		// If the preceding property was rdf:type and an object is expected,
+		// then a class is expected.
+		var isClassPos = false;
+		if (lastProperty
+				.match(/^a|rdf:type|<http:\/\/www.w3.org\/1999\/02\/22-rdf-syntax-ns#type>$/)
+				&& ((start == "" && (topSymbol == "object"
+						|| topSymbol == "objectList" || topSymbol == "objectListPath")) || (start != "" && topSymbol == "}"))) {
+			isClassPos = true;
+		}
+
 		// test the case of the 1st non-space char
 		var startIsLowerCase = /^ *[a-z]/.test(token.string);
 
@@ -444,11 +463,47 @@ window.onload = function() {
 			}
 		}
 
+		// Add items from the fetched sets of properties / classes
+		// set is "properties" or "classes"
+		// varName is "p" or "o"
+		function addFromCollectedURIs(set, varName) {
+//			if (/:/.test(start)) {
+//				// Prefix has been entered - give items matching prefix
+//				var activeDataItem = editor.getSidebar().getActiveDataItem();
+//				if (activeDataItem) {
+//					for ( var k = 0; k < activeDataItem.prefixes.length; k++) {
+//						var ns = activeDataItem.prefixes[k].uri;
+//						for ( var j = 0; j < activeDataItem[set].results.bindings.length; j++) {
+//							var fragments = activeDataItem[set].results.bindings[j][varName].value
+//									.match(/(^\S*[#\/])([^#\/]*$)/);
+//							if (fragments.length == 3 && fragments[1] == ns)
+//								maybeAddCS(activeDataItem.prefixes[k].prefix + ":"
+//										+ fragments[2]);
+//						}
+//					}
+//				}
+//			} else if (/^</.test(start)) {
+//				// Looks like a URI - add matching URIs
+//				var activeDataItem = editor.getSidebar().getActiveDataItem();
+//				if (activeDataItem) {
+//					for ( var j = 0; j < activeDataItem[set].results.bindings.length; j++)
+//						maybeAddCS("<"
+//								+ activeDataItem[set].results.bindings[j][varName].value
+//								+ ">");
+//				}
+//			}
+		}
+
 		function gatherCompletions() {
-			for ( var i = 0; i < possibles.length; ++i) {
-				if (possibles[i] == "VAR1")
+			var i;
+			var j;
+			var activeDataItem;
+			if (isClassPos)
+				addFromCollectedURIs("classes", "o");
+			for (i = 0; i < possibles.length; ++i) {
+				if (possibles[i] == "VAR1" && state.allowVars) {
 					maybeAddCS("?");
-				else if (keywords.exec(possibles[i])) {
+				} else if (keywords.exec(possibles[i])) {
 					// keywords - the strings stand for themselves
 					maybeAdd(possibles[i]);
 				} else if (punct.exec(possibles[i])) {
@@ -471,50 +526,19 @@ window.onload = function() {
 					} else if (!/^</.test(start)) {
 						maybeAddCS("<");
 					}
-				} else if (possibles[i] == "BLANK_NODE_LABEL") {
+				} else if (possibles[i] == "BLANK_NODE_LABEL" && state.allowBnodes) {
 					maybeAddCS("_:");
 				} else if (possibles[i] == "a") {
-					// Property expected at cursor position - fetch
-					// possibilities
+					// Property expected here - fetch possibilities
 					maybeAddCS("a");
-
-//					if (/:/.test(start)) {
-//						// Prefix has been entered - give matching prefixed
-//						// properties
-//						var activeDataItem = createSidebar.getActiveDataItem();
-//						if (activeDataItem) {
-//							for ( var k = 0; k < activeDataItem.prefixes.length; k++) {
-//								// maybeAddCS(activeDataItem.prefixes[i].prefix+":");
-//								var ns = activeDataItem.prefixes[k].uri;
-//								for ( var j = 0; j < activeDataItem.properties.results.bindings.length; j++) {
-//									var fragments = activeDataItem.properties.results.bindings[j].p.value
-//											.match(/(^\S*[#\/])([^#\/]*$)/);
-//									if (fragments.length == 3
-//											&& fragments[1] == ns)
-//										maybeAddCS(activeDataItem.prefixes[k].prefix
-//												+ ":" + fragments[2]);
-//								}
-//							}
-//						}
-//					}
-
-					if (/^</.test(start)) {
-						// if (true) {
-						// Looks like a URI - add property URIs
-
-//						var activeDataItem = createSidebar.getActiveDataItem();
-//						if (activeDataItem) {
-//							for ( var j = 0; j < activeDataItem.properties.results.bindings.length; j++)
-//								maybeAddCS("<"
-//										+ activeDataItem.properties.results.bindings[j].p.value
-//										+ ">");
-//						}
-					}
+					addFromCollectedURIs("properties", "p");
 				} else if (possibles[i] == "PNAME_LN" && !/:$/.test(start)) {
-
-//					var activeDataItem = createSidebar.getActiveDataItem();
-//					if (activeDataItem && activeDataItem.prefixes.length) {
-//						for ( var j = 0; j < activeDataItem.prefixes.length; j++) {
+//					// prefixed names - offer prefixes
+//					activeDataItem = editor.getSidebar().getActiveDataItem();
+//					if (activeDataItem !== undefined
+//							&& activeDataItem.prefixes != undefined
+//							&& activeDataItem.prefixes.length) {
+//						for (j = 0; j < activeDataItem.prefixes.length; j++) {
 //							maybeAddCS(activeDataItem.prefixes[j].prefix + ":");
 //						}
 //					}
@@ -610,7 +634,7 @@ window.onload = function() {
 
 	var cm = CodeMirror.fromTextArea(document.getElementById("textAreaQuery"),
 			{
-				mode : "sparql",
+				mode : document.getElementById("modeSelector").selectedItem.value,
 				// workDelay: 50,
 				// workTime: 100,
 				lineNumbers : true,
@@ -637,11 +661,13 @@ art_semanticturkey.disableSPARQLSubmitQuery = function() {
 art_semanticturkey.submitQuery = function() {
 
 	var queryText = art_semanticturkey.cm.getValue();
+	var mode = art_semanticturkey.cm.getStateAfter().queryType == "update" ? "update" : "query";
+		
 	var inferredStat = document.getElementById("inferredStatements").hasAttribute("checked");
 	
 	try {
 		var response = art_semanticturkey.STRequests.SPARQL.resolveQuery(
-				queryText, "SPARQL", inferredStat);
+				queryText, "SPARQL", inferredStat, mode);
 		art_semanticturkey.resolveQuery_RESPONSE(response);
 	} catch (e) {
 		alert(e.name + ": " + e.message);

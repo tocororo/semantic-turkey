@@ -11,6 +11,7 @@ import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.Query;
 import it.uniroma2.art.owlart.query.QueryLanguage;
 import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.query.Update;
 import it.uniroma2.art.owlart.query.io.TupleBindingsWriterException;
 import it.uniroma2.art.owlart.query.io.TupleBindingsWritingFormat;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
@@ -62,6 +63,7 @@ public class SPARQL extends ServiceAdapter {
 	public final static String queryPar = "query";
 	public final static String languagePar = "lang";
 	public final static String inferPar = "infer";
+	public final static String modePar = "mode";
 
 	public final static String resultTypeAttr = "resulttype";
 
@@ -80,8 +82,10 @@ public class SPARQL extends ServiceAdapter {
 			String query = setHttpPar(queryPar);
 			String lang = setHttpPar(languagePar);
 			String infer = setHttpPar(inferPar);
+			String mode = setHttpPar(modePar);
+
 			checkRequestParametersAllNotNull(queryPar);
-			return resolveQuery(query, lang, infer, ser_type);
+			return resolveQuery(query, lang, infer, mode, ser_type);
 		} else {
 			return servletUtilities.createNoSuchHandlerExceptionResponse(request);
 		}
@@ -92,7 +96,7 @@ public class SPARQL extends ServiceAdapter {
 		return logger;
 	}
 
-	public Response resolveQuery(String queryString, String lang, String inferString,
+	public Response resolveQuery(String queryString, String lang, String inferString, String mode,
 			SerializationType ser_type) {
 
 		String request = resolveQueryRequest;
@@ -113,6 +117,18 @@ public class SPARQL extends ServiceAdapter {
 			infer = false;
 		logger.debug("inference set: " + ql);
 
+		if (mode == null) {
+			mode = "query";
+			logger.debug("query mode default to query");
+		} else {
+			if (!mode.equals("query") && !mode.equals("update")) {
+				return logAndSendException("Unknown mode " + mode);
+			}
+			logger.debug("query mode: " + mode);
+		}
+		logger.debug("query language: " + ql);
+
+		
 		RDFModel owlModel = ProjectManager.getCurrentProject().getOntModel();
 
 		ResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
@@ -126,27 +142,33 @@ public class SPARQL extends ServiceAdapter {
 				// XML REQUEST
 				
 				Element dataElement = ((XMLResponseREPLY) response).getDataElement();
-				Query query = owlModel.createQuery(ql, queryString);
-				if (query instanceof TupleQuery) {
-					logger.debug("query is a tuple query");
-					dataElement.setAttribute(resultTypeAttr, "tuple");
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					((TupleQuery) query).evaluate(infer, TupleBindingsWritingFormat.XML, baos);
-					Document doc = XMLHelp.byteArrayOutputStream2XML(baos);
-					Node importedSPARQLResult = ((Document) response.getResponseObject()).importNode(doc
-							.getDocumentElement(), true);
-					dataElement.appendChild(importedSPARQLResult);
-					logger.debug(XMLHelp.XML2String(doc));
-				} else if (query instanceof GraphQuery) {
-					logger.debug("query is a graph query");
-					dataElement.setAttribute(resultTypeAttr, "graph");
-					ARTStatementIterator statIt = ((GraphQuery) query).evaluate(infer);
-					Statement.createStatementsList(owlModel, statIt, dataElement);
-				} else if (query instanceof BooleanQuery) {
-					logger.debug("query is a boolean query");
-					dataElement.setAttribute(resultTypeAttr, "boolean");
-					boolean result = ((BooleanQuery) query).evaluate(infer);
-					XMLHelp.newElement(dataElement, "result", Boolean.toString(result));
+				if ("query".equalsIgnoreCase(mode)) {  // a query
+					Query query = owlModel.createQuery(ql, queryString);
+					if (query instanceof TupleQuery) {
+						logger.debug("query is a tuple query");
+						dataElement.setAttribute(resultTypeAttr, "tuple");
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						((TupleQuery) query).evaluate(infer, TupleBindingsWritingFormat.XML, baos);
+						Document doc = XMLHelp.byteArrayOutputStream2XML(baos);
+						Node importedSPARQLResult = ((Document) response.getResponseObject()).importNode(doc
+								.getDocumentElement(), true);
+						dataElement.appendChild(importedSPARQLResult);
+						logger.debug(XMLHelp.XML2String(doc));
+					} else if (query instanceof GraphQuery) {
+						logger.debug("query is a graph query");
+						dataElement.setAttribute(resultTypeAttr, "graph");
+						ARTStatementIterator statIt = ((GraphQuery) query).evaluate(infer);
+						Statement.createStatementsList(owlModel, statIt, dataElement);
+					} else if (query instanceof BooleanQuery) {
+						logger.debug("query is a boolean query");
+						dataElement.setAttribute(resultTypeAttr, "boolean");
+						boolean result = ((BooleanQuery) query).evaluate(infer);
+						XMLHelp.newElement(dataElement, "result", Boolean.toString(result));
+					}
+				} else { // an update
+					Update update = owlModel.createUpdate(ql, queryString, owlModel.getBaseURI());
+					update.evaluate(infer);
+					// Nothing to return in case of a successful update
 				}
 			} else {
 				
@@ -155,28 +177,34 @@ public class SPARQL extends ServiceAdapter {
 				if (response instanceof JSONResponseREPLY) {
 					JSONObject data = null;
 					data = ((JSONResponseREPLY) response).getDataElement();
-					Query query = owlModel.createQuery(ql, queryString);
-					if (query instanceof TupleQuery) {
-						logger.debug("query is a tuple query");
-						data.put(resultTypeAttr, "tuple");
-						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						((TupleQuery) query).evaluate(infer, TupleBindingsWritingFormat.JSON, baos);
-						String sparql_result = baos.toString();
-						data.put("sparql", new JSONObject(sparql_result));
-					} else if (query instanceof GraphQuery) {
-						logger.debug("query is a graph query");
-						data.put(resultTypeAttr, "graph");
-						ARTStatementIterator statIt = ((GraphQuery) query).evaluate(infer);
-						Statement.createStatementsList(owlModel, statIt, data);
-					} else if (query instanceof BooleanQuery) {
-						logger.debug("query is a boolean query");
-						data.put(resultTypeAttr, "boolean");
-						boolean result = ((BooleanQuery) query).evaluate(infer);
-						data.put("result", Boolean.toString(result));
+					if ("query".equalsIgnoreCase(mode)) {  // a query
+						Query query = owlModel.createQuery(ql, queryString);
+						if (query instanceof TupleQuery) {
+							logger.debug("query is a tuple query");
+							data.put(resultTypeAttr, "tuple");
+							ByteArrayOutputStream baos = new ByteArrayOutputStream();
+							((TupleQuery) query).evaluate(infer, TupleBindingsWritingFormat.JSON, baos);
+							String sparql_result = baos.toString();
+							data.put("sparql", new JSONObject(sparql_result));
+						} else if (query instanceof GraphQuery) {
+							logger.debug("query is a graph query");
+							data.put(resultTypeAttr, "graph");
+							ARTStatementIterator statIt = ((GraphQuery) query).evaluate(infer);
+							Statement.createStatementsList(owlModel, statIt, data);
+						} else if (query instanceof BooleanQuery) {
+							logger.debug("query is a boolean query");
+							data.put(resultTypeAttr, "boolean");
+							boolean result = ((BooleanQuery) query).evaluate(infer);
+							data.put("result", Boolean.toString(result));
+						}
+	
+						logger.debug("JSON data: \n" + data.toString(3));
+					} else {  // an update
+						Update update = owlModel.createUpdate(ql, queryString, owlModel.getBaseURI());
+						update.evaluate(infer);
+						// Nothing to return in case of a successful update
 					}
-
-					logger.debug("JSON data: \n" + data.toString(3));
-
+					
 				}
 			}
 			return response;

@@ -16,17 +16,20 @@ var serviceName = service.serviceName;
  *            (optional) if not specified, it is SPARQL, otherwise it must be the id of a query language
  *            supported by the OntManager implementation backending current ontology
  * @param inferPar
+ * @param mode either query mode (read-only) or update (modification of the underlying data)
  * @return
  */
-function resolveQuery(queryPar, languagePar, inferPar) {
+function resolveQuery(queryPar, languagePar, inferPar, mode) {
 	var queryPar = "query=" + queryPar;
 	var languagePar = "lang=" + languagePar;
 	var inferPar = "infer=" + inferPar;
 	var respType = RespContType.json;
+	var modePar = typeof mode != "undefined" ? "mode=" + mode : "";
 	//var respType = RespContType.xml;
-	var resp=HttpMgr.POST(respType, serviceName, service.resolveQueryRequest, queryPar, languagePar, inferPar);
+	var resp=HttpMgr.POST(respType, serviceName, service.resolveQueryRequest, queryPar, languagePar, inferPar,
+			modePar);
 	resp.respType = respType;
-//	Ramon Orrù (2010): introduzione campo per memorizzare la serializzazione adottata
+//	Ramon Orrï¿½ (2010): introduzione campo per memorizzare la serializzazione adottata
 	//service.serializationType=HttpMgr.serializationType;	
 	return resp;
 }

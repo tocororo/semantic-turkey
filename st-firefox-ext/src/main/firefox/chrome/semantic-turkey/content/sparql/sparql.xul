@@ -37,9 +37,24 @@
 		src="chrome://semantic-turkey/content/event/eventObjects.js"/>
 	<script type="application/x-javascript" 
 		src="codemirror2/lib/modified_codemirror.js"/>
+	<script type="application/x-javascript"
+		src="flint/sparql10querymode_ll1.js"/>
 	<script type="application/x-javascript" 
-		src="flint/sparqlmode_ll1.js"/>
+		src="flint/sparql11querymode_ll1.js"/>
+	<script type="application/x-javascript" 
+		src="flint/sparql11updatemode_ll1.js"/>
 		
+	<groupbox flex="0">
+		<caption class="header" label=" - Select editing mode - "/>
+		<menulist id="modeSelector">
+			<menupopup>
+				<menuitem label="SPARQL 1.0" value="sparql10" />
+				<menuitem label="SPARQL 1.1 (QUERY)" value="sparql11query" />
+				<menuitem label="SPARQL 1.1 (UPDATE)" value="sparql11update" />
+			</menupopup>
+		</menulist>
+	</groupbox>
+
 	<groupbox flex="0">
 		<caption class="header" label=" - Insert Query Data - " image="chrome://semantic-turkey/skin/classic/images/st_favicon.png"/>
 
