@@ -52,11 +52,6 @@ public class Resource extends STServiceAdapter {
 		return values;
 	}
 	
-	@Override
-	public OWLModel getOWLModel() {
-		return ProjectManager.getCurrentProject().getOWLModel();
-	}
-	
 	public ARTResource[] getUserNamedGraphs() {
 		ARTResource[] graphs = {NodeFilters.ANY};
 		return graphs;

@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.services;
 
-import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -9,14 +9,14 @@ import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 
 public class STServiceAdapter implements STService {
 
-	protected ServletUtilities servletUtilities = ServletUtilities.getService();
-	// private HttpServletRequest req;
+	@Autowired
+	private STServiceContext stServiceContext;
 	
+	protected ServletUtilities servletUtilities = ServletUtilities.getService();
+	// private HttpServletRequest req;	
 	
 	public OWLModel getOWLModel() {
-		// return ProjectManager.getCurrentProject().getOWLModel();
-		throw new IllegalStateException(
-				"getOWLModel() has been not overridden by any injected method implementation");
+		return stServiceContext.getProject().getOWLModel();
 	}
 
 	private String getRequest() {

@@ -81,5 +81,9 @@
 		</property>
 	</bean>
 
+	<!-- TEST STServiceHTTPContext -->
+	<bean class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext">
+	</bean>
+
 	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/>	 -->
 </beans>

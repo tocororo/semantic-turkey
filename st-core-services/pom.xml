@@ -171,6 +171,8 @@
 							org.springframework.beans.factory.config,
 							org.springframework.context.annotation,
 							javax.servlet.http,
+							<!-- This dependency is required for the instantiation of the ST HTTP Context -->
+							it.uniroma2.art.semanticturkey.services.http,
 							*;resolution:=optional
 						</Import-Package>
 						<!-- <Bundle-ClassPath>.</Bundle-ClassPath> -->
