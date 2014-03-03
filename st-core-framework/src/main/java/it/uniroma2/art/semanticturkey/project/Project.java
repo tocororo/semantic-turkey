@@ -114,6 +114,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private Properties stp_properties;
 	public NSPrefixMappings nsPrefixMappingsPersistence;
 
+	private ProjectACL acl;
+	
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
@@ -140,6 +142,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			FileInputStream propFileInStream = new FileInputStream(infoSTPFile);
 			stp_properties.load(propFileInStream);
 			propFileInStream.close();
+			acl = new ProjectACL(this);
 		} catch (IOException e1) {
 			throw new ProjectCreationException(e1);
 		}
@@ -494,4 +497,11 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return "proj:" + getName() + "|defNS:" + getDefaultNamespace() + "|TS:" + getTimeStamp();
 	}
 
+	// ACCESS CONTROL
+	
+	public ProjectACL getACL() {
+		return acl;
+	}
+	
+	
 }

@@ -25,7 +25,7 @@ package it.uniroma2.art.semanticturkey.project;
 
 import java.io.File;
 
-public abstract class AbstractProject {
+public abstract class AbstractProject implements ProjectConsumer {
 
 	protected File _projectDir;
 	
@@ -34,4 +34,23 @@ public abstract class AbstractProject {
 	}
 	
 	public abstract String getName();
+	
+    public boolean equals(Object o) {
+        	
+        if (this == o) {
+            return true;
+        }
+        
+        if (o instanceof ProjectConsumer) {
+            return getName().equals( ((ProjectConsumer)o).getName() );
+        }
+        
+        return false;
+    }
+	
+	public int hashCode() {
+    	return getName().hashCode();
+    }
+	
+	
 }

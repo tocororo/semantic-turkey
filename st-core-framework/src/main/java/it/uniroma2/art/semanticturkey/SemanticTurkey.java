@@ -137,8 +137,9 @@ public class SemanticTurkey implements BundleActivator {
 	public void start(BundleContext arg0) throws Exception {
 		PluginManager.setContext(arg0);
 		String extensionDir = new File(System.getProperty("user.dir")).toURI().toString();
-		System.out.println("ext dir: " + extensionDir);
+		System.out.println("ST Home Directory: " + extensionDir);
 		initialize(extensionDir);
+		System.out.println("ST Started");
 	}
 
 	public void stop(BundleContext arg0) throws Exception {

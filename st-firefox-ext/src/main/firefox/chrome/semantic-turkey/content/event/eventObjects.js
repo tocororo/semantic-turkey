@@ -168,7 +168,6 @@ art_semanticturkey.subPropOfRemovedClass = function(propertyName, superPropertyN
  * @param {} classRes
  */
 art_semanticturkey.typeRemovedClass = function(instanceRes, classRes){
-	alert("ciao22");
 	var instanceRes = instanceRes;
 	var classRes = classRes;
 	

@@ -170,6 +170,7 @@
 							javax.inject,
 							org.springframework.beans.factory.config,
 							org.springframework.context.annotation,
+							org.springframework.beans.factory,
 							javax.servlet.http,
 							<!-- This dependency is required for the instantiation of the ST HTTP Context -->
 							it.uniroma2.art.semanticturkey.services.http,

@@ -1,0 +1,196 @@
+package it.uniroma2.art.semanticturkey.project;
+
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+/**
+ * This class describes the Access Control List for a given {@link Project}. It consists in:
+ * <ul>
+ * <li>a list of {@link ProjectConsumer}s, together with their access permissions.</li>
+ * <li>a "lockable" property, telling if the project associated to this ACL, can be locked for use by a
+ * {@link ProjectConsumer}, and with which modality</li>
+ * </ul>
+ * 
+ * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
+ * @author Armando Stellato &lt;stellato@info.uniroma2.it&gt;
+ * @author Andrea Turbati &lt;turbati@info.uniroma2.it&gt;
+ * 
+ */
+public class ProjectACL {
+
+	public static enum AccessLevel {
+		R, RW;
+
+		public static boolean resolveAccessibility(AccessLevel requestedLevel, AccessLevel allowedLevel) {
+			if (requestedLevel == allowedLevel || allowedLevel == AccessLevel.RW)
+				return true;
+			return false;
+		}
+
+		/**
+		 * returns <code>true</code> if the requested level can be accepted by this access level
+		 * 
+		 * @param requestedLevel
+		 * @return
+		 */
+		public boolean accepts(AccessLevel requestedLevel) {
+			return resolveAccessibility(requestedLevel, this);
+		}
+
+		/**
+		 * returns <code>true</code> if the allowedLevel allows for accepting this level
+		 * 
+		 * @param allowedLevel
+		 * @return
+		 */
+		public boolean isAcceptedBy(AccessLevel allowedLevel) {
+			return resolveAccessibility(this, allowedLevel);
+		}
+	};
+
+	public static enum LockLevel {
+		W, R, NO;
+
+		public static boolean resolveLocking(LockLevel requestedLevel, LockLevel allowedLevel) {
+			if (requestedLevel == allowedLevel || requestedLevel == NO || allowedLevel == R)
+				return true;
+			return false;
+		}
+
+		public boolean accepts(LockLevel requestedLevel) {
+			return resolveLocking(requestedLevel, this);
+		}
+
+		public boolean isAcceptedBy(LockLevel allowedLevel) {
+			return resolveLocking(this, allowedLevel);
+		}
+
+	}
+
+	private Map<String, AccessLevel> acl = new HashMap<String, ProjectACL.AccessLevel>();;
+	private LockLevel lockLevel;
+
+	private Project<?> project;
+
+	private static final String ACL = "acl.acl";
+	private static final String LOCKLEVEL = "acl.lockLevel";
+
+	/**
+	 * this constructors takes as input a list of comma separated values of the form:<br/>
+	 * <code>&lt;ProjectConsumer&gt;:&lt;AccessLevel&gt;</code>
+	 * 
+	 * @param aclSerialization
+	 * @param lockLevelSerialization
+	 */
+	ProjectACL(Project<?> project) {
+		this.project = project;
+		String aclSerialization = project.getProperty(ACL);
+		String lockLevelSerialization = project.getProperty(LOCKLEVEL);
+
+		if (aclSerialization != null) {
+			String[] acis = aclSerialization.split(",");
+			for (String aci : acis) {
+				String[] acisplit = aci.split(":");
+				acl.put(acisplit[0], AccessLevel.valueOf(acisplit[1]));
+			}
+		} else
+			acl.put(ProjectConsumer.SYSTEM.getName(), AccessLevel.RW);
+
+		if (lockLevelSerialization != null)
+			this.lockLevel = LockLevel.valueOf(lockLevelSerialization);
+		else
+			this.lockLevel = LockLevel.R;
+	}
+
+	// ACCESS CONTROL
+
+	public boolean isLockable() {
+		return (lockLevel != LockLevel.NO);
+	}
+
+	/**
+	 * this method tells if the project that is owning this ACL can be accessed with access level
+	 * <code>reqLevel</code> from the given {@link ProjectConsumer} <code>consumer</code>. <br/>
+	 * This is not considering the runtime status of the project, in case it has already been accessed by
+	 * another {@link ProjectConsumer}
+	 * 
+	 * @param consumer
+	 * @param reqLevel
+	 * @return
+	 */
+	private boolean isAccessibleFrom(ProjectConsumer consumer, AccessLevel reqLevel) {
+		AccessLevel storedLevel = acl.get(consumer.getName());
+		if (storedLevel == null)
+			return false;
+		return reqLevel.isAcceptedBy(storedLevel);
+	}
+
+	/**
+	 * this method tells if the project that is owning this ACL can be locked with the desired lock level
+	 * <code>reqLevel</code>. <br/>
+	 * This is not considering the runtime status of the project, in case it has already been accessed by
+	 * another {@link ProjectConsumer}
+	 * 
+	 * @param reqLevel
+	 * @return
+	 */
+	private boolean isLockableWithLevel(LockLevel reqLevel) {
+		return reqLevel.isAcceptedBy(lockLevel);
+	}
+
+	/**
+	 * this method tells if the project that is owning this ACL can be accessed with the desired access/lock
+	 * level specifications. <br/>
+	 * This is not considering the runtime status of the project, in case it has already been accessed by
+	 * another {@link ProjectConsumer}
+	 * 
+	 * @param consumer
+	 * @param reqAccessLevel
+	 * @param reqLock
+	 * @return
+	 */
+	public boolean canGrantAccess(ProjectConsumer consumer, AccessLevel reqAccessLevel, LockLevel reqLock) {
+		return (isAccessibleFrom(consumer, reqAccessLevel) && isLockableWithLevel(reqLock));
+
+	}
+
+	// UPDATE
+
+	public void grantAccess(ProjectConsumer consumer, AccessLevel reqAccessLevel)
+			throws ProjectUpdateException, ReservedPropertyUpdateException {
+		acl.put(consumer.getName(), reqAccessLevel);
+		saveACL();
+	}
+
+	public void setLockableWithLevel(LockLevel lockLevel) throws ProjectUpdateException,
+			ReservedPropertyUpdateException {
+		this.lockLevel = lockLevel;
+		saveLock();
+	}
+
+	
+	
+	
+	
+	// SERIALIZATION
+
+	private void saveACL() throws ProjectUpdateException, ReservedPropertyUpdateException {
+
+		StringBuilder aclString = new StringBuilder();
+		for (Entry<String, AccessLevel> entry : acl.entrySet()) {
+			aclString.append(entry.getKey()).append(":").append(entry.getValue()).append(",");
+		}
+		aclString.deleteCharAt(aclString.length() - 1);
+		project.setProperty(ACL, aclString.toString());
+
+	}
+
+	private void saveLock() throws ProjectUpdateException, ReservedPropertyUpdateException {
+		project.setProperty(LOCKLEVEL, lockLevel.toString());
+	}
+
+}

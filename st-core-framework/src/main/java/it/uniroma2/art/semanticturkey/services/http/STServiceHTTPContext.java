@@ -13,20 +13,16 @@ public class STServiceHTTPContext implements STServiceContext {
 	@Autowired
 	private ServletRequest request;
 	
-	public STServiceHTTPContext() {
-		System.out.println("Hello, world!");
-	}
-	
 	@Override
 	public Project<?> getProject() {
 		System.out.println("Project parameter: " + request.getParameter("project"));
-		return ProjectManager.getCurrentProject();
+		return ProjectManager.getProject(request.getParameter("project"));
 	}
 
 	@Override
 	public Project<?> getProject(int index) {
-		// TODO Auto-generated method stub
-		return null;
+		StringBuilder projectPar = new StringBuilder("project_").append(index);
+		return ProjectManager.getProject(request.getParameter(projectPar.toString()));	
 	}
 	
 
