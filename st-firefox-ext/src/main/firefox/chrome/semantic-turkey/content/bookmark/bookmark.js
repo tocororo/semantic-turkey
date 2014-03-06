@@ -39,7 +39,8 @@ Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturk
 
 art_semanticturkey.chkBookmarks = function(event) {
 	var projectIsNull = art_semanticturkey.CurrentProject.isNull();
-	var chkAnn = art_semanticturkey.Preferences.get("extensions.semturkey.bookmark.checkBookmark", true);
+	//var chkAnn = art_semanticturkey.Preferences.get("extensions.semturkey.bookmark.checkBookmark", true);
+	var chkAnn = art_semanticturkey.Preferences.get("extensions.semturkey.checkAnnotation", true);
 	if (projectIsNull == false && chkAnn == true) {
 		var url = gBrowser.selectedBrowser.currentURI.spec;
 		try {

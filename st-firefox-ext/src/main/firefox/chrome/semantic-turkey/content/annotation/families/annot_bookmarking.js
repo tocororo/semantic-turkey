@@ -16,6 +16,8 @@ art_semanticturkey.annotation.bookmarking = {};
 
 art_semanticturkey.annotation.bookmarking.checkAnnotationsForContent = function(
 		contentId) {
+	if(art_semanticturkey.Preferences.get("extensions.semturkey.checkAnnotation", true) == false)
+		return false;
 	var responseXML = art_semanticturkey.STRequests.Annotation
 			.chkAnnotation(contentId);
 	var reply = responseXML.getElementsByTagName('reply')[0];

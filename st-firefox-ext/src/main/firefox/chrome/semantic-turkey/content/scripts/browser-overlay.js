@@ -33,6 +33,7 @@ Components.utils.import("resource://stmodules/PrefUtils.jsm", art_semanticturkey
 Components.utils.import("resource://stservices/SERVICE_Annotation.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey); // TODO why this?
 Components.utils.import("resource://stmodules/SemTurkeyHTTP.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 
 
 
@@ -286,7 +287,37 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 	observerService.addObserver(new art_semanticturkey.myObserverFirefoxClosed(),
 			"quit-application-requested", false); // close
 	observerService.addObserver(new art_semanticturkey.myObserverFirefoxClosed(), "quit-application", false); // restart
+	
+	
+	//enable or disable check annotation
+	document.getElementById("checkAnnotation_ST_ToolsPopup").addEventListener("popupshowing",
+			art_semanticturkey.chkST_checkAnnotationEnableOrNot,true);
+	document.getElementById("enableCheckAnnotation_menuitem").addEventListener("command",
+			art_semanticturkey.setTrueCheckAnnotation, true);
+	document.getElementById("disableCheckAnnotation_menuitem").addEventListener("command",
+			art_semanticturkey.setFalseCheckAnnotation, true);
+	alert("test");
 };
+
+art_semanticturkey.chkST_checkAnnotationEnableOrNot = function(){
+	var checkAnnotation = art_semanticturkey.Preferences.get("extensions.semturkey.checkAnnotation", true);
+	if(checkAnnotation == true){
+		document.getElementById("enableCheckAnnotation_menuitem").disabled = true;
+		document.getElementById("disableCheckAnnotation_menuitem").disabled = false;
+	} else {
+		document.getElementById("enableCheckAnnotation_menuitem").disabled = false;
+		document.getElementById("disableCheckAnnotation_menuitem").disabled = true;
+	}
+}
+
+art_semanticturkey.setFalseCheckAnnotation = function(){
+	art_semanticturkey.Preferences.set("extensions.semturkey.checkAnnotation", false);
+};
+
+art_semanticturkey.setTrueCheckAnnotation = function(){
+	art_semanticturkey.Preferences.set("extensions.semturkey.checkAnnotation", true);
+};
+
 
 art_semanticturkey.myObserverFirefoxClosed = function() {
 	this.observe = function() {

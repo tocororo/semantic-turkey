@@ -28,6 +28,7 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 
 
 art_semanticturkey.associateEventsOnGraphicElementsClasses = function() {
@@ -749,6 +750,9 @@ art_semanticturkey.getClassAndInstancesInfo_RESPONSE = function(
 	var instancesResList = responseArray['instances'];
 	//var startJustUI = new Date().getTime();
 	for (var i = 0; i < instancesResList.length; i++) {
+		//TODO at the moment this consider only the ARTURIResource and not the BNode
+		if(!(instancesResList[i] instanceof art_semanticturkey.ARTURIResource))
+			continue;
 		var instName = instancesResList[i].getShow();
 		var lsti = document.createElement("listitem");
 		lsti.setAttribute("label", instName);

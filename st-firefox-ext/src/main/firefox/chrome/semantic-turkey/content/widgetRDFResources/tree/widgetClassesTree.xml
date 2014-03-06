@@ -1,0 +1,416 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://semantic-turkey/content/class/class.css" type="text/css"?>
+<bindings xmlns="http://www.mozilla.org/xbl"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<binding id="tree-classes-widget"
+		extends="chrome://semantic-turkey/content/widgetRDFResources/tree/widgetTree.xml#tree-widget">
+		<implementation>
+
+			<field name="dblclickMethod" />
+			<filed name="classesTreeObj"/>
+			<filed name="instancesTreeArray"/>
+			
+			<constructor>
+				<![CDATA[
+					if (typeof art_semanticturkey == 'undefined')
+						var art_semanticturkey = {};
+					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+					Components.utils.import("resource://stservices/SERVICE_Cls.jsm", art_semanticturkey);
+					
+					// this array holds all the instancesTree associated to the classes tree
+					this.instancesTreeArray = new Array();
+				]]>
+			</constructor>
+
+			<method name="setClassesTreeObj">
+				<parameter name="classTreeObject" />
+				<body>
+					<![CDATA[
+						this.classesTreeObj = classTreeObject;
+					]]>
+				</body>
+			</method>
+			
+			<method name="getClassesTreeObj">
+				<body>
+					<![CDATA[
+						return this.classesTreeObj;
+					]]>
+				</body>
+			</method>
+
+			<method name="addInstanceTree">
+				<parameter name="instanceTree" />
+				<body>
+					<![CDATA[
+						if(typeof instanceTree != 'undefined')
+							this.instancesTreeArray[this.instancesTreeArray.length] = instanceTree;
+					]]>
+				</body>
+			</method>
+
+			<!-- ADD the event to manage the open and close of a class and click on 
+				a class to refresh its information -->
+			<!-- Methods regarding the CLASS and INSTANCES TREES -->
+			<method name="addRootClass">
+				<parameter name="rootClassRDFNode" />
+				<body>
+					<![CDATA[
+						var rootClassTreeChildren = 
+							document.getAnonymousElementByAttribute(this, "anonid", "rootClassTreeChildren");
+						this.addSubClass(rootClassTreeChildren, rootClassRDFNode);	
+					]]>
+				</body>
+			</method>
+
+			<method name="addSubClass">
+				<parameter name="superClassTreechildren" />
+				<parameter name="subClassRDFNode" />
+				<body>
+					<![CDATA[
+						var tr = document.createElement("treerow");
+						var tc = document.createElement("treecell");
+						var numInst = subClassRDFNode.numInst;
+						
+						var showValue;
+						showValue = subClassRDFNode.getShow();
+						
+						if (numInst != 0) {
+							tc.setAttribute("label", showValue +"("+ numInst+")");
+						} else {
+							tc.setAttribute("label", showValue);
+						}
+						
+						tc.setAttribute("show", showValue);
+						tc.setAttribute("numInst", numInst);
+						
+						var deleteForbidden;
+						deleteForbidden = subClassRDFNode.deleteForbidden;
+						if(deleteForbidden == null)
+							deleteForbidden = false;
+						tc.setAttribute("deleteForbidden", deleteForbidden);
+						if (deleteForbidden == "true" || subClassRDFNode.explicit == "false")
+							tc.setAttribute("properties", "role-"+subClassRDFNode.getRole()+"-noexpl");
+						else
+							tc.setAttribute("properties", "role-"+subClassRDFNode.getRole()+"-explicit");
+						tc.rdfNode = subClassRDFNode;
+						
+						//tc.setAttribute("isRootNode", isRootNode);
+						tr.appendChild(tc);
+						
+						var ti = document.createElement("treeitem");
+						//ti.setAttribute("className", classNode.getURI());
+						//ti.setAttribute("show", showValue);
+						ti.appendChild(tr);
+						var tch = document.createElement("treechildren");
+						superClassTreechildren.appendChild(ti);
+						var more = subClassRDFNode.more;
+						
+						if (more == "1") {
+							ti.appendChild(tch);
+							ti.setAttribute("container", true);
+							ti.setAttribute("open", false);
+						} else {
+							ti.setAttribute("container", false);
+						}
+					]]>
+				</body>
+			</method>
+
+			<method name="checkClassInfo">
+				<parameter name="classTreeitem" />
+				<parameter name="classRDFNode" />
+				<body>
+					<![CDATA[
+						var parentClassNameURI = classRDFNode.getURI()
+						var parentClassNameShow = "";
+						
+						var numTotInst = classRDFNode.numInst;
+						var hasSubClasses = classRDFNode.more; // this can be "1" or "0" or null
+				
+						if (hasSubClasses != null) {
+							var isAlreadyContainer = classTreeitem.getAttribute("container");
+							var isOpen = classTreeitem.getAttribute("open");
+							if (hasSubClasses == "1") {
+								classTreeitem.setAttribute("container", true);
+								if (isAlreadyContainer == false)
+									classTreeitem.setAttribute("open", false);
+							} else { // == 0
+								classTreeitem.setAttribute("container", false);
+							}
+						}
+						var treecell = classTreeitem.getElementsByTagName("treecell")[0];
+						treecell.setAttribute("numInst", numTotInst);
+						parentClassNameShow = treecell.getAttribute("show");
+						if (numTotInst > 0)
+							treecell.setAttribute("label", treecell.getAttribute("show") + "("
+											+ numTotInst + ")");
+						else
+							treecell.setAttribute("label", treecell.getAttribute("show"));
+					]]>
+				</body>
+			</method>
+
+			<method name="addDblClickFunction">
+				<parameter name="functionToExecOnDBClick" />
+				<body>
+					<![CDATA[
+						if(typeof functionToExecOnDBClick != 'undefined')
+							this.dblclickMethod = functionToExecOnDBClick;
+					]]>
+				</body>
+			</method>
+			
+			<method name="openSubTree">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+						var treeitem = event.detail.ti;
+						var rdfNode = event.detail.rdfNode;
+						
+						var classTreechildren = treeitem.childNodes[1];
+						
+						var collectionSubClass = art_semanticturkey.STRequests.Cls.getSubClasses(rdfNode.getURI(), 
+								true, true);
+						for (var i = 0; i < collectionSubClass.length; i++) {
+							this.addSubClass(classTreechildren, collectionSubClass[i]);
+						}
+					]]>
+				</body>
+			</method>
+
+			<method name="closeSubTree">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+						var treeitem = event.detail.ti;
+						var rdfNode = event.detail.rdfNode;
+						
+						var classTreechildren = treeitem.childNodes[1];
+						while(classTreechildren.childNodes.length > 0)
+							classTreechildren.removeChild(classTreechildren.childNodes[0]);
+					]]>
+				</body>
+			</method>
+
+			<method name="infoOnClass">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+						var treeitem = event.detail.ti;
+						var rdfNode = event.detail.rdfNode;
+						
+						var responseArray = art_semanticturkey.STRequests.Cls.getClassAndInstancesInfo(rdfNode.getURI(), true);
+				
+						//First of all check if the information of the current class are correct
+						
+						var classRDFNode = responseArray['class'];
+						this.checkClassInfo(treeitem, classRDFNode);
+						
+						// now clean and add the instances (if instancesTreeArray has at least one element)
+						for( var i=0; i<this.instancesTreeArray.length; ++i){
+							this.instancesTreeArray[i].clearTree();
+							this.instancesTreeArray[i].setTitle("Instances of "+rdfNode.getShow());
+						
+							var instancesResList = responseArray['instances'];
+							
+							for (var j=0; j<instancesResList.length; j++) {
+								this.instancesTreeArray[i].addInstance(instancesResList[j], rdfNode);
+							}
+						}
+					]]>
+				</body>
+			</method>
+			
+			<method name="createStandardContextMenu">
+				<body>
+					<![CDATA[
+						//TODO add the action associated to these menuitem
+					
+						//Create Individual
+						this.addToContextMenu("menuItemCreateIndividual", "Create Instance", 
+							"chrome://semantic-turkey/skin/images/individual_add.png",
+							this.createInstanceCM);
+						
+						//Create SubClass
+						this.addToContextMenu("menuItemSubClass", "Add SubClass", 
+							"chrome://semantic-turkey/skin/images/class_addSubClass.png",
+							this.addSubclassCM);
+						
+						//Delete Class
+						this.addToContextMenu("menuItemRemoveClass", "Delete", 
+							"chrome://semantic-turkey/skin/images/class_delete.png",
+							this.deleteClassCM);
+						
+						// Rename Class
+						this.addToContextMenu("menuItemRenameClass", "Rename", 
+							"chrome://semantic-turkey/skin/images/empty20x20.png",
+							this.renameClassCM);
+						
+						// Add Synonym
+						this.addToContextMenu("menuItemAddSynonym", "Add Synonym", 
+							"chrome://semantic-turkey/skin/images/empty20x20.png",
+							this.addSynonymCM);
+						
+						// Add Sibling Class
+						this.addToContextMenu("menuItemCreateSiblingClass", "Create Sibling Class", 
+							"chrome://semantic-turkey/skin/images/class_addSibling.png",
+							this.addSiblingClassCM);
+					
+					]]>
+				</body>
+			</method>
+			
+			<!-- Methods associated to the context menu -->
+			<method name="createInstanceCM">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+					
+						var currentWidgetTree = event.target.widgetTree;
+						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
+						try {
+							alert("trying to create an istance for : "+ classRDFNode.getURI());
+							
+							//TODO
+						}
+						catch (e) {
+							alert(e.name + ": " + e.message);
+						}
+					]]>
+				</body>
+			</method>
+
+			<method name="addSubclassCM">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+					
+						var currentWidgetTree = event.target.widgetTree;
+						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
+						try {
+							alert("trying to create a subclass for : "+ classRDFNode.getURI());
+							
+							//TODO
+						}
+						catch (e) {
+							alert(e.name + ": " + e.message);
+						}
+					]]>
+				</body>
+			</method>
+			
+			<method name="deleteClassCM">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+					
+						var currentWidgetTree = event.target.widgetTree;
+						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
+						try {
+							alert("trying to delete class : "+ classRDFNode.getURI());
+							
+							//TODO
+						}
+						catch (e) {
+							alert(e.name + ": " + e.message);
+						}
+					]]>
+				</body>
+			</method>
+			
+			<method name="renameClassCM">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+					
+						var currentWidgetTree = event.target.widgetTree;
+						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
+						try {
+							alert("trying to rename class : "+ classRDFNode.getURI());
+							
+							//TODO
+						}
+						catch (e) {
+							alert(e.name + ": " + e.message);
+						}
+					]]>
+				</body>
+			</method>
+			
+			<method name="addSynonymCM">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+					
+						var currentWidgetTree = event.target.widgetTree;
+						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
+						try {
+							alert("trying to add a synonym for class : "+ classRDFNode.getURI());
+							
+							//TODO
+						}
+						catch (e) {
+							alert(e.name + ": " + e.message);
+						}
+					]]>
+				</body>
+			</method>
+			
+			<method name="addSiblingClassCM">
+				<parameter name="event" />
+				<body>
+					<![CDATA[
+					
+						var currentWidgetTree = event.target.widgetTree;
+						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
+						try {
+							alert("trying to add a sibling class to class : "+ classRDFNode.getURI());
+							
+							//TODO
+						}
+						catch (e) {
+							alert(e.name + ": " + e.message);
+						}
+					]]>
+				</body>
+			</method>
+			
+			
+		</implementation>
+		
+		<!-- EVENTS -->
+		<handlers>
+			<handler event="dblclickOnTree">
+				<![CDATA[
+					//alert("dblclick");
+					//event.preventDefault();
+    				//event.stopPropagation();
+    				dblclickMethod(event); 
+	     		]]>
+			</handler>
+			<handler event="openSubTreeEvent">
+				<![CDATA[
+					//alert("click e event = "+event);
+					this.openSubTree(event);
+	     		]]>
+			</handler>
+			<handler event="closeSubTreeEvent">
+				<![CDATA[
+					//alert("click e event = "+event);
+					this.closeSubTree(event);
+	     		]]>
+			</handler>
+			<handler event="infoOnRDFNodeEvent">
+				<![CDATA[
+					//alert("click e event = "+event);
+					this.infoOnClass(event);
+	     		]]>
+			</handler>
+		</handlers>
+
+	</binding>
+
+</bindings>

@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+
+<!-- <?xml-stylesheet href="chrome://semantic-turkey/content/widgetTest/stResWidget.css" 
+	type="text/css"?> -->
+
+<?xml-stylesheet href="chrome://semantic-turkey/content/widgetRDFResources/tree/widgetTree.css" type="text/css"?>
+
+<!-- chrome://semantic-turkey/content/widgetRDFResources/tree/testTreeWidget.xul -->
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/widgetRDFResources/tree/testTreeWidget.js" />
+
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/widgetRDFResources/tree/classesTreeObject.js" />
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/widgetRDFResources/tree/individualsTreeObject.js" />
+
+
+	<!-- <script type="application/x-javascript" src="chrome://semantic-turkey/content/utilities/utilities.js"/>  -->
+    
+
+	<vbox id="mainBox" flex="1">
+		<!-- <tree hidecolumnpicker="true" id="testTree" context="clipmenu"
+			seltype="single" flex="2">
+			<treecols>
+				<treecol id="category" label="Classes" primary="true" flex="1" />
+			</treecols>
+			<treechildren id="rootClassTreeChildren" flex="1" />
+		</tree> -->
+		
+		<!-- 
+		<hbox id="hboxForSelButton" flex="1">
+			<button id="getSelRDFNodeFromTree" label="getSelRDFNodeFromTree"/>
+		</hbox>
+		<hbox id="hboxForDelButton" flex="1">
+			<button id="getDelRDFNodeFromTree" label="Delete Node"/>
+			<checkbox id="getParentCheckBox" label="Use parent" checked="true"/>
+			<checkbox id="remWithChild" label="Remove with Children" checked="false"/>
+		</hbox>
+		<hbox id="hboxForChangeButton" flex="1">
+			<button id="changeRDFNodeFromTree" label="change Node"/>
+			<hbox>
+				<label value="Show:"/>
+				<textbox id="newRDFnodeShow" />
+			</hbox>
+			<hbox>
+				<label value="URI:"/>
+				<textbox id="newRDFnodeURI" />
+			</hbox>
+		</hbox>
+		 -->
+		 
+		<hbox id="hboxForTree1" flex="1"/>
+		
+		<spacer  flex="1"/>
+		<label value="1 class tree and 1 instance tree"/>
+		<spacer  flex="1"/>
+		
+		<hbox id="hboxForClassesAndInstanes1" flex="5">
+			<vbox id="boxForClasses1" flex="3"/>
+			<vbox id="boxForInstances1" flex="1"/>
+		</hbox>
+		
+		<spacer  flex="1"/>
+		<label value="1 class tree and 2 instance tree"/>
+		<spacer  flex="1"/>
+		
+		<hbox id="hboxForClassesAndInstanes2" flex="5">
+			<vbox id="boxForInstances2-1" flex="1"/>
+			<vbox id="boxForClasses2" flex="3"/>
+			<vbox id="boxForInstances2-2" flex="1"/>
+			<vbox id="boxForInstances2-3" flex="1"/>
+		</hbox>
+		
+		<hbox id="hboxForTree3" flex="1"/>
+		
+		<!-- <hbox>
+			<tree hidecolumnpicker="true" id="testTree" context="clipmenu"
+			seltype="single" rows="5" flex="2">
+			<treecols>
+				<treecol id="category" label="Classes" primary="true" flex="1" />
+			</treecols>
+			<treechildren id="rootClassTest4TreeChildren" flex="1" >
+				<treeitem>
+					<treerow>
+						<treecell label="speriamoFix" />
+					</treerow>
+				</treeitem>
+				<treeitem>
+					<treerow class="RDFchild-tree-widget" />
+				</treeitem>
+			</treechildren>
+			</tree>
+		</hbox>
+		
+		
+		<hbox>
+			<tree id="myTree" flex="1" hidecolumnpicker="false" seltype="single"
+				class="tree" rows="5">
+				<treecols id="myTree2-treeCols">
+					<treecol id="myTree2-treeCol0" primary="true" flex="2" label="Column A"
+						persist="width" ordinal="1" />
+				</treecols>
+				<treechildren>
+					<treeitem>
+						<treerow>
+							<treecell label="1" />
+						</treerow>
+					</treeitem>
+					<treeitem container="true" open="false">
+						<treerow>
+							<treecell label="2" />
+						</treerow>
+						<treechildren>
+							<treeitem>
+								<treerow>
+									<treecell label="2a" />
+								</treerow>
+							</treeitem>
+						</treechildren>
+					</treeitem>
+				</treechildren>
+			</tree>
+		</hbox> -->
+		
+	</vbox>
+</window>
+
+
