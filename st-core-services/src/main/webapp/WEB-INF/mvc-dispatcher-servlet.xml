@@ -41,7 +41,10 @@
 
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey" />
 
-	<bean id="validator"
+	<!--A ValidatorFactory whose products (Validators) support dependency injection 
+		on constraint validators, through the use of SpringConstraintValidatorFactory 
+		for instantiating them. (See: http://stackoverflow.com/a/13361762) -->
+	<bean id="validatorFactory"
 		class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
 
 	<bean id="viewResolver"
@@ -56,23 +59,26 @@
 		<property name="proxyTargetClass" value="true" />
 		<property name="order" value="0" />
 	</bean>
-		
-	<bean
-		class="org.springframework.aop.support.DefaultPointcutAdvisor">
+
+	<bean class="org.springframework.aop.support.DefaultPointcutAdvisor">
 		<property name="pointcut">
-			<bean class="it.uniroma2.art.semanticturkey.aspects.rendering.STServiceRenderingPointcut" />
+			<bean
+				class="it.uniroma2.art.semanticturkey.aspects.rendering.STServiceRenderingPointcut" />
 		</property>
 		<property name="advice">
-			<bean class="it.uniroma2.art.semanticturkey.aspects.rendering.STServiceRenderingAdvice" />
+			<bean
+				class="it.uniroma2.art.semanticturkey.aspects.rendering.STServiceRenderingAdvice" />
 		</property>
 	</bean>
 
 	<bean
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
+		<!-- Use explicitly the ValidatorFactory enabling dependency injection on constraint validators -->
+		<property name="validatorFactory" ref="validatorFactory"></property>
 	</bean>
-	
-	
+
+
 	<!-- TEST SHOWER -->
 	<bean class="it.uniroma2.art.semanticturkey.shower.ShowerManager">
 		<property name="showerImpl">
@@ -82,8 +88,9 @@
 	</bean>
 
 	<!-- TEST STServiceHTTPContext -->
-	<bean class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext">
+	<bean
+		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext">
 	</bean>
 
-	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/>	 -->
+	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
 </beans>

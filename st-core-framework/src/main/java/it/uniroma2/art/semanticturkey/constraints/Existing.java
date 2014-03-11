@@ -27,4 +27,6 @@ public @interface Existing {
  Class<?>[] groups() default {};
  
  Class<? extends Payload>[] payload() default {};
+ 
+ int projectIndex() default 0;
 }

@@ -70,8 +70,8 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 
 @Component
-public class Projects extends ServiceAdapter {
-	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
+public class ProjectsOld extends ServiceAdapter {
+	protected static Logger logger = LoggerFactory.getLogger(ProjectsOld.class);
 
 	// requests
 	public static class Req {
@@ -123,7 +123,7 @@ public class Projects extends ServiceAdapter {
 
 	// parameters
 	@Autowired
-	public Projects(@Value("Projects") String id) {
+	public ProjectsOld(@Value("Projects") String id) {
 		super(id);
 	}
 
