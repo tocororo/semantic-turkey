@@ -1,24 +1,35 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
-import it.uniroma2.art.owlart.utilities.RDFIterators;
-import it.uniroma2.art.semanticturkey.constraints.Existing;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.main.ProjectsOld.Req;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.util.Collection;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Null;
+
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
 
 /**
  * 
@@ -26,46 +37,109 @@ import org.springframework.validation.annotation.Validated;
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
  * @author Armando Stellato &lt;stellato@info.uniroma2.it&gt;
  * @author Andrea Turbati &lt;turbati@info.uniroma2.it&gt;
- *
+ * 
  */
-//@GenerateSTServiceController
+// @GenerateSTServiceController
 @Validated
 @Component
 public class Projects extends STServiceAdapter {
 
+	public static class XMLNames {
+		// response tags and attributes
+		public final static String baseuriTag = "baseuri";
+		public final static String projectTag = "project";
+		public final static String propertyTag = "property";
+		public final static String propNameAttr = "name";
+		public final static String openAttr = "open";
+		public final static String propValueAttr = "value";
+		public final static String ontMgrAttr = "ontmgr";
+		public final static String typeAttr = "type";
+		public final static String ontoTypeAttr = "ontoType";
+		public final static String modelConfigAttr = "modelConfigType";
+		public final static String statusAttr = "status";
+		public final static String statusMsgAttr = "stMsg";
+	}
+
+	/**
+	 * @param consumer
+	 * @param projectName
+	 * @param requestedAccessLevel
+	 * @param requestedLockLevel
+	 * @return
+	 * @throws ForbiddenProjectAccessException
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 */
 	@GenerateSTServiceController
-	@AutoRendering
-	public Collection<STRDFNode> getPropertyValues(@Existing ARTResource subject, ARTURIResource predicate) throws ModelAccessException {
-		OWLModel model = getOWLModel();
-		ARTResource[] graphs;
-		graphs = getUserNamedGraphs();
-		ARTNodeIterator it = model.listValuesOfSubjPredPair(subject, predicate, true, graphs);
+	public Response accessProject(ProjectConsumer consumer, String projectName,
+			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException {
 
-		Collection<ARTNode> explicitValues = RDFIterators.getCollectionFromIterator(model
-				.listValuesOfSubjPredPair(subject, predicate, false, getWorkingGraph()));
+		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 
-		Collection<STRDFNode> values = STRDFNodeFactory.createEmptyNodeCollection();
-		while (it.streamOpen()) {
-			ARTNode next = it.getNext();
-			boolean explicit;
-			if (explicitValues.contains(next))
-				explicit = true;
-			else
-				explicit = false;
-			values.add(STRDFNodeFactory.createSTRDFNode(model, next, true, explicit, false)); // disables rendering
+		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
+	}
+	
+	
+	@GenerateSTServiceController
+	public Response disconnectFromProject(ProjectConsumer consumer, String projectName) throws ModelUpdateException {
+
+		ProjectManager.disconnectFromProject(consumer, projectName);
+
+		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
+	}
+	
+	
+
+	@SuppressWarnings("unchecked")
+	@GenerateSTServiceController
+	// @AutoRendering
+	// TODO insert an @Optional Annotation for the parameter  
+	public Response listProjects(ProjectConsumer consumer) {
+		String request = Req.listProjectsRequest;
+		Collection<AbstractProject> projects;
+		try {
+			projects = ProjectManager.listProjects();
+			XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
+			Element dataElem = resp.getDataElement();
+
+			for (AbstractProject absProj : projects) {
+				Element projElem = XMLHelp.newElement(dataElem, XMLNames.projectTag, absProj.getName());
+				if (absProj instanceof Project<?>) {
+					Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
+					try {
+						projElem.setAttribute(XMLNames.ontoTypeAttr, ((Project<?>) proj).getModelType()
+								.getName());
+						String ontMgr = ((Project<?>) proj).getOntologyManagerImplID();
+						projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
+						String mConfID = ((Project<?>) proj).getModelConfigurationID();
+						projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
+						projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
+
+						projElem.setAttribute(XMLNames.statusAttr, "ok");
+
+						projElem.setAttribute(XMLNames.openAttr,
+								Boolean.toString(ProjectManager.isOpen((Project<?>) absProj)));
+
+					} catch (DOMException e) {
+						projElem.setAttribute(XMLNames.statusAttr, "error");
+						projElem.setAttribute(XMLNames.statusMsgAttr,
+								"problem when building XML response for this project");
+					} catch (ProjectInconsistentException e) {
+						projElem.setAttribute(XMLNames.statusAttr, "error");
+						projElem.setAttribute(XMLNames.statusMsgAttr, e.getMessage());
+					}
+
+				} else
+					// proj instanceof CorruptedProject
+					projElem.setAttribute(XMLNames.statusAttr, "corrupted");
+			}
+			return resp;
+		} catch (ProjectAccessException e) {
+			return ServletUtilities.getService().createExceptionResponse(request, e.toString());
 		}
-		it.close();
-		
-		return values;
 	}
-	
-	public ARTResource[] getUserNamedGraphs() {
-		ARTResource[] graphs = {NodeFilters.ANY};
-		return graphs;
-	}
-	
-	public ARTResource getWorkingGraph() {
-		return NodeFilters.MAINGRAPH;
-	}
-	
+
 }

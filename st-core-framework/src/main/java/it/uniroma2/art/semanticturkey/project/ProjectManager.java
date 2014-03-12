@@ -170,8 +170,8 @@ public class ProjectManager {
 	 * @throws ProjectInconsistentException
 	 */
 	public static Project<? extends RDFModel> createProject(String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration)
+			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace,
+			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 
@@ -207,7 +207,7 @@ public class ProjectManager {
 	 * @throws ProjectInconsistentException
 	 */
 	public static Project<? extends RDFModel> createProject(String projectName,
-	// public static <MODELTYPE extends RDFModel> Project<MODELTYPE> createProject(String projectName,
+			// public static <MODELTYPE extends RDFModel> Project<MODELTYPE> createProject(String projectName,
 			Class<? extends RDFModel> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration)
 			throws ProjectCreationException {
@@ -398,6 +398,28 @@ public class ProjectManager {
 	public static boolean existsProject(String projectName) throws InvalidProjectNameException {
 		File projectDir = resolveProjectNameToDir(projectName);
 		return (projectDir.exists());
+	}
+
+	/**
+	 * returns a project consumer from its string description. A valid project consumer is either
+	 * {@link ProjectConsumer#SYSTEM} or an open project. If <code>consumerName</code>
+	 * 
+	 * @param consumerName
+	 * @return
+	 */
+	public static ProjectConsumer getProjectConsumer(String consumerName) {
+
+		if (consumerName.equals(ProjectConsumer.SYSTEM.getName())) {
+			return ProjectConsumer.SYSTEM;
+		}
+
+		Project<?> project = openProjects.getProject(consumerName);
+		if (project != null)
+			return project;
+		else
+			throw new IllegalProjectStatusException(consumerName
+					+ " is not an open project, so cannot be a consumer");
+
 	}
 
 	/**
@@ -934,7 +956,7 @@ public class ProjectManager {
 
 		// statically checking accessibility to the project through the projects' ACL
 		if (!acl.canGrantAccess(consumer, requestedAccessLevel, requestedLockLevel))
-			throw new ForbiddenProjectAccessException("the Access Control List of project " + project
+			throw new ForbiddenProjectAccessException("the Access Control List of project " + projectName
 					+ " forbids access from consumer " + consumer.getName() + " with access level: "
 					+ requestedAccessLevel + " and lock level: " + requestedLockLevel);
 
@@ -984,7 +1006,9 @@ public class ProjectManager {
 		// turn
 		if (consumer == ProjectConsumer.SYSTEM) {
 			Set<Project<?>> accessedProjects = openProjects.listAccessedProjects(project);
+			System.out.println("accessed projects set: " + accessedProjects);
 			for (Project<?> accessedProject : accessedProjects) {
+				System.out.println("accessed project: " + accessedProject);
 				disconnectFromProject(project, accessedProject.getName());
 			}
 		}
@@ -995,6 +1019,10 @@ public class ProjectManager {
 			closeProject(project);
 		}
 
+	}
+
+	public static boolean isOpen(Project<?> project) {
+		return openProjects.isOpen(project);
 	}
 
 	/**
@@ -1048,6 +1076,14 @@ public class ProjectManager {
 			return (consumer.equals(getLockingConsumer(project)));
 		}
 
+		/**
+		 * only for use internal to {@link ProjectManager}, as normally an open project should have at least
+		 * one consumer, so an open project with no consumer represents a transient which is to be resolved
+		 * inside {@link ProjectManager}'s methods
+		 * 
+		 * @param project
+		 * @return
+		 */
 		public boolean isNotConsumed(Project<?> project) {
 			return projectsAccessStatus.get(project).isEmpty();
 		}
@@ -1140,14 +1176,24 @@ public class ProjectManager {
 
 		}
 
+		/**
+		 * lists all projects accessed by a given consumer
+		 * 
+		 * @param consumer
+		 * @return
+		 */
 		public Set<Project<?>> listAccessedProjects(ProjectConsumer consumer) {
 			HashSet<Project<?>> accessedProjects = new HashSet<Project<?>>();
 			for (Entry<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>> mapEntry : projectsAccessStatus
 					.entrySet()) {
 				if (mapEntry.getValue().keySet().contains(consumer))
-					accessedProjects.add(projects.get(mapEntry.getKey()));
+					accessedProjects.add(mapEntry.getKey());
 			}
 			return accessedProjects;
+		}
+
+		public boolean isOpen(Project<?> project) {
+			return projects.containsKey(project.getName());
 		}
 
 		/**

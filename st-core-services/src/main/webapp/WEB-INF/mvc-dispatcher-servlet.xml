@@ -19,6 +19,13 @@
 			<list>
 				<!-- <bean id="toArtNodesConverter" class="it.uniroma2.art.semanticturkey.converters.ToARTNodes" 
 					/> -->
+				<bean id="StringToACLAccessLevelConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToACLAccessLevelConverter" />
+				<bean id="StringToACLLockLevelConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToACLLockLevelConverter" />
+				<bean id="StringToProjectConsumerConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />															
+										
 				<bean id="StringToARTBNodeConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToARTBNodeConverter" />
 				<bean id="StringToARTLiteralConverter"
