@@ -103,12 +103,18 @@ public class ProjectManager {
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
 
 	/**
-	 * provides the lists of available projects (stored in the projects directory of Semantic Turkey)
+	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
+	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain
+	 * <code>consumer</code> in their ACL
 	 * 
+	 * @param consumer
+	 *            if <code>null</code>, all the projects in the projects folder are listed. Corrupted projects
+	 *            are also listed in this case.
 	 * @return
 	 * @throws ProjectAccessException
 	 */
-	public static Collection<AbstractProject> listProjects() throws ProjectAccessException {
+	public static Collection<AbstractProject> listProjects(ProjectConsumer consumer)
+			throws ProjectAccessException {
 		ArrayList<AbstractProject> projects = new ArrayList<AbstractProject>();
 		List<File> projectDirs = null;
 		try {
@@ -118,58 +124,117 @@ public class ProjectManager {
 			throw new ProjectAccessException(e);
 		}
 		for (File projDir : projectDirs) {
+			// an AbstractProject is being declared as it can be both a description of a project, or a
+			// CorruptedProject
 			AbstractProject proj = null;
-			try {
-				proj = getProjectDescription(projDir.getName());
-			} catch (Exception e) {
-				proj = new CorruptedProject(projDir.getName(), projDir, e);
+
+			if (consumer == null) { // case of no consumer
+				try {
+					proj = getProjectDescription(projDir.getName());
+				} catch (Exception e) {
+					proj = new CorruptedProject(projDir.getName(), projDir, e);
+				}
+				projects.add(proj);
+			} else { // case of using a consumer
+				try {
+					proj = getProjectDescription(projDir.getName());
+					if (((Project<?>) proj).getACL().hasInACL(consumer))
+						projects.add(proj);
+				} catch (Exception e) {
+					// if a project is corrupted, it is simply cut from the list of available projects
+				}
+
 			}
 
-			projects.add(proj);
 		}
 
 		return projects;
 	}
 
+	public static Collection<AbstractProject> listProjects() throws ProjectAccessException {
+		return listProjects(null);
+	}
+
 	/**
-	 * a shortcut for {@link #createProject(String, Class, String, String, String, String, Properties)} with
-	 * defaultNamespace automatically assigned from the baseuri
+	 * a shortcut for
+	 * {@link #createProject(ProjectConsumer, String, Class, String, String, String, Properties)} with
+	 * {@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}
 	 * 
 	 * @param projectName
-	 * @param ontManagerID
+	 * @param modelType
+	 * @param baseURI
+	 * @param ontManagerFactoryID
+	 * @param modelConfigurationClass
+	 * @param modelConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectCreationException
-	 * @throws ProjectUpdateException
 	 * @throws ProjectInconsistentException
+	 * @throws ProjectUpdateException
 	 */
 	public static Project<? extends RDFModel> createProject(String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
-		return createProject(projectName, modelType, baseURI,
+		return createProject(ProjectConsumer.SYSTEM, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration);
 	}
 
 	/**
-	 * as for {@link #createProject(String, Class, File, String, String, String, String, Properties)} but the
-	 * directory of the project bears the name of the project itself and is located inside the
-	 * SemanticTurkeyData directory of your Firefox profile. You should normally use this method to create new
-	 * projects which are expected to be found by the main system
+	 * a shortcut for
+	 * {@link #createProject(ProjectConsumer, String, Class, String, String, String, String, Properties)} with
+	 * defaultNamespace automatically assigned from the baseuri
 	 * 
+	 * @param consumer
 	 * @param projectName
-	 * @param ontManagerID
+	 * @param modelType
+	 * @param baseURI
+	 * @param ontManagerFactoryID
+	 * @param modelConfigurationClass
+	 * @param modelConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectCreationException
-	 * @throws ProjectUpdateException
 	 * @throws ProjectInconsistentException
+	 * @throws ProjectUpdateException
 	 */
-	public static Project<? extends RDFModel> createProject(String projectName,
+	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
+			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
+			String modelConfigurationClass, Properties modelConfiguration)
+			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
+			ProjectInconsistentException, ProjectUpdateException {
+		return createProject(consumer, projectName, modelType, baseURI,
+				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
+				modelConfigurationClass, modelConfiguration);
+	}
+
+	/**
+	 * as for
+	 * {@link #createProject(ProjectConsumer, String, Class, File, String, String, String, String, Properties)}
+	 * but the directory of the project bears the name of the project itself and is located inside the
+	 * SemanticTurkeyData directory of your Firefox profile. You should normally use this method to create new
+	 * projects which are expected to be found by the main system
+	 * 
+	 * @param consumer
+	 * @param projectName
+	 * @param modelType
+	 * @param baseURI
+	 * @param defaultNamespace
+	 * @param ontManagerFactoryID
+	 * @param modelConfigurationClass
+	 * @param modelConfiguration
+	 * @return
+	 * @throws DuplicatedResourceException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectCreationException
+	 * @throws ProjectInconsistentException
+	 * @throws ProjectUpdateException
+	 */
+	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
@@ -177,7 +242,7 @@ public class ProjectManager {
 
 		File projectDir = resolveProjectNameToDir(projectName);
 
-		return createProject(projectName, modelType, projectDir, baseURI, defaultNamespace,
+		return createProject(consumer, projectName, modelType, projectDir, baseURI, defaultNamespace,
 				ontManagerFactoryID, modelConfigurationClass, modelConfiguration);
 	}
 
@@ -194,19 +259,19 @@ public class ProjectManager {
 	 * to create a new project</em>
 	 * </p>
 	 * 
+	 * @param consumer
 	 * @param projectName
-	 * @return the created project
-	 * @throws DuplicatedResourceException
-	 *             thrown when attempting to build a new project with the same name of an existing one
-	 * @throws InvalidProjectNameException
-	 *             if the project name cannot be used to create a directory
+	 * @param modelType
+	 * @param projectDir
+	 * @param baseURI
+	 * @param defaultNamespace
+	 * @param ontManagerFactoryID
+	 * @param modelConfigurationClassName
+	 * @param modelConfiguration
+	 * @return
 	 * @throws ProjectCreationException
-	 *             any other exception occurring while creating the project
-	 * @throws DuplicatedResourceException
-	 * @throws ProjectUpdateException
-	 * @throws ProjectInconsistentException
 	 */
-	public static Project<? extends RDFModel> createProject(String projectName,
+	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			// public static <MODELTYPE extends RDFModel> Project<MODELTYPE> createProject(String projectName,
 			Class<? extends RDFModel> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration)
@@ -231,11 +296,11 @@ public class ProjectManager {
 
 			logger.debug("building project directory");
 			prepareProjectFiles(projectName, modelType, projectDir, baseURI, defaultNamespace,
-					ontManagerFactoryID, modelConfigurationClassName, modelConfiguration, projType);
+					ontManagerFactoryID, modelConfigurationClassName, modelConfiguration, projType, consumer);
 
 			logger.debug("activating project");
 			// return activateProject(projectName);
-			return accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
+			return accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
 		} catch (UnsupportedModelConfigurationException e) {
 			throw new ProjectCreationException(e);
@@ -264,7 +329,8 @@ public class ProjectManager {
 	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(String projectName,
 			Class<MODELTYPE> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerID, String modelConfigurationClass, Properties modelConfiguration,
-			ProjectType type) throws DuplicatedResourceException, ProjectCreationException {
+			ProjectType type, ProjectConsumer consumer) throws DuplicatedResourceException,
+			ProjectCreationException {
 		if (projectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
 					+ "already exists; choose a different project name for a new project");
@@ -289,6 +355,8 @@ public class ProjectManager {
 			out.write(Project.PROJECT_MODEL_TYPE + "=" + modelType.getName() + "\n");
 			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
 			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()));
+			out.write(ProjectACL.ACL + "="
+					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
 			out.close();
 
 			logger.debug("project creation: all project properties have been stored");
@@ -600,6 +668,16 @@ public class ProjectManager {
 
 	}
 
+	/**
+	 * returns a instance of a concrete implementation of class {@link Project}, with the sole exception that
+	 * the project is not activated (no data is loaded)
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
 	public static <MODELTYPE extends RDFModel> Project<MODELTYPE> getProjectDescription(String projectName)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		logger.info("opening project: " + projectName);
@@ -932,6 +1010,71 @@ public class ProjectManager {
 
 	// MULTI PROJECT MANAGEMENT ADDITIONS
 
+	public static class AccessResponse {
+		private String msg;
+		private boolean affirmative;
+
+		AccessResponse(boolean affirmative, String msg) {
+			this.affirmative = affirmative;
+			this.msg = msg;
+		}
+
+		AccessResponse(boolean affirmative) {
+			this.affirmative = affirmative;
+		}
+
+		public String getMsg() {
+			return msg;
+		}
+
+		public boolean isAffirmative() {
+			return affirmative;
+		}
+	}
+
+	public static AccessResponse checkAccessibility(ProjectConsumer consumer, Project<?> project,
+			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel) {
+
+		ProjectACL acl = project.getACL();
+
+		// statically checking accessibility to the project through the projects' ACL
+		if (!acl.isAccessibleFrom(consumer, requestedAccessLevel, requestedLockLevel))
+			return new AccessResponse(false, "the Access Control List of project " + project.getName()
+					+ " forbids access from consumer " + consumer.getName() + " with access level: "
+					+ requestedAccessLevel + " and lock level: " + requestedLockLevel);
+
+		// only if project is already open, dynamically checks its runtime status and its accessibility
+		if (openProjects.isOpen(project)) {
+			ProjectACL.AccessLevel accessStatus = openProjects.getAccessStatus(project);
+			ProjectACL.LockLevel lockStatus = openProjects.getLockLevel(project);
+
+			// if already locked, it cannot be locked again
+			if (lockStatus != ProjectACL.LockLevel.NO && requestedLockLevel != ProjectACL.LockLevel.NO)
+				return new AccessResponse(false, "there is already a lock on project " + project
+						+ " so it cannot be locked again");
+
+			// requestedAccess vs lock status
+			if (lockStatus == ProjectACL.LockLevel.R)
+				return new AccessResponse(false, "LockLevel " + ProjectACL.LockLevel.R
+						+ " forbids any access to project " + project);
+
+			if ((lockStatus == ProjectACL.LockLevel.W) && (requestedAccessLevel == ProjectACL.AccessLevel.RW))
+				return new AccessResponse(false, "LockLevel " + ProjectACL.LockLevel.W
+						+ " forbids RW access to project " + project);
+
+			// requestedLock vs accessStatus
+			if (accessStatus == ProjectACL.AccessLevel.RW && requestedLockLevel != ProjectACL.LockLevel.NO)
+				return new AccessResponse(false, "AccessLevel " + ProjectACL.AccessLevel.RW
+						+ " forbids request for any lock on project " + project);
+
+			if (accessStatus == ProjectACL.AccessLevel.R && requestedLockLevel == ProjectACL.LockLevel.R)
+				return new AccessResponse(false, "AccessLevel " + ProjectACL.AccessLevel.R
+						+ " forbids request for an R lock on project " + project);
+		}
+
+		return new AccessResponse(true);
+	}
+
 	/*
 	 * public static <MODELTYPE extends RDFModel> Project<MODELTYPE> accessProject(String projectName,
 	 * Class<MODELTYPE> modelType, String baseURI, String ontManagerFactoryID, String modelConfigurationClass,
@@ -942,59 +1085,23 @@ public class ProjectManager {
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException {
-		Project<? extends RDFModel> project;
-		Project<? extends RDFModel> projectDescription;
 
-		project = openProjects.getProject(projectName);
-		if (project != null) {
-			projectDescription = project;
+		Project<?> project = getProjectDescription(projectName);
+
+		AccessResponse accessResponse = checkAccessibility(consumer, project, requestedAccessLevel,
+				requestedLockLevel);
+
+		if (accessResponse.isAffirmative()) {
+			if (openProjects.isOpen(project))
+				openProjects.addConsumer(project, consumer, requestedAccessLevel, requestedLockLevel);
+			else {
+				project = openProject(projectName);
+				openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
+			}
+			return project;
 		} else {
-			projectDescription = getProjectDescription(projectName);
+			throw new ForbiddenProjectAccessException(accessResponse.getMsg());
 		}
-
-		ProjectACL acl = projectDescription.getACL();
-
-		// statically checking accessibility to the project through the projects' ACL
-		if (!acl.canGrantAccess(consumer, requestedAccessLevel, requestedLockLevel))
-			throw new ForbiddenProjectAccessException("the Access Control List of project " + projectName
-					+ " forbids access from consumer " + consumer.getName() + " with access level: "
-					+ requestedAccessLevel + " and lock level: " + requestedLockLevel);
-
-		// only if project is already open, dynamically checks its runtime status and its accessibility
-		if (project != null) {
-			ProjectACL.AccessLevel accessStatus = openProjects.getAccessStatus(project);
-			ProjectACL.LockLevel lockStatus = openProjects.getLockLevel(project);
-
-			// if already locked, it cannot be locked again
-			if (lockStatus != ProjectACL.LockLevel.NO && requestedLockLevel != ProjectACL.LockLevel.NO)
-				throw new ForbiddenProjectAccessException("there is already a lock on project " + project
-						+ " so it cannot be locked again");
-
-			// requestedAccess vs lock status
-			if (lockStatus == ProjectACL.LockLevel.R)
-				throw new ForbiddenProjectAccessException("LockLevel " + ProjectACL.LockLevel.R
-						+ " forbids any access to project " + project);
-			if ((lockStatus == ProjectACL.LockLevel.W) && (requestedAccessLevel == ProjectACL.AccessLevel.RW))
-				throw new ForbiddenProjectAccessException("LockLevel " + ProjectACL.LockLevel.W
-						+ " forbids RW access to project " + project);
-
-			// requestedLock vs accessStatus
-			if (accessStatus == ProjectACL.AccessLevel.RW)
-				throw new ForbiddenProjectAccessException("AccessLevel " + ProjectACL.AccessLevel.RW
-						+ " forbids request for any lock on project " + project);
-			if (accessStatus == ProjectACL.AccessLevel.R && requestedLockLevel == ProjectACL.LockLevel.R)
-				throw new ForbiddenProjectAccessException("AccessLevel " + ProjectACL.AccessLevel.R
-						+ " forbids request for an R lock on project " + project);
-
-			openProjects.addConsumer(project, consumer, requestedAccessLevel, requestedLockLevel);
-
-		} else {
-
-			project = openProject(projectName);
-			openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
-		}
-
-		return project;
 	}
 
 	public static void disconnectFromProject(ProjectConsumer consumer, String projectName)

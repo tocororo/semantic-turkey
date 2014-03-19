@@ -76,8 +76,8 @@ public class ProjectACL {
 
 	private Project<?> project;
 
-	private static final String ACL = "acl.acl";
-	private static final String LOCKLEVEL = "acl.lockLevel";
+	public static final String ACL = "acl.acl";
+	public static final String LOCKLEVEL = "acl.lockLevel";
 
 	/**
 	 * this constructors takes as input a list of comma separated values of the form:<br/>
@@ -98,11 +98,13 @@ public class ProjectACL {
 				acl.put(acisplit[0], AccessLevel.valueOf(acisplit[1]));
 			}
 		} else
+			// if no ACL is specified, it defaults to {SYSTEM, RW}
 			acl.put(ProjectConsumer.SYSTEM.getName(), AccessLevel.RW);
 
 		if (lockLevelSerialization != null)
 			this.lockLevel = LockLevel.valueOf(lockLevelSerialization);
 		else
+			// if no lock is specified, it defaults to R
 			this.lockLevel = LockLevel.R;
 	}
 
@@ -122,7 +124,7 @@ public class ProjectACL {
 	 * @param reqLevel
 	 * @return
 	 */
-	private boolean isAccessibleFrom(ProjectConsumer consumer, AccessLevel reqLevel) {
+	private boolean allowsAccessWith(ProjectConsumer consumer, AccessLevel reqLevel) {
 		AccessLevel storedLevel = acl.get(consumer.getName());
 		if (storedLevel == null)
 			return false;
@@ -153,8 +155,21 @@ public class ProjectACL {
 	 * @param reqLock
 	 * @return
 	 */
-	public boolean canGrantAccess(ProjectConsumer consumer, AccessLevel reqAccessLevel, LockLevel reqLock) {
-		return (isAccessibleFrom(consumer, reqAccessLevel) && isLockableWithLevel(reqLock));
+	public boolean isAccessibleFrom(ProjectConsumer consumer, AccessLevel reqAccessLevel, LockLevel reqLock) {
+		return (allowsAccessWith(consumer, reqAccessLevel) && isLockableWithLevel(reqLock));
+
+	}
+
+	/**
+	 * this method tells if consumer <code>consumer</code> is listed in the ACL of the current project. This
+	 * does not tell anything about the {@link AccessLevel} nor the {@link LockLevel} which would be accepted
+	 * for a request from consumer
+	 * 
+	 * @param consumer
+	 * @return
+	 */
+	public boolean hasInACL(ProjectConsumer consumer) {
+		return (allowsAccessWith(consumer, AccessLevel.R));
 
 	}
 
@@ -172,20 +187,28 @@ public class ProjectACL {
 		saveLock();
 	}
 
-	
-	
-	
-	
 	// SERIALIZATION
 
-	private void saveACL() throws ProjectUpdateException, ReservedPropertyUpdateException {
-
+	
+	public static String serializeACL(String consumerName, AccessLevel accessLevel) {
+		Map<String, AccessLevel> acl = new HashMap<String, ProjectACL.AccessLevel>();
+		acl.put(consumerName, accessLevel);
+		return serializeACL(acl);
+	}
+	
+	public static String serializeACL(Map<String, AccessLevel> acl) {
 		StringBuilder aclString = new StringBuilder();
 		for (Entry<String, AccessLevel> entry : acl.entrySet()) {
 			aclString.append(entry.getKey()).append(":").append(entry.getValue()).append(",");
 		}
 		aclString.deleteCharAt(aclString.length() - 1);
-		project.setProperty(ACL, aclString.toString());
+		return aclString.toString();
+	}
+	
+	
+	private void saveACL() throws ProjectUpdateException, ReservedPropertyUpdateException {
+
+		project.setProperty(ACL, serializeACL(acl));
 
 	}
 

@@ -34,12 +34,12 @@ public class ${className}Controller
 
 #foreach($parameter in $method.Parameters)
 #set( $type = $parameter.asType() )
-#set( $arguments = "${arguments} ${comma} "+'@RequestParam(value = "'+"$parameter.simpleName"+'")'+ "$type $parameter.simpleName" )
+#set( $arguments = "${arguments} ${comma} "+'@RequestParam(required=false, value = "'+"$parameter.simpleName"+'")'+ "$type $parameter.simpleName" )
 #set( $subarg="${subarg} ${comma} $parameter.simpleName")
 #set($comma=",")
 #end
 
-    @RequestMapping(value = "/${className}/${path}", method = RequestMethod.GET)
+    @RequestMapping(value = "/${className}/${path}", method = RequestMethod.GET, produces = "application/xml")
 	public @ResponseBody String  ${method.simpleName}Published(${arguments}) 
 	{
 		${className} fun = (${className}) context.getBean(${className}.class);

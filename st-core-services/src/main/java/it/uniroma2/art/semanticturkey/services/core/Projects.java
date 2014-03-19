@@ -2,10 +2,13 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
@@ -14,6 +17,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
@@ -22,9 +26,7 @@ import it.uniroma2.art.semanticturkey.servlet.main.ProjectsOld.Req;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.util.Collection;
-
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Null;
+import java.util.Properties;
 
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +41,7 @@ import org.w3c.dom.Element;
  * @author Andrea Turbati &lt;turbati@info.uniroma2.it&gt;
  * 
  */
-// @GenerateSTServiceController
+@GenerateSTServiceController
 @Validated
 @Component
 public class Projects extends STServiceAdapter {
@@ -58,8 +60,23 @@ public class Projects extends STServiceAdapter {
 		public final static String modelConfigAttr = "modelConfigType";
 		public final static String statusAttr = "status";
 		public final static String statusMsgAttr = "stMsg";
+		public final static String accessibleAttr = "accessible";
 	}
 
+	@GenerateSTServiceController
+	public Response createProject(ProjectConsumer consumer, String projectName,
+			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
+			String modelConfigurationClass, Properties modelConfiguration)
+			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
+			ProjectInconsistentException, ProjectUpdateException {
+
+		ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
+				modelConfigurationClass, modelConfiguration);
+
+		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
+	}
+	
+	
 	/**
 	 * @param consumer
 	 * @param projectName
@@ -81,27 +98,35 @@ public class Projects extends STServiceAdapter {
 
 		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
 	}
-	
-	
+
 	@GenerateSTServiceController
-	public Response disconnectFromProject(ProjectConsumer consumer, String projectName) throws ModelUpdateException {
+	public Response disconnectFromProject(ProjectConsumer consumer, String projectName)
+			throws ModelUpdateException {
 
 		ProjectManager.disconnectFromProject(consumer, projectName);
 
 		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
 	}
-	
-	
 
 	@SuppressWarnings("unchecked")
 	@GenerateSTServiceController
 	// @AutoRendering
-	// TODO insert an @Optional Annotation for the parameter  
-	public Response listProjects(ProjectConsumer consumer) {
+	// TODO insert an @Optional Annotation for the parameter
+	public Response listProjects(ProjectConsumer consumer,
+			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel) {
+
+		if (requestedAccessLevel == null)
+			requestedAccessLevel = ProjectACL.AccessLevel.R;
+
+		if (requestedLockLevel == null)
+			requestedLockLevel = ProjectACL.LockLevel.NO;
+
+		System.out.println("consumer = " + consumer);
 		String request = Req.listProjectsRequest;
 		Collection<AbstractProject> projects;
 		try {
-			projects = ProjectManager.listProjects();
+			projects = ProjectManager.listProjects(consumer);
 			XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
 			Element dataElem = resp.getDataElement();
 
@@ -122,6 +147,18 @@ public class Projects extends STServiceAdapter {
 
 						projElem.setAttribute(XMLNames.openAttr,
 								Boolean.toString(ProjectManager.isOpen((Project<?>) absProj)));
+
+						if (consumer != null) {
+							ProjectManager.AccessResponse access = ProjectManager.checkAccessibility(
+									consumer, proj, requestedAccessLevel, requestedLockLevel);
+
+							projElem.setAttribute(XMLNames.accessibleAttr,
+									Boolean.toString(access.isAffirmative()));
+
+							if (!access.isAffirmative())
+								projElem.setAttribute("accessibilityFault", access.getMsg());
+
+						}
 
 					} catch (DOMException e) {
 						projElem.setAttribute(XMLNames.statusAttr, "error");
