@@ -24,10 +24,9 @@ public class ${generatedClassSimpleName}
 		context=arg0;
 		
 	}
-
 #*
 	For each service method to be published, generate a method in the controller
-*#
+*###
 #foreach($method in $methods)
 #set( $arguments = "" ) ## The method signature
 #set( $subarg = "" )    ## The arguments used in the controller to invoke the service
@@ -37,45 +36,49 @@ public class ${generatedClassSimpleName}
 #set( $arguments = "${arguments}#{if}($foreach.count > 1), #{end}" )
 #*
 	Add the annotation @RequestParam(...) to the method signature
-*#
+*###
 #set( $arguments = "${arguments}" + '@RequestParam(value = "' + $parameter.simpleName + '"')
 #*
 	Process annotations on the service parameter
-*#
+*###
 #foreach( $annotation in $parameter.annotationMirrors )
 #*
 	Handle @Optional
-*#
+*###
 #if ($annotation.annotationType.asElement().qualifiedName == 'it.uniroma2.art.semanticturkey.services.annotations.Optional')
 #set( $arguments = "${arguments}, required=false" )
 #foreach ($annotationElement in $annotation.elementValues.entrySet())
-#if ($annotationElement.key.simpleName == 'defaultValue' && !$annotationElement.key.value.getValue().equals(''))
+#if ($annotationElement.key.simpleName == 'defaultValue' )
 #set( $arguments = "${arguments}" + ', defaultValue=' + $annotationElement.value)
 #end
 #end
 #end
 #end
-#set( $arguments = "${arguments}" + ')' )
-#*
+#set( $arguments = "${arguments}" + ')' )#*
 	Add the parameter name to the signature
-*#
+*###
 #set( $arguments = "${arguments} $type $parameter.simpleName" )
 #set( $subarg = "${subarg}#{if}($foreach.count > 1), #{end}$parameter.simpleName" )
 #end
+#*
+	Prepare throws declaration
+*###
+#set( $throwsDeclaration = "")
+#if (!$method.thrownTypes.isEmpty())
+#set( $throwsDeclaration = " throws")
+#foreach ($tt in $method.thrownTypes)
+#if ($foreach.count > 1)
+#set( $throwsDeclaration = "$throwsDeclaration," )
+#end
+#set( $throwsDeclaration = "$throwsDeclaration $tt" )
+#end
+#end
 
     @RequestMapping(value = "/${classSimpleName}/${path}", method = RequestMethod.GET, produces = "application/xml")
-	public @ResponseBody String  ${method.simpleName}Published(${arguments}) 
+	public @ResponseBody String  ${method.simpleName}Published(${arguments}) $throwsDeclaration
 	{
 		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
-		try {
-
-			return fun.${method.simpleName}(${subarg}).getResponseContent();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return e.toString();
-		}
-
+		return fun.${method.simpleName}(${subarg}).getResponseContent();
     }
 #end
 }
