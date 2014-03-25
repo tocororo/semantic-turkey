@@ -354,7 +354,7 @@ public class ProjectManager {
 			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
 			out.write(Project.PROJECT_MODEL_TYPE + "=" + modelType.getName() + "\n");
 			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
-			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()));
+			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
 			out.write(ProjectACL.ACL + "="
 					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
 			out.close();

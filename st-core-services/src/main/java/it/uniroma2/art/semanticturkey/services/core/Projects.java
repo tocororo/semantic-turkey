@@ -112,15 +112,9 @@ public class Projects extends STServiceAdapter {
 	@GenerateSTServiceController
 	// @AutoRendering
 	// TODO insert an @Optional Annotation for the parameter
-	public Response listProjects(ProjectConsumer consumer,
+	public Response listProjects(@Optional ProjectConsumer consumer,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel) {
-
-		if (requestedAccessLevel == null)
-			requestedAccessLevel = ProjectACL.AccessLevel.R;
-
-		if (requestedLockLevel == null)
-			requestedLockLevel = ProjectACL.LockLevel.NO;
 
 		System.out.println("consumer = " + consumer);
 		String request = Req.listProjectsRequest;

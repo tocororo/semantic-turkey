@@ -1,0 +1,81 @@
+package ${generatedPackageName};
+
+import ${packageName}.${classSimpleName};
+
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Controller;
+
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+@Controller
+public class ${generatedClassSimpleName} 
+    implements ApplicationContextAware {
+    ApplicationContext context;
+    
+	@Override
+	public void setApplicationContext(ApplicationContext arg0)
+			throws BeansException {
+		context=arg0;
+		
+	}
+
+#*
+	For each service method to be published, generate a method in the controller
+*#
+#foreach($method in $methods)
+#set( $arguments = "" ) ## The method signature
+#set( $subarg = "" )    ## The arguments used in the controller to invoke the service
+#set( $path = $method.simpleName )
+#foreach($parameter in $method.Parameters)
+#set( $type = $parameter.asType() )
+#set( $arguments = "${arguments}#{if}($foreach.count > 1), #{end}" )
+#*
+	Add the annotation @RequestParam(...) to the method signature
+*#
+#set( $arguments = "${arguments}" + '@RequestParam(value = "' + $parameter.simpleName + '"')
+#*
+	Process annotations on the service parameter
+*#
+#foreach( $annotation in $parameter.annotationMirrors )
+#*
+	Handle @Optional
+*#
+#if ($annotation.annotationType.asElement().qualifiedName == 'it.uniroma2.art.semanticturkey.services.annotations.Optional')
+#set( $arguments = "${arguments}, required=false" )
+#foreach ($annotationElement in $annotation.elementValues.entrySet())
+#if ($annotationElement.key.simpleName == 'defaultValue' && !$annotationElement.key.value.getValue().equals(''))
+#set( $arguments = "${arguments}" + ', defaultValue=' + $annotationElement.value)
+#end
+#end
+#end
+#end
+#set( $arguments = "${arguments}" + ')' )
+#*
+	Add the parameter name to the signature
+*#
+#set( $arguments = "${arguments} $type $parameter.simpleName" )
+#set( $subarg = "${subarg}#{if}($foreach.count > 1), #{end}$parameter.simpleName" )
+#end
+
+    @RequestMapping(value = "/${classSimpleName}/${path}", method = RequestMethod.GET, produces = "application/xml")
+	public @ResponseBody String  ${method.simpleName}Published(${arguments}) 
+	{
+		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		try {
+
+			return fun.${method.simpleName}(${subarg}).getResponseContent();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return e.toString();
+		}
+
+    }
+#end
+}
