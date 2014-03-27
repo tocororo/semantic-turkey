@@ -151,7 +151,7 @@ public class Individual extends ResourceOld {
 	 */
 	public Response getDirectNamedTypes(String indQName) {
 		logger.debug("replying to \"getTypes(" + indQName + ").");
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();

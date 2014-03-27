@@ -371,7 +371,7 @@ public class Property extends ResourceOld {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		try {
 			property = ontModel.retrieveURIResource(ontModel.expandQName(propQName));
@@ -398,7 +398,7 @@ public class Property extends ResourceOld {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		try {
 			property = ontModel.retrieveURIResource(ontModel.expandQName(propQName));
@@ -430,7 +430,7 @@ public class Property extends ResourceOld {
 	 */
 	public Response getPropertyTree(boolean props, boolean objprops, boolean datatypeprops,
 			boolean annotationprops, boolean ontologyprops, boolean inference) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
 				Req.getPropertiesTreeRequest, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -579,7 +579,7 @@ public class Property extends ResourceOld {
 
 	public Response getPropertyList(RDFResourceRolesEnum role, String rootPropsString,
 			String excludedRootPropsString) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTResource[] graphs;
 		try {
 			graphs = getUserNamedGraphs();
@@ -717,7 +717,7 @@ public class Property extends ResourceOld {
 	 * 
 	 */
 	public Response editProperty(String propertyQName, String request, int method, String... parameters) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ServletUtilities servletUtilities = new ServletUtilities();
 		ARTURIResource property = null;
 		String propertyURI;
@@ -873,7 +873,7 @@ public class Property extends ResourceOld {
 	public Response editPropertyValue(String request, String individualQName, String propertyQName,
 			String valueString, RDFTypesEnum valueType, String rangeQName, String lang,
 			String oldValueString, RDFTypesEnum oldValueType, String oldRangeQName, String oldLang) {
-		OWLModel model = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel model = getOWLModel();
 		ServletUtilities servletUtilities = new ServletUtilities();
 
 		String propertyURI;
@@ -1078,7 +1078,7 @@ public class Property extends ResourceOld {
 
 	public Response parseDataRange(String dataRangeID, String nodeType) {
 		String request = Req.parseDataRangeRequest;
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		try {
 			ARTResource dataRange = RDFUtilities.retrieveResource(ontModel, dataRangeID,
 					RDFTypesEnum.valueOf(nodeType));
@@ -1105,7 +1105,7 @@ public class Property extends ResourceOld {
 	 */
 	public Response getDomainClassesTreeXML(String propertyQName) {
 		ClsOld cls = new ClsOld("cls");
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
 				Req.getDomainClassesTreeRequest, RepliesStatus.ok);
@@ -1133,7 +1133,7 @@ public class Property extends ResourceOld {
 	 */
 	public Response getRangeClassesTreeXML(String propertyQName) {
 		ClsOld cls = new ClsOld("cls");
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
 				Req.getRangeClassesTreeRequest, RepliesStatus.ok);
@@ -1156,7 +1156,7 @@ public class Property extends ResourceOld {
 
 	public Response setDataRange(String propertyQName, String values) {
 
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response;
 		try {
 			ARTURIResource property = ontModel.createURIResource(ontModel.expandQName(propertyQName));
@@ -1188,7 +1188,7 @@ public class Property extends ResourceOld {
 	}
 
 	public Response addValueToDatarange(String datarangeId, String value) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response;
 		try {
 			ARTBNode datarange = RDFNodeSerializer.createBNode(datarangeId);
@@ -1213,7 +1213,7 @@ public class Property extends ResourceOld {
 	}
 
 	public Response addValuesToDatarange(String datarangeId, String values) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response;
 		try {
 			ARTBNode datarange = RDFNodeSerializer.createBNode(datarangeId);
@@ -1244,7 +1244,7 @@ public class Property extends ResourceOld {
 	}
 
 	public Response hasValueInDatarange(String datarangeId, String value) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response;
 		try {
 			ARTBNode datarange = RDFNodeSerializer.createBNode(datarangeId);
@@ -1267,7 +1267,7 @@ public class Property extends ResourceOld {
 	}
 
 	public Response removeValueFromDatarange(String datarangeId, String value) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response;
 		try {
 			ARTBNode datarange = RDFNodeSerializer.createBNode(datarangeId);
@@ -1292,7 +1292,7 @@ public class Property extends ResourceOld {
 	}
 
 	public Response removeValuesFromDatarange(String datarangeId, String values) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response;
 		try {
 			String[] valuesArray = values.split("\\|_\\|");

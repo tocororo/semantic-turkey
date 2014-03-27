@@ -433,7 +433,7 @@ public class ClsOld extends ResourceOld {
 		if (listMod != null && listMod.equals(allInstances))
 			direct = false;
 		logger.debug("replying to \"getInstancesListXML(" + clsQName + ")\"");
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();

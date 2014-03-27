@@ -725,7 +725,7 @@ public class ResourceOld extends ServiceAdapter {
 			String method) {
 		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
 		logger.debug("class for the ontModel is: " + ontModel.getClass());
-		OWLModel owlModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel owlModel = getOWLModel();
 
 		ARTResource resource;
 		try {
@@ -771,7 +771,7 @@ public class ResourceOld extends ServiceAdapter {
 
 	public Response getTemplateProperties(String resourceQName, RDFResourceRolesEnum role,
 			String rootPropsString, String excludedRootPropsString) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTResource[] graphs;
 		try {
 			graphs = getUserNamedGraphs();
@@ -864,7 +864,7 @@ public class ResourceOld extends ServiceAdapter {
 
 	public Response getPropertiesForDomains(String classNames, RDFResourceRolesEnum role,
 			String rootPropsString, String excludedRootPropsString) {
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		ARTResource[] graphs;
 		try {
 			graphs = getUserNamedGraphs();
@@ -1315,7 +1315,7 @@ public class ResourceOld extends ServiceAdapter {
 
 	public Response getSuperTypes(String resourceQName, RDFResourceRolesEnum resType) {
 		logger.debug("getting supertypes of: " + resourceQName);
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();

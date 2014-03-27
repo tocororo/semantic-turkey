@@ -281,7 +281,7 @@ public class Metadata extends ResourceOld {
 	}
 
 	public Response getOntologyDescription() {
-		OWLModel model = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel model = getOWLModel();
 		String ontQName;
 		try {
 			ontQName = model.getQName(model.getBaseURI());
@@ -592,7 +592,7 @@ public class Metadata extends ResourceOld {
 
 		HashSet<String> importsBranch = new HashSet<String>();
 
-		OWLModel ontModel = ProjectManager.getCurrentProject().getOWLModel();
+		OWLModel ontModel = getOWLModel();
 		STOntologyManager<? extends RDFModel> repMgr = ProjectManager.getCurrentProject()
 				.getOntologyManager();
 
