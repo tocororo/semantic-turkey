@@ -6,6 +6,7 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
@@ -71,6 +72,12 @@ public class Projects extends STServiceAdapter {
 
 		ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration);
+	}
+
+	@GenerateSTServiceController
+	public void deleteProject(ProjectConsumer consumer, String projectName)
+			throws ProjectDeletionException {
+		ProjectManager.deleteProject(projectName);
 	}
 
 	/**

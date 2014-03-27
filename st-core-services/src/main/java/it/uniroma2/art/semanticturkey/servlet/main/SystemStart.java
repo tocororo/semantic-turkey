@@ -28,6 +28,7 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
@@ -35,6 +36,7 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
+import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -188,7 +190,11 @@ public class SystemStart extends ServiceAdapter {
 			logger.info("problems in project creation", e);
 			return ServletUtilities.getService().createExceptionResponse(request, e.toString());
 		} catch (ProjectInconsistentException e) {
-			logAndSendException(request, e);
+			return logAndSendException(request, e);
+		} catch (InvalidProjectNameException e) {
+			return logAndSendException(request, e);
+		} catch (ForbiddenProjectAccessException e) {
+			return logAndSendException(request, e);
 		}
 
 		logger.info("system loaded with the following parameters:\nbaseuri=" + baseuri + "\nontModelImplID="

@@ -44,6 +44,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException
 import it.uniroma2.art.semanticturkey.ontology.ModelTypeRegistry;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.ProjectType;
@@ -462,6 +463,8 @@ public class ProjectsOld extends ServiceAdapter {
 			return logAndSendException(
 					e,
 					"weird error: ProjectManager reported that it is impossible to clone the current project because it does not exist!");
+		} catch (ForbiddenProjectAccessException e) {
+			return logAndSendException(e);
 		}
 
 		return servletUtilities.createReplyResponse(Req.saveProjectAsRequest, RepliesStatus.ok);

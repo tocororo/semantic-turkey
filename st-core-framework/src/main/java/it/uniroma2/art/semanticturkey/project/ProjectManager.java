@@ -184,6 +184,30 @@ public class ProjectManager {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param projectName
+	 * @throws ProjectDeletionException
+	 */
+	public static void deleteProject(String projectName) throws ProjectDeletionException {
+		File projectDir;
+		try {
+			projectDir = getProjectDir(projectName);
+		} catch (InvalidProjectNameException e) {
+			throw new ProjectDeletionException("project name: " + projectName
+					+ " is not a valid name; cannot delete that project");
+		} catch (ProjectInexistentException e) {
+			throw new ProjectDeletionException("project: " + projectName
+					+ " does not exist; cannot delete it");
+		}
+
+		if (isOpen(projectName))
+			throw new ProjectDeletionException("cannot delete a project while it is open");
+		if (!Utilities.deleteDir(projectDir))
+			throw new ProjectDeletionException("unable to delete project: " + projectName);
+	}
+
+	/**
 	 * a shortcut for
 	 * {@link #createProject(ProjectConsumer, String, Class, String, String, String, String, Properties)} with
 	 * defaultNamespace automatically assigned from the baseuri
@@ -394,7 +418,6 @@ public class ProjectManager {
 			proj.activate();
 			logger.debug("project " + projectName + " activated");
 
-			confirmProject(proj);
 			logger.debug("project : " + projectName + " created");
 
 			return proj;
@@ -412,34 +435,7 @@ public class ProjectManager {
 		}
 	}
 
-	/**
-	 * opens an already created project, with name <code>projectName</code>
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws ProjectAccessException
-	 * @throws ProjectInexistentException
-	 */
-	public static Project<? extends RDFModel> openProject(String projectName) throws ProjectAccessException,
-			ProjectInexistentException {
-		try {
-			return activateProject(projectName);
-		} catch (ProjectCreationException e) {
-			throw new ProjectAccessException(e);
-		} catch (ProjectInconsistentException e) {
-			throw new ProjectAccessException(e);
-		} catch (ProjectUpdateException e) {
-			throw new ProjectAccessException(e);
-		} catch (InvalidProjectNameException e) {
-			throw new ProjectAccessException(e);
-		} catch (UnsupportedModelConfigurationException e) {
-			throw new ProjectAccessException(e);
-		} catch (UnloadableModelConfigurationException e) {
-			throw new ProjectAccessException(e);
-		}
-	}
-
-	private static <MODELTYPE extends RDFModel> void confirmProject(Project<MODELTYPE> proj) {
+	private static <MODELTYPE extends RDFModel> void setCurrentProject(Project<MODELTYPE> proj) {
 		_currentProject = proj;
 	}
 
@@ -558,24 +554,6 @@ public class ProjectManager {
 			return new File(Resources.getProjectsDir(), projectName);
 	}
 
-	public static void deleteProject(String projectName) throws ProjectDeletionException {
-		File projectDir;
-		try {
-			projectDir = getProjectDir(projectName);
-		} catch (InvalidProjectNameException e) {
-			throw new ProjectDeletionException("project name: " + projectName
-					+ " is not a valid name; cannot delete that project");
-		} catch (ProjectInexistentException e) {
-			throw new ProjectDeletionException("project: " + projectName
-					+ " does not exist; cannot delete it");
-		}
-
-		if (_currentProject != null && _currentProject.getName().equals(projectName))
-			throw new ProjectDeletionException("cannot delete a project while it is loaded");
-		if (!Utilities.deleteDir(projectDir))
-			throw new ProjectDeletionException("unable to delete project: " + projectName);
-	}
-
 	public static void closeCurrentProject() throws ModelUpdateException {
 		// logger.debug("closing current project: " + _currentProject.getName());
 		closeProject(getCurrentProject());
@@ -588,20 +566,23 @@ public class ProjectManager {
 		openProjects.removeProject(project);
 	}
 
-	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
+	public static void exportProject(Project<?> project, File semTurkeyProjectFile) throws IOException,
 			ModelAccessException, UnsupportedRDFFormatException {
 		File tempDir = Resources.createTempDir();
-		Utilities.copy(_currentProject.infoSTPFile, new File(tempDir, _currentProject.infoSTPFile.getName()));
-		Utilities.copy(_currentProject.nsPrefixMappingsPersistence.getFile(), new File(tempDir,
-				_currentProject.nsPrefixMappingsPersistence.getFile().getName()));
-		Utilities.copy(_currentProject.modelConfigFile,
-				new File(tempDir, _currentProject.modelConfigFile.getName()));
-		_currentProject.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName),
-				RDFFormat.NTRIPLES);
+		Utilities.copy(project.infoSTPFile, new File(tempDir, project.infoSTPFile.getName()));
+		Utilities.copy(project.nsPrefixMappingsPersistence.getFile(), new File(tempDir,
+				project.nsPrefixMappingsPersistence.getFile().getName()));
+		Utilities.copy(project.modelConfigFile, new File(tempDir, project.modelConfigFile.getName()));
+		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
 		Utilities
 				.createZipFile(tempDir, semTurkeyProjectFile, false, true, "Semantic Turkey Project Archive");
 		tempDir.delete();
 		tempDir.deleteOnExit();
+	}
+
+	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
+			ModelAccessException, UnsupportedRDFFormatException {
+		exportProject(_currentProject, semTurkeyProjectFile);
 	}
 
 	public static void importProject(File semTurkeyProjectFile, String name) throws IOException,
@@ -1091,17 +1072,57 @@ public class ProjectManager {
 		AccessResponse accessResponse = checkAccessibility(consumer, project, requestedAccessLevel,
 				requestedLockLevel);
 
-		if (accessResponse.isAffirmative()) {
-			if (openProjects.isOpen(project))
-				openProjects.addConsumer(project, consumer, requestedAccessLevel, requestedLockLevel);
-			else {
-				project = openProject(projectName);
-				openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
+		try {
+			if (accessResponse.isAffirmative()) {
+				if (openProjects.isOpen(project))
+					openProjects.addConsumer(project, consumer, requestedAccessLevel, requestedLockLevel);
+				else {
+					project = activateProject(projectName);
+					openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
+				}
+				return project;
+			} else {
+				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
 			}
-			return project;
-		} else {
-			throw new ForbiddenProjectAccessException(accessResponse.getMsg());
+		} catch (ProjectCreationException e) {
+			throw new ProjectAccessException(e);
+		} catch (ProjectInconsistentException e) {
+			throw new ProjectAccessException(e);
+		} catch (ProjectUpdateException e) {
+			throw new ProjectAccessException(e);
+		} catch (InvalidProjectNameException e) {
+			throw new ProjectAccessException(e);
+		} catch (UnsupportedModelConfigurationException e) {
+			throw new ProjectAccessException(e);
+		} catch (UnloadableModelConfigurationException e) {
+			throw new ProjectAccessException(e);
 		}
+
+	}
+
+	/**
+	 * as for {@link #accessProject(ProjectConsumer, String, AccessLevel, LockLevel)} with
+	 * <ul>
+	 * <li>{@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}</li>
+	 * <li>{@link AccessLevel} = {@link AccessLevel#RW}</li>
+	 * <li>{@link LockLevel} = {@link LockLevel#NO}</li>
+	 * </ul>
+	 * and sets the project identified by <code>projectName</code> as <code>currentProject</code>
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws ForbiddenProjectAccessException
+	 * @throws InvalidProjectNameException
+	 */
+	public static Project<? extends RDFModel> openProject(String projectName) throws ProjectAccessException,
+			ProjectInexistentException, InvalidProjectNameException, ForbiddenProjectAccessException {
+		Project<? extends RDFModel> project;
+		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
+		setCurrentProject(project);
+		return project;
+
 	}
 
 	public static void disconnectFromProject(ProjectConsumer consumer, String projectName)
@@ -1129,6 +1150,10 @@ public class ProjectManager {
 	}
 
 	public static boolean isOpen(Project<?> project) {
+		return openProjects.isOpen(project);
+	}
+
+	public static boolean isOpen(String project) {
 		return openProjects.isOpen(project);
 	}
 
@@ -1299,8 +1324,12 @@ public class ProjectManager {
 			return accessedProjects;
 		}
 
+		public boolean isOpen(String projectName) {
+			return projects.containsKey(projectName);
+		}
+
 		public boolean isOpen(Project<?> project) {
-			return projects.containsKey(project.getName());
+			return isOpen(project.getName());
 		}
 
 		/**
