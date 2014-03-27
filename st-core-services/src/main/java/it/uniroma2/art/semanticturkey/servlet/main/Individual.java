@@ -203,7 +203,7 @@ public class Individual extends ResourceOld {
 	 */
 	public Response addType(String indQName, String typeQName) {
 		logger.debug("replying to \"addType(" + indQName + "," + typeQName + ")\".");
-		OWLModel model = (OWLModel) ProjectManager.getCurrentProject().getOntModel();
+		OWLModel model = getOWLModel();
 
 		ARTURIResource individual;
 		try {
@@ -257,7 +257,7 @@ public class Individual extends ResourceOld {
 	 */
 	public Response removeType(String indQName, String typeQName) {
 		logger.debug("replying to \"removeType(" + indQName + "," + typeQName + ")\".");
-		OWLModel model = (OWLModel) ProjectManager.getCurrentProject().getOntModel();
+		OWLModel model = getOWLModel();
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();
