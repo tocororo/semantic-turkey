@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor;
 
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.generation.annotation.processor.internal.VelocitySupportTools;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -122,6 +123,7 @@ public class STServiceProcessor extends AbstractProcessor {
 					vc.put("packageName", packageName);
 					vc.put("fields", fields);
 					vc.put("methods", methods);
+					vc.put("tools", new VelocitySupportTools());
 
 					vc.put("generatedPackageName", generatedPackageName);
 					vc.put("generatedClassSimpleName", generatedClassSimpleName);
@@ -146,5 +148,4 @@ public class STServiceProcessor extends AbstractProcessor {
 
 		return true;
 	}
-	
 }

@@ -2,6 +2,9 @@ package ${generatedPackageName};
 
 import ${packageName}.${classSimpleName};
 
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -41,17 +44,13 @@ public class ${generatedClassSimpleName}
 #*
 	Process annotations on the service parameter
 *###
-#foreach( $annotation in $parameter.annotationMirrors )
 #*
 	Handle @Optional
 *###
-#if ($annotation.annotationType.asElement().qualifiedName == 'it.uniroma2.art.semanticturkey.services.annotations.Optional')
+#if ($tools.isOptionalParameter($parameter))
 #set( $arguments = "${arguments}, required=false" )
-#foreach ($annotationElement in $annotation.elementValues.entrySet())
-#if ($annotationElement.key.simpleName == 'defaultValue' )
-#set( $arguments = "${arguments}" + ', defaultValue=' + $annotationElement.value)
-#end
-#end
+#if ($tools.hasDefaultValue($parameter))
+#set( $arguments = "${arguments}" + ', defaultValue=' + $tools.getDefaultLiteralValue($parameter))
 #end
 #end
 #set( $arguments = "${arguments}" + ')' )#*
@@ -77,8 +76,14 @@ public class ${generatedClassSimpleName}
     @RequestMapping(value = "/${classSimpleName}/${path}", method = RequestMethod.GET, produces = "application/xml")
 	public @ResponseBody String  ${method.simpleName}Published(${arguments}) $throwsDeclaration
 	{
-		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
-		return fun.${method.simpleName}(${subarg}).getResponseContent();
+#if($tools.isVoidMethod($method))
+			${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+			fun.${method.simpleName}(${subarg});		
+			return ServletUtilities.getService().createReplyResponse($tools.toStringLiteral($path.toString()), RepliesStatus.ok).getResponseContent();
+#else
+			${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+			return fun.${method.simpleName}(${subarg}).getResponseContent();		
+#end
     }
 #end
 }

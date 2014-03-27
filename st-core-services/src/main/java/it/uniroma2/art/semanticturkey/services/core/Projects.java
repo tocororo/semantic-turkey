@@ -20,7 +20,6 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.main.ProjectsOld.Req;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
@@ -64,7 +63,7 @@ public class Projects extends STServiceAdapter {
 	}
 
 	@GenerateSTServiceController
-	public Response createProject(ProjectConsumer consumer, String projectName,
+	public void createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
@@ -72,11 +71,8 @@ public class Projects extends STServiceAdapter {
 
 		ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration);
-
-		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
 	}
-	
-	
+
 	/**
 	 * @param consumer
 	 * @param projectName
@@ -89,88 +85,79 @@ public class Projects extends STServiceAdapter {
 	 * @throws InvalidProjectNameException
 	 */
 	@GenerateSTServiceController
-	public Response accessProject(ProjectConsumer consumer, String projectName,
+	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException {
 
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
-
-		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
 	}
 
 	@GenerateSTServiceController
-	public Response disconnectFromProject(ProjectConsumer consumer, String projectName)
+	public void disconnectFromProject(ProjectConsumer consumer, String projectName)
 			throws ModelUpdateException {
 
 		ProjectManager.disconnectFromProject(consumer, projectName);
-
-		return servletUtilities.createReplyResponse("accessProject", RepliesStatus.ok);
 	}
 
 	@SuppressWarnings("unchecked")
 	@GenerateSTServiceController
 	// @AutoRendering
-	// TODO insert an @Optional Annotation for the parameter
 	public Response listProjects(@Optional ProjectConsumer consumer,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
-			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel) {
+			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel) throws ProjectAccessException {
 
 		System.out.println("consumer = " + consumer);
 		String request = Req.listProjectsRequest;
 		Collection<AbstractProject> projects;
-		try {
-			projects = ProjectManager.listProjects(consumer);
-			XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
-			Element dataElem = resp.getDataElement();
 
-			for (AbstractProject absProj : projects) {
-				Element projElem = XMLHelp.newElement(dataElem, XMLNames.projectTag, absProj.getName());
-				if (absProj instanceof Project<?>) {
-					Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
-					try {
-						projElem.setAttribute(XMLNames.ontoTypeAttr, ((Project<?>) proj).getModelType()
-								.getName());
-						String ontMgr = ((Project<?>) proj).getOntologyManagerImplID();
-						projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
-						String mConfID = ((Project<?>) proj).getModelConfigurationID();
-						projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
-						projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
+		projects = ProjectManager.listProjects(consumer);
+		XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
+		Element dataElem = resp.getDataElement();
 
-						projElem.setAttribute(XMLNames.statusAttr, "ok");
+		for (AbstractProject absProj : projects) {
+			Element projElem = XMLHelp.newElement(dataElem, XMLNames.projectTag, absProj.getName());
+			if (absProj instanceof Project<?>) {
+				Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
+				try {
+					projElem.setAttribute(XMLNames.ontoTypeAttr, ((Project<?>) proj).getModelType().getName());
+					String ontMgr = ((Project<?>) proj).getOntologyManagerImplID();
+					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
+					String mConfID = ((Project<?>) proj).getModelConfigurationID();
+					projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
+					projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
 
-						projElem.setAttribute(XMLNames.openAttr,
-								Boolean.toString(ProjectManager.isOpen((Project<?>) absProj)));
+					projElem.setAttribute(XMLNames.statusAttr, "ok");
 
-						if (consumer != null) {
-							ProjectManager.AccessResponse access = ProjectManager.checkAccessibility(
-									consumer, proj, requestedAccessLevel, requestedLockLevel);
+					projElem.setAttribute(XMLNames.openAttr,
+							Boolean.toString(ProjectManager.isOpen((Project<?>) absProj)));
 
-							projElem.setAttribute(XMLNames.accessibleAttr,
-									Boolean.toString(access.isAffirmative()));
+					if (consumer != null) {
+						ProjectManager.AccessResponse access = ProjectManager.checkAccessibility(consumer,
+								proj, requestedAccessLevel, requestedLockLevel);
 
-							if (!access.isAffirmative())
-								projElem.setAttribute("accessibilityFault", access.getMsg());
+						projElem.setAttribute(XMLNames.accessibleAttr,
+								Boolean.toString(access.isAffirmative()));
 
-						}
+						if (!access.isAffirmative())
+							projElem.setAttribute("accessibilityFault", access.getMsg());
 
-					} catch (DOMException e) {
-						projElem.setAttribute(XMLNames.statusAttr, "error");
-						projElem.setAttribute(XMLNames.statusMsgAttr,
-								"problem when building XML response for this project");
-					} catch (ProjectInconsistentException e) {
-						projElem.setAttribute(XMLNames.statusAttr, "error");
-						projElem.setAttribute(XMLNames.statusMsgAttr, e.getMessage());
 					}
 
-				} else
-					// proj instanceof CorruptedProject
-					projElem.setAttribute(XMLNames.statusAttr, "corrupted");
-			}
-			return resp;
-		} catch (ProjectAccessException e) {
-			return ServletUtilities.getService().createExceptionResponse(request, e.toString());
+				} catch (DOMException e) {
+					projElem.setAttribute(XMLNames.statusAttr, "error");
+					projElem.setAttribute(XMLNames.statusMsgAttr,
+							"problem when building XML response for this project");
+				} catch (ProjectInconsistentException e) {
+					projElem.setAttribute(XMLNames.statusAttr, "error");
+					projElem.setAttribute(XMLNames.statusMsgAttr, e.getMessage());
+				}
+
+			} else
+				// proj instanceof CorruptedProject
+				projElem.setAttribute(XMLNames.statusAttr, "corrupted");
 		}
+		return resp;
 	}
 
 }
