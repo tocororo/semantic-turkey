@@ -102,12 +102,11 @@ public class Delete extends ServiceAdapter {
 
 	public Response deleteResource(String qname, String request) {
 		logger.debug("request to delete resource: " + qname);
-		String encodedQName = servletUtilities.encodeLabel(qname);
 		OWLModel model = getOWLModel();
 		ARTURIResource resource;
 		Response response = null;
 		try {
-			resource = model.createURIResource(model.expandQName(encodedQName));
+			resource = model.createURIResource(model.expandQName(qname));
 			if (!model.existsResource(resource))
 				return servletUtilities.createExceptionResponse("deleteResource",
 						"client/server inconsistency error: there is no resource corresponding to: " + qname
