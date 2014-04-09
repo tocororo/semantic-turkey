@@ -913,7 +913,7 @@ public class SKOS extends ResourceOld {
 	}
 
 	public Response getAllSchemesList(String defaultLanguage) {
-		SKOSModel skosModel = (SKOSModel) ProjectManager.getCurrentProject().getOntModel();
+		SKOSModel skosModel = (SKOSModel) getOntModel();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 
 		try {
@@ -1280,10 +1280,9 @@ public class SKOS extends ResourceOld {
 					+ " has not been specified");
 		}
 	}
-
-	@SuppressWarnings("unchecked")
-	public static SKOSModel getSKOSModel() {
-		return ((Project<SKOSModel>) ProjectManager.getCurrentProject()).getOntModel();
+	
+	public SKOSModel getSKOSModel() {
+		return (SKOSModel) getOntModel();
 	}
 
 }

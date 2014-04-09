@@ -649,7 +649,7 @@ public class AnnotationOld extends ServiceAdapter {
 		Element instanceElement = XMLHelp.newElement(dataElement, "Instance");
 		instanceElement.setAttribute("instanceName", servletUtilities.decodeLabel(instanceName));
 		return response;*/
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 		try {
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();

@@ -118,7 +118,7 @@ public class Statement extends ServiceAdapter {
 
 		logger.debug("processing request: " + request);
 
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 		ARTURIResource subject;
 		ARTURIResource predicate;
 		ARTNode object;

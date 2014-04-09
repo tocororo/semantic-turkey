@@ -131,7 +131,7 @@ public class OntoSearch extends ServiceAdapter {
 			return servletUtilities.createExceptionResponse(request,
 					"\"types\" parameter not correctly specified in GET request");
 
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 		ArrayList<Struct> results = new ArrayList<Struct>();
 
 		String inputStringExpandedQName;

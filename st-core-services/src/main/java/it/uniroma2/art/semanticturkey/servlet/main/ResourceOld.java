@@ -723,7 +723,7 @@ public class ResourceOld extends ServiceAdapter {
 	 */
 	protected Response getResourceDescription(String resourceQName, RDFResourceRolesEnum restype,
 			String method) {
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 		logger.debug("class for the ontModel is: " + ontModel.getClass());
 		OWLModel owlModel = getOWLModel();
 

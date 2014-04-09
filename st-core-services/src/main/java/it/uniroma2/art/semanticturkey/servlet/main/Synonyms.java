@@ -113,7 +113,7 @@ public class Synonyms extends ServiceAdapter {
 			return ServletUtilities.getService().createExceptionResponse(request, e.getMessage());
 		}
 
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String language = null;
@@ -199,7 +199,7 @@ public class Synonyms extends ServiceAdapter {
 
 	public void addSynonym(String classQName, String synonym, String language) throws ModelAccessException,
 			ModelUpdateException {
-		RDFSModel ontModel = (RDFSModel)ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel)getOntModel();
 		ARTResource cls = ontModel.createURIResource(ontModel.expandQName(classQName));
 		ontModel.addLabel(cls, synonym, language);
 	}

@@ -38,7 +38,9 @@ import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceRequest;
@@ -53,6 +55,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Armando Stellato
@@ -60,6 +63,10 @@ import org.slf4j.Logger;
  * 
  */
 public abstract class ServiceAdapter implements ServiceInterface {
+	
+	@Autowired
+	protected STServiceContext serviceContext;
+	
 	protected String id;
 	protected ServiceRequest _oReq = null;
 	protected List<ServletListener> listeners = new ArrayList<ServletListener>();
@@ -317,8 +324,16 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return model.listNamedGraphs();
 	}
 
+	protected Project<? extends RDFModel> getProject() {
+		return serviceContext.getProject();
+	}
+	
+	protected RDFModel getOntModel() {
+		return serviceContext.getProject().getOntModel();
+	}
+	
 	protected OWLModel getOWLModel() {
-		return ProjectManager.getCurrentProject().getOWLModel();
+		return serviceContext.getProject().getOWLModel();
 	}
 
 	protected ARTResource retrieveExistingResource(RDFModel model, String qname, ARTResource... graphs)

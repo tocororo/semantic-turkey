@@ -42,5 +42,10 @@ public class InvalidProjectNameException extends Exception {
 		super("the selected Project Name, which is: \"" + projectName
 				+ "\", may not contain the following symbols: \\/:*?\"<>|");
 	}
+	
+	public InvalidProjectNameException(String msg, String projectName) {
+		super(msg + ": the selected Project Name, which is: \"" + projectName
+				+ "\", may not contain the following symbols: \\/:*?\"<>|");
+	}
 
 }

@@ -208,7 +208,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 
 	/**
-	 * this initializes the {@link #owlModel} field with a newly created {@link OWLModel} for this project
+	 * this initializes the {@link #model} field with a newly created {@link OWLModel} for this project
 	 * 
 	 * @throws ModelCreationException
 	 */

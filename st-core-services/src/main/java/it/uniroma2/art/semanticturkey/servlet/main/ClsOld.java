@@ -241,7 +241,7 @@ public class ClsOld extends ResourceOld {
 	 * @return
 	 */
 	public Response getSubClasses(String clsQName, boolean forTree, boolean instNum, String labelQuery) {
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 
 		try {
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -496,7 +496,7 @@ public class ClsOld extends ResourceOld {
 	 * @return
 	 */
 	public Response createInstanceOption(String instanceQName, String clsQName) {
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 		ARTURIResource instanceRes;
 		try {
 			instanceRes = ontModel.createURIResource(ontModel.expandQName(instanceQName));
@@ -517,7 +517,7 @@ public class ClsOld extends ResourceOld {
 
 	public Response updateClassOnTree(String clsQName, String instanceName)
 			throws NonExistingRDFResourceException {
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 		try {
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
@@ -557,7 +557,7 @@ public class ClsOld extends ResourceOld {
 	 * @return
 	 */
 	/*public Response getClassSubTreeXML(String clsQName) {
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 		ARTURIResource cls;
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -594,7 +594,7 @@ public class ClsOld extends ResourceOld {
 	 */
 	public Response createClassXMLTree() {
 
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -752,7 +752,7 @@ public class ClsOld extends ResourceOld {
 	 * @return
 	 */
 	public Response getClassesInfoAsRootsForTree(String clsesQNamesString, boolean instNumBool) {
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		//Element dataElement = response.getDataElement();
@@ -799,7 +799,7 @@ public class ClsOld extends ResourceOld {
 	 */
 	public Response addSuperClass(String clsQName, String superclsQName) {
 		logger.debug("replying to \"addSuperClass(" + clsQName + "," + superclsQName + ")\".");
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();
@@ -856,7 +856,7 @@ public class ClsOld extends ResourceOld {
 	 */
 	public Response removeSuperClass(String clsQName, String superClassQName) {
 		logger.debug("replying to \"removeType(" + clsQName + "," + superClassQName + ")\".");
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();
@@ -939,7 +939,7 @@ public class ClsOld extends ResourceOld {
 
 	public Response createClass(String newClassQName, String superClassQName) {
 		logger.debug("creating class: " + newClassQName + " as subClassOf: " + superClassQName);
-		RDFSModel ontModel = (RDFSModel) ProjectManager.getCurrentProject().getOntModel();
+		RDFSModel ontModel = (RDFSModel) getOntModel();
 		try {
 			ARTResource wgraph = getWorkingGraph();
 			ARTResource[] graphs = getUserNamedGraphs();

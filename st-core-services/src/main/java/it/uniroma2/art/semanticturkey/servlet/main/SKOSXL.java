@@ -771,9 +771,9 @@ public class SKOSXL extends SKOS {
 		return model.getDefaultNamespace() + "xl-" + UUID.randomUUID().toString();
 	}
 
-	@SuppressWarnings("unchecked")
-	public static SKOSXLModel getSKOSXLModel() {
-		return ((Project<SKOSXLModel>) ProjectManager.getCurrentProject()).getOntModel();
+	
+	public SKOSXLModel getSKOSXLModel() {
+		return (SKOSXLModel)getOntModel();
 	}
 
 }

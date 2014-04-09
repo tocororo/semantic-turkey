@@ -170,7 +170,7 @@ public class RangeAnnotation extends ServiceAdapter {
 
 	private Response chkAnnotations(String urlPage) {
 		String request = Req.chkAnnotationsRequest;
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 
 		ARTLiteral urlPageLiteral = ontModel.createLiteral(urlPage);
 		
@@ -275,7 +275,7 @@ public class RangeAnnotation extends ServiceAdapter {
 					+ " lexicalization: " + lexicalization + " title: " + title);
 
 			ServletUtilities servletUtilities = new ServletUtilities();
-			RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+			RDFModel ontModel = getOntModel();
 
 			ARTResource artResource = retrieveExistingResource(ontModel, resource, getUserNamedGraphs());
 

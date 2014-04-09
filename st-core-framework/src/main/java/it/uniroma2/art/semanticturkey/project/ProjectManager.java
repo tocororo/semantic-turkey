@@ -80,8 +80,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * a manager/factory class for creating new projects, for retrieving existing ones or for accessing the
- * currently loaded project <br/>
+ * a manager/factory class for creating new projects, for retrieving existing ones or for accessing the loaded
+ * projects <br/>
  * TODO We should split ProjectManager into two classes: the real ProjectManager, and a ProjectFactory.
  * ProjectManager should not deal with things like having "hands-in-the-details" of how a project is
  * structured. ProjectFactory should do this.
@@ -95,8 +95,6 @@ public class ProjectManager {
 	}
 
 	public static final String triples_exchange_FileName = "ontology.nt";
-
-	private static Project<? extends RDFModel> _currentProject;
 
 	protected static Logger logger = LoggerFactory.getLogger(ProjectManager.class);
 
@@ -435,19 +433,6 @@ public class ProjectManager {
 		}
 	}
 
-	private static <MODELTYPE extends RDFModel> void setCurrentProject(Project<MODELTYPE> proj) {
-		_currentProject = proj;
-	}
-
-	/**
-	 * gets the currently loaded project
-	 * 
-	 * @return
-	 */
-	public static Project<? extends RDFModel> getCurrentProject() {
-		return _currentProject;
-	}
-
 	/**
 	 * returns the {@link Project} with name = <code>projectName</code>. In case no project with that name is
 	 * open, <code>null</code> is returned.
@@ -487,8 +472,8 @@ public class ProjectManager {
 	}
 
 	/**
-	 * this method copies a project to another location. You need to assure that <code>projectName</code> is
-	 * not the name of the project currently being loaded
+	 * this method copies a project to another location. The project identified by <code>projectName</code>
+	 * must not be open.
 	 * 
 	 * @param projectName
 	 * @param newProjectName
@@ -506,6 +491,11 @@ public class ProjectManager {
 
 		if (!validProjectName(newProjectName))
 			throw new InvalidProjectNameException(projectName);
+
+		if (isOpen(projectName)) {
+			throw new UnavailableResourceException("project: " + projectName
+					+ " is currently open, thus it cannot be cloned");
+		}
 
 		File oldProjectDir = getProjectDir(projectName);
 		File newProjectDir = resolveProjectNameToDir(newProjectName);
@@ -554,20 +544,17 @@ public class ProjectManager {
 			return new File(Resources.getProjectsDir(), projectName);
 	}
 
-	public static void closeCurrentProject() throws ModelUpdateException {
-		// logger.debug("closing current project: " + _currentProject.getName());
-		closeProject(getCurrentProject());
-		_currentProject = null;
-	}
 
-	public static void closeProject(Project<?> project) throws ModelUpdateException {
-		logger.debug("closing project: " + project);
-		project.getOntModel().close();
-		openProjects.removeProject(project);
-	}
+	public static void exportProject(String projectName, File semTurkeyProjectFile) throws IOException,
+			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
 
-	public static void exportProject(Project<?> project, File semTurkeyProjectFile) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException {
+		if (!isOpen(projectName)) {
+			throw new UnavailableResourceException("project " + projectName
+					+ " is not open, and thus cannot be exported");
+		}
+
+		Project<?> project = openProjects.getProject(projectName);
+
 		File tempDir = Resources.createTempDir();
 		Utilities.copy(project.infoSTPFile, new File(tempDir, project.infoSTPFile.getName()));
 		Utilities.copy(project.nsPrefixMappingsPersistence.getFile(), new File(tempDir,
@@ -578,11 +565,6 @@ public class ProjectManager {
 				.createZipFile(tempDir, semTurkeyProjectFile, false, true, "Semantic Turkey Project Archive");
 		tempDir.delete();
 		tempDir.deleteOnExit();
-	}
-
-	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException {
-		exportProject(_currentProject, semTurkeyProjectFile);
 	}
 
 	public static void importProject(File semTurkeyProjectFile, String name) throws IOException,
@@ -854,8 +836,7 @@ public class ProjectManager {
 	}
 
 	/**
-	 * gets the baseuri of the project with name <code>projectName</code>. Use {@link Project#getBaseURI()} if
-	 * the project is currently loaded
+	 * gets the baseuri of the project with name <code>projectName</code>.
 	 * 
 	 * @param projectName
 	 * @return
@@ -869,8 +850,7 @@ public class ProjectManager {
 	}
 
 	/**
-	 * gets the default namespace of the project with name <code>projectName</code>. Use
-	 * {@link Project#getDefaultNamespace()} if the project is currently loaded
+	 * gets the default namespace of the project with name <code>projectName</code>.
 	 * 
 	 * @param projectName
 	 * @return
@@ -884,8 +864,7 @@ public class ProjectManager {
 	}
 
 	/**
-	 * gets the timestamp of the project with name <code>projectName</code>. Use
-	 * {@link Project#getTimeStamp()} if the project is currently loaded
+	 * gets the timestamp of the project with name <code>projectName</code>.
 	 * 
 	 * @param projectName
 	 * @return
@@ -1100,31 +1079,6 @@ public class ProjectManager {
 
 	}
 
-	/**
-	 * as for {@link #accessProject(ProjectConsumer, String, AccessLevel, LockLevel)} with
-	 * <ul>
-	 * <li>{@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}</li>
-	 * <li>{@link AccessLevel} = {@link AccessLevel#RW}</li>
-	 * <li>{@link LockLevel} = {@link LockLevel#NO}</li>
-	 * </ul>
-	 * and sets the project identified by <code>projectName</code> as <code>currentProject</code>
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws ProjectAccessException
-	 * @throws ProjectInexistentException
-	 * @throws ForbiddenProjectAccessException
-	 * @throws InvalidProjectNameException
-	 */
-	public static Project<? extends RDFModel> openProject(String projectName) throws ProjectAccessException,
-			ProjectInexistentException, InvalidProjectNameException, ForbiddenProjectAccessException {
-		Project<? extends RDFModel> project;
-		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
-		setCurrentProject(project);
-		return project;
-
-	}
-
 	public static void disconnectFromProject(ProjectConsumer consumer, String projectName)
 			throws ModelUpdateException {
 
@@ -1144,7 +1098,7 @@ public class ProjectManager {
 		openProjects.removeConsumer(project, consumer);
 
 		if (openProjects.isNotConsumed(project)) {
-			closeProject(project);
+			tearDownProject(project);
 		}
 
 	}
@@ -1157,6 +1111,15 @@ public class ProjectManager {
 		return openProjects.isOpen(project);
 	}
 
+	
+	private static void tearDownProject(Project<?> project) throws ModelUpdateException {
+		logger.debug("closing project: " + project);
+		project.getOntModel().close();
+		openProjects.removeProject(project);
+	}
+
+	
+	
 	/**
 	 * This private class holds the information related to projects open at runtime <br/>
 	 * the methods in this class should be available from the outer class {@link ProjectManager}<br/>
@@ -1374,6 +1337,61 @@ public class ProjectManager {
 
 		}
 
+	}
+
+	/*
+	 * SINGLE PROJECT METHODS, WRAPPING THE ABOVE METHODS
+	 */
+
+	private static Project<? extends RDFModel> _currentProject;
+
+	private static <MODELTYPE extends RDFModel> void setCurrentProject(Project<MODELTYPE> proj) {
+		_currentProject = proj;
+	}
+
+	/**
+	 * gets the currently loaded project
+	 * 
+	 * @return
+	 */
+	public static Project<? extends RDFModel> getCurrentProject() {
+		return _currentProject;
+	}
+
+	/**
+	 * as for {@link #accessProject(ProjectConsumer, String, AccessLevel, LockLevel)} with
+	 * <ul>
+	 * <li>{@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}</li>
+	 * <li>{@link AccessLevel} = {@link AccessLevel#RW}</li>
+	 * <li>{@link LockLevel} = {@link LockLevel#NO}</li>
+	 * </ul>
+	 * and sets the project identified by <code>projectName</code> as <code>currentProject</code>
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws ForbiddenProjectAccessException
+	 * @throws InvalidProjectNameException
+	 */
+	public static Project<? extends RDFModel> openProject(String projectName) throws ProjectAccessException,
+			ProjectInexistentException, InvalidProjectNameException, ForbiddenProjectAccessException {
+		Project<? extends RDFModel> project;
+		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
+		setCurrentProject(project);
+		return project;
+
+	}
+
+	public static void closeCurrentProject() throws ModelUpdateException {
+		// logger.debug("closing current project: " + _currentProject.getName());
+		disconnectFromProject(ProjectConsumer.SYSTEM, getCurrentProject().getName());
+		_currentProject = null;
+	}
+
+	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
+			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
+		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 
 }

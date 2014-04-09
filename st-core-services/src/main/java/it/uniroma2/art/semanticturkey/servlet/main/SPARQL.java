@@ -129,7 +129,7 @@ public class SPARQL extends ServiceAdapter {
 		logger.debug("query language: " + ql);
 
 		
-		RDFModel owlModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel owlModel = getOntModel();
 
 		ResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
 				RepliesStatus.ok, ser_type);

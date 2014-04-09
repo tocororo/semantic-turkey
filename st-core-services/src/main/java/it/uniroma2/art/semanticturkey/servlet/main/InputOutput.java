@@ -116,7 +116,7 @@ public class InputOutput extends ServiceAdapter {
 
 		String request = saveRDFRequest;
 		try {
-			RDFModel model = ProjectManager.getCurrentProject().getOntologyManager().getOntModel();
+			RDFModel model = getOntModel();
 			RDFFormat format = RDFFormat.guessRDFFormatFromFile(outPutFile);
 			if (format == null)
 				format = RDFFormat.RDFXML;
@@ -164,7 +164,7 @@ public class InputOutput extends ServiceAdapter {
 			if (rdfFormat == null) {
 				return logAndSendException("rdf file format cannot be established neither from file extension nor from user preference (if it has been provided)");
 			}
-			ProjectManager.getCurrentProject().getOntologyManager()
+			getProject().getOntologyManager()
 					.loadOntologyData(inputFile, baseURI, rdfFormat, getWorkingGraph());
 		} catch (FileNotFoundException e) {
 			return logAndSendException("the file you chose is unavailable: \n" + e.getMessage());
@@ -202,7 +202,7 @@ public class InputOutput extends ServiceAdapter {
 	 */
 	public Response clearData() {
 		try {
-			ProjectManager.getCurrentProject().getOntologyManager().clearData();
+			getProject().getOntologyManager().clearData();
 		} catch (ModelUpdateException e) {
 			return logAndSendException("unable to clear the ontModel: \n" + e.getMessage());
 		} catch (ModelCreationException e) {

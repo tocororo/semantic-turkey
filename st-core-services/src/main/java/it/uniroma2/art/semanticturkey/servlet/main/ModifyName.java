@@ -82,7 +82,7 @@ public class ModifyName extends ServiceAdapter {
 	}
 
 	public Response changeResourceName(String qName, String newQName) {
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 		ARTURIResource res = null;
 		String newResURI = null;
 		try {

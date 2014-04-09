@@ -137,7 +137,7 @@ public class ProjectsOld extends ServiceAdapter {
 		if (request.equals(Req.isCurrentProjectActiveRequest)) {
 			return isCurrentProjectActive();
 		}
-		
+
 		else if (request.equals(Req.openProjectRequest)) {
 			String projectName = setHttpPar(projectNamePar);
 			checkRequestParametersAllNotNull(projectNamePar);
@@ -245,13 +245,12 @@ public class ProjectsOld extends ServiceAdapter {
 		else
 			return servletUtilities.createNoSuchHandlerExceptionResponse(request);
 	}
-	
-	
+
 	public Response isCurrentProjectActive() {
-		if (ProjectManager.getCurrentProject()!=null)
+		if (ProjectManager.getCurrentProject() != null)
 			return createBooleanResponse(true);
 		else
-			return createBooleanResponse(false);	
+			return createBooleanResponse(false);
 	}
 
 	public Response repairProject(String projectName) {
@@ -277,29 +276,30 @@ public class ProjectsOld extends ServiceAdapter {
 
 	public Response getCurrentProject() {
 		try {
-		String request = Req.getCurrentProjectRequest;
-		Project<? extends RDFModel> proj = ProjectManager.getCurrentProject();
-		if (proj==null)
-			return servletUtilities.createReplyResponse(request, RepliesStatus.fail, "no project currently loaded!");
-		
-		XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
-		Element dataElem = resp.getDataElement();
-		String projName = proj.getName();
-		Element projElem;
+			String request = Req.getCurrentProjectRequest;
+			Project<? extends RDFModel> proj = ProjectManager.getCurrentProject();
+			if (proj == null)
+				return servletUtilities.createReplyResponse(request, RepliesStatus.fail,
+						"no project currently loaded!");
 
-		if (projName == null) {
-			projElem = XMLHelp.newElement(dataElem, projectTag);
-			projElem.setAttribute("exists", "false");
-		} else {
-			projElem = XMLHelp.newElement(dataElem, projectTag, projName);
-			projElem.setAttribute("exists", "true");
-		}
-		
-		projElem.setAttribute("type", proj.getType());
-		projElem.setAttribute("ontoType", proj.getModelType().getCanonicalName());
+			XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
+			Element dataElem = resp.getDataElement();
+			String projName = proj.getName();
+			Element projElem;
 
-		return resp;
-		} catch(ProjectInconsistentException e) {
+			if (projName == null) {
+				projElem = XMLHelp.newElement(dataElem, projectTag);
+				projElem.setAttribute("exists", "false");
+			} else {
+				projElem = XMLHelp.newElement(dataElem, projectTag, projName);
+				projElem.setAttribute("exists", "true");
+			}
+
+			projElem.setAttribute("type", proj.getType());
+			projElem.setAttribute("ontoType", proj.getModelType().getCanonicalName());
+
+			return resp;
+		} catch (ProjectInconsistentException e) {
 			return logAndSendException(e);
 		}
 	}
@@ -401,16 +401,20 @@ public class ProjectsOld extends ServiceAdapter {
 	 * @return
 	 */
 	public Response saveProject(String projName) {
-		// now working only for current project
+		
 		String request = Req.saveProjectRequest;
 		logger.info("requested to save project: " + projName);
-		Project<? extends RDFModel> proj = ProjectManager.getCurrentProject();
-
-		if (projName != null && !projName.equals(proj.getName())) {
-			// proj = getLoadedProject(projName)
-			// this case will be available when multiple project management will be activated
-		}
-
+		
+		Project<? extends RDFModel> proj;
+		
+		if (projName!=null)
+			proj = ProjectManager.getProject(projName);			
+		else
+			proj = getProject();
+		
+		if (!ProjectManager.isOpen(proj))
+			return ServletUtilities.getService().createExceptionResponse(request, "project " + proj.getName() + " is not open and cannot thus be saved");
+										
 		if (!(proj instanceof SaveToStoreProject<?>))
 			return servletUtilities.createExceptionResponse(request,
 					"non-sense request: this is not a saveable project!");

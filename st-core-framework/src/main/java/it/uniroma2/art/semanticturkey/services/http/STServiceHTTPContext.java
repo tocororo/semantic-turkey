@@ -15,6 +15,7 @@ public class STServiceHTTPContext implements STServiceContext {
 	
 	@Override
 	public Project<?> getProject() {
+		// TODO remove this or use a logger
 		System.out.println("Project parameter: " + request.getParameter("project"));
 		if (request.getParameter("project") == null) {
 			return ProjectManager.getCurrentProject();

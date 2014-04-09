@@ -54,7 +54,7 @@ public class STOntologyManagerSesame2Impl<MODELTYPE extends RDFModel> extends ST
 
 	@Override
 	protected void declareSupportOntologies() {
-		declareSupportOntology(owlModel.createURIResource(SESAME.NAMESPACE), false, true);
+		declareSupportOntology(model.createURIResource(SESAME.NAMESPACE), false, true);
 	}
 
 }

@@ -89,7 +89,7 @@ public class Page extends ServiceAdapter {
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
-		RDFModel ontModel = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel ontModel = getOntModel();
 		ARTResource instanceRes;
 		try {
 			instanceRes = ontModel.createURIResource(ontModel.expandQName(instanceQName));

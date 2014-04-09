@@ -124,7 +124,7 @@ public class Plugins extends ServiceAdapter {
 	 * @return
 	 */
 	public Response getPluginsForCurrentProject() {
-		return getPluginsForProject(ProjectManager.getCurrentProject());
+		return getPluginsForProject(getProject());
 	}
 
 	/**
@@ -133,9 +133,6 @@ public class Plugins extends ServiceAdapter {
 	 * @return
 	 */
 	public Response getPluginsForProject(String projectName) {
-		if (projectName.equals(ProjectManager.getCurrentProject().getName()))
-			return getPluginsForCurrentProject();
-
 		try {
 			Project<? extends RDFModel> proj = ProjectManager.getProjectDescription(projectName);
 			return getPluginsForProject(proj);
