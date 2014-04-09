@@ -320,7 +320,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 
 	protected ARTResourceIterator listNamedGraphs() throws ModelAccessException,
 			NonExistingRDFResourceException {
-		RDFModel model = ProjectManager.getCurrentProject().getOntModel();
+		RDFModel model = getOntModel();
 		return model.listNamedGraphs();
 	}
 

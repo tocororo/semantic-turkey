@@ -6,13 +6,19 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 public abstract class ShowerAdapter implements ShowerInterface {
 
+	@Autowired
+	protected STServiceContext serviceContext;
+	
 	protected String id;
 
 	public ShowerAdapter(String id) {
@@ -33,7 +39,7 @@ public abstract class ShowerAdapter implements ShowerInterface {
 
 		try {
 			// get the right Shower from the right project (the current one at the moment)
-			Project<? extends RDFModel> currentProject = ProjectManager.getCurrentProject();
+			Project<? extends RDFModel> currentProject = serviceContext.getProject();
 			ProjectManager.getProjectProperty(currentProject.getName(), "shower");
 
 			// now it create a Response, later it will call the Marshaller
