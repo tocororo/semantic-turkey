@@ -16,12 +16,20 @@ public class STServiceHTTPContext implements STServiceContext {
 	@Override
 	public Project<?> getProject() {
 		System.out.println("Project parameter: " + request.getParameter("project"));
+		if (request.getParameter("project") == null) {
+			return ProjectManager.getCurrentProject();
+		}
 		return ProjectManager.getProject(request.getParameter("project"));
 	}
 
 	@Override
 	public Project<?> getProject(int index) {
-		StringBuilder projectPar = new StringBuilder("project_").append(index);
+		String projectPar;
+		if (index == 0) {
+			projectPar = "project";
+		} else {
+			projectPar = new StringBuilder("project_").append(index).toString();
+		}
 		return ProjectManager.getProject(request.getParameter(projectPar.toString()));	
 	}
 	
