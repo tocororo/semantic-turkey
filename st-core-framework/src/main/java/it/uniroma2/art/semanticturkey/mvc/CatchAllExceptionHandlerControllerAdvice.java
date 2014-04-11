@@ -1,13 +1,21 @@
 package it.uniroma2.art.semanticturkey.mvc;
 
+import it.uniroma2.art.semanticturkey.constraints.MsgInterpolationVariables;
+import it.uniroma2.art.semanticturkey.servlet.JSONResponse;
+import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseERROR;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseEXCEPTION;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.hibernate.validator.method.MethodConstraintViolation;
+import org.hibernate.validator.method.MethodConstraintViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.w3c.dom.Document;
 
 /**
  * ControllerAdvice that handles the exception thrown by Semantic Turkey services (published using the MVC
@@ -17,16 +25,66 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class CatchAllExceptionHandlerControllerAdvice {
 
-	@ExceptionHandler(RuntimeException.class)
-	public ResponseEntity<String> exceptionHandler(RuntimeException e) {
-		XMLResponseERROR response = ServletUtilities.getService().createErrorResponse("", e.getMessage());
-		return new ResponseEntity<String>(response.getResponseContent(), HttpStatus.OK);
+	@ExceptionHandler(MethodConstraintViolationException.class)
+	public ResponseEntity<String> handleException(MethodConstraintViolationException ex,
+			HttpServletRequest request) {
+
+		ServletUtilities servUtils = ServletUtilities.getService();
+
+		StringBuilder errorMsg = new StringBuilder();
+		for (MethodConstraintViolation<?> viol : ex.getConstraintViolations()) {
+			errorMsg.append(viol.getMessage().replace(MsgInterpolationVariables.invalidParamValuePlaceHolder,
+					viol.getInvalidValue().toString()));
+			errorMsg.append("\n\n");
+		}
+
+		// Despite MethodConstraintViolationException being a RuntimeException, return an ST exception
+		Response stResp = servUtils.createExceptionResponse(extractServicRequestName(request),
+				errorMsg.toString());
+
+		return formatResponse(stResp, request);
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<String> exceptionHandler(Exception e) {
-		XMLResponseEXCEPTION response = ServletUtilities.getService().createExceptionResponse("",
-				e.getMessage());
-		return new ResponseEntity<String>(response.getResponseContent(), HttpStatus.OK);
+	public ResponseEntity<String> handleException(Exception ex, HttpServletRequest request) {
+		ServletUtilities servUtils = ServletUtilities.getService();
+
+		Response stResp;
+
+		if (ex instanceof RuntimeException) {
+			// if a RuntimeException (i.e., unexpected failure), return an ST error
+			stResp = servUtils.createErrorResponse(extractServicRequestName(request), ex.getMessage());
+		} else {
+			// otherwise, it is a foreseen failure, therefore return an ST exception
+			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex.getMessage());
+		}
+		return formatResponse(stResp, request);
 	}
+
+	private ResponseEntity<String> formatResponse(Response stResp, HttpServletRequest request) {
+		HttpHeaders responseHeaders = new HttpHeaders();
+
+		String contentType;
+		String respContent = null;
+
+		// 1) we could write to output stream directly (see original ST or LegacyServiceController)
+		// 2) actually JSON is not handled here! create a format-agnostic response and then serializers
+		if (stResp instanceof JSONResponse) {
+			contentType = "application/json";
+			respContent = stResp.getResponseContent();
+		} else {
+			contentType = "application/xml";
+			respContent = XMLHelp.XML2String((Document) stResp.getResponseObject(), true);
+		}
+		responseHeaders.set("Content-Type", contentType + "; charset=UTF-8");
+		return new ResponseEntity<String>(respContent, responseHeaders, HttpStatus.OK);
+	}
+
+	private static String extractServicRequestName(HttpServletRequest request) {
+		String path = request.getServletPath();
+		String[] pathElements = path.split("/");
+
+		return pathElements[pathElements.length - 1];
+	}
+
 }
