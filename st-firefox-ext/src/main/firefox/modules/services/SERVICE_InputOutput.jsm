@@ -1,6 +1,8 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.InputOutput;
@@ -17,7 +19,8 @@ var serviceName = service.serviceName;
  */
 function saveRepository(file){
 	var file = "file="+file;
-	return HttpMgr.GET(serviceName, service.saveRepositoryRequest, file);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.saveRepositoryRequest, file, contextAsArray);
 }
 
 /**
@@ -31,7 +34,8 @@ function saveRepository(file){
 function loadRepository(file, baseUri){
 	var file = "file="+file;
 	var baseUri = "baseUri="+baseUri;
-	return HttpMgr.GET(serviceName, service.loadRepositoryRequest, file, baseUri);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.loadRepositoryRequest, file, baseUri, contextAsArray);
 }
 
 /**
@@ -41,13 +45,22 @@ function loadRepository(file, baseUri){
  * @return
  */
 function clearRepository(){
-	return HttpMgr.GET(serviceName, service.clearRepositoryRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.clearRepositoryRequest, contextAsArray);
 }
 
 
 //InputOutput SERVICE INITIALIZATION
-service.saveRepository = saveRepository;
-service.loadRepository = loadRepository;
-service.clearRepository = clearRepository;
-
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.saveRepository = saveRepository;
+service.prototype.loadRepository = loadRepository;
+service.prototype.clearRepository = clearRepository;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;
 

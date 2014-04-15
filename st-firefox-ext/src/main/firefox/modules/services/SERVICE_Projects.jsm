@@ -2,6 +2,8 @@ Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.Projects;
@@ -17,7 +19,8 @@ var serviceName = service.serviceName;
 function openProject(name) {
 	Logger.debug('[SERVICE_Projects.jsm] openProject');
 	var name = "name=" + name;
-	return HttpMgr.GET(serviceName, service.openProjectRequest, name);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.openProjectRequest, name, contextAsArray);
 }
 
 /**
@@ -34,7 +37,8 @@ function openProject(name) {
 function repairProject(name){
 	Logger.debug('[SERVICE_Projects.jsm] repairProject');
 	var name = "name=" + name;
-	return HttpMgr.GET(serviceName, service.repairProjectRequest, name);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.repairProjectRequest, name, contextAsArray);
 }
 
 /**
@@ -67,7 +71,8 @@ function newProject(name, ontologyType, baseuri, ontmanager, ontMgrConfiguration
 			cfgPars +="|_|";
 		cfgPars += namePar+":::"+valuePar;
 	}
-	return HttpMgr.GET(serviceName, service.newProjectRequest, name, ontologyType,baseuri, ontmanager, ontMgrConfiguration, cfgPars);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.newProjectRequest, name, ontologyType,baseuri, ontmanager, ontMgrConfiguration, cfgPars, contextAsArray);
 }
 
 /**
@@ -103,7 +108,8 @@ function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfi
 			cfgPars +="|_|";
 		cfgPars += namePar+":::"+valuePar;
 	}
-	return HttpMgr.GET(serviceName, service.newProjectFromFileRequest, name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, file, cfgPars);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.newProjectFromFileRequest, name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, file, cfgPars, contextAsArray);
 }
 
 /**
@@ -114,7 +120,8 @@ function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfi
  */
 function closeProject() {
 	Logger.debug('[SERVICE_Projects.jsm] closeProject');
-	return HttpMgr.GET(serviceName, service.closeProjectRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.closeProjectRequest, contextAsArray);
 }
 
 /**
@@ -127,7 +134,8 @@ function closeProject() {
 function deleteProject(name) {
 	Logger.debug('[SERVICE_Projects.jsm] deleteProject');
 	var name = "name=" + name;
-	return HttpMgr.GET(serviceName, service.deleteProjectRequest, name);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.deleteProjectRequest, name, contextAsArray);
 }
 
 /**
@@ -140,7 +148,8 @@ function deleteProject(name) {
 function exportProject(projfile) {
 	Logger.debug('[SERVICE_Projects.jsm] exportProject');
 	var projfile = "projfile=" + projfile;
-	return HttpMgr.GET(serviceName, service.exportProjectRequest, projfile);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.exportProjectRequest, projfile, contextAsArray);
 }
 
 /**
@@ -157,7 +166,8 @@ function importProject(projfile, name) {
 	Logger.debug('[SERVICE_Projects.jsm] importProject');
 	var projfile = "projfile=" + projfile;
 	var name = "name=" + name;
-	return HttpMgr.GET(serviceName, service.importProjectRequest, projfile, name);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.importProjectRequest, projfile, name, contextAsArray);
 }
 
 /**
@@ -172,7 +182,8 @@ function cloneProject(name, newName) {
 	Logger.debug('[SERVICE_Projects.jsm] cloneProject');
 	var name = "name=" + name;
 	var newName = "newName=" + newName;
-	return HttpMgr.GET(serviceName, service.cloneProjectRequest, name, newName);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.cloneProjectRequest, name, newName, contextAsArray);
 }
 
 /**
@@ -186,7 +197,8 @@ function cloneProject(name, newName) {
 function saveProjectAs(newName) {
 	Logger.debug('[SERVICE_Projects.jsm] saveProjectAs');
 	var newName = "newName=" + newName;
-	return HttpMgr.GET(serviceName, service.saveProjectAsRequest, newName);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.saveProjectAsRequest, newName, contextAsArray);
 }
 
 /**
@@ -197,7 +209,8 @@ function saveProjectAs(newName) {
  */
 function saveProject() {
 	Logger.debug('[SERVICE_Projects.jsm] saveProject');
-	return HttpMgr.GET(serviceName, service.saveProjectRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.saveProjectRequest, contextAsArray);
 }
 
 /**
@@ -208,8 +221,8 @@ function saveProject() {
  * @return
  */
 function listProjects() {
-	Logger.debug('[SERVICE_Projects.jsm] listProjects');
-	return HttpMgr.GET(serviceName, service.listProjectsRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.listProjectsRequest, contextAsArray);
 }
 
 /**
@@ -220,22 +233,25 @@ function listProjects() {
  */
 function getCurrentProject() {
 	Logger.debug('[SERVICE_Projects.jsm] getCurrentProject');
-	return HttpMgr.GET(serviceName, service.getCurrentProjectRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getCurrentProjectRequest, contextAsArray);
 }
 
 function getProjectProperty(propNames, projectName) {
 	Logger.debug('[SERVICE_Projects.jsm] getProjectProperty');
 	var propNames_p = "propNames=" + propNames;
 	var name_p = projectName == null ? "" : "name=" + projectName;
-	return HttpMgr.GET(serviceName, service.getProjectPropertyRequest, propNames_p, name_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getProjectPropertyRequest, propNames_p, name_p, contextAsArray);
 }
 
 function setProjectProperty(propName, propValue, context) {
 	Logger.debug('[SERVICE_Projects.jsm] setProjectProperty');
 	var propName_p = "name=" + propName;
 	var propValue_p = "value=" + propValue;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.setProjectPropertyRequest, propName_p, propValue_p);
+	var reply = HttpMgr.GET(serviceName, service.setProjectPropertyRequest, propName_p, propValue_p, contextAsArray);
 	
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("projectPropertySet", {getPropName : function(){return propName;}, getPropValue : function(){return propValue;}, getContext : function(){return context;}});
@@ -247,26 +263,36 @@ function setProjectProperty(propName, propValue, context) {
 
 function isCurrentProjectActive() {
 	Logger.debug('[SERVICE_Projects.jsm] isCurrentProjectActive');
-	return HttpMgr.GET(serviceName, service.isCurrentProjectActiveRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.isCurrentProjectActiveRequest, contextAsArray);
 }
 
 
-// Projects SERVICE INITIALIZATION
-service.openProject = openProject;
-service.repairProject = repairProject;
-//service.openMainProject = openMainProject;
-service.newProject = newProject;
-service.newProjectFromFile = newProjectFromFile;
-service.closeProject = closeProject;
-service.deleteProject = deleteProject;
-service.exportProject = exportProject;
-service.importProject = importProject;
-service.cloneProject = cloneProject;
-service.saveProject = saveProject;
-service.saveProjectAs = saveProjectAs;
-service.listProjects = listProjects;
-service.getCurrentProject = getCurrentProject;
-service.getProjectProperty = getProjectProperty;
-service.setProjectProperty = setProjectProperty;
-service.isCurrentProjectActive = isCurrentProjectActive;
+// this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
 
+// Projects SERVICE INITIALIZATION
+service.prototype.openProject = openProject;
+service.prototype.repairProject = repairProject;
+//service.openMainProject = openMainProject;
+service.prototype.newProject = newProject;
+service.prototype.newProjectFromFile = newProjectFromFile;
+service.prototype.closeProject = closeProject;
+service.prototype.deleteProject = deleteProject;
+service.prototype.exportProject = exportProject;
+service.prototype.importProject = importProject;
+service.prototype.cloneProject = cloneProject;
+service.prototype.saveProject = saveProject;
+service.prototype.saveProjectAs = saveProjectAs;
+service.prototype.listProjects = listProjects;
+service.prototype.getCurrentProject = getCurrentProject;
+service.prototype.getProjectProperty = getProjectProperty;
+service.prototype.setProjectProperty = setProjectProperty;
+service.prototype.isCurrentProjectActive = isCurrentProjectActive;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

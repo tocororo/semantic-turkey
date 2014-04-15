@@ -5,98 +5,98 @@ EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests"];
 /**
  * @class
  */
-STRequests = new Object();
+STRequests = function(){};
 
 /**
  * @class
  */
-STRequests.Administration = new Object();
+STRequests.Administration = function(){};
 /**
  * @class
  */
-STRequests.Annotate = new Object();
+STRequests.Annotate = function(){};
 /**
  * @class
  */
-STRequests.Annotation = new Object();    
+STRequests.Annotation = function(){};    
 
 /**
  * @class
  */
-STRequests.RangeAnnotation = new Object();    
+STRequests.RangeAnnotation = function(){};    
 
 /**
  * @class
  */
-STRequests.Cls = new Object();           
+STRequests.Cls = function(){};           
 /**
  * @class
  */
-STRequests.Delete = new Object();        
+STRequests.Delete = function(){};        
 /**
  * @class
  */
-STRequests.Graph = new Object();         
+STRequests.Graph = function(){};         
 /**
  * @class
  */
-STRequests.Individual = new Object();    
+STRequests.Individual = function(){};    
 /**
  * @class
  */
-STRequests.InputOutput = new Object();   
+STRequests.InputOutput = function(){};   
 /**
  * @class
  */
-STRequests.Metadata = new Object();      
+STRequests.Metadata = function(){};      
 /**
  * @class
  */
-STRequests.ModifyName = new Object();    
+STRequests.ModifyName = function(){};    
 /**
  * @class
  */
-STRequests.OntoSearch = new Object();
+STRequests.OntoSearch = function(){};
 /**
  * @class
  */
-STRequests.Page = new Object();          
+STRequests.Page = function(){};          
 /**
  * @class
  */
-STRequests.Property = new Object();      
+STRequests.Property = function(){};      
 /**
  * @class
  */
-STRequests.SPARQL = new Object();
+STRequests.SPARQL = function(){};
 /**
  * @class
  */
-STRequests.SKOS = new Object();
+STRequests.SKOS = function(){};
 /**
  * @class
  */
-STRequests.Statement = new Object();
+STRequests.Statement = function(){};
 /**
  * @class
  */
-STRequests.Synonyms = new Object();      
+STRequests.Synonyms = function(){};      
 /**
  * @class
  */
-STRequests.SystemStart = new Object();   
+STRequests.SystemStart = function(){};   
 /**
  * @class
  */
-STRequests.Projects = new Object();
+STRequests.Projects = function(){};
 /**
  * @class
  */
-STRequests.OntManager = new Object();
+STRequests.OntManager = function(){};
 /**
  * @class
  */
-STRequests.Resource = new Object();
+STRequests.Resource = function(){};
 
 
 //systemStart service requests

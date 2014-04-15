@@ -3,6 +3,8 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Deserializer.jsm");	
 Components.utils.import("resource://stmodules/ARTResources.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = ["STRequests"];
 
 var service = STRequests.OntoSearch;
@@ -20,7 +22,18 @@ var serviceName = service.serviceName;
 function searchOntology(inputString,types){
 	var inputString = "inputString="+inputString;
 	var types = "types="+types;
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.searchOntologyRequest,inputString,types));
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.searchOntologyRequest,inputString,
+			types, contextAsArray));
 }
 //OntoSearch SERVICE INITIALIZATION
-service.searchOntology = searchOntology;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.searchOntology = searchOntology;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

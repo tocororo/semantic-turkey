@@ -91,17 +91,26 @@ HttpMgr = new function() {
 			var realRequest = service;
 			parameters += "?service=" + realService + "&request=" + realRequest;
 			if (arguments.length > 2) { // arguments[2] = request
-				var index = arguments[2].indexOf("=");
-				aURL += "&" + arguments[2].substring(0, index + 1)
-						+ encodeURIComponent(arguments[2].substr(index + 1));
+				if(Array.isArray(arguments[2])){
+					for(var k=0; k<arguments[2].length; ++k){
+						parameters += this.splitAndEncode(arguments[2][k]);
+					}
+				} else{
+					parameters += this.splitAndEncode(arguments[2]);
+				}
 			}
 		}
-		if (arguments.length > 3)
+		if (arguments.length > 3) {
 			for ( var i = 3; i < arguments.length; i++) {
-				var index = arguments[i].indexOf("=");
-				parameters += "&" + arguments[i].substring(0, index + 1)
-						+ encodeURIComponent(arguments[i].substr(index + 1));
+				if(Array.isArray(arguments[i])){
+					for(var k=0; k<arguments[i].length; ++k){
+						parameters += this.splitAndEncode(arguments[i][k]);
+					}
+				} else{
+					parameters += this.splitAndEncode(arguments[i]);
+				}
 			}
+		}
 		return this.submitHTTPRequest(realRespType, aURL, "POST", false, parameters);
 	};
 
@@ -123,21 +132,41 @@ HttpMgr = new function() {
 			var realRequest = service;
 			aURL += "?service=" + realService + "&request=" + realRequest;
 			if (arguments.length > 2) { // arguments[2] = request
-				var index = arguments[2].indexOf("=");
-				aURL += "&" + arguments[2].substring(0, index + 1)
-						+ encodeURIComponent(arguments[2].substr(index + 1));
+				if(Array.isArray(arguments[2])){
+					for(var k=0; k<arguments[2].length; ++k){
+						aURL += this.splitAndEncode(arguments[2][k]);
+					}
+				} else{
+					aURL += this.splitAndEncode(arguments[2]);
+				}
 			}
 		}
-		if (arguments.length > 3)
+		if (arguments.length > 3) {
 			for ( var i = 3; i < arguments.length; i++) {
-				var index = arguments[i].indexOf("=");
-				aURL += "&" + arguments[i].substring(0, index + 1)
-						+ encodeURIComponent(arguments[i].substr(index + 1));
+				if(Array.isArray(arguments[i])){
+					for(var k=0; k<arguments[i].length; ++k){
+						aURL += this.splitAndEncode(arguments[i][k]);
+					}
+				} else{
+					aURL += this.splitAndEncode(arguments[i]);
+				}
 			}
+		}
 		return this.submitHTTPRequest(realRespType, aURL, "GET", false);
 	};
 
 
+	// This function take a String in the form "name=value" and return "&name=encode(value)" or ""
+	this.splitAndEncode = function(valueString){
+		var index = valueString.indexOf("=");
+		var urlPart = "";
+		if(index>0){
+			urlPart = "&" + valueString.substring(0, index + 1)
+					+ encodeURIComponent(valueString.substr(index + 1));
+		}
+		return urlPart;
+	}
+	
 	this.submitHTTPRequest = function(respType, aURL, method, async, parameters) {
 		// Logger.debug("httpRequest: " + method + ": " + aURL + "| async:" + async + " parameters: " + parameters + " port: " + serverport);
 		Logger.debug(aURL);
@@ -163,7 +192,7 @@ HttpMgr = new function() {
 		httpReq.onerror = httpError;
 		// FINO QUI VECCHIO
 
-		Logger.debug("dopo l'assegnazione onerror");
+		//Logger.debug("dopo l'assegnazione onerror");
 
 		/*
 		 * httpReq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(); // QI the

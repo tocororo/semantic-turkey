@@ -2,6 +2,8 @@ Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/ResponseContentType.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "STRequests" ];
 
 var service = STRequests.SPARQL;
@@ -25,9 +27,10 @@ function resolveQuery(queryPar, languagePar, inferPar, mode) {
 	var inferPar = "infer=" + inferPar;
 	var respType = RespContType.json;
 	var modePar = typeof mode != "undefined" ? "mode=" + mode : "";
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	//var respType = RespContType.xml;
 	var resp=HttpMgr.POST(respType, serviceName, service.resolveQueryRequest, queryPar, languagePar, inferPar,
-			modePar);
+			modePar, contextAsArray);
 	resp.respType = respType;
 //	Ramon Orr� (2010): introduzione campo per memorizzare la serializzazione adottata
 	//service.serializationType=HttpMgr.serializationType;	
@@ -35,4 +38,12 @@ function resolveQuery(queryPar, languagePar, inferPar, mode) {
 }
 
 // SPARQL SERVICE INITIALIZATION
-service.resolveQuery = resolveQuery;
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.resolveQuery = resolveQuery;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

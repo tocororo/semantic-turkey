@@ -641,7 +641,7 @@ art_semanticturkey.rdfnodeBaseEventHandler = function(event){
 		text += "ARTBNode with"+
 			"\n\tid = "+rdfResource.getId();
 	}
-	alert("dentro rdfnodeBaseEventHandler : "+text); // da cancellare
+	//alert("dentro rdfnodeBaseEventHandler : "+text); // da cancellare
 }
 
 //NEW

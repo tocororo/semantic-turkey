@@ -3,6 +3,8 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Deserializer.jsm");	
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.Annotation;
@@ -20,7 +22,8 @@ function createAndAnnotate(clsQName, instanceQName, urlPage, title) {
 	var instanceQName = "instanceQName=" + instanceQName;
 	var urlPage = "urlPage=" + urlPage;
 	var title = "title=" + title;
-	var reply = HttpMgr.GET(serviceName, service.createAndAnnotateRequest, clsQName, instanceQName, urlPage, title);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reply = HttpMgr.GET(serviceName, service.createAndAnnotateRequest, clsQName, instanceQName, urlPage, title, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -45,7 +48,8 @@ function createFurtherAnnotation(instanceQName,text,urlPage,title) {
 	var text = "text=" + text;
 	var urlPage = "urlPage=" + urlPage;
 	var title = "title=" + title;
-	return HttpMgr.GET(serviceName, service.createFurtherAnnotationRequest, instanceQName, text, urlPage, title);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.createFurtherAnnotationRequest, instanceQName, text, urlPage, title, contextAsArray);
 }
 
 
@@ -126,6 +130,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 	var objectQName = "objectQName=" + objectQName;
 	var urlPage = "urlPage=" + urlPage;
 	var title = "title=" + title;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	if(typeof lexicalization != 'undefined'){
 		var op = "op=bindAnnot";
 		var lex = "lexicalization=" + lexicalization;
@@ -136,7 +141,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 	    		lex,
 	    		urlPage, 
 	    		title,
-	    		op);
+	    		op,
+	    		contextAsArray);
 	}else{
 		var op = "op=bindCreate";
 		if(lang != ""){
@@ -154,7 +160,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			title,
 		    			lang,
 		    			type,
-		    			op);
+		    			op,
+		    			contextAsArray);
 		    	}else{
 		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
@@ -164,7 +171,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			title,
 		    			lang,
 		    			type,
-		    			op);
+		    			op,
+		    			contextAsArray);
 		    	}
 	    	} else{
 		    	if(typeof objectClsName != 'undefined'){
@@ -177,7 +185,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			urlPage, 
 		    			title,
 		    			lang,
-		    			op);
+		    			op,
+		    			contextAsArray);
 		    	}else{
 		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
@@ -186,7 +195,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			urlPage, 
 		    			title,
 		    			lang,
-		    			op);
+		    			op,
+		    			contextAsArray);
 		    	}
 		    }
 		}else{
@@ -202,7 +212,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			urlPage, 
 		    			title,
 		    			type,
-		    			op);
+		    			op,
+		    			contextAsArray);
 		    	}else{
 		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
@@ -211,7 +222,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			urlPage, 
 		    			title,
 		    			type,
-		    			op);
+		    			op,contextAsArray);
 		    	}
     		} else{
 	    		if(typeof objectClsName != 'undefined'){
@@ -223,7 +234,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 	    				objectClsName, 
 	    				urlPage, 
 	    				title,
-	    				op);
+	    				op,
+	    				contextAsArray);
 		    	}else{
 		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
@@ -231,9 +243,10 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			objectQName,
 		    			urlPage, 
 		    			title,
-		    			op);
+		    			op,
+		    			contextAsArray);
 		    	}
-		    	}
+		    }
 		}
 	}
    }
@@ -247,7 +260,8 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
  */
 function chkAnnotation(urlPage) {
 	var urlPage="urlPage="+urlPage;
-	return HttpMgr.GET(serviceName, service.chkAnnotationsRequest,urlPage);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.chkAnnotationsRequest,urlPage,contextAsArray);
 }
 
  /** given page <code>urlPage</code>, this method tells if the page has topics
@@ -258,7 +272,8 @@ function chkAnnotation(urlPage) {
  */
 function chkBookmarks(urlPage) {
 	var urlPage="urlPage="+urlPage;
-	return HttpMgr.GET(serviceName, service.chkBookmarksRequest,urlPage);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.chkBookmarksRequest,urlPage,contextAsArray);
 }
 
 /**
@@ -270,7 +285,8 @@ function chkBookmarks(urlPage) {
  */
 function getPageAnnotations(urlPage) {
 	var urlPage="urlPage="+urlPage;
-	var reponseXML = HttpMgr.GET(serviceName, service.getPageAnnotationsRequest,urlPage);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reponseXML = HttpMgr.GET(serviceName, service.getPageAnnotationsRequest,urlPage,contextAsArray);
 	var annotations = [];
 	var annotationsXML = reponseXML.getElementsByTagName("Annotation");
 	
@@ -302,7 +318,8 @@ function addAnnotation(urlPage,instanceQName,text,title){
 	var instanceQName="instanceQName="+instanceQName;
 	var text="text="+text;
 	var title="title="+title;
-	return HttpMgr.GET(serviceName, service.addAnnotationRequest,urlPage,instanceQName,text,title);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.addAnnotationRequest,urlPage,instanceQName,text,title,contextAsArray);
 }
 
 /**
@@ -320,27 +337,28 @@ function bookmarkPage(urlPage, title, topics){
 	for (var i = 0 ; i < topics.length ; i++) {
 		topics_p += topics[i];
 	}
-	
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.bookmarkPageRequest,urlPage_p,title_p,topics_p));
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.bookmarkPageRequest,urlPage_p,title_p,topics_p,contextAsArray));
 }
 
 function getPageTopics(urlPage) {
 	var urlPage_p = "urlPage=" + urlPage;
-	
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getPageTopicsRequest,urlPage_p));
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getPageTopicsRequest,urlPage_p,contextAsArray));
 }
 
 function getBookmarksByTopic(topic) {
 	var topic_p = "topic=" + topic;
-	return HttpMgr.GET(serviceName, service.getBookmarksByTopicRequest,topic_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getBookmarksByTopicRequest,topic_p,contextAsArray);
 }
 
 function removeBookmark(urlPage, topic) {
 	var urlPage_p = "urlPage=" + urlPage;
 	var topic_p = "topic=" + topic;
 	
-	
-	var reply = HttpMgr.GET(serviceName, service.removeBookmarkRequest, urlPage_p, topic_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reply = HttpMgr.GET(serviceName, service.removeBookmarkRequest, urlPage_p, topic_p,contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("bookmarkRemoved", {
@@ -361,7 +379,8 @@ function removeBookmark(urlPage, topic) {
 function removeAnnotation(id) {
 	var id_p = "id=" + id;
 
-	var responseXML = HttpMgr.GET(serviceName, service.removeAnnotationRequest, id_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var responseXML = HttpMgr.GET(serviceName, service.removeAnnotationRequest, id_p,contextAsArray);
 	
 	if (!responseXML.isFail()) {
 		var annotation;
@@ -383,7 +402,8 @@ function removeAnnotation(id) {
 function getAnnotatedContentResources(resource) {
 	var resource_p = "resource=" + resource;
 
-	var responseXML = HttpMgr.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var responseXML = HttpMgr.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p,contextAsArray);
 	
 	var response = [];
 	
@@ -401,17 +421,26 @@ function getAnnotatedContentResources(resource) {
 }
 
 // Annotation SERVICE INITIALIZATION
-service.chkAnnotation = chkAnnotation;
-service.chkBookmarks = chkBookmarks;
-service.getPageAnnotations = getPageAnnotations;
-service.createAndAnnotate = createAndAnnotate;
-service.relateAndAnnotateBindAnnot = relateAndAnnotateBindAnnot;
-service.relateAndAnnotateBindCreate = relateAndAnnotateBindCreate;
-service.createFurtherAnnotation = createFurtherAnnotation;
-service.addAnnotation=addAnnotation;
-service.bookmarkPage=bookmarkPage;
-service.getPageTopics=getPageTopics;
-service.getBookmarksByTopic=getBookmarksByTopic;
-service.removeBookmark=removeBookmark;
-service.removeAnnotation = removeAnnotation;
-service.getAnnotatedContentResources = getAnnotatedContentResources;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.chkAnnotation = chkAnnotation;
+service.prototype.chkBookmarks = chkBookmarks;
+service.prototype.getPageAnnotations = getPageAnnotations;
+service.prototype.createAndAnnotate = createAndAnnotate;
+service.prototype.relateAndAnnotateBindAnnot = relateAndAnnotateBindAnnot;
+service.prototype.relateAndAnnotateBindCreate = relateAndAnnotateBindCreate;
+service.prototype.createFurtherAnnotation = createFurtherAnnotation;
+service.prototype.addAnnotation=addAnnotation;
+service.prototype.bookmarkPage=bookmarkPage;
+service.prototype.getPageTopics=getPageTopics;
+service.prototype.getBookmarksByTopic=getBookmarksByTopic;
+service.prototype.removeBookmark=removeBookmark;
+service.prototype.removeAnnotation = removeAnnotation;
+service.prototype.getAnnotatedContentResources = getAnnotatedContentResources;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

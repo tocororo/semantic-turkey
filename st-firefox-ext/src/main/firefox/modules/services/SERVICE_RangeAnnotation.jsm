@@ -3,6 +3,8 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Deserializer.jsm");	
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.RangeAnnotation;
@@ -17,7 +19,8 @@ var serviceName = service.serviceName;
  */
 function chkAnnotation(urlPage) {
 	var urlPage="urlPage="+urlPage;
-	return HttpMgr.GET(serviceName, service.chkAnnotationsRequest,urlPage);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.chkAnnotationsRequest,urlPage, contextAsArray);
 }
 
 /**
@@ -29,7 +32,8 @@ function chkAnnotation(urlPage) {
  */
 function getPageAnnotations(urlPage) {
 	var urlPage="urlPage="+urlPage;
-	var reponseXML = HttpMgr.GET(serviceName, service.getPageAnnotationsRequest,urlPage);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reponseXML = HttpMgr.GET(serviceName, service.getPageAnnotationsRequest,urlPage,contextAsArray);
 	var annotations = [];
 	var annotationsXML = reponseXML.getElementsByTagName("RangeAnnotation");
 	
@@ -65,9 +69,9 @@ function addAnnotation(resource, lexicalization, urlPage, title, range) {
 	var urlPage_p = "urlPage=" + urlPage;
 	var title_p = "title=" + title;
 	var range_p = "range=" + range;
-	
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	var responseXML = HttpMgr.GET(serviceName, service.addAnnotationRequest,resource_p, lexicalization_p,
-	   urlPage_p, title_p, range_p);
+	   urlPage_p, title_p, range_p, contextAsArray);
 
 	return responseXML;
 }
@@ -80,8 +84,8 @@ function addAnnotation(resource, lexicalization, urlPage, title, range) {
  */
 function deleteAnnotation(id) {
 	var id_p = "id=" + id;
-
-	var responseXML = HttpMgr.GET(serviceName, service.deleteAnnotationRequest, id_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var responseXML = HttpMgr.GET(serviceName, service.deleteAnnotationRequest, id_p, contextAsArray);
 	
 	if (!responseXML.isFail()) {
 		var annotation;
@@ -103,7 +107,9 @@ function deleteAnnotation(id) {
 function getAnnotatedContentResources(resource) {
 	var resource_p = "resource=" + resource;
 
-	var responseXML = HttpMgr.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var responseXML = HttpMgr.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p,
+			contextAsArray);
 	
 	var response = [];
 	
@@ -121,8 +127,17 @@ function getAnnotatedContentResources(resource) {
 }
 
 // Range Annotation SERVICE INITIALIZATION
-service.chkAnnotation = chkAnnotation;
-service.getPageAnnotations = getPageAnnotations;
-service.addAnnotation = addAnnotation;
-service.deleteAnnotation = deleteAnnotation;
-service.getAnnotatedContentResources = getAnnotatedContentResources;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.chkAnnotation = chkAnnotation;
+service.prototype.getPageAnnotations = getPageAnnotations;
+service.prototype.addAnnotation = addAnnotation;
+service.prototype.deleteAnnotation = deleteAnnotation;
+service.prototype.getAnnotatedContentResources = getAnnotatedContentResources;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

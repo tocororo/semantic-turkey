@@ -4,6 +4,7 @@ Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
+Components.utils.import("resource://stmodules/Context.jsm");
 
 art_semanticturkey.closeProject = function(){
 	try{
@@ -27,7 +28,20 @@ art_semanticturkey.closeProject = function(){
 				parentWindow.art_semanticturkey.save_project();
 		}
 		art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "nullProject", "nullModel");
-		var responseXML = art_semanticturkey.STRequests.Projects.closeProject();
+		
+		//TODO TEST TO ADD A SPECIFIED CONTEXT, DELETE THE FOLLOWINF LINES AND DECOMMENT THE OTHER LINES
+		//TODO REMOVES THIS LINES
+		var specifiedContext = new Context();
+		specifiedContext.createNewArrayForContext();
+		specifiedContext.addValue("primo", "first");
+		specifiedContext.addValue("secondo", "second");
+		var responseXML = art_semanticturkey.STRequests.Projects.getAPI(specifiedContext).closeProject();
+		
+		//TODO DECOMMENT THIS LINE
+		//var responseXML = art_semanticturkey.STRequests.Projects.closeProject();
+		
+		
+		
 		art_semanticturkey.closeProject_RESPONSE(responseXML, currentProectName);
 	}
 	catch (e) {
@@ -66,12 +80,14 @@ art_semanticturkey.getCurrentProject_RESPONSE = function(responseElement){
 //These two function send the events of project
 art_semanticturkey.projectOpened = function(newProjectName, type){
 	var projectInfo = new art_semanticturkey.projectOpenedClass(newProjectName, type);
+	Context.addValue("project", newProjectName); 
 	art_semanticturkey.evtMgr.fireEvent("projectOpened", projectInfo);
 };
 
 //These two function sends the events of project
 art_semanticturkey.projectClosed = function(oldProjectName){
 	var projectInfo = art_semanticturkey.projectClosedClass(oldProjectName);
+	Context.removeValue("project"); 
 	art_semanticturkey.evtMgr.fireEvent("projectClosed", projectInfo);
 };
 

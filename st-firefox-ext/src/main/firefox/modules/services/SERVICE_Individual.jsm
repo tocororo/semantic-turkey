@@ -3,6 +3,8 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Deserializer.jsm");	
 Components.utils.import("resource://stmodules/ARTResources.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.Individual;
@@ -24,7 +26,8 @@ var deleteServiceName = deleteService.serviceName;
 function getBookmarks(individualName) {
 	Logger.debug('[SERVICE_Individual.jsm] getBookmarks');
 	var individualName = "instanceName=" + individualName;
-	return HttpMgr.GET(pageServiceName, pageService.getBookmarksRequest, individualName);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(pageServiceName, pageService.getBookmarksRequest, individualName, contextAsArray);
 };
 
 /**
@@ -36,7 +39,8 @@ function getBookmarks(individualName) {
 function removeInstance(name) {
 	var myName = "name=" + name;
 	var myType = "type=Instance";
-	return Deserializer.createURI(HttpMgr.GET(deleteServiceName, deleteService.removeInstanceRequest, myName, myType));
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createURI(HttpMgr.GET(deleteServiceName, deleteService.removeInstanceRequest, myName, myType, contextAsArray));
 };
 
 /**
@@ -50,7 +54,8 @@ function removeInstance(name) {
 function getIndividualDescription(instanceQName, method) {
 	var instanceQName = "instanceQName=" + instanceQName;
 	var method = "method=" + method;
-	return HttpMgr.GET(serviceName, service.getIndividualDescriptionRequest, instanceQName, method);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getIndividualDescriptionRequest, instanceQName, method, contextAsArray);
 };
 
 /**
@@ -64,7 +69,8 @@ function getIndividualDescription(instanceQName, method) {
 function addType(indqname, typeqname) {
 	var indqname = "indqname=" + indqname;
 	var typeqname = "typeqname=" + typeqname;
-	var reply = HttpMgr.GET(serviceName, service.addTypeRequest, indqname, typeqname);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reply = HttpMgr.GET(serviceName, service.addTypeRequest, indqname, typeqname, contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -83,7 +89,8 @@ function addType(indqname, typeqname) {
 function removeType(indqname, typeqname) {
 	var indqname = "indqname=" + indqname;
 	var typeqname = "typeqname=" + typeqname;
-	var reply = HttpMgr.GET(serviceName, service.removeTypeRequest, indqname, typeqname);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reply = HttpMgr.GET(serviceName, service.removeTypeRequest, indqname, typeqname, contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -100,7 +107,8 @@ function removeType(indqname, typeqname) {
  */
 function get_directNamedTypes(indqname) {
 	var indqname = "indqname=" + indqname;
-	var reply = HttpMgr.GET(serviceName, service.get_directNamedTypesRequest, indqname);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reply = HttpMgr.GET(serviceName, service.get_directNamedTypesRequest, indqname, contextAsArray);
 	var resArray = new Array();
 	resArray["types"] = Deserializer.createRDFArray(reply.getElementsByTagName("Types")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -108,13 +116,40 @@ function get_directNamedTypes(indqname) {
 	//return Deserializer.createURI(HttpMgr.GET(serviceName, service.get_directNamedTypesRequest, indqname));
 };
 
-service.getIndividualDescription = getIndividualDescription;
-service.addType = addType;
-service.removeType = removeType;
-service.get_directNamedTypes = get_directNamedTypes;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.getIndividualDescription = getIndividualDescription;
+service.prototype.addType = addType;
+service.prototype.removeType = removeType;
+service.prototype.get_directNamedTypes = get_directNamedTypes;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;
 
 // Remove Individual SERVICE INITIALIZATION
-deleteService.removeInstance = removeInstance;
+//this return an implementation for Project with a specified context
+deleteService.prototype.getAPI = function(specifiedContext){
+	var newObj = new deleteService();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+deleteService.prototype.removeInstance = removeInstance;
+deleteService.prototype.context = new Context();  // set the default context
+deleteService.constructor = service;
+deleteService.__proto__ = service.prototype;
 
 // Page SERVICE INITIALIZATION
-pageService.getBookmarks = getBookmarks;
+//this return an implementation for Project with a specified context
+pageService.prototype.getAPI = function(specifiedContext){
+	var newObj = new pageService();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+pageService.prototype.getBookmarks = getBookmarks;
+pageService.prototype.context = new Context();  // set the default context
+pageService.constructor = service;
+pageService.__proto__ = service.prototype;

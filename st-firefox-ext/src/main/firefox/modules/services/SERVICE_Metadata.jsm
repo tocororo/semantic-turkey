@@ -1,6 +1,8 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.Metadata;
@@ -14,7 +16,8 @@ var serviceName = service.serviceName;
  * @return
  */
 function getOntologyDescription() {
-	return HttpMgr.GET(serviceName, service.getOntologyDescriptionRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getOntologyDescriptionRequest, contextAsArray);
 }
 
 /**
@@ -24,7 +27,8 @@ function getOntologyDescription() {
  * @return
  */
 function getBaseuri() {
-	return HttpMgr.GET(serviceName, service.getBaseuriRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getBaseuriRequest, contextAsArray);
 }
 
 /**
@@ -34,7 +38,8 @@ function getBaseuri() {
  * @return
  */
 function getDefaultNamespace() {
-	return HttpMgr.GET(serviceName, service.getDefaultNamespaceRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getDefaultNamespaceRequest, contextAsArray);
 }
 
 /**
@@ -45,7 +50,8 @@ function getDefaultNamespace() {
  * @return
  */
 function getImports() {
-	return HttpMgr.GET(serviceName, service.getImportsRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getImportsRequest, contextAsArray);
 }
 
 /**
@@ -58,7 +64,8 @@ function getImports() {
  * @return
  */
 function getNSPrefixMappings() {
-	return HttpMgr.GET(serviceName, service.getNSPrefixMappingsRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getNSPrefixMappingsRequest, contextAsArray);
 }
 
 /**
@@ -70,7 +77,8 @@ function getNSPrefixMappings() {
  * @return
  */
 function getNamedGraphs() {
-	return HttpMgr.GET(serviceName, service.getNamedGraphsRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.getNamedGraphsRequest, contextAsArray);
 }
 
 /**
@@ -84,7 +92,8 @@ function getNamedGraphs() {
 function setBaseuriDefNamespace(baseuri, namespace) {
 	var baseuri = "baseuri=" + baseuri;
 	var namespace = "namespace=" + namespace;
-	return HttpMgr.GET(serviceName, service.setBaseuriDefNamespaceRequest, baseuri, namespace);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.setBaseuriDefNamespaceRequest, baseuri, namespace, contextAsArray);
 }
 
 /**
@@ -96,7 +105,8 @@ function setBaseuriDefNamespace(baseuri, namespace) {
  */
 function setDefaultNamespace(namespace) {
 	var namespace = "namespace=" + namespace;
-	return HttpMgr.GET(serviceName, service.setDefaultNamespaceRequest, namespace);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.setDefaultNamespaceRequest, namespace, contextAsArray);
 }
 
 /**
@@ -108,7 +118,8 @@ function setDefaultNamespace(namespace) {
  */
 function setBaseuri(uri) {
 	var uri = "baseuri=" + uri;
-	return HttpMgr.GET(serviceName, service.setBaseuriRequest, uri);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.setBaseuriRequest, uri, contextAsArray);
 }
 
 /**
@@ -122,7 +133,8 @@ function setBaseuri(uri) {
 function setNSPrefixMapping(prefix, namespace) {
 	var prefix = "prefix=" + prefix;
 	var namespace = "namespace=" + namespace;
-	return HttpMgr.GET(serviceName, service.setNSPrefixMappingRequest, prefix, namespace);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.setNSPrefixMappingRequest, prefix, namespace, contextAsArray);
 }
 
 /**
@@ -134,7 +146,8 @@ function setNSPrefixMapping(prefix, namespace) {
  */
 function removeNSPrefixMapping(namespace) {
 	var namespace = "namespace=" + namespace;
-	return HttpMgr.GET(serviceName, service.removeNSPrefixMappingRequest, namespace);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.removeNSPrefixMappingRequest, namespace, contextAsArray);
 }
 
 /**
@@ -148,7 +161,8 @@ function removeNSPrefixMapping(namespace) {
 function changeNSPrefixMapping(prefix, namespace) {
 	var prefix = "prefix=" + prefix;
 	var namespace = "namespace=" + namespace;
-	return HttpMgr.GET(serviceName, service.changeNSPrefixMappingRequest, prefix, namespace);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.changeNSPrefixMappingRequest, prefix, namespace, contextAsArray);
 }
 
 /**
@@ -161,7 +175,8 @@ function changeNSPrefixMapping(prefix, namespace) {
  */
 function removeImport(baseuri) {
 	var baseuri = "baseuri=" + baseuri;
-	return HttpMgr.GET(serviceName, service.removeImportRequest, baseuri);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.removeImportRequest, baseuri, contextAsArray);
 }
 
 /**
@@ -179,9 +194,11 @@ function addFromWeb(baseuri, alturl) {
 	var baseuri = "baseuri=" + baseuri;
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
-		return HttpMgr.GET(serviceName, service.addFromWebRequest, baseuri, alturl);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.addFromWebRequest, baseuri, alturl, contextAsArray);
 	} else {
-		return HttpMgr.GET(serviceName, service.addFromWebRequest, baseuri);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.addFromWebRequest, baseuri, contextAsArray);
 	}
 }
 
@@ -203,9 +220,11 @@ function addFromWebToMirror(baseuri, mirrorFile, alturl) {
 	var mirrorFile = "mirrorFile=" + mirrorFile;
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
-		return HttpMgr.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, alturl);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
 	} else {
-		return HttpMgr.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
 	}
 }
 
@@ -225,7 +244,8 @@ function addFromLocalFile(baseuri, localFilePath, mirrorFile) {
 	var baseuri = "baseuri=" + baseuri;
 	var localFilePath = "localFilePath=" + localFilePath;
 	var mirrorFile = "mirrorFile=" + mirrorFile;
-	return HttpMgr.GET(serviceName, service.addFromLocalFileRequest, baseuri, localFilePath, mirrorFile);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.addFromLocalFileRequest, baseuri, localFilePath, mirrorFile, contextAsArray);
 }
 
 /**
@@ -240,7 +260,8 @@ function addFromLocalFile(baseuri, localFilePath, mirrorFile) {
 function addFromOntologyMirror(baseuri, mirrorFile) {
 	baseuri = "baseuri=" + baseuri;
 	mirrorFile = "mirrorFile=" + mirrorFile;
-	return HttpMgr.GET(serviceName, service.addFromOntologyMirrorRequest, baseuri, mirrorFile);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.addFromOntologyMirrorRequest, baseuri, mirrorFile, contextAsArray);
 }
 
 /**
@@ -259,9 +280,11 @@ function downloadFromWebToMirror(baseuri, mirrorFile, alturl) {
 	var mirrorFile = "mirrorFile=" + mirrorFile;
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
-		return HttpMgr.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, alturl);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
 	} else {
-		return HttpMgr.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
 	}
 }
 
@@ -279,9 +302,11 @@ function downloadFromWeb(baseuri, alturl) {
 	var baseuri = "baseuri=" + baseuri;
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
-		return HttpMgr.GET(serviceName, service.downloadFromWebRequest, baseuri, alturl);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.downloadFromWebRequest, baseuri, alturl, contextAsArray);
 	} else {
-		return HttpMgr.GET(serviceName, service.downloadFromWebRequest, baseuri);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.downloadFromWebRequest, baseuri, contextAsArray);
 	}
 }
 
@@ -303,10 +328,13 @@ function getFromLocalFile(baseuri, localFilePath, mirrorFile, alturl) {
 	var mirrorFile = "mirrorFile=" + mirrorFile;
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 		return HttpMgr.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile,
-				alturl);
+				alturl, contextAsArray);
 	} else {
-		return HttpMgr.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return HttpMgr.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile,
+				contextAsArray);
 	}
 }
 
@@ -321,29 +349,39 @@ function getFromLocalFile(baseuri, localFilePath, mirrorFile, alturl) {
 function mirrorOntology(baseuri, mirrorFile) {
 	baseuri = "baseuri=" + baseuri;
 	mirrorFile = "mirrorFile=" + mirrorFile;
-	return HttpMgr.GET(serviceName, service.mirrorOntologyRequest, baseuri, mirrorFile);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.mirrorOntologyRequest, baseuri, mirrorFile, contextAsArray);
 }
 
 
 // Annotation SERVICE INITIALIZATION
-service.getOntologyDescription = getOntologyDescription;
-service.getBaseuri = getBaseuri;
-service.getDefaultNamespace = getDefaultNamespace;
-service.getImports = getImports;
-service.getNSPrefixMappings = getNSPrefixMappings;
-service.setBaseuriDefNamespace = setBaseuriDefNamespace;
-service.setDefaultNamespace = setDefaultNamespace;
-service.setBaseuri = setBaseuri;
-service.setNSPrefixMapping = setNSPrefixMapping;
-service.removeNSPrefixMapping = removeNSPrefixMapping;
-service.changeNSPrefixMapping = changeNSPrefixMapping;
-service.removeImport = removeImport;
-service.addFromWeb = addFromWeb;
-service.addFromWebToMirror = addFromWebToMirror;
-service.addFromLocalFile = addFromLocalFile;
-service.addFromOntologyMirror = addFromOntologyMirror;
-service.downloadFromWebToMirror = downloadFromWebToMirror;
-service.downloadFromWeb = downloadFromWeb;
-service.getFromLocalFile = getFromLocalFile;
-service.mirrorOntology = mirrorOntology;
-service.getNamedGraphs = getNamedGraphs;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.getOntologyDescription = getOntologyDescription;
+service.prototype.getBaseuri = getBaseuri;
+service.prototype.getDefaultNamespace = getDefaultNamespace;
+service.prototype.getImports = getImports;
+service.prototype.getNSPrefixMappings = getNSPrefixMappings;
+service.prototype.setBaseuriDefNamespace = setBaseuriDefNamespace;
+service.prototype.setDefaultNamespace = setDefaultNamespace;
+service.prototype.setBaseuri = setBaseuri;
+service.prototype.setNSPrefixMapping = setNSPrefixMapping;
+service.prototype.removeNSPrefixMapping = removeNSPrefixMapping;
+service.prototype.changeNSPrefixMapping = changeNSPrefixMapping;
+service.prototype.removeImport = removeImport;
+service.prototype.addFromWeb = addFromWeb;
+service.prototype.addFromWebToMirror = addFromWebToMirror;
+service.prototype.addFromLocalFile = addFromLocalFile;
+service.prototype.addFromOntologyMirror = addFromOntologyMirror;
+service.prototype.downloadFromWebToMirror = downloadFromWebToMirror;
+service.prototype.downloadFromWeb = downloadFromWeb;
+service.prototype.getFromLocalFile = getFromLocalFile;
+service.prototype.mirrorOntology = mirrorOntology;
+service.prototype.getNamedGraphs = getNamedGraphs;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

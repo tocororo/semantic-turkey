@@ -894,9 +894,9 @@ var CodeMirror = (function() {
       tmpSbInner.style.height = "200px";
       tmpSb.appendChild(tmpSbInner);
 
-      document.body.appendChild(tmpSb);
+      //document.body.appendChild(tmpSb); // removed because there was some problem with the mac
       var result = (tmpSb.offsetWidth <= 1);
-      document.body.removeChild(tmpSb);
+      //document.body.removeChild(tmpSb); // removed because there was some problem with the mac
       return result;
     }
 

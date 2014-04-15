@@ -1,6 +1,8 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.SystemStart;
@@ -24,12 +26,13 @@ var serviceName = service.serviceName;
  */
 function start(baseuri, ontmanager) {
 	Logger.debug('[SERVICE_SystemStart.jsm] baseuri: ' + baseuri + '  | ontmanager: ' + ontmanager);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	if ((typeof baseuri != "undefined") && (typeof ontmanager != "undefined")) {
 		var baseuri = "baseuri=" + baseuri;
 		var ontmanager = "ontmanager=" + ontmanager;
-		return HttpMgr.GET(serviceName, service.startRequest, baseuri, ontmanager);
+		return HttpMgr.GET(serviceName, service.startRequest, baseuri, ontmanager, contextAsArray);
 	} else
-		return HttpMgr.GET(serviceName, service.startRequest);
+		return HttpMgr.GET(serviceName, service.startRequest, contextAsArray);
 }
 
 /**
@@ -41,9 +44,19 @@ function start(baseuri, ontmanager) {
  */
 function listOntManagers() {
 	Logger.debug('[SERVICE_SystemStart.jsm] listOntManager');
-	return HttpMgr.GET(serviceName, service.listTripleStoresRequest);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return HttpMgr.GET(serviceName, service.listTripleStoresRequest, contextAsArray);
 }
 
 // SystemStart SERVICE INITIALIZATION
-service.start = start;
-service.listOntManagers = listOntManagers;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.start = start;
+service.prototype.listOntManagers = listOntManagers;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

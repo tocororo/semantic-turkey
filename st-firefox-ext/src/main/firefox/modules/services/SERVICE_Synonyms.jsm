@@ -1,6 +1,8 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 
+Components.utils.import("resource://stmodules/Context.jsm");
+
 EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
 
 var service = STRequests.Synonyms;
@@ -21,9 +23,19 @@ function addSynonyms(resourceName,language,synonym) {
 		var resourceName ="name="+resourceName;
 		var synonym ="synonym="+synonym;
 		var language ="language="+language;
-		HttpMgr.GET(serviceName, service.addSynonymsRequest,resourceName,synonym,language);
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		HttpMgr.GET(serviceName, service.addSynonymsRequest,resourceName,synonym,language, contextAsArray);
 	}
 
 
 //Synonym SERVICE INITIALIZATION
-service.addSynonyms = addSynonyms;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.addSynonyms = addSynonyms;
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;

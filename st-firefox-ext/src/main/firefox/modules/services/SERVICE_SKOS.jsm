@@ -4,6 +4,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 Components.utils.import("resource://stmodules/Deserializer.jsm");	
 Components.utils.import("resource://stmodules/ARTResources.jsm");
 				
+Components.utils.import("resource://stmodules/Context.jsm");
 
 EXPORTED_SYMBOLS = [ "STRequests" ];
 
@@ -23,7 +24,9 @@ function getTopConcepts(scheme,lang) {
 	var scheme_p = scheme == null ? "" : "scheme=" + scheme;
 	var language_p = lang != null ? "lang=" + lang : "";
 
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getTopConceptsRequest,scheme_p,language_p));
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getTopConceptsRequest,scheme_p,
+			language_p, contextAsArray));
 }
 
 /**
@@ -41,8 +44,10 @@ function getNarrowerConcepts(concept, scheme, lang) {
 	var scheme_p = scheme == null ? "" : "scheme=" + scheme;
 	var treeView_p ="treeView=true";
 	var language_p = lang != null ? "lang=" + lang : "";
-
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getNarrowerConceptsRequest,concept_p, scheme_p, treeView_p, language_p));
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getNarrowerConceptsRequest,concept_p, 
+			scheme_p, treeView_p, language_p, contextAsArray));
 }
 
 /**
@@ -55,39 +60,47 @@ function getNarrowerConcepts(concept, scheme, lang) {
 function getAllSchemesList(lang) {
 	Logger.debug('[SERVICE_SKOS.jsm] getAllSchemesList');
 	var language_p = lang != null ? "lang=" + lang : "";
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getAllSchemesListRequest, language_p));
+	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getAllSchemesListRequest, language_p,
+			contextAsArray));
 }
 
 function getConceptDescription(concept, method) {
 	Logger.debug('[SERVICE_SKOS.jsm] getConceptDescription');
 	var concept_p = "concept=" + concept;
 	var method_p = "method=" + method;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return HttpMgr.GET(serviceName, service.getConceptDescriptionRequest,concept_p, method_p);	
+	return HttpMgr.GET(serviceName, service.getConceptDescriptionRequest,concept_p, method_p, contextAsArray);	
 }
 
 function getConceptSchemeDescription(scheme) {
 	Logger.debug('[SERVICE_SKOS.jsm] getConceptSchemeDescription');
 	var scheme_p = "scheme=" + scheme;
 	var method_p = "method=" + "templateandvalued";
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return HttpMgr.GET(serviceName, service.getConceptSchemeDescriptionRequest,scheme_p, method_p);	
+	return HttpMgr.GET(serviceName, service.getConceptSchemeDescriptionRequest,scheme_p, method_p, 
+			contextAsArray);	
 }
 
 function getPrefLabel(concept, lang) {
 	Logger.debug('[SERVICE_SKOS.jsm] getPrefLabel');
 	var concept_p = "concept=" + concept;
 	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return HttpMgr.GET(serviceName, service.getPrefLabelRequest,concept_p, lang_p);	
+	return HttpMgr.GET(serviceName, service.getPrefLabelRequest,concept_p, lang_p, contextAsArray);	
 }
 
 function addBroaderConcept(concept, broaderConcept) {
 	var concept_p = "concept=" + concept;
 	var broaderConcept_p = "broaderConcept=" + broaderConcept;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.addBroaderConceptRequest, concept_p, broaderConcept_p);
+	var reply = HttpMgr.GET(serviceName, service.addBroaderConceptRequest, concept_p, broaderConcept_p,
+			contextAsArray);
 
 	if (!reply.isFail()) {
 		var conceptResource = Deserializer.createRDFResource(reply.getElementsByTagName("data")[0].children[0]);
@@ -104,8 +117,9 @@ function addBroaderConcept(concept, broaderConcept) {
 function addTopConcept(scheme, concept) {
 	var scheme_p = "scheme=" + scheme;
 	var concept_p = "concept=" + concept;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.addTopConceptRequest, scheme_p, concept_p);
+	var reply = HttpMgr.GET(serviceName, service.addTopConceptRequest, scheme_p, concept_p, contextAsArray);
 
 	if (!reply.isFail()) {
 		var topConcept = Deserializer.createRDFResource(reply.getElementsByTagName("data")[0].children[0]);
@@ -122,8 +136,10 @@ function setPrefLabel(concept, label, lang) {
 	var concept_p = "concept=" + concept;
 	var label_p = "label=" + label;
 	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.setPrefLabelRequest, concept_p, label_p, lang_p);
+	var reply = HttpMgr.GET(serviceName, service.setPrefLabelRequest, concept_p, label_p, lang_p, 
+			contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosPrefLabelSet", {
@@ -139,8 +155,9 @@ function setPrefLabel(concept, label, lang) {
 function removeTopConcept(scheme, concept) {
 	var scheme_p = "scheme=" + scheme;
 	var concept_p = "concept=" + concept;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.removeTopConceptRequest, scheme_p, concept_p);
+	var reply = HttpMgr.GET(serviceName, service.removeTopConceptRequest, scheme_p, concept_p, contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosTopConceptRemoved", {
@@ -169,9 +186,11 @@ function createConcept(concept, broaderConcept, scheme, prefLabel, prefLabelLang
 	var scheme_p = "scheme=" + scheme;
 	var prefLabel_p = prefLabel != null ? "prefLabel=" + prefLabel : "";
 	var prefLabelLanguage_p = prefLabelLanguage != null ? "prefLabelLang=" + prefLabelLanguage : "";
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	var language_p = language != null ? "lang=" + language : "";
 	
-	var reply = HttpMgr.GET(serviceName, service.createConceptRequest, concept_p, broaderConcept_p, scheme_p, prefLabel_p, prefLabelLanguage_p, language_p);
+	var reply = HttpMgr.GET(serviceName, service.createConceptRequest, concept_p, broaderConcept_p, scheme_p, 
+			prefLabel_p, prefLabelLanguage_p, language_p, contextAsArray);
 
 	var uriValue = Deserializer.createURI(reply);
 	
@@ -203,8 +222,10 @@ function createScheme(scheme, prefLabel, prefLabelLanguage, language) {
 	var prefLabel_p = prefLabel != null ? "prefLabel=" + prefLabel : "";
 	var prefLabelLanguage_p = prefLabelLanguage != null ? "prefLabelLang=" + prefLabelLanguage : "";
 	var language_p = language != null ? "lang=" + language : "";
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.createSchemeRequest,scheme_p, prefLabel_p,prefLabelLanguage_p, language_p);
+	var reply = HttpMgr.GET(serviceName, service.createSchemeRequest,scheme_p, prefLabel_p,
+			prefLabelLanguage_p, language_p, contextAsArray);
 	
 	var uriValue = Deserializer.createURI(reply);
 	
@@ -230,8 +251,9 @@ function createScheme(scheme, prefLabel, prefLabelLanguage, language) {
 function deleteConcept(concept) {
 	Logger.debug('[SERVICE_SKOS.jsm] deleteConcept');
 	var concept_p = "concept=" + concept;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.deleteConceptRequest, concept_p);
+	var reply = HttpMgr.GET(serviceName, service.deleteConceptRequest, concept_p, contextAsArray);
 	
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosConceptRemoved", {
@@ -247,7 +269,8 @@ function deleteConcept(concept) {
  * 
  * @member STRequests.SKOS
  * @param scheme the scheme QName
- * @param forceDeleteDanglingConcepts indicates whether or not delete the dangling concepts. If this argument is omitted and the scheme is not empty, then the operation will fail.
+ * @param forceDeleteDanglingConcepts indicates whether or not delete the dangling concepts. If this argument 
+ * is omitted and the scheme is not empty, then the operation will fail.
  * @return
  */
 function deleteScheme(scheme, forceDeleteDanglingConcepts) {
@@ -256,9 +279,12 @@ function deleteScheme(scheme, forceDeleteDanglingConcepts) {
 	
 	var scheme_p = "scheme=" + scheme;
 	var setForceDeleteDanglingConcepts_p = "setForceDeleteDanglingConcepts=" + setForceDeleteDanglingConcepts;
-	var forceDeleteDanglingConcepts_p = setForceDeleteDanglingConcepts ? "forceDeleteDanglingConcepts=" + forceDeleteDanglingConcepts : ""; 
+	var forceDeleteDanglingConcepts_p = setForceDeleteDanglingConcepts ? "forceDeleteDanglingConcepts=" + 
+			forceDeleteDanglingConcepts : ""; 
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.deleteSchemeRequest, scheme_p, setForceDeleteDanglingConcepts_p, forceDeleteDanglingConcepts_p);
+	var reply = HttpMgr.GET(serviceName, service.deleteSchemeRequest, scheme_p, 
+			setForceDeleteDanglingConcepts_p, forceDeleteDanglingConcepts_p, contextAsArray);
 	
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosSchemeRemoved", {
@@ -273,8 +299,10 @@ function deleteScheme(scheme, forceDeleteDanglingConcepts) {
 function removeBroaderConcept(concept, broaderConcept) {
 	var concept_p = "concept=" + concept;
 	var broaderConcept_p = "broaderConcept=" + broaderConcept;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.removeBroaderConceptRequest, concept_p, broaderConcept_p);
+	var reply = HttpMgr.GET(serviceName, service.removeBroaderConceptRequest, concept_p, broaderConcept_p, 
+			contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosBroaderConceptRemoved", {
@@ -290,8 +318,10 @@ function removePrefLabel(concept, label, lang) {
 	var concept_p = "concept=" + concept;
 	var label_p = "label=" + label;
 	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.removePrefLabelRequest, concept_p, label_p, lang_p);
+	var reply = HttpMgr.GET(serviceName, service.removePrefLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosPrefLabelRemoved", {
@@ -307,33 +337,44 @@ function removePrefLabel(concept, label, lang) {
 function getShow(resourceName, language) {
 	var resourceName_p = "resourceName=" + resourceName;
 	var language_p = language != null ? "lang=" + language : "";	
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.getShowRequest, resourceName_p, language_p);
+	var reply = HttpMgr.GET(serviceName, service.getShowRequest, resourceName_p, language_p, contextAsArray);
 	
 	return reply.getElementsByTagName("show")[0].getAttribute("value");
 }
 
 
 // SKOS SERVICE INITIALIZATION
-service.getTopConcepts = getTopConcepts;
-service.getAllSchemesList = getAllSchemesList;
-service.getNarrowerConcepts = getNarrowerConcepts;
-service.getConceptDescription = getConceptDescription;
-service.getConceptSchemeDescription = getConceptSchemeDescription;
-service.getPrefLabel = getPrefLabel;
-service.getShow = getShow;
+//this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+service.prototype.getTopConcepts = getTopConcepts;
+service.prototype.getAllSchemesList = getAllSchemesList;
+service.prototype.getNarrowerConcepts = getNarrowerConcepts;
+service.prototype.getConceptDescription = getConceptDescription;
+service.prototype.getConceptSchemeDescription = getConceptSchemeDescription;
+service.prototype.getPrefLabel = getPrefLabel;
+service.prototype.getShow = getShow;
 
-service.addBroaderConcept = addBroaderConcept;
-service.addTopConcept = addTopConcept;
+service.prototype.addBroaderConcept = addBroaderConcept;
+service.prototype.addTopConcept = addTopConcept;
 
-service.setPrefLabel = setPrefLabel;
+service.prototype.setPrefLabel = setPrefLabel;
 
-service.createConcept = createConcept;
-service.createScheme = createScheme;
+service.prototype.createConcept = createConcept;
+service.prototype.createScheme = createScheme;
 
-service.deleteConcept = deleteConcept;
-service.deleteScheme = deleteScheme;
+service.prototype.deleteConcept = deleteConcept;
+service.prototype.deleteScheme = deleteScheme;
 
-service.removeBroaderConcept = removeBroaderConcept;
-service.removeTopConcept = removeTopConcept;
-service.removePrefLabel = removePrefLabel;
+service.prototype.removeBroaderConcept = removeBroaderConcept;
+service.prototype.removeTopConcept = removeTopConcept;
+service.prototype.removePrefLabel = removePrefLabel;
+
+service.prototype.context = new Context();  // set the default context
+service.constructor = service;
+service.__proto__ = service.prototype;
