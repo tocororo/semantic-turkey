@@ -21,7 +21,7 @@ var serviceName = service.serviceName;
 function setAdminLevel(adminLevel) {
 	var adminLevel = "adminLevel=" + adminLevel;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.setAdminLevelRequest, adminLevelm contextAsArray);
+	return HttpMgr.GET(serviceName, service.setAdminLevelRequest, adminLevel, contextAsArray);
 }
 
 /**
