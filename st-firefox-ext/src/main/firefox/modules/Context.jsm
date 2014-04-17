@@ -13,6 +13,15 @@ function getContextValuesForHTTPGetAsArray(){
 	return contexAsArray;
 }
 
+function getContextValuesAsString(){
+	var contexString = "";
+	var i=0;
+	for (var name in this.valuesArray) {
+		contexString +=name+"="+this.valuesArray[name]+";";
+	}
+	return contexString;
+}
+
 
 function createNewArrayForContext(){
 	this.valuesArray = new Array();
@@ -38,6 +47,7 @@ function clearValues(){
 }
 
 Context.prototype.getContextValuesForHTTPGetAsArray = getContextValuesForHTTPGetAsArray;
+Context.prototype.getContextValuesAsString = getContextValuesAsString;
 Context.prototype.createNewArrayForContext = createNewArrayForContext;
 Context.prototype.addValue = addValue;
 Context.prototype.removeValue = removeValue;

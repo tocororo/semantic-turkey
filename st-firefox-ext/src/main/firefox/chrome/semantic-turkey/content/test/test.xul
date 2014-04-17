@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<!--  /*
+	  * The contents of this file are subject to the Mozilla Public License
+	  * Version 1.1 (the "License");  you may not use this file except in compliance
+	  * with the License.  You may obtain a copy of the License at
+	  * http://www.mozilla.org/MPL/
+	  *
+	  * Software distributed under the License is distributed on an "AS IS" basis,
+	  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+	  * the specific language governing rights and limitations under the License.
+	  *
+	  * The Original Code is SemanticTurkey.
+	  *
+	  * The Initial Developer of the Original Code is University of Roma Tor Vergata.
+	  * Portions created by University of Roma Tor Vergata are Copyright (C) 2007.
+	  * All Rights Reserved.
+	  *
+	  * SemanticTurkey was developed by the Artificial Intelligence Research Group
+	  * (art.uniroma2.it) at the University of Roma Tor Vergata (ART)
+	  * Current information about SemanticTurkey can be obtained at 
+	  * http://semanticturkey.uniroma2.it
+	  *
+	  */ -->
+
+<!-- chrome://semantic-turkey/content/test/test.xul -->
+
+<window id="TestWindow" title="Test Window" flex="1"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	
+	xmlns:html="http://www.w3.org/1999/xhtml"
+	>
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/test.js"/>
+		
+	
+	<label value="Page to test the context clien side (an ad-hoc fake modules has been developed: test/Test)" id="mainTitle"/>
+
+	<vbox>
+		<separator class="groove"/>
+		
+		<hbox flex="1">
+			<label value="default context: "></label>
+			<textbox value="" id="defaulContextTextBox" size="200"/>
+		</hbox>
+		
+		<separator class="groove"/>
+		
+		<hbox flex="1">
+			<label value="used context: "></label>
+			<textbox value="" id="usedContextTextBox" size="200"/>
+		</hbox>
+		
+		<separator class="groove"/>
+		
+		<hbox flex="1">
+			<button id="testButton1" label="Use default context" width="500"/>
+		</hbox>
+		
+		<separator class="groove"/>
+		
+		<hbox flex="1">
+			<label value="name:"/>
+			<textbox value="defNewName1" id="nameForContext1" />
+			<label value="value:"/>
+			<textbox value="defNewValue1" id="valueForContext1" />
+			<button id="testButton2" label="[1] Create a new context, create an instance of Test with it and use it" width="500"/>
+			<button id="testButton3" label="Use the specific context created by [1]" width="500"/>
+		</hbox>
+		
+		<separator class="groove"/>
+		
+		<hbox flex="1">
+		<label value="name:"/>
+			<textbox value="defNewName2" id="nameForContext2" />
+			<label value="value:"/>
+			<textbox value="defNewValue2" id="valueForContext2" />
+			<button id="testButton4" label="[2] Create a new context, create an instance of Test with it and use it" width="500"/>
+			<button id="testButton5" label="Use the specific context created by [2]" width="500"/>
+		</hbox>
+		
+	</vbox>
+</window>
