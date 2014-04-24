@@ -544,7 +544,6 @@ public class ProjectManager {
 			return new File(Resources.getProjectsDir(), projectName);
 	}
 
-
 	public static void exportProject(String projectName, File semTurkeyProjectFile) throws IOException,
 			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
 
@@ -1035,12 +1034,23 @@ public class ProjectManager {
 		return new AccessResponse(true);
 	}
 
-	/*
-	 * public static <MODELTYPE extends RDFModel> Project<MODELTYPE> accessProject(String projectName,
-	 * Class<MODELTYPE> modelType, String baseURI, String ontManagerFactoryID, String modelConfigurationClass,
-	 * Properties modelConfiguration)
+	/**
+	 * {@link ProjectConsumer}s may request access to a project through this method. The
+	 * {@link ProjectManager} verifies that the access can be granted to the requesting consumer, and in
+	 * affirmative case handles all the necessary operations (verifying that the project is open, or opening
+	 * it in negative case and adding it to the list of open projects, making its data available) to make the
+	 * project available to the consumer.
+	 * 
+	 * @param consumer
+	 * @param projectName
+	 * @param requestedAccessLevel
+	 * @param requestedLockLevel
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ForbiddenProjectAccessException
 	 */
-
 	public static Project<? extends RDFModel> accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
@@ -1079,6 +1089,16 @@ public class ProjectManager {
 
 	}
 
+	/**
+	 * this method allows {@link ProjectConsumer} <code>consumer</code> to be disconnected from the
+	 * {@link Project} identified by <code>projectName</code>.<br/>
+	 * If the consumer is {@link ProjectConsumer#SYSTEM}, then <code>projectName</code> is disconnected in
+	 * turn from the projects it consumes.
+	 * 
+	 * @param consumer
+	 * @param projectName
+	 * @throws ModelUpdateException
+	 */
 	public static void disconnectFromProject(ProjectConsumer consumer, String projectName)
 			throws ModelUpdateException {
 
@@ -1111,15 +1131,12 @@ public class ProjectManager {
 		return openProjects.isOpen(project);
 	}
 
-	
 	private static void tearDownProject(Project<?> project) throws ModelUpdateException {
 		logger.debug("closing project: " + project);
 		project.getOntModel().close();
 		openProjects.removeProject(project);
 	}
 
-	
-	
 	/**
 	 * This private class holds the information related to projects open at runtime <br/>
 	 * the methods in this class should be available from the outer class {@link ProjectManager}<br/>

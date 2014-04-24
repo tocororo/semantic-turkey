@@ -120,6 +120,9 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
+	 * see
+	 * {@link ProjectManager#accessProject(ProjectConsumer, String, it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel, it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel)}
+	 * 
 	 * @param consumer
 	 * @param projectName
 	 * @param requestedAccessLevel
@@ -139,6 +142,13 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 	}
 
+	/**
+	 * see {@link ProjectManager#disconnectFromProject(ProjectConsumer, String)}
+	 * 
+	 * @param consumer
+	 * @param projectName
+	 * @throws ModelUpdateException
+	 */
 	@GenerateSTServiceController
 	public void disconnectFromProject(ProjectConsumer consumer, String projectName)
 			throws ModelUpdateException {
@@ -325,7 +335,8 @@ public class Projects extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	public Response getProjectProperty(String projectName, String propNameList)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException {
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
 
 		String[] propNames = propNameList.split(";");
 		String[] propValues = new String[propNames.length];
@@ -345,7 +356,6 @@ public class Projects extends STServiceAdapter {
 
 		return resp;
 	}
-
 
 	/**
 	 * This service sets the value of a property of the current project.
