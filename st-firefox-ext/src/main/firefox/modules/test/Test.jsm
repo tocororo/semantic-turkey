@@ -32,12 +32,21 @@ function fakeRequest(){
 	Logger.debug('[Test.jsm] fakeRequest, context: '+this.context.getContextValuesAsString());
 }
 
+function fakeRequest2(){
+	Logger.debug("[Test.jsm] fakeRequest, context: "+
+			"ctx_project="+this.context.getProject()+
+			"&ctx_wGraph="+this.context.getWGpragh()+
+			"&"+this.context.getContextValuesAsString());
+	//Logger.debug('[Test.jsm] fakeRequest, context: '+this.context.getContextValuesAsString());
+}
+
 Test.prototype.getAPI = function(specifiedContext){
 	var newObj = new Test();
 	newObj.context = specifiedContext;
 	return newObj;
 }
 Test.prototype.fakeRequest = fakeRequest;
+Test.prototype.fakeRequest2 = fakeRequest2;
 Test.prototype.context = new Context();  // set the default context
 Test.constructor = Test;
 Test.__proto__ = Test.prototype;

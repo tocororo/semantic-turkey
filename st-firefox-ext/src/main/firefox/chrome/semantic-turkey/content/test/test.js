@@ -4,7 +4,7 @@ if (typeof art_semanticturkey == 'undefined')
 
 Components.utils.import("resource://stmodules/test/Test.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Context.jsm", art_semanticturkey);
-Components.utils.import("resource://stmodules/Logger.jsm");
+Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
 
 window.onload = function() {
@@ -25,10 +25,25 @@ window.onload = function() {
 	document.getElementById("testButton5").addEventListener("command",
 			art_semanticturkey.getNewContext2, true);
 	
+	document.getElementById("testButton6").addEventListener("command",
+			art_semanticturkey.setNewContext3, true);
+	document.getElementById("testButton7").addEventListener("command",
+			art_semanticturkey.getNewContext3, true);
+	
 }
 
 art_semanticturkey.getDefaultContext = function(){
 	var defaultContext = art_semanticturkey.Test.context;
+	
+	
+	//for a test, try to change the dafault context
+	//art_semanticturkey.Logger.debug("PRE defaultContext.getProject() = "+defaultContext.getProject());
+	//defaultContext.setProject("progettoProva");
+	//defaultContext.setWGraph("grafoProva");
+	//defaultContext.addValue("pippo","paperino");
+	//art_semanticturkey.Logger.debug("POST defaultContext.getProject() = "+defaultContext.getProject());
+	// end of the test
+	
 	art_semanticturkey.writeContext(defaultContext, defaultContext);
 	
 	art_semanticturkey.Test.fakeRequest();
@@ -89,7 +104,35 @@ art_semanticturkey.getNewContext2 = function(){
 }
 
 
+art_semanticturkey.setNewContext3 = function(){
+	var defaultContext = art_semanticturkey.Test.context;
+	
+	var specifiedContext = new art_semanticturkey.Context();
+	specifiedContext.createNewArrayForContext();
+	var nameForProject3 = document.getElementById("nameForProject3").value;
+	var valueForWGraph3 = document.getElementById("valueForWGraph3").value;
+	specifiedContext.setProject(nameForProject3);
+	specifiedContext.setWGraph(valueForWGraph3);
+	specifiedContext.addValue("pippo","paperino");
+	
+	art_semanticturkey.newServiceInstance3 = art_semanticturkey.Test.getAPI(specifiedContext);
+	art_semanticturkey.writeContext(defaultContext, specifiedContext);
+	
+	art_semanticturkey.newServiceInstance3.fakeRequest2();
+}
 
+art_semanticturkey.getNewContext3 = function(){
+	var defaultContext = art_semanticturkey.Test.context;
+	
+	var specifiedContext = art_semanticturkey.newServiceInstance3.context;
+	
+	art_semanticturkey.writeContext(defaultContext, specifiedContext);
+	
+	art_semanticturkey.newServiceInstance3.fakeRequest2();
+}
+
+
+/***************************************************************/
 
 
 

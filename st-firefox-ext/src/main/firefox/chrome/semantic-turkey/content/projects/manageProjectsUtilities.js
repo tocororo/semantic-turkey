@@ -80,7 +80,8 @@ art_semanticturkey.getCurrentProject_RESPONSE = function(responseElement){
 //These two function send the events of project
 art_semanticturkey.projectOpened = function(newProjectName, type){
 	var projectInfo = new art_semanticturkey.projectOpenedClass(newProjectName, type);
-	Context.addValue("project", newProjectName); 
+	//Context.addValue("project", newProjectName); 
+	Context.setProject(newProjectName); 
 	art_semanticturkey.evtMgr.fireEvent("projectOpened", projectInfo);
 };
 
