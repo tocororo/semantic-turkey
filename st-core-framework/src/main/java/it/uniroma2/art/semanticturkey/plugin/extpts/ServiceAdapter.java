@@ -39,7 +39,6 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
@@ -311,11 +310,11 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	}
 
 	protected ARTResource getWorkingGraph() throws ModelAccessException, NonExistingRDFResourceException {
-		return NodeFilters.MAINGRAPH;
+		return serviceContext.getWGraph();
 	}
 
 	protected ARTResource[] getUserNamedGraphs() throws ModelAccessException, NonExistingRDFResourceException {
-		return userGraphs;
+		return serviceContext.getRGraphs();
 	}
 
 	protected ARTResourceIterator listNamedGraphs() throws ModelAccessException,

@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.converters;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
@@ -18,6 +19,9 @@ public class StringToARTResourceConverter implements Converter<String, ARTResour
 	public ARTResource convert(String NTTerm) {
 		RDFModel model = serviceContext.getProject().getOntModel();
 		try {
+			if (NTTerm.equals("ANY")) return NodeFilters.ANY;
+			if (NTTerm.equals("DEFAULT")) return NodeFilters.MAINGRAPH;
+			
 			return RDFNodeSerializer.createResource(model, NTTerm);
 		} catch (ModelAccessException e) {
 			throw new RuntimeException(e);
