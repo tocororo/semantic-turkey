@@ -2,6 +2,9 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 
 EXPORTED_SYMBOLS = [ "Context"];
 
+const HTTP_PARAM_PREFIX = "ctx_";
+const ARRAY_SEPARATOR = ",";
+
 function Context() {
 	//var project;
 	//var wGraph;
@@ -11,6 +14,7 @@ function Context() {
 function getContextValuesForHTTPGetAsArray(){
 	var contexAsArray = new Array();
 	var i=0;
+	var separatorRGraphs=","; // to separete the elements of the array rGraphs 
 	
 	//first of all take the context, wgraph e rgraph. If they are not present, 
 	// try using these values from the default context
@@ -20,13 +24,13 @@ function getContextValuesForHTTPGetAsArray(){
 	if(typeof project == 'undefined' || project == "")
 		project = Context.getProject();
 	if(typeof project != 'undefined' && project != "")
-		contexAsArray[i++] ="ctx_project="+project;
+		contexAsArray[i++] = HTTP_PARAM_PREFIX + "project=" + project;
 	
 	var wGraph = this.getWGpragh();
 	if(typeof wGraph == 'undefined' || wGraph == "")
 		wGraph = Context.getWGpragh();
 	if(typeof wGraph != 'undefined' && wGraph != "")
-		contexAsArray[i++] ="ctx_wgraph="+wGraph;
+		contexAsArray[i++] = HTTP_PARAM_PREFIX + "wgraph=" + wGraph;
 	
 	var rGraphs = this.getRGraphs();
 	var rGraphsAsString="";
@@ -34,14 +38,16 @@ function getContextValuesForHTTPGetAsArray(){
 		rGraphs = Context.getRGraphs();
 	if(typeof rGraphs != 'undefined' && rGraphs.length != 0){
 		for (var i=0; i<rGraphs.length ; ++i) {
+			if(i!=0)
+				rGraphsAsString+=separatorRGraphs;
 			rGraphsAsString+=rGraphs[i]
 		}
-		contexAsArray[i++] ="ctx_rgraph="+rGraphsAsString;
+		contexAsArray[i++] = HTTP_PARAM_PREFIX + "rgraph=" + rGraphsAsString;
 	}
 	
 	//now use all the other values from the associative array
 	for (var name in this.valuesArray) {
-		contexAsArray[i++] ="ctx_"+name+"="+this.valuesArray[name];
+		contexAsArray[i++] = HTTP_PARAM_PREFIX + name + "=" + this.valuesArray[name];
 	}
 	return contexAsArray;
 }
@@ -104,8 +110,8 @@ function getRGraphs(){
 	return this.rGraphs;
 }
 
-function setRGraphs(rGraphsName){
-	this.rGraphs = rGraphsName;
+function setRGraphs(rGraphsArray){
+	this.rGraphs = rGraphsArray;
 }
 
 //TODO test it

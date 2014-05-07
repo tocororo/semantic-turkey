@@ -110,10 +110,20 @@ art_semanticturkey.setNewContext3 = function(){
 	var specifiedContext = new art_semanticturkey.Context();
 	specifiedContext.createNewArrayForContext();
 	var nameForProject3 = document.getElementById("nameForProject3").value;
+	//take the value for the wGraph
 	var valueForWGraph3 = document.getElementById("valueForWGraph3").value;
 	specifiedContext.setProject(nameForProject3);
 	specifiedContext.setWGraph(valueForWGraph3);
 	specifiedContext.addValue("pippo","paperino");
+	//take the value(s) for the rGraphs
+	var rGraphsArray = new Array();
+	var count = 0;
+	for(var i=1; i<4; ++i){
+		var valueForRGraph31 = document.getElementById("valueForRGraph3"+i).value;
+		if(valueForRGraph31 != "")
+			rGraphsArray[count++] = valueForRGraph31;
+	}
+	specifiedContext.setRGraphs(rGraphsArray);
 	
 	art_semanticturkey.newServiceInstance3 = art_semanticturkey.Test.getAPI(specifiedContext);
 	art_semanticturkey.writeContext(defaultContext, specifiedContext);
