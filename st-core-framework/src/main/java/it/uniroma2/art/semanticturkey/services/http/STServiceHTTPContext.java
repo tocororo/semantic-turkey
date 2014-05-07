@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.http;
 
+import java.util.Arrays;
+
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -33,10 +35,8 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		Project<?> project;
 
 		if (projectParameter == null) {
-			System.out.println("Branch1");
 			project = ProjectManager.getCurrentProject();
 		} else {
-			System.out.println("Branch2" + projectParameter);
 			project = ProjectManager.getProject(projectParameter);
 		}
 
@@ -72,7 +72,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		ARTResource[] rgraphs = conversionService.convert(rgraphsParameter, ARTResource[].class);
 
-		System.out.println("rgraphs = " + rgraphs);
+		System.out.println("rgraphs = " + Arrays.toString(rgraphs) );
 		System.out.flush();
 
 		return rgraphs;
