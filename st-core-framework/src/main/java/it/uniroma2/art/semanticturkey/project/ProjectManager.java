@@ -322,8 +322,10 @@ public class ProjectManager {
 
 			logger.debug("activating project");
 			// return activateProject(projectName);
-			return accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
-
+			Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
+			setCurrentProject(project);
+			
+			return project;
 		} catch (UnsupportedModelConfigurationException e) {
 			throw new ProjectCreationException(e);
 		} catch (UnloadableModelConfigurationException e) {
