@@ -154,6 +154,30 @@ public class ProjectManager {
 	}
 
 	/**
+	 * 
+	 * 
+	 * @param projectName
+	 * @throws ProjectDeletionException
+	 */
+	public static void deleteProject(String projectName) throws ProjectDeletionException {
+		File projectDir;
+		try {
+			projectDir = getProjectDir(projectName);
+		} catch (InvalidProjectNameException e) {
+			throw new ProjectDeletionException("project name: " + projectName
+					+ " is not a valid name; cannot delete that project");
+		} catch (ProjectInexistentException e) {
+			throw new ProjectDeletionException("project: " + projectName
+					+ " does not exist; cannot delete it");
+		}
+
+		if (isOpen(projectName))
+			throw new ProjectDeletionException("cannot delete a project while it is open");
+		if (!Utilities.deleteDir(projectDir))
+			throw new ProjectDeletionException("unable to delete project: " + projectName);
+	}
+
+	/**
 	 * a shortcut for
 	 * {@link #createProject(ProjectConsumer, String, Class, String, String, String, Properties)} with
 	 * {@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}
@@ -179,30 +203,6 @@ public class ProjectManager {
 		return createProject(ProjectConsumer.SYSTEM, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration);
-	}
-
-	/**
-	 * 
-	 * 
-	 * @param projectName
-	 * @throws ProjectDeletionException
-	 */
-	public static void deleteProject(String projectName) throws ProjectDeletionException {
-		File projectDir;
-		try {
-			projectDir = getProjectDir(projectName);
-		} catch (InvalidProjectNameException e) {
-			throw new ProjectDeletionException("project name: " + projectName
-					+ " is not a valid name; cannot delete that project");
-		} catch (ProjectInexistentException e) {
-			throw new ProjectDeletionException("project: " + projectName
-					+ " does not exist; cannot delete it");
-		}
-
-		if (isOpen(projectName))
-			throw new ProjectDeletionException("cannot delete a project while it is open");
-		if (!Utilities.deleteDir(projectDir))
-			throw new ProjectDeletionException("unable to delete project: " + projectName);
 	}
 
 	/**
@@ -272,10 +272,10 @@ public class ProjectManager {
 	 * This method sets up all the necessary files which characterize projects and then generates a new
 	 * instance on the initialized folder
 	 * <p>
-	 * <em>Note: by using this method you may create projects in any place in the file system, and Semantic
-	 * Turkey won't be able to localize them. For this reason, it should only be used by Semantic Turkey
-	 * extensions which are adopting a new project folder, providing also dedicated API to access/manage its
-	 * projects.<br/>
+	 * <em>Note: by using directly this method you may create projects in any place in the file system, and 
+	 * Semantic Turkey won't be able to localize them. For this reason, it should only be used by Semantic
+	 * Turkey extensions which are adopting a new project folder, providing also dedicated API to 
+	 * access/manage its projects.<br/>
 	 * use {@link #createProject(String, Class, String, String, String, Properties)} or
 	 * {@link #createProject(String, Class, String, String, String, String, Properties)}
 	 * to create a new project</em>
@@ -322,30 +322,18 @@ public class ProjectManager {
 
 			logger.debug("activating project");
 			// return activateProject(projectName);
-			Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
+			Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
+					LockLevel.NO);
+			// TODO this has to be removed, once all references to currentProject have been removed from ST (filters etc..)
 			setCurrentProject(project);
-			
 			return project;
-		} catch (UnsupportedModelConfigurationException e) {
-			throw new ProjectCreationException(e);
-		} catch (UnloadableModelConfigurationException e) {
-			throw new ProjectCreationException(e);
-		} catch (UnavailableResourceException e) {
-			throw new ProjectCreationException(e);
-		} catch (ClassNotFoundException e) {
-			throw new ProjectCreationException(e);
-		} catch (RuntimeException e) {
-			e.printStackTrace(System.err);
-			throw new ProjectCreationException("unforeseen runtime exception: " + e + ": " + e.getMessage());
-		} catch (InvalidProjectNameException e) {
-			throw new ProjectCreationException(e);
-		} catch (ProjectInexistentException e) {
-			throw new ProjectCreationException(e);
-		} catch (ProjectAccessException e) {
-			throw new ProjectCreationException(e);
-		} catch (DuplicatedResourceException e) {
-			throw new ProjectCreationException(e);
-		} catch (ForbiddenProjectAccessException e) {
+		} catch (Exception e) {
+			try {
+				Utilities.deleteDir(resolveProjectNameToDir(projectName));
+			} catch (InvalidProjectNameException e1) {
+				logger.error("unable to remove project dir after failed project creation, need to remove i"
+						+ " manually. Details of the exception follow:" + e1);
+			}
 			throw new ProjectCreationException(e);
 		}
 	}
@@ -423,10 +411,14 @@ public class ProjectManager {
 			return proj;
 
 		} catch (ModelCreationException e) {
-			Utilities.deleteDir(resolveProjectNameToDir(projectName));
+			// Utilities.deleteDir(resolveProjectNameToDir(projectName));
+			// I moved the delete to where I'm sure I'm creating the project
 			throw new ProjectCreationException(e);
 		} catch (ProjectIncompatibleException e) {
-			Utilities.deleteDir(resolveProjectNameToDir(projectName));
+			// Utilities.deleteDir(resolveProjectNameToDir(projectName));
+			// surely good to not delete here. The lack of a proper OntologyManager is not something that
+			// would normally happen when creating a project. It usually happens on old projects which have
+			// been created with an ontology manager which is not present in the current installation
 			throw new ProjectCreationException(
 					"it is not possible to create a project with OntologyManager: " + "---"
 							+ "because no bundle with such ID has been loaded by OSGi");
@@ -1411,6 +1403,17 @@ public class ProjectManager {
 	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
 			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
+	}
+
+	public static Project<? extends RDFModel> createProjectAndSetAsCurrent(String projectName,
+			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
+			String modelConfigurationClass, Properties modelConfiguration)
+			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
+			ProjectInconsistentException, ProjectUpdateException {
+		Project<? extends RDFModel> project = createProject(projectName, modelType, baseURI,
+				ontManagerFactoryID, modelConfigurationClass, modelConfiguration);
+		setCurrentProject(project);
+		return project;
 	}
 
 }
