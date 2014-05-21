@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.servlet.main.controllers;
 import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.servlet.HttpServiceRequestWrapper;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponse;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -25,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +35,10 @@ import org.w3c.dom.Document;
 
 @org.springframework.stereotype.Controller
 public class LegacyServiceController implements ApplicationContextAware {
+	
+	@Autowired
+	protected STServiceContext serviceContext;
+	
 	ApplicationContext context;
 	protected static Logger logger = LoggerFactory.getLogger(LegacyServiceController.class);
 	// final static private HashMap<String, Class> map = new HashMap<String,
@@ -173,7 +179,7 @@ public class LegacyServiceController implements ApplicationContextAware {
 				response = plugin.activate();
 				if (response.isAffirmative()) {
 					try {
-						ProjectManager.getCurrentProject().registerPlugin(pluginName);
+						serviceContext.getProject().registerPlugin(pluginName);
 					} catch (Exception e) {
 						((ResponseREPLY) response)
 								.setReplyStatusWARNING("the plugin has been successfully initialized, though there are some warnings reported while associating it to the current project:\n"
@@ -184,7 +190,7 @@ public class LegacyServiceController implements ApplicationContextAware {
 				response = plugin.deactivate();
 				if (response.isAffirmative()) {
 					try {
-						ProjectManager.getCurrentProject().deregisterPlugin(pluginName);
+						serviceContext.getProject().deregisterPlugin(pluginName);
 					} catch (Exception e) {
 						((ResponseREPLY) response)
 								.setReplyStatusWARNING("the plugin has been successfully disposed, though there are some warnings reported while deregistering it from the current project:\n"

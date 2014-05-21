@@ -48,11 +48,10 @@ import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.filter.DomainResourcePredicate;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -266,22 +265,24 @@ public class ClsOld extends ResourceOld {
 
 			RDFIterator<? extends ARTResource> subClassesIterator;
 
+			STOntologyManager<?> ontManager = getProject().getOntologyManager();
+			
 			// creating subclasses iterator
 			// URI filter and other complex operations for tree show
 			if (forTree)
-				subClassesIterator = new SubClassesForTreeIterator(ontModel, cls, graphs);
+				subClassesIterator = new SubClassesForTreeIterator(ontManager, cls, graphs);
 			else
-				// simple listDirectSubClasses for standard method	
+				// simple listDirectSubClasses for standard method
 				subClassesIterator = ((DirectReasoning) ontModel).listDirectSubClasses(cls, graphs);
 
 			Collection<STRDFResource> classes = STRDFNodeFactory.createEmptyResourceCollection();
 			while (subClassesIterator.streamOpen()) {
 				ARTResource subClass = subClassesIterator.getNext();
 				STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, subClass,
-						ModelUtilities.getResourceRole(subClass, ontModel), 
+						ModelUtilities.getResourceRole(subClass, ontModel),
 						servletUtilities.checkWritable(ontModel, subClass, wgraph), false);
 				if (forTree)
-					ClsOld.decorateForTreeView(ontModel, stClass, getUserNamedGraphs());
+					ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
 				if (instNum) {
 					ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 				}
@@ -401,10 +402,10 @@ public class ClsOld extends ResourceOld {
 		subClass.setRendering(rendering);
 	}
 
-	public static void decorateForTreeView(RDFSModel model, STRDFResource subClass, ARTResource[] graphs) 
-				throws ModelAccessException,
-			NonExistingRDFResourceException {
-		RDFIterator<ARTURIResource> subSubClassesIterator = new SubClassesForTreeIterator(model,
+	public static void decorateForTreeView(STOntologyManager<?> ontManager, STRDFResource subClass,
+			ARTResource[] graphs) throws ModelAccessException, NonExistingRDFResourceException {
+
+		RDFIterator<ARTURIResource> subSubClassesIterator = new SubClassesForTreeIterator(ontManager,
 				subClass.getARTNode().asURIResource(), graphs);
 		if (subSubClassesIterator.hasNext())
 			subClass.setInfo("more", "1"); // the subclass has further subclasses
@@ -413,8 +414,8 @@ public class ClsOld extends ResourceOld {
 		subSubClassesIterator.close();
 	}
 
-	public static void decorateWithNumberOfIstances(RDFSModel model, STRDFResource subClass, 
-				ARTResource[] graphs) throws ModelAccessException, NonExistingRDFResourceException {
+	public static void decorateWithNumberOfIstances(RDFSModel model, STRDFResource subClass,
+			ARTResource[] graphs) throws ModelAccessException, NonExistingRDFResourceException {
 		int numInst = ModelUtilities.getNumberOfClassInstances((DirectReasoning) model,
 				(ARTResource) subClass.getARTNode(), true, graphs);
 		subClass.setInfo("numInst", Integer.toString(numInst));
@@ -439,20 +440,23 @@ public class ClsOld extends ResourceOld {
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTURIResource cls = retrieveExistingURIResource(ontModel, clsQName, graphs);
 			ARTResource wgraph = getWorkingGraph();
-			
+
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
-			
+
 			Element classElement = XMLHelp.newElement(dataElement, "Class");
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
-					ModelUtilities.getResourceRole(cls, ontModel), 
+					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 			setRendering(ontModel, stClass, null, null, graphs);
-			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
-			if(hasSubClassesRequest)
-				ClsOld.decorateForTreeView(ontModel, stClass, getUserNamedGraphs());
-			RDFXMLHelp.addRDFNode(classElement, stClass);
+			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);			
 			
+			if (hasSubClassesRequest) {
+				STOntologyManager<?> ontManager = getProject().getOntologyManager();
+				ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
+			}
+			RDFXMLHelp.addRDFNode(classElement, stClass);
+
 			createInstancesXMLList(ontModel, cls, direct, dataElement, graphs);
 			return response;
 		} catch (ModelAccessException e) {
@@ -462,11 +466,12 @@ public class ClsOld extends ResourceOld {
 		}
 	}
 
-	private void createInstancesXMLList(RDFSModel ontModel, ARTResource cls, boolean direct, Element dataElement,
-			ARTResource... graphs) throws ModelAccessException, NonExistingRDFResourceException {
+	private void createInstancesXMLList(RDFSModel ontModel, ARTResource cls, boolean direct,
+			Element dataElement, ARTResource... graphs) throws ModelAccessException,
+			NonExistingRDFResourceException {
 		Element instancesElement = XMLHelp.newElement(dataElement, "Instances");
 		ARTResource wgraph = getWorkingGraph();
-		
+
 		// TODO filter on admin also here
 		ARTResourceIterator instancesIterator;
 		if (direct)
@@ -477,8 +482,8 @@ public class ClsOld extends ResourceOld {
 		Collection<STRDFResource> instances = STRDFNodeFactory.createEmptyResourceCollection();
 		while (instancesIterator.streamOpen()) {
 			ARTResource instance = instancesIterator.getNext();
-			STRDFResource stIndividual = STRDFNodeFactory.createSTRDFResource(ontModel, instance, 
-					ModelUtilities.getResourceRole(instance, ontModel), 
+			STRDFResource stIndividual = STRDFNodeFactory.createSTRDFResource(ontModel, instance,
+					ModelUtilities.getResourceRole(instance, ontModel),
 					servletUtilities.checkWritable(ontModel, instance, wgraph), false);
 			setRendering(ontModel, stIndividual, null, null, graphs);
 			instances.add(stIndividual);
@@ -521,25 +526,24 @@ public class ClsOld extends ResourceOld {
 		try {
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
-			
+
 			Element clsElement = XMLHelp.newElement(dataElement, "Class");
 			String clsURI = ontModel.expandQName(clsQName);
 			ARTResource cls = ontModel.createURIResource(clsURI);
 			ARTResource wgraph = getWorkingGraph();
 			ARTResource[] graphs = getUserNamedGraphs();
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
-					ModelUtilities.getResourceRole(cls, ontModel), 
+					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 			setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);
-			
+
 			Element instanceElement = XMLHelp.newElement(dataElement, "Instance");
 			ARTURIResource instanceRes = ontModel.createURIResource(ontModel.expandQName(instanceName));
 			STRDFResource stInstance = STRDFNodeFactory.createSTRDFResource(ontModel, instanceRes,
-					ModelUtilities.getResourceRole(instanceRes, ontModel), 
-					servletUtilities.checkWritable(ontModel, instanceRes, wgraph),
-					false);
+					ModelUtilities.getResourceRole(instanceRes, ontModel),
+					servletUtilities.checkWritable(ontModel, instanceRes, wgraph), false);
 			setRendering(ontModel, stInstance, null, null, graphs);
 			RDFXMLHelp.addRDFNode(instanceElement, stInstance);
 			return response;
@@ -550,29 +554,23 @@ public class ClsOld extends ResourceOld {
 	}
 
 	/**
-	 * retrieves the class tree rooted on the class identified by <code>clsQName</code>
-	 * Not used at the moment, so it is commented
+	 * retrieves the class tree rooted on the class identified by <code>clsQName</code> Not used at the
+	 * moment, so it is commented
+	 * 
 	 * @param clsQName
 	 *            the qname of the class which is root for the tree
 	 * @return
 	 */
-	/*public Response getClassSubTreeXML(String clsQName) {
-		RDFSModel ontModel = (RDFSModel) getOntModel();
-		ARTURIResource cls;
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		try {
-			cls = ontModel.createURIResource(ontModel.expandQName(clsQName));
-			this.recursiveCreateClassesXMLTree(ontModel, cls, dataElement, getUserNamedGraphs());
-		} catch (DOMException e) {
-			return logAndSendException("exception raised in building the classes tree: " + e.getMessage());
-		} catch (ModelAccessException e) {
-			return logAndSendException(e);
-		} catch (NonExistingRDFResourceException e) {
-			return logAndSendException(e);
-		}
-		return response;
-	}*/
+	/*
+	 * public Response getClassSubTreeXML(String clsQName) { RDFSModel ontModel = (RDFSModel) getOntModel();
+	 * ARTURIResource cls; XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok); Element
+	 * dataElement = response.getDataElement(); try { cls =
+	 * ontModel.createURIResource(ontModel.expandQName(clsQName));
+	 * this.recursiveCreateClassesXMLTree(ontModel, cls, dataElement, getUserNamedGraphs()); } catch
+	 * (DOMException e) { return logAndSendException("exception raised in building the classes tree: " +
+	 * e.getMessage()); } catch (ModelAccessException e) { return logAndSendException(e); } catch
+	 * (NonExistingRDFResourceException e) { return logAndSendException(e); } return response; }
+	 */
 
 	// TODO, se possibile, togliamo anche quell'odioso: subclasses. Non serve a niente e complica la vita a
 	// tutti!
@@ -603,7 +601,7 @@ public class ClsOld extends ResourceOld {
 		if (Config.isAdminStatus())
 			exclusionPredicate = NoLanguageResourcePredicate.nlrPredicate;
 		else
-			exclusionPredicate = DomainResourcePredicate.domResPredicate;
+			exclusionPredicate = DomainResourcePredicate.getPredicate(getProject());
 
 		// TODO I should have "graphs" in the filter constructor too
 		Predicate<ARTResource> rootUserClsPred = Predicates.and(new RootClassesResourcePredicate(ontModel),
@@ -652,7 +650,7 @@ public class ClsOld extends ResourceOld {
 	void recursiveCreateClassesXMLTree(RDFSModel ontModel, ARTURIResource cls, Element element,
 			ARTResource... graphs) throws DOMException, ModelAccessException {
 		Element classElement = XMLHelp.newElement(element, "Class");
-		boolean deleteForbidden = servletUtilities.checkReadOnly(cls);
+		boolean deleteForbidden = servletUtilities.checkReadOnly(cls, getProject());
 		classElement.setAttribute("name", ontModel.getQName(cls.getURI()));
 
 		int numInst = ModelUtilities.getNumberOfClassInstances((DirectReasoning) ontModel, cls, true, graphs);
@@ -687,8 +685,9 @@ public class ClsOld extends ResourceOld {
 		RDFIterator<? extends ARTResource> subClassesIterator;
 		Iterator<? extends ARTResource> finalIterator;
 
-		SubClassesForTreeIterator(RDFSModel ontModel, ARTResource superCls, ARTResource... graphs)
-				throws ModelAccessException {
+		SubClassesForTreeIterator(STOntologyManager<?> ontManager, ARTResource superCls,
+				ARTResource... graphs) throws ModelAccessException {
+			RDFSModel ontModel = ontManager.getOWLModel();
 			// to check that even with a non-owl reasoning triple-store, root classes are computed as children
 			// of owl:Thing
 			if (superCls.equals(OWL.Res.THING)) {
@@ -697,7 +696,7 @@ public class ClsOld extends ResourceOld {
 				if (Config.isAdminStatus())
 					exclusionPredicate = NoLanguageResourcePredicate.nlrPredicate;
 				else
-					exclusionPredicate = DomainResourcePredicate.domResPredicate;
+					exclusionPredicate = DomainResourcePredicate.getPredicate(ontManager);
 
 				Predicate<ARTResource> rootUserClsPred = Predicates.and(new RootClassesResourcePredicate(
 						ontModel), exclusionPredicate);
@@ -755,7 +754,7 @@ public class ClsOld extends ResourceOld {
 		RDFSModel ontModel = (RDFSModel) getOntModel();
 
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		//Element dataElement = response.getDataElement();
+		// Element dataElement = response.getDataElement();
 
 		String[] clsesQNames = clsesQNamesString.split("\\|_\\|");
 		try {
@@ -767,13 +766,16 @@ public class ClsOld extends ResourceOld {
 				ARTURIResource cls = retrieveExistingURIResource(ontModel, clsQName, graphs);
 
 				STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
-						ModelUtilities.getResourceRole(cls, ontModel), 
+						ModelUtilities.getResourceRole(cls, ontModel),
 						servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 				setRendering(ontModel, stClass, null, null, graphs);
-				ClsOld.decorateForTreeView(ontModel, stClass, getUserNamedGraphs());
-				if(instNumBool)
-					ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 				
+				STOntologyManager<?> ontManager = getProject().getOntologyManager();
+				
+				ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
+				if (instNumBool)
+					ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
+
 				classes.add(stClass);
 			}
 			RDFXMLHelp.addRDFNodes(response, classes);
@@ -817,24 +819,24 @@ public class ClsOld extends ResourceOld {
 
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
-			
+
 			Element clsElement = XMLHelp.newElement(dataElement, "Class");
 			ARTResource wgraph = getWorkingGraph();
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
-					ModelUtilities.getResourceRole(cls, ontModel), 
+					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 			setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);
-			
+
 			Element superClsElement = XMLHelp.newElement(dataElement, "SuperClass");
 			STRDFResource stSuperClass = STRDFNodeFactory.createSTRDFResource(ontModel, superCls,
-					ModelUtilities.getResourceRole(superCls, ontModel), 
+					ModelUtilities.getResourceRole(superCls, ontModel),
 					servletUtilities.checkWritable(ontModel, superCls, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stSuperClass, graphs);
 			setRendering(ontModel, stSuperClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(superClsElement, stSuperClass);
-			
+
 			return response;
 
 		} catch (ModelAccessException e) {
@@ -877,25 +879,24 @@ public class ClsOld extends ResourceOld {
 
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
-			
+
 			Element clsElement = XMLHelp.newElement(dataElement, "Class");
 			ARTResource wgraph = getWorkingGraph();
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
-					ModelUtilities.getResourceRole(cls, ontModel), 
+					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 			setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);
-			
+
 			Element superClsElement = XMLHelp.newElement(dataElement, "SuperClass");
 			STRDFResource stSuperClass = STRDFNodeFactory.createSTRDFResource(ontModel, superCls,
-					ModelUtilities.getResourceRole(superCls, ontModel), 
-					servletUtilities.checkWritable(ontModel, superCls, wgraph),
-					false);
+					ModelUtilities.getResourceRole(superCls, ontModel),
+					servletUtilities.checkWritable(ontModel, superCls, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stSuperClass, graphs);
 			setRendering(ontModel, stSuperClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(superClsElement, stSuperClass);
-			
+
 			return response;
 
 		} catch (ModelAccessException e) {
@@ -957,25 +958,28 @@ public class ClsOld extends ResourceOld {
 
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
-			
+
 			Element clsElement = XMLHelp.newElement(dataElement, "Class");
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, classRes,
-					ModelUtilities.getResourceRole(classRes, ontModel), 
+					ModelUtilities.getResourceRole(classRes, ontModel),
 					servletUtilities.checkWritable(ontModel, classRes, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
-			ClsOld.decorateForTreeView(ontModel, stClass, getUserNamedGraphs() );
+			
+			STOntologyManager<?> ontManager = getProject().getOntologyManager();
+			
+			ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
 			setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);
-			
+
 			Element superClsElement = XMLHelp.newElement(dataElement, "SuperClass");
 			STRDFResource stSuperClass = STRDFNodeFactory.createSTRDFResource(ontModel, superClassResource,
-					ModelUtilities.getResourceRole(superClassResource, ontModel), 
+					ModelUtilities.getResourceRole(superClassResource, ontModel),
 					servletUtilities.checkWritable(ontModel, superClassResource, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stSuperClass, graphs);
 			setRendering(ontModel, stSuperClass, null, null, graphs);
-			ClsOld.decorateForTreeView(ontModel, stSuperClass, getUserNamedGraphs());
+			ClsOld.decorateForTreeView(ontManager, stSuperClass, getUserNamedGraphs());
 			RDFXMLHelp.addRDFNode(superClsElement, stSuperClass);
-			
+
 			return response;
 
 		} catch (ModelAccessException e) {

@@ -5,10 +5,14 @@ import java.util.Arrays;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.resources.Config;
+import it.uniroma2.art.semanticturkey.services.InvalidContextException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import javax.servlet.ServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -24,6 +28,8 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	private static final String HTTP_ARG_DEFAULT_GRAPH = "DEFAULT";
 	private static final String HTTP_ARG_ANY_GRAPH = "ANY";
 
+	protected static Logger logger = LoggerFactory.getLogger(STServiceHTTPContext.class);
+	
 	@Autowired
 	private ServletRequest request;
 
@@ -35,14 +41,17 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		Project<?> project;
 
 		if (projectParameter == null) {
-			project = ProjectManager.getCurrentProject();
+			if (Config.isSingleProjectMode())
+				project = ProjectManager.getCurrentProject();
+			else
+				throw new InvalidContextException(
+						"either this context is meant to have no project information, or it has not been passed through the request");
 		} else {
 			project = ProjectManager.getProject(projectParameter);
 		}
 
-		System.out.println("project = " + project);
-		System.out.flush();
-
+		logger.trace("project = " + project);
+		
 		return project;
 	}
 
@@ -56,8 +65,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		ARTResource wgraph = conversionService.convert(wgraphParameter, ARTResource.class);
 
-		System.out.println("wgraph = " + wgraph);
-		System.out.flush();
+		logger.trace("wgraph = " + wgraph);
 
 		return wgraph;
 	}
@@ -72,8 +80,8 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		ARTResource[] rgraphs = conversionService.convert(rgraphsParameter, ARTResource[].class);
 
-		System.out.println("rgraphs = " + Arrays.toString(rgraphs) );
-		System.out.flush();
+		
+		logger.trace("rgraphs = " + Arrays.toString(rgraphs));
 
 		return rgraphs;
 	}

@@ -52,7 +52,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
@@ -441,7 +440,7 @@ public class Property extends ResourceOld {
 		if (Config.isAdminStatus())
 			exclusionPredicate = Predicates.alwaysTrue();
 		else
-			exclusionPredicate = NoSystemResourcePredicate.noSysResPred;
+			exclusionPredicate = NoSystemResourcePredicate.getPredicate(getProject());
 		Predicate<ARTURIResource> rootUserPropsPred = Predicates.and(new RootPropertiesResourcePredicate(
 				ontModel), exclusionPredicate);
 
@@ -526,7 +525,7 @@ public class Property extends ResourceOld {
 		logger.trace("\t" + property);
 		ServletUtilities servletUtilities = new ServletUtilities();
 		Element propElement = XMLHelp.newElement(element, "Property");
-		boolean deleteForbidden = servletUtilities.checkReadOnly(property);
+		boolean deleteForbidden = servletUtilities.checkReadOnly(property, getProject());
 		propElement.setAttribute("name", ontModel.getQName(property.getURI()));
 
 		propElement.setAttribute("type", type);
@@ -653,7 +652,7 @@ public class Property extends ResourceOld {
 		Collection<Predicate<? super ARTURIResource>> pruningPredicates = new ArrayList<Predicate<? super ARTURIResource>>();
 		// template props are pruned of type/subclass/subproperty declarations
 		pruningPredicates.addAll(basePropertyPruningPredicates);
-		pruningPredicates.add(NoSystemResourcePredicate.noSysResPred);
+		pruningPredicates.add(NoSystemResourcePredicate.getPredicate(getProject()));
 		// if null, all kind of properties are ok, no filtering
 
 		ARTURIResourceIterator propertyIterator;

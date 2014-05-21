@@ -48,6 +48,7 @@ public class Config {
 	private static File propFile = null;
 	private static String adminStatusPropName = "adminStatus";
 	private static String versionNumberPropName = "version";
+	private static String singleProjectModePropName = "singleProjectMode";
 	private static String dataDirPropName = "data.dir";
 
 	private static void updatePropertyFile() {
@@ -119,11 +120,29 @@ public class Config {
 		String versionCode = stProperties.getProperty(versionNumberPropName);
 		return new VersionNumber(versionCode);
 	}
-	
+
+	/**
+	 * checks if Semantic Turkey is being run in single project mode (i.e. providing the notion of
+	 * "current project", with dedicated APIs for retrieving it, where the current project is being reset each
+	 * time a new project is being loaded).<br/>
+	 * Note that there is not <code>set</code> method for this property as this is a specific system
+	 * configuration which must be setup before running the system, and is never thought to be changed at
+	 * runtime.
+	 * 
+	 * @return
+	 */
+	public static boolean isSingleProjectMode() {
+		String singleProjectModeString = stProperties.getProperty(singleProjectModePropName, "false");
+		if (singleProjectModeString.equals("true"))
+			return true;
+		else
+			return false;
+	}
+
 	public static File getDataDir() {
 		return new File(stProperties.getProperty(dataDirPropName));
 	}
-	
+
 	public static void setDataDirProp(String dataDirPath) throws ConfigurationUpdateException {
 		stProperties.setProperty(dataDirPropName, dataDirPath);
 	}

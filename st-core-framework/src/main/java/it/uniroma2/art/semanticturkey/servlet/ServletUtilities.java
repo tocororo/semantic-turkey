@@ -39,6 +39,7 @@ import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
@@ -566,17 +567,17 @@ public class ServletUtilities {
 	}
 
 	// TODO I should change this!!!
-	public boolean checkReadOnly(ARTURIResource res) {
+	public boolean checkReadOnly(ARTURIResource res, Project<?> project) {
 		return (
 		// if other namespace than default one, then it is imported, thus write only
-		!(checkWritable(res)));
+		!(checkWritable(res, project)));
 	}
 
 	// TODO I should change this!!!
-	public boolean checkWritable(ARTURIResource res) {
+	public boolean checkWritable(ARTURIResource res, Project<?> project) {
 		return (
 		// if other namespace than default one, then it is imported, thus write only
-		res.getNamespace().equals(ProjectManager.getCurrentProject().getDefaultNamespace()));
+		res.getNamespace().equals(project.getDefaultNamespace()));
 	}
 
 	public boolean checkWritable(RDFModel model, ARTResource res, ARTResource graph)

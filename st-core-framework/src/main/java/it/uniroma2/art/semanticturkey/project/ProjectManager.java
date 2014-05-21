@@ -325,7 +325,7 @@ public class ProjectManager {
 			Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
 					LockLevel.NO);
 			// TODO this has to be removed, once all references to currentProject have been removed from ST (filters etc..)
-			setCurrentProject(project);
+			// setCurrentProject(project);
 			return project;
 		} catch (Exception e) {
 			try {

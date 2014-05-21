@@ -30,6 +30,8 @@ import com.google.common.base.Predicate;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
+import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
 
@@ -39,10 +41,24 @@ import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
  */
 public class DomainResourcePredicate implements Predicate<ARTResource> {
 
-	public static final DomainResourcePredicate domResPredicate = new DomainResourcePredicate();
+	// public static final DomainResourcePredicate domResPredicate = new DomainResourcePredicate();
+	
+	private STOntologyManager<?> ontManager;
+	
+	private DomainResourcePredicate(STOntologyManager<?> ontManager) {
+		this.ontManager = ontManager;
+	}
+	
+	public static DomainResourcePredicate getPredicate(STOntologyManager<?> ontManager) {
+		return new DomainResourcePredicate(ontManager);
+	}
+	
+	public static DomainResourcePredicate getPredicate(Project<?> project) {
+		return getPredicate(project.getOntologyManager());
+	}
 
 	public boolean apply(ARTResource res) {
-        if ( VocabUtilities.isLanguageResource((ARTURIResource)res) || STVocabUtilities.isHiddenResource((ARTResource)res))
+        if ( VocabUtilities.isLanguageResource((ARTURIResource)res) || STVocabUtilities.isHiddenResource((ARTResource)res, ontManager))
 			return false;
 		else
 			return true;

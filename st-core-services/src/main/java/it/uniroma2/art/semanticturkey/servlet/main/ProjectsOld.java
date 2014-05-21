@@ -49,6 +49,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.ProjectType;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
+import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -247,6 +248,9 @@ public class ProjectsOld extends ServiceAdapter {
 	}
 
 	public Response isCurrentProjectActive() {
+		if (!Config.isSingleProjectMode())
+			return logAndSendException("Semantic Turkey is not in single project mode; therefore this service cannot be invoked");		
+				
 		if (ProjectManager.getCurrentProject() != null)
 			return createBooleanResponse(true);
 		else
@@ -275,6 +279,8 @@ public class ProjectsOld extends ServiceAdapter {
 	}
 
 	public Response getCurrentProject() {
+		if (!Config.isSingleProjectMode())
+			return logAndSendException("Semantic Turkey is not in single project mode; therefore this service cannot be invoked");		
 		try {
 			String request = Req.getCurrentProjectRequest;
 			Project<? extends RDFModel> proj = ProjectManager.getCurrentProject();
@@ -431,13 +437,17 @@ public class ProjectsOld extends ServiceAdapter {
 	}
 
 	/**
-	 * saves project <code>projectName</code> to <code>newProject</code>
+	 * saves project <code>projectName</code> to <code>newProject</code>. <br>
+	 * This service can only be invoked in single project mode
 	 * 
 	 * @param projectName
 	 * @return
 	 */
 	public Response saveProjectAs(String newProjectName) {
 
+		if (!Config.isSingleProjectMode())
+			return logAndSendException("Semantic Turkey is not in single project mode; therefore this service cannot be invoked");		
+		
 		logger.info("requested to save current project as project: " + newProjectName);
 
 		String projectName = ProjectManager.getCurrentProject().getName();

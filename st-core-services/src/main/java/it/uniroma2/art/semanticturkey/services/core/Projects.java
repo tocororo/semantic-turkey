@@ -248,7 +248,7 @@ public class Projects extends STServiceAdapter {
 	/*
 	 * this one has being temporarily not imported from the old project service, as it requires to close and
 	 * reopen a project. Not clear if we should allow a project to be deactivated/activated. Surely,
-	 * considering the fact taht now more clients may be accessing the project, it would be dangerous to close
+	 * considering the fact that now more clients may be accessing the project, it would be dangerous to close
 	 * it and reopen it
 	 * 
 	 * public Response saveProjectAs(Project<?> project, String newProjectName) throws

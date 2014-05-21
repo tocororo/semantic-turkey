@@ -29,7 +29,6 @@ package it.uniroma2.art.semanticturkey.vocabulary;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 
 /**
@@ -39,8 +38,8 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 public class STVocabUtilities {
 	
 	
-	public static boolean isHiddenResource(ARTResource res) {		
-		return isHiddenResource(ProjectManager.getCurrentProject().getOntologyManager(), res);
+	public static boolean isHiddenResource(ARTResource res, STOntologyManager<?> ontManager) {		
+		return isHiddenResource(ontManager, res);
 	}
 	
 	/**

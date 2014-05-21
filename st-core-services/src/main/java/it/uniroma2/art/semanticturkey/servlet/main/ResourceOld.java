@@ -76,7 +76,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -945,7 +944,7 @@ public class ResourceOld extends ServiceAdapter {
 		// types nor, if in userStatus,
 		// any type class from any application ontology
 		Predicate<ARTResource> typesFilter = NoLanguageResourcePredicate.nlrPredicate;
-		typesFilter = Predicates.and(typesFilter, NoSystemResourcePredicate.noSysResPred);
+		typesFilter = Predicates.and(typesFilter, NoSystemResourcePredicate.getPredicate(getProject()));
 
 		// **** PROPERTIES FILTER preparation ****
 
@@ -954,7 +953,7 @@ public class ResourceOld extends ServiceAdapter {
 		Collection<Predicate<? super ARTURIResource>> pruningPredicates = new ArrayList<Predicate<? super ARTURIResource>>();
 		// template props are pruned of type/subclass/subproperty declarations
 		pruningPredicates.addAll(basePropertyPruningPredicates);
-		pruningPredicates.add(NoSystemResourcePredicate.noSysResPred);
+		pruningPredicates.add(NoSystemResourcePredicate.getPredicate(getProject()));
 		// if null, all kind of properties are ok, no filtering
 		if (role != null)
 			pruningPredicates.add(ResourceOfATypePredicate.getPredicate(ontModel, role.getRDFURIResource()));
@@ -1026,7 +1025,7 @@ public class ResourceOld extends ServiceAdapter {
 			ARTURIResource valuedProperty = st.getPredicate();
 
 			if (!bannedPredicatesForResourceDescription.contains(valuedProperty)
-					&& !STVocabUtilities.isHiddenResource(valuedProperty)) {
+					&& !STVocabUtilities.isHiddenResource(valuedProperty, getProject().getOntologyManager())) {
 
 				ARTNode value = st.getObject();
 
