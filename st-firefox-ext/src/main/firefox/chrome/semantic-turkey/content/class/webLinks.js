@@ -96,6 +96,6 @@ art_semanticturkey.copyWebLink = function(event) {
 // *********** register request handler method (they need to be registered after
 // the declaration of function )***********************
 
-art_semanticturkey.HttpMgr.addRequestHandler(
+art_semanticturkey.SemTurkeyHTTPLegacy.addRequestHandler(
 		art_semanticturkey.STRequests.Page.getBookmarksRequest,
 		art_semanticturkey.getBookmarks_RESPONSE);

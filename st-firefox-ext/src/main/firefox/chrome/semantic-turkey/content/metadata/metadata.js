@@ -22,7 +22,7 @@
 
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
-Components.utils.import("resource://stmodules/SemTurkeyHTTP.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);
 
 /**
  * this function changes both values of baseuri and namespace

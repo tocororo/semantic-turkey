@@ -25,7 +25,7 @@ function getTopConcepts(scheme,lang) {
 	var language_p = lang != null ? "lang=" + lang : "";
 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getTopConceptsRequest,scheme_p,
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getTopConceptsRequest,scheme_p,
 			language_p, contextAsArray));
 }
 
@@ -46,7 +46,7 @@ function getNarrowerConcepts(concept, scheme, lang) {
 	var language_p = lang != null ? "lang=" + lang : "";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getNarrowerConceptsRequest,concept_p, 
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getNarrowerConceptsRequest,concept_p, 
 			scheme_p, treeView_p, language_p, contextAsArray));
 }
 
@@ -62,7 +62,7 @@ function getAllSchemesList(lang) {
 	var language_p = lang != null ? "lang=" + lang : "";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getAllSchemesListRequest, language_p,
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getAllSchemesListRequest, language_p,
 			contextAsArray));
 }
 
@@ -72,7 +72,7 @@ function getConceptDescription(concept, method) {
 	var method_p = "method=" + method;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return HttpMgr.GET(serviceName, service.getConceptDescriptionRequest,concept_p, method_p, contextAsArray);	
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getConceptDescriptionRequest,concept_p, method_p, contextAsArray);	
 }
 
 function getConceptSchemeDescription(scheme) {
@@ -81,7 +81,7 @@ function getConceptSchemeDescription(scheme) {
 	var method_p = "method=" + "templateandvalued";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return HttpMgr.GET(serviceName, service.getConceptSchemeDescriptionRequest,scheme_p, method_p, 
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getConceptSchemeDescriptionRequest,scheme_p, method_p, 
 			contextAsArray);	
 }
 
@@ -91,7 +91,7 @@ function getPrefLabel(concept, lang) {
 	var lang_p = "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	return HttpMgr.GET(serviceName, service.getPrefLabelRequest,concept_p, lang_p, contextAsArray);	
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getPrefLabelRequest,concept_p, lang_p, contextAsArray);	
 }
 
 function addBroaderConcept(concept, broaderConcept) {
@@ -99,7 +99,7 @@ function addBroaderConcept(concept, broaderConcept) {
 	var broaderConcept_p = "broaderConcept=" + broaderConcept;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.addBroaderConceptRequest, concept_p, broaderConcept_p,
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addBroaderConceptRequest, concept_p, broaderConcept_p,
 			contextAsArray);
 
 	if (!reply.isFail()) {
@@ -119,7 +119,7 @@ function addTopConcept(scheme, concept) {
 	var concept_p = "concept=" + concept;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.addTopConceptRequest, scheme_p, concept_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTopConceptRequest, scheme_p, concept_p, contextAsArray);
 
 	if (!reply.isFail()) {
 		var topConcept = Deserializer.createRDFResource(reply.getElementsByTagName("data")[0].children[0]);
@@ -138,7 +138,7 @@ function setPrefLabel(concept, label, lang) {
 	var lang_p = "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.setPrefLabelRequest, concept_p, label_p, lang_p, 
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.setPrefLabelRequest, concept_p, label_p, lang_p, 
 			contextAsArray);
 
 	if (!reply.isFail()) {
@@ -157,7 +157,7 @@ function removeTopConcept(scheme, concept) {
 	var concept_p = "concept=" + concept;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.removeTopConceptRequest, scheme_p, concept_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeTopConceptRequest, scheme_p, concept_p, contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosTopConceptRemoved", {
@@ -189,7 +189,7 @@ function createConcept(concept, broaderConcept, scheme, prefLabel, prefLabelLang
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	var language_p = language != null ? "lang=" + language : "";
 	
-	var reply = HttpMgr.GET(serviceName, service.createConceptRequest, concept_p, broaderConcept_p, scheme_p, 
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createConceptRequest, concept_p, broaderConcept_p, scheme_p, 
 			prefLabel_p, prefLabelLanguage_p, language_p, contextAsArray);
 
 	var uriValue = Deserializer.createURI(reply);
@@ -224,7 +224,7 @@ function createScheme(scheme, prefLabel, prefLabelLanguage, language) {
 	var language_p = language != null ? "lang=" + language : "";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.createSchemeRequest,scheme_p, prefLabel_p,
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createSchemeRequest,scheme_p, prefLabel_p,
 			prefLabelLanguage_p, language_p, contextAsArray);
 	
 	var uriValue = Deserializer.createURI(reply);
@@ -253,7 +253,7 @@ function deleteConcept(concept) {
 	var concept_p = "concept=" + concept;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.deleteConceptRequest, concept_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.deleteConceptRequest, concept_p, contextAsArray);
 	
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosConceptRemoved", {
@@ -283,7 +283,7 @@ function deleteScheme(scheme, forceDeleteDanglingConcepts) {
 			forceDeleteDanglingConcepts : ""; 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.deleteSchemeRequest, scheme_p, 
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.deleteSchemeRequest, scheme_p, 
 			setForceDeleteDanglingConcepts_p, forceDeleteDanglingConcepts_p, contextAsArray);
 	
 	if (!reply.isFail()) {
@@ -301,7 +301,7 @@ function removeBroaderConcept(concept, broaderConcept) {
 	var broaderConcept_p = "broaderConcept=" + broaderConcept;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.removeBroaderConceptRequest, concept_p, broaderConcept_p, 
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeBroaderConceptRequest, concept_p, broaderConcept_p, 
 			contextAsArray);
 
 	if (!reply.isFail()) {
@@ -320,7 +320,7 @@ function removePrefLabel(concept, label, lang) {
 	var lang_p = "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.removePrefLabelRequest, concept_p, label_p, lang_p,
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removePrefLabelRequest, concept_p, label_p, lang_p,
 			contextAsArray);
 
 	if (!reply.isFail()) {
@@ -339,7 +339,7 @@ function getShow(resourceName, language) {
 	var language_p = language != null ? "lang=" + language : "";	
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.getShowRequest, resourceName_p, language_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getShowRequest, resourceName_p, language_p, contextAsArray);
 	
 	return reply.getElementsByTagName("show")[0].getAttribute("value");
 }

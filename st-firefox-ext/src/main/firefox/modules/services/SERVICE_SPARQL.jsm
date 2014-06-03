@@ -29,11 +29,11 @@ function resolveQuery(queryPar, languagePar, inferPar, mode) {
 	var modePar = typeof mode != "undefined" ? "mode=" + mode : "";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	//var respType = RespContType.xml;
-	var resp=HttpMgr.POST(respType, serviceName, service.resolveQueryRequest, queryPar, languagePar, inferPar,
+	var resp=SemTurkeyHTTPLegacy.POST(respType, serviceName, service.resolveQueryRequest, queryPar, languagePar, inferPar,
 			modePar, contextAsArray);
 	resp.respType = respType;
 //	Ramon Orr� (2010): introduzione campo per memorizzare la serializzazione adottata
-	//service.serializationType=HttpMgr.serializationType;	
+	//service.serializationType=SemTurkeyHTTPLegacy.serializationType;	
 	return resp;
 }
 

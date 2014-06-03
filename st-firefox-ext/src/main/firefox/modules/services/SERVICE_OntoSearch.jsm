@@ -23,7 +23,7 @@ function searchOntology(inputString,types){
 	var inputString = "inputString="+inputString;
 	var types = "types="+types;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.searchOntologyRequest,inputString,
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.searchOntologyRequest,inputString,
 			types, contextAsArray));
 }
 //OntoSearch SERVICE INITIALIZATION

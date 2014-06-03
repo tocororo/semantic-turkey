@@ -5,7 +5,7 @@ Components.utils.import("resource://stmodules/ARTResources.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Property;
 var serviceName = service.serviceName;
@@ -25,10 +25,10 @@ function getPropertyTree(instanceQName, method) {
 		var instanceQName = "instanceQName=" + instanceQName;
 		var method = "method=" + method;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.getPropertiesTreeRequest, instanceQName, method, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getPropertiesTreeRequest, instanceQName, method, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.getPropertiesTreeRequest, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getPropertiesTreeRequest, contextAsArray);
 	}
 }
 
@@ -41,7 +41,7 @@ function getPropertyTree(instanceQName, method) {
 function getObjPropertyTree() {
 	Logger.debug('[SERVICE_Property.jsm] getObjPropertyTree');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getObjPropertiesTreeRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getObjPropertiesTreeRequest, contextAsArray);
 }
 
 /**
@@ -53,7 +53,7 @@ function getObjPropertyTree() {
 function getDatatypePropertiesTree() {
 	Logger.debug('[SERVICE_Property.jsm] getDatatypePropertiesTree');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getDatatypePropertiesTreeRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getDatatypePropertiesTreeRequest, contextAsArray);
 }
 
 /**
@@ -65,7 +65,7 @@ function getDatatypePropertiesTree() {
 function getAnnotationPropertiesTree() {
 	Logger.debug('[SERVICE_Property.jsm] getAnnotationPropertiesTree');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getAnnotationPropertiesTreeRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getAnnotationPropertiesTreeRequest, contextAsArray);
 }
 
 /**
@@ -79,7 +79,7 @@ function removeProperty(name) {
 	var myName = "name=" + name;
 	var myType = "type=Property";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createURI(HttpMgr.GET(deleteServiceName, deleteService.removePropertyRequest, myName, 
+	return Deserializer.createURI(SemTurkeyHTTPLegacy.GET(deleteServiceName, deleteService.removePropertyRequest, myName, 
 			myType, contextAsArray));
 }
 
@@ -95,7 +95,7 @@ function addProperty(propertyQName, propertyType) {
 	var myPropertyQName = "propertyQName=" + propertyQName;
 	var myPropertyType = "propertyType=" + propertyType;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.addPropertyRequest, myPropertyQName, myPropertyType,
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addPropertyRequest, myPropertyQName, myPropertyType,
 			contextAsArray);
 	var resArray = new Array();
 	resArray["property"] = Deserializer.createURI(reply.getElementsByTagName("Property")[0]);
@@ -118,7 +118,7 @@ function addSubProperty(propertyQName, propertyType, superPropertyQName) {
 	var myPropertyType = "propertyType=" + propertyType;
 	var mySuperPropertyQName = "superPropertyQName=" + superPropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.addPropertyRequest, myPropertyQName, myPropertyType,
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addPropertyRequest, myPropertyQName, myPropertyType,
 			mySuperPropertyQName, contextAsArray);
 	var resArray = new Array();
 	resArray["property"] = Deserializer.createURI(reply.getElementsByTagName("Property")[0]);
@@ -137,7 +137,7 @@ function addSubProperty(propertyQName, propertyType, superPropertyQName) {
 function getRangeClassesTree(propertyQName) {
 	propertyQName = "propertyQName=" + propertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getRangeClassesTreeRequest, propertyQName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getRangeClassesTreeRequest, propertyQName, contextAsArray);
 }
 
 /**
@@ -151,7 +151,7 @@ function getPropertyDescription(propertyQName) {
 	Logger.debug('[SERVICE_Property.jsm] getPropertyDescription');
 	var propertyQName = "propertyQName=" + propertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getPropertyDescriptionRequest, propertyQName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getPropertyDescriptionRequest, propertyQName, contextAsArray);
 }
 
 /**
@@ -181,12 +181,12 @@ function removePropValue(instanceQName, propertyQName, value,rangeQName,type, la
 	if (typeof lang != "undefined" && lang != "") {
 		var lang = "lang=" + lang;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.removePropValueRequest, instanceQName, propertyQName, value,
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.removePropValueRequest, instanceQName, propertyQName, value,
 				rangeQName,type, lang, contextAsArray);
 		
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.removePropValueRequest, instanceQName, propertyQName, value,
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.removePropValueRequest, instanceQName, propertyQName, value,
 				rangeQName,type, contextAsArray);
 	}
 }
@@ -220,11 +220,11 @@ function createAndAddPropValue(instanceQName, propertyQName, value, rangeQName, 
 	if (typeof lang != "undefined" && lang != "") {
 		var lang = "lang=" + lang;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.createAndAddPropValueRequest, instanceQName, propertyQName,
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.createAndAddPropValueRequest, instanceQName, propertyQName,
 				value, rangeQName, type, lang, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.createAndAddPropValueRequest, instanceQName, propertyQName,
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.createAndAddPropValueRequest, instanceQName, propertyQName,
 				value, rangeQName, type, contextAsArray);
 	}
 }
@@ -246,7 +246,7 @@ function addExistingPropValue(instanceQName, propertyQName, value,type) {
 	var value = "value=" + value;
 	var type = "type=" + type;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addExistingPropValueRequest, instanceQName, propertyQName, value,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addExistingPropValueRequest, instanceQName, propertyQName, value,
 			type, contextAsArray);
 }
 
@@ -262,7 +262,7 @@ function addSuperProperty(propertyQName, superPropertyQName) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var superPropertyQName = "superPropertyQName=" + superPropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addSuperPropertyRequest, propertyQName, superPropertyQName,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addSuperPropertyRequest, propertyQName, superPropertyQName,
 			contextAsArray);
 }
 
@@ -279,7 +279,7 @@ function removeSuperProperty(propertyQName, superPropertyQName) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var superPropertyQName = "superPropertyQName=" + superPropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.removeSuperPropertyRequest, propertyQName, superPropertyQName,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeSuperPropertyRequest, propertyQName, superPropertyQName,
 			contextAsArray);
 }
 
@@ -294,7 +294,7 @@ function removeSuperProperty(propertyQName, superPropertyQName) {
 function  getDomain(propertyQName){
 	var propertyQName = "propertyQName=" + propertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getDomainRequest, propertyQName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getDomainRequest, propertyQName, contextAsArray);
 }
 /**
  * get info about Range of a property
@@ -307,7 +307,7 @@ function getRange(propertyQName,visualize) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var visualize = "visualize=" + visualize;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getRangeRequest, propertyQName,visualize,contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getRangeRequest, propertyQName,visualize,contextAsArray);
 }
 
 /**
@@ -322,7 +322,7 @@ function  parseDataRange(dataRange,nodeType) {
 	var dataRange = "dataRange=" + dataRange;
 	var nodeType = "nodeType=" + nodeType;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.parseDataRangeRequest, dataRange,nodeType,contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.parseDataRangeRequest, dataRange,nodeType,contextAsArray);
 }
 
 /**
@@ -338,7 +338,7 @@ function addPropertyDomain(propertyQName, domainPropertyQName) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var domainPropertyQName = "domainPropertyQName=" + domainPropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addPropertyDomainRequest, propertyQName, domainPropertyQName,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addPropertyDomainRequest, propertyQName, domainPropertyQName,
 			contextAsArray);
 }
 
@@ -354,7 +354,7 @@ function removePropertyDomain(propertyQName, domainPropertyQName) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var domainPropertyQName = "domainPropertyQName=" + domainPropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.removePropertyDomainRequest, propertyQName, domainPropertyQName,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removePropertyDomainRequest, propertyQName, domainPropertyQName,
 			contextAsArray);
 }
 
@@ -371,7 +371,7 @@ function addPropertyRange(propertyQName, rangePropertyQName) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var rangePropertyQName = "rangePropertyQName=" + rangePropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addPropertyRangeRequest, propertyQName, rangePropertyQName,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addPropertyRangeRequest, propertyQName, rangePropertyQName,
 			contextAsArray);
 }
 
@@ -387,7 +387,7 @@ function removePropertyRange(propertyQName, rangePropertyQName) {
 	var propertyQName = "propertyQName=" + propertyQName;
 	var rangePropertyQName = "rangePropertyQName=" + rangePropertyQName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.removePropertyRangeRequest, propertyQName, rangePropertyQName,
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removePropertyRangeRequest, propertyQName, rangePropertyQName,
 			contextAsArray);
 }
 // Property SERVICE INITIALIZATION

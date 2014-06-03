@@ -3,7 +3,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.InputOutput;
 var serviceName = service.serviceName;
@@ -20,7 +20,7 @@ var serviceName = service.serviceName;
 function saveRepository(file){
 	var file = "file="+file;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.saveRepositoryRequest, file, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.saveRepositoryRequest, file, contextAsArray);
 }
 
 /**
@@ -35,7 +35,7 @@ function loadRepository(file, baseUri){
 	var file = "file="+file;
 	var baseUri = "baseUri="+baseUri;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.loadRepositoryRequest, file, baseUri, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.loadRepositoryRequest, file, baseUri, contextAsArray);
 }
 
 /**
@@ -46,7 +46,7 @@ function loadRepository(file, baseUri){
  */
 function clearRepository(){
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.clearRepositoryRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.clearRepositoryRequest, contextAsArray);
 }
 
 

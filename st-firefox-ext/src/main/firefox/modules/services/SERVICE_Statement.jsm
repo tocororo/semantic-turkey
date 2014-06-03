@@ -30,13 +30,13 @@ function getStatements(subj, pred, obj, inference, ngs){
 		var inference = "inference" + inference;
 		if(typeof ngs != 'undefined'){
 			var ngs = "ngs=" + ngs;
-			return HttpMgr.GET(serviceName, service.getStatementsRequest, subj, pred, obj, inference, ngs,
+			return SemTurkeyHTTPLegacy.GET(serviceName, service.getStatementsRequest, subj, pred, obj, inference, ngs,
 					contextAsArray);
 		}
-		return HttpMgr.GET(serviceName, service.getStatementsRequest, subj, pred, obj, inference, 
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getStatementsRequest, subj, pred, obj, inference, 
 				contextAsArray);
 	}
-	return HttpMgr.GET(serviceName, service.getStatementsRequest, subj, pred, obj, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getStatementsRequest, subj, pred, obj, contextAsArray);
 }
 
 /**
@@ -61,13 +61,13 @@ function hasStatements(subj, pred, obj, inference, ngs){
 		var inference = "inference" + inference;
 		if(typeof ngs != 'undefined'){
 			var ngs = "ngs=" + ngs;
-			return HttpMgr.GET(serviceName, service.hasStatementRequest, subj, pred, obj, inference, ngs,
+			return SemTurkeyHTTPLegacy.GET(serviceName, service.hasStatementRequest, subj, pred, obj, inference, ngs,
 					contextAsArray);
 		}
-		return HttpMgr.GET(serviceName, service.hasStatementRequest, subj, pred, obj, inference, 
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.hasStatementRequest, subj, pred, obj, inference, 
 				contextAsArray);
 	}
-	return HttpMgr.GET(serviceName, service.hasStatementRequest, subj, pred, obj, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.hasStatementRequest, subj, pred, obj, contextAsArray);
 }
 
 //SPARQL SERVICE INITIALIZATION

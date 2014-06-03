@@ -91,7 +91,7 @@ art_semanticturkey.onAccept = function() {
 	}
 	/*
 	 * TODO make update of tree instead total refresh of tree
-	 * art_semanticturkey.HttpMgr .GETP("http://" + server +
+	 * art_semanticturkey.SemTurkeyHTTPLegacy.GETP("http://" + server +
 	 * ":1979/semantic_turkey/resources/stserver/STServer?service=refresh&update=yes");
 	 */
 	close();

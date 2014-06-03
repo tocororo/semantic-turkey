@@ -5,7 +5,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Annotation;
 var serviceName = service.serviceName;
@@ -23,7 +23,7 @@ function createAndAnnotate(clsQName, instanceQName, urlPage, title) {
 	var urlPage = "urlPage=" + urlPage;
 	var title = "title=" + title;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.createAndAnnotateRequest, clsQName, instanceQName, urlPage, title, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createAndAnnotateRequest, clsQName, instanceQName, urlPage, title, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -49,7 +49,7 @@ function createFurtherAnnotation(instanceQName,text,urlPage,title) {
 	var urlPage = "urlPage=" + urlPage;
 	var title = "title=" + title;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.createFurtherAnnotationRequest, instanceQName, text, urlPage, title, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.createFurtherAnnotationRequest, instanceQName, text, urlPage, title, contextAsArray);
 }
 
 
@@ -134,7 +134,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 	if(typeof lexicalization != 'undefined'){
 		var op = "op=bindAnnot";
 		var lex = "lexicalization=" + lexicalization;
-		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 	    		instanceQName,
 	    		propertyQName,
 	    		objectQName,
@@ -151,7 +151,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 				var type = "type=" +type;
 				if(typeof objectClsName != 'undefined'){
 					var objectClsName = "objectClsName=" + objectClsName;
-					return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+					return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -163,7 +163,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			op,
 		    			contextAsArray);
 		    	}else{
-		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+		    		return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -177,7 +177,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 	    	} else{
 		    	if(typeof objectClsName != 'undefined'){
 					var objectClsName = "objectClsName=" + objectClsName;
-					return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+					return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -188,7 +188,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			op,
 		    			contextAsArray);
 		    	}else{
-		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+		    		return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -204,7 +204,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 				var type = "type=" +type;
 				if(typeof objectClsName != 'undefined'){
 					var objectClsName = "objectClsName=" + objectClsName;
-					return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+					return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -215,7 +215,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 		    			op,
 		    			contextAsArray);
 		    	}else{
-		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+		    		return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -227,7 +227,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
     		} else{
 	    		if(typeof objectClsName != 'undefined'){
 					var objectClsName = "objectClsName=" + objectClsName;
-					return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+					return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 	    				instanceQName,
 	    				propertyQName,
 	    				objectQName,
@@ -237,7 +237,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 	    				op,
 	    				contextAsArray);
 		    	}else{
-		    		return HttpMgr.GET(serviceName, service.relateAndAnnotateRequest, 
+		    		return SemTurkeyHTTPLegacy.GET(serviceName, service.relateAndAnnotateRequest, 
 		    			instanceQName,
 		    			propertyQName,
 		    			objectQName,
@@ -261,7 +261,7 @@ function relateAndAnnotate(instanceQName,propertyQName,objectQName,urlPage,title
 function chkAnnotation(urlPage) {
 	var urlPage="urlPage="+urlPage;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.chkAnnotationsRequest,urlPage,contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.chkAnnotationsRequest,urlPage,contextAsArray);
 }
 
  /** given page <code>urlPage</code>, this method tells if the page has topics
@@ -273,7 +273,7 @@ function chkAnnotation(urlPage) {
 function chkBookmarks(urlPage) {
 	var urlPage="urlPage="+urlPage;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.chkBookmarksRequest,urlPage,contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.chkBookmarksRequest,urlPage,contextAsArray);
 }
 
 /**
@@ -286,7 +286,7 @@ function chkBookmarks(urlPage) {
 function getPageAnnotations(urlPage) {
 	var urlPage="urlPage="+urlPage;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reponseXML = HttpMgr.GET(serviceName, service.getPageAnnotationsRequest,urlPage,contextAsArray);
+	var reponseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.getPageAnnotationsRequest,urlPage,contextAsArray);
 	var annotations = [];
 	var annotationsXML = reponseXML.getElementsByTagName("Annotation");
 	
@@ -319,7 +319,7 @@ function addAnnotation(urlPage,instanceQName,text,title){
 	var text="text="+text;
 	var title="title="+title;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addAnnotationRequest,urlPage,instanceQName,text,title,contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addAnnotationRequest,urlPage,instanceQName,text,title,contextAsArray);
 }
 
 /**
@@ -338,19 +338,19 @@ function bookmarkPage(urlPage, title, topics){
 		topics_p += topics[i];
 	}
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.bookmarkPageRequest,urlPage_p,title_p,topics_p,contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.bookmarkPageRequest,urlPage_p,title_p,topics_p,contextAsArray));
 }
 
 function getPageTopics(urlPage) {
 	var urlPage_p = "urlPage=" + urlPage;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getPageTopicsRequest,urlPage_p,contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getPageTopicsRequest,urlPage_p,contextAsArray));
 }
 
 function getBookmarksByTopic(topic) {
 	var topic_p = "topic=" + topic;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getBookmarksByTopicRequest,topic_p,contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getBookmarksByTopicRequest,topic_p,contextAsArray);
 }
 
 function removeBookmark(urlPage, topic) {
@@ -358,7 +358,7 @@ function removeBookmark(urlPage, topic) {
 	var topic_p = "topic=" + topic;
 	
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.removeBookmarkRequest, urlPage_p, topic_p,contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeBookmarkRequest, urlPage_p, topic_p,contextAsArray);
 
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("bookmarkRemoved", {
@@ -380,7 +380,7 @@ function removeAnnotation(id) {
 	var id_p = "id=" + id;
 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var responseXML = HttpMgr.GET(serviceName, service.removeAnnotationRequest, id_p,contextAsArray);
+	var responseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.removeAnnotationRequest, id_p,contextAsArray);
 	
 	if (!responseXML.isFail()) {
 		var annotation;
@@ -403,7 +403,7 @@ function getAnnotatedContentResources(resource) {
 	var resource_p = "resource=" + resource;
 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var responseXML = HttpMgr.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p,contextAsArray);
+	var responseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p,contextAsArray);
 	
 	var response = [];
 	

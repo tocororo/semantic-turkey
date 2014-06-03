@@ -20,7 +20,7 @@ function getRole(resource) {
 	var resource_p = "resource=" + resource;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var response = HttpMgr.GET(serviceName, service.getRoleRequest,resource_p, contextAsArray);
+	var response = SemTurkeyHTTPLegacy.GET(serviceName, service.getRoleRequest,resource_p, contextAsArray);
 	return response.getElementsByTagName("value")[0].textContent.trim();
 }
 

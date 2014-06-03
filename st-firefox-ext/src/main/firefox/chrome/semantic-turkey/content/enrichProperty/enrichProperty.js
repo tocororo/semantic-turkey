@@ -284,7 +284,7 @@ art_semanticturkey.setPanel = function() {
 		document.getElementById('Add').setAttribute("label", "Add Existing Property Value");
 	}
 	// NScarpato 24/05/2007 add subtree
-	/*art_semanticturkey.HttpMgr.GETP("http://"+server+":1979/semantic_turkey/resources/stserver/STServer?service=property&request=getRangeClassesTree&propertyQName="
+	/*art_semanticturkey.SemTurkeyHTTPLegacy.GETP("http://"+server+":1979/semantic_turkey/resources/stserver/STServer?service=property&request=getRangeClassesTree&propertyQName="
 			+ predicatePropertyName);*/
 	//TODO e' stata spostata in utilities e gli vanno passati albero e lista 
 	//searchFocus("Class", objectClsName, "", "");

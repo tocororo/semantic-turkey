@@ -5,7 +5,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.RangeAnnotation;
 var serviceName = service.serviceName;
@@ -20,7 +20,7 @@ var serviceName = service.serviceName;
 function chkAnnotation(urlPage) {
 	var urlPage="urlPage="+urlPage;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.chkAnnotationsRequest,urlPage, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.chkAnnotationsRequest,urlPage, contextAsArray);
 }
 
 /**
@@ -33,7 +33,7 @@ function chkAnnotation(urlPage) {
 function getPageAnnotations(urlPage) {
 	var urlPage="urlPage="+urlPage;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reponseXML = HttpMgr.GET(serviceName, service.getPageAnnotationsRequest,urlPage,contextAsArray);
+	var reponseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.getPageAnnotationsRequest,urlPage,contextAsArray);
 	var annotations = [];
 	var annotationsXML = reponseXML.getElementsByTagName("RangeAnnotation");
 	
@@ -70,7 +70,7 @@ function addAnnotation(resource, lexicalization, urlPage, title, range) {
 	var title_p = "title=" + title;
 	var range_p = "range=" + range;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var responseXML = HttpMgr.GET(serviceName, service.addAnnotationRequest,resource_p, lexicalization_p,
+	var responseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.addAnnotationRequest,resource_p, lexicalization_p,
 	   urlPage_p, title_p, range_p, contextAsArray);
 
 	return responseXML;
@@ -85,7 +85,7 @@ function addAnnotation(resource, lexicalization, urlPage, title, range) {
 function deleteAnnotation(id) {
 	var id_p = "id=" + id;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var responseXML = HttpMgr.GET(serviceName, service.deleteAnnotationRequest, id_p, contextAsArray);
+	var responseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.deleteAnnotationRequest, id_p, contextAsArray);
 	
 	if (!responseXML.isFail()) {
 		var annotation;
@@ -108,7 +108,7 @@ function getAnnotatedContentResources(resource) {
 	var resource_p = "resource=" + resource;
 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var responseXML = HttpMgr.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p,
+	var responseXML = SemTurkeyHTTPLegacy.GET(serviceName, service.getAnnotatedContentResourcesRequest, resource_p,
 			contextAsArray);
 	
 	var response = [];

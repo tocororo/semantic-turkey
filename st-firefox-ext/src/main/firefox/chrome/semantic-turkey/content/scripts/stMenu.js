@@ -24,7 +24,7 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 if (!art_semanticturkey.ContexMenu) art_semanticturkey.ContexMenu = {};
 
-Components.utils.import("resource://stmodules/SemTurkeyHTTP.jsm", art_semanticturkey);  // TODO va eliminato
+Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);  // TODO va eliminato
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Administration.jsm",
 		art_semanticturkey);

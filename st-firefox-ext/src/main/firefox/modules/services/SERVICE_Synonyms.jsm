@@ -3,7 +3,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Synonyms;
 var serviceName = service.serviceName;
@@ -24,7 +24,7 @@ function addSynonyms(resourceName,language,synonym) {
 		var synonym ="synonym="+synonym;
 		var language ="language="+language;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		HttpMgr.GET(serviceName, service.addSynonymsRequest,resourceName,synonym,language, contextAsArray);
+		SemTurkeyHTTPLegacy.GET(serviceName, service.addSynonymsRequest,resourceName,synonym,language, contextAsArray);
 	}
 
 

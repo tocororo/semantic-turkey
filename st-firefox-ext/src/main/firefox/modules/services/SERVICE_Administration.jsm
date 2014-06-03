@@ -21,7 +21,7 @@ var serviceName = service.serviceName;
 function setAdminLevel(adminLevel) {
 	var adminLevel = "adminLevel=" + adminLevel;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.setAdminLevelRequest, adminLevel, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.setAdminLevelRequest, adminLevel, contextAsArray);
 }
 
 /**
@@ -32,7 +32,7 @@ function setAdminLevel(adminLevel) {
  */
 function getOntologyMirror() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getOntologyMirrorRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getOntologyMirrorRequest, contextAsArray);
 }
 
 /**
@@ -48,7 +48,7 @@ function deleteOntMirrorEntry(ns, file) {
 	var ns = "ns=" + ns;
 	var file = "file=" + file;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.deleteOntMirrorEntryRequest, ns, file, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.deleteOntMirrorEntryRequest, ns, file, contextAsArray);
 }
 
 /**
@@ -74,7 +74,7 @@ function updateOntMirrorEntry(baseURI, mirrorFileName, srcLoc, location) {
 
 	if (srcLoc == "srcLoc=wbu"){
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.updateOntMirrorEntryRequest, baseURI, mirrorFileName, srcLoc, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.updateOntMirrorEntryRequest, baseURI, mirrorFileName, srcLoc, contextAsArray);
 	}
 	else if (srcLoc == "srcLoc=walturl")
 		loc = "altURL=" + location;
@@ -84,7 +84,7 @@ function updateOntMirrorEntry(baseURI, mirrorFileName, srcLoc, location) {
 	Logger.debug("dentro updateOntMirrorEntry e loc = " + loc);
 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr
+	return SemTurkeyHTTPLegacy
 			.GET(serviceName, service.updateOntMirrorEntryRequest, baseURI, mirrorFileName, srcLoc, loc, contextAsArray);
 }
 

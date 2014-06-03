@@ -6,7 +6,7 @@ Components.utils.import("resource://stmodules/ARTResources.jsm");
 Components.utils.import("resource://stmodules/Context.jsm");
 
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Cls;
 var serviceName = service.serviceName;
@@ -37,7 +37,7 @@ function getClassesInfoAsRootsForTree(instNum, clsqnames) {
 	for ( var i = 2; i < arguments.length; i++)
 		clsesqnames += "|_|" + arguments[i];
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getClassesInfoAsRootsForTreeRequest, clsesqnames, instNum, contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getClassesInfoAsRootsForTreeRequest, clsesqnames, instNum, contextAsArray));
 }
 
 /**
@@ -53,10 +53,10 @@ function getClassTree(clsName) {
 	if (typeof clsName != "undefined") {
 		var className = "clsName=" + clsName;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.getClassTreeRequest, className, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getClassTreeRequest, className, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.getClassTreeRequest, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getClassTreeRequest, contextAsArray);
 	}
 }
 
@@ -79,7 +79,7 @@ function getSubClasses(clsName, tree, instNum) {
 	var tree = "tree=" + tree;
 	var instNum = "instNum=" + instNum;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getSubClassesRequest, className, tree, instNum, contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSubClassesRequest, className, tree, instNum, contextAsArray));
 }
 
 /**
@@ -93,7 +93,7 @@ function getClassDescription(clsName, method) {
 	var className = "clsName=" + clsName;
 	var method = "method=" + method;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getClassDescriptionRequest, className, method, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getClassDescriptionRequest, className, method, contextAsArray);
 }
 
 /**
@@ -111,9 +111,9 @@ function getClassAndInstancesInfo(clsName, hasSubClasses) {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	if(typeof hasSubClasses != "undefined"){
 		var hasSubClasses = "hasSubClasses="+hasSubClasses;
-		var reply = HttpMgr.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName,hasSubClasses, contextAsArray)
+		var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName,hasSubClasses, contextAsArray)
 	}
-	var reply = HttpMgr.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName, contextAsArray);
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["instances"] = Deserializer.createRDFArray(reply.getElementsByTagName("Instances")[0]);
 	return resArray;
@@ -129,7 +129,7 @@ function removeClass(name) {
 	var myName = "name=" + name;
 	var myType = "type=Class";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createURI(HttpMgr.GET(deleteServiceName, deleteService.removeClassRequest, myName, myType, contextAsArray));
+	return Deserializer.createURI(SemTurkeyHTTPLegacy.GET(deleteServiceName, deleteService.removeClassRequest, myName, myType, contextAsArray));
 }
 
 /**
@@ -142,7 +142,7 @@ function renameResource(newResourceName, oldResourceName) {
 	var myNewName = "newName=" + newResourceName;
 	var myOldName = "oldName=" + oldResourceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(renameServiceName, renameService.renameRequest, myNewName, myOldName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(renameServiceName, renameService.renameRequest, myNewName, myOldName, contextAsArray);
 }
 
 /**
@@ -156,7 +156,7 @@ function addClass(newClassName) {
 	//var superClassName = "superClassName=http://www.w3.org/2002/07/owl#Thing";
 	//var superClassName = "superClassName=owl:Thing";
 	//var newClassName = "newClassName=" + newClassName;
-	//return HttpMgr.GET(serviceName, service.createClassRequest, superClassName, newClassName);
+	//return SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName, newClassName);
 	return addSubClass(newClassName, "owl:Thing");
 }
 
@@ -172,7 +172,7 @@ function addIndividual(clsName, instanceName) {
 	var clsName = "clsName=" + clsName;
 	var instanceName = "instanceName=" + instanceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.createInstanceRequest, clsName, instanceName, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createInstanceRequest, clsName, instanceName, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -192,7 +192,7 @@ function addSubClass(newClassName, superClassName) {
 	var superClassName = "superClassName=" + superClassName;
 	var newClassName = "newClassName=" + newClassName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply =  HttpMgr.GET(serviceName, service.createClassRequest, superClassName, newClassName, contextAsArray);
+	var reply =  SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName, newClassName, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -208,7 +208,7 @@ function addSubClass(newClassName, superClassName) {
  */
 function graph() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(graphServiceName, graphService.graphRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(graphServiceName, graphService.graphRequest, contextAsArray);
 }
 
 /**
@@ -222,7 +222,7 @@ function graph() {
 function partialGraph(className) {
 	var className = "className=" + className;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(graphServiceName, graphService.partialGraphRequest, className, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(graphServiceName, graphService.partialGraphRequest, className, contextAsArray);
 }
 
 /**
@@ -237,7 +237,7 @@ function addType(clsqname, typeqname) {
 	var clsqname = "clsqname=" + clsqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.addTypeRequest, clsqname, typeqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTypeRequest, clsqname, typeqname, contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -256,7 +256,7 @@ function removeType(clsqname, typeqname) {
 	var clsqname = "clsqname=" + clsqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.removeTypeRequest, clsqname, typeqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeTypeRequest, clsqname, typeqname, contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -276,7 +276,7 @@ function addSuperCls(clsqname, superclsqname) {
 	var clsqname = "clsqname=" + clsqname;
 	var superclsqname = "superclsqname=" + superclsqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.addSuperClsRequest, clsqname, superclsqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addSuperClsRequest, clsqname, superclsqname, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -296,7 +296,7 @@ function removeSuperCls(clsqname, superclsqname) {
 	var clsqname = "clsqname=" + clsqname;
 	var superclsqname = "superclsqname=" + superclsqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.removeSuperClsRequest, clsqname, superclsqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeSuperClsRequest, clsqname, superclsqname, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -313,7 +313,7 @@ function removeSuperCls(clsqname, superclsqname) {
 function getSuperClasses(clsName) {
 	var clsName = "clsName=" + clsName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(HttpMgr.GET(serviceName, service.getSuperClassesRequest, clsName, contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSuperClassesRequest, clsName, contextAsArray));
 }
 
 

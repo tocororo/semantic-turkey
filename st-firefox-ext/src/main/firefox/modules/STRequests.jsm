@@ -1,6 +1,6 @@
-Components.utils.import("resource://stmodules/SemTurkeyHTTP.jsm");
+Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests"];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests"];
 
 /**
  * @class

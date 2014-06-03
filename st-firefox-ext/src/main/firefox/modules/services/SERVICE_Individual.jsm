@@ -5,7 +5,7 @@ Components.utils.import("resource://stmodules/ARTResources.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Individual;
 var serviceName = service.serviceName;
@@ -27,7 +27,7 @@ function getBookmarks(individualName) {
 	Logger.debug('[SERVICE_Individual.jsm] getBookmarks');
 	var individualName = "instanceName=" + individualName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(pageServiceName, pageService.getBookmarksRequest, individualName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(pageServiceName, pageService.getBookmarksRequest, individualName, contextAsArray);
 };
 
 /**
@@ -40,7 +40,7 @@ function removeInstance(name) {
 	var myName = "name=" + name;
 	var myType = "type=Instance";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createURI(HttpMgr.GET(deleteServiceName, deleteService.removeInstanceRequest, myName, myType, contextAsArray));
+	return Deserializer.createURI(SemTurkeyHTTPLegacy.GET(deleteServiceName, deleteService.removeInstanceRequest, myName, myType, contextAsArray));
 };
 
 /**
@@ -55,7 +55,7 @@ function getIndividualDescription(instanceQName, method) {
 	var instanceQName = "instanceQName=" + instanceQName;
 	var method = "method=" + method;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getIndividualDescriptionRequest, instanceQName, method, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getIndividualDescriptionRequest, instanceQName, method, contextAsArray);
 };
 
 /**
@@ -70,7 +70,7 @@ function addType(indqname, typeqname) {
 	var indqname = "indqname=" + indqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.addTypeRequest, indqname, typeqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTypeRequest, indqname, typeqname, contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -90,7 +90,7 @@ function removeType(indqname, typeqname) {
 	var indqname = "indqname=" + indqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.removeTypeRequest, indqname, typeqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeTypeRequest, indqname, typeqname, contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -108,12 +108,12 @@ function removeType(indqname, typeqname) {
 function get_directNamedTypes(indqname) {
 	var indqname = "indqname=" + indqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.get_directNamedTypesRequest, indqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.get_directNamedTypesRequest, indqname, contextAsArray);
 	var resArray = new Array();
 	resArray["types"] = Deserializer.createRDFArray(reply.getElementsByTagName("Types")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
 	return resArray;
-	//return Deserializer.createURI(HttpMgr.GET(serviceName, service.get_directNamedTypesRequest, indqname));
+	//return Deserializer.createURI(SemTurkeyHTTPLegacy.GET(serviceName, service.get_directNamedTypesRequest, indqname));
 };
 
 //this return an implementation for Project with a specified context

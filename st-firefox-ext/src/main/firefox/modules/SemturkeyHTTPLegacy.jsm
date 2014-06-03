@@ -26,7 +26,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/ResponseContentType.jsm");
 Components.utils.import("resource://stmodules/Exceptions.jsm");
 
-let EXPORTED_SYMBOLS = [ "HttpMgr" ];
+let EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy" ];
 
 const USER_AGENT = "Semantic Turkey";
 const RESULT_OK = 0;
@@ -40,7 +40,7 @@ const RESULT_NOT_RSS = 5;
 // TODO i've to remove this global variables!!!
 var parameters;
 
-HttpMgr = new function() {
+SemTurkeyHTTPLegacy = new function() {
 
 	var requestHandler = new Object();
 	var that = this;
@@ -54,14 +54,14 @@ HttpMgr = new function() {
 	var serverpath = Preferences.get("extensions.semturkey.server.path", "/semantic_turkey/resources/stserver/STServer");
 
 	this.getName = function() {
-		return 'HttpMgr';
+		return 'SemTurkeyHTTPLegacy';
 	};
 
 	this.addRequestHandler = function(request, method) {
 		// Logger.debug('registered method: ' + method);
 		requestHandler[request] = method;
 		// Logger.debug(' request '+request);
-		//Logger.debug('[SemTurkeyHTTP.jsm] addedRequestHandler:\n' + requestHandler[request]);
+		//Logger.debug('[SemturkeyHTTPLegacy.jsm] addedRequestHandler:\n' + requestHandler[request]);
 	};
 
 	this.getRequestHandler = function() {

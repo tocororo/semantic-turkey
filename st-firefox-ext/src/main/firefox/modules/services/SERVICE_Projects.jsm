@@ -4,7 +4,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Projects;
 var serviceName = service.serviceName;
@@ -20,7 +20,7 @@ function openProject(name) {
 	Logger.debug('[SERVICE_Projects.jsm] openProject');
 	var name = "name=" + name;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.openProjectRequest, name, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.openProjectRequest, name, contextAsArray);
 }
 
 /**
@@ -31,14 +31,14 @@ function openProject(name) {
  */
 /*function openMainProject() {
 	Logger.debug('[SERVICE_Projects.jsm] openMainProject');
-	return HttpMgr.GET(serviceName, service.openMainProjectRequest);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.openMainProjectRequest);
 }*/
 
 function repairProject(name){
 	Logger.debug('[SERVICE_Projects.jsm] repairProject');
 	var name = "name=" + name;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.repairProjectRequest, name, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.repairProjectRequest, name, contextAsArray);
 }
 
 /**
@@ -72,7 +72,7 @@ function newProject(name, ontologyType, baseuri, ontmanager, ontMgrConfiguration
 		cfgPars += namePar+":::"+valuePar;
 	}
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.newProjectRequest, name, ontologyType,baseuri, ontmanager, ontMgrConfiguration, cfgPars, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.newProjectRequest, name, ontologyType,baseuri, ontmanager, ontMgrConfiguration, cfgPars, contextAsArray);
 }
 
 /**
@@ -109,7 +109,7 @@ function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfi
 		cfgPars += namePar+":::"+valuePar;
 	}
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.newProjectFromFileRequest, name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, file, cfgPars, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.newProjectFromFileRequest, name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, file, cfgPars, contextAsArray);
 }
 
 /**
@@ -121,7 +121,7 @@ function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfi
 function closeProject() {
 	Logger.debug('[SERVICE_Projects.jsm] closeProject');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.closeProjectRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.closeProjectRequest, contextAsArray);
 }
 
 /**
@@ -135,7 +135,7 @@ function deleteProject(name) {
 	Logger.debug('[SERVICE_Projects.jsm] deleteProject');
 	var name = "name=" + name;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.deleteProjectRequest, name, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.deleteProjectRequest, name, contextAsArray);
 }
 
 /**
@@ -149,7 +149,7 @@ function exportProject(projfile) {
 	Logger.debug('[SERVICE_Projects.jsm] exportProject');
 	var projfile = "projfile=" + projfile;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.exportProjectRequest, projfile, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.exportProjectRequest, projfile, contextAsArray);
 }
 
 /**
@@ -167,7 +167,7 @@ function importProject(projfile, name) {
 	var projfile = "projfile=" + projfile;
 	var name = "name=" + name;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.importProjectRequest, projfile, name, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.importProjectRequest, projfile, name, contextAsArray);
 }
 
 /**
@@ -183,7 +183,7 @@ function cloneProject(name, newName) {
 	var name = "name=" + name;
 	var newName = "newName=" + newName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.cloneProjectRequest, name, newName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.cloneProjectRequest, name, newName, contextAsArray);
 }
 
 /**
@@ -198,7 +198,7 @@ function saveProjectAs(newName) {
 	Logger.debug('[SERVICE_Projects.jsm] saveProjectAs');
 	var newName = "newName=" + newName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.saveProjectAsRequest, newName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.saveProjectAsRequest, newName, contextAsArray);
 }
 
 /**
@@ -210,7 +210,7 @@ function saveProjectAs(newName) {
 function saveProject() {
 	Logger.debug('[SERVICE_Projects.jsm] saveProject');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.saveProjectRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.saveProjectRequest, contextAsArray);
 }
 
 /**
@@ -222,7 +222,7 @@ function saveProject() {
  */
 function listProjects() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.listProjectsRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.listProjectsRequest, contextAsArray);
 }
 
 /**
@@ -234,7 +234,7 @@ function listProjects() {
 function getCurrentProject() {
 	Logger.debug('[SERVICE_Projects.jsm] getCurrentProject');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getCurrentProjectRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getCurrentProjectRequest, contextAsArray);
 }
 
 function getProjectProperty(propNames, projectName) {
@@ -242,7 +242,7 @@ function getProjectProperty(propNames, projectName) {
 	var propNames_p = "propNames=" + propNames;
 	var name_p = projectName == null ? "" : "name=" + projectName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getProjectPropertyRequest, propNames_p, name_p, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getProjectPropertyRequest, propNames_p, name_p, contextAsArray);
 }
 
 function setProjectProperty(propName, propValue, context) {
@@ -251,7 +251,7 @@ function setProjectProperty(propName, propValue, context) {
 	var propValue_p = "value=" + propValue;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = HttpMgr.GET(serviceName, service.setProjectPropertyRequest, propName_p, propValue_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.setProjectPropertyRequest, propName_p, propValue_p, contextAsArray);
 	
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("projectPropertySet", {getPropName : function(){return propName;}, getPropValue : function(){return propValue;}, getContext : function(){return context;}});
@@ -264,7 +264,7 @@ function setProjectProperty(propName, propValue, context) {
 function isCurrentProjectActive() {
 	Logger.debug('[SERVICE_Projects.jsm] isCurrentProjectActive');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.isCurrentProjectActiveRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.isCurrentProjectActiveRequest, contextAsArray);
 }
 
 

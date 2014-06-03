@@ -3,7 +3,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.SystemStart;
 var serviceName = service.serviceName;
@@ -30,9 +30,9 @@ function start(baseuri, ontmanager) {
 	if ((typeof baseuri != "undefined") && (typeof ontmanager != "undefined")) {
 		var baseuri = "baseuri=" + baseuri;
 		var ontmanager = "ontmanager=" + ontmanager;
-		return HttpMgr.GET(serviceName, service.startRequest, baseuri, ontmanager, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.startRequest, baseuri, ontmanager, contextAsArray);
 	} else
-		return HttpMgr.GET(serviceName, service.startRequest, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.startRequest, contextAsArray);
 }
 
 /**
@@ -45,7 +45,7 @@ function start(baseuri, ontmanager) {
 function listOntManagers() {
 	Logger.debug('[SERVICE_SystemStart.jsm] listOntManager');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.listTripleStoresRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.listTripleStoresRequest, contextAsArray);
 }
 
 // SystemStart SERVICE INITIALIZATION

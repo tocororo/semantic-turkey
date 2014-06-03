@@ -20,7 +20,7 @@ var serviceName = service.serviceName;
 function getOntManagerParameters(ontMgrID){
 	var ontMgrID = "ontMgrID="+ontMgrID;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getOntManagerParametersRequest,ontMgrID, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getOntManagerParametersRequest,ontMgrID, contextAsArray);
 }
 
 //OntManager SERVICE INITIALIZATION

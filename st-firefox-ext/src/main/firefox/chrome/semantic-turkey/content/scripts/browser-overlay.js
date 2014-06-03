@@ -32,7 +32,7 @@ Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturk
 Components.utils.import("resource://stmodules/PrefUtils.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Annotation.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey); // TODO why this?
-Components.utils.import("resource://stmodules/SemTurkeyHTTP.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 
 
@@ -77,7 +77,7 @@ art_semanticturkey.semnavigation = function() {
 	var isHumanReadable = art_semanticturkey.Preferences
 			.get("extensions.semturkey.skos.humanReadable", false);
 
-	var authority = art_semanticturkey.HttpMgr.getAuthority();
+	var authority = art_semanticturkey.SemTurkeyHTTPLegacy.getAuthority();
 	// art_semanticturkey.openUrl("http://127.0.0.1:1979/semantic_turkey/resources/graph.html");
 	var graphURL = "http://"
 			+ authority

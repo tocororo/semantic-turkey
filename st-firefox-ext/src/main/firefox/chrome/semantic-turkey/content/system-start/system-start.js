@@ -5,7 +5,7 @@ Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semant
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
-Components.utils.import("resource://stmodules/SemTurkeyHTTP.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Exceptions.jsm", art_semanticturkey);
 
 /**
@@ -25,7 +25,7 @@ art_semanticturkey.startST = function() {
 	} catch (e) {
 		if (e instanceof art_semanticturkey.HTTPError) {
 			alert("no server found! pls check that a server is listening on: "
-					+ art_semanticturkey.HttpMgr.getAuthority()+"\n\n"+
+					+ art_semanticturkey.SemTurkeyHTTPLegacy.getAuthority()+"\n\n"+
 					"Semantic Turkey server can be downloaded from here:\n"+
 					"https://bitbucket.org/art-uniroma2/semantic-turkey/downloads");
 			return;	// Leave ST unstarted

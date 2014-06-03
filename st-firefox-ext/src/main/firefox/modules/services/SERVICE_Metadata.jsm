@@ -3,7 +3,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.Metadata;
 var serviceName = service.serviceName;
@@ -17,7 +17,7 @@ var serviceName = service.serviceName;
  */
 function getOntologyDescription() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getOntologyDescriptionRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getOntologyDescriptionRequest, contextAsArray);
 }
 
 /**
@@ -28,7 +28,7 @@ function getOntologyDescription() {
  */
 function getBaseuri() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getBaseuriRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getBaseuriRequest, contextAsArray);
 }
 
 /**
@@ -39,7 +39,7 @@ function getBaseuri() {
  */
 function getDefaultNamespace() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getDefaultNamespaceRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getDefaultNamespaceRequest, contextAsArray);
 }
 
 /**
@@ -51,7 +51,7 @@ function getDefaultNamespace() {
  */
 function getImports() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getImportsRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getImportsRequest, contextAsArray);
 }
 
 /**
@@ -65,7 +65,7 @@ function getImports() {
  */
 function getNSPrefixMappings() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getNSPrefixMappingsRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getNSPrefixMappingsRequest, contextAsArray);
 }
 
 /**
@@ -78,7 +78,7 @@ function getNSPrefixMappings() {
  */
 function getNamedGraphs() {
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.getNamedGraphsRequest, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getNamedGraphsRequest, contextAsArray);
 }
 
 /**
@@ -93,7 +93,7 @@ function setBaseuriDefNamespace(baseuri, namespace) {
 	var baseuri = "baseuri=" + baseuri;
 	var namespace = "namespace=" + namespace;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.setBaseuriDefNamespaceRequest, baseuri, namespace, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.setBaseuriDefNamespaceRequest, baseuri, namespace, contextAsArray);
 }
 
 /**
@@ -106,7 +106,7 @@ function setBaseuriDefNamespace(baseuri, namespace) {
 function setDefaultNamespace(namespace) {
 	var namespace = "namespace=" + namespace;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.setDefaultNamespaceRequest, namespace, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.setDefaultNamespaceRequest, namespace, contextAsArray);
 }
 
 /**
@@ -119,7 +119,7 @@ function setDefaultNamespace(namespace) {
 function setBaseuri(uri) {
 	var uri = "baseuri=" + uri;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.setBaseuriRequest, uri, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.setBaseuriRequest, uri, contextAsArray);
 }
 
 /**
@@ -134,7 +134,7 @@ function setNSPrefixMapping(prefix, namespace) {
 	var prefix = "prefix=" + prefix;
 	var namespace = "namespace=" + namespace;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.setNSPrefixMappingRequest, prefix, namespace, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.setNSPrefixMappingRequest, prefix, namespace, contextAsArray);
 }
 
 /**
@@ -147,7 +147,7 @@ function setNSPrefixMapping(prefix, namespace) {
 function removeNSPrefixMapping(namespace) {
 	var namespace = "namespace=" + namespace;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.removeNSPrefixMappingRequest, namespace, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeNSPrefixMappingRequest, namespace, contextAsArray);
 }
 
 /**
@@ -162,7 +162,7 @@ function changeNSPrefixMapping(prefix, namespace) {
 	var prefix = "prefix=" + prefix;
 	var namespace = "namespace=" + namespace;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.changeNSPrefixMappingRequest, prefix, namespace, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.changeNSPrefixMappingRequest, prefix, namespace, contextAsArray);
 }
 
 /**
@@ -176,7 +176,7 @@ function changeNSPrefixMapping(prefix, namespace) {
 function removeImport(baseuri) {
 	var baseuri = "baseuri=" + baseuri;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.removeImportRequest, baseuri, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeImportRequest, baseuri, contextAsArray);
 }
 
 /**
@@ -195,10 +195,10 @@ function addFromWeb(baseuri, alturl) {
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.addFromWebRequest, baseuri, alturl, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, alturl, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.addFromWebRequest, baseuri, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, contextAsArray);
 	}
 }
 
@@ -221,10 +221,10 @@ function addFromWebToMirror(baseuri, mirrorFile, alturl) {
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
 	}
 }
 
@@ -245,7 +245,7 @@ function addFromLocalFile(baseuri, localFilePath, mirrorFile) {
 	var localFilePath = "localFilePath=" + localFilePath;
 	var mirrorFile = "mirrorFile=" + mirrorFile;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addFromLocalFileRequest, baseuri, localFilePath, mirrorFile, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromLocalFileRequest, baseuri, localFilePath, mirrorFile, contextAsArray);
 }
 
 /**
@@ -261,7 +261,7 @@ function addFromOntologyMirror(baseuri, mirrorFile) {
 	baseuri = "baseuri=" + baseuri;
 	mirrorFile = "mirrorFile=" + mirrorFile;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.addFromOntologyMirrorRequest, baseuri, mirrorFile, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromOntologyMirrorRequest, baseuri, mirrorFile, contextAsArray);
 }
 
 /**
@@ -281,10 +281,10 @@ function downloadFromWebToMirror(baseuri, mirrorFile, alturl) {
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.downloadFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
 	}
 }
 
@@ -303,10 +303,10 @@ function downloadFromWeb(baseuri, alturl) {
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.downloadFromWebRequest, baseuri, alturl, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.downloadFromWebRequest, baseuri, alturl, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.downloadFromWebRequest, baseuri, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.downloadFromWebRequest, baseuri, contextAsArray);
 	}
 }
 
@@ -329,11 +329,11 @@ function getFromLocalFile(baseuri, localFilePath, mirrorFile, alturl) {
 	if (typeof alturl != "undefined") {
 		var alturl = "alturl=" + alturl;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile,
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile,
 				alturl, contextAsArray);
 	} else {
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return HttpMgr.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile,
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getFromLocalFileRequest, baseuri, localFilePath, mirrorFile,
 				contextAsArray);
 	}
 }
@@ -350,7 +350,7 @@ function mirrorOntology(baseuri, mirrorFile) {
 	baseuri = "baseuri=" + baseuri;
 	mirrorFile = "mirrorFile=" + mirrorFile;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return HttpMgr.GET(serviceName, service.mirrorOntologyRequest, baseuri, mirrorFile, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.mirrorOntologyRequest, baseuri, mirrorFile, contextAsArray);
 }
 
 

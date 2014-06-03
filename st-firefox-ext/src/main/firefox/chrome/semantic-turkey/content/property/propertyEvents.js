@@ -106,7 +106,7 @@ art_semanticturkey.createSubProperty = function() {
 	 * treeChildren.getElementsByTagName("treeitem"); while
 	 * (treeChildren.hasChildNodes()) {
 	 * treeChildren.removeChild(treeChildren.lastChild); }
-	 * art_semanticturkey.HttpMgr.GETP(request); }
+	 * art_semanticturkey.SemTurkeyHTTPLegacy.GETP(request); }
 	 */
 };
 

@@ -6,7 +6,7 @@ Components.utils.import("resource://stmodules/Context.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "HttpMgr", "STRequests" ];
+EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
 var service = STRequests.ModifyName;
 var serviceName = service.serviceName;
@@ -23,7 +23,7 @@ function rename(oldName,newName){
 	var oldName_p = "oldName=" + oldName;
 	var newName_p = "newName=" + newName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = HttpMgr.GET(serviceName, service.renameRequest, oldName_p, newName_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.renameRequest, oldName_p, newName_p, contextAsArray);
 	
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("resourceRenamed", {getOldName : function(){return oldName;}, getNewName : function(){return newName;}});
