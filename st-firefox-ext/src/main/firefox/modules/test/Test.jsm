@@ -25,6 +25,7 @@ let EXPORTED_SYMBOLS = ["Test"];
 Components.utils.import("resource://stmodules/Preferences.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm"); 
 Components.utils.import("resource://stmodules/Context.jsm");
+Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
 
 function Test(){};
 
@@ -33,12 +34,40 @@ function fakeRequest(){
 }
 
 function fakeRequest2(){
-	Logger.debug("[Test.jsm] fakeRequest, context: "+
+	Logger.debug("[Test.jsm] fakeRequest2, context: "+
 			"ctx_project="+this.context.getProject()+
 			"&ctx_wGraph="+this.context.getWGpragh()+
 			"&"+this.context.getContextValuesAsString());
 	//Logger.debug('[Test.jsm] fakeRequest, context: '+this.context.getContextValuesAsString());
 }
+
+
+function fakeRequest3(groupId, artifactId, service, request, param1Input, param2Input){
+	Logger.debug('[Test.jsm] fakeRequest3, groupId: '+groupId+" artifactId = "+artifactId, "service = "+
+			service+" request = "+request);
+	
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(groupId, artifactId);
+	
+	var param1 = "param1="+param1Input;
+	var param2 = "param2="+param2Input;
+	
+	
+	currentSTHttpMgr.GET(null, service, request, this.context, param1, param2);
+}
+
+function fakeRequest4(groupId, artifactId, service, request, param1Input, param2Input){
+	Logger.debug('[Test.jsm] fakeRequest4, groupId: '+groupId+" artifactId = "+artifactId, "service = "+
+			service+" request = "+request);
+	
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(groupId, artifactId);
+	
+	var param1 = "param1="+param1Input;
+	var param2 = "param2="+param2Input;
+	
+	
+	currentSTHttpMgr.POST(null, service, request, this.context, param1, param2);
+}
+
 
 Test.prototype.getAPI = function(specifiedContext){
 	var newObj = new Test();
@@ -47,6 +76,8 @@ Test.prototype.getAPI = function(specifiedContext){
 }
 Test.prototype.fakeRequest = fakeRequest;
 Test.prototype.fakeRequest2 = fakeRequest2;
+Test.prototype.fakeRequest3 = fakeRequest3;
+Test.prototype.fakeRequest4 = fakeRequest4;
 Test.prototype.context = new Context();  // set the default context
 Test.constructor = Test;
 Test.__proto__ = Test.prototype;

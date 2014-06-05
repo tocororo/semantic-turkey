@@ -26,7 +26,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/ResponseContentType.jsm");
 Components.utils.import("resource://stmodules/Exceptions.jsm");
 
-let EXPORTED_SYMBOLS = [ "STHttpMgr" ];
+let EXPORTED_SYMBOLS = [ "STHttpMgrFactory" ];
 
 const USER_AGENT = "Semantic Turkey";
 const RESULT_OK = 0;
@@ -39,7 +39,29 @@ const RESULT_NOT_RSS = 5;
 
 var parameters;
 
-STHttpMgr = new function() {
+STHttpMgrFactory = new function() {
+	
+	var instanceIdMap = new Array(); // this array contains other arrays, and each array contains
+	// instanceIdMap[groupid][artifactid] is an instance of STHttpMgr
+	
+	
+	this.getInstance = function(groupId, artifactId){
+		
+		if(typeof instanceIdMap[groupId] == 'undefined') { // check if this is the right way to do it
+			Logger.debug("[STHttpMgrFactory.jsm] the instances map does not have any groupId = " + 
+					groupId); // DEBUG
+			instanceIdMap[groupId] = new Array();
+		}
+		if(typeof instanceIdMap[groupId][artifactId] == 'undefined') { // check if this is the right way to do it
+			Logger.debug("[STHttpMgrFactory.jsm] the instances map does not have any artifactId = " +
+					artifactId + "with groupId = "+groupId); // DEBUG
+			instanceIdMap[groupId][artifactId] = new STHttpMgr(groupId, artifactId);
+		}
+		return instanceIdMap[groupId][artifactId];
+	};
+};
+
+STHttpMgr = function(groupIdInput, artifactIdInput) {
 
 	var requestHandler = new Object();
 
@@ -47,10 +69,21 @@ STHttpMgr = new function() {
 	//var serverport = Preferences.get("extensions.semturkey.server.port", "1979");
 	//var serverpath = Preferences.get("extensions.semturkey.server.path", "/semantic_turkey/resources/stserver/STServer");
 
+	
 	var serverhost;
 	var serverport;
 	var serverpath;
 
+	var groupId = groupIdInput;
+	var artifactId = artifactIdInput;
+	
+	this.getGroupId = function(){
+		return groupId;
+	}
+	
+	this.getArtifactId = function(){
+		return artifactId;
+	}
 	
 	//the url of the new services is: http://address:port/service_turkey/SERVICE/REQUEST?ARGUMETS_WITH_&
 	// this url works only with the services inside ST itself, not with the extension
@@ -75,11 +108,15 @@ STHttpMgr = new function() {
 	 * this function composes a POST request (with async argument always set to false). It can be invoked with
 	 * a variable number of arguments. The first four arguments are always the respType, the service, 
 	 * the request and the context. All the other ones are the parameters of the http POST request
+	 *  The respType can be null or undefined, in this case the RespContType.xml is used
 	 */
 	this.POST = function(respType, service, request, context) {
 		this.refreshServerInfo();
-		var aURL = "http://" + serverhost + ":" + serverport + "/" + serverpath + "/" + 
-					service + "/" + request+"?";
+		// an example of a aURL is 
+		// http://<serverhost>:<serverport>/semanticturkey/<groupId>/<artifactId>/<service>/<request>
+		var aURL = "http://"+ serverhost + ":" + serverport + "/" + serverpath + "/" + groupId + "/" +  
+			artifactId + "/" + service + "/"+ request +"?";
+		
 		var realRespType;
 		if ((respType instanceof XMLRespContType) || (respType instanceof JSONRespContType) ) {
 			realRespType = respType;
@@ -105,6 +142,7 @@ STHttpMgr = new function() {
 				}
 			}
 		}
+		Logger.debug("POST: aURL  = "+aURL); // DEBUG
 		return this.submitHTTPRequest(realRespType, aURL, "POST", false, parameters);
 	};
 
@@ -116,8 +154,16 @@ STHttpMgr = new function() {
 	 */
 	this.GET = function(respType, service, request, context) {
 		this.refreshServerInfo();
-		var aURL = "http://" + serverhost + ":" + serverport + "/" + serverpath + "/" + 
-					service + "/" + request+"?";
+		
+		// an example of a aURL is 
+		// http://<serverhost>:<serverport>/semanticturkey/<groupId>/<artifactId>/<service>/<request>
+		var aURL = "http://"+ serverhost + ":" + serverport + "/" + serverpath + "/" + groupId + "/" +
+			artifactId + "/" + service + "/"+ request +"?";
+		
+//		Logger.debug("[STHttpMgrFactory.jsm] GET: serverhost = "+serverhost+"\nserverport = "+serverport
+//				+"\ngroupId = "+groupId +"\nartifactId = "+artifactId + "\nservice = "+service 
+//				+ "\nrequest = "+request); // DEBUG		
+		
 		var realRespType;
 		if ((respType instanceof XMLRespContType) || (respType instanceof JSONRespContType) ) {
 			realRespType = respType;
@@ -125,13 +171,13 @@ STHttpMgr = new function() {
 			realRespType = RespContType.xml;
 		}
 		
-		// now process the context
+		// process the context
 		var contextArray = context.getContextValuesForHTTPGetAsArray();
 		for ( var i = 0; i < contextArray.length; i++) {
 			aURL += this.splitAndEncode(arguments[i][k]);
 		}
 		
-		//now see if there are other arguments
+		//see if there are other arguments
 		if (arguments.length > 4) {
 			for ( var i = 4; i < arguments.length; i++) {
 				if(Array.isArray(arguments[i])){
@@ -143,6 +189,9 @@ STHttpMgr = new function() {
 				}
 			}
 		}
+		
+		
+		Logger.debug("GET: aURL  = "+aURL); // DEBUG
 		return this.submitHTTPRequest(realRespType, aURL, "GET", false);
 	};
 
@@ -152,6 +201,7 @@ STHttpMgr = new function() {
 		var index = valueString.indexOf("=");
 		var urlPart = "";
 		if(index>0){
+			//encode the part of the string after the =
 			urlPart = valueString.substring(0, index + 1)
 					+ encodeURIComponent(valueString.substr(index + 1))+"&";
 		}
@@ -159,7 +209,8 @@ STHttpMgr = new function() {
 	}
 	
 	this.submitHTTPRequest = function(respType, aURL, method, async, parameters) {
-		// Logger.debug("httpRequest: " + method + ": " + aURL + "| async:" + async + " parameters: " + parameters + " port: " + serverport);
+//		Logger.debug("httpRequest: " + method + ": " + aURL + "| async:" + async + " parameters: " + 
+//				parameters + " port: " + serverport);
 		Logger.debug(aURL);
 
 		var httpReq;
@@ -351,7 +402,7 @@ STHttpMgr = new function() {
 	this.refreshServerInfo = function(){
 		serverhost = Preferences.get("extensions.semturkey.server.host", "127.0.0.1");
 		serverport = Preferences.get("extensions.semturkey.server.port", "1979");
-		serverpath = Preferences.get("extensions.semturkey.server.path", "service_turkey");
+		serverpath = Preferences.get("extensions.semturkey.server.serverid", "semanticturkey");
 	}
 	
 	

@@ -318,11 +318,11 @@ function getSuperClasses(clsName) {
 
 
 // Add a specific context
-service.prototype.getAPI = function(specificContext){
+/*service.prototype.getAPI = function(specificContext){
 	var newObj = new STRequests.Cls();
 	newObj.context = specificContext;
 	return newObj;
-}
+}*/
 
 // Class SERVICE INITIALIZATION
 //this return an implementation for Project with a specified context

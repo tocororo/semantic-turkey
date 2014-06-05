@@ -7,9 +7,7 @@ Components.utils.import("resource://stmodules/Context.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
 
-window.onload = function() {
-	
-	
+art_semanticturkey.onloadTextContext = function() {
 	document.getElementById("testButton1").addEventListener("command",
 			art_semanticturkey.getDefaultContext, true);
 	
@@ -47,6 +45,7 @@ art_semanticturkey.getDefaultContext = function(){
 	art_semanticturkey.writeContext(defaultContext, defaultContext);
 	
 	art_semanticturkey.Test.fakeRequest();
+	
 }
 
 
@@ -161,4 +160,5 @@ art_semanticturkey.writeUsedContext = function(valueString){
 
 
 
-
+window.addEventListener("load",
+		art_semanticturkey.onloadTextContext, true);

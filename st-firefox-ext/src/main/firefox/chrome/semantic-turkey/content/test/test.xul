@@ -19,7 +19,8 @@
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 
 	xmlns:html="http://www.w3.org/1999/xhtml">
-	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/test.js" />
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/testContext.js" />
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/testSTHttpMgr.js" />
 
 
 	<label
@@ -97,5 +98,48 @@
 			</hbox>
 		</vbox>
 
+	</vbox>
+	
+	<separator class="groove" />
+	<label
+		value="Section to test the new STHttpMgr using the STHttpMgrFactory"
+		id="mainTitle" />
+	<vbox>
+		<label value="GET:" />
+		<hbox>
+			<label value="groupId:" />
+			<textbox value="my.group.Id" id="groupIdGET" />
+			<label value="artifactId:" />
+			<textbox value="myArtifactId" id="artifactIdGET" />
+			<label value="service:" />
+			<textbox value="myService" id="serviceIdGET" />
+			<label value="request:" />
+			<textbox value="myRequest" id="requestIdGET" />
+			<label value="param1:" />
+			<textbox value="testParam1" id="param1IdGET" />
+			<label value="param2:" />
+			<textbox value="testParam2" id="param2IdGET" />
+			<button id="testButton8"
+				label="Execute a fake GET request (see the javascript consolle)"
+				width="500" />
+		</hbox>
+		<label value="POST:" />
+		<hbox>
+			<label value="groupId:" />
+			<textbox value="my.group.Id" id="groupIdPOST" />
+			<label value="artifactId:" />
+			<textbox value="myArtifactId" id="artifactIdPOST" />
+			<label value="service:" />
+			<textbox value="myService" id="serviceIdPOST" />
+			<label value="request:" />
+			<textbox value="myRequest" id="requestIdPOST" />
+			<label value="param1:" />
+			<textbox value="testParam1" id="param1IdPOST" />
+			<label value="param2:" />
+			<textbox value="testParam2" id="param2IdPOST" />
+			<button id="testButton9"
+				label="Execute a fake POST request (see the javascript consolle)"
+				width="500" />
+		</hbox>
 	</vbox>
 </window>
