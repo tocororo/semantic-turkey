@@ -8,7 +8,7 @@
 
 <project default="final" basedir="." name="SemanticTurkeyGraph" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
-	<target name="start" depends="final"/>
+	<target name="start" depends="final" />
 
 	<target name="init">
 
@@ -53,7 +53,10 @@
 
 
 	<!-- === Final Empty Task ================================================= -->
-
-	<target name="final" depends="copy_resources" />
+	<!--
+		Dependency on the copy_resources target has been remove, because it assumes the existency of the now outdated
+		embedded distribution.
+	-->
+	<target name="final" />
 
 </project>
