@@ -25,6 +25,10 @@ public class ExistingValidator implements
 
 	@Override
 	public boolean isValid(ARTResource value, ConstraintValidatorContext context) {
+		if (value == null) {
+			return false;
+		}
+
 		int projectIndex = annotation.projectIndex();
 		Project<?> project = serviceContext.getProject(projectIndex);
 		

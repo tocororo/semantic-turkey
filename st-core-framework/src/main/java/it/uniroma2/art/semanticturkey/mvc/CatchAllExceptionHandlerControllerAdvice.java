@@ -34,7 +34,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 		StringBuilder errorMsg = new StringBuilder();
 		for (MethodConstraintViolation<?> viol : ex.getConstraintViolations()) {
 			errorMsg.append(viol.getMessage().replace(MsgInterpolationVariables.invalidParamValuePlaceHolder,
-					viol.getInvalidValue().toString()));
+					"" + viol.getInvalidValue()));
 			errorMsg.append("\n\n");
 		}
 
