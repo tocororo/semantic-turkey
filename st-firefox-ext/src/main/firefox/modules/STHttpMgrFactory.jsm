@@ -127,7 +127,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 		// now process the context
 		var contextArray = context.getContextValuesForHTTPGetAsArray();
 		for ( var i = 0; i < contextArray.length; i++) {
-			aURL += this.splitAndEncode(arguments[i][k]);
+			aURL += this.splitAndEncode(contextArray[i]);
 		}
 		
 		
@@ -174,7 +174,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 		// process the context
 		var contextArray = context.getContextValuesForHTTPGetAsArray();
 		for ( var i = 0; i < contextArray.length; i++) {
-			aURL += this.splitAndEncode(arguments[i][k]);
+			aURL += this.splitAndEncode(contextArray[i]);
 		}
 		
 		//see if there are other arguments
