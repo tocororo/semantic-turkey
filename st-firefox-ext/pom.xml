@@ -35,6 +35,7 @@
 										<include>chrome.manifest</include>
 										<include>install.rdf</include>
 										<include>components/data/sturkey.properties</include>
+										<include>modules/SemanticTurkeyMetadata.jsm</include>
 									</includes>
 								</resource>
 								<!-- this is to copy all the rest, being sure that we don't copy 
@@ -49,6 +50,7 @@
 										<exclude>install.rdf</exclude>
 										<exclude>components/data/sturkey.properties</exclude>
 										<exclude>**/*.idl</exclude>
+										<exclude>modules/SemanticTurkeyMetadata.jsm</exclude>
 									</excludes>
 								</resource>
 							</resources>

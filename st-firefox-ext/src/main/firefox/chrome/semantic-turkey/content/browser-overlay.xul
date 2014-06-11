@@ -53,6 +53,7 @@
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/annotation/families/annot_rangeannotation.js" />				
 
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/utilities/utilities.js" />
 
 	<broadcasterset id="mainBroadcasterSet">
 		<broadcaster id="stOntologySidebar" autoCheck="false"

@@ -54,8 +54,10 @@ art_semanticturkey.toggleSidebar3 = function() {
 };
 
 art_semanticturkey.chkST_started = function() {
+	
 	var stIsStarted = art_semanticturkey.ST_started.getStatus();
 	if (stIsStarted == "true") {
+		art_semanticturkey.compareVersions(); // the check if the server and the client are the same version
 		document.getElementById("startSt").disabled = true;
 		// document.getElementById("key_openSTOntologySidebar").disabled =
 		// false;
@@ -136,6 +138,7 @@ art_semanticturkey.manage_all_projects = function() {
 };
 
 art_semanticturkey.enableSTToolbarButtons = function() {
+	art_semanticturkey.compareVersions(); // the check if the server and the client are the same version
 	document.getElementById("startSTToolBarButton").hidden = true;
 	document.getElementById("prjManagementToolBarButton").hidden = false;
 	/*

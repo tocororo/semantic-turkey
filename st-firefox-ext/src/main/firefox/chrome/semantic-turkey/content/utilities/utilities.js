@@ -19,8 +19,17 @@
  * http://semanticturkey.uniroma2.it
  * 
  */
+
+
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
+
+Components.utils.import("resource://stservices/SERVICE_Administration.jsm",
+		art_semanticturkey);
+Components.utils.import("resource://stmodules/SemanticTurkeyMetadata.jsm",
+		art_semanticturkey);
+Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+
 
 /**
  * @author NScarpato 21/04/2008 manageInput
@@ -70,3 +79,36 @@ art_semanticturkey.openUrl = function(url) {
 			.getMostRecentWindow('navigator:browser');
 	win.openUILinkIn(url, "tab");
 };
+art_semanticturkey.compareVersions  = function(){
+	//first take the client version
+	var serverVersionResponse = art_semanticturkey.STRequests.Administration.getVersion();
+	var serverVersion = serverVersionResponse.getElementsByTagName("value")[0].textContent; // TODO check
+	art_semanticturkey.Logger.debug("server Version = "+serverVersion);
+	
+	//then take the server version
+	var clientVersion = art_semanticturkey.SemanticTurkeyMetadata.getClientVersion();
+	
+	clientVersion = art_semanticturkey.stripQualifier(clientVersion);
+	art_semanticturkey.Logger.debug("client Version = "+clientVersion);
+	
+	
+	//compare the two versions
+	if(serverVersion != clientVersion){
+		//the server and the client have two different version
+		var text = "The client and the server have two different versions:"+
+				"\n\tserver version = "+serverVersion+
+				"\n\tclient version = "+clientVersion;
+		
+		art_semanticturkey.Logger.debug(text);
+		alert(text);
+		
+	}
+}
+
+art_semanticturkey.stripQualifier = function(version){
+	var pos = version. indexOf("-");
+	if(pos == -1)
+		return version;
+	return version.substring(0, pos);
+	var temp = version
+}

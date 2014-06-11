@@ -231,6 +231,7 @@ STRequests.Administration.getOntologyMirrorRequest = "getOntologyMirror";
 STRequests.Administration.setAdminLevelRequest = "setAdminLevel";
 STRequests.Administration.deleteOntMirrorEntryRequest = "deleteOntMirrorEntry";
 STRequests.Administration.updateOntMirrorEntryRequest = "updateOntMirrorEntry";
+STRequests.Administration.getVersionRequest = "getVersion";
 
 // inputoutput service request
 STRequests.InputOutput.serviceName = "inputOutput";

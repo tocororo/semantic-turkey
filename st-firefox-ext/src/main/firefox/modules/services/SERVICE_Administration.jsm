@@ -88,6 +88,15 @@ function updateOntMirrorEntry(baseURI, mirrorFileName, srcLoc, location) {
 			.GET(serviceName, service.updateOntMirrorEntryRequest, baseURI, mirrorFileName, srcLoc, loc, contextAsArray);
 }
 
+/**
+ * this method get the version from the server
+ */
+function getVersion(){
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy
+		.GET(serviceName, service.getVersionRequest, contextAsArray);
+}
+
 // Administration SERVICE INITIALIZATION
 //this return an implementation for Project with a specified context
 service.prototype.getAPI = function(specifiedContext){

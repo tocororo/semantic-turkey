@@ -21,6 +21,8 @@
 	xmlns:html="http://www.w3.org/1999/xhtml">
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/testContext.js" />
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/testSTHttpMgr.js" />
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/test/testGeneric.js" />
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/utilities/utilities.js" />
 
 
 	<label
@@ -141,5 +143,12 @@
 				label="Execute a fake POST request (see the javascript consolle)"
 				width="500" />
 		</hbox>
+	</vbox>
+	
+	<separator class="groove" />
+	<vbox>
+		<button id="testButton10"
+			label="multi purpose button"
+			width="500" />
 	</vbox>
 </window>
