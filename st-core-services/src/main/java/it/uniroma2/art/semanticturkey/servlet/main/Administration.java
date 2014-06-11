@@ -26,6 +26,7 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
+import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
@@ -35,6 +36,7 @@ import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
 import it.uniroma2.art.semanticturkey.resources.OntTempFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.resources.VersionNumber;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponse;
@@ -71,6 +73,7 @@ public class Administration extends ServiceAdapter {
 	protected static String getOntologyMirror = "getOntologyMirror";
 	protected static String deleteOntMirrorEntry = "deleteOntMirrorEntry";
 	protected static String updateOntMirrorEntry = "updateOntMirrorEntry";
+	protected static String getVersion = "getVersion";
 
 	@Autowired
 	public Administration(@Value("Administration") String id) {
@@ -111,7 +114,9 @@ public class Administration extends ServiceAdapter {
 
 			return updateOntologyMirrorEntry(updateType, baseURI, mirrorFileName, location);
 
-		} else
+		} else if(request.equals(getVersion)){
+			return getVersion();
+		}else
 			return ServletUtilities.getService().createExceptionResponse(request,
 					"no handler for such a request!");
 
@@ -204,6 +209,24 @@ public class Administration extends ServiceAdapter {
 				"mirror entry updated");
 	}
 
+	
+	public XMLResponse getVersion() {
+
+		VersionNumber currentVersionNumber = Config.getVersionNumber();
+		String version=currentVersionNumber.toString();
+		
+		XMLResponseREPLY resp = ServletUtilities.getService().createReplyResponse(getVersion,
+				RepliesStatus.ok);
+		
+		Element dataElement = resp.getDataElement();
+		Element valueElem = XMLHelp.newElement(dataElement, "value");
+		valueElem.setAttribute("type", XmlSchema.STRING);
+		valueElem.setTextContent(version);
+		dataElement.appendChild(valueElem);
+		
+		return resp;
+	}
+	
 	/*
 	 * this is the old version of updateOntologyMirror which I i-do-not-know-why implemented as a rename. I
 	 * keep it, in case i decide to implement a rename ontology mirror entry service
