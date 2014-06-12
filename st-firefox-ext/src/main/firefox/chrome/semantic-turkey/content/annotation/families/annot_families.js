@@ -16,11 +16,17 @@ art_semanticturkey.registerAnnotationFamilies = function() {
 
 		// Bind conventional functions
 		bookmarking.checkAnnotationsForContent = art_semanticturkey.annotation.bookmarking.checkAnnotationsForContent;
-		bookmarking.getAnnotationsForContent = art_semanticturkey.STRequests.Annotation.getPageAnnotations;
-		bookmarking.deleteAnnotation = art_semanticturkey.STRequests.Annotation.removeAnnotation;
+		bookmarking.getAnnotationsForContent = function(urlPage){
+			return art_semanticturkey.STRequests.Annotation.getPageAnnotations(urlPage);
+		};
+		bookmarking.deleteAnnotation = function(id){
+			return art_semanticturkey.STRequests.Annotation.removeAnnotation(id);
+		};
 		bookmarking.annotation2ranges = art_semanticturkey.annotation.bookmarking.annotation2ranges;
 		bookmarking.furtherAnn = art_semanticturkey.annotation.bookmarking.furtherAnn;
-		bookmarking.getAnnotatedContentResources = art_semanticturkey.STRequests.Annotation.getAnnotatedContentResources;
+		bookmarking.getAnnotatedContentResources = function(resource) {
+			return art_semanticturkey.STRequests.Annotation.getAnnotatedContentResources(resource);
+		};
 
 		// Register default handlers
 		art_semanticturkey.annotation.commons.registerCommonHandlers(bookmarking);
@@ -33,11 +39,17 @@ art_semanticturkey.registerAnnotationFamilies = function() {
 
 		// Bind conventional functions
 		rangeannotation.checkAnnotationsForContent = art_semanticturkey.annotation.rangeannotation.checkAnnotationsForContent;
-		rangeannotation.getAnnotationsForContent = art_semanticturkey.STRequests.RangeAnnotation.getPageAnnotations;
-		rangeannotation.deleteAnnotation = art_semanticturkey.STRequests.RangeAnnotation.deleteAnnotation;
+		rangeannotation.getAnnotationsForContent = function(urlPage){
+			return art_semanticturkey.STRequests.RangeAnnotation.getPageAnnotations(urlPage);
+		};
+		rangeannotation.deleteAnnotation = function(id){
+			return art_semanticturkey.STRequests.RangeAnnotation.deleteAnnotation(id);
+		};
 		rangeannotation.annotation2ranges = art_semanticturkey.annotation.rangeannotation.annotation2ranges;
 		rangeannotation.furtherAnn = art_semanticturkey.annotation.rangeannotation.furtherAnn;
-		rangeannotation.getAnnotatedContentResources = art_semanticturkey.STRequests.RangeAnnotation.getAnnotatedContentResources;
+		rangeannotation.getAnnotatedContentResources = function(resource) {
+			return art_semanticturkey.STRequests.RangeAnnotation.getAnnotatedContentResources(resource);
+		};
 
 		// Register default handlers
 		art_semanticturkey.annotation.commons.registerCommonHandlers(rangeannotation);

@@ -108,6 +108,7 @@ service.prototype.setAdminLevel = setAdminLevel;
 service.prototype.getOntologyMirror = getOntologyMirror;
 service.prototype.deleteOntMirrorEntry = deleteOntMirrorEntry;
 service.prototype.updateOntMirrorEntry = updateOntMirrorEntry;
+service.prototype.getVersion = getVersion;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

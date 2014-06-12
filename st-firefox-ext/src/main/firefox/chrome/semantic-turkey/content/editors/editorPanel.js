@@ -432,7 +432,7 @@ art_semanticturkey.init = function(type, sourceElementName, superName,
 			art_semanticturkey.getPropertyDescription_RESPONSE(responseXML);
 		}
 	} catch (e) {
-		art_semanticturkey.Logger.error("EDITOR: catch error \n"+e.name + ": " + e.message); 
+		art_semanticturkey.Logger.printException("EDITOR: catch error \n"+e.name + ": " + e.message + "\nLine Number:" + e.lineNumber); 
 		//This alert cannot be shown, an error is thrown when trying to open an alert at this point
 		//alert(e.name + ": " + e.message);
 	}
