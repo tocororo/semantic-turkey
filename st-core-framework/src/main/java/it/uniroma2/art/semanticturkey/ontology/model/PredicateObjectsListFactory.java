@@ -12,9 +12,11 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 public class PredicateObjectsListFactory {
 
@@ -72,5 +74,9 @@ public class PredicateObjectsListFactory {
 		}
 
 		return new PredicateObjectsListImpl(art2STRDFPredicates, resultPredicateObjectValues);
+	}
+	
+	public static PredicateObjectsList createPredicateObjectsList(Map<ARTURIResource, STRDFResource> art2STRDFPredicates, Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues) {
+		return new PredicateObjectsListImpl(art2STRDFPredicates, resultPredicateObjectValues);	
 	}
 }

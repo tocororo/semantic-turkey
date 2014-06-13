@@ -38,7 +38,6 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -334,7 +333,11 @@ public class RDFXMLHelp {
 
 	public static Element addPredicateObjectList(XMLResponseREPLY resp, PredicateObjectsList predObjList) {
 		Element dataElement = resp.getDataElement();
-		Element collectionNameElem = XMLHelp.newElement(dataElement, "collection");
+		return addPredicateObjectList(dataElement, predObjList);
+	}
+	
+	public static Element addPredicateObjectList(Element parent, PredicateObjectsList predObjList) {
+		Element collectionNameElem = XMLHelp.newElement(parent, "collection");
 		Collection<STRDFResource> preds = predObjList.getPredicates();
 		for (STRDFResource pred : preds) {
 			Element predObjectElem = XMLHelp.newElement(collectionNameElem, "predicateObjects");

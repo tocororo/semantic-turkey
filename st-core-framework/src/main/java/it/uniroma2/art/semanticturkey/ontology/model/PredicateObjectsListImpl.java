@@ -5,17 +5,17 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Map;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 public class PredicateObjectsListImpl implements PredicateObjectsList {
 
-	HashMultimap<ARTURIResource, STRDFNode> valueMultiMap;
-	HashMap<ARTURIResource, STRDFResource> propMap;
+	Multimap<ARTURIResource, STRDFNode> valueMultiMap;
+	Map<ARTURIResource, STRDFResource> propMap;
 
-	PredicateObjectsListImpl(HashMap<ARTURIResource, STRDFResource> propMap,
-			HashMultimap<ARTURIResource, STRDFNode> valueMultiMap) {
+	PredicateObjectsListImpl(Map<ARTURIResource, STRDFResource> propMap,
+			Multimap<ARTURIResource, STRDFNode> valueMultiMap) {
 		this.propMap = propMap;
 		this.valueMultiMap = valueMultiMap;
 	}
