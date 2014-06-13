@@ -4,7 +4,6 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
@@ -49,15 +48,6 @@ public class Resource extends STServiceAdapter {
 		it.close();
 		
 		return values;
-	}
-	
-	public ARTResource[] getUserNamedGraphs() {
-		ARTResource[] graphs = {NodeFilters.ANY};
-		return graphs;
-	}
-	
-	public ARTResource getWorkingGraph() {
-		return NodeFilters.MAINGRAPH;
 	}
 	
 }
