@@ -2,7 +2,10 @@ package it.uniroma2.art.semanticturkey.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
@@ -13,10 +16,21 @@ public class STServiceAdapter implements STService {
 	private STServiceContext stServiceContext;
 	
 	protected ServletUtilities servletUtilities = ServletUtilities.getService();
-	// private HttpServletRequest req;	
 	
 	public OWLModel getOWLModel() {
 		return stServiceContext.getProject().getOWLModel();
+	}
+	
+	public Project<? extends RDFModel> getProject() {
+		return stServiceContext.getProject();
+	}
+
+	public ARTResource[] getUserNamedGraphs() {
+		return stServiceContext.getRGraphs();
+	}
+	
+	public ARTResource getWorkingGraph() {
+		return stServiceContext.getWGraph();
 	}
 
 	private String getRequest() {
