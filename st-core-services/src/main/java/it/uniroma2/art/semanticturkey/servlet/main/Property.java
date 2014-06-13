@@ -1103,7 +1103,6 @@ public class Property extends ResourceOld {
 	 * @return Response tree
 	 */
 	public Response getDomainClassesTreeXML(String propertyQName) {
-		ClsOld cls = new ClsOld("cls");
 		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
@@ -1116,7 +1115,7 @@ public class Property extends ResourceOld {
 			while (domainClasses.streamOpen()) {
 				ARTResource domainClass = domainClasses.getNext();
 				if (domainClass.isURIResource())
-					cls.recursiveCreateClassesXMLTree(ontModel, domainClass.asURIResource(), dataElement);
+					ClsOld.recursiveCreateClassesXMLTree(getProject(), domainClass.asURIResource(), dataElement);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getDomainClassesTreeRequest, e);
@@ -1131,7 +1130,6 @@ public class Property extends ResourceOld {
 	 * @return Response tree
 	 */
 	public Response getRangeClassesTreeXML(String propertyQName) {
-		ClsOld cls = new ClsOld("cls");
 		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
@@ -1144,7 +1142,7 @@ public class Property extends ResourceOld {
 			while (rangeClasses.streamOpen()) {
 				ARTResource rangeClass = rangeClasses.getNext();
 				if (rangeClass.isURIResource())
-					cls.recursiveCreateClassesXMLTree(ontModel, rangeClass.asURIResource(), dataElement);
+					ClsOld.recursiveCreateClassesXMLTree(getProject(), rangeClass.asURIResource(), dataElement);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getRangeClassesTreeRequest, e);

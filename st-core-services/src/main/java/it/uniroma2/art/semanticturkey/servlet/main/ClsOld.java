@@ -52,6 +52,7 @@ import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -613,7 +614,7 @@ public class ClsOld extends ResourceOld {
 			filtIt = Iterators.filter(namedClassesIt, rootUserClsPred);
 			while (filtIt.hasNext()) {
 				ARTURIResource cls = filtIt.next().asURIResource();
-				recursiveCreateClassesXMLTree(ontModel, cls, dataElement, graphs);
+				recursiveCreateClassesXMLTree(getProject(), cls, dataElement, graphs);
 			}
 			namedClassesIt.close();
 		} catch (ModelAccessException e) {
@@ -641,16 +642,17 @@ public class ClsOld extends ResourceOld {
 	 * for each of these, a dedicated
 	 * </p>
 	 * 
-	 * @param ontModel
+	 * @param project
 	 * @param cls
 	 * @param element
 	 * @throws DOMException
 	 * @throws ModelAccessException
 	 */
-	void recursiveCreateClassesXMLTree(RDFSModel ontModel, ARTURIResource cls, Element element,
+	public static void recursiveCreateClassesXMLTree(Project<?> project, ARTURIResource cls, Element element,
 			ARTResource... graphs) throws DOMException, ModelAccessException {
+		RDFModel ontModel = project.getOWLModel();
 		Element classElement = XMLHelp.newElement(element, "Class");
-		boolean deleteForbidden = servletUtilities.checkReadOnly(cls, getProject());
+		boolean deleteForbidden = ServletUtilities.getService().checkReadOnly(cls, project);
 		classElement.setAttribute("name", ontModel.getQName(cls.getURI()));
 
 		int numInst = ModelUtilities.getNumberOfClassInstances((DirectReasoning) ontModel, cls, true, graphs);
@@ -668,7 +670,7 @@ public class ClsOld extends ResourceOld {
 		Element subClassesElem = XMLHelp.newElement(classElement, "SubClasses");
 		while (namedSubClassesIterator.hasNext()) {
 			ARTURIResource subClass = namedSubClassesIterator.next().asURIResource();
-			recursiveCreateClassesXMLTree(ontModel, subClass, subClassesElem, graphs);
+			recursiveCreateClassesXMLTree(project, subClass, subClassesElem, graphs);
 		}
 		subClassesIterator.close();
 	}
