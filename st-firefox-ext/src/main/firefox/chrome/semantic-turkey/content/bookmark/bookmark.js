@@ -56,8 +56,8 @@ art_semanticturkey.chkBookmarks = function(event) {
 art_semanticturkey.checkBookmarks_RESPONSE = function(responseElement) {
 	var act = responseElement.getElementsByTagName('value')[0].textContent.trim() == "true" ? true : false;
 
-	var statusIcon = document.getElementById("status-bar-bookmark");
-	statusIcon.collapsed = !act;
+	var statusIcon = document.getElementById("showBookmarksButton");
+	statusIcon.hidden = !act;
 };
 
 art_semanticturkey.openBookmarksDialog = function() {

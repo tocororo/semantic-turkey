@@ -196,9 +196,9 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 			art_semanticturkey.ContexMenu.clearRepository, true);
 	document.getElementById("mirror_ontologies").addEventListener("command",
 			art_semanticturkey.ContexMenu.manageOntologyMirror, true);
-	document.getElementById("status-bar-annotation").addEventListener("click",
+	document.getElementById("annotationHighlightButton").addEventListener("click",
 			art_semanticturkey.viewAnnotationOnPage, true);
-	document.getElementById("status-bar-bookmark").addEventListener("click",
+	document.getElementById("showBookmarksButton").addEventListener("click",
 			art_semanticturkey.openBookmarksDialog, true);
 
 	// Projects menu

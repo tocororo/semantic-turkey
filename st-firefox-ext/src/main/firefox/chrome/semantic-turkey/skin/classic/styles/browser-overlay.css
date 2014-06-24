@@ -34,12 +34,12 @@
     padding: 4px 12px 0 33px;
     margin-right: 5px;
     margin-left: 5px;
-    background: transparent url(chrome://semantic-turkey/skin/classic/images/searchicon.png) top left no-repeat; }
-    
- 
-  #status-bar-annotation {
-     list-style-image: url("chrome://semantic-turkey/skin/images/highlighter.png");
-     cursor: pointer;	
+    background: transparent url(chrome://semantic-turkey/skin/images/searchicon.png) top left no-repeat;
 }
-  
+
+#showBookmarksButton {
+	/* Icon grabbed from Firefox 29 Theme */
+	list-style-image: url('chrome://semantic-turkey/skin/images/star-icons.png');
+	-moz-image-region: rect(0px, 32px, 16px, 16px); /* The image is a sprite composed of two images side-by-side */
+}
 

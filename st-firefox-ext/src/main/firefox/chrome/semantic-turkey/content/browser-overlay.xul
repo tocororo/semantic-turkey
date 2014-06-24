@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<?xml-stylesheet href="chrome://semantic-turkey/skin/classic/styles/browser-overlay.css" type="text/css"?>
+<?xml-stylesheet href="chrome://semantic-turkey/skin/styles/browser-overlay.css" type="text/css"?>
 <?xml-stylesheet href="page.css" type="text/css"?>
 <!DOCTYPE overlay SYSTEM "chrome://semantic-turkey/locale/browser-overlay.dtd">
 	<!--
@@ -104,6 +104,12 @@
 			<toolbarbutton id="humanReadableButton"
 				image="chrome://semantic-turkey/skin/images/user.png"
 				tooltiptext="Human readable labels" hidden="true" type="checkbox" autocheck="false" />
+				
+			<toolbarbutton id="annotationHighlightButton"
+				image="chrome://semantic-turkey/skin/images/highlighter.png"
+				tooltiptext="Annotated Page" collapsed="true" />
+			<toolbarbutton id="showBookmarksButton"
+				tooltiptext="Show Page Topics" hidden="true" />
 		</toolbar>
 	</toolbox>
 
@@ -178,14 +184,6 @@
 		<toolbarbutton id="status_bar_annotation_button" class="toolbarbutton-1"
 			tooltiptext="Annotated Page" />
 	</toolbarpalette>
-	<statusbar id="status-bar">
-		<statusbarpanel id="status-bar-bookmark" collapsed="true"
-			class="statusbarpanel-iconic" tooltiptext="Show Page Topics"
-			src="chrome://browser/skin/places/pageStarred.png" />
-		<statusbarpanel id="status-bar-annotation" collapsed="true"
-			class="statusbarpanel-iconic" tooltiptext="Annotated Page"
-			src="chrome://semantic-turkey/skin/images/highlighter.png" />
-	</statusbar>
 </overlay>	
 	
 	

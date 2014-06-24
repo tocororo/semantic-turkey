@@ -73,10 +73,10 @@ art_semanticturkey.checkAnnotationsForContent_RESPONSE = function(doc) {
 	var projectIsNull = art_semanticturkey.CurrentProject.isNull();
 	
 	if (projectIsNull == false && (doc.getUserData("stAnnotationsExist") == "true")) {
-		var statusIcon = document.getElementById("status-bar-annotation");
+		var statusIcon = document.getElementById("annotationHighlightButton");
 		statusIcon.collapsed = false;
 	} else {
-		var statusIcon = document.getElementById("status-bar-annotation");
+		var statusIcon = document.getElementById("annotationHighlightButton");
 		statusIcon.collapsed = true;
 	}
 };
