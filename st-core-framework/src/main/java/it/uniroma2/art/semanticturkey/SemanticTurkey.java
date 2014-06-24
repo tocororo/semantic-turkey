@@ -28,19 +28,13 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.resources.VersionNumber;
-import it.uniroma2.art.semanticturkey.servlet.Proxy;
-import it.uniroma2.art.semanticturkey.servlet.STServer;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 import java.io.File;
 import java.net.URISyntaxException;
 
-import org.mortbay.http.HttpContext;
 import org.mortbay.http.HttpServer;
-import org.mortbay.http.SocketListener;
-import org.mortbay.http.handler.ResourceHandler;
-import org.mortbay.jetty.servlet.ServletHandler;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;

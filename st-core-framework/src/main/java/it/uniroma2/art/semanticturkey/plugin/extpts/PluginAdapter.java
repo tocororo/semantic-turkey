@@ -26,9 +26,8 @@ package it.uniroma2.art.semanticturkey.plugin.extpts;
 import it.uniroma2.art.semanticturkey.exceptions.PluginDisposedException;
 import it.uniroma2.art.semanticturkey.exceptions.PluginInitializationException;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.STServer;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 
 /**
  * @author Armando Stellato
@@ -36,6 +35,9 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
  */
 public abstract class PluginAdapter implements PluginInterface {
 
+	public static final String pluginActivateRequest = "activate";
+	public static final String pluginDeactivateRequest = "deactivate";
+	
 	protected String id = null;
 	protected boolean active = false;
 	protected String activationMessage = null;
@@ -54,17 +56,17 @@ public abstract class PluginAdapter implements PluginInterface {
 			if (dispose()) {
 				active=false;
 				if (activationMessage == null)
-					return ServletUtilities.getService().createReplyResponse(STServer.pluginDeactivateRequest,
+					return ServletUtilities.getService().createReplyResponse(pluginDeactivateRequest,
 							RepliesStatus.ok);
 				else
-					return ServletUtilities.getService().createReplyResponse(STServer.pluginDeactivateRequest,
+					return ServletUtilities.getService().createReplyResponse(pluginDeactivateRequest,
 							RepliesStatus.warning, activationMessage);
 			} else
-				return ServletUtilities.getService().createReplyResponse(STServer.pluginDeactivateRequest,
+				return ServletUtilities.getService().createReplyResponse(pluginDeactivateRequest,
 						RepliesStatus.fail, activationMessage);
 
 		} catch (PluginDisposedException e) {
-			return ServletUtilities.getService().createExceptionResponse(STServer.pluginDeactivateRequest,
+			return ServletUtilities.getService().createExceptionResponse(pluginDeactivateRequest,
 					e.toString());
 		}
 	}
@@ -75,17 +77,17 @@ public abstract class PluginAdapter implements PluginInterface {
 			if (initialize()) {
 				active=true;
 				if (activationMessage == null)
-					return ServletUtilities.getService().createReplyResponse(STServer.pluginActivateRequest,
+					return ServletUtilities.getService().createReplyResponse(pluginActivateRequest,
 							RepliesStatus.ok);
 				else
-					return ServletUtilities.getService().createReplyResponse(STServer.pluginActivateRequest,
+					return ServletUtilities.getService().createReplyResponse(pluginActivateRequest,
 							RepliesStatus.warning, activationMessage);
 			} else
-				return ServletUtilities.getService().createReplyResponse(STServer.pluginActivateRequest,
+				return ServletUtilities.getService().createReplyResponse(pluginActivateRequest,
 						RepliesStatus.fail, activationMessage);
 
 		} catch (PluginInitializationException e) {
-			return ServletUtilities.getService().createExceptionResponse(STServer.pluginActivateRequest,
+			return ServletUtilities.getService().createExceptionResponse(pluginActivateRequest,
 					e.toString());
 		}
 	}
