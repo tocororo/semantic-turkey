@@ -38,8 +38,6 @@
 }
 
 #showBookmarksButton {
-	/* Icon grabbed from Firefox 29 Theme */
-	list-style-image: url('chrome://semantic-turkey/skin/images/star-icons.png');
-	-moz-image-region: rect(0px, 32px, 16px, 16px); /* The image is a sprite composed of two images side-by-side */
+	list-style-image: url('chrome://semantic-turkey/skin/images/star.png');
 }
 
