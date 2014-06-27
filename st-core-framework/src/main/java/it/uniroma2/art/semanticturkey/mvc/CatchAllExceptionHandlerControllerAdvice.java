@@ -10,6 +10,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.hibernate.validator.method.MethodConstraintViolation;
 import org.hibernate.validator.method.MethodConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +27,14 @@ import org.w3c.dom.Document;
 @ControllerAdvice
 public class CatchAllExceptionHandlerControllerAdvice {
 
+	private static Logger logger = LoggerFactory.getLogger(CatchAllExceptionHandlerControllerAdvice.class);
+	
 	@ExceptionHandler(MethodConstraintViolationException.class)
 	public ResponseEntity<String> handleException(MethodConstraintViolationException ex,
 			HttpServletRequest request) {
-
+		
+		logger.debug("Exception catched by the Controller Advice", ex);
+		
 		ServletUtilities servUtils = ServletUtilities.getService();
 
 		StringBuilder errorMsg = new StringBuilder();
@@ -49,6 +55,8 @@ public class CatchAllExceptionHandlerControllerAdvice {
 	public ResponseEntity<String> handleException(Exception ex, HttpServletRequest request) {
 		ServletUtilities servUtils = ServletUtilities.getService();
 
+		logger.debug("Exception catched by the Controller Advice", ex);
+		
 		Response stResp;
 
 		if (ex instanceof RuntimeException) {
