@@ -4,7 +4,7 @@ pref("extensions.semturkey.log", "info");
 pref("extensions.semturkey.extpt.annotate", "it.uniroma2.art.semanticturkey.annotation.bookmarking");
 pref("extensions.semturkey.server.host", "127.0.0.1");
 pref("extensions.semturkey.server.port", "1979");
-pref("extensions.semturkey.server.path", "/semantic_turkey/resources/stserver/STServer");
+pref("extensions.semturkey.server.path", "/semanticturkey/resources/stserver/STServer");
 //pref("extensions.semturkey.isLastProjMain", true);
 //pref("extensions.semturkey.firstStart", true);
 pref("extensions.semturkey.isDefaultSet", false);

@@ -51,7 +51,7 @@ SemTurkeyHTTPLegacy = new function() {
 	// TODO should put a listener for hot changing to these preferences
 	var serverhost = Preferences.get("extensions.semturkey.server.host", "127.0.0.1");
 	var serverport = Preferences.get("extensions.semturkey.server.port", "1979");
-	var serverpath = Preferences.get("extensions.semturkey.server.path", "/semantic_turkey/resources/stserver/STServer");
+	var serverpath = Preferences.get("extensions.semturkey.server.path", "/semanticturkey/resources/stserver/STServer");
 
 	this.getName = function() {
 		return 'SemTurkeyHTTPLegacy';

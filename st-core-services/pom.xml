@@ -103,6 +103,15 @@
 
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.0.2</version>
+				<configuration>
+					<fork>true</fork>
+					<compilerArgument>-Ait.uniroma2.art.semanticturkey.generation.controller.path.prefix=${project.groupId}\/${project.artifactId}</compilerArgument>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
 				<version>2.3.7</version>
@@ -111,8 +120,9 @@
 					<instructions>
 						<!-- <_wab>src/main/webapp</_wab> could also use src/main/resources 
 							if you like -->
-						<Webapp-Context>semantic_turkey</Webapp-Context>
-						<Web-ContextPath>semantic_turkey</Web-ContextPath>
+						<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+						<Webapp-Context>semanticturkey</Webapp-Context>
+						<Web-ContextPath>semanticturkey</Web-ContextPath>
 						<Export-Package>
 							<!-- The following is required to make core service classes (SKOS[XL], 
 								...) available for extensions -->
