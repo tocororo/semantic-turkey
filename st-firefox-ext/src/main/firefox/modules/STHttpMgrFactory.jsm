@@ -130,19 +130,26 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			aURL += this.splitAndEncode(contextArray[i]);
 		}
 		
-		
+		//Edited by Tiziano: if 5th argument is a FormData, then it will be setted directly as "parameters" 
 		if (arguments.length > 4) {
-			for ( var i = 4; i < arguments.length; i++) {
-				if(Array.isArray(arguments[i])){
-					for(var k=0; k<arguments[i].length; ++k){
-						parameters += this.splitAndEncode(arguments[i][k]);
+			//using FormData
+			if (arguments.length == 5 && arguments[4] instanceof Components.interfaces.nsIDOMFormData){
+				parameters = arguments[4];
+			} else {
+				for ( var i = 4; i < arguments.length; i++) {
+					if(Array.isArray(arguments[i])){
+						for(var k=0; k<arguments[i].length; ++k){
+							parameters += this.splitAndEncode(arguments[i][k]);
+						}
+					} else{
+						Logger.debug("arg["+i+"] " +arguments[i] );
+						parameters += this.splitAndEncode(arguments[i]);
 					}
-				} else{
-					parameters += this.splitAndEncode(arguments[i]);
 				}
 			}
 		}
 		Logger.debug("POST: aURL  = "+aURL); // DEBUG
+		
 		return this.submitHTTPRequest(realRespType, aURL, "POST", false, parameters);
 	};
 
@@ -229,14 +236,19 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 		}
 
 		httpReq.onerror = httpError;
-
+		
 		// try {
 		httpReq.setRequestHeader("User-Agent", USER_AGENT);
 		if (method == "POST") {
-			httpReq.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			//Edited by Tiziano:
+			//content-type is set to application/x-www-form-urlencoded only if parameters is not a FormData 
+			if (!parameters instanceof Components.interfaces.nsIDOMFormData) {
+				httpReq.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			}
 			httpReq.setRequestHeader("Content-length", parameters.length);
-			// httpReq.setRequestHeader("Connection", "close");
+			// 	httpReq.setRequestHeader("Connection", "close");
 		}
+		
 		if (respType instanceof XMLRespContType)
 			httpReq.setRequestHeader("Accept", "application/xml");
 		else if (respType instanceof JSONRespContType)
@@ -298,6 +310,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			};
 
 			if (newResponseXML.isException()) {
+				Logger.debug("[STHttpMgrFactory.jsm] EXCEPTION: "+ newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
 				throw new STException("java.prova.exception", newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
 			}
 			
@@ -306,6 +319,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			};
 			
 			if (newResponseXML.isError()) {
+				Logger.debug("[STHttpMgrFactory.jsm] ERROR: "+ newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
 				throw new STError("java.prova.exception", newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
 			}
 			newResponseXML.getContent = function() {

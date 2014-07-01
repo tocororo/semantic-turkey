@@ -2,9 +2,18 @@
 
 <features>
 
- <feature name="semantic_prereq" version="1.0">
-	
-		<!--  Owlart -->
+	<feature name="semantic_prereq" version="1.0">
+
+		
+		<!-- These bundles provide optional dependencies for spring-web, in order to support multipart
+			resolver. It's important that these bundles are installed before spring-web, otherwise the latter
+			must be refreshed to pick the optional packages.
+			See http://fusesource.com/forums/thread.jspa?threadID=4139 -->
+		<!-- Commons io and fileupload -->
+		<bundle>mvn:commons-io/commons-io/2.4</bundle>
+		<bundle>mvn:org.apache.commons/com.springsource.org.apache.commons.fileupload/1.2.0</bundle>
+
+		<!-- Owlart -->
 		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.0.6-SNAPSHOT</bundle>
 
 		<!-- Web-Console -->
