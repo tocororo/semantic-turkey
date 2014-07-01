@@ -8,10 +8,12 @@ import java.io.InputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -41,10 +43,43 @@ public class STServiceProcessor extends AbstractProcessor {
 	private static final String TEMPLATE_CLASSPATH_CLASSPATH_NAME = CLASSPATH_RESOURCES_BASE
 			+ "/spring_controller.vm";
 
-	public STServiceProcessor() {
-		super();
+	private static class Options {
+		public static final String CONTROLLER_PATH_PREFIX = "it.uniroma2.art.semanticturkey.generation.controller.path.prefix";
 	}
-
+	
+	private static final Map<String, String> optionsWithDefaults;
+	
+	static {
+		optionsWithDefaults = new HashMap<String, String>();
+		optionsWithDefaults.put(Options.CONTROLLER_PATH_PREFIX, "");
+	}
+	
+	private Map<String, String> options;
+	
+	@Override
+	public Set<String> getSupportedOptions() {
+		return optionsWithDefaults.keySet();
+	}
+	
+	@Override
+	public synchronized void init(ProcessingEnvironment processingEnv) {
+		super.init(processingEnv);
+		
+		Map<String, String> providedOptions = processingEnv.getOptions();
+		
+		options = new HashMap<String, String>();
+		
+		for (Entry<String, String> entry : optionsWithDefaults.entrySet()) {
+			String providedOption = providedOptions.get(entry.getKey());
+			
+			if (providedOption == null) {
+				options.put(entry.getKey(), entry.getValue());
+			} else {
+				options.put(entry.getKey(), providedOption);
+			}
+		}
+	}
+	
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		System.out.println("generating:");
@@ -127,6 +162,8 @@ public class STServiceProcessor extends AbstractProcessor {
 
 					vc.put("generatedPackageName", generatedPackageName);
 					vc.put("generatedClassSimpleName", generatedClassSimpleName);
+					
+					vc.put("controllerPathPrefix", options.get(Options.CONTROLLER_PATH_PREFIX));
 					
 					jfo = processingEnv.getFiler().createSourceFile(
 							generatedPackageName + "." + generatedClassSimpleName);
