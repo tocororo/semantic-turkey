@@ -45,7 +45,6 @@
 							to import: -->
 						<Import-Package>!com.hp.*,
 							!com.hp.jena.*,
-							!au.com.bytecode.opencsv,
 							!org.apache.avalon.framework.*,
 							!ch.qos.logback.*,
 							!org.apache.commons.cli,
