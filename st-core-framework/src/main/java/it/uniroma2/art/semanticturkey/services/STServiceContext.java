@@ -8,4 +8,5 @@ public interface STServiceContext {
 	Project<?> getProject(int index);
 	ARTResource getWGraph();
 	ARTResource[] getRGraphs();
+	String getExtensionPathComponent();
 }

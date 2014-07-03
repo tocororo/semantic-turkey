@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.http;
 
-import java.util.Arrays;
-
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -9,14 +7,19 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import javax.servlet.ServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.io.Resource;
 
 public class STServiceHTTPContext implements STServiceContext, ApplicationListener<ContextRefreshedEvent> {
 
@@ -29,11 +32,16 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	private static final String HTTP_ARG_ANY_GRAPH = "ANY";
 
 	protected static Logger logger = LoggerFactory.getLogger(STServiceHTTPContext.class);
-	
+
 	@Autowired
 	private ServletRequest request;
 
+	@Autowired
+	private ApplicationContext applicationContext;
+
 	private ConversionService conversionService;
+
+	private String extensionPathComponent = null;
 
 	@Override
 	public Project<?> getProject() {
@@ -51,7 +59,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		}
 
 		logger.trace("project = " + project);
-		
+
 		return project;
 	}
 
@@ -80,7 +88,6 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		ARTResource[] rgraphs = conversionService.convert(rgraphsParameter, ARTResource[].class);
 
-		
 		logger.trace("rgraphs = " + Arrays.toString(rgraphs));
 
 		return rgraphs;
@@ -96,6 +103,37 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 			projectPar = new StringBuilder(HTTP_PARAM_PROJECT).append("_").append(index).toString();
 		}
 		return ProjectManager.getProject(request.getParameter(projectPar.toString()));
+	}
+
+	@Override
+	public String getExtensionPathComponent() {
+		// Returns previously determined extension path component (i.e., groupId/artifactId)
+		if (extensionPathComponent != null) {
+			return extensionPathComponent;
+		}
+		
+		// Otherwise, computes the extension path component by looking at the path of the resource pom.properties added by Maven
+		Resource[] resources;
+		try {
+			resources = applicationContext.getResources("classpath*:/META-INF/maven/**/pom.properties");
+		} catch (IOException e) {
+			throw new InvalidContextException("An exception occurred while loading resources from the location classpath*:/META-INF/maven/**/pom.properties", e);
+		}
+		if (resources.length == 0) {
+			throw new InvalidContextException("No resource found at the location classpath*:/META-INF/maven/**/pom.properties");
+		}
+		
+		Resource r = resources[0];
+		
+		try {
+			// Path elements should be xxx, yyy, zzz, META-INF, maven, groupId, artifactId, pom.properties
+			String[] pathElements = r.getURI().getPath().split("/");
+			extensionPathComponent = pathElements[pathElements.length - 3 ] + "/" + pathElements[pathElements.length - 2];
+		} catch (IOException e) {
+			throw new InvalidContextException("Error while referencing a resource located at classpath*:/META-INF/maven/**/pom.properties", e);
+		}
+		
+		return extensionPathComponent;
 	}
 
 	/*

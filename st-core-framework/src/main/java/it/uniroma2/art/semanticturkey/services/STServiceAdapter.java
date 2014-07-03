@@ -32,6 +32,10 @@ public class STServiceAdapter implements STService {
 	public ARTResource getWorkingGraph() {
 		return stServiceContext.getWGraph();
 	}
+	
+	public ARTResource getMetadataGraph() {
+		return stServiceContext.getProject().getMetadataGraph(stServiceContext.getExtensionPathComponent());
+	}
 
 	private String getRequest() {
 		return this.getClass().getSimpleName();

@@ -30,6 +30,7 @@ import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
@@ -37,7 +38,7 @@ import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
 import it.uniroma2.art.owlart.models.conf.BadConfigurationException;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
-
+import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -501,6 +502,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	
 	public ProjectACL getACL() {
 		return acl;
+	}
+
+	// Auxiliary graphs management
+	
+	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";
+	private static final String AUXILIARY_METADATA_GRAPH_SUFFIX = "/meta";
+
+	public ARTResource getMetadataGraph(String extensionPathComponent) {
+		return VocabUtilities.nodeFactory.createURIResource(AUXILIARY_METADATA_GRAPH_NAME_BASE + extensionPathComponent + AUXILIARY_METADATA_GRAPH_SUFFIX);
 	}
 	
 	
