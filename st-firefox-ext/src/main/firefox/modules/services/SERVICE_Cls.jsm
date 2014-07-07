@@ -31,7 +31,7 @@ var graphServiceName = STRequests.Graph.serviceName;
  * @return
  */
 function getClassesInfoAsRootsForTree(instNum, clsqnames) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassTree');
+	Logger.debug('[SERVICE_Cls.jsm] getClassTree '+instNum+" "+clsqnames);
 	var instNum = "instNum=" + instNum; // instNum should be true or false
 	var clsesqnames = "clsesqnames=" + clsqnames;
 	for ( var i = 2; i < arguments.length; i++)
@@ -49,7 +49,7 @@ function getClassesInfoAsRootsForTree(instNum, clsqnames) {
  * @return
  */
 function getClassTree(clsName) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassTree');
+	Logger.debug('[SERVICE_Cls.jsm] getClassTree '+clsName);
 	if (typeof clsName != "undefined") {
 		var className = "clsName=" + clsName;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -74,7 +74,7 @@ function getClassTree(clsName) {
  * @return
  */
 function getSubClasses(clsName, tree, instNum) {
-	Logger.debug('[SERVICE_Cls.jsm] getSubClasses');
+	Logger.debug('[SERVICE_Cls.jsm] getSubClasses '+clsName+" "+tree+" "+instNum);
 	var className = "clsName=" + clsName;
 	var tree = "tree=" + tree;
 	var instNum = "instNum=" + instNum;
@@ -89,7 +89,7 @@ function getSubClasses(clsName, tree, instNum) {
  * @return
  */
 function getClassDescription(clsName, method) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassTree');
+	Logger.debug('[SERVICE_Cls.jsm] getClassTree '+clsName+" "+method);
 	var className = "clsName=" + clsName;
 	var method = "method=" + method;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -104,7 +104,7 @@ function getClassDescription(clsName, method) {
  * @return
  */
 function getClassAndInstancesInfo(clsName, hasSubClasses) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassAndInstancesInfo' + clsName);
+	Logger.debug('[SERVICE_Cls.jsm] getClassAndInstancesInfo ' + clsName+" "+hasSubClasses);
 	var clsName = "clsName=" + clsName;
 	var resArray = new Array();
 	
@@ -126,6 +126,7 @@ function getClassAndInstancesInfo(clsName, hasSubClasses) {
  * @return
  */
 function removeClass(name) {
+	Logger.debug('[SERVICE_Cls.jsm] removeClass ' + name);
 	var myName = "name=" + name;
 	var myType = "type=Class";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -139,6 +140,7 @@ function removeClass(name) {
  * @return
  */
 function renameResource(newResourceName, oldResourceName) {
+	Logger.debug('[SERVICE_Cls.jsm] renameResource ' + newResourceName+" "+oldResourceName);
 	var myNewName = "newName=" + newResourceName;
 	var myOldName = "oldName=" + oldResourceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -153,11 +155,16 @@ function renameResource(newResourceName, oldResourceName) {
  * @return
  */
 function addClass(newClassName) {
-	//var superClassName = "superClassName=http://www.w3.org/2002/07/owl#Thing";
-	//var superClassName = "superClassName=owl:Thing";
-	//var newClassName = "newClassName=" + newClassName;
-	//return SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName, newClassName);
-	return addSubClass(newClassName, "owl:Thing");
+	Logger.debug('[SERVICE_Cls.jsm] addClass ' + newClassName);
+	//return addSubClass(newClassName, "owl:Thing");
+	var superClassName = "superClassName=" + "owl:Thing";
+	var newClassName = "newClassName=" + newClassName;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var reply =  SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName, newClassName, contextAsArray);
+	var resArray = new Array();
+	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
+	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
+	return resArray;
 }
 
 /**
@@ -169,6 +176,7 @@ function addClass(newClassName) {
  * @return
  */
 function addIndividual(clsName, instanceName) {
+	Logger.debug('[SERVICE_Cls.jsm] addIndividual ' + clsName+" "+instanceName);
 	var clsName = "clsName=" + clsName;
 	var instanceName = "instanceName=" + instanceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -189,6 +197,7 @@ function addIndividual(clsName, instanceName) {
  * @return
  */
 function addSubClass(newClassName, superClassName) {
+	Logger.debug('[SERVICE_Cls.jsm] addSubClass ' + newClassName+" "+superClassName);
 	var superClassName = "superClassName=" + superClassName;
 	var newClassName = "newClassName=" + newClassName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -234,6 +243,7 @@ function partialGraph(className) {
  * @return
  */
 function addType(clsqname, typeqname) {
+	Logger.debug('[SERVICE_Cls.jsm] addType ' + clsqname+" "+typeqname);
 	var clsqname = "clsqname=" + clsqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -253,6 +263,7 @@ function addType(clsqname, typeqname) {
  * @return
  */
 function removeType(clsqname, typeqname) {
+	Logger.debug('[SERVICE_Cls.jsm] removeType ' + clsqname+" "+typeqname);
 	var clsqname = "clsqname=" + clsqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -273,6 +284,7 @@ function removeType(clsqname, typeqname) {
  * @return
  */
 function addSuperCls(clsqname, superclsqname) {
+	Logger.debug('[SERVICE_Cls.jsm] addSuperCls ' + clsqname+" "+superclsqname);
 	var clsqname = "clsqname=" + clsqname;
 	var superclsqname = "superclsqname=" + superclsqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -293,6 +305,7 @@ function addSuperCls(clsqname, superclsqname) {
  * @return
  */
 function removeSuperCls(clsqname, superclsqname) {
+	Logger.debug('[SERVICE_Cls.jsm] removeSuperCls ' + clsqname+" "+superclsqname);
 	var clsqname = "clsqname=" + clsqname;
 	var superclsqname = "superclsqname=" + superclsqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -311,6 +324,7 @@ function removeSuperCls(clsqname, superclsqname) {
  * @return
  */
 function getSuperClasses(clsName) {
+	Logger.debug('[SERVICE_Cls.jsm] getSuperClasses ' + clsName);
 	var clsName = "clsName=" + clsName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSuperClassesRequest, clsName, contextAsArray));
