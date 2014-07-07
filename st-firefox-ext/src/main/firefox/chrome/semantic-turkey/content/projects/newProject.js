@@ -38,12 +38,12 @@ art_semanticturkey.populate_projectType = function() {
 			var ontologyTypeMenupopup = document.getElementById("ontologyTypeMenupopup");
 			
 			var menuitem = document.createElement("menuitem");
-			menuitem.setAttribute("value","SKOS");
+			menuitem.setAttribute("value","it.uniroma2.art.owlart.models.SKOSModel");
 			menuitem.setAttribute("label","SKOS");
 			ontologyTypeMenupopup.appendChild(menuitem);
 			
 			var menuitem2 = document.createElement("menuitem");
-			menuitem2.setAttribute("value","SKOS-XL");
+			menuitem2.setAttribute("value","it.uniroma2.art.owlart.models.SKOSXLModel");
 			menuitem2.setAttribute("label","SKOS-XL");
 			ontologyTypeMenupopup.appendChild(menuitem2);
 	 }
@@ -153,7 +153,6 @@ art_semanticturkey.onAccept = function() {
 	var tripleStore = document.getElementById("tripleStoreMenulist").selectedItem.getAttribute("id");
 	var ontMgrConfiguration = document.getElementById("modeMenulist").selectedItem.typeOntMgr;
 	var srcLocalFile = document.getElementById("srcLocalFile").value;
-	
 	
 	if((projectName == "") || (uri == "")){
 		alert("Please specify a name and a URI for the project");

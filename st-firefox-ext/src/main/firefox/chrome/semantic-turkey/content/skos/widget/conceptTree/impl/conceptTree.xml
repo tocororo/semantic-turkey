@@ -39,7 +39,7 @@
 				Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Commands.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", this.art_semanticturkey);
-				Components.utils.import("resource://stservices/SERVICE_Projects.jsm", this.art_semanticturkey);
+				//Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/PrefUtils.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Preferences.jsm", this.art_semanticturkey);				
 				Components.utils.import("resource://stmodules/ARTResources.jsm", this.art_semanticturkey);				

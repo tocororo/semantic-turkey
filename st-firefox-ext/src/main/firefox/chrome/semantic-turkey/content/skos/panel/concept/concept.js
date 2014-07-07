@@ -2,11 +2,13 @@ if (typeof art_semanticturkey == "undefined") {
 	var art_semanticturkey = {};
 }
 
+//Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/AnnotationManager.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 art_semanticturkey.init = function() {
 	var conceptTree = document.getElementById("conceptTree");
@@ -16,7 +18,13 @@ art_semanticturkey.init = function() {
 		conceptTree._addStateChangedListener(art_semanticturkey.conceptTreeStateChanged);
 	}, 0);
 	
-	conceptTree.conceptScheme = art_semanticturkey.STRequests.Projects.getProjectProperty("skos.selected_scheme", null).getElementsByTagName("property")[0].getAttribute("value");		
+	//conceptTree.conceptScheme = art_semanticturkey.STRequests.ProjectsOLD.
+	//getProjectProperty("skos.selected_scheme", null).getElementsByTagName("property")[0].getAttribute("value");	
+	
+	conceptTree.conceptScheme = art_semanticturkey.STRequests.Projects
+			.getProjectProperty(art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme")
+			.getElementsByTagName("property")[0].getAttribute("value");	
+	
 	
 	conceptTree._view.canDrop = function(index, orientation, dataTransfer) {
 		if (index != -1 && orientation == 0) {

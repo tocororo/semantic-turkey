@@ -1,8 +1,6 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_Projects.jsm",
-		art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 window.onload = function(){

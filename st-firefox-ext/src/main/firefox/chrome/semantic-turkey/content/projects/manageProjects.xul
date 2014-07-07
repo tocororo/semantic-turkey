@@ -103,8 +103,8 @@
 					<menuitem id="nullAction" label ="----"/>
 					<menuitem id="newProject" label ="new Project"
 						tooltiptext="Create a new empty project and open it" />
-					<menuitem id="newProjectFromFile" label ="new Project From File"
-						tooltiptext="Create a new project from a file and open it" />
+					<!-- <menuitem id="newProjectFromFile" label ="new Project From File"
+						tooltiptext="Create a new project from a file and open it" />-->
 					<menuitem id="imporProject" label ="Import Project"
 						tooltiptext="Import and open a project" />
 				</menupopup>

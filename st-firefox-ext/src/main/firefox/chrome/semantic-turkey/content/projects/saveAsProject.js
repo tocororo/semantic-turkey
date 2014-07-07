@@ -1,8 +1,8 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_Projects.jsm",
-		art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 window.onload = function(){
@@ -26,7 +26,7 @@ art_semanticturkey.onAccept = function() {
 		return;
 	}
 	try{
-		var responseXML = art_semanticturkey.STRequests.Projects.saveProjectAs(
+		var responseXML = art_semanticturkey.STRequests.ProjectsOLD.saveProjectAs(
 			projectName);
 		art_semanticturkey.saveAsProject_RESPONSE(responseXML, projectName);
 	}
@@ -38,8 +38,10 @@ art_semanticturkey.onAccept = function() {
 				//var oldProjectIsMain = art_semanticturkey.CurrentProject.isMainProject();
 				var oldProjectType = art_semanticturkey.CurrentProject.getType();
 				var oldProjectOntoType = art_semanticturkey.CurrentProject.getOntoType();
-				var responseXML = art_semanticturkey.STRequests.Projects.openProject(
-					projectName);
+				//var responseXML = art_semanticturkey.STRequests.ProjectsOLD.openProject(
+				//	projectName);
+				var responseXML = art_semanticturkey.STRequests.Projects.accessProject(
+						projectName);
 				art_semanticturkey.openProject_RESPONSE(responseXML, oldProjectName, oldProjectIsMain, oldProjectType, oldProjectOntoType);
 				
 			}

@@ -2,6 +2,9 @@ Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
+Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
+Components.utils.import("resource://stmodules/STInfo.jsm");
+
 Components.utils.import("resource://stmodules/Context.jsm");
 
 EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
@@ -16,11 +19,19 @@ var serviceName = service.serviceName;
  * @param name
  * @return
  */
-function openProject(name) {
-	Logger.debug('[SERVICE_Projects.jsm] openProject');
+function accessProject(projectName) {//NEW
+	Logger.debug('[SERVICE_Projects.jsm] accessProject');
 	var name = "name=" + name;
+	
+	var consumer = "consumer=" + STInfo.getSystemProjectName();	// DEFAULT
+	var projectName = "projectName="+projectName;
+	var requestedAccessLevel = "requestedAccessLevel=" + STInfo.getAccessRW(); // DEFAULT
+	var requestedLockLevel = "requestedLockLevel=" + STInfo.getLockNO(); // DEFAULT
+	
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.openProjectRequest, name, contextAsArray);
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.accessProjectRequest, this.context,
+			consumer, projectName, requestedAccessLevel, requestedLockLevel);
 }
 
 /**
@@ -34,11 +45,11 @@ function openProject(name) {
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.openMainProjectRequest);
 }*/
 
-function repairProject(name){
+function repairProject(projectName){	//NEW
 	Logger.debug('[SERVICE_Projects.jsm] repairProject');
-	var name = "name=" + name;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.repairProjectRequest, name, contextAsArray);
+	var projectName = "projectName=" + projectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.repairProjectRequest, this.context, projectName);
 }
 
 /**
@@ -56,23 +67,28 @@ function repairProject(name){
  *            or if it needs to be explicitly saved (<em>saveToStore</em>)
  * @return
  */
-function newProject(name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, cfgParsArray) {
+function newProject(projectName, modelType, baseURI, ontManagerFactoryID, modelConfigurationClass, 
+		modelConfigurationArray) { //NEW
 	Logger.debug('[SERVICE_Projects.jsm] newProject');
-	var name = "name=" + name;
-	var ontologyType = "ontologyType=" + ontologyType;
-	var baseuri = "baseuri=" + baseuri;
-	var ontmanager = "ontmanager=" + ontmanager;
-	var ontMgrConfiguration = "ontMgrConfiguration=" + ontMgrConfiguration;
-	var cfgPars = "cfgPars=";
-	for ( var i=0; i < cfgParsArray.length; ++i){
-		var namePar = cfgParsArray[i].name;
-		var valuePar = cfgParsArray[i].value;
+	
+	var consumer = "consumer="+ STInfo.getSystemProjectName(); 
+	var projectName = "projectName=" + projectName;
+	var modelType = "modelType=" + modelType;
+	var baseURI = "baseURI=" + baseURI;
+	var ontmanager = "ontManagerFactoryID=" + ontManagerFactoryID;
+	var ontMgrConfiguration = "modelConfigurationClass=" + modelConfigurationClass;
+	var modelConfiguration = "modelConfiguration=";
+	for ( var i=0; i < modelConfigurationArray.length; ++i){
+		var namePar = modelConfigurationArray[i].name;
+		var valuePar = modelConfigurationArray[i].value;
 		if(i!=0)
-			cfgPars +="|_|";
-		cfgPars += namePar+":::"+valuePar;
+			modelConfiguration +="\n";
+		modelConfiguration += namePar+"="+valuePar;
 	}
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.newProjectRequest, name, ontologyType,baseuri, ontmanager, ontMgrConfiguration, cfgPars, contextAsArray);
+	//var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
+			projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration);
 }
 
 /**
@@ -92,7 +108,7 @@ function newProject(name, ontologyType, baseuri, ontmanager, ontMgrConfiguration
  *            the path to the RDF file the data of which is automatically loaded inside the new project
  * @return
  */
-function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, cfgParsArray, file) {
+/*function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, cfgParsArray, file) {
 	Logger.debug('[SERVICE_Projects.jsm] newProjectFromFile');
 	var name = "name=" + name;
 	var ontologyType = "ontologyType=" + ontologyType;
@@ -110,7 +126,7 @@ function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfi
 	}
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.newProjectFromFileRequest, name, ontologyType, baseuri, ontmanager, ontMgrConfiguration, file, cfgPars, contextAsArray);
-}
+}*/
 
 /**
  * closes the current project
@@ -118,10 +134,13 @@ function newProjectFromFile(name, ontologyType, baseuri, ontmanager, ontMgrConfi
  * @member STRequests.Projects
  * @return
  */
-function closeProject() {
-	Logger.debug('[SERVICE_Projects.jsm] closeProject');
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.closeProjectRequest, contextAsArray);
+function disconnectFromProject(projectName) {	//NEW
+	Logger.debug('[SERVICE_Projects.jsm] disconnectFromProject');
+	var consumer = "consumer="+ STInfo.getSystemProjectName(); 
+	var projectName = "projectName="+projectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.disconnectFromProjectRequest, this.context,
+			consumer, projectName);
 }
 
 /**
@@ -131,11 +150,13 @@ function closeProject() {
  * @param name
  * @return
  */
-function deleteProject(name) {
-	Logger.debug('[SERVICE_Projects.jsm] deleteProject');
-	var name = "name=" + name;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.deleteProjectRequest, name, contextAsArray);
+function deleteProject(projectName) { // NEW
+	Logger.debug('[SERVICE_Projects_NEW.jsm] deleteProject');
+	var consumer = "consumer="+ STInfo.getSystemProjectName(); 
+	var projectName = "projectName=" + projectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.deleteProjectRequest, this.context,
+			consumer, projectName);
 }
 
 /**
@@ -145,11 +166,13 @@ function deleteProject(name) {
  * @param projfile
  * @return
  */
-function exportProject(projfile) {
+function exportProject(projectName, exportPackage) {	//NEW
 	Logger.debug('[SERVICE_Projects.jsm] exportProject');
-	var projfile = "projfile=" + projfile;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.exportProjectRequest, projfile, contextAsArray);
+	var projectName = "projectName=" + projectName;
+	var exportPackage = "exportPackage="+exportPackage;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.exportProjectRequest, this.context, 
+			projectName, exportPackage);
 }
 
 /**
@@ -162,12 +185,13 @@ function exportProject(projfile) {
  *            this name clashes with that of an existing project, then an exception is being thrown
  * @return
  */
-function importProject(projfile, name) {
+function importProject(importPackage, newProjectName) { // new 
 	Logger.debug('[SERVICE_Projects.jsm] importProject');
-	var projfile = "projfile=" + projfile;
-	var name = "name=" + name;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.importProjectRequest, projfile, name, contextAsArray);
+	var importPackage = "importPackage=" + importPackage;
+	var newProjectName = "newProjectName=" + newProjectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.importProjectRequest, this.context, 
+			importPackage, newProjectName);
 }
 
 /**
@@ -178,28 +202,17 @@ function importProject(projfile, name) {
  * @param newName
  * @return
  */
-function cloneProject(name, newName) {
+function cloneProject(projectName, newName) { // NEW
 	Logger.debug('[SERVICE_Projects.jsm] cloneProject');
-	var name = "name=" + name;
+	var projectName = "projectName=" + projectName;
 	var newName = "newName=" + newName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.cloneProjectRequest, name, newName, contextAsArray);
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.cloneProjectRequest, this.context, 
+			projectName, newName);
 }
 
-/**
- * saves the current project into a new one with given name <em>newName</em>. If the save is successful,
- * then the new project automatically becomes the current one and the previous one is being closed
- * 
- * @member STRequests.Projects
- * @param newName
- * @return
- */
-function saveProjectAs(newName) {
-	Logger.debug('[SERVICE_Projects.jsm] saveProjectAs');
-	var newName = "newName=" + newName;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.saveProjectAsRequest, newName, contextAsArray);
-}
+
 
 /**
  * saves the current project
@@ -207,10 +220,11 @@ function saveProjectAs(newName) {
  * @member STRequests.Projects
  * @return
  */
-function saveProject() {
+function saveProject(project) {	//NEW
 	Logger.debug('[SERVICE_Projects.jsm] saveProject');
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.saveProjectRequest, contextAsArray);
+	var project = "project"+project;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.saveProjectRequest, this.context, project);
 }
 
 /**
@@ -220,9 +234,11 @@ function saveProject() {
  * @member STRequests.Projects
  * @return
  */
-function listProjects() {
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.listProjectsRequest, contextAsArray);
+function listProjects() {	//NEW
+	Logger.debug('[SERVICE_Projects.jsm] listProjects');
+	var consumer = "consumer=" + STInfo.getSystemProjectName();	// DEFAULT
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.listProjectsRequest, this.context, consumer);
 }
 
 /**
@@ -237,24 +253,36 @@ function getCurrentProject() {
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.getCurrentProjectRequest, contextAsArray);
 }
 
-function getProjectProperty(propNames, projectName) {
+function getProjectProperty(projectName, propertyNames) {	//NEW
 	Logger.debug('[SERVICE_Projects.jsm] getProjectProperty');
-	var propNames_p = "propNames=" + propNames;
-	var name_p = projectName == null ? "" : "name=" + projectName;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.getProjectPropertyRequest, propNames_p, name_p, contextAsArray);
+	var projectName = "projectName=" + projectName;
+	var propertyNames = "propertyNames="+propertyNames;
+	//var propNameList = propNameList == null ? "" : "name=" + projectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.getProjectPropertyRequest, this.context,
+			projectName, propertyNames);
 }
 
-function setProjectProperty(propName, propValue, context) {
+function setProjectProperty(projectName, propName, propValue, context) { //NEW
 	Logger.debug('[SERVICE_Projects.jsm] setProjectProperty');
-	var propName_p = "name=" + propName;
-	var propValue_p = "value=" + propValue;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.setProjectPropertyRequest, propName_p, propValue_p, contextAsArray);
+	var projectName_orig = projectName;
+	var propName_orig = propName;
+	var propValue_orig = propValue;
+	var context_orig = context;
+	
+	var projectName = "projectName="+projectName;
+	var propName = "propName=" + propName;
+	var propValue = "propValue=" + propValue;
+	
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	var reply = currentSTHttpMgr.GET(null, serviceName, service.setProjectPropertyRequest, this.context, 
+			projectName, propName, propValue);
 	
 	if (!reply.isFail()) {
-		evtMgr.fireEvent("projectPropertySet", {getPropName : function(){return propName;}, getPropValue : function(){return propValue;}, getContext : function(){return context;}});
+		evtMgr.fireEvent("projectPropertySet", {getPropName : function(){return propName_orig;}, 
+			getPropValue : function(){return propValue_orig;}, 
+			getContext : function(){return context_orig;}});
 	}
 
 	return reply;
@@ -276,19 +304,18 @@ service.prototype.getAPI = function(specifiedContext){
 }
 
 // Projects SERVICE INITIALIZATION
-service.prototype.openProject = openProject;
-service.prototype.repairProject = repairProject;
+service.prototype.accessProject = accessProject;	//NEW
+service.prototype.repairProject = repairProject;	//NEW
 //service.openMainProject = openMainProject;
-service.prototype.newProject = newProject;
-service.prototype.newProjectFromFile = newProjectFromFile;
-service.prototype.closeProject = closeProject;
-service.prototype.deleteProject = deleteProject;
+service.prototype.newProject = newProject;	//NEW
+//service.prototype.newProjectFromFile = newProjectFromFile;
+service.prototype.disconnectFromProject = disconnectFromProject;	//NEW
+service.prototype.deleteProject = deleteProject;	//NEW
 service.prototype.exportProject = exportProject;
 service.prototype.importProject = importProject;
-service.prototype.cloneProject = cloneProject;
-service.prototype.saveProject = saveProject;
-service.prototype.saveProjectAs = saveProjectAs;
-service.prototype.listProjects = listProjects;
+service.prototype.cloneProject = cloneProject;	//NEW
+service.prototype.saveProject = saveProject;	//NEW
+service.prototype.listProjects = listProjects;	//NEW
 service.prototype.getCurrentProject = getCurrentProject;
 service.prototype.getProjectProperty = getProjectProperty;
 service.prototype.setProjectProperty = setProjectProperty;

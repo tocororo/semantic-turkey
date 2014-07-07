@@ -27,6 +27,7 @@ Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/StartST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Annotation.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/PrefUtils.jsm", art_semanticturkey);
@@ -102,13 +103,15 @@ art_semanticturkey.chk_SaveCurrentProjectMenuitem = function() {
 
 art_semanticturkey.save_project = function() {
 	try {
-		art_semanticturkey.STRequests.Projects.saveProject();
+		var projName = art_semanticturkey.CurrentProject.getProjectName();
+		//art_semanticturkey.STRequests.ProjectsOLD.saveProject();
+		art_semanticturkey.STRequests.Projects.saveProject(projName);
 	} catch (e) {
 		alert(e.name + ": " + e.message);
 	}
 };
 
-art_semanticturkey.save_as_project = function() {
+/*art_semanticturkey.save_as_project = function() {
 	var parameters = new Object();
 	parameters.savedAsProject = false;
 	parameters.newProjectName = "";
@@ -116,7 +119,7 @@ art_semanticturkey.save_as_project = function() {
 	window.openDialog("chrome://semantic-turkey/content/projects/saveAsProject.xul", "_blank",
 			"modal=yes,resizable,centerscreen", parameters);
 
-};
+};*/
 
 art_semanticturkey.export_project = function() {
 	var parameters = new Object();
@@ -204,8 +207,8 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 	// Projects menu
 	document.getElementById("save_project")
 			.addEventListener("command", art_semanticturkey.save_project, true);
-	document.getElementById("save_as_project").addEventListener("command",
-			art_semanticturkey.save_as_project, true);
+	//document.getElementById("save_as_project").addEventListener("command",
+	//		art_semanticturkey.save_as_project, true);
 	document.getElementById("export_project").addEventListener("command", art_semanticturkey.export_project,
 			true);
 	document.getElementById("manage_all_projects").addEventListener("command",
@@ -299,7 +302,6 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 			art_semanticturkey.setTrueCheckAnnotation, true);
 	document.getElementById("disableCheckAnnotation_menuitem").addEventListener("command",
 			art_semanticturkey.setFalseCheckAnnotation, true);
-	alert("test");
 };
 
 art_semanticturkey.chkST_checkAnnotationEnableOrNot = function(){
@@ -360,8 +362,8 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("save_project").setAttribute("label", "Save " + projectName);
 		if (art_semanticturkey.CurrentProject.isContinuosEditing() == false)
 			document.getElementById("save_project").disabled = false;
-		document.getElementById("save_as_project").setAttribute("label", "Save " + projectName + " as ...");
-		document.getElementById("save_as_project").disabled = false;
+		//document.getElementById("save_as_project").setAttribute("label", "Save " + projectName + " as ...");
+		//document.getElementById("save_as_project").disabled = false;
 		document.getElementById("export_project").setAttribute("label", "Export " + projectName);
 		document.getElementById("export_project").disabled = false;
 		document.getElementById("key_openSTOntologySidebar").disabled = false;
@@ -372,28 +374,34 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("visualization2").disabled = false;
 		document.getElementById("projects_ST_Menu").disabled = false;
 		document.getElementById("save_project").disabled = false;
-		document.getElementById("save_as_project").disabled = false;
+		//document.getElementById("save_as_project").disabled = false;
 		document.getElementById("export_project").disabled = false;
 		document.getElementById("manage_all_projects").disabled = false;
 		document.getElementById("ontPanelToolBarButton").disabled = false;
 		document.getElementById("importsToolBarButton").disabled = false;
 		document.getElementById("SPARQLToolBarButton").disabled = false;
 		//document.getElementById("graphBarButton").disabled = false;
-		document.getElementById("SKOSToolBarButton").disabled = false;
 		if (projectInfo.getType().indexOf("SKOS") != -1) {
 			document.getElementById("SKOSToolBarButton").hidden = false;
+			document.getElementById("SKOSToolBarButton").disabled = false;
 			document.getElementById("key_openSTSKOSSidebar").hidden = false;
 			document.getElementById("key_openSTSKOSSidebar").disabled = false;
 			document.getElementById("humanReadableButton").hidden = false;
-
+			
 			if (typeof art_semanticturkey.skosStateManagemenet.stEventArray != "undefined") {
 				art_semanticturkey.skosStateManagemenet.stEventArray.deregisterAllListener();
 			}
 
-			art_semanticturkey.skosStateManagemenet.selectedScheme = art_semanticturkey.STRequests.Projects
-					.getProjectProperty("skos.selected_scheme", null).getElementsByTagName("property")[0]
-					.getAttribute("value");
+			//art_semanticturkey.skosStateManagemenet.selectedScheme = art_semanticturkey.STRequests.Projects
+			//		.getProjectProperty("skos.selected_scheme", null).getElementsByTagName("property")[0]
+			//		.getAttribute("value");
 
+			var responseXML  = art_semanticturkey.STRequests.Projects.getProjectProperty(
+					projectInfo.getProjectName(), "skos.selected_scheme");
+
+			art_semanticturkey.skosStateManagemenet.selectedScheme = responseXML.
+					getElementsByTagName("property")[0].getAttribute("value")
+			
 			art_semanticturkey.skosStateManagemenet.stEventArray = new art_semanticturkey.eventListenerArrayClass();
 			art_semanticturkey.skosStateManagemenet.stEventArray.addEventListenerToArrayAndRegister(
 					"resourceRenamed", art_semanticturkey.skosStateManagemenet.resourceRenamed);
@@ -417,8 +425,8 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 			}
 		}
 		document.getElementById("save_project").disabled = true;
-		document.getElementById("save_as_project").disabled = true;
-		document.getElementById("save_as_project").setAttribute("label", "Save ??? as ...");
+		//document.getElementById("save_as_project").disabled = true;
+		//document.getElementById("save_as_project").setAttribute("label", "Save ??? as ...");
 		document.getElementById("export_project").disabled = true;
 		document.getElementById("export_project").setAttribute("label", "Export");
 		document.getElementById("key_openSTOntologySidebar").disabled = true;
@@ -430,7 +438,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("save_project").disabled = true;
 		document.getElementById("projects_ST_Menu").disabled = false;
 		document.getElementById("save_project").disabled = true;
-		document.getElementById("save_as_project").disabled = true;
+		//document.getElementById("save_as_project").disabled = true;
 		document.getElementById("export_project").disabled = true;
 		document.getElementById("manage_all_projects").disabled = false;
 		document.getElementById("ontPanelToolBarButton").disabled = true;
@@ -457,7 +465,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 			}
 		}
 		document.getElementById("save_project").setAttribute("label", "Save " + projectName);
-		document.getElementById("save_as_project").setAttribute("label", "Save " + projectName + " as ...");
+		//document.getElementById("save_as_project").setAttribute("label", "Save " + projectName + " as ...");
 		document.getElementById("export_project").setAttribute("label", "Export " + projectName);
 	}
 };
@@ -510,7 +518,7 @@ art_semanticturkey.skosStateManagemenet.resourceRenamed = function(eventId, reso
 	var newName = resourceRenamedObj.getNewName();
 
 	if (oldName == art_semanticturkey.skosStateManagemenet.selectedScheme) {
-		art_semanticturkey.STRequests.Projects.setProjectProperty("skos.selected_scheme", newName, {
+		art_semanticturkey.STRequests.ProjectsOLD.setProjectProperty("skos.selected_scheme", newName, {
 			getName : function() {
 				return "rename";
 			}
@@ -521,7 +529,7 @@ art_semanticturkey.skosStateManagemenet.schemeRemoved = function(eventId, skosSc
 	var name = skosSchemeRemovedObj.getSchemeName();
 
 	if (name == art_semanticturkey.skosStateManagemenet.selectedScheme) {
-		art_semanticturkey.STRequests.Projects.setProjectProperty("skos.selected_scheme", "");
+		art_semanticturkey.STRequests.ProjectsOLD.setProjectProperty("skos.selected_scheme", "");
 	}
 };
 art_semanticturkey.skosStateManagemenet.projectPropertySet = function(eventId, projectPropertySetObj) {

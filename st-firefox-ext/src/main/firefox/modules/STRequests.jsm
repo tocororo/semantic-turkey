@@ -88,6 +88,10 @@ STRequests.SystemStart = function(){};
 /**
  * @class
  */
+STRequests.ProjectsOLD = function(){};
+/**
+ * @class
+ */
 STRequests.Projects = function(){};
 /**
  * @class
@@ -275,24 +279,43 @@ STRequests.SKOS.removeBroaderConceptRequest = "removeBroaderConcept";
 STRequests.SKOS.removeTopConceptRequest = "removeTopConcept";
 STRequests.SKOS.removePrefLabelRequest = "removePrefLabel";
 
-//projects service request
-STRequests.Projects.serviceName = "projects";
-STRequests.Projects.openProjectRequest = "openProject";
-STRequests.Projects.repairProjectRequest = "repairProject";
-STRequests.Projects.newProjectRequest = "newProject";
+//projects service request (OLD VERSION)
+STRequests.ProjectsOLD.serviceName = "projects";
+STRequests.ProjectsOLD.openProjectRequest = "openProject";
+STRequests.ProjectsOLD.repairProjectRequest = "repairProject";
+STRequests.ProjectsOLD.newProjectRequest = "newProject";
+STRequests.ProjectsOLD.newProjectFromFileRequest = "newProjectFromFile";
+STRequests.ProjectsOLD.closeProjectRequest = "closeProject";
+STRequests.ProjectsOLD.deleteProjectRequest = "deleteProject";
+STRequests.ProjectsOLD.exportProjectRequest = "exportProject";
+STRequests.ProjectsOLD.importProjectRequest = "importProject";
+STRequests.ProjectsOLD.cloneProjectRequest = "cloneProject";
+STRequests.ProjectsOLD.saveProjectAsRequest = "saveProjectAs";
+STRequests.ProjectsOLD.saveProjectRequest = "saveProject";
+STRequests.ProjectsOLD.listProjectsRequest = "listProjects";
+STRequests.ProjectsOLD.getCurrentProjectRequest = "getCurrentProject";
+STRequests.ProjectsOLD.getProjectPropertyRequest = "getProjectProperty";
+STRequests.ProjectsOLD.setProjectPropertyRequest = "setProjectProperty";
+STRequests.ProjectsOLD.isCurrentProjectActiveRequest = "isCurrentProjectActive";
+
+//projects service request (NEW VERSION)
+STRequests.Projects.serviceName = "Projects";	//NEW
+STRequests.Projects.accessProjectRequest = "accessProject";	//NEW
+STRequests.Projects.repairProjectRequest = "repairProject";	//NEW
+STRequests.Projects.createProjectRequest = "createProject";	//NEW
 STRequests.Projects.newProjectFromFileRequest = "newProjectFromFile";
-STRequests.Projects.closeProjectRequest = "closeProject";
-STRequests.Projects.deleteProjectRequest = "deleteProject";
-STRequests.Projects.exportProjectRequest = "exportProject";
-STRequests.Projects.importProjectRequest = "importProject";
-STRequests.Projects.cloneProjectRequest = "cloneProject";
-STRequests.Projects.saveProjectAsRequest = "saveProjectAs";
-STRequests.Projects.saveProjectRequest = "saveProject";
-STRequests.Projects.listProjectsRequest = "listProjects";
+STRequests.Projects.disconnectFromProjectRequest = "disconnectFromProject";	//NEW
+STRequests.Projects.deleteProjectRequest = "deleteProject"; //NEW
+STRequests.Projects.exportProjectRequest = "exportProject";	//NEW
+STRequests.Projects.importProjectRequest = "importProject";	//NEW
+STRequests.Projects.cloneProjectRequest = "cloneProject";	//NEW
+STRequests.Projects.saveProjectRequest = "saveProject";	//NEW
+STRequests.Projects.listProjectsRequest = "listProjects";	//NEW
 STRequests.Projects.getCurrentProjectRequest = "getCurrentProject";
-STRequests.Projects.getProjectPropertyRequest = "getProjectProperty";
-STRequests.Projects.setProjectPropertyRequest = "setProjectProperty";
+STRequests.Projects.getProjectPropertyRequest = "getProjectProperty";	//NEW
+STRequests.Projects.setProjectPropertyRequest = "setProjectProperty";	//NEW
 STRequests.Projects.isCurrentProjectActiveRequest = "isCurrentProjectActive";
+
 
 //ontManager service request
 STRequests.OntManager.serviceName = "ontManager";

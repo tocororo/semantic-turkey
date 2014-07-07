@@ -15,8 +15,8 @@ window.onload = function() {
 	document.getElementById("imporProject").addEventListener("command", art_semanticturkey.importProject,
 			true);
 	document.getElementById("newProject").addEventListener("command", art_semanticturkey.newProject, true);
-	document.getElementById("newProjectFromFile").addEventListener("command",
-			art_semanticturkey.newProjectFromFile, true);
+	//document.getElementById("newProjectFromFile").addEventListener("command",
+	//		art_semanticturkey.newProjectFromFile, true);
 	document.getElementById("deleteProject").addEventListener("command", art_semanticturkey.deleteProject,
 			true);
 	document.getElementById("setDeafultProject").addEventListener("command", art_semanticturkey.setDeafultProject,
@@ -79,25 +79,6 @@ art_semanticturkey.clickOnAProject = function(event){
 		
 	}
 	
-	/*
-	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecellName = treerow.getElementsByTagName('treecell')[0];
-	var treecellStatus = treerow.getElementsByTagName('treecell')[2];
-	var projectName = treecellName.getAttribute("label");
-	var projectType = treecellName.getAttribute("typeProject");
-	if (treecellStatus.getAttribute("hasIssues") == "true") {
-		alert("The Project " + projectName + " could not be opened because it has some internal problems");
-		return;
-	}
-	try {
-		art_semanticturkey.DisabledAllButton(true);
-		art_semanticturkey.closeProject(); // close the current project
-		var responseXML = art_semanticturkey.STRequests.Projects.openProject(projectName);
-		art_semanticturkey.openProject_RESPONSE(responseXML, projectName, false, projectType);
-	} catch (e) {
-		alert(e.name + ": " + e.message);
-		art_semanticturkey.DisabledAllButton(false);
-	}*/
 }
 
 
@@ -148,7 +129,9 @@ art_semanticturkey.populateProjectsList = function() {
 		var responseXML = art_semanticturkey.STRequests.Projects.listProjects();
 		art_semanticturkey.getListProjects_RESPONSE(responseXML);
 	} catch (e) {
-		alert(e.name + ": " + e.message);
+		art_semanticturkey.Logger.alertMessage(e.name + ": " + e.message);
+		art_semanticturkey.Logger.printException(e.name + ": " + e.message);
+		//alert(e.name + ": " + e.message);
 	}
 };
 
@@ -239,7 +222,7 @@ art_semanticturkey.openProject = function() {
 	try {
 		art_semanticturkey.DisabledAllButton(true);
 		art_semanticturkey.closeProject(); // close the current project
-		var responseXML = art_semanticturkey.STRequests.Projects.openProject(projectName);
+		var responseXML = art_semanticturkey.STRequests.Projects.accessProject(projectName);
 		art_semanticturkey.openProject_RESPONSE(responseXML, projectName, projectType,ontoType);
 	} catch (e) {
 		alert(e.name + ": " + e.message);
@@ -249,23 +232,6 @@ art_semanticturkey.openProject = function() {
 	}
 };
 
-/*
-art_semanticturkey.openMainProject = function() {
-	if (document.getElementById("openProject").disabled == true) {
-		return;
-	}
-	try {
-		art_semanticturkey.closeProject(); // close the current project
-		art_semanticturkey.DisabledAllButton(true);
-		var responseXML = art_semanticturkey.STRequests.Projects.openMainProject(); // this can cause the
-		// exception
-		art_semanticturkey.openProject_RESPONSE(responseXML, "Main Project", true, "continuosEditing");
-	} catch (e) {
-		// This should happen only when or the base uri or the ontManger are undefined
-		art_semanticturkey.openMainProjectException();
-		art_semanticturkey.DisabledAllButton(false);
-	}
-};*/
 
 art_semanticturkey.openProject_RESPONSE = function(responseElement, projectName, type, ontoType) {
 	art_semanticturkey.CurrentProject.setCurrentProjet(projectName, false, type, ontoType);
@@ -273,19 +239,6 @@ art_semanticturkey.openProject_RESPONSE = function(responseElement, projectName,
 	art_semanticturkey.properClose();
 };
 
-/*
-art_semanticturkey.openMainProjectException = function() {
-	try {
-		var responseXML = art_semanticturkey.STRequests.SystemStart.start();
-		art_semanticturkey.startST_RESPONSE(responseXML, true);
-		if (art_semanticturkey.CurrentProject.isNull() == false)
-			art_semanticturkey.properClose();
-	} catch (e) {
-		art_semanticturkey.openMainProjectException();
-		alert(e.name + ": " + e.message);
-		art_semanticturkey.DisabledAllButton(false);
-	}
-};*/
 
 art_semanticturkey.importProject = function() {
 	var parameters = new Object();

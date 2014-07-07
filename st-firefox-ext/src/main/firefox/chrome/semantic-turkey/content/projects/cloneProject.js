@@ -1,10 +1,8 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_Projects.jsm",
-		art_semanticturkey);
-Components.utils.import("resource://stmodules/ProjectST.jsm",
-		art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 window.onload = function(){
 	document.getElementById("cloneProject").addEventListener("command", art_semanticturkey.onAccept, true);
@@ -38,25 +36,26 @@ art_semanticturkey.onAccept = function() {
 	}
 	
 	try{
-		var responseXML = art_semanticturkey.STRequests.Projects.cloneProject(
-			projectName,
-				clonedProjectName);
-		art_semanticturkey.cloneProject_RESPONSE(responseXML, projectName, currentProject, currentProjectType, currentProjectOntoType);
+		var responseXML = art_semanticturkey.STRequests.Projects.cloneProject( projectName, clonedProjectName);
+		art_semanticturkey.cloneProject_RESPONSE(responseXML, projectName, currentProject, currentProjectType, 
+				currentProjectOntoType);
 	}
 	catch (e) {
 		alert(e.name + ": " + e.message);
 		art_semanticturkey.DisabledAllButton(false);
 		if(projectName == currentProject){
-			art_semanticturkey.STRequests.Projects.openProject(projectName);
-			art_semanticturkey.CurrentProject.setCurrentProjet(currentProject, false, currentProjectType, currentProjectOntoType);
+			art_semanticturkey.STRequests.Projects.accessProject(projectName);
+			art_semanticturkey.CurrentProject.setCurrentProjet(currentProject, false, currentProjectType, 
+					currentProjectOntoType);
 		}
 	}
 };
 
-art_semanticturkey.cloneProject_RESPONSE = function(responseElement, projectName, currentProject, currentProjectType, currentProjectOntoType){
+art_semanticturkey.cloneProject_RESPONSE = function(responseElement, projectName, currentProject, 
+		currentProjectType, currentProjectOntoType){
 	window.arguments[0].clonedProject = true;
 	if(projectName == currentProject){
-		art_semanticturkey.STRequests.Projects.openProject(projectName);
+		art_semanticturkey.STRequests.Projects.accessProject(projectName);
 		art_semanticturkey.CurrentProject.setCurrentProjet(currentProject, false, currentProjectType, currentProjectOntoType);
 	}
 	close();

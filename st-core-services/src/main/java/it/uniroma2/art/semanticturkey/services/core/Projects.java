@@ -28,9 +28,10 @@ import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.main.ProjectsOld.Req;
+//import it.uniroma2.art.semanticturkey.servlet.main.ProjectsOld.Req;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.io.File;
@@ -60,6 +61,30 @@ public class Projects extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
 
+	// requests
+		public static class Req {
+			public final static String createProjectRequest = "createProject";
+			public final static String listProjectsRequest = "listProjects";
+			public final static String getProjectPropertyRequest = "getProjectProperty";
+			
+			/*public final static String isCurrentProjectActiveRequest = "isCurrentProjectActive";
+			public final static String openProjectRequest = "openProject";
+			public final static String createNewProjectRequest = "newProject";
+			public final static String createNewProjectFromFileRequest = "newProjectFromFile";
+			public final static String closeProjectRequest = "closeProject";
+			public final static String deleteProjectRequest = "deleteProject";
+			public final static String exportProjectRequest = "exportProject";
+			public final static String importProjectRequest = "importProject";
+			public final static String cloneProjectRequest = "cloneProject";
+			public final static String saveProjectRequest = "saveProject";
+			public final static String saveProjectAsRequest = "saveProjectAs";
+			public final static String listProjectsRequest = "listProjects";
+			public final static String getProjectPropertyRequest = "getProjectProperty";
+			public final static String setProjectPropertyRequest = "setProjectProperty";
+			public final static String getCurrentProjectRequest = "getCurrentProject";
+			public final static String repairProjectRequest = "repairProject";*/
+	}
+	
 	public static class XMLNames {
 		// response tags and attributes
 		public final static String baseuriTag = "baseuri";
@@ -78,17 +103,24 @@ public class Projects extends STServiceAdapter {
 	}
 
 	@GenerateSTServiceController
-	public void createProject(ProjectConsumer consumer, String projectName,
+	public Response createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 
-		ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
+		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration);
+		
+		String request = Req.createProjectRequest;
+		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
+				RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		XMLHelp.newElement(dataElement, "type", proj.getType());
+		return response;
 	}
 
-	@GenerateSTServiceController
+	/*@GenerateSTServiceController
 	public void createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration, File rdfFile)
@@ -112,7 +144,7 @@ public class Projects extends STServiceAdapter {
 					"a problem raised when creating the project, however, we were not able to delete the folder which has been created for it; please delete it manually");
 
 		}
-	}
+	}*/
 
 	@GenerateSTServiceController
 	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException {
@@ -334,15 +366,16 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 * @throws IOException
 	 */
-	public Response getProjectProperty(String projectName, String propNameList)
+	@GenerateSTServiceController
+	public Response getProjectProperty(String projectName, String[] propertyNames)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			IOException {
 
-		String[] propNames = propNameList.split(";");
-		String[] propValues = new String[propNames.length];
+		//String[] propNames = propNameList.split(";");
+		String[] propValues = new String[propertyNames.length];
 
-		for (int i = 0; i < propNames.length; i++)
-			propValues[i] = ProjectManager.getProjectProperty(projectName, propNames[i]);
+		for (int i = 0; i < propertyNames.length; i++)
+			propValues[i] = ProjectManager.getProjectProperty(projectName, propertyNames[i]);
 
 		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectPropertyRequest,
 				RepliesStatus.ok);
@@ -350,7 +383,7 @@ public class Projects extends STServiceAdapter {
 
 		for (int i = 0; i < propValues.length; i++) {
 			Element projElem = XMLHelp.newElement(dataElem, XMLNames.propertyTag);
-			projElem.setAttribute(XMLNames.propNameAttr, propNames[i]);
+			projElem.setAttribute(XMLNames.propNameAttr, propertyNames[i]);
 			projElem.setAttribute(XMLNames.propValueAttr, propValues[i]);
 		}
 
@@ -369,6 +402,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ReservedPropertyUpdateException
 	 * @throws ProjectUpdateException
 	 */
+	@GenerateSTServiceController
 	public void setProjectProperty(String projectName, String propName, String propValue)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {

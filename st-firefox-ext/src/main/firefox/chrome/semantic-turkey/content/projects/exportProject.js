@@ -3,6 +3,8 @@ if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm",
 		art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
+
 
 window.onload = function(){
 	document.getElementById("dirBtn").addEventListener("click", art_semanticturkey.saveFile, true);
@@ -24,7 +26,8 @@ art_semanticturkey.onAccept = function() {
 	}
 	try{
 		var file = dir+"/"+fileName;
-		art_semanticturkey.STRequests.Projects.exportProject(file);
+		var projectName = CurrentProject.setCurrentNameProject(); // get the current project;
+		art_semanticturkey.STRequests.Projects.exportProject(projectName, file);
 		close();
 	}
 	catch (e) {

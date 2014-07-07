@@ -163,7 +163,7 @@
 							id="export_project" label="Export" /> </menupopup> </menu>
 						-->
 						<menuitem id="save_project" label="Save" disabled="true" />
-						<menuitem id="save_as_project" label="Save as" disabled="true" />
+						<!-- <menuitem id="save_as_project" label="Save as" disabled="true" /> -->
 						<menuitem id="export_project" label="Export" disabled="true" />
 						<menuitem id="manage_all_projects" label="Projects Management" />
 					</menupopup>

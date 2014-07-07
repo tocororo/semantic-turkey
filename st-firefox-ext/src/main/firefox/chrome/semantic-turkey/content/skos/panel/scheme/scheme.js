@@ -6,6 +6,8 @@ Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semant
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Deserializer.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
 art_semanticturkey.init = function() {
 	var schemeList = document.getElementById("schemeList");
@@ -16,14 +18,17 @@ art_semanticturkey.init = function() {
 
 		if (rowIndex == -1 || col == null || col.id != "check") return;
 		
-		art_semanticturkey.STRequests.Projects.setProjectProperty("skos.selected_scheme", schemeList._view.visibleRows2[rowIndex].id);
+		art_semanticturkey.STRequests.Projects.setProjectProperty(
+				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
+				schemeList._view.visibleRows2[rowIndex].id);
 	}, false);
 	
 	var predefRoots = schemeList._view.sourceAdapter.fetchRoots;
 	schemeList._view.sourceAdapter.fetchRoots = function() {
-		//var selSc = art_semanticturkey.STRequests.Projects.getProjectProperty("skos.selected_scheme").getElementsByTagName("property")[0].getAttribute("value");
+		//var selSc = art_semanticturkey.STRequests.ProjectsOLD.getProjectProperty("skos.selected_scheme").getElementsByTagName("property")[0].getAttribute("value");
 
-		var response = art_semanticturkey.STRequests.Projects.getProjectProperty("skos.selected_scheme");
+		var response = art_semanticturkey.STRequests.Projects.getProjectProperty(
+				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
 		
 		var selSc = art_semanticturkey.Deserializer.createPropertyValue(response);
 		//var collectionValues = art_semanticturkey.deserializer.createRDFArray(response);

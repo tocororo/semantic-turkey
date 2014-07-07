@@ -1,5 +1,5 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
-Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
@@ -10,13 +10,13 @@ art_semanticturkey.closeProject = function(){
 	try{
 		var isContinuosEditing = art_semanticturkey.CurrentProject.isContinuosEditing();
 		var isNull = art_semanticturkey.CurrentProject.isNull();
-		var currentProectName = art_semanticturkey.CurrentProject.getProjectName();
-		art_semanticturkey.projectClosed(currentProectName); 
+		var currentProjectName = art_semanticturkey.CurrentProject.getProjectName();
+		art_semanticturkey.projectClosed(currentProjectName); 
 		if((isNull == false) && (isContinuosEditing == false)){
 			
 			var parameters = new Object();
 			parameters.parentWindow = window;
-			parameters.projectName = currentProectName;
+			parameters.projectName = currentProjectName;
 			parameters.save = false;
 			
 			window.openDialog("chrome://semantic-turkey/content/projects/saveProject.xul", "_blank",
@@ -29,16 +29,7 @@ art_semanticturkey.closeProject = function(){
 		}
 		art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "nullProject", "nullModel");
 		
-		//TODO TEST TO ADD A SPECIFIED CONTEXT, DELETE THE FOLLOWINF LINES AND DECOMMENT THE OTHER LINES
-		//TODO REMOVES THIS LINES
-		var specifiedContext = new Context();
-		specifiedContext.createNewArrayForContext();
-		specifiedContext.addValue("primo", "first");
-		specifiedContext.addValue("secondo", "second");
-		var responseXML = art_semanticturkey.STRequests.Projects.getAPI(specifiedContext).closeProject();
-		
-		//TODO DECOMMENT THIS LINE
-		//var responseXML = art_semanticturkey.STRequests.Projects.closeProject();
+		var responseXML = art_semanticturkey.STRequests.Projects.disconnectFromProject(currentProjectName);
 		
 		
 		
@@ -51,12 +42,12 @@ art_semanticturkey.closeProject = function(){
 };
 
 art_semanticturkey.closeProject_RESPONSE = function(responseElement, projectName){
-	//art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, false, "nullProject");
+	art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, false, "nullProject");
 };
 
 art_semanticturkey.getCurrentProjectFromServer = function(){
 	try{
-		var responseXML = art_semanticturkey.STRequests.Projects.getCurrentProject();
+		var responseXML = art_semanticturkey.STRequests.ProjectsOLD.getCurrentProject();
 		return art_semanticturkey.getCurrentProject_RESPONSE(responseXML);
 	}
 	catch(e){
