@@ -1,7 +1,8 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stservices/SERVICE_SystemStart.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
+//Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
@@ -21,7 +22,8 @@ art_semanticturkey.startST = function() {
 
 	var responseXML = null;
 	try {
-		responseXML = art_semanticturkey.STRequests.ProjectsOLD.getCurrentProject();
+		//responseXML = art_semanticturkey.STRequests.ProjectsOLD.getCurrentProject();
+		responseXML = art_semanticturkey.STRequests.Projects.listProjects();
 	} catch (e) {
 		if (e instanceof art_semanticturkey.HTTPError) {
 			alert("no server found! pls check that a server is listening on: "
@@ -36,7 +38,7 @@ art_semanticturkey.startST = function() {
 	art_semanticturkey.ST_started.setStatus();
 	art_semanticturkey.registerAnnotationFamilies();	// Should we place this initialization elsewhere?
 
-	if (responseXML != null && !responseXML.isFail()) {
+	/*if (responseXML != null && !responseXML.isFail()) {
 		var projectElement = responseXML.getElementsByTagName("project")[0];
 		var projectName = projectElement.textContent;
 		var type = projectElement.getAttribute("type");
@@ -45,7 +47,8 @@ art_semanticturkey.startST = function() {
 		art_semanticturkey.openDefProject_RESPONSE2(projectName, type, ontoType);
 	} else { // No project is open, let the user choose one
 		art_semanticturkey.chose_a_projects();
-	}
+	}*/
+	art_semanticturkey.chose_a_projects();
 };
 
 art_semanticturkey.chose_a_projects = function() {
