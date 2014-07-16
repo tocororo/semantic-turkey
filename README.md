@@ -1,20 +1,8 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Everything about Semantic Turkey (user manual, build information etc..) is in its [official site](http://semanticturkey.uniroma2.it/)
 
-### What is this repository for? ###
+### Notes for people installing ST stable 0.9.1 ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
-
-### How do I get set up? ###
-
-
-### Contribution guidelines ###
-
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+Due to changes in latest firefox UI (addon bar has been removed from FF), the pencil for annotations is not visible anymore. We have been addressing this in the next to come ST 0.10. However, you can easily patch this for 0.9.1 by installing this further extension in ST
+https://addons.mozilla.org/it/firefox/addon/the-addon-bar/
