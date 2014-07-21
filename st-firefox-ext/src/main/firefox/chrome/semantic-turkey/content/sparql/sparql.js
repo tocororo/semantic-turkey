@@ -661,6 +661,7 @@ art_semanticturkey.disableSPARQLSubmitQuery = function() {
 art_semanticturkey.submitQuery = function() {
 
 	//first of all clean the result table
+	art_semanticturkey.setDisableSubmitQuery(true);
 	art_semanticturkey.clearResultTable();
 	art_semanticturkey.decorateTitleResult("( Processing ... )");
 	
@@ -670,14 +671,26 @@ art_semanticturkey.submitQuery = function() {
 	var inferredStat = document.getElementById("inferredStatements").hasAttribute("checked");
 	
 	try {
+		//get the time to see how long does it take to execute the query
+		var initTime = (new Date().getTime());
 		var response = art_semanticturkey.STRequests.SPARQL.resolveQuery(
 				queryText, "SPARQL", inferredStat, mode);
-		art_semanticturkey.resolveQuery_RESPONSE(response);
+		
+		//get the time to see how long does it take to execute the query
+		var finishTime = (new Date().getTime());
+		var diffTime = finishTime-initTime;
+		art_semanticturkey.resolveQuery_RESPONSE(response, diffTime);
 	} catch (e) {
 		alert(e.name + ": " + e.message);
 	}
 
 };
+
+art_semanticturkey.setDisableSubmitQuery = function(disableState){
+	//alert("setDisableSubmitQuery e disableState = "+disableState);
+	document.getElementById("submitQuery").disabled = disableState;
+	
+}
 
 art_semanticturkey.clearResultTable = function(){
 	var treecols = document.getElementById("SPARQLTreeCols");
@@ -692,9 +705,7 @@ art_semanticturkey.clearResultTable = function(){
 }
 
 art_semanticturkey.decorateTitleResult = function(textInput){
-	var decoratorValueResult = "   >>>   ";
-	var textFinal = decoratorValueResult+document.getElementById("textAreaResult1").getAttribute("cleanValue")+
-			" "+textInput+decoratorValueResult;
+	var textFinal = document.getElementById("textAreaResult1").getAttribute("cleanValue")+" "+textInput;
 	
 	document.getElementById("textAreaResult1").setAttribute("value", textFinal);
 }
@@ -702,16 +713,16 @@ art_semanticturkey.decorateTitleResult = function(textInput){
 art_semanticturkey.getTime = function() {
     var str = "";
 
-    var currentTime = new Date()
-    var hours = currentTime.getHours()
-    var minutes = currentTime.getMinutes()
-    var seconds = currentTime.getSeconds()
+    var currentTime = new Date();
+    var hours = currentTime.getHours();
+    var minutes = currentTime.getMinutes();
+    var seconds = currentTime.getSeconds();
 
     if (minutes < 10) {
-        minutes = "0" + minutes
+        minutes = "0" + minutes;
     }
     if (seconds < 10) {
-        seconds = "0" + seconds
+        seconds = "0" + seconds;
     }
     str += hours + ":" + minutes + ":" + seconds + " ";
     /*if(hours > 11){
@@ -722,7 +733,22 @@ art_semanticturkey.getTime = function() {
     return str;
 }
 
-art_semanticturkey.resolveQuery_RESPONSE = function(response) {
+art_semanticturkey.getPrettyDiffTime = function(diffTime){
+	if(diffTime < 1000){
+		return diffTime+ " millisec";		
+	} else{
+		var sec = Math.floor(diffTime/1000);
+		var millisec = diffTime % 1000;
+		if(millisec < 10){
+			millisec = "00"+millisec;
+		} else if(millisec < 100){
+			millisec = "0"+millisec;
+		}
+		return sec+","+millisec+" sec";
+	}
+}
+
+art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 	var treecols = document.getElementById("SPARQLTreeCols");
 	var rootTreechildren = document.getElementById("SPARQLRootTreechildren");
 	
@@ -973,7 +999,10 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response) {
 	
 	//set the time of the response
 	
-	art_semanticturkey.decorateTitleResult("(Done at "+art_semanticturkey.getTime()+")");
+	var prettyDiffTime = art_semanticturkey.getPrettyDiffTime(diffTime);
+	
+	art_semanticturkey.decorateTitleResult("(Done at "+art_semanticturkey.getTime()+" in "+prettyDiffTime+")");
+	art_semanticturkey.setDisableSubmitQuery(false);
 };
 
 /*
