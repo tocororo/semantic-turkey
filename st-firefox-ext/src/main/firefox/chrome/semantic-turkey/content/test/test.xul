@@ -59,7 +59,7 @@
 			<textbox value="defNewValue1" id="valueForContext1" />
 			<button id="testButton2"
 				label="[1] Create a new context, create an instance of Test with it and use it"
-				width="500" />
+				width="550" />
 			<button id="testButton3" label="Use the specific context created by [1]"
 				width="500" />
 		</hbox>
@@ -72,8 +72,8 @@
 			<label value="value:" />
 			<textbox value="defNewValue2" id="valueForContext2" />
 			<button id="testButton4"
-				label="[2] Create a new context, create an instance of Test with it and use it"
-				width="500" />
+				label="[2] Create a new context copying the context [1], create an instance of Test with it and use it"
+				width="550" />
 			<button id="testButton5" label="Use the specific context created by [2]"
 				width="500" />
 		</hbox>

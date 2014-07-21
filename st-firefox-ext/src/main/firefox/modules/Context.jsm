@@ -13,41 +13,47 @@ function Context() {
 
 function getContextValuesForHTTPGetAsArray(){
 	var contexAsArray = new Array();
-	var i=0;
-	var separatorRGraphs=","; // to separete the elements of the array rGraphs 
+	var pos=0;
+	var separatorRGraphs=","; // to separate the elements of the array rGraphs 
 	
 	//first of all take the context, wgraph e rgraph. If they are not present, 
 	// try using these values from the default context
 	// (it does not check if this is the default context or not)
 	
 	var project = this.getProject();
-	if(typeof project == 'undefined' || project == "")
+	if(typeof project == 'undefined' || project == ""){
 		project = Context.getProject();
-	if(typeof project != 'undefined' && project != "")
-		contexAsArray[i++] = HTTP_PARAM_PREFIX + "project=" + project;
+	}
+	if(typeof project != 'undefined' && project != ""){
+		contexAsArray[pos++] = HTTP_PARAM_PREFIX + "project=" + project;
+	}
 	
 	var wGraph = this.getWGpragh();
-	if(typeof wGraph == 'undefined' || wGraph == "")
+	if(typeof wGraph == 'undefined' || wGraph == ""){
 		wGraph = Context.getWGpragh();
-	if(typeof wGraph != 'undefined' && wGraph != "")
-		contexAsArray[i++] = HTTP_PARAM_PREFIX + "wgraph=" + wGraph;
+	}
+	if(typeof wGraph != 'undefined' && wGraph != ""){
+		contexAsArray[pos++] = HTTP_PARAM_PREFIX + "wgraph=" + wGraph;
+	}
 	
 	var rGraphs = this.getRGraphs();
 	var rGraphsAsString="";
-	if(typeof rGraphs == 'undefined' || rGraphs.length == 0)
+	if(typeof rGraphs == 'undefined' || rGraphs.length == 0){
 		rGraphs = Context.getRGraphs();
+	}
 	if(typeof rGraphs != 'undefined' && rGraphs.length != 0){
 		for (var i=0; i<rGraphs.length ; ++i) {
-			if(i!=0)
+			if(i!=0){
 				rGraphsAsString+=separatorRGraphs;
+			}
 			rGraphsAsString+=rGraphs[i]
 		}
-		contexAsArray[i++] = HTTP_PARAM_PREFIX + "rgraph=" + rGraphsAsString;
+		contexAsArray[pos++] = HTTP_PARAM_PREFIX + "rgraph=" + rGraphsAsString;
 	}
 	
 	//now use all the other values from the associative array
 	for (var name in this.valuesArray) {
-		contexAsArray[i++] = HTTP_PARAM_PREFIX + name + "=" + this.valuesArray[name];
+		contexAsArray[pos++] = HTTP_PARAM_PREFIX + name + "=" + this.valuesArray[name];
 	}
 	return contexAsArray;
 }
@@ -55,8 +61,9 @@ function getContextValuesForHTTPGetAsArray(){
 function getContextValuesAsString(separator){
 	//use getContextValuesForHTTPGetAsArray, take all the elements of the returned array and put 
 	// them in a string
-	if(typeof separator  == 'undefined' || separator == "")
+	if(typeof separator  == 'undefined' || separator == ""){
 		separator = "&";
+	}
 	var contexString = "";
 	var contexAsArray = this.getContextValuesForHTTPGetAsArray();
 	for (var i=0; i<contexAsArray.length ; ++i) {
@@ -73,6 +80,37 @@ function getContextValuesAsString(separator){
 	return contexString;*/
 }
 
+function copyContext(inputContext){
+	if(typeof inputContext == 'undefined' || inputContext == null){
+		return; // the input context is not defined, so just return
+	}
+	
+	//iterate over the values stored in the inputContext
+	
+	//first of all take the context, wgraph e rgraph. If they are not present, 
+	// try using these values from the default context
+	// (it does not check if this is the default context or not)
+	
+	var project = inputContext.getProject();
+	if(typeof project != 'undefined' && project != "") {
+		this.setProject(project);
+	}
+	
+	var wGraph = inputContext.getWGpragh();
+	if(typeof wGraph != 'undefined' && wGraph != "") {
+		this.setWGraph(wGraph);
+	}
+
+	var rGraphs = inputContext.getRGraphs();
+	if(typeof rGraphs != 'undefined' && rGraphs.length != 0){
+		this.setRGraphs(rGraphs);
+	}
+	
+	//now copy all the other values from the inputContext
+	for (var name in inputContext.valuesArray) {
+		this.addValue(name, inputContext.valuesArray[name])
+	}
+}
 
 function createNewArrayForContext(){
 	this.valuesArray = new Array();
@@ -129,6 +167,7 @@ function clearValues(){
 Context.prototype.getContextValuesForHTTPGetAsArray = getContextValuesForHTTPGetAsArray;
 Context.prototype.getContextValuesAsString = getContextValuesAsString;
 Context.prototype.createNewArrayForContext = createNewArrayForContext;
+Context.prototype.copyContext = copyContext;
 Context.prototype.addValue = addValue;
 Context.prototype.removeValue = removeValue;
 Context.prototype.getValue = getValue;

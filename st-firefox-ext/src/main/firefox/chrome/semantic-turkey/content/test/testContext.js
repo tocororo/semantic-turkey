@@ -82,6 +82,7 @@ art_semanticturkey.setNewContext2 = function(){
 	
 	var specifiedContext = new art_semanticturkey.Context();
 	specifiedContext.createNewArrayForContext();
+	specifiedContext.copyContext(art_semanticturkey.newServiceInstance1.context);
 	var nameForContext2 = document.getElementById("nameForContext2").value;
 	var valueForContext2 = document.getElementById("valueForContext2").value;
 	specifiedContext.addValue(nameForContext2, valueForContext2 );
