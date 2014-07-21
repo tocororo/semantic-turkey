@@ -27,7 +27,6 @@ Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/StartST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Annotation.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/PrefUtils.jsm", art_semanticturkey);
@@ -104,7 +103,6 @@ art_semanticturkey.chk_SaveCurrentProjectMenuitem = function() {
 art_semanticturkey.save_project = function() {
 	try {
 		var projName = art_semanticturkey.CurrentProject.getProjectName();
-		//art_semanticturkey.STRequests.ProjectsOLD.saveProject();
 		art_semanticturkey.STRequests.Projects.saveProject(projName);
 	} catch (e) {
 		alert(e.name + ": " + e.message);
@@ -518,18 +516,20 @@ art_semanticturkey.skosStateManagemenet.resourceRenamed = function(eventId, reso
 	var newName = resourceRenamedObj.getNewName();
 
 	if (oldName == art_semanticturkey.skosStateManagemenet.selectedScheme) {
-		art_semanticturkey.STRequests.ProjectsOLD.setProjectProperty("skos.selected_scheme", newName, {
-			getName : function() {
-				return "rename";
-			}
-		});
+		art_semanticturkey.STRequests.Projects.setProjectProperty(
+				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
+				newName, { getName : function() {
+							return "rename";
+						}
+				});
 	}
 };
 art_semanticturkey.skosStateManagemenet.schemeRemoved = function(eventId, skosSchemeRemovedObj) {
 	var name = skosSchemeRemovedObj.getSchemeName();
 
 	if (name == art_semanticturkey.skosStateManagemenet.selectedScheme) {
-		art_semanticturkey.STRequests.ProjectsOLD.setProjectProperty("skos.selected_scheme", "");
+		art_semanticturkey.STRequests.Projects.setProjectProperty(
+				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", "");
 	}
 };
 art_semanticturkey.skosStateManagemenet.projectPropertySet = function(eventId, projectPropertySetObj) {

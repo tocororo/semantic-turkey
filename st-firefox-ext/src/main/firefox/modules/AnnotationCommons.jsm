@@ -84,8 +84,6 @@ annotation.commons.handlers.createNarrowerConcept = function(event) {
 	if (typeof event.skos != "undefined" && typeof event.skos.conceptScheme != "undefined") {
 		conceptScheme = event.skos.conceptScheme;
 	} else {
-		//conceptScheme = STRequests.ProjectsOLD.getProjectProperty("skos.selected_scheme", null)
-		//		.getElementsByTagName("property")[0].getAttribute("value");
 		conceptScheme = STRequests.Projects.getProjectProperty(CurrentProject.getProjectName(),
 				"skos.selected_scheme", null).getElementsByTagName("property")[0].getAttribute("value");
 	}

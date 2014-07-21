@@ -1,7 +1,6 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stservices/SERVICE_SystemStart.jsm", art_semanticturkey);
-//Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
@@ -22,7 +21,6 @@ art_semanticturkey.startST = function() {
 
 	var responseXML = null;
 	try {
-		//responseXML = art_semanticturkey.STRequests.ProjectsOLD.getCurrentProject();
 		responseXML = art_semanticturkey.STRequests.Projects.listProjects();
 	} catch (e) {
 		if (e instanceof art_semanticturkey.HTTPError) {

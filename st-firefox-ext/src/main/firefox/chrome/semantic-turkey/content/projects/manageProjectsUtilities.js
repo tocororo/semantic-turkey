@@ -1,5 +1,4 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
-Components.utils.import("resource://stservices/SERVICE_ProjectsOLD.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
@@ -45,7 +44,8 @@ art_semanticturkey.closeProject_RESPONSE = function(responseElement, projectName
 	art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, false, "nullProject");
 };
 
-art_semanticturkey.getCurrentProjectFromServer = function(){
+// this function is not called any more, it is called just by saveAsProject, which is not used anymore
+/*art_semanticturkey.getCurrentProjectFromServer = function(){
 	try{
 		var responseXML = art_semanticturkey.STRequests.ProjectsOLD.getCurrentProject();
 		return art_semanticturkey.getCurrentProject_RESPONSE(responseXML);
@@ -53,7 +53,7 @@ art_semanticturkey.getCurrentProjectFromServer = function(){
 	catch(e){
 		return null;
 	}
-};
+};*/
 
 art_semanticturkey.getCurrentProject_RESPONSE = function(responseElement){
 	var projectInfo = new Object();

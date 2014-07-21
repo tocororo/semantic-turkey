@@ -25,7 +25,6 @@ art_semanticturkey.init = function() {
 	
 	var predefRoots = schemeList._view.sourceAdapter.fetchRoots;
 	schemeList._view.sourceAdapter.fetchRoots = function() {
-		//var selSc = art_semanticturkey.STRequests.ProjectsOLD.getProjectProperty("skos.selected_scheme").getElementsByTagName("property")[0].getAttribute("value");
 
 		var response = art_semanticturkey.STRequests.Projects.getProjectProperty(
 				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
