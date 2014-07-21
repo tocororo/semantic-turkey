@@ -660,6 +660,10 @@ art_semanticturkey.disableSPARQLSubmitQuery = function() {
 // Noemi Scarpato
 art_semanticturkey.submitQuery = function() {
 
+	//first of all clean the result table
+	art_semanticturkey.clearResultTable();
+	art_semanticturkey.decorateTitleResult("( Processing ... )");
+	
 	var queryText = art_semanticturkey.cm.getValue();
 	var mode = art_semanticturkey.cm.getStateAfter().queryType == "update" ? "update" : "query";
 		
@@ -675,20 +679,56 @@ art_semanticturkey.submitQuery = function() {
 
 };
 
-art_semanticturkey.resolveQuery_RESPONSE = function(response) {
+art_semanticturkey.clearResultTable = function(){
+	var treecols = document.getElementById("SPARQLTreeCols");
+	while (treecols.hasChildNodes()) {
+		treecols.removeChild(treecols.lastChild);
+	}
+	var rootTreechildren = document.getElementById("SPARQLRootTreechildren");
+	while (rootTreechildren.hasChildNodes()) {
+		rootTreechildren.removeChild(rootTreechildren.lastChild);
+	}
+	
+}
 
+art_semanticturkey.decorateTitleResult = function(textInput){
+	var decoratorValueResult = "   >>>   ";
+	var textFinal = decoratorValueResult+document.getElementById("textAreaResult1").getAttribute("cleanValue")+
+			" "+textInput+decoratorValueResult;
+	
+	document.getElementById("textAreaResult1").setAttribute("value", textFinal);
+}
+
+art_semanticturkey.getTime = function() {
+    var str = "";
+
+    var currentTime = new Date()
+    var hours = currentTime.getHours()
+    var minutes = currentTime.getMinutes()
+    var seconds = currentTime.getSeconds()
+
+    if (minutes < 10) {
+        minutes = "0" + minutes
+    }
+    if (seconds < 10) {
+        seconds = "0" + seconds
+    }
+    str += hours + ":" + minutes + ":" + seconds + " ";
+    /*if(hours > 11){
+        str += "PM"
+    } else {
+        str += "AM"
+    }*/
+    return str;
+}
+
+art_semanticturkey.resolveQuery_RESPONSE = function(response) {
+	var treecols = document.getElementById("SPARQLTreeCols");
+	var rootTreechildren = document.getElementById("SPARQLRootTreechildren");
+	
 	// Ramon Orr� (2010) : controllo tipologia serializzazione
 	if (response.respType == art_semanticturkey.RespContType.xml) {
-		var treecols = document.getElementById("SPARQLTreeCols");
-		while (treecols.hasChildNodes()) {
-			treecols.removeChild(treecols.lastChild);
-		}
-		var rootTreechildren = document
-				.getElementById("SPARQLRootTreechildren");
-
-		while (rootTreechildren.hasChildNodes()) {
-			rootTreechildren.removeChild(rootTreechildren.lastChild);
-		}
+		
 		var resultType = response.getElementsByTagName("data")[0]
 				.getAttribute("resulttype");
 		/*
@@ -813,16 +853,6 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response) {
 
 	// Ramon Orrù (2010) : JSON SPARQL RESULT Parser
 	else if (response.respType == art_semanticturkey.RespContType.json) {
-		var treecols = document.getElementById("SPARQLTreeCols");
-		while (treecols.hasChildNodes()) {
-			treecols.removeChild(treecols.lastChild);
-		}
-		var rootTreechildren = document
-				.getElementById("SPARQLRootTreechildren");
-
-		while (rootTreechildren.hasChildNodes()) {
-			rootTreechildren.removeChild(rootTreechildren.lastChild);
-		}
 		if (response.stresponse.reply.status == 'fail') {
 			// var msg = JSON.stringify(response.stresponse.reply.msg);
 			var msg = response.stresponse.reply.msg;
@@ -940,6 +970,10 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response) {
 			rootTreechildren.appendChild(ti);
 		}
 	}
+	
+	//set the time of the response
+	
+	art_semanticturkey.decorateTitleResult("(Done at "+art_semanticturkey.getTime()+")");
 };
 
 /*

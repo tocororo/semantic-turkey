@@ -64,7 +64,8 @@
 	</groupbox>
 	
 	<label class="header" value="" id="labelask"/>
-	<label class="header" value="&gt;&gt;&gt;   Results of the query   &gt;&gt;&gt;" id="textAreaResult1" />
+	<label class="header" value="   &gt;&gt;&gt;   Results of the query   &gt;&gt;&gt;   " 
+			cleanValue="Results of the query" id="textAreaResult1" />
 	<tree hidecolumnpicker="false" id="SPARQLTree" seltype="single" flex="1">
 		<treecols id="SPARQLTreeCols" />
 		<treechildren id="SPARQLRootTreechildren" flex="1" />
