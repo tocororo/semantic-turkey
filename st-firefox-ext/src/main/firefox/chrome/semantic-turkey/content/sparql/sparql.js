@@ -47,6 +47,13 @@ window.onload = function() {
 				art_semanticturkey.submitQuery();
 			}, false);
 
+	document.getElementById("saveResults").addEventListener("command",
+			function(event) {
+				art_semanticturkey.saveSparqlResults();
+			}, false);
+
+	
+	
 	document.getElementById("SPARQLTree").addEventListener("dblclick",
 			art_semanticturkey.SPARQLResourcedblClick, false);
 
@@ -660,6 +667,7 @@ art_semanticturkey.disableSPARQLSubmitQuery = function() {
 // Noemi Scarpato
 art_semanticturkey.submitQuery = function() {
 
+	art_semanticturkey.setDisableSaveResults(true);
 	//first of all clean the result table
 	art_semanticturkey.setDisableSubmitQuery(true);
 	art_semanticturkey.clearResultTable();
@@ -687,9 +695,11 @@ art_semanticturkey.submitQuery = function() {
 };
 
 art_semanticturkey.setDisableSubmitQuery = function(disableState){
-	//alert("setDisableSubmitQuery e disableState = "+disableState);
 	document.getElementById("submitQuery").disabled = disableState;
-	
+}
+
+art_semanticturkey.setDisableSaveResults = function(disableState){
+	document.getElementById("saveResults").disabled = disableState;
 }
 
 art_semanticturkey.clearResultTable = function(){
@@ -880,13 +890,17 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 	// Ramon Orrù (2010) : JSON SPARQL RESULT Parser
 	else if (response.respType == art_semanticturkey.RespContType.json) {
 		if (response.stresponse.reply.status == 'fail') {
+			art_semanticturkey.setDisableSaveResults(true);
 			// var msg = JSON.stringify(response.stresponse.reply.msg);
 			var msg = response.stresponse.reply.msg;
 			alert(msg);
 			return;
 		}
 		var resultType = response.stresponse.data.resulttype;
-
+		
+		// save the result in a variable defined in sparqlUtils.js
+		lastSPARQLResults = response.stresponse.data; 
+		
 		if (resultType == "tuple") {
 			var cols = response.stresponse.data.sparql.head.vars;
 
@@ -901,6 +915,13 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 			}
 
 			var bindings = response.stresponse.data.sparql.results.bindings;
+			
+			//check if the answer has at least one results to enable the save Results button
+			if(bindings.length > 0){
+				art_semanticturkey.setDisableSaveResults(false);
+			} else {
+				art_semanticturkey.setDisableSaveResults(true);
+			}
 
 			for (var bind in bindings) {
 				var ti = document.createElement("treeitem");
@@ -963,6 +984,14 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 			treecols.appendChild(treecol);
 
 			var stms = response.stresponse.data.stm;
+			
+			//check if the answer has at least one results to enable the save Results button
+			if(stms.length > 0){
+				art_semanticturkey.setDisableSaveResults(false);
+			} else {
+				art_semanticturkey.setDisableSaveResults(true);
+			}
+			
 			for ( var stm in stms) {
 				var ti = document.createElement("treeitem");
 				var tr = document.createElement("treerow");
@@ -982,6 +1011,7 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 				rootTreechildren.appendChild(ti);
 			}
 		} else if (resultType == "boolean") {
+			art_semanticturkey.setDisableSaveResults(true);
 			var boolValue = response.stresponse.data.result;
 			var treecol = document.createElement("treecol");
 			treecol.setAttribute("label", "Result");
