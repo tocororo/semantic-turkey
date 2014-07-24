@@ -20,6 +20,14 @@ ARTNode = function(){
 	this.isBNode = function(){
 		return false;
 	};
+	
+	this.getNominalValue = function() {
+		return "";
+	};
+	
+	this.toNT = function() {
+		return "";
+	};
 };
 
 /********** ARTLiteral *******************/
@@ -48,7 +56,24 @@ ARTLiteral = function(label, datatype, lang, isTypedLiteral){
 	
 	this.isTypedLiteral = function(){
 		return isTypedLiteral;
-	}
+	};
+	
+	this.getNominalValue = function() {
+		return label;
+	};
+	
+	this.toNT = function() {
+		var nt = label.quote();
+		
+		if (lang != null) {
+			nt += "@" + lang;
+		} else if (datatype != null) {
+			nt += "^^" + datatype; // TODO: check!!!
+		}
+		
+		return nt;
+	};
+
 };
 
 ARTLiteral.prototype = new ARTNode();
@@ -80,6 +105,14 @@ ARTURIResource = function(show, role, uri){
 	this.getURI = function(){
 		return uri;	
 	};
+	
+	this.getNominalValue = function() {
+		return uri;
+	};
+	
+	this.toNT = function() {
+		return "<" + uri + ">";
+	};
 };
 
 ARTURIResource.prototype = new ARTNode();
@@ -102,6 +135,15 @@ ARTBNode = function(id){
 	this.getId = function(){
 		return id;	
 	};
+	
+	this.getNominalValue = function() {
+		return "_:" + id;
+	};
+	
+	this.toNT = function() {
+		return this.getNominalValue();
+	};
+
 };
 
 ARTBNode.prototype = new ARTNode();

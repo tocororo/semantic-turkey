@@ -22,8 +22,13 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.vocabulary.RDFS;
+import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,9 +55,9 @@ public class DatasetMetadataRepository {
 
 		// TODO: remove this initialization block defining some known datasets
 		datasetMetadataRepository.put("http://dbpedia.org/resource/", new DatasetMetadata(
-				"http://dbpedia.org/resource/", "http://dbpedia.org/sparql", true));
+				"http://dbpedia.org/resource/", null, "http://dbpedia.org/sparql", true, new DummyRenderingEngine(), RDFS.Res.URI));
 		datasetMetadataRepository.put("http://aims.fao.org/aos/agrovoc/", new DatasetMetadata(
-				"http://aims.fao.org/aos/agrovoc/", "http://dbpedia.org/sparql", true));
+				"http://aims.fao.org/aos/agrovoc/", null, "http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc#", true, new DummyRenderingEngine(), SKOSXL.Res.URI));
 
 	}
 
@@ -97,4 +102,21 @@ public class DatasetMetadataRepository {
 
 	}
 
+	// TODO: remove dummy rendering engine
+	public static class DummyRenderingEngine implements RenderingEngine {
+
+		@Override
+		public Map<ARTResource, String> render(DatasetMetadata datasetMetadata,
+				Collection<ARTResource> resources) {
+
+			Map<ARTResource, String> results = new HashMap<ARTResource, String>();
+			
+			for (ARTResource res : resources) {
+				results.put(res, "!!!" + res.toString());
+			}
+			
+			return results;
+		}
+		
+	}
 }

@@ -16,6 +16,8 @@
 			<field name="addRemoveButton" />
 			<constructor>
 				<![CDATA[
+					const OBJECT_COUNT_TRESHOLD = 5;
+					
 					if (typeof art_semanticturkey == 'undefined')
 					var art_semanticturkey = {};
 					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
@@ -31,7 +33,7 @@
 					
 					if(typeof this.rdfResourcesArray != "undefined"){
 						maindOLWbox.setAttribute("flex", "1");
-						if(this.rdfResourcesArray.length >= 5 ){
+						if(this.rdfResourcesArray.length >= OBJECT_COUNT_TRESHOLD){
 							//create the buttons
 							if(typeof this.addRemoveButton == "undefined" || this.addRemoveButton == true ){
 							var button = document.createElement("button");
@@ -42,7 +44,6 @@
 							
 							//add the resources list
 							var richListBox = document.createElement("richlistbox");
-						
 							for (var i = 0; i < this.rdfResourcesArray.length; i++) {
 								rdfRes = rdfResourcesArray[i];
 								
@@ -58,7 +59,7 @@
 							}
 							maindOLWbox.appendChild(richListBox);
 						
-						} else{ // this.rdfResourcesArray.lentgh < 10
+						} else{ // this.rdfResourcesArray.lentgh < OBJECT_COUNT_TRESHOLD
 							for (var i = 0; i < this.rdfResourcesArray.length; i++) {
 								rdfRes = rdfResourcesArray[i];
 								

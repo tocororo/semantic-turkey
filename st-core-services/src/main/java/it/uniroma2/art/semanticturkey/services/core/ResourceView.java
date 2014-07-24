@@ -22,9 +22,17 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelCreationException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenComponents_Predicate;
 import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenSubjects_Predicate;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
+import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNamespace;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -32,20 +40,34 @@ import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.LinkedDataResolver;
 import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.TripleQueryModel;
 import it.uniroma2.art.owlart.models.TripleQueryModelHTTPConnection;
+import it.uniroma2.art.owlart.navigation.ARTNamespaceIterator;
+import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.query.GraphQuery;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.QueryLanguage;
+import it.uniroma2.art.owlart.query.TupleBindings;
+import it.uniroma2.art.owlart.query.TupleBindingsIterator;
+import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.owlart.vocabulary.RDFS;
+import it.uniroma2.art.owlart.vocabulary.SKOS;
+import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -58,12 +80,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.HashMultimap;
 
@@ -72,16 +98,20 @@ import com.google.common.collect.HashMultimap;
 @Component
 public class ResourceView extends STServiceAdapter {
 
+	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
+
 	@GenerateSTServiceController
-	public Response getResourceView(ARTResource resource) throws Exception {
+	public Response getResourceView(ARTURIResource resource) throws Exception {
 		OWLModel owlModel = getOWLModel();
 		ARTResource[] userNamedGraphs = getUserNamedGraphs();
 		ARTResource workingGraph = getWorkingGraph();
 
-		boolean localResource = owlModel.existsResource(resource, userNamedGraphs);
+		boolean localResource = isLocalResource(owlModel, resource);
 
-		// ***********************************************************************************
-		// Retrieve the given resource description, and, if possible, the explicit statements
+		Map<ARTResource, String> artResource2Rendering = new HashMap<ARTResource, String>();
+
+		// ******************************************************************************************
+		// Step 1: Retrieve the given resource description, and, if possible, the explicit statements
 
 		Collection<ARTStatement> resourceDescription;
 		Set<ARTStatement> explicitStatements;
@@ -97,6 +127,7 @@ public class ResourceView extends STServiceAdapter {
 			// query
 			explicitStatements = RDFIterators.getSetFromIterator(owlModel.listStatements(resource,
 					NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.MAINGRAPH));
+
 		} else { // external resource
 			resourceDescription = remoteLookup(resource);
 
@@ -104,12 +135,185 @@ public class ResourceView extends STServiceAdapter {
 			explicitStatements = new HashSet<ARTStatement>(); // All statements are considered implicit
 		}
 
-		// **********************
-		// Selects only outlinks
-		Collection<ARTStatement> outlinks = Collections2.filter(resourceDescription,
-				StatementWithAnyOfGivenSubjects_Predicate.getFilter(Arrays.asList(resource)));
+		// ***********************************
+		// Step X: Render the subject resource
+
+		// TODO: determine the right rendering engine for the the subject resource
+		RenderingEngine subjectRenderer = new DatasetMetadataRepository.DummyRenderingEngine();
+
+		String subjectRendering = subjectRenderer.render(null, Arrays.<ARTResource> asList(resource))
+				.values().iterator().next();
+
+		STRDFResource subjectResource = STRDFNodeFactory.createSTRDFResource(owlModel, resource, false,
+				false, false);
+		subjectResource.setRendering(subjectRendering);
+
+		artResource2Rendering.put(resource, subjectRendering);
+
+		// *************************************
+		// Step X: Remove linguistic information
 
 		// Produces the property-values forms
+		HashMap<ARTURIResource, STRDFResource> art2STRDFPredicatesLabels = new HashMap<ARTURIResource, STRDFResource>();
+		HashMultimap<ARTURIResource, STRDFNode> resultPredicateObjectValuesLabels = HashMultimap.create();
+
+		// Filter rdfs:labels
+
+		Collection<ARTStatement> rdfsLabelStmts = Collections2.filter(resourceDescription,
+				StatementWithAnyOfGivenComponents_Predicate.getFilter(resource, RDFS.Res.LABEL,
+						NodeFilters.ANY));
+
+		STRDFURI rdfsLabelRes = STRDFNodeFactory.createSTRDFURI(RDFS.Res.LABEL,
+				RDFResourceRolesEnum.annotationProperty, false, "rdfs:label");
+		art2STRDFPredicatesLabels.put(RDFS // TODO
+				.Res.LABEL, rdfsLabelRes);
+
+		for (ARTStatement stmt : rdfsLabelStmts) {
+
+			boolean explicit = false;
+
+			if (explicitStatements.contains(stmt)) {
+				explicit = true;
+			}
+
+			STRDFNode labelNode = STRDFNodeFactory.createSTRDFNode(owlModel, stmt.getObject(), false,
+					explicit, false);
+			if (stmt.getObject().isLiteral()) {
+				labelNode.setRendering(stmt.getObject().getNominalValue());
+			}
+			resultPredicateObjectValuesLabels.put(RDFS.Res.LABEL, labelNode);
+
+		}
+
+		// Remove processed statements
+		rdfsLabelStmts.clear();
+
+		// Filter skos:{pref,alt,hidden}Label
+
+		@SuppressWarnings("unchecked")
+		Collection<ARTStatement> skosLabelStmts = Collections2.filter(resourceDescription, Predicates.or(
+				StatementWithAnyOfGivenComponents_Predicate.getFilter(resource, SKOS.Res.PREFLABEL,
+						NodeFilters.ANY), StatementWithAnyOfGivenComponents_Predicate.getFilter(resource,
+						SKOS.Res.ALTLABEL, NodeFilters.ANY), StatementWithAnyOfGivenComponents_Predicate
+						.getFilter(resource, SKOS.Res.HIDDENLABEL, NodeFilters.ANY)));
+
+		STRDFURI skosPrefLabelRes = STRDFNodeFactory.createSTRDFURI(SKOS.Res.PREFLABEL,
+				RDFResourceRolesEnum.annotationProperty, false, "skos:prefLabel");
+		art2STRDFPredicatesLabels.put(SKOS.Res.PREFLABEL, skosPrefLabelRes);
+
+		STRDFURI skosAltLabelRes = STRDFNodeFactory.createSTRDFURI(SKOS.Res.ALTLABEL,
+				RDFResourceRolesEnum.annotationProperty, false, "skos:altLabel");
+		art2STRDFPredicatesLabels.put(SKOS.Res.ALTLABEL, skosAltLabelRes);
+
+		STRDFURI skosHiddenLabelRes = STRDFNodeFactory.createSTRDFURI(SKOS.Res.HIDDENLABEL,
+				RDFResourceRolesEnum.annotationProperty, false, "skos:hiddenLabel");
+		art2STRDFPredicatesLabels.put(SKOS.Res.HIDDENLABEL, skosHiddenLabelRes);
+
+		for (ARTStatement stmt : skosLabelStmts) {
+
+			boolean explicit = false;
+
+			if (explicitStatements.contains(stmt)) {
+				explicit = true;
+			}
+
+			STRDFNode labelNode = STRDFNodeFactory.createSTRDFNode(owlModel, stmt.getObject(), false,
+					explicit, false);
+			if (stmt.getObject().isLiteral()) {
+				labelNode.setRendering(stmt.getObject().getNominalValue());
+			}
+			resultPredicateObjectValuesLabels.put(stmt.getPredicate(), labelNode);
+
+		}
+
+		// Remove processed statements
+		skosLabelStmts.clear();
+
+		// Filter skosxl:{pref,alt,hidden}Label
+
+		@SuppressWarnings("unchecked")
+		Collection<ARTStatement> skosxlLabelStmts = Collections2.filter(resourceDescription, Predicates.or(
+				StatementWithAnyOfGivenComponents_Predicate.getFilter(resource, SKOSXL.Res.PREFLABEL,
+						NodeFilters.ANY), StatementWithAnyOfGivenComponents_Predicate.getFilter(resource,
+						SKOSXL.Res.ALTLABEL, NodeFilters.ANY), StatementWithAnyOfGivenComponents_Predicate
+						.getFilter(resource, SKOSXL.Res.HIDDENLABEL, NodeFilters.ANY)));
+
+		STRDFURI skosxlPrefLabelRes = STRDFNodeFactory.createSTRDFURI(SKOSXL.Res.PREFLABEL,
+				RDFResourceRolesEnum.objectProperty, false, "skosxl:prefLabel");
+		art2STRDFPredicatesLabels.put(SKOSXL.Res.PREFLABEL, skosxlPrefLabelRes);
+
+		STRDFURI skosxlAltLabelRes = STRDFNodeFactory.createSTRDFURI(SKOSXL.Res.ALTLABEL,
+				RDFResourceRolesEnum.objectProperty, false, "skosxl:altLabel");
+		art2STRDFPredicatesLabels.put(SKOSXL.Res.ALTLABEL, skosxlAltLabelRes);
+
+		STRDFURI skosxlHiddenLabelRes = STRDFNodeFactory.createSTRDFURI(SKOSXL.Res.HIDDENLABEL,
+				RDFResourceRolesEnum.objectProperty, false, "skosxl:hiddenLabel");
+		art2STRDFPredicatesLabels.put(SKOSXL.Res.HIDDENLABEL, skosxlHiddenLabelRes);
+
+		Map<ARTURIResource, STRDFURI> art2stxlabels = new HashMap<ARTURIResource, STRDFURI>();
+
+		for (ARTStatement stmt : skosxlLabelStmts) {
+
+			boolean explicit = false;
+
+			if (explicitStatements.contains(stmt)) {
+				explicit = true;
+			}
+
+			STRDFNode xLabelNode = STRDFNodeFactory.createSTRDFNode(owlModel, stmt.getObject(), false,
+					explicit, false);
+
+			if (xLabelNode.isURIResource()) {
+				STRDFURI xLabelUri = (STRDFURI) xLabelNode;
+				xLabelUri.setRole(RDFResourceRolesEnum.xLabel);
+
+				// Retain xlabels for computing their rendering
+				art2stxlabels.put(stmt.getObject().asURIResource(), xLabelUri);
+			}
+			resultPredicateObjectValuesLabels.put(stmt.getPredicate(), xLabelNode);
+
+		}
+
+		renderXLabels(resource, localResource, art2stxlabels);
+
+		// Remove processed statements
+		skosxlLabelStmts.clear();
+
+		// Create labels predicateObjectLists
+		PredicateObjectsList labellingPredicateObjectsList = PredicateObjectsListFactory
+				.createPredicateObjectsList(art2STRDFPredicatesLabels, resultPredicateObjectValuesLabels);
+
+		// *********************************
+		// Step X: Process remaining triples
+
+		Collection<ARTStatement> outlinks = Collections2.filter(resourceDescription,
+				StatementWithAnyOfGivenSubjects_Predicate.getFilter(Arrays.<ARTResource> asList(resource)));
+
+		// ********************************
+		// Step X: Render remaining objects
+
+		// TODO: currently, we use always qname for predicates
+
+		ARTNodeIterator distinctObjects = RDFIterators.listDistinct(RDFIterators.listObjects(RDFIterators
+				.createARTStatementIterator(outlinks.iterator())));
+
+		while (distinctObjects.streamOpen()) {
+			ARTNode objNode = distinctObjects.getNext();
+
+			if (objNode.isURIResource()) {
+
+			} else if (objNode.isBlank()) {
+				if (!artResource2Rendering.containsKey(objNode)) {
+					artResource2Rendering.put(objNode.asBNode(), "!!!" + objNode.toString()); // TODO: handle
+																								// Blank
+				}
+			}
+		}
+		distinctObjects.close();
+
+		// ************************************************
+		// Step X: Prepare data for predicate objects lists
+
 		HashMap<ARTURIResource, STRDFResource> art2STRDFPredicates = new HashMap<ARTURIResource, STRDFResource>();
 		HashMultimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
 
@@ -122,8 +326,16 @@ public class ResourceView extends STServiceAdapter {
 				explicit = true;
 			}
 
-			resultPredicateObjectValues.put(predicate,
-					STRDFNodeFactory.createSTRDFNode(owlModel, stmt.getObject(), false, explicit, false));
+			STRDFNode stNodeObject = STRDFNodeFactory.createSTRDFNode(owlModel, stmt.getObject(), false,
+					explicit, false);
+
+			// TODO: currently, renders resources by their nominal value
+			if (stNodeObject.isResource()) {
+				STRDFResource stResourceObject = ((STRDFResource)stNodeObject);
+				stResourceObject.setRendering(stResourceObject.getARTNode().getNominalValue());
+			}
+			
+			resultPredicateObjectValues.put(predicate, stNodeObject);
 
 			art2STRDFPredicates.put(
 					predicate,
@@ -131,19 +343,118 @@ public class ResourceView extends STServiceAdapter {
 							owlModel.getQName(predicate.getURI())));
 		}
 
+		// ******************************
+		// Step X: Reorganize information
+
+		// Produces the property-values forms
+
 		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory.createPredicateObjectsList(
 				art2STRDFPredicates, resultPredicateObjectValues);
 
-		// ********************************
-		// Produces the OLD-style response
+		// ****************************************
+		// Step X : Produces the OLD-style response
 		XMLResponseREPLY response = servletUtilities.createReplyResponse("getResourceDescription",
 				RepliesStatus.ok);
-		 Element dataElement = response.getDataElement();
-		
-		 Element propertiesElement = XMLHelp.newElement(dataElement, "Properties");
-		 RDFXMLHelp.addPredicateObjectList(propertiesElement, predicateObjectsList);
+		Element dataElement = response.getDataElement();
+
+		// Append the subject resource
+
+		Element resourceElement = XMLHelp.newElement(dataElement, "resource");
+		RDFXMLHelp.addRDFNode(resourceElement, subjectResource);
+
+		// Labeling properties
+
+		Element lexicalizationsElement = XMLHelp.newElement(dataElement, "lexicalizations");
+		RDFXMLHelp.addPredicateObjectList(lexicalizationsElement, labellingPredicateObjectsList);
+
+		// Append the other properties
+
+		Element propertiesElement = XMLHelp.newElement(dataElement, "properties");
+		RDFXMLHelp.addPredicateObjectList(propertiesElement, predicateObjectsList);
 
 		return response;
+	}
+
+	private void renderXLabels(ARTURIResource resource, boolean localResource,
+			Map<ARTURIResource, STRDFURI> art2stxlabels) throws ModelAccessException,
+			UnsupportedQueryLanguageException, MalformedQueryException, ModelCreationException,
+			UnavailableResourceException, ProjectInconsistentException, QueryEvaluationException {
+
+		OWLModel owlModel = getOWLModel();
+
+		HashMultimap<DatasetMetadata, ARTURIResource> dataset2resources = HashMultimap.create();
+
+		for (ARTURIResource xl : art2stxlabels.keySet()) {
+			if (isLocalResource(getOWLModel(), xl)) {
+				dataset2resources.put(null, xl);
+			} else {
+				DatasetMetadata datasetMeta = DatasetMetadataRepository.getInstance().findDatasetForResource(
+						xl);
+
+				if (datasetMeta != null && datasetMeta.getSparqlEndpoint() != null) {
+					dataset2resources.put(datasetMeta, xl);
+				}
+			}
+		}
+
+		for (DatasetMetadata datasetMeta : dataset2resources.keySet()) {
+			StringBuilder queryBuilder = new StringBuilder();
+			queryBuilder.append("select ?resource ?lexicalForm ?languageTag {\n");
+			queryBuilder.append("   values(?resource){\n");
+
+			for (ARTURIResource xl : dataset2resources.get(datasetMeta)) {
+				queryBuilder.append("      (").append(RDFNodeSerializer.toNT(xl)).append(")\n");
+			}
+
+			queryBuilder.append("   }\n");
+			queryBuilder
+					.append("   ?resource <http://www.w3.org/2008/05/skos-xl#literalForm> ?literalForm . \n");
+			queryBuilder.append("   bind(str(?literalForm) as ?lexicalForm) \n");
+			queryBuilder.append("   bind(lang(?literalForm) as ?languageTag) \n");
+			queryBuilder.append("}");
+
+			String querySpec = queryBuilder.toString();
+			TripleQueryModel queryModel;
+
+			boolean mustCloseConnection = false;
+
+			logger.info(querySpec);
+
+			if (datasetMeta == null) {
+				queryModel = owlModel;
+			} else {
+				queryModel = getCurrentModelFactory().loadTripleQueryHTTPConnection(
+						datasetMeta.getSparqlEndpoint());
+				mustCloseConnection = true;
+			}
+
+			logger.info("Query Model: " + queryModel);
+
+			TupleQuery literalFormQuery = queryModel.createTupleQuery(QueryLanguage.SPARQL, querySpec, null);
+			TupleBindingsIterator bindingsIt = literalFormQuery.evaluate(true);
+
+			while (bindingsIt.streamOpen()) {
+				TupleBindings bindings = bindingsIt.getNext();
+
+				ARTURIResource anXlabel = bindings.getBoundValue("resource").asURIResource();
+				String lexicalForm = bindings.getBoundValue("lexicalForm").asLiteral().getLabel();
+				String languageTag = bindings.getBoundValue("languageTag").asLiteral().getLabel();
+
+				logger.info("Bindings: " + bindings);
+
+				STRDFURI stXLabel = art2stxlabels.get(anXlabel);
+				if (stXLabel != null) {
+					stXLabel.setRendering(RDFNodeSerializer.toNT(owlModel.createLiteral(lexicalForm,
+							languageTag)));
+				}
+			}
+
+			bindingsIt.close();
+
+			if (mustCloseConnection) {
+				((TripleQueryModelHTTPConnection) queryModel).disconnect();
+			}
+		}
 	}
 
 	private Collection<ARTStatement> remoteLookup(ARTResource resource) throws Exception {
@@ -178,6 +489,26 @@ public class ResourceView extends STServiceAdapter {
 	private ModelFactory<?> getCurrentModelFactory() throws UnavailableResourceException,
 			ProjectInconsistentException {
 		return PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
+	}
+
+	// TODO: find better name??
+	private boolean isLocalResource(RDFModel rdfModel, ARTURIResource uriResource)
+			throws ModelAccessException {
+		ARTNamespaceIterator it = rdfModel.listNamespaces();
+
+		try {
+			while (it.streamOpen()) {
+				ARTNamespace ns = it.getNext();
+
+				if (ns.getName().equals(uriResource.getNamespace())) {
+					return true;
+				}
+			}
+		} finally {
+			it.close();
+		}
+
+		return false;
 	}
 
 }

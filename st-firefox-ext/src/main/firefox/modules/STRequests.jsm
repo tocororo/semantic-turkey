@@ -102,6 +102,11 @@ STRequests.OntManager = function(){};
  */
 STRequests.Resource = function(){};
 
+/**
+ * @class
+ */
+STRequests.ResourceView = function(){};
+
 
 //systemStart service requests
 STRequests.SystemStart.serviceName = "systemStart";
@@ -333,3 +338,8 @@ STRequests.Statement.hasStatementRequest = "hasStatement";
 //Resource service request
 STRequests.Resource.serviceName = "resource";
 STRequests.Resource.getRoleRequest = "getRole";
+STRequests.Resource.removePropertyValueRequest = "removePropertyValue";
+
+//ResourceView service request
+STRequests.ResourceView.serviceName = "ResourceView";
+STRequests.ResourceView.getResourceViewRequest = "getResourceView";

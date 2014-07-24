@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -51,6 +52,11 @@ public class Resource extends STServiceAdapter {
 		it.close();
 
 		return values;
+	}
+	
+	@GenerateSTServiceController
+	public void removePropertyValue(@Existing ARTResource subject, @Existing ARTURIResource predicate, ARTNode object) throws ModelUpdateException {
+		getOWLModel().deleteTriple(subject, predicate, object, getUserNamedGraphs());
 	}
 
 }
