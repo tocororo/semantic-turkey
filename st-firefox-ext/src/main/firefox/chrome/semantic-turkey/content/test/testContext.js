@@ -18,15 +18,21 @@ art_semanticturkey.onloadTextContext = function() {
 			art_semanticturkey.getNewContext1, true);
 
 	
-	document.getElementById("testButton4").addEventListener("command",
-			art_semanticturkey.setNewContext2, true);
-	document.getElementById("testButton5").addEventListener("command",
-			art_semanticturkey.getNewContext2, true);
+	document.getElementById("testButton1Copied").addEventListener("command",
+			art_semanticturkey.setNewContextCopied, true);
+	document.getElementById("testButton2Copied").addEventListener("command",
+			art_semanticturkey.getNewContextCopied, true);
 	
-	document.getElementById("testButton6").addEventListener("command",
-			art_semanticturkey.setNewContext3, true);
-	document.getElementById("testButton7").addEventListener("command",
-			art_semanticturkey.getNewContext3, true);
+	document.getElementById("testButton1Cloned").addEventListener("command",
+			art_semanticturkey.setNewContextCloned, true);
+	document.getElementById("testButton2Cloned").addEventListener("command",
+			art_semanticturkey.getNewContextCloned, true);
+	
+	
+	document.getElementById("testButton1Array").addEventListener("command",
+			art_semanticturkey.setNewContextArray, true);
+	document.getElementById("testButton2Array").addEventListener("command",
+			art_semanticturkey.getNewContextArray, true);
 	
 }
 
@@ -76,15 +82,16 @@ art_semanticturkey.getNewContext1 = function(){
 
 
 
-
-art_semanticturkey.setNewContext2 = function(){
+//COPY TEST
+art_semanticturkey.setNewContextCopied = function(){
 	var defaultContext = art_semanticturkey.Test.context;
 	
 	var specifiedContext = new art_semanticturkey.Context();
 	specifiedContext.createNewArrayForContext();
-	specifiedContext.copyContext(art_semanticturkey.newServiceInstance1.context);
-	var nameForContext2 = document.getElementById("nameForContext2").value;
-	var valueForContext2 = document.getElementById("valueForContext2").value;
+	//specifiedContext.copyContext(art_semanticturkey.newServiceInstance1.context);
+	specifiedContext.copy(art_semanticturkey.newServiceInstance1.context);
+	var nameForContext2 = document.getElementById("nameForContextCopied").value;
+	var valueForContext2 = document.getElementById("valueForContextCopied").value;
 	specifiedContext.addValue(nameForContext2, valueForContext2 );
 	
 	art_semanticturkey.newServiceInstance2 = art_semanticturkey.Test.getAPI(specifiedContext);
@@ -93,7 +100,7 @@ art_semanticturkey.setNewContext2 = function(){
 	art_semanticturkey.newServiceInstance2.fakeRequest();
 }
 
-art_semanticturkey.getNewContext2 = function(){
+art_semanticturkey.getNewContextCopied = function(){
 	var defaultContext = art_semanticturkey.Test.context;
 	
 	var specifiedContext = art_semanticturkey.newServiceInstance2.context;
@@ -103,23 +110,48 @@ art_semanticturkey.getNewContext2 = function(){
 	art_semanticturkey.newServiceInstance2.fakeRequest();
 }
 
+//CLONE TEST
+art_semanticturkey.setNewContextCloned = function(){
+	var defaultContext = art_semanticturkey.Test.context;
+	
+	var clonedContext = art_semanticturkey.newServiceInstance1.context.clone();
+	var nameForContext2 = document.getElementById("nameForContextCloned").value;
+	var valueForContext2 = document.getElementById("valueForContextCloned").value;
+	clonedContext.addValue(nameForContext2, valueForContext2 );
+	
+	art_semanticturkey.newServiceInstance2 = art_semanticturkey.Test.getAPI(clonedContext);
+	art_semanticturkey.writeContext(defaultContext, clonedContext);
+	
+	art_semanticturkey.newServiceInstance2.fakeRequest();
+}
 
-art_semanticturkey.setNewContext3 = function(){
+art_semanticturkey.getNewContextCloned = function(){
+	var defaultContext = art_semanticturkey.Test.context;
+	
+	var clonedContext = art_semanticturkey.newServiceInstance2.context;
+	
+	art_semanticturkey.writeContext(defaultContext, clonedContext);
+	
+	art_semanticturkey.newServiceInstance2.fakeRequest();
+}
+
+//ARRAY TEST
+art_semanticturkey.setNewContextArray = function(){
 	var defaultContext = art_semanticturkey.Test.context;
 	
 	var specifiedContext = new art_semanticturkey.Context();
 	specifiedContext.createNewArrayForContext();
-	var nameForProject3 = document.getElementById("nameForProject3").value;
+	var nameForProject3 = document.getElementById("nameForProjectArray").value;
 	//take the value for the wGraph
-	var valueForWGraph3 = document.getElementById("valueForWGraph3").value;
+	var valueForWGraph3 = document.getElementById("valueForWGraphArray").value;
 	specifiedContext.setProject(nameForProject3);
 	specifiedContext.setWGraph(valueForWGraph3);
-	specifiedContext.addValue("pippo","paperino");
+	specifiedContext.addValue("donald","duck");
 	//take the value(s) for the rGraphs
 	var rGraphsArray = new Array();
 	var count = 0;
 	for(var i=1; i<4; ++i){
-		var valueForRGraph31 = document.getElementById("valueForRGraph3"+i).value;
+		var valueForRGraph31 = document.getElementById("valueForRGraphArray"+i).value;
 		if(valueForRGraph31 != "")
 			rGraphsArray[count++] = valueForRGraph31;
 	}
@@ -131,7 +163,7 @@ art_semanticturkey.setNewContext3 = function(){
 	art_semanticturkey.newServiceInstance3.fakeRequest2();
 }
 
-art_semanticturkey.getNewContext3 = function(){
+art_semanticturkey.getNewContextArray = function(){
 	var defaultContext = art_semanticturkey.Test.context;
 	
 	var specifiedContext = art_semanticturkey.newServiceInstance3.context;

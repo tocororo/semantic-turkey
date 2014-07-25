@@ -80,7 +80,7 @@ function getContextValuesAsString(separator){
 	return contexString;*/
 }
 
-function copyContext(inputContext){
+function copy(inputContext){
 	if(typeof inputContext == 'undefined' || inputContext == null){
 		return; // the input context is not defined, so just return
 	}
@@ -110,6 +110,39 @@ function copyContext(inputContext){
 	for (var name in inputContext.valuesArray) {
 		this.addValue(name, inputContext.valuesArray[name])
 	}
+}
+
+function clone(){
+	var clonedContext = new Context();
+	clonedContext.createNewArrayForContext();
+	
+	//iterate over the values stored in this context
+	
+	//first of all take the context, wgraph e rgraph. If they are not present, 
+	// try using these values from the default context
+	// (it does not check if this is the default context or not)
+	
+	var project = this.getProject();
+	if(typeof project != 'undefined' && project != "") {
+		clonedContext.setProject(project);
+	}
+	
+	var wGraph = this.getWGpragh();
+	if(typeof wGraph != 'undefined' && wGraph != "") {
+		clonedContext.setWGraph(wGraph);
+	}
+
+	var rGraphs = this.getRGraphs();
+	if(typeof rGraphs != 'undefined' && rGraphs.length != 0){
+		clonedContext.setRGraphs(rGraphs);
+	}
+	
+	//now copy all the other values from this context
+	for (var name in this.valuesArray) {
+		clonedContext.addValue(name, this.valuesArray[name])
+	}
+	
+	return clonedContext;
 }
 
 function createNewArrayForContext(){
@@ -167,7 +200,8 @@ function clearValues(){
 Context.prototype.getContextValuesForHTTPGetAsArray = getContextValuesForHTTPGetAsArray;
 Context.prototype.getContextValuesAsString = getContextValuesAsString;
 Context.prototype.createNewArrayForContext = createNewArrayForContext;
-Context.prototype.copyContext = copyContext;
+Context.prototype.copy = copy;
+Context.prototype.clone = clone;
 Context.prototype.addValue = addValue;
 Context.prototype.removeValue = removeValue;
 Context.prototype.getValue = getValue;
