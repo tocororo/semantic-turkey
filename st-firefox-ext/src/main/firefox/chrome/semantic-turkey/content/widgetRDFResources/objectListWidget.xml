@@ -45,7 +45,7 @@
 							//add the resources list
 							var richListBox = document.createElement("richlistbox");
 							for (var i = 0; i < this.rdfResourcesArray.length; i++) {
-								rdfRes = rdfResourcesArray[i];
+								var rdfRes = rdfResourcesArray[i];
 								
 								var richListItem = document.createElement("richlistitem");
 								richListItem.setAttribute("flex", "1");
@@ -61,7 +61,7 @@
 						
 						} else{ // this.rdfResourcesArray.lentgh < OBJECT_COUNT_TRESHOLD
 							for (var i = 0; i < this.rdfResourcesArray.length; i++) {
-								rdfRes = rdfResourcesArray[i];
+								var rdfRes = rdfResourcesArray[i];
 								
 								var widgetBox = document.createElement("box");
 								widgetBox.setAttribute("flex", "1");

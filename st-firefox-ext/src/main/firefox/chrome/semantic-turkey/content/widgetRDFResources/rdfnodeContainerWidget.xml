@@ -37,6 +37,9 @@
 								var button = document.createElement("button");
 								button.setAttribute("label", "remove");
 								button.setAttribute("image", imageSrc);
+
+								button.setAttribute("disabled", "" + (this.rdfResource.explicit == "false"));
+								
 								document.getAnonymousElementByAttribute(this, "anonid", "mainHbox")
 									.appendChild(button);
 							}

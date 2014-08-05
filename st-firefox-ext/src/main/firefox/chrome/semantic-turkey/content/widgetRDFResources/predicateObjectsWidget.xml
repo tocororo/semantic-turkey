@@ -48,10 +48,13 @@
 					
 						//now add the buttons
 						if(this.operations.contains("add")){
-							var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource, "add");
+							var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfPredicate, "add");
 							var button = document.createElement("button");
 							button.setAttribute("label", "add");
 							button.setAttribute("image", imageSrc);
+							
+							button.setAttribute("disabled", "" + (this.rdfSubject.explicit == "false"));
+							
 							document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW")
 								.appendChild(button);
 						}
@@ -62,6 +65,7 @@
 								var button = document.createElement("button");
 								button.setAttribute("label", "remove");
 								button.setAttribute("image", imageSrc);
+								
 								document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW")
 									.appendChild(button);
 							}

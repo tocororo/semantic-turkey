@@ -22,12 +22,160 @@ art_semanticturkey.resourceView.init = function() {
 	try {
 		var response = art_semanticturkey.STRequests.ResourceView.getResourceView(resource);
 	} catch (e) {
-		alert(e.getMessage());
+		alert(e.message);
 		return;
 	}
 
 	var resourceViewBox = document.getElementById("resourceViewBox");
 	art_semanticturkey.resourceView.getResourceView_RESPONSE(response);
+};
+
+art_semanticturkey.resourceView.refreshView = function() {
+	var resourceNameElement = document.getElementById("resourceNameBox");
+	
+	try {
+		var response = art_semanticturkey.STRequests.ResourceView.getResourceView(resourceNameElement.value);
+	} catch (e) {
+		alert(e.message);
+		return;
+	}
+
+	var resourceViewBox = document.getElementById("resourceViewBox");
+	art_semanticturkey.resourceView.getResourceView_RESPONSE(response);
+};
+
+art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
+	// -----------------------------
+	// Populates the resource header
+
+	// Handles the resource name (resource name box)
+	var responseDataElement = response.getElementsByTagName("data")[0];
+	var responseResourceElement = responseDataElement.getElementsByTagName("resource")[0];
+
+	var resourceObj = art_semanticturkey.Deserializer.createRDFNode(responseResourceElement.children[0]);
+
+	var resourceNameElement = document.getElementById("resourceNameBox");
+	resourceNameElement.value = resourceObj.getNominalValue();
+
+	// Handles the resource editability (rename button)
+	var isResourceEditable = !(resourceObj.explicit == "false");
+
+	var renameResourceButton = document.getElementById("renameResourceButton");
+	renameResourceButton.disabled = !isResourceEditable;
+
+	// ----------------------
+	// Handles the partitions
+
+	// Specially handled partitions
+	var excludedPartitions = [ "resource" ];
+
+	var responsePartitions = responseDataElement.children;
+
+	var partitionsBox = document.getElementById("partitionsBox");
+	while (partitionsBox.firstChild) {
+		partitionsBox.removeChild(partitionsBox.firstChild);
+	}
+	
+	// For each partition
+	for (var i = 0; i < responsePartitions.length; i++) {	
+		var responsePartition = responsePartitions[i];
+		var responsePartitionTagName = responsePartition.tagName;
+
+		if (excludedPartitions.indexOf(responsePartitionTagName) != -1)
+			continue;
+		
+		art_semanticturkey.resourceView.renderPartition(resourceObj, responsePartition, partitionsBox);
+	}
+
+};
+
+art_semanticturkey.resourceView.renderPartition = function(subjectResource, responsePartition, partitionsBox) {
+	var partitionName = responsePartition.tagName;	
+	var partitionHandler = partition2handlerMap[partitionName];
+
+	var renderFunction = art_semanticturkey.resourceView.getPropertyPathValue(partitionHandler, "render") || art_semanticturkey.resourceView.renderPartitionDefault;
+	renderFunction(subjectResource, responsePartition, partitionsBox);
+};
+
+art_semanticturkey.resourceView.renderPartitionDefault = function(subjectResource, responsePartition, partitionsBox) {
+	
+	var partitionName = responsePartition.tagName;
+	
+	var partitionHandler = partition2handlerMap[partitionName];
+
+	var partitionLabel = art_semanticturkey.resourceView.getPropertyPathValue(partitionHandler, "partitionLabel") || partitionName;
+	
+	// Handles the partition header
+	var partitionGroupBox = document.createElement("groupbox");
+	var partitionCaption = document.createElement("caption");
+	partitionCaption.setAttribute("label", partitionLabel);
+	partitionGroupBox.appendChild(partitionCaption);
+
+	// Handles the partition content
+
+	var predicateObjectsList = art_semanticturkey.Deserializer
+			.createPredicateObjectList(responsePartition.children[0]);
+
+	for (var j = 0; j < predicateObjectsList.length; j++) {
+		var po = predicateObjectsList[j];
+		var predicateObjectsBox = document.createElement("box");
+		predicateObjectsBox.rdfSubject = subjectResource;
+		predicateObjectsBox.showSubjInGUI = false;
+		predicateObjectsBox.rdfPredicate = po.getPredicate();
+		predicateObjectsBox.rdfResourcesArray = po.getObjects();
+		predicateObjectsBox.operations = "add;remove";
+		predicateObjectsBox.classList.add("predicate-objects-widget");
+
+		predicateObjectsBox.addEventListener("rdfnodeBaseEvent",
+				art_semanticturkey.resourceView.dblClickHandler);
+		predicateObjectsBox.addEventListener("predicateObjectsEvent",
+				art_semanticturkey.resourceView.predicateObjectsEventHandler);
+
+		predicateObjectsBox.setAttribute("st-partitionName", partitionName);
+
+		partitionGroupBox.appendChild(predicateObjectsBox);
+	}
+	
+	// Append the partition
+	partitionsBox.appendChild(partitionGroupBox);	
+};
+
+art_semanticturkey.ARTPredicateObjects = function(predicate, objects) {
+
+	this.getPredicate = function() {
+		return predicate;
+	};
+
+	this.getObjects = function() {
+		return objects;
+	};
+
+};
+
+art_semanticturkey.Deserializer.createPredicateObjectList = function(element) {
+	if (element.tagName != "collection") {
+		new Error("Not a collection");
+	}
+
+	var elements = element.children;
+
+	var result = [];
+
+	for (var i = 0; i < elements.length; i++) {
+		var el = elements[i];
+
+		if (el.tagName != "predicateObjects")
+			continue;
+
+		var predicate = art_semanticturkey.Deserializer
+				.createRDFNode(el.getElementsByTagName("predicate")[0].children[0]);
+		var objects = art_semanticturkey.Deserializer.createRDFArray(el.getElementsByTagName("objects")[0]);
+
+		var predicateObjects = new art_semanticturkey.ARTPredicateObjects(predicate, objects);
+		result.push(predicateObjects);
+	}
+
+	return result;
 };
 
 art_semanticturkey.resourceView.dblClickHandler = function(event) {
@@ -68,6 +216,7 @@ art_semanticturkey.resourceView.predicateObjectsEventHandler = function(event) {
 
 var partition2handlerMap = {
 	"lexicalizations" : {
+		"partitionLabel" : "Lexicalizations",
 		"add" : function(rdfSubject, rdfPredicate, rdfObject) {
 			if (typeof rdfPredicate != "undefined") {
 				var predURI = rdfPredicate.getURI();
@@ -85,7 +234,8 @@ var partition2handlerMap = {
 
 				parameters.winTitle = "Add " + rdfPredicate.getShow() + " Lexicalization";
 				parameters.action = function(label, lang) {
-					// TODO: add event handler
+
+					art_semanticturkey.resourceView.refreshView();
 				};
 				parameters.oncancel = false;
 
@@ -110,6 +260,8 @@ var partition2handlerMap = {
 		}
 	},
 	"properties" : {
+		"partitionLabel" : "Properties",
+//      "render" : function(subjectResource, responsePartition, partitionsBox) {},
 		"add" : function(rdfSubject, rdfPredicate, rdfObject) {
 			alert("Add property");
 		},
@@ -123,120 +275,16 @@ art_semanticturkey.resourceView.getButtonType = function(button) {
 	return button.getAttribute("label");
 };
 
-art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
-	// -----------------------------
-	// Populates the resource header
-
-	// Handles the resource name (resource name box)
-	var responseDataElement = response.getElementsByTagName("data")[0];
-	var responseResourceElement = responseDataElement.getElementsByTagName("resource")[0];
-
-	var resourceObj = art_semanticturkey.Deserializer.createRDFNode(responseResourceElement.children[0]);
-
-	var resourceNameElement = document.getElementById("resourceNameBox");
-	resourceNameElement.value = resourceObj.getNominalValue();
-
-	// Handles the resource editability (rename button)
-	var isResourceEditable = resourceObj.explicit || "false";
-
-	var renameResourceButton = document.getElementById("renameResourceButton");
-	renameResourceButton.disabled = !(isResourceEditable == "true");
-
-	// ----------------------
-	// Handles the partitions
-
-	// Specially handled partitions
-	var excludedPartitions = [ "resource" ];
-
-	var responsePartitions = responseDataElement.children;
-
-	var partitionsBox = document.getElementById("partitionsBox");
-
-	// For each partition
-	for (var i = 0; i < responsePartitions.length; i++) {
-		var responsePartition = responsePartitions[i];
-		var responsePartitionTagName = responsePartition.tagName;
-
-		var partitionName = responsePartitionTagName;
-		var partitionLabel = responsePartitionTagName;
-
-		if (excludedPartitions.indexOf(responsePartitionTagName) != -1)
-			continue;
-
-		// Handles the partition header
-		var partitionGroupBox = document.createElement("groupbox");
-		var partitionCaption = document.createElement("caption");
-		partitionCaption.setAttribute("label", partitionLabel);
-		partitionGroupBox.appendChild(partitionCaption);
-
-		// Handles the partition content
-
-		var predicateObjectsList = art_semanticturkey.Deserializer
-				.createPredicateObjectList(responsePartition.children[0]);
-
-		for (var j = 0; j < predicateObjectsList.length; j++) {
-			var po = predicateObjectsList[j];
-			var predicateObjectsBox = document.createElement("box");
-			predicateObjectsBox.rdfSubject = resourceObj;
-			predicateObjectsBox.showSubjInGUI = false;
-			predicateObjectsBox.rdfPredicate = po.getPredicate();
-			predicateObjectsBox.rdfResourcesArray = po.getObjects();
-			predicateObjectsBox.operations = "add;remove";
-			predicateObjectsBox.classList.add("predicate-objects-widget");
-
-			predicateObjectsBox.addEventListener("rdfnodeBaseEvent",
-					art_semanticturkey.resourceView.dblClickHandler);
-			predicateObjectsBox.addEventListener("predicateObjectsEvent",
-					art_semanticturkey.resourceView.predicateObjectsEventHandler);
-
-			predicateObjectsBox.setAttribute("st-partitionName", partitionName);
-
-			partitionGroupBox.appendChild(predicateObjectsBox);
-		}
-
-		// Append the partition
-		partitionsBox.appendChild(partitionGroupBox);
-
+art_semanticturkey.resourceView.getPropertyPathValue = function(object) {
+	var temp = object;
+	
+	for (var i = 1 ; i < arguments.length ; i++) {
+		if (typeof temp == "undefined") return;
+		
+		temp = temp[arguments[i]];
 	}
-
-};
-
-art_semanticturkey.ARTPredicateObjects = function(predicate, objects) {
-
-	this.getPredicate = function() {
-		return predicate;
-	};
-
-	this.getObjects = function() {
-		return objects;
-	};
-
-};
-
-art_semanticturkey.Deserializer.createPredicateObjectList = function(element) {
-	if (element.tagName != "collection") {
-		new Error("Not a collection");
-	}
-
-	var elements = element.children;
-
-	var result = [];
-
-	for (var i = 0; i < elements.length; i++) {
-		var el = elements[i];
-
-		if (el.tagName != "predicateObjects")
-			continue;
-
-		var predicate = art_semanticturkey.Deserializer
-				.createRDFNode(el.getElementsByTagName("predicate")[0].children[0]);
-		var objects = art_semanticturkey.Deserializer.createRDFArray(el.getElementsByTagName("objects")[0]);
-
-		var predicateObjects = new art_semanticturkey.ARTPredicateObjects(predicate, objects);
-		result.push(predicateObjects);
-	}
-
-	return result;
+	
+	return temp;
 };
 
 window.addEventListener("load", art_semanticturkey.resourceView.init, true);
