@@ -30,9 +30,7 @@ import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenComponents_Predicate;
 import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenSubjects_Predicate;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
-import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNamespace;
-import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -44,7 +42,6 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.TripleQueryModel;
 import it.uniroma2.art.owlart.models.TripleQueryModelHTTPConnection;
 import it.uniroma2.art.owlart.navigation.ARTNamespaceIterator;
-import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.QueryLanguage;
@@ -56,11 +53,11 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -68,6 +65,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.rendering.RenderingOrchestrator;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -108,7 +106,7 @@ public class ResourceView extends STServiceAdapter {
 
 		boolean localResource = isLocalResource(owlModel, resource);
 
-		Map<ARTResource, String> artResource2Rendering = new HashMap<ARTResource, String>();
+		boolean subjectEditability = localResource; // TODO: implement the right check
 
 		// ******************************************************************************************
 		// Step 1: Retrieve the given resource description, and, if possible, the explicit statements
@@ -120,7 +118,7 @@ public class ResourceView extends STServiceAdapter {
 			// Statements about the resource (both explicit and implicit ones)
 			GraphQuery describeQuery = owlModel.createGraphQuery("describe "
 					+ RDFNodeSerializer.toNT(resource));
-			resourceDescription = RDFIterators.getCollectionFromIterator(describeQuery.evaluate(true));
+			resourceDescription = RDFIterators.getSetFromIterator(describeQuery.evaluate(true));
 
 			// Explicit statements (triples belonging to the current working graph).
 			// We must use the API, since there is no standard way for mentioning the null context in a SPARQL
@@ -135,20 +133,16 @@ public class ResourceView extends STServiceAdapter {
 			explicitStatements = new HashSet<ARTStatement>(); // All statements are considered implicit
 		}
 
-		// ***********************************
-		// Step X: Render the subject resource
+		// **************************
+		// Step X: Render the subject
 
-		// TODO: determine the right rendering engine for the the subject resource
-		RenderingEngine subjectRenderer = new DatasetMetadataRepository.DummyRenderingEngine();
-
-		String subjectRendering = subjectRenderer.render(null, Arrays.<ARTResource> asList(resource))
-				.values().iterator().next();
+		RenderingEngine renderingOrchestrator = RenderingOrchestrator.getInstance();
+		Map<ARTResource, String> artResource2Rendering = renderingOrchestrator.render(getProject(), resource,
+				resourceDescription, resource);
 
 		STRDFResource subjectResource = STRDFNodeFactory.createSTRDFResource(owlModel, resource, false,
-				false, false);
-		subjectResource.setRendering(subjectRendering);
-
-		artResource2Rendering.put(resource, subjectRendering);
+				subjectEditability, false);
+		subjectResource.setRendering(artResource2Rendering.get(resource));
 
 		// *************************************
 		// Step X: Remove linguistic information
@@ -289,28 +283,28 @@ public class ResourceView extends STServiceAdapter {
 		Collection<ARTStatement> outlinks = Collections2.filter(resourceDescription,
 				StatementWithAnyOfGivenSubjects_Predicate.getFilter(Arrays.<ARTResource> asList(resource)));
 
-		// ********************************
-		// Step X: Render remaining objects
+		// ****************************
+		// Step X: Render the resources
 
-		// TODO: currently, we use always qname for predicates
+		Set<ARTResource> resourcesToBeRendered = new HashSet<ARTResource>();
+		resourcesToBeRendered.addAll(RDFIterators.getSetFromIterator(RDFIterators
+				.filterResources(RDFIterators.listObjects(RDFIterators.createARTStatementIterator(outlinks
+						.iterator())))));
+		artResource2Rendering = renderingOrchestrator.render(getProject(), resource, resourceDescription,
+				resourcesToBeRendered.toArray(new ARTResource[resourcesToBeRendered.size()]));
 
-		ARTNodeIterator distinctObjects = RDFIterators.listDistinct(RDFIterators.listObjects(RDFIterators
-				.createARTStatementIterator(outlinks.iterator())));
+		// **************************
+		// Step X: Computes the roles
 
-		while (distinctObjects.streamOpen()) {
-			ARTNode objNode = distinctObjects.getNext();
-
-			if (objNode.isURIResource()) {
-
-			} else if (objNode.isBlank()) {
-				if (!artResource2Rendering.containsKey(objNode)) {
-					artResource2Rendering.put(objNode.asBNode(), "!!!" + objNode.toString()); // TODO: handle
-																								// Blank
-				}
-			}
-		}
-		distinctObjects.close();
-
+		Set<ARTResource> resourcesForComputingRole = new HashSet<ARTResource>(resourcesToBeRendered);
+		resourcesForComputingRole.add(resource);
+		
+		Map<ARTResource, RDFResourceRolesEnum> artResource2Role = RoleRecognitionOrchestrator.getInstance()
+				.computeRoleOf(getProject(), resource, resourceDescription,
+						resourcesForComputingRole.toArray(new ARTResource[resourcesForComputingRole.size()]));
+		
+		subjectResource.setRole(artResource2Role.get(subjectResource.getARTNode().asResource()));
+		
 		// ************************************************
 		// Step X: Prepare data for predicate objects lists
 
@@ -329,18 +323,19 @@ public class ResourceView extends STServiceAdapter {
 			STRDFNode stNodeObject = STRDFNodeFactory.createSTRDFNode(owlModel, stmt.getObject(), false,
 					explicit, false);
 
-			// TODO: currently, renders resources by their nominal value
 			if (stNodeObject.isResource()) {
-				STRDFResource stResourceObject = ((STRDFResource)stNodeObject);
-				stResourceObject.setRendering(stResourceObject.getARTNode().getNominalValue());
+				STRDFResource stResourceObject = ((STRDFResource) stNodeObject);
+				stResourceObject.setRendering(artResource2Rendering.get(stResourceObject.getARTNode()
+						.asResource()));
+				stResourceObject.setRole(artResource2Role.get(stResourceObject.getARTNode().asResource()));
 			}
-			
+
 			resultPredicateObjectValues.put(predicate, stNodeObject);
 
-			art2STRDFPredicates.put(
-					predicate,
-					STRDFNodeFactory.createSTRDFURI(predicate, RDFResourceRolesEnum.property, false,
-							owlModel.getQName(predicate.getURI())));
+			if (!art2STRDFPredicates.containsKey(predicate)) {
+				art2STRDFPredicates.put(predicate, STRDFNodeFactory.createSTRDFURI(predicate,
+						RDFResourceRolesEnum.property, false, owlModel.getQName(predicate.getURI())));
+			}
 		}
 
 		// ******************************
@@ -477,8 +472,8 @@ public class ResourceView extends STServiceAdapter {
 			GraphQuery describeQuery = queryConnection.createGraphQuery(QueryLanguage.SPARQL, "describe "
 					+ RDFNodeSerializer.toNT(uriResource), null);
 
-			Collection<ARTStatement> resourceDescription = RDFIterators
-					.getCollectionFromIterator(describeQuery.evaluate(true));
+			Collection<ARTStatement> resourceDescription = RDFIterators.getSetFromIterator(describeQuery
+					.evaluate(true));
 			queryConnection.disconnect();
 
 			return resourceDescription;

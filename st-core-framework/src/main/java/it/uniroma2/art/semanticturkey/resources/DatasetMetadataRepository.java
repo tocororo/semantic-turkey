@@ -22,11 +22,14 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.project.Project;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,6 +61,8 @@ public class DatasetMetadataRepository {
 				"http://dbpedia.org/resource/", null, "http://dbpedia.org/sparql", true, new DummyRenderingEngine(), RDFS.Res.URI));
 		datasetMetadataRepository.put("http://aims.fao.org/aos/agrovoc/", new DatasetMetadata(
 				"http://aims.fao.org/aos/agrovoc/", null, "http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc#", true, new DummyRenderingEngine(), SKOSXL.Res.URI));
+		datasetMetadataRepository.put("http://lod.nal.usda.gov/nalt/", new DatasetMetadata(
+				"http://lod.nal.usda.gov/nalt/", null, null, true, new DummyRenderingEngine(), SKOSXL.Res.URI));
 
 	}
 
@@ -106,17 +111,17 @@ public class DatasetMetadataRepository {
 	public static class DummyRenderingEngine implements RenderingEngine {
 
 		@Override
-		public Map<ARTResource, String> render(DatasetMetadata datasetMetadata,
-				Collection<ARTResource> resources) {
+		public Map<ARTResource, String> render(Project<?> project, ARTResource subject,
+				Collection<ARTStatement> statements, ARTResource... resources) throws ModelAccessException {
+			Map<ARTResource, String> resource2rendering = new HashMap<ARTResource, String>();
 
-			Map<ARTResource, String> results = new HashMap<ARTResource, String>();
-			
 			for (ARTResource res : resources) {
-				results.put(res, "!!!" + res.toString());
+				resource2rendering.put(res, "####" + res.getNominalValue());
 			}
 			
-			return results;
+			return resource2rendering;
 		}
+
 		
 	}
 }
