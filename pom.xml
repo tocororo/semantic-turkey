@@ -92,15 +92,14 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 	</properties>
 
 	<scm>
-		<connection>scm:svn:http://semanticturkey.googlecode.com/svn/trunk/</connection>
-		<developerConnection>scm:svn:https://semanticturkey.googlecode.com/svn/trunk/</developerConnection>
-		<tag>HEAD</tag>
-		<url>http://code.google.com/p/semanticturkey/source/browse/#svn/trunk/</url>
+		<connection>scm:git:https://bitbucket.org/art-uniroma2/semantic-turkey.git</connection>
+		<developerConnection>scm:git:https://bitbucket.org/art-uniroma2/semantic-turkey.git</developerConnection>
+		<url>https://bitbucket.org/art-uniroma2/semantic-turkey.git</url>
 	</scm>
 
 	<issueManagement>
-		<system>Google Code</system>
-		<url>http://code.google.com/p/semanticturkey/issues/</url>
+		<system>Jira</system>
+		<url>https://art-uniroma2.atlassian.net/browse/ST</url>
 	</issueManagement>
 
 	<modules>
@@ -272,4 +271,9 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 			<comments />
 		</license>
 	</licenses>
+	<organization>
+		<name>ART Group, University of Rome, Tor Vergata</name>
+		<url>http://art.uniroma2.it</url>
+	</organization>
+	<url>http://semanticturkey.uniroma2.it/</url>
 </project>
