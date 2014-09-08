@@ -84,6 +84,9 @@
 			<toolbarbutton id="prjManagementToolBarButton"
 				image="chrome://semantic-turkey/skin/images/folder-open.png"
 				tooltiptext="Open Projects Management" hidden="true" />
+			<toolbarbutton id="SKOSICVToolBarButton"
+				image="chrome://semantic-turkey/skin/images/skosIcvPanel.png"
+				tooltiptext="Open SKOS Integrity Constraint Validator" hidden="true" />
 			<toolbarbutton id="SKOSToolBarButton"
 				image="chrome://semantic-turkey/skin/images/skosPanel.png"
 				tooltiptext="Open SKOS Editor" hidden="true" />

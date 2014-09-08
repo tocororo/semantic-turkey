@@ -26,6 +26,13 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+/**
+ * Service that retrieve a list of dangling concepts. A dangling concept is a concept that has no broader
+ * concept and is not a top concept of a scheme
+ * @author Tiziano Lorenzetti
+ *
+ */
+
 @GenerateSTServiceController
 @Validated
 @Component

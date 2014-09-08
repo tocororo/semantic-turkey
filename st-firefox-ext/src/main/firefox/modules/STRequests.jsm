@@ -76,6 +76,10 @@ STRequests.SKOS = function(){};
 /**
  * @class
  */
+STRequests.SKOS_ICV = function(){};
+/**
+ * @class
+ */
 STRequests.Statement = function(){};
 /**
  * @class
@@ -284,6 +288,9 @@ STRequests.SKOS.removeBroaderConceptRequest = "removeBroaderConcept";
 STRequests.SKOS.removeTopConceptRequest = "removeTopConcept";
 STRequests.SKOS.removePrefLabelRequest = "removePrefLabel";
 
+//SKOS_ICV requests
+STRequests.SKOS_ICV.serviceName = "SKOS_ICV";
+STRequests.SKOS_ICV.listDanglingConceptsRequest = "listDanglingConcepts";
 //projects service request (OLD VERSION, this it not used anymore, so maybe it could be removed)
 //STRequests.ProjectsOLD.serviceName = "projects";
 //STRequests.ProjectsOLD.openProjectRequest = "openProject";
