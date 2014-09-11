@@ -11,7 +11,7 @@
 	<artifactId>st-firefox-ext</artifactId>
 	<name>Semantic Turkey Firefox Extension</name>
 	<description>The javascript and XUL resources used to build the true firefox extension bunlded in the Semantic Turkey XPI</description>
-
+	<packaging>pom</packaging>
 	<build>
 		<plugins>
 			<plugin>
