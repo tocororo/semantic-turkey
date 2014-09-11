@@ -88,7 +88,6 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 
 		<dist.client>${dist}/st-client</dist.client>
 		<dist.client.lib>${dist.client}/${dist.lib}</dist.client.lib>
-		<dist.client.applet>${dist.client.lib}/applet</dist.client.applet>
 	</properties>
 
 	<scm>
@@ -108,7 +107,6 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<module>st-codegen-processor</module>
 		<module>st-core-framework</module>
 		<module>st-core-services</module>
-		<module>st-graph-applet</module>
 		<module>st-sesame2-ontmanager</module>
  		<module>st-firefox-ext</module> 
 		<module>st-console</module>
