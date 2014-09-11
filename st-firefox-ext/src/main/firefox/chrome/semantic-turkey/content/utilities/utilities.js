@@ -88,7 +88,6 @@ art_semanticturkey.compareVersions  = function(){
 	//then take the server version
 	var clientVersion = art_semanticturkey.SemanticTurkeyMetadata.getClientVersion();
 	
-	clientVersion = art_semanticturkey.stripQualifier(clientVersion);
 	art_semanticturkey.Logger.debug("client Version = "+clientVersion);
 	
 	
@@ -105,10 +104,4 @@ art_semanticturkey.compareVersions  = function(){
 	}
 }
 
-art_semanticturkey.stripQualifier = function(version){
-	var pos = version. indexOf("-");
-	if(pos == -1)
-		return version;
-	return version.substring(0, pos);
-	var temp = version
-}
+

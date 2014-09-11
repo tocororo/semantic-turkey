@@ -10,7 +10,7 @@ pref("extensions.semturkey.server.port", "1979");
 pref("extensions.semturkey.isDefaultSet", false);
 pref("extensions.semturkey.defaultProjectName", "null");
 pref("extensions.semturkey.defaultProjectOntType", "null");
-pref("extensions.semturkey.version", "0.9.0");
+pref("extensions.semturkey.version", "${project.version}");
 pref("extensions.semturkey.hints.defaultProject", true);
 pref("extensions.semturkey.skos.humanReadable", false);
 pref("extensions.semturkey.skos.enabled", true);

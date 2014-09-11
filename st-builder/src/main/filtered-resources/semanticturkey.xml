@@ -52,7 +52,7 @@
 		
 		
 		<!-- Console -->
-		<configfile finalname="/lib/st-console-0.9.2-SNAPSHOT.jar"
+		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="true">
 			mvn:it.uniroma2.art.semanticturkey/st-console/${project.version}
 		</configfile>

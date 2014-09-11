@@ -36,6 +36,7 @@
 										<include>install.rdf</include>
 										<include>components/data/sturkey.properties</include>
 										<include>modules/SemanticTurkeyMetadata.jsm</include>
+										<include>defaults/preferences/prefs.js</include>
 									</includes>
 								</resource>
 								<!-- this is to copy all the rest, being sure that we don't copy 
@@ -51,6 +52,7 @@
 										<exclude>components/data/sturkey.properties</exclude>
 										<exclude>**/*.idl</exclude>
 										<exclude>modules/SemanticTurkeyMetadata.jsm</exclude>
+										<exclude>defaults/preferences/prefs.js</exclude>
 									</excludes>
 								</resource>
 							</resources>
