@@ -772,6 +772,12 @@ public class Metadata extends ResourceOld {
 					String namespace = entry.getKey();
 					String newPrefix = ModelUtilities.guessPrefix(namespace);
 					try {
+						logger.info("prefix "
+								+ prefix
+								+ "for: "
+								+ namespace
+								+ " is probably assigned by the triple store; replacing it with a guessed prefix: "
+								+ newPrefix);
 						model.setNsPrefix(newPrefix, namespace);
 					} catch (ModelUpdateException e) {
 						logger.error(Utilities.printStackTrace(e));

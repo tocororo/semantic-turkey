@@ -26,6 +26,7 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
@@ -116,7 +117,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public NSPrefixMappings nsPrefixMappingsPersistence;
 
 	private ProjectACL acl;
-	
+
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
@@ -187,9 +188,27 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
 				logger.info("generating defaultNamespace from baseuri: " + defaultNamespace);
 			}
-			getOntModel().setDefaultNamespace(defaultNamespace);
-			logger.debug("activation of project: " + getName() + ": defaultnamespace set to: "
-					+ defaultNamespace);
+
+			// retrieves the default namespace (in case it is persisted somehow by the triple store
+			// if it is null (non persisted) or different from the one stored in the project (well, that would
+			// be really weird), it sets it again as an initialization step
+			String liveGotNS = getOntModel().getDefaultNamespace();
+			if (liveGotNS == null || !liveGotNS.equals(defaultNamespace)) {
+				logger.debug("activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
+				getOntModel().setDefaultNamespace(defaultNamespace);
+				logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
+						+ defaultNamespace);
+				// it may seem strange that ST is reporting the msg:
+				// "a mapping already exists for" <def namespace here of the current project>
+				// this is due to a non-properly managed def namespace in owlart sesame implementation
+				// it seems last sesame versions are persisting the namespace prefix mapping. In this case,
+				// there should be no need of writing explicitly a further variable (as it does at least until
+				// owlart-sesame2 version 1.1), containing the default namespace. What happens is that
+				// the liveGotNS is null, though actually sesame has the right namespace associated to the
+				// empty prefix "".
+				// in future implementations of sesame2, the default namespace should be only inferable from
+				// the "" prefix, and no redundanc should be present
+			}
 
 			ontManager.declareApplicationOntology(getOntModel().createURIResource(SemAnnotVocab.NAMESPACE),
 					false, true);
@@ -199,6 +218,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 			SemanticTurkey.initializeVocabularies(getOntModel());
 			logger.info("defaultnamespace set to: " + defaultNamespace);
+		} catch (ModelAccessException e) {
+			throw new ProjectUpdateException(e);
 		} catch (ModelUpdateException e) {
 			throw new ProjectUpdateException(e);
 		} catch (VocabularyInitializationException e) {
@@ -468,7 +489,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	/**
 	 * returns the list of registered plugins
-	 *  
+	 * 
 	 * @return a List containing the names of the registered plugins
 	 */
 	public List<String> getRegisteredPlugins() {
@@ -499,19 +520,19 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 
 	// ACCESS CONTROL
-	
+
 	public ProjectACL getACL() {
 		return acl;
 	}
 
 	// Auxiliary graphs management
-	
+
 	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";
 	private static final String AUXILIARY_METADATA_GRAPH_SUFFIX = "/meta";
 
 	public ARTResource getMetadataGraph(String extensionPathComponent) {
-		return VocabUtilities.nodeFactory.createURIResource(AUXILIARY_METADATA_GRAPH_NAME_BASE + extensionPathComponent + AUXILIARY_METADATA_GRAPH_SUFFIX);
+		return VocabUtilities.nodeFactory.createURIResource(AUXILIARY_METADATA_GRAPH_NAME_BASE
+				+ extensionPathComponent + AUXILIARY_METADATA_GRAPH_SUFFIX);
 	}
-	
-	
+
 }

@@ -42,6 +42,7 @@ import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.OWLArtModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.PrefixMapping;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
@@ -88,6 +89,25 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
 
 /**
+ * <p>
+ * A class managing high level operations (such as recursive ontology import, gussing namespace-prefix
+ * mappings etc..) which are usually not automated by a triple store.
+ * <p/>
+ * <p>
+ * The <b>namespace-prefix mapping</b> has a double management
+ * <ul>
+ * <li>prefixes for imported ontologies are guessed by means of some heuristics and then directly added to the
+ * loaded triple store manager. These "guesses" will be typically shown with a lighter color on user
+ * interfaces, denoting their setting being chosen automatically</li>
+ * <li>the namespace-prefix mapping APIs in this class allow for the definition of custom mappings. These are
+ * persisted on the project associated to this OntologyManager and will be reloaded each time the project is
+ * open. These custom mappings will usually be evident in the UI as user-specified mappings</li>
+ * </ul>
+ * Note that, at the level of this OntologyManager, there is no track of which mappings were already present
+ * in the loaded triple store and which ones have been guessed by OntologyManager. Only those explicitly
+ * selected by the user are made evident
+ * </p>
+ * 
  * @author Armando Stellato
  * 
  */
@@ -190,16 +210,19 @@ public abstract class STOntologyManager<T extends RDFModel> {
 	 * <li>then it checks if the related URI is present in the mirror and in the NAMED GRAPHS. Then you have
 	 * the following 4 possibilities
 	 * <ul>
-	 * <li>MIRROR & NO_NG: it loads it from the mirror (strange situation, if you have an import, then also
-	 * the data should have already been loaded)</li>
-	 * <li>MIRROR & NG: it checks if the timestamp of the mirror is more recent than that of the repository (I
-	 * should put it in a global property of the repo) and in affirmative case it cancels the old named graph
-	 * and then loads it again from the mirror file (otherwise it keeps the one already in the repo)</li>
+	 * <li>MIRROR & NO_NG: it loads it from the mirror (strange situation, this should not happen: if you have
+	 * an import, then also the data should have already been loaded)</li>
+	 * <li>MIRROR & NG: the ontology is actually loaded as expected, however the system checks if the
+	 * timestamp of the mirror is more recent than that of the project (it is in a global property of the
+	 * project) and in affirmative case it deletes the old named graph and then loads it again from the mirror
+	 * file (otherwise it keeps the one already in the graph)</li>
 	 * <li>NO_MIRROR & NO_NG: load it from the web, if available put status=WEB, otherwise put status=FAILED</li>
 	 * <li>NO_MIRROR & NG: remove the NG, then behave as: NO_MIRROR & NO_NG (this is used for ontologies
 	 * imported from the WEB and not mirrored, in this case the system behaves as the ontology is never
 	 * present (though it is persisted in the NG). For this reason the associated NG is deleted and the
-	 * ontology is loaded back from the WEB</li>
+	 * ontology is loaded back from the WEB. Thus, keeping an imported ontology as WEB is good as it is always
+	 * refreshed, but it also needs always a connection, and in case of projects with large amounts data, will
+	 * slow down the project initialization due to the reloading of all the ontologies marked as WEB</li>
 	 * </ul>
 	 * </li>
 	 * </ul>
@@ -261,8 +284,9 @@ public abstract class STOntologyManager<T extends RDFModel> {
 			// considered as support ontologies
 			declareSupportOntologies();
 
-			// stores the prefix for the SemanticAnnotationOntology
-			model.setNsPrefix(SemAnnotVocab.NAMESPACE, "ann");
+			// stores the prefix for the SemanticAnnotationOntology (if not already stored)
+			// TODO this should be part of the whole automathism for support/application ontologies
+			setNsPrefix(SemAnnotVocab.NAMESPACE, "ann", false);
 
 			// initializes the importStatus map (if reload, importStatus is already initialized)
 			importsStatusMap = new HashMap<ARTURIResource, ImportStatus>();
@@ -306,13 +330,14 @@ public abstract class STOntologyManager<T extends RDFModel> {
 		}
 	}
 
-	public void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappings) throws ModelUpdateException {
+	public void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappings) throws ModelUpdateException,
+			ModelAccessException {
 		this.nsPrefixMappings = nsPrefixMappings;
 		// owlModel nsPrefixMapping regeneration from persistenceNSPrefixMapping
 		Map<String, String> nsPrefixMapTable = nsPrefixMappings.getNSPrefixMappingTable();
 		Set<Map.Entry<String, String>> mapEntries = nsPrefixMapTable.entrySet();
 		for (Map.Entry<String, String> entry : mapEntries) {
-			model.setNsPrefix(entry.getValue(), entry.getKey());
+			setNsPrefix(entry.getValue(), entry.getKey(), true);
 		}
 	}
 
@@ -666,8 +691,8 @@ public abstract class STOntologyManager<T extends RDFModel> {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(mirFileString);
 		File physicalMirrorFile = new File(mirFile.getAbsolutePath());
 		try {
-			model.addRDF(physicalMirrorFile, baseURI,
-					RDFFormat.guessRDFFormatFromFile(physicalMirrorFile), model.createURIResource(baseURI));
+			model.addRDF(physicalMirrorFile, baseURI, RDFFormat.guessRDFFormatFromFile(physicalMirrorFile),
+					model.createURIResource(baseURI));
 		} catch (Exception e) {
 			if (!updateImportStatement) {
 				importsStatusMap.put(model.createURIResource(baseURI),
@@ -1298,10 +1323,7 @@ public abstract class STOntologyManager<T extends RDFModel> {
 		return XMLHelp.byteArrayOutputStream2XML(baos);
 	}
 
-	// NS PREFIX MAPPINGS
-	/*
-	 * "getNSPrefixMappings"; "setNSPrefixMapping"; "changeNSPrefixMapping"; "removeNSPrefixMapping";
-	 */
+	// NS PREFIX MAPPINGS METHODS
 
 	/**
 	 * @param explicit
@@ -1317,10 +1339,29 @@ public abstract class STOntologyManager<T extends RDFModel> {
 			return model.getNamespacePrefixMapping();
 	}
 
-	public void setNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException,
-			ModelUpdateException {
-		nsPrefixMappings.setNSPrefixMapping(namespace, prefix);
+	// TODO Pay attention this is not being invoked by any method! check metadata ones!
+	public void setNSPrefixMapping(String prefix, String namespace)
+			throws NSPrefixMappingUpdateException, ModelUpdateException {
 		model.setNsPrefix(namespace, prefix);
+		nsPrefixMappings.setNSPrefixMapping(namespace, prefix);
+	}
+
+	/**
+	 * a wrapper around OWLART {@link PrefixMapping} with an additional <code>overwrite</code> parameter
+	 * which, if false, makes the method ignore calls if the namespace-prefix mapping already exists. If true,
+	 * it still does not overwrite if the old and new values are the same
+	 * 
+	 * @param namespace
+	 * @param prefix
+	 * @param overwrite
+	 * @throws ModelAccessException
+	 * @throws ModelUpdateException
+	 */
+	private void setNsPrefix(String namespace, String prefix, boolean overwrite) throws ModelAccessException,
+			ModelUpdateException {
+		String oldPrefix = model.getPrefixForNS(namespace);
+		if ((oldPrefix == null) || (overwrite && !oldPrefix.equals(prefix)))
+			model.setNsPrefix(namespace, prefix);
 	}
 
 	public void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException,
@@ -1392,4 +1433,5 @@ public abstract class STOntologyManager<T extends RDFModel> {
 			return ((SKOSModel) model).getOWLModel();
 
 	}
+
 }

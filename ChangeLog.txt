@@ -1,8 +1,18 @@
-version 0.9.2-SNAPSHOT
-date: 
+version 0.10
+date: 09/09/2014
   * move to Karaf container and improvement OSGi management
+  * the server base url has been changed. Also, all services requests URLs (including those for extensions) now are modeled 
+    according to the following pattern: http://<domain>:<port>/semanticturkey/<groupId>/<artifactId>/<ClassName>/<methodName>
+  * enabled management of concurrently open projects (http://semanticturkey.uniroma2.it/documentation/dev/project_management.jsf)
+  * generalized all services to deal with different read/write graphs (through rgraphs, wgraph request parameters)
+  * introduced a "context of the request" (currently hosting project and graph parameters)
   * improved Spring exploitation (still smoothly migrated from old services)
-  * Updated SPARQL panel to SPARQL 1.1 (both query and update)
+  * updated SPARQL panel to SPARQL 1.1 (both query and update)
+  * added some Integrity Constraint Validators (ICV) for SKOS/SKOS-XL thesauri
+  * enabled export of SPARQL results
+  * implemented a version check at client initialization
+  * quickened the prefix/namespace mapping procedure at each project initialization
+  * other minor bugfixes
 
 version 0.9.1
 date: 01-07-2013
