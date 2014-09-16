@@ -196,7 +196,7 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel)
 			throws ProjectAccessException {
 
-		System.out.println("consumer = " + consumer);
+		logger.debug("listProjects, asked by consumer: " + consumer);
 		String request = Req.listProjectsRequest;
 		Collection<AbstractProject> projects;
 

@@ -46,7 +46,6 @@
 		</resources>
 
 		<plugins>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -127,6 +126,8 @@
 							<classifier>st</classifier>
 						</configuration>
 					</execution>
+					<!-- it seems the config.properties had no customization, so we removed it -->
+					<!-- 
 					<execution>
 						<id>install-prp-file</id>
 						<phase>compile</phase>
@@ -142,6 +143,7 @@
 							<classifier>prp</classifier>
 						</configuration>
 					</execution>
+					 -->
 				</executions>
 			</plugin>
 
