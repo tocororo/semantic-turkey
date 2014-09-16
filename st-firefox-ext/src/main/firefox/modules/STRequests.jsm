@@ -76,6 +76,10 @@ STRequests.SKOS = function(){};
 /**
  * @class
  */
+STRequests.SKOSXL = function(){};
+/**
+ * @class
+ */
 STRequests.SKOS_ICV = function(){};
 /**
  * @class
@@ -258,7 +262,6 @@ STRequests.SPARQL.resolveQueryRequest = "resolveQuery";
 
 // SKOS service request
 STRequests.SKOS.serviceName = "skos";
-
 // GET REQUESTS
 STRequests.SKOS.getTopConceptsRequest = "getTopConcepts";
 STRequests.SKOS.getNarrowerConceptsRequest = "getNarrowerConcepts";
@@ -267,30 +270,70 @@ STRequests.SKOS.getConceptDescriptionRequest = "getConceptDescription";
 STRequests.SKOS.getConceptSchemeDescriptionRequest = "getConceptSchemeDescription";
 STRequests.SKOS.getPrefLabelRequest = "getPrefLabel";
 STRequests.SKOS.getShowRequest = "getShow";
-
 // ADD REQUESTS
 STRequests.SKOS.addBroaderConceptRequest = "addBroaderConcept";
 STRequests.SKOS.addTopConceptRequest = "addTopConcept";
-
 // SET REQUESTS
 STRequests.SKOS.setPrefLabelRequest = "setPrefLabel";
-
 // CREATE REQUESTS
 STRequests.SKOS.createConceptRequest = "createConcept";
 STRequests.SKOS.createSchemeRequest = "createScheme";
-
 // DELETE REQUESTS
 STRequests.SKOS.deleteConceptRequest = "deleteConcept";
 STRequests.SKOS.deleteSchemeRequest = "deleteScheme";
-
 // REMOVE REQUESTS
 STRequests.SKOS.removeBroaderConceptRequest = "removeBroaderConcept";
 STRequests.SKOS.removeTopConceptRequest = "removeTopConcept";
 STRequests.SKOS.removePrefLabelRequest = "removePrefLabel";
 
+//SKOSXL service request
+STRequests.SKOSXL.serviceName = "skosxl";
+// GET REQUESTS
+STRequests.SKOSXL.getTopConceptsRequest = "getTopConcepts";
+STRequests.SKOSXL.getNarrowerConceptsRequest = "getNarrowerConcepts";
+STRequests.SKOSXL.getAllSchemesListRequest = "getAllSchemesList";
+STRequests.SKOSXL.getConceptDescriptionRequest = "getConceptDescription";
+STRequests.SKOSXL.getConceptSchemeDescriptionRequest = "getConceptSchemeDescription";
+STRequests.SKOSXL.getPrefLabelRequest = "getPrefLabel";
+STRequests.SKOSXL.getShowRequest = "getShow";
+// ADD REQUESTS
+STRequests.SKOSXL.addBroaderConceptRequest = "addBroaderConcept";
+STRequests.SKOSXL.addTopConceptRequest = "addTopConcept";
+// SET REQUESTS
+STRequests.SKOSXL.setPrefLabelRequest = "setPrefLabel";
+// CREATE REQUESTS
+STRequests.SKOSXL.createConceptRequest = "createConcept";
+STRequests.SKOSXL.createSchemeRequest = "createScheme";
+// DELETE REQUESTS
+STRequests.SKOSXL.deleteConceptRequest = "deleteConcept";
+STRequests.SKOSXL.deleteSchemeRequest = "deleteScheme";
+// REMOVE REQUESTS
+STRequests.SKOSXL.removeBroaderConceptRequest = "removeBroaderConcept";
+STRequests.SKOSXL.removeTopConceptRequest = "removeTopConcept";
+STRequests.SKOSXL.removePrefLabelRequest = "removePrefLabel";
+
 //SKOS_ICV requests
 STRequests.SKOS_ICV.serviceName = "SKOS_ICV";
 STRequests.SKOS_ICV.listDanglingConceptsRequest = "listDanglingConcepts";
+STRequests.SKOS_ICV.listCyclicConceptsRequest = "listCyclicConcepts";
+STRequests.SKOS_ICV.listConceptSchemesWithNoTopConceptRequest = "listConceptSchemesWithNoTopConcept";
+STRequests.SKOS_ICV.listConceptsWithNoSchemeRequest = "listConceptsWithNoScheme";
+STRequests.SKOS_ICV.listTopConceptsWithBroaderRequest = "listTopConceptsWithBroader";
+STRequests.SKOS_ICV.listConceptsWithSameSKOSPrefLabelRequest = "listConceptsWithSameSKOSPrefLabel";
+STRequests.SKOS_ICV.listConceptsWithSameSKOSXLPrefLabelRequest = "listConceptsWithSameSKOSXLPrefLabel";
+STRequests.SKOS_ICV.listConceptsWithOnlySKOSAltLabelRequest = "listConceptsWithOnlySKOSAltLabel";
+STRequests.SKOS_ICV.listConceptsWithOnlySKOSXLAltLabelRequest = "listConceptsWithOnlySKOSXLAltLabel";
+STRequests.SKOS_ICV.listConceptsWithNoLabelRequest = "listConceptsWithNoLabel";
+STRequests.SKOS_ICV.listConceptSchemesWithNoLabelRequest = "listConceptSchemesWithNoLabel";
+STRequests.SKOS_ICV.listConceptsWithMultipleSKOSPrefLabelRequest = "listConceptsWithMultipleSKOSPrefLabel";
+STRequests.SKOS_ICV.listConceptsWithMultipleSKOSXLPrefLabelRequest = "listConceptsWithMultipleSKOSXLPrefLabel";
+STRequests.SKOS_ICV.listConceptsWithNoLanguageTagSKOSLabelRequest = "listConceptsWithNoLanguageTagSKOSLabel";
+STRequests.SKOS_ICV.listConceptsWithNoLanguageTagSKOSXLLabelRequest = "listConceptsWithNoLanguageTagSKOSXLLabel";
+STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSLabelRequest = "listConceptsWithOverlappedSKOSLabel";
+STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSXLLabelRequest = "listConceptsWithOverlappedSKOSXLLabel";
+STRequests.SKOS_ICV.listConceptsWithExtraWhitespaceInSKOSLabelRequest = "listConceptsWithExtraWhitespaceInSKOSLabel";
+STRequests.SKOS_ICV.listConceptsWithExtraWhitespaceInSKOSXLLabelRequest = "listConceptsWithExtraWhitespaceInSKOSXLLabel";
+
 //projects service request (OLD VERSION, this it not used anymore, so maybe it could be removed)
 //STRequests.ProjectsOLD.serviceName = "projects";
 //STRequests.ProjectsOLD.openProjectRequest = "openProject";

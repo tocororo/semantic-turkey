@@ -2,10 +2,9 @@
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="skos_icv.css" type="text/css"?>
 
-<window id="skos_icv_dialog" title="Integrity Constraint Validation"
+<window id="skos_icv" title="Integrity Constraint Validation - Dangling Concept"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	width="600" height="600">
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/skos_icv/danglingConcept/danglingConcept.js" />
 		

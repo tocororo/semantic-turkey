@@ -17,7 +17,6 @@ art_semanticturkey.init = function() {
 	
 	var conceptTree = document.getElementById("conceptTree");
 	conceptTree.conceptScheme = scheme;
-	
 }
 
 /**

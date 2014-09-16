@@ -24,10 +24,10 @@ art_semanticturkey.init = function() {
 	try {
 		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listDanglingConcepts();
 		var data = xmlResp.getElementsByTagName("data")[0];
-		var pairs = data.getElementsByTagName("pair");
-		for (var i=0; i<pairs.length; i++){
-			var concept = pairs[i].getAttribute("concept");
-			var scheme = pairs[i].getAttribute("scheme");
+		var record = data.getElementsByTagName("record");
+		for (var i=0; i<record.length; i++){
+			var concept = record[i].getAttribute("concept");
+			var scheme = record[i].getAttribute("scheme");
 			//fill the list of dangling concept (without duplicate if a concept is dangling in multiple sch.)
 			if (danglingConceptList.indexOf(concept) == -1) //if the concept is not already in the list
 				danglingConceptList.push(concept);
@@ -95,7 +95,6 @@ function createDanglingConceptListbox(danglingConceptList) {
  */
 art_semanticturkey.conceptDblClickListener = function() {
 	var concept = this.getAttribute("label");//this in an actionListener represents the target of the listener
-//	alert("opening editor panel for concept " + concept);
 	var parameters = new Object();
 	parameters.sourceType = "concept";
 	parameters.sourceElement = concept;
