@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="skos_icv.css" type="text/css"?>
+
+<window id="omittedTopConcept" title="Integrity Constraint Validation - TopConcept with broader"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="700px" height="500px">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/skos_icv/topConceptWithBroader/topConceptWithBroader.js" />
+		
+		<grid>
+			<columns>
+				<column flex="1" />
+				<column flex="1" />
+			</columns>
+			<rows id="gridRows" >
+				<!-- <row>
+					<label value="http://baseuri.org#concept" />
+					<button label="Fix" />
+				</row> -->
+			</rows>
+		</grid>
+	
+</window>

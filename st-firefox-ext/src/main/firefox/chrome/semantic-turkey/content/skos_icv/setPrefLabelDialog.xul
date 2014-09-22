@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<dialog id="setPrefLabelDialog" title="Set label"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	buttons="accept,cancel" ondialogaccept="return buttonOkListener();"
+	ondialogcancel="return buttonCancelListener();" width="300px">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/skos_icv/setPrefLabel.js" />
+
+	<hbox>
+		<textbox id="textBoxLabel" flex="1" />
+		<menulist id="menulist">
+			<menupopup id="menupopup">
+			</menupopup>
+		</menulist>
+	</hbox>
+
+
+
+</dialog>

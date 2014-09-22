@@ -3,7 +3,7 @@
 <?xml-stylesheet href="selectScheme.css" type="text/css"?>  
 <?xml-stylesheet href="chrome://semantic-turkey/content/skos/widget/conceptTree/conceptTree.css" type="text/css"?> 
 
-<dialog id="selectSchemeDialog" title="Select a broader"
+<dialog id="selectBroaderDialog" title="Select a broader"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	xmlns:st="http://semanticturkey.uniroma2.it/xmlns/widget#"
 	buttons="accept,cancel"

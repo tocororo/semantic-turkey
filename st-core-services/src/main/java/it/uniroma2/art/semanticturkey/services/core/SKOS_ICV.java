@@ -11,12 +11,9 @@ import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.owlart.query.Query;
-import it.uniroma2.art.owlart.query.QueryLanguage;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
@@ -59,28 +56,28 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listDanglingConcepts",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?scheme WHERE{"
-				+ " FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}"
-				+ " FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }"
-				+ " {"
-				+ " ?concept a <" + SKOS.CONCEPT + "> ."
-				+ " ?concept <" + SKOS.INSCHEME + "> ?scheme ."
-				+ " FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1  . }"
-				+ " } UNION {"
-				+ " ?concept a <" + SKOS.CONCEPT + "> ."
-				+ " ?concept <" + SKOS.INSCHEME + "> ?scheme ."
-				+ " ?concept <" + SKOS.BROADER + "> ?broaderConcept1 ."
-				+ " FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }"
-				+ " } {"
-				+ " ?concept a <" + SKOS.CONCEPT + "> ."
-				+ " ?concept <" + SKOS.INSCHEME + "> ?scheme ."
-				+ " FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }"
-				+ " } UNION {"
-				+ " ?concept a <" + SKOS.CONCEPT + "> ."
-				+ " ?concept <" + SKOS.INSCHEME + "> ?scheme ."
-				+ " ?broaderConcept2 <" + SKOS.NARROWER + "> ?concept ."
-				+ " FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }"
-				+ " } }";
+		String q = "SELECT ?concept ?scheme WHERE{\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "{?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1  . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "} {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "} }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -111,12 +108,13 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listCyclicConcepts",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT DISTINCT ?topCyclicConcept ?cyclicConcept WHERE { "
-				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept . "
-				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept . "
-				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">) ?broader . "
-				+ "FILTER NOT EXISTS { "
+		String q = "SELECT DISTINCT ?topCyclicConcept ?cyclicConcept WHERE {\n"
+				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
+				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept .\n"
+				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">) ?broader .\n"
+				+ "FILTER NOT EXISTS {\n"
 				+ "?broader (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -145,12 +143,13 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptSchemeWithNoTopConcept",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?conceptScheme WHERE { "
-				+ "?conceptScheme a <" + SKOS.CONCEPTSCHEME + "> . "
-				+ "FILTER NOT EXISTS { { "
-				+ "?conceptScheme <" + SKOS.HASTOPCONCEPT + "> ?topConcept . "
-				+ "} UNION { "
+		String q = "SELECT ?conceptScheme WHERE {\n"
+				+ "?conceptScheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
+				+ "FILTER NOT EXISTS { {\n"
+				+ "?conceptScheme <" + SKOS.HASTOPCONCEPT + "> ?topConcept .\n"
+				+ "} UNION {\n"
 				+ "?topConcept <" + SKOS.TOPCONCEPTOF + "> ?conceptScheme . } } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -176,10 +175,11 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoScheme",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "FILTER NOT EXISTS { "
+		String q = "SELECT ?concept WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "FILTER NOT EXISTS {\n" 
 				+ "?concept <" + SKOS.INSCHEME + "> ?scheme . } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -206,9 +206,10 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listTopConceptsWithBroader",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept WHERE { "
-				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme . "
+		String q = "SELECT DISTINCT ?concept WHERE {\n"
+				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader . }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -237,14 +238,14 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithSameSKOSPrefLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE { "
-				+ "?concept1 a <" + SKOS.CONCEPT + "> . "
-				+ "?concept2 a <" + SKOS.CONCEPT + "> . "
-				+ "?concept1 <" + SKOS.PREFLABEL + "> ?skoslabel . "
-				+ "?concept2 <" + SKOS.PREFLABEL + "> ?skoslabel . "
-				+ "bind(lang(?skoslabel) as ?lang) "
-				+ "bind(str(?skoslabel) as ?label) "
+		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE {\n"
+				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept2 a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept1 <" + SKOS.PREFLABEL + "> ?label .\n"
+				+ "?concept2 <" + SKOS.PREFLABEL + "> ?label .\n"
+				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (str(?concept1) < str(?concept2)) }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -278,17 +279,17 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithSameSKOSXLPrefLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE { "
-				+ "?concept1 a <" + SKOS.CONCEPT + "> . "
-				+ "?concept2 a <" + SKOS.CONCEPT + "> . "
-				+ "?concept1 <" + SKOSXL.PREFLABEL + "> ?xlabel1 . "
-				+ "?concept2 <" + SKOSXL.PREFLABEL + "> ?xlabel2 . "
-				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?lit1 . "
-				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?lit2 . "
-				+ "FILTER (?lit1 = ?lit2) "
-				+ "FILTER (str(?concept1) < str(?concept2)) "
-				+ "bind(lang(?lit1) as ?lang) "
-				+ "bind(str(?lit1) as ?label) }";
+		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE {\n"
+				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept2 a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept1 <" + SKOSXL.PREFLABEL + "> ?xlabel1 .\n"
+				+ "?concept2 <" + SKOSXL.PREFLABEL + "> ?xlabel2 .\n"
+				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?label1 .\n"
+				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?label2 .\n"
+				+ "FILTER (?label1 = ?label2)\n"
+				+ "FILTER (str(?concept1) < str(?concept2))\n"
+				+ "bind(lang(?label1) as ?lang) }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -321,13 +322,14 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOnlySKOSAltLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?lang WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "?concept <" + SKOS.ALTLABEL + "> ?alt . "
-				+ "bind (lang(?alt) as ?lang) . "
-				+ "FILTER NOT EXISTS { "
-				+ "?concept <" + SKOS.PREFLABEL + "> ?pref . "
+		String q = "SELECT ?concept ?lang WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.ALTLABEL + "> ?alt .\n"
+				+ "bind (lang(?alt) as ?lang) .\n"
+				+ "FILTER NOT EXISTS {\n"
+				+ "?concept <" + SKOS.PREFLABEL + "> ?pref .\n"
 				+ "FILTER (lang(?pref) = ?lang) } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -356,15 +358,16 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOnlySKOSXLAltLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?lang WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "?concept <" + SKOSXL.ALTLABEL + "> ?alt . "
-				+ "?alt <" + SKOSXL.LITERALFORM + "> ?literalForm . "
-				+ "bind (lang(?literalForm) as ?lang) . "
-				+ "FILTER NOT EXISTS { "
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?pref . "
-				+ "?pref <" + SKOSXL.LITERALFORM + "> ?literalForm . "
-				+ "FILTER (lang(?literalForm) = ?lang) } }";
+		String q = "SELECT ?concept ?lang WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOSXL.ALTLABEL + "> ?alt .\n"
+				+ "?alt <" + SKOSXL.LITERALFORM + "> ?literalFormAlt .\n"
+				+ "bind (lang(?literalFormAlt) as ?lang) .\n"
+				+ "FILTER NOT EXISTS {\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> ?pref .\n"
+				+ "?pref <" + SKOSXL.LITERALFORM + "> ?literalFormPref .\n"
+				+ "FILTER (lang(?literalFormPref) = ?lang) } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -388,20 +391,20 @@ public class SKOS_ICV extends STServiceAdapter {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
-	//TODO: unico servizio o separare? (1 per concept e 1 per scheme)
 	public Response listConceptsWithNoLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "FILTER NOT EXISTS { { "
-				+ "?concept <" + SKOS.PREFLABEL + "> ?prefLabel . "
-				+ "} UNION { "
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?prefLabel . "
-				+ "} UNION { "
+		String q = "SELECT ?concept WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "FILTER NOT EXISTS { {\n"
+				+ "?concept <" + SKOS.PREFLABEL + "> ?prefLabel .\n"
+				+ "} UNION {\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
+				+ "} UNION {\n"
 				+ "?concept <" + RDFS.LABEL + "> ?prefLabel . } } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -422,20 +425,20 @@ public class SKOS_ICV extends STServiceAdapter {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
-	//TODO: unico servizio o separare? (1 per concept e 1 per scheme)
 	public Response listConceptSchemesWithNoLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptSchemesWithNoLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?scheme WHERE { "
-				+ "?scheme a <" + SKOS.CONCEPTSCHEME + "> . "
-				+ "FILTER NOT EXISTS { { "
-				+ "?scheme <" + SKOS.PREFLABEL + "> ?prefLabel . "
-				+ "} UNION { "
-				+ "?scheme <" + SKOSXL.PREFLABEL + "> ?prefLabel . "
-				+ "} UNION { "
+		String q = "SELECT ?scheme WHERE {\n"
+				+ "?scheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
+				+ "FILTER NOT EXISTS { {\n"
+				+ "?scheme <" + SKOS.PREFLABEL + "> ?prefLabel .\n"
+				+ "} UNION {\n"
+				+ "?scheme <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
+				+ "} UNION {\n"
 				+ "?scheme <" + RDFS.LABEL + "> ?prefLabel . } } }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -461,12 +464,13 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithMultipleSKOSPrefLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT DISTINCT ?concept ?lang WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "?concept <" + SKOS.PREFLABEL + "> ?label1. "
-				+ "?concept <" + SKOS.PREFLABEL + "> ?label2. "
-				+ "FILTER ( ?label1 != ?label2 && lang(?label1) = lang(?label2) ) "
+		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.PREFLABEL + "> ?label1.\n"
+				+ "?concept <" + SKOS.PREFLABEL + "> ?label2.\n"
+				+ "FILTER ( ?label1 != ?label2 && lang(?label1) = lang(?label2) )\n"
 				+ "bind(lang(?label1) as ?lang) }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -495,14 +499,15 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithMultipleSKOSXLPrefLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT DISTINCT ?concept ?lang WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?label1 . "
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?label2 . "
-				+ "?label1 <" + SKOSXL.LITERALFORM + "> ?lit1 . "
-				+ "?label2 <" + SKOSXL.LITERALFORM + "> ?lit2 . "
-				+ "bind(lang(?lit1) as ?lang) "
+		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> ?label1 .\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> ?label2 .\n"
+				+ "?label1 <" + SKOSXL.LITERALFORM + "> ?lit1 .\n"
+				+ "?label2 <" + SKOSXL.LITERALFORM + "> ?lit2 .\n"
+				+ "bind(lang(?lit1) as ?lang)\n"
 				+ "FILTER ( ?label1 != ?label2 && lang(?lit1) = lang(?lit2) ) }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -532,12 +537,15 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLanguageTagSKOSLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred ?label WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "?labelPred <" + RDFS.SUBPROPERTYOF + "> <" + RDFS.LABEL + "> . "
-				+ "?concept ?labelPred ?label . "
-				+ "bind(lang(?label) as ?lang) "
+		String q = "SELECT ?concept ?labelPred ?label WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "{ bind(<" + SKOS.PREFLABEL + "> as ?labelPred)}\n"
+				+ "UNION\n"
+				+ "{bind(<" + SKOS.ALTLABEL + "> as ?labelPred)}\n"
+				+ "?concept ?labelPred ?label .\n"
+				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (?lang = '') }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -574,13 +582,14 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLanguageTagSKOSXLLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred ?literal WHERE { "
-				+ "?concept a <" + SKOS.CONCEPT + "> . "
-				+ "?xlabel a <" + SKOSXL.LABEL + "> . "
-				+ "?concept ?labelPred ?xlabel . "
-				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?literal . "
-				+ "bind(lang(?literal) as ?lang) "
+		String q = "SELECT ?concept ?labelPred ?label WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
+				+ "?concept ?labelPred ?xlabel .\n"
+				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?label .\n"
+				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (?lang = '') }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -588,19 +597,18 @@ public class SKOS_ICV extends STServiceAdapter {
 			TupleBindings tb = itTupleBinding.next();
 			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
 			String labelPred = tb.getBinding("labelPred").getBoundValue().getNominalValue();
-			String literal = tb.getBinding("literal").getBoundValue().getNominalValue();
+			String label = tb.getBinding("label").getBoundValue().getNominalValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
 			recordElem.setAttribute("labelPred", labelPred);
-			recordElem.setAttribute("literal", literal);
+			recordElem.setAttribute("label", label);
 		}
 		return response;
 	}
 	
 	/**
-	 * Returns a list of records concept-labelPred1-labelPred2-label-lang. A record like that means that
-	 * the concept ?concept has the same label ?label in language ?lang for the predicates ?labelPred1 and
-	 * ?labelPred2 (e.g. http://baseuri.org#c_1, skos:prefLabel, skos:altLabel, concept, en) 
+	 * Returns a list of records concept-label-lang. A record like that means that the concept ?concept has 
+	 * the same skos:prefLabel and skos:altLabel ?label in language ?lang
 	 * @return
 	 * @throws QueryEvaluationException
 	 * @throws UnsupportedQueryLanguageException
@@ -613,16 +621,11 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOverlappedSKOSLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred1 ?labelPred2 ?label ?lang WHERE { "
-				+ "?labelPred1 <" + RDFS.SUBPROPERTYOF + "> <" + RDFS.LABEL + "> . "
-				+ "?labelPred2 <" + RDFS.SUBPROPERTYOF + "> <" + RDFS.LABEL + "> . "
-				+ "?concept ?labelPred1 ?label1 . "
-				+ "?concept ?labelPred2 ?label1 . "
-				+ "FILTER ( (?labelPred1 = <" + SKOS.PREFLABEL + "> && ?labelPred2 = <" + SKOS.ALTLABEL + ">) || "
-				+ "(?labelPred1 = <" + SKOS.PREFLABEL + "> && ?labelPred2 = <" + SKOS.HIDDENLABEL + ">) || "
-				+ "(?labelPred1 = <" + SKOS.ALTLABEL + "> && ?labelPred2 = <" + SKOS.HIDDENLABEL + ">) ) "
-				+ "bind(str(?label1) as ?label) . "
-				+ "bind(lang(?label1) as ?lang) . }";
+		String q = "SELECT ?concept ?label ?lang WHERE {\n"
+				+ "?concept <" + SKOS.PREFLABEL + "> ?label .\n"
+				+ "?concept <" + SKOS.ALTLABEL + "> ?label .\n"
+				+ "bind(lang(?label) as ?lang) . }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -631,12 +634,8 @@ public class SKOS_ICV extends STServiceAdapter {
 			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
 			String label = tb.getBinding("label").getBoundValue().getNominalValue();
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
-			String labelPred1 = tb.getBinding("labelPred1").getBoundValue().getNominalValue();
-			String labelPred2 = tb.getBinding("labelPred2").getBoundValue().getNominalValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
-			recordElem.setAttribute("labelPred1", labelPred1);
-			recordElem.setAttribute("labelPred2", labelPred2);
 			recordElem.setAttribute("label", label);
 			recordElem.setAttribute("lang", lang);
 		}
@@ -644,9 +643,8 @@ public class SKOS_ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns a list of records concept-labelPred1-labelPred2-label-lang. A record like that means that
-	 * the concept ?concept has the same skosxl label ?label in language ?lang for the predicates ?labelPred1 and
-	 * ?labelPred2 (e.g. http://baseuri.org#c_1, skosxl:prefLabel, skosxl:altLabel, concept, en) 
+	 * Returns a list of records concept-label-lang. A record like that means that the concept ?concept has 
+	 * the same skosxl:prefLabel and skosxl:altLabel ?label in language ?lang
 	 * @return
 	 * @throws QueryEvaluationException
 	 * @throws UnsupportedQueryLanguageException
@@ -659,22 +657,13 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOverlappedSKOSXLLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred1 ?labelPred2 ?label ?lang WHERE { { "
-				+ "bind (<" + SKOSXL.PREFLABEL + "> as ?labelPred1) "
-				+ "bind (<" + SKOSXL.ALTLABEL + "> as ?labelPred2) "
-				+ "} UNION { "
-				+ "bind (<" + SKOSXL.PREFLABEL + "> as ?labelPred1) "
-				+ "bind (<" + SKOSXL.HIDDENLABEL + "> as ?labelPred2) "
-				+ "} UNION { "
-				+ "bind (<" + SKOSXL.ALTLABEL + "> as ?labelPred1) "
-				+ "bind (<" + SKOSXL.HIDDENLABEL + "> as ?labelPred2) } "
-				+ "?concept ?labelPred1 ?xlabel1 . "
-				+ "?concept ?labelPred2 ?xlabel2 . "
-				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?label1 . "
-				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?label2 . "
-				+ "FILTER ( ?label1 = ?label2 ) "
-				+ "bind(str(?label1) as ?label) . "
-				+ "bind(lang(?label1) as ?lang) . }";
+		String q = "SELECT ?concept ?label ?lang WHERE {\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> ?xlabel1 .\n"
+				+ "?concept <" + SKOSXL.ALTLABEL + "> ?xlabel2 .\n"
+				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?label .\n"
+				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?label .\n"
+				+ "bind(lang(?label) as ?lang) . }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -683,12 +672,8 @@ public class SKOS_ICV extends STServiceAdapter {
 			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
 			String label = tb.getBinding("label").getBoundValue().getNominalValue();
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
-			String labelPred1 = tb.getBinding("labelPred1").getBoundValue().getNominalValue();
-			String labelPred2 = tb.getBinding("labelPred2").getBoundValue().getNominalValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
-			recordElem.setAttribute("labelPred1", labelPred1);
-			recordElem.setAttribute("labelPred2", labelPred2);
 			recordElem.setAttribute("label", label);
 			recordElem.setAttribute("lang", lang);
 		}
@@ -711,12 +696,15 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithExtraWhitespaceInSKOSLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE { "
-				+ "?labelPred <" + RDFS.SUBPROPERTYOF + "> <" + RDFS.LABEL + "> . "
-				+ "?concept ?labelPred ?skoslabel . "
-				+ "bind(str(?skoslabel) as ?label) "
-				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?')) "
+		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE {\n"
+				+ "{ bind(<" + SKOS.PREFLABEL + "> as ?labelPred)}\n"
+				+ "UNION\n"
+				+ "{bind(<" + SKOS.ALTLABEL + "> as ?labelPred)}\n"
+				+ "?concept ?labelPred ?skoslabel .\n"
+				+ "bind(str(?skoslabel) as ?label)\n"
+				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 				+ "bind(lang(?skoslabel) as ?lang) }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -751,13 +739,16 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithExtraWhitespaceInSKOSXLLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE { "
-				+ "?xlabel a <" + SKOSXL.LABEL + "> . "
-				+ "?concept ?labelPred ?xlabel . "
-				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?litForm . "
-				+ "bind(str(?litForm) as ?label) "
-				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?')) "
+		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE {\n"
+				+ "{ bind(<" + SKOSXL.PREFLABEL + "> as ?labelPred)}\n"
+				+ "UNION\n"
+				+ "{bind(<" + SKOSXL.ALTLABEL + "> as ?labelPred)}\n"
+				+ "?concept ?labelPred ?xlabel .\n"
+				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?litForm .\n"
+				+ "bind(str(?litForm) as ?label)\n"
+				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 				+ "bind(lang(?litForm) as ?lang) }";
+		logger.info("query: " + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);

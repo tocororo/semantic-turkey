@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="skos_icv.css" type="text/css"?>
+
+<window id="skos_icv" title="Integrity Constraint Validation"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/skos_icv/skos_icv.js" />
+		
+		<vbox>
+		
+			
+			
+			<grid>
+				<columns>
+					<column flex="1" />
+					<column flex="3" />
+					<column flex="2" />
+				</columns>
+				<rows id="gridRows" >
+					<!-- Structural ICV -->	
+					<separator orient="orizontal" class="groove" />
+						<hbox pack="center">
+							<label value="Structural checks" />
+						</hbox>
+					<separator orient="orizontal" class="groove" />
+					
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/danglingConcept/danglingConcept.xul">
+						<checkbox />
+						<label value="Dangling concepts"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/cyclicConcept/cyclicConcept.xul">
+						<checkbox />
+						<label value="Cyclic hierarchical concepts"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/omittedTopConcept/omittedTopConcept.xul">
+						<checkbox />
+						<label value="Omitted top concept"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/conceptInNoScheme/conceptInNoScheme.xul">
+						<checkbox />
+						<label value="Concepts in no scheme"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/topConceptWithBroader/topConceptWithBroader.xul">
+						<checkbox />
+						<label value="TopConcept with broader"/>
+						<button label="Run check" />
+					</row>
+					
+					<!-- Labeling ICV -->	
+					<separator orient="orizontal" class="groove" />
+						<hbox pack="center">
+							<label value="Labeling checks" />
+						</hbox>
+					<separator orient="orizontal" class="groove" />
+					
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/noLabelConcept/noLabelConcept.xul">
+						<checkbox />
+						<label value="No label concept"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/onlyAltLabelConcept/onlyAltLabelConcept.xul">
+						<checkbox />
+						<label value="Only alt label concept"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/noLangTagLabel/noLangTagLabel.xul">
+						<checkbox />
+						<label value="No language tag label"/>
+						<button label="Run check" />
+					</row>
+					<row align="center" target="chrome://semantic-turkey/content/skos_icv/sameLabelConcept/sameLabelConcept.xul">
+						<checkbox />
+						<label value="Same label concepts"/>
+						<button label="Run check" />
+					</row>
+					
+				</rows>
+			</grid>
+			
+			<!-- <row target="">
+						<checkbox />
+						<label value=""/>
+						<button label="Run check" />
+					</row> -->
+					
+			<separator orient="orizontal" class="groove" />
+			<button label="Run multiple checks" />
+			
+		</vbox>
+
+	
+</window>

@@ -76,7 +76,7 @@ art_semanticturkey.SPARQL = function() {
 };
 
 art_semanticturkey.openSkosICV = function() {
-	art_semanticturkey.openUrl("chrome://semantic-turkey/content/skos_icv/danglingConcept/danglingConcept.xul");
+	art_semanticturkey.openUrl("chrome://semantic-turkey/content/skos_icv/skos_icv.xul");
 };
 
 art_semanticturkey.semnavigation = function() {

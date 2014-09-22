@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="skos_icv.css" type="text/css"?>
+
+<window id="cyclicConcept" title="Integrity Constraint Validation - Cyclic hierarchical concept"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="700px" height="500px">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/skos_icv/cyclicConcept/cyclicConcept.js" />
+		
+		<vbox>
+
+			<grid>
+				<columns>
+					<column flex="4" />
+					<column flex="2" />
+					<column flex="1" />
+				</columns>
+				<rows id="gridRows" >
+					<row>
+						<label value="Concepts in cyclic hierarchy" />
+						<label value="Suggested concept" />
+					</row>
+					<row>
+						<hbox>
+							<label value="http://baseuri.org/c_1235" />
+							<label value="http://baseuri.org/c_1236" />
+							<label value="http://baseuri.org/c_1237" />
+						</hbox>
+						<label value="http://baseuri.org/c_1234" />
+						<button label="Edit concept tree" />
+					</row>
+				</rows>
+			</grid>
+			
+		</vbox>
+
+	
+</window>
