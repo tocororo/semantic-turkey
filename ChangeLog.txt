@@ -1,6 +1,8 @@
 version 0.10
-date: 09/09/2014
-  * move to Karaf container and improvement OSGi management
+date: 22-09-2014
+  * first time ST on Maven
+  * move to Karaf container and improved OSGi management
+  * ST can be downloaded at runtime inside a fresh karaf container as an additional feature through Maven
   * the server base url has been changed. Also, all services requests URLs (including those for extensions) now are modeled 
     according to the following pattern: http://<domain>:<port>/semanticturkey/<groupId>/<artifactId>/<ClassName>/<methodName>
   * enabled management of concurrently open projects (http://semanticturkey.uniroma2.it/documentation/dev/project_management.jsf)
