@@ -5,7 +5,7 @@
 	buttons="accept,cancel" ondialogaccept="return buttonOkListener();"
 	ondialogcancel="return buttonCancelListener();" width="300px">
 	<script type="application/x-javascript"
-		src="chrome://semantic-turkey/content/skos_icv/setPrefLabel.js" />
+		src="chrome://semantic-turkey/content/skos_icv/setLabel.js" />
 
 	<hbox>
 		<textbox id="textBoxLabel" flex="1" />

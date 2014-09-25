@@ -9,17 +9,19 @@
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/skos_icv/topConceptWithBroader/topConceptWithBroader.js" />
 		
-		<grid>
-			<columns>
-				<column flex="1" />
-				<column flex="1" />
-			</columns>
-			<rows id="gridRows" >
-				<!-- <row>
-					<label value="http://baseuri.org#concept" />
-					<button label="Fix" />
-				</row> -->
-			</rows>
-		</grid>
+		<hbox pack="center">
+			<description>skos:Concept(s) that are skos:topConceptOf a skos:ConceptScheme and have some broader concept</description>
+		</hbox>
+		
+		<listbox id="listbox" flex="1">
+			<listhead flex="1">
+				<listheader label="skos:Concept" />
+				<listheader label="Action" />
+			</listhead>
+			<listcols>
+				<listcol flex="2"/>
+				<listcol flex="1"/>
+			</listcols>
+		</listbox> 
 	
 </window>

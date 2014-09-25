@@ -8,25 +8,29 @@ window.onload = function() {
 }
 
 art_semanticturkey.init = function(){
-	var rows = document.getElementById("gridRows");
+	var listbox = document.getElementById("listbox");
 	try {
 		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listTopConceptsWithBroader();
 		var data = xmlResp.getElementsByTagName("data")[0];
 		var concepts = data.getElementsByTagName("concept");
-		art_semanticturkey.Logger.debug("concepts " + concepts.length);
 		for (var i=0; i<concepts.length; i++){
-			var row = document.createElement("row");
-			row.setAttribute("align", "center");
 			var concept = concepts[i].textContent;
-			var conceptLabel = document.createElement("label");
-			conceptLabel.setAttribute("value", concept);
-			conceptLabel.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
-			var fixButton = document.createElement("button");
-			fixButton.setAttribute("label", "Fix concept");
-			fixButton.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-			row.appendChild(conceptLabel);
-			row.appendChild(fixButton);
-			rows.appendChild(row);
+
+			var listitem = document.createElement("listitem");
+			listitem.setAttribute("allowevents", "true");
+			
+			var cell = document.createElement("listcell");
+		    cell.setAttribute("label", concept);
+		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
+		    listitem.appendChild(cell);
+		    
+		    var button = document.createElement("button");
+		    button.setAttribute("label", "Fix concept");
+		    button.setAttribute("flex", "1");
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
+		    
+		    listbox.appendChild(listitem);
 		}
 	} catch (e){
 		alert(e.message);
@@ -36,8 +40,8 @@ art_semanticturkey.init = function(){
 
 art_semanticturkey.fixButtonClickListener = function() {
 	var btn = this;
-	var row = btn.parentNode;
-	var concept = row.children[0].value;
+	var listitem = btn.parentNode;
+	var concept = listitem.children[0].getAttribute("label");
 	var parameters = new Object();
 	parameters.sourceType = "concept";
 	parameters.sourceElement = concept;
@@ -57,7 +61,7 @@ art_semanticturkey.fixButtonClickListener = function() {
  * Listener to the concept, when double clicked it opens the editor panel
  */
 art_semanticturkey.conceptDblClickListener = function() {
-	var concept = this.getAttribute("value");//this in an actionListener represents the target of the listener
+	var concept = this.getAttribute("label");//this in an actionListener represents the target of the listener
 	var parameters = new Object();
 	parameters.sourceType = "concept";
 	parameters.sourceElement = concept;

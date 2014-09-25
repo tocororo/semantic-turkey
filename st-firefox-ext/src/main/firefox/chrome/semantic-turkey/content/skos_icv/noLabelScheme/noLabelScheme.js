@@ -7,25 +7,25 @@ window.onload = function() {
 	art_semanticturkey.init();
 }
 
-art_semanticturkey.init = function(){
-	var listbox = document.getElementById("listbox");
+art_semanticturkey.init = function() {
 	try {
-		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithNoScheme();
+		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptSchemesWithNoLabel();
 		var data = xmlResp.getElementsByTagName("data")[0];
-		var concepts = data.getElementsByTagName("concept");
-		for (var i=0; i<concepts.length; i++){
-			var concept = concepts[i].textContent;
-
+		var schemes = data.getElementsByTagName("scheme");
+		var listbox = document.getElementById("listbox");
+		for (var i=0; i<schemes.length; i++){
+			var scheme = schemes[i].textContent;
+			
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
 			
 			var cell = document.createElement("listcell");
-		    cell.setAttribute("label", concept);
-		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
+		    cell.setAttribute("label", scheme);
+		    cell.addEventListener("dblclick", art_semanticturkey.schemeDblClickListener, false);
 		    listitem.appendChild(cell);
 		    
 		    var button = document.createElement("button");
-		    button.setAttribute("label", "Add concept to a skos:ConceptScheme");
+		    button.setAttribute("label", "Set skos:prefLabel");
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
@@ -38,26 +38,12 @@ art_semanticturkey.init = function(){
 }
 
 
-art_semanticturkey.fixButtonClickListener = function() {
-	var btn = this;
-	var listitem = btn.parentNode;
-	var concept = listitem.children[0].getAttribute("label");
+art_semanticturkey.schemeDblClickListener = function() {
+	var scheme = this.getAttribute("label");//this in an actionListener represents the target of the listener
 	var parameters = new Object();
-	parameters.concept = concept;
-	window.openDialog("chrome://semantic-turkey/content/skos_icv/conceptInNoScheme/selectSchemeDialog.xul",
-			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
-			parameters);
-}
-
-/**
- * Listener to the concept, when double clicked it opens the editor panel
- */
-art_semanticturkey.conceptDblClickListener = function() {
-	var concept = this.getAttribute("label");//this in an actionListener represents the target of the listener
-	var parameters = new Object();
-	parameters.sourceType = "concept";
-	parameters.sourceElement = concept;
-	parameters.sourceElementName = concept;
+	parameters.sourceType = "conceptscheme";
+	parameters.sourceElement = null;
+	parameters.sourceElementName = scheme;
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	//TODO: restore if the new editor panel becomes active
@@ -68,3 +54,19 @@ art_semanticturkey.conceptDblClickListener = function() {
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
 			parameters);
 }
+
+art_semanticturkey.fixButtonClickListener = function() {
+	var btn = this;
+	var listitem = btn.parentNode;
+	var scheme = listitem.children[0].getAttribute("label");
+	var labelType = "skos:prefLabel";
+	var parameters = new Object();
+	parameters.resource = scheme;
+	parameters.editLabel = true;
+	parameters.editLang = true;
+	parameters.labelType = labelType;
+	window.openDialog("chrome://semantic-turkey/content/skos_icv/setLabelDialog.xul",
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
+			parameters);
+}
+

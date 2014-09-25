@@ -1,6 +1,7 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stservices/SERVICE_SKOS_ICV.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
 window.onload = function() {
@@ -10,13 +11,13 @@ window.onload = function() {
 art_semanticturkey.init = function(){
 	var listbox = document.getElementById("listbox");
 	try {
-		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listCyclicConcepts();
+		//SKOS
+		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithMultipleSKOSPrefLabel();
 		var data = xmlResp.getElementsByTagName("data")[0];
-		var concepts = data.getElementsByTagName("concept");
-		//init UI
-		for (var i=0; i<concepts.length; i++){
-			var concept = concepts[i].textContent;
-			
+		var records = data.getElementsByTagName("record");
+		for (var i=0; i<records.length; i++){
+			var concept = records[i].getAttribute("concept");
+			var lang = records[i].getAttribute("lang");
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
 			
@@ -25,13 +26,52 @@ art_semanticturkey.init = function(){
 		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
 		    listitem.appendChild(cell);
 		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", "skos:prefLabel");
+		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", lang);
+		    listitem.appendChild(cell);
+		    
 		    var button = document.createElement("button");
 		    button.setAttribute("label", "Edit concept");
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
+		    
+		    listbox.appendChild(listitem);
+		}
+		//SKOSXL
+		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithMultipleSKOSXLPrefLabel();
+		var data = xmlResp.getElementsByTagName("data")[0];
+		var records = data.getElementsByTagName("record");
+		for (var i=0; i<records.length; i++){
+			var concept = records[i].getAttribute("concept");
+			var lang = records[i].getAttribute("lang");
+			var listitem = document.createElement("listitem");
+			listitem.setAttribute("allowevents", "true");
 			
-			listbox.appendChild(listitem)
+			var cell = document.createElement("listcell");
+		    cell.setAttribute("label", concept);
+		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
+		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", "skosxl:prefLabel");
+		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", lang);
+		    listitem.appendChild(cell);
+		    
+		    var button = document.createElement("button");
+		    button.setAttribute("label", "Edit concept");
+		    button.setAttribute("flex", "1");
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
+		    
+		    listbox.appendChild(listitem);
 		}
 	} catch (e){
 		alert(e.message);
@@ -39,8 +79,7 @@ art_semanticturkey.init = function(){
 }
 
 art_semanticturkey.fixButtonClickListener = function() {
-	var btn = this;
-	var listitem = btn.parentNode;
+	var listitem = this.parentNode;
 	var concept = listitem.children[0].getAttribute("label");
 	var parameters = new Object();
 	parameters.sourceType = "concept";

@@ -7,17 +7,17 @@ window.onload = function() {
 	art_semanticturkey.init();
 }
 
-art_semanticturkey.init = function(){
-	var listbox = document.getElementById("listbox");
+art_semanticturkey.init = function() {
 	try {
-		//SKOS
-		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithNoLanguageTagSKOSLabel();
+		//for SKOS
+		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSLabel();
 		var data = xmlResp.getElementsByTagName("data")[0];
 		var records = data.getElementsByTagName("record");
+		var listbox = document.getElementById("listbox");
 		for (var i=0; i<records.length; i++){
 			var concept = records[i].getAttribute("concept");
 			var label = records[i].getAttribute("label");
-			var labelPred = records[i].getAttribute("labelPred");
+			var lang = records[i].getAttribute("lang");
 			
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
@@ -28,32 +28,36 @@ art_semanticturkey.init = function(){
 		    listitem.appendChild(cell);
 		    
 		    cell = document.createElement("listcell");
-		    if (labelPred == "http://www.w3.org/2004/02/skos/core#prefLabel") 
-		    	cell.setAttribute("label", "skos:prefLabel");
-			else if (labelPred == "http://www.w3.org/2004/02/skos/core#altLabel")
-				cell.setAttribute("label", "skos:altLabel");
-		    listitem.appendChild(cell);
-		    
-		    cell = document.createElement("listcell");
 		    cell.setAttribute("label", label);
 		    listitem.appendChild(cell);
 		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", lang);
+		    listitem.appendChild(cell);
+		    
 		    var button = document.createElement("button");
-		    button.setAttribute("label", "Set language tag");
+		    button.setAttribute("label", "skos:prefLabel");
+		    button.setAttribute("flex", "1");
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
+		    
+		    button = document.createElement("button");
+		    button.setAttribute("label", "skos:altLabel");
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
 		    
 		    listbox.appendChild(listitem);
 		}
-		//SKOSXL
-		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithNoLanguageTagSKOSXLLabel();
+		//for SKOSXL
+		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSXLLabel();
 		var data = xmlResp.getElementsByTagName("data")[0];
 		var records = data.getElementsByTagName("record");
+		var listbox = document.getElementById("listbox");
 		for (var i=0; i<records.length; i++){
 			var concept = records[i].getAttribute("concept");
 			var label = records[i].getAttribute("label");
-			var labelPred = records[i].getAttribute("labelPred");
+			var lang = records[i].getAttribute("lang");
 			
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
@@ -64,18 +68,21 @@ art_semanticturkey.init = function(){
 		    listitem.appendChild(cell);
 		    
 		    cell = document.createElement("listcell");
-		    if (labelPred == "http://www.w3.org/2008/05/skos-xl#prefLabel") 
-		    	cell.setAttribute("label", "skosxl:prefLabel");
-			else if (labelPred == "http://www.w3.org/2008/05/skos-xl#altLabel")
-				cell.setAttribute("label", "skosxl:altLabel");
-		    listitem.appendChild(cell);
-		    
-		    cell = document.createElement("listcell");
 		    cell.setAttribute("label", label);
 		    listitem.appendChild(cell);
 		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", lang);
+		    listitem.appendChild(cell);
+		    
 		    var button = document.createElement("button");
-		    button.setAttribute("label", "Set language tag");
+		    button.setAttribute("label", "skosxl:prefLabel");
+		    button.setAttribute("flex", "1");
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
+		    
+		    button = document.createElement("button");
+		    button.setAttribute("label", "skosxl:altLabel");
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
@@ -85,29 +92,6 @@ art_semanticturkey.init = function(){
 	} catch (e){
 		alert(e.message);
 	}
-}
-
-/**
- * Listener to the buttons to set a label.
- */
-art_semanticturkey.fixButtonClickListener = function() {
-	var btn = this;
-	var listitem = btn.parentNode;
-	var concept = listitem.children[0].getAttribute("label");
-	var labelType = listitem.children[1].getAttribute("label");
-	var label = listitem.children[2].getAttribute("label");
-	//open dialog to set a language tag
-	var parameters = new Object();
-	parameters.resource = concept;
-	parameters.label = label;
-	parameters.labelType = labelType;
-	parameters.lang = "";
-	parameters.editLabel = false;
-	parameters.editLang = true;
-	parameters.replaceLabel = true;
-	window.openDialog("chrome://semantic-turkey/content/skos_icv/setLabelDialog.xul",
-			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
-			parameters);
 }
 
 /**
@@ -129,3 +113,25 @@ art_semanticturkey.conceptDblClickListener = function() {
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
 			parameters);
 }
+
+art_semanticturkey.fixButtonClickListener = function() {
+	var btn = this;
+	var listitem = btn.parentNode;
+	var concept = listitem.children[0].getAttribute("label");
+	var label = listitem.children[1].getAttribute("label");
+	var lang = listitem.children[2].getAttribute("label");
+	var labelType = btn.label;
+	var parameters = new Object();
+	parameters.resource = concept;
+	parameters.label = label;
+	parameters.labelType = labelType;
+	parameters.lang = lang;
+	parameters.editLabel = true;
+	parameters.editLang = true;
+	parameters.replaceLabel = true;
+	
+	window.openDialog("chrome://semantic-turkey/content/skos_icv/setLabelDialog.xul",
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
+			parameters);
+}
+

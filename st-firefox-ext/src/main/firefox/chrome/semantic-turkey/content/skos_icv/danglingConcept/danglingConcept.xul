@@ -9,7 +9,11 @@
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/skos_icv/danglingConcept/danglingConcept.js" />
 		
-
+		<hbox pack="center">
+			<description>
+				skos:Concept(s) that are not reachable in a concept tree because they have no broader concept and are not top concept of its scheme.
+			</description>
+		</hbox>
 
 		<listbox id="dangling_concept_listbox" flex="1">
 			<listhead flex="1">

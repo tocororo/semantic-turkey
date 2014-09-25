@@ -8,45 +8,62 @@ window.onload = function() {
 }
 
 art_semanticturkey.init = function(){
-	var rows = document.getElementById("gridRows");
+	var listbox = document.getElementById("listbox");
 	try {
 		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptSchemesWithNoTopConcept();
 		var data = xmlResp.getElementsByTagName("data")[0];
 		var schemes = data.getElementsByTagName("conceptScheme");
 		for (var i=0; i<schemes.length; i++){
-			var row = document.createElement("row");
-			row.setAttribute("align", "center");
 			var scheme = schemes[i].textContent;
-			var schemeLabel = document.createElement("label");
-			schemeLabel.setAttribute("value", scheme);
-			var fixButton = document.createElement("button");
-			fixButton.setAttribute("label", "Edit skos:ConceptScheme");
-			fixButton.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-			row.appendChild(schemeLabel);
-			row.appendChild(fixButton);
-			rows.appendChild(row);
+			
+			var listitem = document.createElement("listitem");
+			listitem.setAttribute("allowevents", "true");
+			
+			var cell = document.createElement("listcell");
+		    cell.setAttribute("label", scheme);
+		    cell.addEventListener("dblclick", art_semanticturkey.schemeDblClickListener, false);
+		    listitem.appendChild(cell);
+		    
+		    var button = document.createElement("button");
+		    button.setAttribute("label", "Edit scheme");
+		    button.setAttribute("flex", "1");
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
+		    
+		    listbox.appendChild(listitem);
 		}
 	} catch (e){
 		alert(e.message);
 	}
 }
 
+art_semanticturkey.schemeDblClickListener = function() {
+	var scheme = this.getAttribute("label");//this in an actionListener represents the target of the listener
+	var parameters = new Object();
+	parameters.sourceType = "conceptscheme";
+	parameters.sourceElement = null;
+	parameters.sourceElementName = scheme;
+	parameters.parentWindow = window;
+	parameters.isFirstEditor = true;
+	//TODO: restore if the new editor panel becomes active
+//	window.openDialog("chrome://semantic-turkey/content/editorsNew/editorPanel.xul", 
+//			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
+//			parameters);
+	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul",
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
+			parameters);
+}
 
 art_semanticturkey.fixButtonClickListener = function() {
 	var btn = this;
-	var row = btn.parentNode;
-	var scheme = row.children[0].value;
-//	var scheme = label.value;
-	//code copied from skos/widget/schemeList/impl/schemeList.xml
-	var parameters = {
-		sourceElement : null,		// elemento contenente i dati della riga corrente
-		sourceType : "conceptScheme",		// tipo di editor: clss, ..., determina le funzioni custom ed il titolo della finestra
-		sourceElementName : scheme,	// nome dell'elemento corrente (quello usato per identificazione: attualmente il qname)
-		sourceParentElementName : "", // nome dell'elemento genitore
-		isFirstEditor : true,		 // l'editor è stato aperto direttamente dall class/... tree o da un altro editor?
-		deleteForbidden : false, 	 // cancellazione vietata 
-		parentWindow : window		 // finestra da cui viene aperto l'editor
-	};
+	var listitem = btn.parentNode;
+	var scheme = listitem.children[0].getAttribute("label");
+	var parameters = new Object();
+	parameters.sourceType = "conceptscheme";
+	parameters.sourceElement = null;
+	parameters.sourceElementName = scheme;
+	parameters.parentWindow = window;
+	parameters.isFirstEditor = true;
 	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul", "_blank",
 				"chrome,dependent,dialog,modal=yes,resizable,centerscreen",	parameters);
 }

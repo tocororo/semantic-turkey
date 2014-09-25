@@ -22,6 +22,6 @@ art_semanticturkey.btnCheckListener = function() {
 	var btn = this;
 	var row = btn.parentNode;
 	var target = row.getAttribute("target");
-	art_semanticturkey.Logger.debug("opening dialog " + target);
+//	art_semanticturkey.Logger.debug("opening dialog " + target);
 	window.openDialog(target, "_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen");
 }

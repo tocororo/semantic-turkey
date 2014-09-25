@@ -2,41 +2,38 @@
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="skos_icv.css" type="text/css"?>
 
-<window id="omittedTopConcept" title="Integrity Constraint Validation - Same label concept"
+<window id="overlappedLabelConcept" title="Integrity Constraint Validation - Overlapped label concept"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	width="750px" height="500px">
 	<script type="application/x-javascript"
-		src="chrome://semantic-turkey/content/skos_icv/sameLabelConcept/sameLabelConcept.js" />
+		src="chrome://semantic-turkey/content/skos_icv/overlappedLabelConcept/overlappedLabelConcept.js" />
 		
 		<hbox pack="center">
-			<description>skos:Concept(s) that have the same preferred labels in the same language</description>
+			<description>skos:Concept(s) that have the same prefLabel and altLabel in a language</description>
 		</hbox>
 		
 		<listbox id="listbox" flex="1">
 			<listhead flex="1">
-				<listheader label="Concept 1" />
-				<listheader label="Concept 2" />
+				<listheader label="skos:Concept" />
 				<listheader label="Label" />
 				<listheader label="Lang" />
-				<listheader label="Change 1st concept" />
-				<listheader label="Change 2nd concept" />
+				<listheader label="Change prefLabel" />
+				<listheader label="Change altLabel" />
 			</listhead>
-			<listcols flex="1">
-				<listcol flex="2"/>
-				<listcol flex="2"/>
+			<listcols>
 				<listcol flex="2"/>
 				<listcol flex="1"/>
-				<listcol />
-				<listcol />
+				<listcol flex="1"/>
+				<listcol flex="1"/>
+				<listcol flex="1"/>
 			</listcols>
-<!-- 			<listitem allowevents="true" >
-				<listcell label="http://baseuri.org#concept1" />
-				<listcell label="http://baseuri.org#concept2" />
+			<!-- <listitem allowevents="true" >
+				<listcell label="http://baseuri.org#concept" />
 				<listcell label="concept" />
 				<listcell label="en" />
 				<button label="skos:prefLabel" flex="1"/>
-				<button label="skos:prefLabel" flex="1"/>
+				<button label="skos:altLabel" flex="1"/>
 			</listitem> -->
 		</listbox> 
 	

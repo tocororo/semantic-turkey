@@ -77,7 +77,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
 				+ "} }";
-		logger.info("query: " + q);
+		logger.info("query [listDanglingConcepts]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -108,23 +108,30 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listCyclicConcepts",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT DISTINCT ?topCyclicConcept ?cyclicConcept WHERE {\n"
-				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
+//		String q = "SELECT DISTINCT ?topCyclicConcept ?cyclicConcept WHERE {\n"
+		String q = "SELECT DISTINCT ?topCyclicConcept WHERE {\n"
+				+ "{ ?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
 				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept .\n"
 				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">) ?broader .\n"
 				+ "FILTER NOT EXISTS {\n"
-				+ "?broader (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept } }";
-		logger.info("query: " + q);
+				+ "?broader (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept }\n"
+				+ "} UNION {\n"
+				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
+				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept .\n"
+				+ "?topCyclicConcept (<" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + ">)+ ?scheme . } }";
+		logger.info("query [listCyclicConcepts]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
 		while (itTupleBinding.hasNext()){
 			TupleBindings tb = itTupleBinding.next();
 			String topCyclicConcept = tb.getBinding("topCyclicConcept").getBoundValue().getNominalValue();
-			String cyclicConcept = tb.getBinding("cyclicConcept").getBoundValue().getNominalValue();
-			Element recordElem = XMLHelp.newElement(dataElement, "record");
-			recordElem.setAttribute("topCyclicConcept", topCyclicConcept);
-			recordElem.setAttribute("cyclicConcept", cyclicConcept);
+//			String cyclicConcept = tb.getBinding("cyclicConcept").getBoundValue().getNominalValue();
+//			Element recordElem = XMLHelp.newElement(dataElement, "record");
+//			recordElem.setAttribute("topCyclicConcept", topCyclicConcept);
+//			recordElem.setAttribute("cyclicConcept", cyclicConcept);
+			XMLHelp.newElement(dataElement, "concept", topCyclicConcept);
+			
 		}
 		return response;
 	}
@@ -149,7 +156,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?conceptScheme <" + SKOS.HASTOPCONCEPT + "> ?topConcept .\n"
 				+ "} UNION {\n"
 				+ "?topConcept <" + SKOS.TOPCONCEPTOF + "> ?conceptScheme . } } }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptSchemesWithNoTopConcept]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -179,7 +186,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
 				+ "FILTER NOT EXISTS {\n" 
 				+ "?concept <" + SKOS.INSCHEME + "> ?scheme . } }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithNoScheme]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -209,7 +216,7 @@ public class SKOS_ICV extends STServiceAdapter {
 		String q = "SELECT DISTINCT ?concept WHERE {\n"
 				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader . }";
-		logger.info("query: " + q);
+		logger.info("query [listTopConceptsWithBroader]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -245,7 +252,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept2 <" + SKOS.PREFLABEL + "> ?label .\n"
 				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (str(?concept1) < str(?concept2)) }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithSameSKOSPrefLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -279,7 +286,7 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithSameSKOSXLPrefLabel",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE {\n"
+		String q = "SELECT ?concept1 ?concept2 ?label1 ?lang WHERE {\n"
 				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
 				+ "?concept2 a <" + SKOS.CONCEPT + "> .\n"
 				+ "?concept1 <" + SKOSXL.PREFLABEL + "> ?xlabel1 .\n"
@@ -289,7 +296,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "FILTER (?label1 = ?label2)\n"
 				+ "FILTER (str(?concept1) < str(?concept2))\n"
 				+ "bind(lang(?label1) as ?lang) }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithSameSKOSXLPrefLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -297,7 +304,7 @@ public class SKOS_ICV extends STServiceAdapter {
 			TupleBindings tb = itTupleBinding.next();
 			String concept1 = tb.getBinding("concept1").getBoundValue().getNominalValue();
 			String concept2 = tb.getBinding("concept2").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
+			String label = tb.getBinding("label1").getBoundValue().getNominalValue();
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept1", concept1);
@@ -329,7 +336,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "FILTER NOT EXISTS {\n"
 				+ "?concept <" + SKOS.PREFLABEL + "> ?pref .\n"
 				+ "FILTER (lang(?pref) = ?lang) } }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithOnlySKOSAltLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -367,7 +374,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept <" + SKOSXL.PREFLABEL + "> ?pref .\n"
 				+ "?pref <" + SKOSXL.LITERALFORM + "> ?literalFormPref .\n"
 				+ "FILTER (lang(?literalFormPref) = ?lang) } }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithOnlySKOSXLAltLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -404,7 +411,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
 				+ "} UNION {\n"
 				+ "?concept <" + RDFS.LABEL + "> ?prefLabel . } } }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithNoLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -438,7 +445,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?scheme <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
 				+ "} UNION {\n"
 				+ "?scheme <" + RDFS.LABEL + "> ?prefLabel . } } }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptSchemesWithNoLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -470,7 +477,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept <" + SKOS.PREFLABEL + "> ?label2.\n"
 				+ "FILTER ( ?label1 != ?label2 && lang(?label1) = lang(?label2) )\n"
 				+ "bind(lang(?label1) as ?lang) }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithMultipleSKOSPrefLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -507,7 +514,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?label2 <" + SKOSXL.LITERALFORM + "> ?lit2 .\n"
 				+ "bind(lang(?lit1) as ?lang)\n"
 				+ "FILTER ( ?label1 != ?label2 && lang(?lit1) = lang(?lit2) ) }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithMultipleSKOSXLPrefLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -531,7 +538,6 @@ public class SKOS_ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
-	//MEMO: labelPred serve per tener traccia del tipo di label in caso di modifica da parte del client
 	public Response listConceptsWithNoLanguageTagSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLanguageTagSKOSLabel",
@@ -545,7 +551,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept ?labelPred ?label .\n"
 				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (?lang = '') }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithNoLanguageTagSKOSLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -589,7 +595,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?label .\n"
 				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (?lang = '') }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithNoLanguageTagSKOSXLLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -625,7 +631,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?concept <" + SKOS.PREFLABEL + "> ?label .\n"
 				+ "?concept <" + SKOS.ALTLABEL + "> ?label .\n"
 				+ "bind(lang(?label) as ?lang) . }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithOverlappedSKOSLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -663,7 +669,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?label .\n"
 				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?label .\n"
 				+ "bind(lang(?label) as ?lang) . }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithOverlappedSKOSXLLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -704,7 +710,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "bind(str(?skoslabel) as ?label)\n"
 				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 				+ "bind(lang(?skoslabel) as ?lang) }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithExtraWhitespaceInSKOSLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -748,7 +754,7 @@ public class SKOS_ICV extends STServiceAdapter {
 				+ "bind(str(?litForm) as ?label)\n"
 				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 				+ "bind(lang(?litForm) as ?lang) }";
-		logger.info("query: " + q);
+		logger.info("query [listConceptsWithExtraWhitespaceInSKOSXLLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);

@@ -9,6 +9,7 @@ window.onload = function() {
 
 art_semanticturkey.init = function() {
 	try {
+		//for SKOS
 		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithSameSKOSPrefLabel();
 		var data = xmlResp.getElementsByTagName("data")[0];
 		var record = data.getElementsByTagName("record");
@@ -40,23 +41,66 @@ art_semanticturkey.init = function() {
 		    cell.setAttribute("label", lang);
 		    listitem.appendChild(cell);
 		    
-		    cell = document.createElement("listcell");
 		    var button = document.createElement("button");
 		    button.setAttribute("label", "skos:prefLabel");
 		    button.setAttribute("flex", "1");
 		    button.setAttribute("concept", concept1);
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-		    cell.appendChild(button);
-		    listitem.appendChild(cell);
+		    listitem.appendChild(button);
 		    
-		    cell = document.createElement("listcell");
 		    button = document.createElement("button");
 		    button.setAttribute("label", "skos:prefLabel");
 		    button.setAttribute("flex", "1");
 		    button.setAttribute("concept", concept2);
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-		    cell.appendChild(button);
+		    listitem.appendChild(button);
+		    
+		    listbox.appendChild(listitem);
+		}
+		//for SKOSXL
+		xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listConceptsWithSameSKOSXLPrefLabel();
+		data = xmlResp.getElementsByTagName("data")[0];
+		record = data.getElementsByTagName("record");
+		for (var i=0; i<record.length; i++){
+			var concept1 = record[i].getAttribute("concept1");
+			var concept2 = record[i].getAttribute("concept2");
+			var label = record[i].getAttribute("label");
+			var lang = record[i].getAttribute("lang");
+			
+			var listitem = document.createElement("listitem");
+			listitem.setAttribute("allowevents", "true");
+			
+			var cell = document.createElement("listcell");
+		    cell.setAttribute("label", concept1);
+		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
 		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", concept2);
+		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
+		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", label);
+		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", lang);
+		    listitem.appendChild(cell);
+		    
+		    var button = document.createElement("button");
+		    button.setAttribute("label", "skosxl:prefLabel");
+		    button.setAttribute("flex", "1");
+		    button.setAttribute("concept", concept1);
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
+		    
+		    button = document.createElement("button");
+		    button.setAttribute("label", "skosxl:prefLabel");
+		    button.setAttribute("flex", "1");
+		    button.setAttribute("concept", concept2);
+		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
+		    listitem.appendChild(button);
 		    
 		    listbox.appendChild(listitem);
 		}
@@ -88,20 +132,19 @@ art_semanticturkey.conceptDblClickListener = function() {
 art_semanticturkey.fixButtonClickListener = function() {
 	var btn = this;
 	var concept = btn.getAttribute("concept");
-	var listitem = btn.parentNode.parentNode; //from btn to listcell to listitem
-	art_semanticturkey.Logger.debug("listitem " + listitem);
-	art_semanticturkey.Logger.debug("listitem children " + listitem.children.length);
-	var lang = listitem.children[3].value;
+	var listitem = btn.parentNode;
+	var label = listitem.children[2].getAttribute("label");
+	var lang = listitem.children[3].getAttribute("label");
 	var btnLabel = btn.getAttribute("label");
-	if (btnLabel = "skos:prefLabel")
-		var labelType = "skos";
-	else if (btnLabel = "skosxl:prefLabel")
-		var labelType = "skosxl";
 	var parameters = new Object();
-	parameters.concept = concept;
+	parameters.resource = concept;
 	parameters.lang = lang;
-	parameters.labelType = labelType;
-	window.openDialog("chrome://semantic-turkey/content/skos_icv/setPrefLabelDialog.xul",
+	parameters.labelType = btnLabel;
+	parameters.label = label;
+	parameters.editLabel = true;
+	parameters.editLang = true;	
+	parameters.replaceLabel = true;
+	window.openDialog("chrome://semantic-turkey/content/skos_icv/setLabelDialog.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
 			parameters);
 }
