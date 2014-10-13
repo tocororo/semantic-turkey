@@ -25,9 +25,12 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.TransactionBasedModel;
+import it.uniroma2.art.owlart.utilities.DataRefactoring;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
@@ -60,6 +63,10 @@ public class ModifyName extends ServiceAdapter {
 	public static class Pars {
 		public static String oldName = "oldName";
 		public static String newName = "newName";
+		public static String sourceBaseURI = "sourceBaseURI";
+		public static String targetBaseURI = "targetBaseURI";
+		public static String graphs = "graphs";
+		
 	}
 
 	public Logger getLogger() {
@@ -67,6 +74,7 @@ public class ModifyName extends ServiceAdapter {
 	}
 
 	public static String renameRequest = "rename";
+	public static String replaceBaseURIRequest = "replacebaseuri";
 
 	@Autowired
 	public ModifyName(@Value("ModifyName") String id) {
@@ -74,11 +82,22 @@ public class ModifyName extends ServiceAdapter {
 	}
 
 	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException {
-		String qname = setHttpPar(Pars.oldName);
-		String newQname = setHttpPar(Pars.newName);
-
-		checkRequestParametersAllNotNull(Pars.oldName, Pars.newName);
-		return changeResourceName(qname, newQname);
+		if(request.equals(renameRequest)){
+			String qname = setHttpPar(Pars.oldName);
+			String newQname = setHttpPar(Pars.newName);
+	
+			checkRequestParametersAllNotNull(Pars.oldName, Pars.newName);
+			return changeResourceName(qname, newQname);
+		} else if(request.equals(replaceBaseURIRequest)){
+			String sourceBaseURI = setHttpPar(Pars.sourceBaseURI); 
+			String targetBaseURI = setHttpPar(Pars.targetBaseURI);
+			String graphArrayString = setHttpPar(Pars.graphs);
+			
+			return replaceBaseURI(sourceBaseURI, targetBaseURI, graphArrayString);			
+		} else {
+			return ServletUtilities.getService().createExceptionResponse(request,
+					"no handler for such a request!");
+		}
 	}
 
 	public Response changeResourceName(String qName, String newQName) {
@@ -131,6 +150,45 @@ public class ModifyName extends ServiceAdapter {
 		Element element = XMLHelp.newElement(dataElement, "UpdateResource");
 		element.setAttribute("name", qName);
 		element.setAttribute("newname", newQName);
+		this.fireServletEvent();
+		return response;
+	}
+	
+	public Response replaceBaseURI(String sourceBaseURI, String targetBaseURI, String graphArrayString) {
+		RDFModel ontModel = getOntModel();
+		
+		ARTResource []graphs = null;
+		if(graphArrayString!=null && graphArrayString.length()>0){
+			String[] graphArray = graphArrayString.split("\\|_\\|");
+			graphs = new ARTResource[graphArray.length];
+			for(int i=0; i<graphArray.length; ++i){
+				if(graphArray[i].equals(NodeFilters.MAINGRAPH.getNominalValue())){
+					graphs[i] = NodeFilters.MAINGRAPH;
+				} else{
+					graphs[i] = ontModel.createURIResource(graphArray[i]);
+				}
+			}
+		}
+		try {
+			if(sourceBaseURI!=null && sourceBaseURI.length()>0){
+				DataRefactoring.replaceBaseuri(ontModel, sourceBaseURI, targetBaseURI, graphs);
+			} else{
+				sourceBaseURI = ontModel.getBaseURI();
+				DataRefactoring.replaceBaseuri(ontModel, targetBaseURI, graphs);
+			}
+		} catch (ModelAccessException | ModelUpdateException e) {
+			return ServletUtilities
+					.getService()
+					.createExceptionResponse(replaceBaseURIRequest,
+							"sorry, unable to replace the baseuri, try to close the project and open it again");
+		}
+		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(renameRequest,
+				RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		Element element = XMLHelp.newElement(dataElement, "changeResourceName");
+		element.setAttribute("sourceBaseURI", sourceBaseURI);
+		element.setAttribute("targetBaseURI", targetBaseURI);
+		element.setAttribute("graphs", graphArrayString);
 		this.fireServletEvent();
 		return response;
 	}
