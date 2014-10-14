@@ -10,6 +10,10 @@ Components.utils.import("resource://stmodules/AnnotationManager.jsm", art_semant
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 art_semanticturkey.init = function() {
+	
+	var selectSchemeHint = document.getElementById("selectSchemeHint");
+	selectSchemeHint.addEventListener("click", art_semanticturkey.onSelectSchemeHint, false);
+	
 	var conceptTree = document.getElementById("conceptTree");
 
 	// Delay the registration of the listener, after the execution of the binding constructor
@@ -98,8 +102,20 @@ art_semanticturkey.init = function() {
 }
 
 art_semanticturkey.conceptTreeStateChanged = function(state) {
-	var selectSchemeMsg = document.getElementById("selectSchemeMsg");
-	selectSchemeMsg.style.visibility = state.indexOf("conceptSchemeSelected") == -1 ? "visible" : "hidden";
+	var stackedMessages = document.getElementById("stackedMessages");
+	var parentNode = stackedMessages.parentNode;
+	if (state.indexOf("conceptSchemeSelected") == -1) {
+		parentNode.insertBefore(stackedMessages, null);
+		stackedMessages.style.visibility = "visible";
+	} else {
+		parentNode.insertBefore(stackedMessages, parentNode.firstChild);
+		stackedMessages.style.visibility = "hidden";
+	}
+};
+
+art_semanticturkey.onSelectSchemeHint = function(event) {
+	var event = new CustomEvent("it.uniroma2.art.skos.intent.select_scheme");
+	window.dispatchEvent(event);
 };
 
 window.addEventListener("load", art_semanticturkey.init, false);

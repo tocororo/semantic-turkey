@@ -36,7 +36,7 @@
 		</splitter>
 	
 		<tabbox  id="tabs" flex="1" >
-			<tabs>
+			<tabs id="tabs">
 				<tab label="Concepts" />
 				<tab label="Properties" />
 				<tab label="Schemes" />

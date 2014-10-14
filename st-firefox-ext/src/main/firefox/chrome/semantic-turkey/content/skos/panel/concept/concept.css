@@ -3,10 +3,10 @@
 vbox#stackedMessages {
 	margin: 15px;
 	-moz-box-pack: center;
-	pointer-events: none; /* Makes the overlay transparent for the pointer events */
+	visibility: hidden;
 }
 
-vbox#stackedMessages description {
+vbox#stackedMessages #selectSchemeMsg {
 	background-color: lightyellow;
 	padding: 10px 5px;
 	text-align:center;
@@ -15,8 +15,4 @@ vbox#stackedMessages description {
 	border-radius: 5px;
 	box-shadow: 3px 3px 5px 6px #ccc;
 	box-flex: 0;	
-}
-
-description#selectSchemeMsg {
-	visibility: hidden; /* Hidden by default */
 }
