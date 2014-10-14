@@ -10,7 +10,7 @@ Components.utils.import("resource://stmodules/AnnotationCommons.jsm", art_semant
 art_semanticturkey.annotation.rangeannotation = {};
 
 art_semanticturkey.annotation.rangeannotation.checkAnnotationsForContent = function(contentId) {
-	if(art_semanticturkey.Preferences.get("extensions.semturkey.checkAnnotation", true) == false)
+	if(art_semanticturkey.Preferences.get("extensions.semturkey.annotation.checkAnnotation", true) == false)
 		return false;
 	var responseXML = art_semanticturkey.STRequests.RangeAnnotation.chkAnnotation(contentId);
 	var reply = responseXML.getElementsByTagName('reply')[0];

@@ -57,7 +57,7 @@ art_semanticturkey.chkST_started = function() {
 	
 	var stIsStarted = art_semanticturkey.ST_started.getStatus();
 	if (stIsStarted == "true") {
-		art_semanticturkey.compareVersions(); // the check if the server and the client are the same version
+		//art_semanticturkey.compareVersions(); // the check if the server and the client are the same version
 		document.getElementById("startSt").disabled = true;
 		// document.getElementById("key_openSTOntologySidebar").disabled =
 		// false;
