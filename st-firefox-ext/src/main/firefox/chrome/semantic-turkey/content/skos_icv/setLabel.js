@@ -83,15 +83,15 @@ function buttonOkListener() {
 	if (labelType == "skosxl:prefLabel") {
 		if (replaceLabel)
 			art_semanticturkey.STRequests.SKOSXL.removePrefLabel(resource, label, lang);//remove old label
-		art_semanticturkey.STRequests.SKOSXL.setPrefLabel(resource, newLabel, newLang);
+		art_semanticturkey.STRequests.SKOSXL.setPrefLabel(resource, newLabel, newLang, "bnode");
 	} else if (labelType == "skos:prefLabel") {
 		if (replaceLabel)
 			art_semanticturkey.STRequests.SKOS.removePrefLabel(resource, label, lang);//remove old label
 		art_semanticturkey.STRequests.SKOS.setPrefLabel(resource, newLabel, newLang);
 	} else if (labelType == "skosxl:altLabel") {
-//		if (replaceLabel)
-			//remove old label
-		//add new label
+		if (replaceLabel)
+			art_semanticturkey.STRequests.SKOSXL.removeAltLabel(resource, label, lang);//remove old label
+		art_semanticturkey.STRequests.SKOSXL.addAltLabel(resource, newLabel, newLang, "bnode");
 	} else if (labelType == "skos:altLabel") {
 		if (replaceLabel)
 			art_semanticturkey.STRequests.Property.removePropValue(resource, "skos:altLabel", label, null, "plainLiteral", lang);//remove old label

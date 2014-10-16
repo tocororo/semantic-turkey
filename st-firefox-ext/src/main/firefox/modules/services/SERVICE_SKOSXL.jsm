@@ -132,12 +132,11 @@ function addTopConcept(scheme, concept) {
 	return reply;
 }
 
-//TODO: I should add mode as parameter? (bnode/uri)
-function setPrefLabel(concept, label, lang) {
+function setPrefLabel(concept, label, lang, mode) {
 	var concept_p = "concept=" + concept;
 	var label_p = "label=" + label;
 	var lang_p = "lang=" + lang;
-	var mode_p = "mode=bnode";
+	var mode_p = "mode=" + mode;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
 	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.setPrefLabelRequest, concept_p, label_p, lang_p, 
@@ -146,12 +145,54 @@ function setPrefLabel(concept, label, lang) {
 	if (!reply.isFail()) {
 		evtMgr.fireEvent("skosxlPrefLabelSet", {
 			getConceptName : function(){return concept;}, 
-			getLabel : function(){return label;}, 
-			getLang : function(){return lang;}});	
+			getLabel : function(){return label;},
+			getLabel : function(){return lang;},
+			getLang : function(){return mode;}});	
 	}
 	
 	return reply;
+}
+
+function addAltLabel(concept, label, lang, mode) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var mode_p = "mode=" + mode;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addAltLabelRequest, concept_p, label_p, lang_p, 
+			mode_p, contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosxlAltLabelAdded", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;},
+			getLabel : function(){return lang;},
+			getLang : function(){return mode;}});	
+	}
+	
+	return reply;
+}
+
+function addHiddenLabel(concept, label, lang, mode) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var mode_p = "mode=" + mode;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addHiddenLabelRequest, concept_p, label_p, lang_p, 
+			mode_p, contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosxlHiddenLabelAdded", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;},
+			getLabel : function(){return lang;},
+			getLang : function(){return mode;}});	
+	}
+	
+	return reply;
 }
 
 function removeTopConcept(scheme, concept) {
@@ -336,6 +377,46 @@ function removePrefLabel(concept, label, lang) {
 	return reply;
 }
 
+function removeAltLabel(concept, label, lang) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeAltLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosxlAltLabelRemoved", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;}, 
+			getLang : function(){return lang;}
+		});
+	}
+	
+	return reply;
+}
+
+function removeHiddenLabel(concept, label, lang) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeHiddenLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosxlHiddenLabelRemoved", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;}, 
+			getLang : function(){return lang;}
+		});
+	}
+	
+	return reply;
+}
+
 function getShow(resourceName, language) {
 	var resourceName_p = "resourceName=" + resourceName;
 	var language_p = language != null ? "lang=" + language : "";	
@@ -366,6 +447,8 @@ service.prototype.addBroaderConcept = addBroaderConcept;
 service.prototype.addTopConcept = addTopConcept;
 
 service.prototype.setPrefLabel = setPrefLabel;
+service.prototype.addAltLabel = addAltLabel;
+service.prototype.addHiddenLabel = addHiddenLabel;
 
 service.prototype.createConcept = createConcept;
 service.prototype.createScheme = createScheme;
@@ -376,6 +459,8 @@ service.prototype.deleteScheme = deleteScheme;
 service.prototype.removeBroaderConcept = removeBroaderConcept;
 service.prototype.removeTopConcept = removeTopConcept;
 service.prototype.removePrefLabel = removePrefLabel;
+service.prototype.removeAltLabel = removeAltLabel;
+service.prototype.removeHiddenLabel = removeHiddenLabel;
 
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
