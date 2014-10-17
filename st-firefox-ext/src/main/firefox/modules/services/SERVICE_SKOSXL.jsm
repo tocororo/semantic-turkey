@@ -146,8 +146,8 @@ function setPrefLabel(concept, label, lang, mode) {
 		evtMgr.fireEvent("skosxlPrefLabelSet", {
 			getConceptName : function(){return concept;}, 
 			getLabel : function(){return label;},
-			getLabel : function(){return lang;},
-			getLang : function(){return mode;}});	
+			getLang : function(){return lang;},
+			getMode : function(){return mode;}});	
 	}
 	
 	return reply;
@@ -167,8 +167,8 @@ function addAltLabel(concept, label, lang, mode) {
 		evtMgr.fireEvent("skosxlAltLabelAdded", {
 			getConceptName : function(){return concept;}, 
 			getLabel : function(){return label;},
-			getLabel : function(){return lang;},
-			getLang : function(){return mode;}});	
+			getLang : function(){return lang;},
+			getMode : function(){return mode;}});	
 	}
 	
 	return reply;
@@ -188,8 +188,8 @@ function addHiddenLabel(concept, label, lang, mode) {
 		evtMgr.fireEvent("skosxlHiddenLabelAdded", {
 			getConceptName : function(){return concept;}, 
 			getLabel : function(){return label;},
-			getLabel : function(){return lang;},
-			getLang : function(){return mode;}});	
+			getLang : function(){return lang;},
+			getMode : function(){return mode;}});	
 	}
 	
 	return reply;
