@@ -46,6 +46,22 @@ import org.slf4j.LoggerFactory;
  * may use a different folder structure for SemanticTurkeyData, this set of routines is in charge of aligning
  * a potential older version of the directory with the one which is being used.
  * 
+ * <bold>note:</bold> this class needs to be updated to the changes after the mover to karaf.<br/>
+ * In order to check if there were needs of updates on the data, the version was once retrieved from the
+ * SemanticTurkeyData, and this way it made sense, as it was telling which version of ST last touched the data
+ * folder. If the version was older than the version of the software being run, a check for updates to be made
+ * was performed, and then the version in the data was updated with the one in the software.<br/>
+ * Instead, now the semantic turkey version is retrieved from a file (it.uniroma2.art.semanticturkey.cfg )
+ * which is contained in the server.<br/>
+ * For the future, we should make the terminology more clear, and do the following:
+ * <ul>
+ * <li>suppress the version number hard coded in {@link SemanticTurkey} and replace its check with the check
+ * from the cfg file in karaf</li>
+ * <li>restore a property file in SemanticTurkeyData, containing the version of the latest ST which edited the
+ * data folder</li>
+ * </ul>
+ * 
+ * 
  * @author Armando Stellato
  * 
  */
@@ -55,15 +71,27 @@ public class UpdateRoutines {
 
 	static void startUpdatesCheckAndRepair() {
 
+		// this method has been deactivated, it was originally invoked in the last "else" branch of the
+		// Resources.initializeUserResources(...) method
+
+		// this "versionNumber" variable was originally in SemanticTurkey.java, not it should be superseded by
+		// the one in the it.uniroma2.art.semanticturkey.cfg of Karaf, which is synced with the Maven pom
+		// version and can be correctly parsed by the server
+		// I leave it here just to leave this method still operative (though not being invoked anymore)
+		VersionNumber versionNumber = new VersionNumber(0, 9, 0);
+
+		// while this one, should be data folder...has to be taken from a dedicated prop file in the folder
+		// I suggest to rename it as dataTouchVersion or dataTouchVersionNumber 
 		VersionNumber currentVersionNumber = Config.getVersionNumber();
-		logger.info("version number of installed Semantic Turkey is: " + SemanticTurkey.versionNumber);
+
+		logger.info("version number of installed Semantic Turkey is: " + versionNumber);
 		logger.info("version number of Semantic Turkey currently saved in data folder is: "
 				+ currentVersionNumber);
 
-		if (SemanticTurkey.versionNumber.compareTo(currentVersionNumber) > 0) {
+		if (versionNumber.compareTo(currentVersionNumber) > 0) {
 
 			logger.info("updating resources from version: " + currentVersionNumber + " to version: "
-					+ SemanticTurkey.versionNumber);
+					+ versionNumber);
 
 			if (currentVersionNumber.compareTo(new VersionNumber(0, 7, 0)) < 0)
 				align_from_06x_to_07x();
@@ -71,7 +99,7 @@ public class UpdateRoutines {
 			if (currentVersionNumber.compareTo(new VersionNumber(0, 7, 2)) < 0)
 				align_from_071_to_072();
 
-			Config.setVersionNumber(SemanticTurkey.versionNumber);
+			Config.setVersionNumber(versionNumber);
 		}
 	}
 
@@ -100,10 +128,9 @@ public class UpdateRoutines {
 	private static void align_from_071_to_072() {
 		String mainProjectName = "project-main";
 		File mainProjDir = new File(Resources.getSemTurkeyDataDir(), mainProjectName);
-		
+
 		if (mainProjDir.exists()) {
-			logger
-					.info("version 0.7.1 had a main project folder, main project is no more present (any project can be a project loaded at startup now, and this feature is completely handled by the client)");
+			logger.info("version 0.7.1 had a main project folder, main project is no more present (any project can be a project loaded at startup now, and this feature is completely handled by the client)");
 			try {
 				String newMainProjectName = "wasMainProject";
 				ProjectManager.cloneProjectToNewProject(mainProjectName, newMainProjectName);
@@ -115,22 +142,18 @@ public class UpdateRoutines {
 				// newMainProjectName);
 
 			} catch (IOException e) {
-				logger
-						.error("unable to access property file for main project (which seems however to exist)");
+				logger.error("unable to access property file for main project (which seems however to exist)");
 				e.printStackTrace();
 			} catch (InvalidProjectNameException e) {
 				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: strangely, the project name is invalid");
 			} catch (ProjectInexistentException e) {
-				logger
-						.error("UPDATING OLD PROJECT TO NEW FORMAT: strangely, the main project does not exist, while it has been previously checked for existence");
+				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: strangely, the main project does not exist, while it has been previously checked for existence");
 			} catch (DuplicatedResourceException e) {
-				logger
-						.error("unable to copy main project to normal project wasMainProject cause a project with this name already exists");
+				logger.error("unable to copy main project to normal project wasMainProject cause a project with this name already exists");
 			} catch (UnavailableResourceException e) {
 				e.printStackTrace();
 			} catch (ProjectInconsistentException e) {
-				logger
-						.error("unable to repair old main project, because it is in an inconsistent state even for its original Semantic Turkey version");
+				logger.error("unable to repair old main project, because it is in an inconsistent state even for its original Semantic Turkey version");
 			}
 		}
 	}

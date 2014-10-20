@@ -150,21 +150,9 @@ public class Resources {
 						"owl and rdfs initial resources not present in the classpath: " + e.getMessage());
 			}
 		} else {
-			// try {
-			// Config.initialize(semTurkeyPropertyFile);
-
-			/* new (solo commentato ciò che ora non serve più -inizializzazione ora è fatta all'inizio -) */
-			UpdateRoutines.startUpdatesCheckAndRepair();
-			// } catch (FileNotFoundException e) {
-			// throw new STInitializationException(
-			// "Semantic Turkey initilization failed: unable to find Semantic Turkey Configuration File: "
-			// + semTurkeyPropertyFile);
-			// } catch (IOException e) {
-			// throw new STInitializationException(
-			// "Semantic Turkey initilization failed: "
-			// + e.getMessage());
-			// }
-
+			
+			// TODO: the current UpdateRoutines are wrong, see comments in UpdateRoutines
+			// UpdateRoutines.startUpdatesCheckAndRepair();
 		}
 
 		try {

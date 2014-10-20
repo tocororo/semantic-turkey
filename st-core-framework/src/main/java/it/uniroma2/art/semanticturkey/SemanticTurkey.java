@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class SemanticTurkey implements BundleActivator {
-	public final static VersionNumber versionNumber = new VersionNumber(0, 9, 0);
+	
 	static protected HttpServer s_httpServer;
 	protected static Logger logger = LoggerFactory.getLogger(SemanticTurkey.class);
 	private static HttpServer server = null;

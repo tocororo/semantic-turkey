@@ -53,6 +53,8 @@ public class VersionNumber implements Comparable<VersionNumber> {
 	public VersionNumber(String versionCode) {
 		// if null all values are = 0
 		if (versionCode != null) {
+			if (versionCode.contains("-SNAPSHOT"))
+				versionCode = versionCode.replace("-SNAPSHOT", "");	
 			String[] codes = versionCode.split("\\.");
 			int nums = codes.length;
 			if (nums > 0)
@@ -60,7 +62,7 @@ public class VersionNumber implements Comparable<VersionNumber> {
 			if (nums > 1)
 				minor = parseNumber(codes[1]);
 			if (nums > 2)
-				revision = parseNumber(codes[2].split("-")[0]);
+				revision = parseNumber(codes[2]);
 		}
 	}
 
@@ -110,4 +112,11 @@ public class VersionNumber implements Comparable<VersionNumber> {
 		return this.getRevision() -  o.getRevision();
 	}
 
+	
+	public static void main(String[] args) {
+		
+		VersionNumber vn = new VersionNumber("0.11-SNAPSHOT");
+		System.out.println(vn);
+	}
+	
 }
