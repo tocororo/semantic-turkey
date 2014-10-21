@@ -24,7 +24,10 @@ art_semanticturkey.detailedAlertListener = function(){
 art_semanticturkey.exceptionAlertListener = function(){
 	var message = document.getElementById("exceptionAlertMessage").value;
 	try{
-		throw new UserException(message);
+		if (message == "")
+			throw new UserException();
+		else
+			throw new UserException(message);	
 	} catch (e){
 		art_semanticturkey.alert(e);
 	}

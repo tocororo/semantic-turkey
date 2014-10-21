@@ -3,7 +3,7 @@ if (typeof art_semanticturkey == 'undefined')
 
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
-var width=320;
+var width=340;
 var minHeight=95;
 var maxHeight=185;
 
