@@ -14,8 +14,8 @@ var serviceName = service.serviceName;
 var deleteService = STRequests.Delete;
 var deleteServiceName = deleteService.serviceName;
 
-var renameService = STRequests.ModifyName;
-var renameServiceName = STRequests.ModifyName.serviceName;
+var refactorService = STRequests.Refactor;
+var refactorServiceName = STRequests.Refactor.serviceName;
 
 var graphService = STRequests.Graph;
 var graphServiceName = STRequests.Graph.serviceName;
@@ -136,7 +136,7 @@ function removeClass(name) {
 /**
  * rename selected resource
  * 
- * @member STRequests.ModifyName
+ * @member STRequests.Refactor
  * @return
  */
 function renameResource(newResourceName, oldResourceName) {
@@ -144,7 +144,7 @@ function renameResource(newResourceName, oldResourceName) {
 	var myNewName = "newName=" + newResourceName;
 	var myOldName = "oldName=" + oldResourceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(renameServiceName, renameService.renameRequest, myNewName, myOldName, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(refactorServiceName, refactorService.renameRequest, myNewName, myOldName, contextAsArray);
 }
 
 /**
@@ -363,18 +363,18 @@ service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;
 
-renameService.prototype.getAPI = function(specifiedContext){
-	var newObj = new renameService();
+refactorService.prototype.getAPI = function(specifiedContext){
+	var newObj = new refactorService();
 	newObj.context = specifiedContext;
 	return newObj;
 }
-renameService.prototype.renameResource = renameResource;
-renameService.prototype.context = new Context();  // set the default context
-renameService.constructor = renameService;
-renameService.__proto__ = renameService.prototype;
+refactorService.prototype.renameResource = renameResource;
+refactorService.prototype.context = new Context();  // set the default context
+refactorService.constructor = refactorService;
+refactorService.__proto__ = refactorService.prototype;
 
 graphService.prototype.getAPI = function(specifiedContext){
-	var newObj = new renameService();
+	var newObj = new refactorService();
 	newObj.context = specifiedContext;
 	return newObj;
 }
@@ -385,7 +385,7 @@ graphService.constructor = graphService;
 graphService.__proto__ = graphService.prototype;
 
 deleteService.prototype.getAPI = function(specifiedContext){
-	var newObj = new renameService();
+	var newObj = new refactorService();
 	newObj.context = specifiedContext;
 	return newObj;
 }

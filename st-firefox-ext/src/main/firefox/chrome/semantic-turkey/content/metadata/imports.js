@@ -68,6 +68,7 @@ art_semanticturkey.populateImportPanel = function() {
 	document.getElementById("removePrefix").disabled=false;
 	document.getElementById("changePrefix").disabled=false;
 	document.getElementById("infoOnProject").disabled= false;
+	document.getElementById("replaceBaseUriButton").disabled= false;
 	
 	try{
 		var responseXML = art_semanticturkey.STRequests.Metadata.getNSPrefixMappings();
@@ -91,7 +92,7 @@ art_semanticturkey.infoProject = function(){
 	//var list = document.getElementById('IndividualsList');
 	//var instanceName = list.selectedItem.label;
 	try{
-		responseXML = art_semanticturkey.STRequests.Metadata.getBaseuri();
+		var responseXML = art_semanticturkey.STRequests.Metadata.getBaseuri();
 		var baseuri = responseXML.getElementsByTagName('BaseURI')[0].getAttribute('uri');
 		
 		var parameters = new Object();
@@ -105,6 +106,18 @@ art_semanticturkey.infoProject = function(){
 		//parameters.tree = document.getElementById('classesTree');
 		window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul",
 				"_blank", "modal=yes,resizable,centerscreen", parameters);
+	}
+	catch (e) {
+		alert(e.name + ": " + e.message);
+	}
+};
+
+art_semanticturkey.openReplaceUri = function(){
+	 try {
+		 var parameters = new Object();
+		 parameters.parentWindow = window;
+		 window.openDialog("chrome://semantic-turkey/content/metadata/replaceBaseUri/replaceBaseUri.xul",
+					"_blank", "modal=yes,resizable,centerscreen", parameters);
 	}
 	catch (e) {
 		alert(e.name + ": " + e.message);

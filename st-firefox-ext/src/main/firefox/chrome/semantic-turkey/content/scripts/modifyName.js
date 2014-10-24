@@ -40,7 +40,7 @@ art_semanticturkey.onAccept = function() {
 	var newResourceName = document.getElementById("name").value;
 	var resourceType =  window.arguments[0].resourceType;
 	try{
-		var responseXML = parentWindow.art_semanticturkey.STRequests.ModifyName.renameResource(
+		var responseXML = parentWindow.art_semanticturkey.STRequests.Refactor.renameResource(
 				newResourceName,
 				oldResourceName);
 		parentWindow.art_semanticturkey.renameResource_RESPONSE(responseXML,resourceType);

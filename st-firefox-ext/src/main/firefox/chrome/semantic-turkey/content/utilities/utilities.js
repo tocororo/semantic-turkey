@@ -79,6 +79,57 @@ art_semanticturkey.openUrl = function(url) {
 			.getMostRecentWindow('navigator:browser');
 	win.openUILinkIn(url, "tab");
 };
+
+
+
+
+art_semanticturkey.getImgFromType = function(type, explicit) {
+	var imgType;
+	if (type == "individual") {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/individual_noexpl.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/individual.png";
+	} else if (type == "cls") {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/class_imported.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/class.png";
+	} else if (type.indexOf("ObjectProperty") != -1) {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/propObject_imported.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/propObject20x20.png";
+	} else if (type.indexOf("DatatypeProperty") != -1) {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/propDatatype_imported.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/propDatatype20x20.png";
+	} else if (type.indexOf("AnnotationProperty") != -1) {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/propAnnotation_imported.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/propAnnotation20x20.png";
+	} else if (type.indexOf("Property") != -1) {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/prop_imported.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/prop.png";
+	} else if(type.indexOf("concept") != -1) {
+		if (explicit == "false")
+			imgType = "chrome://semantic-turkey/skin/images/skosConcept_imported.png";
+		else
+			imgType = "chrome://semantic-turkey/skin/images/skosConcept.png";		
+	} else if (type.indexOf("literal") != -1) {
+		// vedere se mettere img o no
+		imgType = "";
+	} else if (type.indexOf("bnodes") != -1) {
+		// vedere se mettere img o no
+		imgType = "";
+	}
+	return imgType;
+};
+
 art_semanticturkey.compareVersions  = function(){
 	//first take the client version
 	var serverVersionResponse = art_semanticturkey.STRequests.Administration.getVersion();

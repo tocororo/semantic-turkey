@@ -23,31 +23,101 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Refactor.jsm", art_semanticturkey);
+
 
 /**
  * this function changes both values of baseuri and namespace
  * 
  * @author Noemi Scarpato
+ * @author Andrea Turbati
  */
 art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
-	var button = document.getElementById("lockBtn");
-	art_semanticturkey.Logger.debug("cheked  type " + button.getAttribute("checked"));
+	var buttonLockBtn = document.getElementById("lockBtn");
+	art_semanticturkey.Logger.debug("cheked  type " + buttonLockBtn.getAttribute("checked"));
 	art_semanticturkey.Logger.debug("type " + type);
-	if (button.getAttribute("checked") == "true") {
+	
+	if(changed == "false"){
+		//nothing has changed, do nothing
+		return;
+	}
+	
+	if (buttonLockBtn.getAttribute("checked") == "true") {
 		var basetxbox = document.getElementById("baseUriTxtBox");
 		var nstxbox = document.getElementById("nsTxtBox");
-		if (changed == "true") {
-			var risp = confirm("Save change of baseuri and namespace?");
-			if (risp) {
-				var valBase = basetxbox.value;
-				if ( art_semanticturkey.stringEndsWith(basetxbox.value, '#') ) {
-					var len = basetxbox.value.length - 1;
-					valBase = basetxbox.value.substring(0, len);
+		var risp = confirm("Save change of baseuri and namespace?");
+		if (risp) {
+			var valBase = basetxbox.value;
+			if ( art_semanticturkey.stringEndsWith(basetxbox.value, '#') ) {
+				var len = basetxbox.value.length - 1;
+				valBase = basetxbox.value.substring(0, len);
+			}
+			if ( art_semanticturkey.stringEndsWith(nstxbox.value, '#') || art_semanticturkey.stringEndsWith(nstxbox.value, '/') ) {
+				try{
+					//var responseXML = art_semanticturkey.STRequests.Metadata.setBaseuriDefNamespace(valBase, nstxbox.value);
+					//art_semanticturkey.setBaseuriDefNamespace_RESPONSE(responseXML);
+					
+					//call two differnet service, setDefaultNamespace and replaceBaseURI
+					
+					//change DefaultNamespace
+					var responseXML = art_semanticturkey.STRequests.Metadata.setDefaultNamespace(nstxbox.value);
+					art_semanticturkey.setDefaultNamespace_RESPONSE(responseXML);
+					
+					//changebaseURI
+					var parameters = new Object();
+					parameters.useDefault = true;
+					parameters.targetBaseuri = valBase;
+					window.openDialog("chrome://semantic-turkey/content/metadata/replaceBaseUri/replaceBaseUriInProgress.xul",
+								"_blank", "modal=yes,resizable,centerscreen", parameters);
+					
+					//get the response 
+					var responseXML = parameters.responseXML;
+					//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
+					art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+					
+					
 				}
-				if ( art_semanticturkey.stringEndsWith(nstxbox.value, '#') || art_semanticturkey.stringEndsWith(nstxbox.value, '/') ) {
+				catch (e) {
+					alert(e.name + ": " + e.message);
+				}
+			} else {
+				alert("Default Namespace should end with '#' or '/'");
+			}
+		}
+
+	} else {
+		if (type == "base") {
+			var risp = confirm("Save change of baseuri?");
+			if (risp) {
+				var valBase = txbox.value;
+				if ( art_semanticturkey.stringEndsWith(txbox.value, '#') ) {
+					var len = txbox.value.length - 1;
+					valBase = txbox.value.substring(0, len);
+				}
+				try{
+					//changebaseURI
+					var parameters = new Object();
+					parameters.useDefault = true;
+					parameters.targetBaseuri = valBase;
+					window.openDialog("chrome://semantic-turkey/content/metadata/replaceBaseUri/replaceBaseUriInProgress.xul",
+								"_blank", "modal=yes,resizable,centerscreen", parameters);
+					
+					//get the response 
+					var responseXML = parameters.responseXML;
+					//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
+					art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+				}
+				catch (e) {
+					alert(e.name + ": " + e.message);
+				}
+			}
+		} else {
+			var risp = confirm("Save change of namespace?");
+			if (risp) {
+				if ( art_semanticturkey.stringEndsWith(txbox.value, '#') || art_semanticturkey.stringEndsWith(txbox.value, '/') ) {
 					try{
-						var responseXML = art_semanticturkey.STRequests.Metadata.setBaseuriDefNamespace(valBase, nstxbox.value);
-						art_semanticturkey.setBaseuriDefNamespace_RESPONSE(responseXML);
+						var responseXML = art_semanticturkey.STRequests.Metadata.setDefaultNamespace(txbox.value);
+						art_semanticturkey.setDefaultNamespace_RESPONSE(responseXML);
 					}
 					catch (e) {
 						alert(e.name + ": " + e.message);
@@ -57,48 +127,10 @@ art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 				}
 			}
 		}
-
-	} else {
-		if (type == "base") {
-			if (changed == "true") {
-				var risp = confirm("Save change of baseuri?");
-				if (risp) {
-					var valBase = txbox.value;
-					if ( art_semanticturkey.stringEndsWith(txbox.value, '#') ) {
-						var len = txbox.value.length - 1;
-						valBase = txbox.value.substring(0, len);
-					}
-					try{
-						var responseXML = art_semanticturkey.STRequests.Metadata.setBaseuri(valBase);
-						art_semanticturkey.setBaseuri_RESPONSE(responseXML);
-					}
-					catch (e) {
-						alert(e.name + ": " + e.message);
-					}
-				}
-			}
-		} else {
-			if (changed == "true") {
-				var risp = confirm("Save change of namespace?");
-				if (risp) {
-					if ( art_semanticturkey.stringEndsWith(txbox.value, '#') || art_semanticturkey.stringEndsWith(txbox.value, '/') ) {
-						try{
-							var responseXML = art_semanticturkey.STRequests.Metadata.setDefaultNamespace(txbox.value);
-							art_semanticturkey.setDefaultNamespace_RESPONSE(responseXML);
-						}
-						catch (e) {
-							alert(e.name + ": " + e.message);
-						}
-					} else {
-						alert("Default Namespace should end with '#' or '/'");
-					}
-				}
-			}
-		}
 	}
 };
 
-art_semanticturkey.setBaseuriDefNamespace_RESPONSE = function(responseElement){
+/*art_semanticturkey.setBaseuriDefNamespace_RESPONSE = function(responseElement){
 	var status = responseElement.getElementsByTagName("reply")[0].getAttribute("status");
 	if(status == "ok"){
 		document.getElementById("baseUriTxtBox").setAttribute("isChanged", "false");
@@ -106,7 +138,7 @@ art_semanticturkey.setBaseuriDefNamespace_RESPONSE = function(responseElement){
 		document.getElementById("nsTxtBox").setAttribute("isChanged", "false");
 		document.getElementById("nsTxtBox").style.color = 'black';
 	}
-};
+};*/
 
 art_semanticturkey.setBaseuri_RESPONSE = function(responseElement){
 	var status = responseElement.getElementsByTagName("reply")[0].getAttribute("status");

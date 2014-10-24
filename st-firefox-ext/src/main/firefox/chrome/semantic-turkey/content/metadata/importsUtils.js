@@ -125,7 +125,7 @@ art_semanticturkey.checkEnter = function(e, type, txbox) { // e is event object 
 
 art_semanticturkey.setNSPrefixMapping_RESPONSE = function(responseElement, prefix, namespace){
 	//TODO la risposta non contiene il prefix e il namespace, quindi mi viene passato esplicitamente
-	// oppure si può ricaricare tutto il pannesso (come per le altre RESPONSE)
+	// oppure si puï¿½ ricaricare tutto il pannesso (come per le altre RESPONSE)
 	if(responseElement.getElementsByTagName("reply")[0].getAttribute("status") != "ok")
 		return;
 	var namespaceTree = document.getElementById('namespaceTree');
@@ -152,8 +152,8 @@ art_semanticturkey.setNSPrefixMapping_RESPONSE = function(responseElement, prefi
 
 
 art_semanticturkey.removeNSPrefixMapping_RESPONSE = function(responseElement){
-	//TODO vedere se fare così o ricarire la sidebar come si per le altre RESPONSE
-	// oppure si può ricaricare tutto il pannesso (come per le altre RESPONSE)
+	//TODO vedere se fare cosï¿½ o ricarire la sidebar come si per le altre RESPONSE
+	// oppure si puï¿½ ricaricare tutto il pannesso (come per le altre RESPONSE)
 	var ns = responseElement.getElementsByTagName("Mapping")[0].getAttribute("prefix");
 	
 	var namespaceTree = document.getElementById('namespaceTree');
@@ -179,6 +179,9 @@ art_semanticturkey.changeNSPrefixMapping_RESPONSE = function(responseElement){
 
 art_semanticturkey.associateEventsOnGraphicElementsImports = function(){
 	document.getElementById("infoOnProject").addEventListener("command", art_semanticturkey.infoProject, true);
+	document.getElementById("replaceBaseUriButton").addEventListener("command", 
+			art_semanticturkey.openReplaceUri, true);
+	
 	
 	var baseUriTxtBox = document.getElementById("baseUriTxtBox");
 	baseUriTxtBox.setAttribute("onkeyup", "art_semanticturkey.manageInput('base',this);");
@@ -208,6 +211,7 @@ art_semanticturkey.associateEventsOnGraphicElementsImports = function(){
 		document.getElementById("removePrefix").disabled=true;
 		document.getElementById("changePrefix").disabled=true;
 		document.getElementById("infoOnProject").disabled = true;
+		document.getElementById("replaceBaseUriButton").disabled = true;
 
 	}
 	document.getElementById("AddImportFromWeb").addEventListener("command",

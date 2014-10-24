@@ -138,53 +138,44 @@ public class Metadata extends ResourceOld {
 
 		if (request.equals(ontologyDescriptionRequest)) {
 			return getOntologyDescription();
-		}
-
-		if (request.equals(setDefaultNamespaceRequest)) {
+		} else if (request.equals(setDefaultNamespaceRequest)) {
 			String namespace = setHttpPar(namespacePar);
 			checkRequestParametersAllNotNull(namespacePar);
 			return setDefaultNamespace(namespace);
-		}
-		if (request.equals(getDefaultNamespaceRequest))
+		} else if (request.equals(getDefaultNamespaceRequest)){
 			return getDefaultNamespace();
-		if (request.equals(setBaseuriRequest)) {
+		}/*else if (request.equals(setBaseuriRequest)) {
 			String baseuri = setHttpPar(baseuriPar);
 			checkRequestParametersAllNotNull(baseuriPar);
 			return setBaseURI(baseuri);
-		}
-		if (request.equals(getBaseuriRequest))
+		}*/ else if (request.equals(getBaseuriRequest)){
 			return getBaseURI();
-		if (request.equals(setBaseuriDefNamespaceRequest)) {
+		}/*else if (request.equals(setBaseuriDefNamespaceRequest)) {
 			String baseURI = setHttpPar(baseuriPar);
 			String defaultNamespace = setHttpPar(namespacePar);
 			checkRequestParametersAllNotNull(baseuriPar, namespacePar);
 			return setBaseURIAndDefaultNamespace(baseURI, defaultNamespace);
-		}
-
-		if (request.equals(getNSPrefixMappingsRequest))
+		}*/ else if (request.equals(getNSPrefixMappingsRequest)) {
 			return getNamespaceMappings();
-		if (request.equals(setNSPrefixMappingRequest)) {
+		} else if (request.equals(setNSPrefixMappingRequest)) {
 			String namespace = setHttpPar(namespacePar);
 			String prefix = setHttpPar(prefixPar);
 			checkRequestParametersAllNotNull(prefixPar, namespacePar);
 			return setNamespaceMapping(prefix, namespace);
-		}
-		if (request.equals(changeNSPrefixMappingRequest)) {
+		} else if (request.equals(changeNSPrefixMappingRequest)) {
 			String namespace = setHttpPar(namespacePar);
 			String prefix = setHttpPar(prefixPar);
 			checkRequestParametersAllNotNull(prefixPar, namespacePar);
 			return changeNamespaceMapping(prefix, namespace);
-		}
-		if (request.equals(removeNSPrefixMappingRequest)) {
+		} else if (request.equals(removeNSPrefixMappingRequest)) {
 			String namespace = setHttpPar(namespacePar);
 			checkRequestParametersAllNotNull(namespacePar);
 			return removeNamespaceMapping(namespace);
-		}
-		if (request.equals(getImportsRequest))
+		} else if (request.equals(getImportsRequest)) {
 			return getOntologyImports();
-
+		}
 		// imports an ontology which is already present in the ontology mirror location
-		if (request.equals(removeImportRequest)) {
+		else if (request.equals(removeImportRequest)) {
 			String uri = setHttpPar(baseuriPar);
 			checkRequestParametersAllNotNull(baseuriPar);
 			return removeOntImport(uri);
@@ -195,7 +186,7 @@ public class Metadata extends ResourceOld {
 		// downloads and imports an ontology from the web, caching it into a local file in the ontology
 		// mirror
 		// location
-		if (request.equals(addFromWebToMirrorRequest)) {
+		else if (request.equals(addFromWebToMirrorRequest)) {
 			String toImport = setHttpPar(baseuriPar);
 			String destLocalFile = setHttpPar(mirrorFilePar);
 			String altURL = setHttpPar(alturlPar);
@@ -206,7 +197,7 @@ public class Metadata extends ResourceOld {
 		}
 		// downloads and imports an ontology from the web; next time the turkey is started, the ontology
 		// will be imported again
-		if (request.equals(addFromWebRequest)) {
+		else if (request.equals(addFromWebRequest)) {
 			String baseuri = setHttpPar(baseuriPar);
 			String altURL = setHttpPar(alturlPar);
 			String rdfFormat = setHttpPar(rdfFormatPar);
@@ -215,7 +206,7 @@ public class Metadata extends ResourceOld {
 		}
 		// downloads and imports an ontology from a local file; caching it into a local file in the
 		// ontology mirror location
-		if (request.equals(addFromLocalFileRequest)) {
+		else if (request.equals(addFromLocalFileRequest)) {
 			String baseuri = setHttpPar(baseuriPar);
 			String localFilePath = setHttpPar(localFilePathPar);
 			String mirrorFile = setHttpPar(mirrorFilePar);
@@ -226,7 +217,7 @@ public class Metadata extends ResourceOld {
 					addFromLocalFileRequest);
 		}
 		// imports an ontology which is already present in the ontology mirror location
-		if (request.equals(addFromOntologyMirrorRequest)) {
+		else if (request.equals(addFromOntologyMirrorRequest)) {
 			String baseuri = setHttpPar(baseuriPar);
 			String mirrorFile = setHttpPar(mirrorFilePar);
 			// String rdfFormat = setHttpPar(rdfFormatPar); commented, unless able to specifiy it even in
@@ -242,22 +233,21 @@ public class Metadata extends ResourceOld {
 		// downloads an imported ontology from the web, caching it into a local file in the ontology
 		// mirror
 		// location
-		if (request.equals(downloadFromWebToMirrorRequest)) {
+		else if (request.equals(downloadFromWebToMirrorRequest)) {
 			String baseURI = setHttpPar(baseuriPar);
 			String altURL = setHttpPar(alturlPar);
 			String toLocalFile = setHttpPar(mirrorFilePar);
 			checkRequestParametersAllNotNull(baseuriPar, mirrorFilePar);
 			return getImportedOntology(fromWebToMirror, baseURI, altURL, null, toLocalFile);
-		}
-		if (request.equals(downloadFromWebRequest)) {
+		} else if (request.equals(downloadFromWebRequest)) {
 			String baseURI = setHttpPar(baseuriPar);
 			String altURL = setHttpPar(alturlPar);
 			checkRequestParametersAllNotNull(baseuriPar);
 			return getImportedOntology(fromWeb, baseURI, altURL, null, null);
-		}
+		} 
 		// downloads an imported ontology from a local file; caching it into a local file in the ontology
 		// mirror location
-		if (request.equals(getFromLocalFileRequest)) {
+		else if (request.equals(getFromLocalFileRequest)) {
 			String baseURI = setHttpPar(baseuriPar);
 			String altURL = setHttpPar(alturlPar);
 			String localFilePath = setHttpPar(localFilePathPar);
@@ -266,7 +256,7 @@ public class Metadata extends ResourceOld {
 			return getImportedOntology(fromLocalFile, baseURI, altURL, localFilePath, mirrorFile);
 		}
 		// mirrors an ontology
-		if (request.equals(mirrorOntologyRequest)) {
+		else if (request.equals(mirrorOntologyRequest)) {
 			String baseURI = setHttpPar(baseuriPar);
 			String mirrorFile = setHttpPar(mirrorFilePar);
 			checkRequestParametersAllNotNull(baseuriPar, mirrorFilePar);
@@ -274,7 +264,7 @@ public class Metadata extends ResourceOld {
 		}
 
 		// NAMED GRAPHS
-		if (request.equals(getNamedGraphsRequest)) {
+		else if (request.equals(getNamedGraphsRequest)) {
 			return getNamedGraphs();
 		}
 
@@ -373,7 +363,8 @@ public class Metadata extends ResourceOld {
 	 * failed updated)
 	 * 
 	 */
-	public Response setBaseURI(String uri) {
+	//Method moved to the service ModifyName
+	/*public Response setBaseURI(String uri) {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(setBaseuriRequest,
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -393,7 +384,7 @@ public class Metadata extends ResourceOld {
 		baseURI.setAttribute("uri", currProj.getBaseURI());
 
 		return response;
-	}
+	}*/
 
 	/**
 	 * gets the baseuri for the loaded ontology
@@ -425,7 +416,8 @@ public class Metadata extends ResourceOld {
 	 * ns="http://art.info.uniroma2.it/ontologies/st#"/> </Tree>
 	 * 
 	 */
-	public Response setBaseURIAndDefaultNamespace(String uri, String namespace) {
+	//Method moved to the service ModifyName, or at least the setBaseURI, the setDefaultNamespace is still here
+	/*public Response setBaseURIAndDefaultNamespace(String uri, String namespace) {
 
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
 				setBaseuriDefNamespaceRequest, RepliesStatus.ok);
@@ -467,7 +459,7 @@ public class Metadata extends ResourceOld {
 		defaultNamespaceElement.setAttribute("ns", currProj.getDefaultNamespace());
 
 		return response;
-	}
+	}*/
 
 	/**
 	 * gets the namespace mapping for the loaded ontology

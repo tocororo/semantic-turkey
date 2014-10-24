@@ -48,6 +48,8 @@
 				<toolbar id="imports-toolbar">
 					<toolbarbutton id="infoOnProject" image="chrome://semantic-turkey/skin/images/imports_management.png" 
 								   tooltiptext="Info on the current project"/>
+					<toolbarbutton id="replaceBaseUriButton" image="chrome://semantic-turkey/skin/images/replace_baseuri.png" 
+								   tooltiptext="Replace a BaseUri"/>
 				</toolbar>
 			</toolbox>
 			<vbox flex="0" orient="horizontal">

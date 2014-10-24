@@ -52,7 +52,7 @@ STRequests.Metadata = function(){};
 /**
  * @class
  */
-STRequests.ModifyName = function(){};    
+STRequests.Refactor = function(){};    
 /**
  * @class
  */
@@ -137,9 +137,12 @@ STRequests.Cls.getSubClassesRequest = "getSubClasses";
 STRequests.Cls.getSuperClassesRequest = "getSuperClasses";
 STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTree";
 
-//ModifyName service Request
-STRequests.ModifyName.serviceName = "modifyName";
-STRequests.ModifyName.renameRequest = "rename";
+//Refactor service Request (old service name was ModifyName)
+STRequests.Refactor.serviceName = "Refactor";
+STRequests.Refactor.renameRequest = "rename";
+STRequests.Refactor.replaceBaseURIRequest = "replaceBaseUri";
+
+
 
 //property service requests
 STRequests.Property.serviceName = "property";
@@ -222,9 +225,9 @@ STRequests.Metadata.getBaseuriRequest = "getBaseuri";
 STRequests.Metadata.getDefaultNamespaceRequest = "getDefaultNamespace";
 STRequests.Metadata.getImportsRequest = "getImports";
 STRequests.Metadata.getNSPrefixMappingsRequest = "getNSPrefixMappings";
-STRequests.Metadata.setBaseuriDefNamespaceRequest = "setBaseuriDefNamespace";
+//STRequests.Metadata.setBaseuriDefNamespaceRequest = "setBaseuriDefNamespace";
 STRequests.Metadata.setDefaultNamespaceRequest = "setDefaultNamespace";
-STRequests.Metadata.setBaseuriRequest = "setBaseuri";
+//STRequests.Metadata.setBaseuriRequest = "setBaseuri";
 STRequests.Metadata.setNSPrefixMappingRequest = "setNSPrefixMapping";
 STRequests.Metadata.removeNSPrefixMappingRequest = "removeNSPrefixMapping";
 STRequests.Metadata.changeNSPrefixMappingRequest = "changeNSPrefixMapping";
@@ -238,9 +241,6 @@ STRequests.Metadata.downloadFromWebRequest = "downloadFromWeb";
 STRequests.Metadata.getFromLocalFileRequest = "getFromLocalFile";
 STRequests.Metadata.mirrorOntologyRequest = "mirrorOntology";
 STRequests.Metadata.getNamedGraphsRequest = "getNamedGraphs";
-//modifyName service request
-STRequests.ModifyName.serviceName = "modifyName";
-STRequests.ModifyName.renameRequest = "rename";
 
 //administartion service request
 STRequests.Administration.serviceName = "administration";

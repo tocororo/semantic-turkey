@@ -89,12 +89,12 @@ function getNamedGraphs() {
  * @param namespace
  * @return
  */
-function setBaseuriDefNamespace(baseuri, namespace) {
+/*function setBaseuriDefNamespace(baseuri, namespace) {
 	var baseuri = "baseuri=" + baseuri;
 	var namespace = "namespace=" + namespace;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.setBaseuriDefNamespaceRequest, baseuri, namespace, contextAsArray);
-}
+}*/
 
 /**
  * sets the default namespace for the ontology of the current project
@@ -116,11 +116,11 @@ function setDefaultNamespace(namespace) {
  * @param uri
  * @return
  */
-function setBaseuri(uri) {
+/*function setBaseuri(uri) {
 	var uri = "baseuri=" + uri;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.setBaseuriRequest, uri, contextAsArray);
-}
+}*/
 
 /**
  * adds a mapping between a namespace and a chosen prefix
@@ -366,9 +366,9 @@ service.prototype.getBaseuri = getBaseuri;
 service.prototype.getDefaultNamespace = getDefaultNamespace;
 service.prototype.getImports = getImports;
 service.prototype.getNSPrefixMappings = getNSPrefixMappings;
-service.prototype.setBaseuriDefNamespace = setBaseuriDefNamespace;
+//service.prototype.setBaseuriDefNamespace = setBaseuriDefNamespace;
 service.prototype.setDefaultNamespace = setDefaultNamespace;
-service.prototype.setBaseuri = setBaseuri;
+//service.prototype.setBaseuri = setBaseuri;
 service.prototype.setNSPrefixMapping = setNSPrefixMapping;
 service.prototype.removeNSPrefixMapping = removeNSPrefixMapping;
 service.prototype.changeNSPrefixMapping = changeNSPrefixMapping;

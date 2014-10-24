@@ -30,7 +30,7 @@ Components.utils.import("resource://stservices/SERVICE_Property.jsm",
 		art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SKOS.jsm",
 		art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_ModifyName.jsm",
+Components.utils.import("resource://stservices/SERVICE_Refactor.jsm",
 		art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils
@@ -2814,7 +2814,7 @@ art_semanticturkey.rename = function() {
 	}
 	if (deleteForbidden != "true") {
 		try {
-			var responseXML = art_semanticturkey.STRequests.ModifyName.rename(
+			var responseXML = art_semanticturkey.STRequests.Refactor.rename(
 					elname, newName);
 			art_semanticturkey.rename_RESPONSE(responseXML);
 			document.getElementById("name")
