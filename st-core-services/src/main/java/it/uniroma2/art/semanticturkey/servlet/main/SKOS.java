@@ -422,6 +422,7 @@ public class SKOS extends ResourceOld {
 			ARTURIResource broaderConcept = retrieveExistingURIResource(skosModel, broaderConceptName, graphs);
 
 			skosModel.removeBroaderConcept(concept, broaderConcept, getWorkingGraph());
+			skosModel.removeNarroweConcept(broaderConcept, concept, getWorkingGraph());
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
