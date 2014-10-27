@@ -54,8 +54,9 @@ art_semanticturkey.onAccept = function() {
 		
 		//get the response 
 		var responseXML = parameters.responseXML;
-		art_semanticturkey.setBaseuri_RESPONSE(responseXML);
-		
+		if(!parameters.cancelRefactor){
+			art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+		}
 		/*var checked = document.getElementById("defaultBaseUri").checked;
 		if(checked){ // use the dafault BaseUri
 			var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(newBaseUri);

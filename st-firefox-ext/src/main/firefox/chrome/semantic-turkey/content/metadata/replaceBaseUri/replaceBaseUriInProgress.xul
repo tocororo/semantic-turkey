@@ -38,10 +38,12 @@
 		<grid flex="1">
 			<columns>
 				<column flex="1" />
+				<column flex="1" />
 			</columns>
 			<rows>
 				<row>
 					<button id="RefactorBaseuri" label="Ok" flex="1"/>
+					<button id="CancelRefactorBaseuri" label="Cancel" flex="1"/>
 				</row>
 			</rows>
 		</grid>

@@ -9,6 +9,10 @@ window.onload = function() {
 	
 	document.getElementById("RefactorBaseuri").addEventListener("command", 
 			art_semanticturkey.doRefactor, true);
+	document.getElementById("CancelRefactorBaseuri").addEventListener("command", 
+			art_semanticturkey.cancelRefactor, true);
+	
+	window.arguments[0].cancelRefactor = true;
 	
 };
 
@@ -16,6 +20,7 @@ art_semanticturkey.doRefactor = function(){
 	document.getElementById("labelToShow").value = "BaseUri in progress, please wait ...";
 	
 	document.getElementById("RefactorBaseuri").disabled = true;
+	document.getElementById("CancelRefactorBaseuri").disabled = true;
 	
 	var responseXML;
 	//execute the request to the server to do the baseUri refactor
@@ -29,7 +34,7 @@ art_semanticturkey.doRefactor = function(){
 		responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(newBaseUri, oldBaseUri);
 	}
 	window.arguments[0].responseXML = responseXML;
-	
+	window.arguments[0].cancelRefactor = false;
 	
 	//the baseUri refactor is complete
 	document.getElementById("RefactorBaseuri").removeEventListener("command", 
@@ -38,6 +43,10 @@ art_semanticturkey.doRefactor = function(){
 			art_semanticturkey.onClose, true);
 	document.getElementById("labelToShow").value = "BaseUri Refactor Complete";
 	document.getElementById("RefactorBaseuri").disabled = false;
+}
+
+art_semanticturkey.cancelRefactor = function(){
+	close();
 }
 
 

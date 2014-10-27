@@ -72,9 +72,10 @@ art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 					
 					//get the response 
 					var responseXML = parameters.responseXML;
-					//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
-					art_semanticturkey.setBaseuri_RESPONSE(responseXML);
-					
+					if(!parameters.cancelRefactor){
+						//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
+						art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+					}
 					
 				}
 				catch (e) {
@@ -104,8 +105,10 @@ art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 					
 					//get the response 
 					var responseXML = parameters.responseXML;
-					//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
-					art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+					if(!parameters.cancelRefactor){
+						//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
+						art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+					}
 				}
 				catch (e) {
 					alert(e.name + ": " + e.message);
