@@ -94,6 +94,46 @@ function getPrefLabel(concept, lang) {
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.getPrefLabelRequest,concept_p, lang_p, contextAsArray);	
 }
 
+function addAltLabel(concept, label, lang) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addAltLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosAltLabelAdded", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;}, 
+			getLang : function(){return lang;}
+		});
+	}
+	
+	return reply;
+}
+
+function addHiddenLabel(concept, label, lang) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addHiddenLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosHiddenLabelAdded", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;}, 
+			getLang : function(){return lang;}
+		});
+	}
+	
+	return reply;
+}
+
 function addBroaderConcept(concept, broaderConcept) {
 	var concept_p = "concept=" + concept;
 	var broaderConcept_p = "broaderConcept=" + broaderConcept;
@@ -334,6 +374,47 @@ function removePrefLabel(concept, label, lang) {
 	return reply;
 }
 
+function removeAltLabel(concept, label, lang) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeAltLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosAltLabelRemoved", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;}, 
+			getLang : function(){return lang;}
+		});
+	}
+	
+	return reply;
+}
+
+function removeHiddenLabel(concept, label, lang) {
+	var concept_p = "concept=" + concept;
+	var label_p = "label=" + label;
+	var lang_p = "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeHiddenLabelRequest, concept_p, label_p, lang_p,
+			contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosHiddenLabelRemoved", {
+			getConceptName : function(){return concept;}, 
+			getLabel : function(){return label;}, 
+			getLang : function(){return lang;}
+		});
+	}
+	
+	return reply;
+}
+
+
 function getShow(resourceName, language) {
 	var resourceName_p = "resourceName=" + resourceName;
 	var language_p = language != null ? "lang=" + language : "";	
@@ -360,6 +441,8 @@ service.prototype.getConceptSchemeDescription = getConceptSchemeDescription;
 service.prototype.getPrefLabel = getPrefLabel;
 service.prototype.getShow = getShow;
 
+service.prototype.addAltLabel = addAltLabel;
+service.prototype.addHiddenLabel = addHiddenLabel;
 service.prototype.addBroaderConcept = addBroaderConcept;
 service.prototype.addTopConcept = addTopConcept;
 
@@ -371,6 +454,8 @@ service.prototype.createScheme = createScheme;
 service.prototype.deleteConcept = deleteConcept;
 service.prototype.deleteScheme = deleteScheme;
 
+service.prototype.removeAltLabel = removeAltLabel;
+service.prototype.removeHiddenLabel = removeHiddenLabel;
 service.prototype.removeBroaderConcept = removeBroaderConcept;
 service.prototype.removeTopConcept = removeTopConcept;
 service.prototype.removePrefLabel = removePrefLabel;

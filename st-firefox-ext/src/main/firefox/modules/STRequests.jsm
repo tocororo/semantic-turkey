@@ -271,6 +271,8 @@ STRequests.SKOS.getConceptSchemeDescriptionRequest = "getConceptSchemeDescriptio
 STRequests.SKOS.getPrefLabelRequest = "getPrefLabel";
 STRequests.SKOS.getShowRequest = "getShow";
 // ADD REQUESTS
+STRequests.SKOS.addAltLabelRequest = "addAltLabel";
+STRequests.SKOS.addHiddenLabelRequest = "addHiddenLabel";
 STRequests.SKOS.addBroaderConceptRequest = "addBroaderConcept";
 STRequests.SKOS.addTopConceptRequest = "addTopConcept";
 // SET REQUESTS
@@ -285,6 +287,8 @@ STRequests.SKOS.deleteSchemeRequest = "deleteScheme";
 STRequests.SKOS.removeBroaderConceptRequest = "removeBroaderConcept";
 STRequests.SKOS.removeTopConceptRequest = "removeTopConcept";
 STRequests.SKOS.removePrefLabelRequest = "removePrefLabel";
+STRequests.SKOS.removeAltLabelRequest = "removeAltLabel";
+STRequests.SKOS.removeHiddenLabelRequest = "removeHiddenLabel";
 
 //SKOSXL service request
 STRequests.SKOSXL.serviceName = "skosxl";

@@ -43,8 +43,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -92,6 +90,7 @@ public class SKOS extends ResourceOld {
 		public static final String addConceptToSchemeRequest = "addConceptToScheme";
 		public static final String setPrefLabelRequest = "setPrefLabel";
 		public static final String addAltLabelRequest = "addAltLabel";
+		public static final String addHiddenLabelRequest = "addHiddenLabel";
 
 		// CREATE REQUESTS
 		public static final String createConceptRequest = "createConcept";
@@ -105,6 +104,7 @@ public class SKOS extends ResourceOld {
 		public static final String removeAltLabelRequest = "removeAltLabel";
 		public static final String removeConceptFromSchemeRequest = "removeConceptFromScheme";
 		public static final String removeBroaderConcept = "removeBroaderConcept";
+		public static final String removeHiddenLabelRequest = "removeHiddenLabel";
 
 		// MODIFY REQUESTS
 		public static final String assignHierarchyToSchemeRequest = "assignHierarchyToScheme";
@@ -253,6 +253,13 @@ public class SKOS extends ResourceOld {
 			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
 			response = removeAltLabel(skosConceptName, label, lang);
 
+		} else if (request.equals(Req.removeHiddenLabelRequest)) {
+			String skosConceptName = setHttpPar(Par.concept);
+			String lang = setHttpPar(Par.lang);
+			String label = setHttpPar(Par.label);
+			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
+			response = removeHiddenLabel(skosConceptName, label, lang);
+
 		} else if (request.equals(Req.removeConceptFromSchemeRequest)) {
 			String concept = setHttpPar(Par.concept);
 			String scheme = setHttpPar(Par.scheme);
@@ -287,6 +294,13 @@ public class SKOS extends ResourceOld {
 			String label = setHttpPar(Par.label);
 			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
 			response = addAltLabel(skosConceptName, label, lang);
+
+		} else if (request.equals(Req.addHiddenLabelRequest)) {
+			String skosConceptName = setHttpPar(Par.concept);
+			String lang = setHttpPar(Par.lang);
+			String label = setHttpPar(Par.label);
+			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
+			response = addHiddenLabel(skosConceptName, label, lang);
 
 			// CREATE SKOS METHODS
 
@@ -1019,6 +1033,34 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
+	
+	/**
+	 * this service adds an hidden label for a given language
+	 * 
+	 * @param skosConceptName
+	 * @param label
+	 * @param lang
+	 * @return
+	 */
+	public Response addHiddenLabel(String skosConceptName, String label, String lang) {
+
+		SKOSModel ontModel = getSKOSModel();
+
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+
+		try {
+			ARTURIResource skosConcept = ontModel.createURIResource(ontModel.expandQName(skosConceptName));
+			ontModel.addHiddenLabel(skosConcept, label, lang, getWorkingGraph());
+		} catch (ModelUpdateException e) {
+			return logAndSendException(e);
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+
 
 	/**
 	 * this service removes the preferred label for a given language
@@ -1046,6 +1088,34 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
+	
+	/**
+	 * this service removes an hidden label for a given language
+	 * 
+	 * @param skosConceptName
+	 * @param label
+	 * @param lang
+	 * @return
+	 */
+	public Response removeHiddenLabel(String skosConceptName, String label, String lang) {
+
+		SKOSModel ontModel = getSKOSModel();
+
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+
+		try {
+			ARTURIResource skosConcept = ontModel.createURIResource(ontModel.expandQName(skosConceptName));
+			ontModel.removeHiddenLabel(skosConcept, label, lang, getWorkingGraph());
+		} catch (ModelUpdateException e) {
+			return logAndSendException(e);
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+
 
 	/**
 	 * this service removes an alternative label for a given language

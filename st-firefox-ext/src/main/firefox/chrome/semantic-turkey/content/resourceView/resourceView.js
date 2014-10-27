@@ -2,7 +2,12 @@ if (typeof art_semanticturkey == "undefined") {
 	var art_semanticturkey = {};
 }
 
+Components.utils.import("resource://stservices/SERVICE_Property.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Resource.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_SKOSXL.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Refactor.jsm", art_semanticturkey);
+
 Components.utils.import("resource://stservices/SERVICE_ResourceView.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Deserializer.jsm", art_semanticturkey);
 
@@ -25,9 +30,23 @@ art_semanticturkey.resourceView.init = function() {
 		alert(e.message);
 		return;
 	}
+	
+	var renameResourceButton = document.getElementById("renameResourceButton");
+	renameResourceButton.addEventListener("command", art_semanticturkey.resourceView.renameResource, false);
 
 	var resourceViewBox = document.getElementById("resourceViewBox");
 	art_semanticturkey.resourceView.getResourceView_RESPONSE(response);
+};
+
+art_semanticturkey.resourceView.renameResource = function(event) {
+	
+	try {
+		var responseXML = art_semanticturkey.STRequests.Refactor.rename(
+				elname, newName);
+	} catch (e) {
+		alert("Exception: " + e.message);
+	}
+	art_semanticturkey.rename_RESPONSE(responseXML);
 };
 
 art_semanticturkey.resourceView.refreshView = function() {
@@ -47,7 +66,7 @@ art_semanticturkey.resourceView.refreshView = function() {
 art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 	// -----------------------------
 	// Populates the resource header
-
+	
 	// Handles the resource name (resource name box)
 	var responseDataElement = response.getElementsByTagName("data")[0];
 	var responseResourceElement = responseDataElement.getElementsByTagName("resource")[0];
@@ -235,6 +254,35 @@ var partition2handlerMap = {
 				parameters.winTitle = "Add " + rdfPredicate.getShow() + " Lexicalization";
 				parameters.action = function(label, lang) {
 
+					try {
+						switch (predURI) {
+						case "http://www.w3.org/2004/02/skos/core#prefLabel":
+							art_semanticturkey.STRequests.SKOS.setPrefLabel(rdfSubject.getURI(), label, lang);
+							break;
+						case "http://www.w3.org/2004/02/skos/core#altLabel":
+							art_semanticturkey.STRequests.SKOS.addAltLabel(rdfSubject.getURI(), label, lang);
+							break;
+						case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
+							art_semanticturkey.STRequests.SKOS.addHiddenLabel(rdfSubject.getURI(), label, lang);
+							break;
+			
+						case "http://www.w3.org/2008/05/skos-xl#prefLabel":
+							art_semanticturkey.STRequests.SKOSXL.setPrefLabel(rdfSubject.getURI(), label, lang, "bnode");
+							break;
+						case "http://www.w3.org/2008/05/skos-xl#altLabel":
+							art_semanticturkey.STRequests.SKOSXL.addAltLabel(rdfSubject.getURI(), label, lang, "bnode");
+							break;
+						case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
+							art_semanticturkey.STRequests.SKOSXL.addHiddenLabel(rdfSubject.getURI(), label, lang, "bnode");
+							break;
+						case "http://www.w3.org/2000/01/rdf-schema#label":
+							art_semanticturkey.STRequests.Property.createAndAddPropValue(rdfSubject.getURI(), predURI, label, null, "plainLiteral", lang);
+							break;
+						}
+					} catch (e) {
+						alert("Exception: " + e.message);
+					}
+					
 					art_semanticturkey.resourceView.refreshView();
 				};
 				parameters.oncancel = false;

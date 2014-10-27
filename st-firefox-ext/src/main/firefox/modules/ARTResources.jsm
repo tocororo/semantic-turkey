@@ -144,6 +144,10 @@ ARTBNode = function(id){
 		return this.getNominalValue();
 	};
 
+	this.getShow = function() {
+		return this.toNT();
+	};
+
 };
 
 ARTBNode.prototype = new ARTNode();

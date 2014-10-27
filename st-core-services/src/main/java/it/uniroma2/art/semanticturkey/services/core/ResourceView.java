@@ -48,6 +48,8 @@ import it.uniroma2.art.owlart.query.QueryLanguage;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.owlart.utilities.PropertyChainsTree;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
@@ -99,7 +101,7 @@ public class ResourceView extends STServiceAdapter {
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
 
 	@GenerateSTServiceController
-	public Response getResourceView(ARTURIResource resource) throws Exception {
+	public Response getResourceView(ARTResource resource) throws Exception {
 		OWLModel owlModel = getOWLModel();
 		ARTResource[] userNamedGraphs = getUserNamedGraphs();
 		ARTResource workingGraph = getWorkingGraph();
@@ -116,10 +118,20 @@ public class ResourceView extends STServiceAdapter {
 
 		if (localResource) { // local resource
 			// Statements about the resource (both explicit and implicit ones)
-			GraphQuery describeQuery = owlModel.createGraphQuery("describe "
-					+ RDFNodeSerializer.toNT(resource));
+//			if (resource.isURIResource()) {
+//				GraphQuery describeQuery = owlModel.createGraphQuery("describe " + RDFNodeSerializer.toNT(resource));
+//				describeQuery.setBinding("resource", resource);
+//				resourceDescription = RDFIterators.getSetFromIterator(describeQuery.evaluate(true));
+//			} else {
+//				resourceDescription = ModelUtilities.createCustomCBD(owlModel, resource, true, new PropertyChainsTree());
+//			}
+			
+			GraphQuery describeQuery = owlModel.createGraphQuery("describe ?x where {bind(?resource as ?x)}");
+			describeQuery.setBinding("resource", resource);
 			resourceDescription = RDFIterators.getSetFromIterator(describeQuery.evaluate(true));
-
+			
+			System.out.println(resourceDescription);
+			
 			// Explicit statements (triples belonging to the current working graph).
 			// We must use the API, since there is no standard way for mentioning the null context in a SPARQL
 			// query
@@ -370,7 +382,7 @@ public class ResourceView extends STServiceAdapter {
 		return response;
 	}
 
-	private void renderXLabels(ARTURIResource resource, boolean localResource,
+	private void renderXLabels(ARTResource resource, boolean localResource,
 			Map<ARTURIResource, STRDFURI> art2stxlabels) throws ModelAccessException,
 			UnsupportedQueryLanguageException, MalformedQueryException, ModelCreationException,
 			UnavailableResourceException, ProjectInconsistentException, QueryEvaluationException {
@@ -487,8 +499,15 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	// TODO: find better name??
-	private boolean isLocalResource(RDFModel rdfModel, ARTURIResource uriResource)
+	private boolean isLocalResource(RDFModel rdfModel, ARTResource resource)
 			throws ModelAccessException {
+		
+		if (resource.isBlank()) {
+			return true;
+		}
+		
+		ARTURIResource uriResource = resource.asURIResource();
+		
 		ARTNamespaceIterator it = rdfModel.listNamespaces();
 
 		try {
