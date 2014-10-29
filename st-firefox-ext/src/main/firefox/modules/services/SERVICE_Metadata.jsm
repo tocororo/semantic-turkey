@@ -190,14 +190,28 @@ function removeImport(baseuri) {
  *            where to look for the file to be downloaded
  * @return
  */
-function addFromWeb(baseuri, alturl) {
+function addFromWeb(baseuri, alturl, format) {
 	var baseuri = "baseuri=" + baseuri;
-	if (typeof alturl != "undefined") {
-		var alturl = "alturl=" + alturl;
-		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, alturl, contextAsArray);
+	var alturlToSend = null;
+	if(typeof alturl != "undefined" && alturl != null){
+		alturlToSend = "alturl=" + alturl;
+	}
+	var formatToSend = null;
+	if(typeof format != "undefined" && format != null){
+		formatToSend = "rdfFormat=" + format;
+	}
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	if(alturlToSend != null && formatToSend != null){
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, alturlToSend,
+				formatToSend, contextAsArray);
+	} else if(alturlToSend != null && formatToSend == null){
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, alturlToSend,
+				contextAsArray);
+	} else if(alturlToSend == null && formatToSend != null) {
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, formatToSend, 
+				contextAsArray);
 	} else {
-		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebRequest, baseuri, contextAsArray);
 	}
 }
@@ -215,16 +229,30 @@ function addFromWeb(baseuri, alturl) {
  *            where to look for the file to be downloaded
  * @return
  */
-function addFromWebToMirror(baseuri, mirrorFile, alturl) {
+function addFromWebToMirror(baseuri, mirrorFile, alturl, format) {
 	var baseuri = "baseuri=" + baseuri;
 	var mirrorFile = "mirrorFile=" + mirrorFile;
-	if (typeof alturl != "undefined") {
-		var alturl = "alturl=" + alturl;
-		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, alturl, contextAsArray);
+	if(typeof alturl != "undefined" && alturl != null){
+		alturlToSend = "alturl=" + alturl;
+	}
+	var formatToSend = null;
+	if(typeof format != "undefined" && format != null){
+		formatToSend = "rdfFormat=" + format;
+	}
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	
+	if(alturlToSend != null && formatToSend != null){
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, 
+				alturlToSend, formatToSend, contextAsArray);
+	} else if(alturlToSend != null && formatToSend == null){
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, 
+				alturlToSend, contextAsArray);
+	} else if(alturlToSend == null && formatToSend != null) {
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, 
+				formatToSend, contextAsArray);
 	} else {
-		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, contextAsArray);
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromWebToMirrorRequest, baseuri, mirrorFile, 
+				contextAsArray);
 	}
 }
 

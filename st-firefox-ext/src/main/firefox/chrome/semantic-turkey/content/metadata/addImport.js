@@ -66,71 +66,100 @@ art_semanticturkey.getImportsTree = function() {
 };
 
 /**
- * Funzione che crea gli elementi di addImport in base al tipo di import
- * selezionato
+ * Function to create the addImport elements according the the selected import type
  */
 art_semanticturkey.initIMP = function(selectIndex, selectedLabel) {
 	art_semanticturkey.getDoc().setAttribute("title", selectedLabel);
 	var mypanel = art_semanticturkey.getPanel();
 	var rows = art_semanticturkey.getRows();
+	/* Possible value for selectIndex:
+	 * 1 : AddImportFromWeb
+	 * 2 : AddImportFromWebToMirror
+	 * 3 : AddImportFromLocalFile
+	 * 4 : AddImportFromOntologyMirror (this should never happen, since it should not call this xul+js)
+	 * 5 : ???? (it is not possible)
+	 * 6 : ???? (it is not possible)
+	 */
 	if (selectIndex == 1 || selectIndex == 6) {
+		var row1 = document.createElement("row");
 		var lbl = document.createElement("label");
 		lbl.setAttribute("value", "Base Uri:");
 		lbl.setAttribute("id", "uriLbl");
 		lbl.setAttribute("control", "uri");
+		row1.appendChild(lbl);
+		
+		
+		var row2 = document.createElement("row");
 		var txbox = document.createElement("textbox");
 		txbox.setAttribute("value", "");
 		txbox.setAttribute("id", "uri");
-		var row = document.createElement("row");
-		row.appendChild(lbl);
-		var row1 = document.createElement("row");
-		row1.appendChild(txbox);
-		var row2 = document.createElement("row");
-		var chkbox = document.createElement("checkbox");
-		chkbox.setAttribute("id", "alturl");
-		chkbox.addEventListener("command", art_semanticturkey.setAlternativeUrl, true);
-		chkbox.setAttribute("label", "Select Alternative Url:");
-		row2.appendChild(chkbox);
+		row2.appendChild(txbox);
+		
+		var row3 = document.createElement("row");
+		var chkbox1 = document.createElement("checkbox");
+		chkbox1.setAttribute("id", "alturl");
+		chkbox1.addEventListener("command", art_semanticturkey.setAlternativeUrl, true);
+		chkbox1.setAttribute("label", "Select Alternative Url:");
+		row3.appendChild(chkbox1);
 
-		rows.appendChild(row);
+		var row4 = document.createElement("row");
+		var chkbox2 = document.createElement("checkbox");
+		chkbox2.setAttribute("id", "forceFormat");
+		chkbox2.addEventListener("command", art_semanticturkey.setForceFormat, true);
+		chkbox2.setAttribute("label", "Force Format");
+		row4.appendChild(chkbox2);
+		
 		rows.appendChild(row1);
 		rows.appendChild(row2);
+		rows.appendChild(row3);
+		rows.appendChild(row4);
 	} else if (selectIndex == 2 || selectIndex == 5) {
+		var row = document.createElement("row");
 		var lbl = document.createElement("label");
 		lbl.setAttribute("value", "Base Uri:");
 		lbl.setAttribute("id", "localLbl");
 		lbl.setAttribute("control", "local");
+		row.appendChild(lbl);
+		
+		var row1 = document.createElement("row");
 		var txbox = document.createElement("textbox");
 		txbox.setAttribute("value", "");
 		txbox.setAttribute("id", "uri");
-
+		row1.appendChild(txbox);
+		
+		var row2 = document.createElement("row");
 		var lbl1 = document.createElement("label");
 		lbl1.setAttribute("value", "Mirror File:");
 		lbl1.setAttribute("id", "uriLbl");
 		lbl1.setAttribute("control", "uri");
+		row2.appendChild(lbl1);
+			
+		var row3 = document.createElement("row");
 		var txbox1 = document.createElement("textbox");
 		txbox1.setAttribute("value", "");
 		txbox1.setAttribute("id", "local");
-
-		var row = document.createElement("row");
-		row.appendChild(lbl);
-		var row1 = document.createElement("row");
-		row1.appendChild(txbox);
-		var row2 = document.createElement("row");
-		row2.appendChild(lbl1);
-		var row3 = document.createElement("row");
 		row3.appendChild(txbox1);
+
 		var row4 = document.createElement("row");
 		var chkbox = document.createElement("checkbox");
 		chkbox.setAttribute("id", "alturl");
 		chkbox.addEventListener("command", art_semanticturkey.setAlternativeUrl, true);
 		chkbox.setAttribute("label", "Select Alternative Url:");
 		row4.appendChild(chkbox);
+		
+		var row5 = document.createElement("row");
+		var chkbox2 = document.createElement("checkbox");
+		chkbox2.setAttribute("id", "forceFormat");
+		chkbox2.addEventListener("command", art_semanticturkey.setForceFormat, true);
+		chkbox2.setAttribute("label", "Force Format");
+		row5.appendChild(chkbox2);
+		
 		rows.appendChild(row);
 		rows.appendChild(row1);
 		rows.appendChild(row2);
 		rows.appendChild(row3);
 		rows.appendChild(row4);
+		rows.appendChild(row5);
 	} else if (selectIndex == 3 || selectIndex == 7) {
 		var lbl = document.createElement("label");
 		lbl.setAttribute("value", "Base Uri:");
@@ -211,9 +240,7 @@ art_semanticturkey.initIMP = function(selectIndex, selectedLabel) {
 	}
 
 };
-/**
- * setAlternativeUri NScarpato 20/11/2007
- */
+
 art_semanticturkey.setAlternativeUrl = function() {
 	var sel = document.getElementById("alturl");
 	var rows = art_semanticturkey.getRows();
@@ -230,6 +257,66 @@ art_semanticturkey.setAlternativeUrl = function() {
 		rows.removeChild(row);
 	}
 };
+
+art_semanticturkey.setForceFormat = function() {
+	var sel = document.getElementById("forceFormat");
+	var rows = art_semanticturkey.getRows();
+	if(sel.checked){
+		var menulist = document.createElement("menulist");
+		menulist.setAttribute("id", "forceFormatML");
+		var menupopup = document.createElement("menupopup");
+		menupopup.setAttribute("id", "forceFormatMP");
+		
+		var menuItem1 = document.createElement("menuitem");
+		menuItem1.setAttribute("id", "RDF/XML");
+		menuItem1.setAttribute("label", "RDF/XML");
+		menupopup.appendChild(menuItem1);
+		
+		var menuItem2 = document.createElement("menuitem");
+		menuItem2.setAttribute("id", "N-TRIPLES");
+		menuItem2.setAttribute("label", "N-TRIPLES");
+		menupopup.appendChild(menuItem2);
+		
+		var menuItem3 = document.createElement("menuitem");
+		menuItem3.setAttribute("id", "N3");
+		menuItem3.setAttribute("label", "N3");
+		menupopup.appendChild(menuItem3);
+		
+		var menuItem4 = document.createElement("menuitem");
+		menuItem4.setAttribute("id", "TURTLE");
+		menuItem4.setAttribute("label", "TURTLE");
+		menupopup.appendChild(menuItem4);
+		
+		var menuItem5 = document.createElement("menuitem");
+		menuItem5.setAttribute("id", "TRIG");
+		menuItem5.setAttribute("label", "TRIG");
+		menupopup.appendChild(menuItem5);
+		
+		var menuItem6 = document.createElement("menuitem");
+		menuItem6.setAttribute("id", "TRIX");
+		menuItem6.setAttribute("label", "TRIX");
+		menupopup.appendChild(menuItem6);
+		
+		var menuItem7 = document.createElement("menuitem");
+		menuItem7.setAttribute("id", "TRIX-EXT");
+		menuItem7.setAttribute("label", "TRIXEXT");
+		menupopup.appendChild(menuItem7);
+		
+		var menuItem8 = document.createElement("menuitem");
+		menuItem8.setAttribute("id", "NQUADS");
+		menuItem8.setAttribute("label", "NQUADS");
+		menupopup.appendChild(menuItem8);
+		
+		var row = document.createElement("row");
+		menulist.appendChild(menupopup);
+		row.appendChild(menulist);
+		row.setAttribute("id", "forceFormatRow");
+		rows.appendChild(row);
+	}else{
+		var row = document.getElementById("forceFormatRow");
+		rows.removeChild(row);
+	}
+}
 
 art_semanticturkey.checkAllNotNull = function(){
 	for(var i=0; i<arguments.length; ++i) {
@@ -248,14 +335,27 @@ art_semanticturkey.onAccept = function() {
 	try{
 		if (selectedIndex == 1) {
 			var uri = document.getElementById("uri").value;
-			var sel = document.getElementById("alturl");
-			if (sel.getAttribute("checked")) {
+			var alturlChBox = document.getElementById("alturl");
+			var formatChBox = document.getElementById("forceFormat");
+			if (alturlChBox.checked && formatChBox.checked) {
+				var alturl = document.getElementById("alternativeUrl").value;
+				var format = document.getElementById("forceFormatML").selectedItem.label;
+				if(!art_semanticturkey.checkAllNotNull(uri, alturl))
+					return;
+				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWeb(
+						uri, alturl, format);
+			} else if(!alturlChBox.checked && formatChBox.checked) {
+				var format = document.getElementById("forceFormatML").selectedItem.label;
+				if(!art_semanticturkey.checkAllNotNull(uri, alturl))
+					return;
+				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWeb(
+						uri, null, format);
+			} else if(alturlChBox.checked && !formatChBox.checked) {
 				var alturl = document.getElementById("alternativeUrl").value;
 				if(!art_semanticturkey.checkAllNotNull(uri, alturl))
 					return;
 				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWeb(
-						uri, 
-						alturl);
+						uri, alturl);
 			} else {
 				if(!art_semanticturkey.checkAllNotNull(uri))
 					return;
@@ -267,15 +367,28 @@ art_semanticturkey.onAccept = function() {
 			var local = document.getElementById("local").value;
 			var uri = document.getElementById("uri").value;
 			var sel = document.getElementById("alturl");
-			if (sel.getAttribute("checked")) {
+			var alturlChBox = document.getElementById("alturl");
+			var formatChBox = document.getElementById("forceFormat");
+			if (alturlChBox.checked && formatChBox.checked) {
+				var alturl = document.getElementById("alternativeUrl").value;
+				var format = document.getElementById("forceFormatML").selectedItem.label;
+				if(!art_semanticturkey.checkAllNotNull(uri, local, alturl))
+					return;
+				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWebToMirror(
+						uri, local, alturl, format);
+			} else if (!alturlChBox.checked && formatChBox.checked) {
+				var format = document.getElementById("forceFormatML").selectedItem.label;
+				if(!art_semanticturkey.checkAllNotNull(uri, local, alturl))
+					return;
+				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWebToMirror(
+						uri, local, null, format);
+			} else if (alturlChBox.checked && !formatChBox.checked) {
 				var alturl = document.getElementById("alternativeUrl").value;
 				if(!art_semanticturkey.checkAllNotNull(uri, local, alturl))
 					return;
 				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWebToMirror(
-						uri,
-						local,
-						alturl);
-			} else {
+						uri, local, alturl);
+			}else {
 				if(!art_semanticturkey.checkAllNotNull(uri, local))
 					return;
 				responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromWebToMirror(
