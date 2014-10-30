@@ -32,26 +32,32 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -800,8 +806,18 @@ public class SKOS extends ResourceOld {
 			ARTResource wrkGraph = getWorkingGraph();
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
-
-			ARTURIResource newConcept = createNewResource(skosModel, conceptName, graphs);
+			
+			
+			ARTURIResource newConcept = null;
+			String randomConceptValue = null;
+			if(conceptName == null){
+				ARTURIResAndRandomString newConceptAndRandomValue = generateConceptURI(skosModel, graphs);
+				newConcept = newConceptAndRandomValue.getArtURIResource();
+				randomConceptValue = newConceptAndRandomValue.getRandomValue();
+			} else{
+				newConcept = createNewResource(skosModel, conceptName, graphs);
+			}
+			//ARTURIResource newConcept = createNewResource(skosModel, conceptName, graphs);
 
 			ARTURIResource superConcept;
 			if (superConceptName != null)
@@ -817,7 +833,9 @@ public class SKOS extends ResourceOld {
 			if (prefLabel != null && prefLabelLang != null) {
 				addPrefLabel(skosModel, newConcept, prefLabel, prefLabelLang);
 			}
-			
+			if(randomConceptValue != null){
+				XMLHelp.newElement(response.getDataElement(), "randomForConcept", randomConceptValue);
+			}
 			RDFXMLHelp.addRDFNode(response, createSTConcept(skosModel, newConcept, true, language));
 
 		} catch (ModelAccessException e) {
@@ -1356,4 +1374,80 @@ public class SKOS extends ResourceOld {
 		return (SKOSModel) getOntModel();
 	}
 
+	
+	
+	protected ARTURIResAndRandomString generateConceptURI(SKOSModel skosModel, ARTResource[] graphs) 
+			throws ModelAccessException {
+		final String DEFAULT_VALUE = "c_";
+		String projectName = serviceContext.getProject().getName();
+		String entityPrefix;
+		try{
+			entityPrefix = ProjectManager.getProjectProperty(projectName, "uriConceptPreamble");
+		} catch (IOException | InvalidProjectNameException | ProjectInexistentException e1) {
+			entityPrefix = DEFAULT_VALUE;
+		}
+		if(entityPrefix == null){
+			entityPrefix = DEFAULT_VALUE;
+		}
+		ARTURIResource newConcept = null;
+		boolean newConceptGenerated = false;
+		String randomValue = null;
+		while(!newConceptGenerated){
+			randomValue = randomGenerator();
+			//check if the new concept already exists, in this case generate a new one until a not alredy
+			// existing URI has been generated
+			String newConceptURI = skosModel.getDefaultNamespace()+entityPrefix+randomValue;
+			newConcept = skosModel.createURIResource(newConceptURI);
+			if(!skosModel.existsResource(newConcept, graphs)){
+				newConceptGenerated = true;
+			};
+		}
+		return new ARTURIResAndRandomString(randomValue, newConcept);
+	}
+	
+	protected String randomGenerator(){
+		final String DEFAULT_VALUE = "truncuuid8";
+		String projectName = serviceContext.getProject().getName();
+		String type;
+		try{
+			type = ProjectManager.getProjectProperty(projectName, "uriRndCodeGenerator");
+		} catch (IOException | InvalidProjectNameException | ProjectInexistentException e1) {
+			type = DEFAULT_VALUE;
+		}
+		if(type == null){
+			type = DEFAULT_VALUE;
+		}
+		String randomValue = null;
+		if(type == "datetimems"){
+			randomValue = new java.util.Date().getTime()+"";
+		} else if(type == "uuid"){
+			randomValue = UUID.randomUUID().toString();
+		} else if(type == "truncuuid8"){ // DEFAULT_VALUE
+			randomValue = UUID.randomUUID().toString().substring(0, 8);
+		} else if(type == "truncuuid12"){
+			randomValue = UUID.randomUUID().toString().substring(0, 13);
+		} else {
+			randomValue = UUID.randomUUID().toString().substring(0, 8);
+		}
+		return randomValue;
+	}
+	
+	protected class ARTURIResAndRandomString {
+		String randomValue;
+		ARTURIResource artURIResource;
+		
+		public ARTURIResAndRandomString(String randomValue, ARTURIResource artUriResource) {
+			super();
+			this.randomValue = randomValue;
+			this.artURIResource = artUriResource;
+		}
+
+		public String getRandomValue() {
+			return randomValue;
+		}
+
+		public ARTURIResource getArtURIResource() {
+			return artURIResource;
+		}
+	}
 }

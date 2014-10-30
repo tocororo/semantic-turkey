@@ -13,15 +13,20 @@ import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.main.SKOS.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
@@ -494,7 +499,17 @@ public class SKOSXL extends SKOS {
 			SKOSXLModel skosxlModel = getSKOSXLModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 
-			ARTURIResource newConcept = createNewResource(skosxlModel, conceptName, graphs);
+			
+			ARTURIResource newConcept = null;
+			String randomConceptValue = null;
+			if(conceptName == null){
+				ARTURIResAndRandomString newConceptAndRandomValue = generateConceptURI(skosxlModel, graphs);
+				newConcept = newConceptAndRandomValue.getArtURIResource();
+				randomConceptValue = newConceptAndRandomValue.getRandomValue();
+			} else{
+				newConcept = createNewResource(skosxlModel, conceptName, graphs);
+			}
+			//ARTURIResource newConcept = createNewResource(skosxlModel, conceptName, graphs);
 
 			ARTURIResource superConcept;
 			if (superConceptName != null)
@@ -507,12 +522,21 @@ public class SKOSXL extends SKOS {
 			logger.debug("adding concept to graph: " + wrkGraph);
 			skosxlModel.addConceptToScheme(newConcept.getURI(), superConcept, conceptScheme, wrkGraph);
 
-			ARTURIResource prefXLabel = skosxlModel.addXLabel(createURIForXLabel(skosxlModel), prefLabel,
-					prefLabelLang, getWorkingGraph());
-			skosxlModel.setPrefXLabel(newConcept, prefXLabel, getWorkingGraph());
+			//ARTURIResource prefXLabel = skosxlModel.addXLabel(createURIForXLabel(skosxlModel), prefLabel,
+			//		prefLabelLang, getWorkingGraph());
+			ARTURIResAndRandomString prefXLabelURIAndRandomValue = generateXLabelURI(skosxlModel, 
+					prefLabelLang, graphs);
+			ARTURIResource prefXLabelURI = prefXLabelURIAndRandomValue.getArtURIResource();
+			String randomXLabelValue = prefXLabelURIAndRandomValue.getRandomValue();
+			skosxlModel.setPrefXLabel(newConcept, prefXLabelURI, getWorkingGraph());
+			
 
+			if(randomConceptValue != null){
+				XMLHelp.newElement(response.getDataElement(), "randomForConcept", randomConceptValue);
+			}
 			RDFXMLHelp.addRDFNode(response, createSTConcept(skosxlModel, newConcept, true, language));
-			RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabel, true));
+			RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabelURI, true));
+			XMLHelp.newElement(response.getDataElement(), "randomForPrefXLabel", randomXLabelValue);
 
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
@@ -596,13 +620,18 @@ public class SKOSXL extends SKOS {
 						oldxlabel, graph);
 			}
 
-			if (mode == XLabelCreationMode.bnode)
+			if (mode == XLabelCreationMode.bnode){
 				model.setPrefXLabel(skosConcept, label, lang, getWorkingGraph());
-			else {
-				ARTURIResource prefXLabel = model.addXLabel(createURIForXLabel(model), label, lang,
+			} else {
+				ARTURIResAndRandomString prefXLabelURIAndRandomValue = generateXLabelURI(model, 
+						lang, getUserNamedGraphs());
+				ARTURIResource prefXLabelURI = prefXLabelURIAndRandomValue.getArtURIResource();
+				String randomXLabelValue = prefXLabelURIAndRandomValue.getRandomValue();
+				ARTURIResource prefXLabel = model.addXLabel(prefXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				model.setPrefXLabel(skosConcept, prefXLabel, getWorkingGraph());
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(model, prefXLabel, true));
+				XMLHelp.newElement(response.getDataElement(), "randomForPrefXLabel", randomXLabelValue);
 			}
 
 		} catch (ModelUpdateException e) {
@@ -635,13 +664,18 @@ public class SKOSXL extends SKOS {
 		try {
 			ARTURIResource skosConcept = retrieveExistingURIResource(model, skosConceptName,
 					getUserNamedGraphs());
-			if (mode == XLabelCreationMode.bnode)
+			if (mode == XLabelCreationMode.bnode) {
 				model.addAltXLabel(skosConcept, label, lang, getWorkingGraph());
-			else {
-				ARTURIResource altXLabel = model.addXLabel(createURIForXLabel(model), label, lang,
+			}else {
+				ARTURIResAndRandomString altXLabelURIAndRandomValue = generateXLabelURI(model, 
+						lang, getUserNamedGraphs());
+				ARTURIResource altXLabelURI = altXLabelURIAndRandomValue.getArtURIResource();
+				String randomXLabelValue = altXLabelURIAndRandomValue.getRandomValue();
+				ARTURIResource altXLabel = model.addXLabel(altXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				model.addAltXLabel(skosConcept, altXLabel, getWorkingGraph());
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(model, altXLabel, true));
+				XMLHelp.newElement(response.getDataElement(), "randomForAltXLabel", randomXLabelValue);
 			}
 
 		} catch (ModelUpdateException e) {
@@ -674,12 +708,18 @@ public class SKOSXL extends SKOS {
 		try {
 			ARTURIResource skosConcept = retrieveExistingURIResource(model, skosConceptName,
 					getUserNamedGraphs());
-			if (mode == XLabelCreationMode.bnode)
+			if (mode == XLabelCreationMode.bnode) {
 				model.addHiddenXLabel(skosConcept, label, lang, getWorkingGraph());
-			else {
-				ARTURIResource hiddenXLabel = model.addXLabel(createURIForXLabel(model), label, lang,
+			} else {
+				ARTURIResAndRandomString hiddenXLabelURIRandomValue = generateXLabelURI(model, lang,
+						getUserNamedGraphs());
+				ARTURIResource hiddenXLabelURI = hiddenXLabelURIRandomValue.getArtURIResource();
+				String randomXLabelValue = hiddenXLabelURIRandomValue.getRandomValue();
+				ARTURIResource hiddenXLabel = model.addXLabel(hiddenXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				model.addHiddenXLabel(skosConcept, hiddenXLabel, getWorkingGraph());
+				RDFXMLHelp.addRDFNode(response, createSTXLabel(model, hiddenXLabelURI, true));
+				XMLHelp.newElement(response.getDataElement(), "randomForHiddenXLabel", randomXLabelValue);
 			}
 
 		} catch (ModelUpdateException e) {
@@ -774,4 +814,37 @@ public class SKOSXL extends SKOS {
 		return (SKOSXLModel)getOntModel();
 	}
 
+	
+	protected ARTURIResAndRandomString generateXLabelURI(SKOSXLModel skosxlModel, String lang,
+			ARTResource[] graphs) 
+			throws ModelAccessException {
+		final String DEFAULT_VALUE = "xl_";
+		String projectName = serviceContext.getProject().getName();
+		String entityPrefix;
+		
+		try{
+			entityPrefix = ProjectManager.getProjectProperty(projectName, "uriXLabelPreamble");
+		} catch (IOException | InvalidProjectNameException | ProjectInexistentException e1) {
+			entityPrefix =DEFAULT_VALUE;
+		}
+		if(entityPrefix == null){
+			entityPrefix = DEFAULT_VALUE;
+		}
+		ARTURIResource newConcept = null;
+		boolean newConceptGenerated = false;
+		String randomValue = null;
+		while(!newConceptGenerated){
+			randomValue = randomGenerator();
+			//check if the new xlabel already exists, in this case generate a new one until a not alredy
+			// existing URI has been generated
+			//String newConceptURI = skosxlModel.getDefaultNamespace()+entityPrefix+randomValue;
+			String newConceptURI = skosxlModel.getDefaultNamespace()+entityPrefix+lang+"_"+randomValue;
+			newConcept = skosxlModel.createURIResource(newConceptURI);
+			if(!skosxlModel.existsResource(newConcept, graphs)){
+				newConceptGenerated = true;
+			};
+		}
+		return new ARTURIResAndRandomString(randomValue, newConcept);
+	}
+	
 }
