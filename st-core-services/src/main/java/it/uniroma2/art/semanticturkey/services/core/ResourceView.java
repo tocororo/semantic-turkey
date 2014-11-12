@@ -29,6 +29,7 @@ import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenComponents_Predicate;
 import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenSubjects_Predicate;
+import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTNamespace;
 import it.uniroma2.art.owlart.model.ARTResource;
@@ -118,20 +119,22 @@ public class ResourceView extends STServiceAdapter {
 
 		if (localResource) { // local resource
 			// Statements about the resource (both explicit and implicit ones)
-//			if (resource.isURIResource()) {
-//				GraphQuery describeQuery = owlModel.createGraphQuery("describe " + RDFNodeSerializer.toNT(resource));
-//				describeQuery.setBinding("resource", resource);
-//				resourceDescription = RDFIterators.getSetFromIterator(describeQuery.evaluate(true));
-//			} else {
-//				resourceDescription = ModelUtilities.createCustomCBD(owlModel, resource, true, new PropertyChainsTree());
-//			}
-			
+			// if (resource.isURIResource()) {
+			// GraphQuery describeQuery = owlModel.createGraphQuery("describe " +
+			// RDFNodeSerializer.toNT(resource));
+			// describeQuery.setBinding("resource", resource);
+			// resourceDescription = RDFIterators.getSetFromIterator(describeQuery.evaluate(true));
+			// } else {
+			// resourceDescription = ModelUtilities.createCustomCBD(owlModel, resource, true, new
+			// PropertyChainsTree());
+			// }
+
 			GraphQuery describeQuery = owlModel.createGraphQuery("describe ?x where {bind(?resource as ?x)}");
 			describeQuery.setBinding("resource", resource);
 			resourceDescription = RDFIterators.getSetFromIterator(describeQuery.evaluate(true));
-			
+
 			System.out.println(resourceDescription);
-			
+
 			// Explicit statements (triples belonging to the current working graph).
 			// We must use the API, since there is no standard way for mentioning the null context in a SPARQL
 			// query
@@ -310,13 +313,13 @@ public class ResourceView extends STServiceAdapter {
 
 		Set<ARTResource> resourcesForComputingRole = new HashSet<ARTResource>(resourcesToBeRendered);
 		resourcesForComputingRole.add(resource);
-		
+
 		Map<ARTResource, RDFResourceRolesEnum> artResource2Role = RoleRecognitionOrchestrator.getInstance()
 				.computeRoleOf(getProject(), resource, resourceDescription,
 						resourcesForComputingRole.toArray(new ARTResource[resourcesForComputingRole.size()]));
-		
+
 		subjectResource.setRole(artResource2Role.get(subjectResource.getARTNode().asResource()));
-		
+
 		// ************************************************
 		// Step X: Prepare data for predicate objects lists
 
@@ -499,30 +502,26 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	// TODO: find better name??
-	private boolean isLocalResource(RDFModel rdfModel, ARTResource resource)
-			throws ModelAccessException {
-		
+	private boolean isLocalResource(RDFModel rdfModel, ARTResource resource) throws ModelAccessException {
+
 		if (resource.isBlank()) {
 			return true;
 		}
-		
+
 		ARTURIResource uriResource = resource.asURIResource();
-		
-		ARTNamespaceIterator it = rdfModel.listNamespaces();
 
-		try {
-			while (it.streamOpen()) {
-				ARTNamespace ns = it.getNext();
+		// replace with isLocallyDefined
+		return rdfModel.hasTriple(uriResource, NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.ANY);
 
-				if (ns.getName().equals(uriResource.getNamespace())) {
-					return true;
-				}
-			}
-		} finally {
-			it.close();
-		}
-
-		return false;
+		/*
+		 * ARTNamespaceIterator it = rdfModel.listNamespaces();
+		 * 
+		 * try { while (it.streamOpen()) { ARTNamespace ns = it.getNext();
+		 * 
+		 * if (ns.getName().equals(uriResource.getNamespace())) { return true; } } } finally { it.close(); }
+		 * 
+		 * return false;
+		 */
 	}
 
 }

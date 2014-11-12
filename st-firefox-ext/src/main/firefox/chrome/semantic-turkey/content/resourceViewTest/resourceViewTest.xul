@@ -17,6 +17,8 @@
 		SemanticTurkey can be obtained at * http://semanticturkey.uniroma2.it
 		* */
 	-->
+	
+<!-- chrome://semantic-turkey/content/resourceViewTest/resourceViewTest.xul -->	
 <window title="Resource View Test" id="resourceView"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
