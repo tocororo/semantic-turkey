@@ -12,13 +12,13 @@ window.onload = function() {
 
 art_semanticturkey.simpleAlertListener = function(){
 	var message = document.getElementById("simpleAlertMessage").value;
-	art_semanticturkey.alert(message);
+	art_semanticturkey.Alert.alert(message);
 }
 
 art_semanticturkey.detailedAlertListener = function(){
 	var message = document.getElementById("detailedAlertMessage").value;
 	var details = document.getElementById("detailedAlertDetails").value;
-	art_semanticturkey.alert(message, details);
+	art_semanticturkey.Alert.alert(message, details);
 }
 
 art_semanticturkey.exceptionAlertListener = function(){
@@ -29,7 +29,7 @@ art_semanticturkey.exceptionAlertListener = function(){
 		else
 			throw new UserException(message);	
 	} catch (e){
-		art_semanticturkey.alert(e);
+		art_semanticturkey.Alert.alert(e);
 	}
 }
 

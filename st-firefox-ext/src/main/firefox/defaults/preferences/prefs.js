@@ -16,6 +16,7 @@ pref("extensions.semturkey.skos.humanReadable", false);
 pref("extensions.semturkey.skos.enabled", true);
 pref("extensions.semturkey.annotation.checkAnnotation", true);
 pref("extensions.semturkey.annotation.colorsEnabled", true);
+pref("extensions.semturkey.useEditor", "legacy");//other options: "tab", "window"
 
 
 

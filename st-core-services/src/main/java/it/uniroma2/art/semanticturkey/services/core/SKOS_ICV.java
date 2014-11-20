@@ -91,11 +91,10 @@ public class SKOS_ICV extends STServiceAdapter {
 		}
 		return response;
 	}
-	
+		
 	/**
-	 * Detects cyclic hierarchical relations. Returns a list of records topCyclicConcept-cyclicConcept where 
-	 * both elements are part of the cycle, and topCyclicConcept is the concept that has a broader outside the
-	 * cycle (in addition to the broader inside) and so, probably is the cause of the problem
+	 * Detects cyclic hierarchical relations. Returns a list of records top, n1, n2 where 
+	 * top is likely the cause of the cycle, n1 and n2 are vertex that belong to the cycle
 	 * @return
 	 * @throws QueryEvaluationException
 	 * @throws UnsupportedQueryLanguageException
@@ -108,30 +107,37 @@ public class SKOS_ICV extends STServiceAdapter {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listCyclicConcepts",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-//		String q = "SELECT DISTINCT ?topCyclicConcept ?cyclicConcept WHERE {\n"
-		String q = "SELECT DISTINCT ?topCyclicConcept WHERE {\n"
-				+ "{ ?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
-				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept .\n"
-				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">) ?broader .\n"
+		String q = "SELECT DISTINCT ?top ?n1 ?n2 WHERE{\n"
+				+ "{?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?n1 .\n"
+				+ "?n1 (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">) ?n2 .\n"
+				+ "?n2 (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?top .\n"
+				+ "}UNION{\n"
+				+ "?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">) ?n1 .\n"
+				+ "?n1 (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">) ?top .\n"
+				+ "bind(?top as ?n2)\n"
+				+ "} {\n" 
+				+ "?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
+				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?top .\n"
+				+ "?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">) ?broader .\n"
 				+ "FILTER NOT EXISTS {\n"
-				+ "?broader (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept }\n"
+				+ "?broader (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?top }\n"
 				+ "} UNION {\n"
-				+ "?topCyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
-				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?topCyclicConcept .\n"
-				+ "?topCyclicConcept (<" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + ">)+ ?scheme . } }";
+				+ "?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
+				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?top .\n"
+				+ "?top (<" + SKOS.TOPCONCEPTOF + "> | ^ <" + SKOS.HASTOPCONCEPT + ">)+ ?scheme .} }";
 		logger.info("query [listCyclicConcepts]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
 		while (itTupleBinding.hasNext()){
 			TupleBindings tb = itTupleBinding.next();
-			String topCyclicConcept = tb.getBinding("topCyclicConcept").getBoundValue().getNominalValue();
-//			String cyclicConcept = tb.getBinding("cyclicConcept").getBoundValue().getNominalValue();
-//			Element recordElem = XMLHelp.newElement(dataElement, "record");
-//			recordElem.setAttribute("topCyclicConcept", topCyclicConcept);
-//			recordElem.setAttribute("cyclicConcept", cyclicConcept);
-			XMLHelp.newElement(dataElement, "concept", topCyclicConcept);
-			
+			String topCyclicConcept = tb.getBinding("top").getBoundValue().getNominalValue();
+			String node1 = tb.getBinding("n1").getBoundValue().getNominalValue();
+			String node2 = tb.getBinding("n2").getBoundValue().getNominalValue();
+			Element recordElem = XMLHelp.newElement(dataElement, "record");
+			recordElem.setAttribute("topCyclicConcept", topCyclicConcept);
+			recordElem.setAttribute("node1", node1);
+			recordElem.setAttribute("node2", node2);
 		}
 		return response;
 	}

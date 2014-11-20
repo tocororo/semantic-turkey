@@ -9,18 +9,21 @@
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/skos_icv/cyclicConcept/cyclicConcept.js" />
 		
-		<hbox pack="center">
-			<description style="white-space: pre-wrap;">skos:Concept(s) that make a cycle in the hierarchy.
-Note: in the list below will be shown the skos:Concept(s) that can be the cause of one or more cycles.
+		<vbox >
+			<description style="white-space: pre-wrap;">skos:Concept(s) that make a cycle in the hierarchy.</description>
+			<description style="white-space: pre-wrap;">Note: in the list below will be shown the skos:Concept(s) that can be the cause of one or more cycles.
+It's recommended to fix one or more relationships of these concepts to eliminate the cycle(s) and to avoid the creation of danglind concept. 
 For further information check the concept tree.</description>
-		</hbox>
+		</vbox>
 		
 		<listbox id="listbox" flex="1">
 			<listhead>
 				<listheader label="skos:Concept" />
 				<listheader label="Action" />
+				<listheader label="See graph" />
 			</listhead>
 			<listcols>
+				<listcol flex="4"/>
 				<listcol flex="2"/>
 				<listcol flex="1"/>
 			</listcols>
