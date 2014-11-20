@@ -2,7 +2,7 @@
 
 <features>
 
-	<feature name="semantic_prereq" version="1.0">
+	<feature name="semantic_prereq" version="${project.version}">
 
 		
 		<!-- These bundles provide optional dependencies for spring-web, in order to support multipart
@@ -14,7 +14,7 @@
 		<bundle>mvn:org.apache.commons/com.springsource.org.apache.commons.fileupload/1.2.0</bundle>
 
 		<!-- Owlart -->
-		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.2-SNAPSHOT</bundle>
+		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.2</bundle>
 
 		<!-- Web-Console -->
 		<feature>webconsole</feature>
