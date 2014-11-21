@@ -56,8 +56,8 @@ import org.w3c.dom.Element;
  * @author Armando Stellato Contributor(s): Andrea Turbati
  */
 @Component
-public class Refactor extends ServiceAdapter {
-	protected static Logger logger = LoggerFactory.getLogger(Refactor.class);
+public class RefactorOld extends ServiceAdapter {
+	protected static Logger logger = LoggerFactory.getLogger(RefactorOld.class);
 	public String XSLpath = Resources.getXSLDirectoryPath() + "createClassForm.xsl";
 
 	public static class Pars {
@@ -77,7 +77,7 @@ public class Refactor extends ServiceAdapter {
 	public static String replaceBaseURIRequest = "replaceBaseUri";
 
 	@Autowired
-	public Refactor(@Value("Refactor") String id) {
+	public RefactorOld(@Value("Refactor") String id) {
 		super(id);
 	}
 
