@@ -3,7 +3,9 @@ date: xx-xx-201x
   * 
 version 0.10.1
 date 20-11-2014
- * fixed several bugs
+ * fixed a few bugs
+ * includes updated sesame2 OntologyManager compatible with triple stores which do not copy triples from all named graphs into the
+   inferred defaultgraph (e.g. OWLIM/GraphDB)
 
 version 0.10
 date: 22-09-2014
