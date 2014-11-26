@@ -138,6 +138,8 @@ public class Refactor extends STServiceAdapter {
 					graphs[i] = ontModel.createURIResource(graphArray[i]);
 				}
 			}
+		} else {
+			graphs = new ARTResource[0];
 		}
 		try {
 			if(sourceBaseURI!=null && sourceBaseURI.length()>0){
