@@ -157,7 +157,7 @@ public class RefactorOld extends ServiceAdapter {
 	public Response replaceBaseURI(String sourceBaseURI, String targetBaseURI, String graphArrayString) {
 		RDFModel ontModel = getOntModel();
 		
-		ARTResource []graphs = null;
+		ARTResource []graphs;
 		if(graphArrayString!=null && graphArrayString.length()>0){
 			String[] graphArray = graphArrayString.split("\\|_\\|");
 			graphs = new ARTResource[graphArray.length];
@@ -168,6 +168,8 @@ public class RefactorOld extends ServiceAdapter {
 					graphs[i] = ontModel.createURIResource(graphArray[i]);
 				}
 			}
+		} else {
+			graphs = new ARTResource[0];
 		}
 		try {
 			if(sourceBaseURI!=null && sourceBaseURI.length()>0){
