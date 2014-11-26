@@ -5,6 +5,7 @@ import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -33,7 +34,7 @@ public class PropertyPatternDataAccessSPARQLImpl implements PropertyPatternDataA
 	}
 
 	@Override
-	public Map<ARTURIResource, Multimap<ARTURIResource, ARTNode>> retrieveInformationAbout(Collection<ARTURIResource> uriResources,
+	public Map<ARTURIResource, Multimap<ARTURIResource, ARTNode>> retrieveInformationAbout(ARTResource subject, Collection<ARTURIResource> uriResources,
 			Multimap<ARTURIResource, ARTNode> propertyPattern) throws DataAccessException {
 
 		List<ARTURIResource> relevantPredicates = new ArrayList<ARTURIResource>(propertyPattern.keySet());
@@ -55,23 +56,7 @@ public class PropertyPatternDataAccessSPARQLImpl implements PropertyPatternDataA
 			}
 		}
 
-		sb.append("values(?resource){\n");
-
-		// TODO: better quota management
-		int remainingResouces = MAXIMUM_RESOURCE_COUNT_FOR_BATCH;
-
-		for (ARTURIResource uriRes : uriResources) {
-			if (remainingResouces == 0) {
-				break;
-			} else {
-				remainingResouces--;
-			}
-
-			sb.append("(" + RDFNodeSerializer.toNT(uriRes) + ")\n");
-		}
-		
-		sb.append("}\n");
-
+		sb.append(RDFNodeSerializer.toNT(subject)).append(" ?anyPredicate ?resource .");
 		sb.append("}");
 
 		try {
@@ -85,6 +70,8 @@ public class PropertyPatternDataAccessSPARQLImpl implements PropertyPatternDataA
 				ARTURIResource pred = stmt.getPredicate();
 				ARTNode obj = stmt.getObject();
 
+				if (!uriResources.contains(subj)) continue;
+				
 				Multimap<ARTURIResource, ARTNode> subjDescr = result.get(subj);
 				
 				if (subjDescr == null) {

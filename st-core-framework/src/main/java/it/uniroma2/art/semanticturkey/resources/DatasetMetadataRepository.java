@@ -30,6 +30,8 @@ import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.rendering.SKOSXLRenderingEngine;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,11 +60,12 @@ public class DatasetMetadataRepository {
 
 		// TODO: remove this initialization block defining some known datasets
 		datasetMetadataRepository.put("http://dbpedia.org/resource/", new DatasetMetadata(
-				"http://dbpedia.org/resource/", null, "http://dbpedia.org/sparql", true, new DummyRenderingEngine(), RDFS.Res.URI));
+				"http://dbpedia.org/resource/", null, "http://dbpedia.org/sparql", true,
+				new RDFSRenderingEngine(), RDFS.Res.URI));
 		datasetMetadataRepository.put("http://aims.fao.org/aos/agrovoc/", new DatasetMetadata(
-				"http://aims.fao.org/aos/agrovoc/", null, "http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc#", true, new DummyRenderingEngine(), SKOSXL.Res.URI));
+				"http://aims.fao.org/aos/agrovoc/", null, "http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc#", true, new SKOSXLRenderingEngine(), SKOSXL.Res.URI));
 		datasetMetadataRepository.put("http://lod.nal.usda.gov/nalt/", new DatasetMetadata(
-				"http://lod.nal.usda.gov/nalt/", null, null, true, new DummyRenderingEngine(), SKOSXL.Res.URI));
+				"http://lod.nal.usda.gov/nalt/", null, null, true, new RDFSRenderingEngine(), SKOSXL.Res.URI));
 
 	}
 
@@ -105,23 +108,5 @@ public class DatasetMetadataRepository {
 			return null;
 		}
 
-	}
-
-	// TODO: remove dummy rendering engine
-	public static class DummyRenderingEngine implements RenderingEngine {
-
-		@Override
-		public Map<ARTResource, String> render(Project<?> project, ARTResource subject,
-				Collection<ARTStatement> statements, ARTResource... resources) throws ModelAccessException {
-			Map<ARTResource, String> resource2rendering = new HashMap<ARTResource, String>();
-
-			for (ARTResource res : resources) {
-				resource2rendering.put(res, "####" + res.getNominalValue());
-			}
-			
-			return resource2rendering;
-		}
-
-		
 	}
 }

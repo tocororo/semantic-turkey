@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.data.access.impl;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -29,7 +30,7 @@ public class PropertyPatternDataAccessDereferencingImpl implements PropertyPatte
 	}
 
 	@Override
-	public Map<ARTURIResource, Multimap<ARTURIResource, ARTNode>> retrieveInformationAbout(
+	public Map<ARTURIResource, Multimap<ARTURIResource, ARTNode>> retrieveInformationAbout(ARTResource subject,
 			Collection<ARTURIResource> uriResources, Multimap<ARTURIResource, ARTNode> propertyPattern)
 			throws DataAccessException {
 

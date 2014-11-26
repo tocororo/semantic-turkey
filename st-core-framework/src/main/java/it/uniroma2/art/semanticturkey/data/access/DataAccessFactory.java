@@ -24,26 +24,41 @@ public class DataAccessFactory {
 		CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(project.getOWLModel());
 		return new TupleQueryDataAccessSPARQLImpl(queryModel);
 	}
+	
+	public static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project, ResourcePosition resourcePosition) throws DataAccessException {
+		if (resourcePosition instanceof LocalResourcePosition) {
+			return createPropertyPatternDataAccess(((LocalResourcePosition)resourcePosition).getProject());
+		} else if (resourcePosition instanceof RemoteResourcePosition) {
+			RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition)resourcePosition;
+			
+			return createPropertyPatternDataAccess(project, remoteResourcePosition.getDatasetMetadata());
+		} else {
+			return createPropertyPatternDataAccess(project, (DatasetMetadata)null);
+		}
+	}
 
-	public static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project) {
+	private static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project) {
 		CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(project.getOWLModel());
 		return new PropertyPatternDataAccessSPARQLImpl(queryModel);
 	}
 
-	public static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project,
+	private static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project,
 			DatasetMetadata meta) throws DataAccessException {
-		String sparqlEndpoint = meta.getSparqlEndpoint();
 
 		try {
 			ModelFactory<?> fact = OWLArtModelFactory.createModelFactory(getCurrentModelFactory(project));
 
-			if (sparqlEndpoint != null) {
-				CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(fact.loadTripleQueryHTTPConnection(sparqlEndpoint));
-				return new PropertyPatternDataAccessSPARQLImpl(queryModel);
-			} else if (meta.isDereferenceable()){
-				return new PropertyPatternDataAccessDereferencingImpl(fact.loadLinkedDataResolver());
-			} else {
+			if (meta != null) {
+				if (meta.getSparqlEndpoint() != null) {
+					CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(fact.loadTripleQueryHTTPConnection(meta.getSparqlEndpoint()));
+					return new PropertyPatternDataAccessSPARQLImpl(queryModel);
+				} else if (meta.isDereferenceable()){
+					return new PropertyPatternDataAccessDereferencingImpl(fact.loadLinkedDataResolver());
+				} else {
 				throw new DataAccessException("Dataset not accessible");
+				}
+			} else {
+				return new PropertyPatternDataAccessDereferencingImpl(fact.loadLinkedDataResolver());				
 			}
 		} catch (UnavailableResourceException | ProjectInconsistentException | ModelCreationException e) {
 			throw new DataAccessException(e);

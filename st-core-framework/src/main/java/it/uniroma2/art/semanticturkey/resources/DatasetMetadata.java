@@ -25,6 +25,8 @@ package it.uniroma2.art.semanticturkey.resources;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 
+import com.google.common.base.Objects;
+
 /**
  * Metadata describing a dataset.
  * 
@@ -70,6 +72,11 @@ public class DatasetMetadata {
 	
 	public boolean isAccessible() {
 		return getSparqlEndpoint() != null || isDereferenceable();
+	}
+	
+	@Override
+	public String toString() {
+		return Objects.toStringHelper(this).add("baseURI", this.baseURI).toString(); 
 	}
 	
 }
