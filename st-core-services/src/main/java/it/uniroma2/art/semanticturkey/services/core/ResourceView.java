@@ -28,6 +28,7 @@ import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
@@ -100,7 +101,6 @@ import org.w3c.dom.Element;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 /**
@@ -159,9 +159,11 @@ public class ResourceView extends STServiceAdapter {
 		String gp_role = roleRecognitionOrchestrator.getGraphPatternForDescribe(resourcePosition, resource,
 				"role_");
 
-		String gp = String.format(
-				"{{%1$s ?resource ?object} union {%1$s ?predicate ?resource} {%2$s union %3$s}}",
-				RDFNodeSerializer.toNT(resource), gp_rendering, gp_role);
+		String gp_literalForm = "optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?xlabel_literalForm}";
+
+		String gp = String
+				.format("{{{%1$s ?resource ?object . %4$s} union {%1$s ?predicate ?resource}} {%2$s union %3$s}}",
+						RDFNodeSerializer.toNT(resource), gp_rendering, gp_role, gp_literalForm);
 
 		logger.debug("graph pattern for resource {} is {}", resource, gp);
 
@@ -173,6 +175,8 @@ public class ResourceView extends STServiceAdapter {
 		Map<ARTResource, RDFResourceRolesEnum> resource2Role = roleRecognitionOrchestrator.computeRoleOf(
 				project, resourcePosition, resource, stmtCollector.getStatements(), resourcesToBeRendered,
 				bindings, "role_");
+
+		Map<ARTResource, String> xLabel2LiteralForm = collectXLabels(bindings);
 
 		// ********************************************
 		// Step X: Update subject with role & rendering
@@ -188,7 +192,7 @@ public class ResourceView extends STServiceAdapter {
 		}
 
 		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource, subjectRole,
-				stmtCollector, resource2Role, resource2Rendering);
+				stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
 
 		// ********************************************
 		// Step X : Populate other properties structure
@@ -257,9 +261,33 @@ public class ResourceView extends STServiceAdapter {
 
 	}
 
+	private Map<ARTResource, String> collectXLabels(Collection<TupleBindings> bindings) {
+		Map<ARTResource, String> result = new HashMap<ARTResource, String>();
+		for (TupleBindings b : bindings) {
+			if (b.hasBinding("xlabel_literalForm")) {
+				ARTNode object = b.getBoundValue("object");
+				ARTNode literalForm = b.getBoundValue("xlabel_literalForm");
+
+				if (object.isResource() && literalForm.isLiteral()) {
+					ARTResource xLabel = object.asResource();
+					ARTLiteral literalFormAsLiteral = literalForm.asLiteral();
+
+					String render = literalFormAsLiteral.getLabel();
+					if (literalFormAsLiteral.getLanguage() != null) {
+						render = render + "(" + literalForm + ")";
+					}
+
+					result.put(xLabel, render);
+				}
+			}
+		}
+
+		return result;
+	}
+
 	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource,
 			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
-			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering)
+			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering, Map<ARTResource, String> xLabel2LiteralForm)
 			throws DOMException, ModelAccessException {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceView.ResourceViewSection>();
@@ -279,8 +307,7 @@ public class ResourceView extends STServiceAdapter {
 			for (ARTStatement stmt : typeStmts) {
 				Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 				STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-						resource2Role.get(stmt.getObject()),
-						graphs.contains(NodeFilters.MAINGRAPH),
+						resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
 						resource2Rendering.get(stmt.getObject()));
 				stRes.setInfo("graphs", Joiner.on(",").join(graphs));
 				types.add(stRes);
@@ -315,8 +342,7 @@ public class ResourceView extends STServiceAdapter {
 				for (ARTStatement stmt : superTypeStmts) {
 					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()),
-							graphs.contains(NodeFilters.MAINGRAPH),
+							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
 							resource2Rendering.get(stmt.getObject()));
 					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
 					superTypes.add(stRes);
@@ -369,15 +395,23 @@ public class ResourceView extends STServiceAdapter {
 						graphs.contains(NodeFilters.MAINGRAPH), false);
 
 				if (stNode.isResource()) {
-					((STRDFResource) stNode).setRendering(resource2Rendering.get(obj));
-					((STRDFResource) stNode).setRole(resource2Role.get(obj));
+					RDFResourceRolesEnum role = resource2Role.get(obj);
+					
+					STRDFResource stRes = (STRDFResource) stNode;
+					
+					if (RDFResourceRolesEnum.xLabel == role) {
+						stRes.setRendering(xLabel2LiteralForm.get(obj));
+					} else {
+						stRes.setRendering(resource2Rendering.get(obj));
+					}
+					stRes.setRole(role);
 				}
 
 				stNode.setInfo("graphs", Joiner.on(",").join(graphs));
 
 				resultPredicateObjectValues.put(pred, stNode);
 			}
-			
+
 			result.put("lexicalizations", new PredicateObjectsListSection(predicateObjectsList));
 		}
 
@@ -396,8 +430,7 @@ public class ResourceView extends STServiceAdapter {
 				for (ARTStatement stmt : topConceptStmts) {
 					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()),
-							graphs.contains(NodeFilters.MAINGRAPH),
+							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
 							resource2Rendering.get(stmt.getObject()));
 					topConcepts.add(stRes);
 					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
@@ -453,8 +486,7 @@ public class ResourceView extends STServiceAdapter {
 				for (ARTStatement stmt : inverseOfStmts) {
 					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()),
-							graphs.contains(NodeFilters.MAINGRAPH),
+							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
 							resource2Rendering.get(stmt.getObject()));
 					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
 					inverseOf.add(stRes);
@@ -468,9 +500,9 @@ public class ResourceView extends STServiceAdapter {
 				inverseOfStmts.clear();
 
 				// TODO: handle domains and ranges
- 
+
 			}
-			
+
 			// TODO: handle ontology imports in ontologies
 
 		}

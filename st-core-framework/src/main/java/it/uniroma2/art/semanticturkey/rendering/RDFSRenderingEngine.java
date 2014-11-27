@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -36,6 +37,7 @@ public class RDFSRenderingEngine implements RenderingEngine {
 			ARTResource subject, Collection<ARTStatement> statements, Collection<ARTResource> resources,
 			Collection<TupleBindings> bindings, String varPrefix) throws ModelAccessException,
 			DataAccessException {
+
 		Set<ARTURIResource> uriresourceToBeRendered = new HashSet<ARTURIResource>();
 
 		for (ARTResource r : resources) {
@@ -44,92 +46,116 @@ public class RDFSRenderingEngine implements RenderingEngine {
 			}
 		}
 
+		///////////////////////////////
+		//// Process subject statements
+		
 		Multimap<ARTResource, ARTLiteral> labelBuilding = HashMultimap.create();
 
-		if (bindings.isEmpty()) {
+		for (ARTStatement stmt : statements) {
+			if (resources.contains(stmt.getSubject()) && stmt.getPredicate().equals(RDFS.Res.LABEL)) {
+				ARTURIResource resourceUri = stmt.getSubject().asURIResource();
 
-			for (ARTStatement stmt : statements) {
-				if (resources.contains(stmt.getSubject()) && stmt.getPredicate().equals(RDFS.Res.LABEL)) {
-					ARTURIResource resourceUri = stmt.getSubject().asURIResource();
+				ARTNode resourceNode = stmt.getSubject();
+				ARTNode labelNode = stmt.getObject();
 
-					ARTNode resourceNode = stmt.getSubject();
-					ARTNode labelNode = stmt.getObject();
+				if (labelNode.isLiteral()) {
+					ARTLiteral labelLiteral = labelNode.asLiteral();
 
-					if (labelNode.isLiteral()) {
-						ARTLiteral labelLiteral = labelNode.asLiteral();
-
-						labelBuilding.put(resourceNode.asResource(), labelLiteral);
-
-					}
+					labelBuilding.put(resourceNode.asResource(), labelLiteral);
 				}
 			}
-		} else {
-			String resourceLabelVar = varPrefix + "label";
-			String subjectLabelVar = varPrefix + "subject_label";
+		}
 
-			String resourceVar = "resource";
+		///////////////////////////
+		//// Process tuple bindings
+		
+		String resourceLabelVar = varPrefix + "label";
+		String subjectLabelVar = varPrefix + "subject_label";
 
-			for (TupleBindings aBinding : bindings) {
-				ARTResource res;
-				ARTLiteral label = null;
+		String resourceVar = "resource";
 
-				if (aBinding.hasBinding(resourceLabelVar)) {
-					res = aBinding.getBoundValue(resourceVar).asResource();
-					label = aBinding.getBoundValue(resourceLabelVar).asLiteral();
-				} if (aBinding.hasBinding(subjectLabelVar)) {
-					res = subject;
-					label = aBinding.getBoundValue(subjectLabelVar).asLiteral();
-				} else {
-					continue;
-				}
+		for (TupleBindings aBinding : bindings) {
+			ARTResource res;
+			ARTLiteral label = null;
 
-				labelBuilding.put(res, label);
+			if (aBinding.hasBinding(resourceLabelVar)) {
+				res = aBinding.getBoundValue(resourceVar).asResource();
+				label = aBinding.getBoundValue(resourceLabelVar).asLiteral();
 			}
+			if (aBinding.hasBinding(subjectLabelVar)) {
+				res = subject;
+				label = aBinding.getBoundValue(subjectLabelVar).asLiteral();
+			} else {
+				continue;
+			}
+
+			labelBuilding.put(res, label);
 		}
 
 		Map<ARTResource, String> resource2rendering = new HashMap<ARTResource, String>();
 
 		for (ARTResource key : labelBuilding.keySet()) {
 			StringBuilder sb = new StringBuilder();
-			
+
 			Set<ARTLiteral> sortedLabels = new TreeSet<ARTLiteral>(LabelComparator.INSTANCE);
 			sortedLabels.addAll(labelBuilding.get(key));
-			
+
 			for (ARTLiteral label : sortedLabels) {
 				if (sb.length() != 0) {
 					sb.append(", ");
 				}
-				
-				sb.append(label.getLabel()).append(" (").append(label.getLanguage()).append(")");
+
+				sb.append(label.getLabel());
+
+				if (label.getLanguage() != null) {
+					sb.append(" (").append(label.getLanguage()).append(")");
+				}
 			}
-			
+
 			resource2rendering.put(key, sb.toString());
 		}
 
 		return resource2rendering;
 	}
 
-	private static class LabelComparator implements Comparator<ARTLiteral>{
+	private static class LabelComparator implements Comparator<ARTLiteral> {
 
 		public static final LabelComparator INSTANCE = new LabelComparator();
-		
+
 		@Override
 		public int compare(ARTLiteral o1, ARTLiteral o2) {
-			int langCompare = o1.getLanguage().compareTo(o2.getLanguage());
-			
+
+			int langCompare = compare(o1.getLanguage(), o2.getLanguage());
+
 			if (langCompare == 0) {
-				return o1.getLabel().compareTo(o2.getLabel());
+				return compare(o1.getLabel(), o2.getLabel());
 			} else {
 				return langCompare;
 			}
 		}
-		
+
+		private static int compare(String s1, String s2) {
+			if (Objects.equal(s1, s2)) {
+				return 0;
+			} else {
+				if (s1 == null) {
+					return -1;
+				} else if (s2 == null) {
+					return 1;
+				} else {
+					return s1.compareTo(s2);
+				}
+			}
+		}
+
 	}
-	
+
 	@Override
 	public String getGraphPatternForDescribe(ResourcePosition resourcePosition,
 			ARTResource resourceToBeRendered, String varPrefix) {
-		return String.format("{?resource <http://www.w3.org/2000/01/rdf-schema#label> ?%1$slabel .} union {%2$s <http://www.w3.org/2000/01/rdf-schema#label> ?%1$ssubject_label .}", varPrefix, RDFNodeSerializer.toNT(resourceToBeRendered));
+		return String
+				.format("{?resource <http://www.w3.org/2000/01/rdf-schema#label> ?%1$slabel .} union {%2$s <http://www.w3.org/2000/01/rdf-schema#label> ?%1$ssubject_label .}",
+						varPrefix, RDFNodeSerializer.toNT(resourceToBeRendered));
 	}
 
 	// @Override
