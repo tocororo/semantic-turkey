@@ -15,7 +15,8 @@
 	can be obtained at * http://semanticturkey.uniroma2.it * */ -->
 <window title="Resource View" id="resourceView"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="600" height="600">
 	<script type="application/x-javascript" src="resourceViewUtils.js" />
 	<script type="application/x-javascript" src="resourceView.js" />
 

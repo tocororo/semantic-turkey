@@ -5,8 +5,14 @@ Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 
+var useEditorMenulist;
+
 window.onload = function() {
 	document.getElementById("resourceViewButton").addEventListener("command", art_semanticturkey.launchResourceView, true);
+	var useEditorPref = art_semanticturkey.Preferences.get("extensions.semturkey.useEditor");
+	useEditorMenulist = document.getElementById("useEditorMenulist");
+	useEditorMenulist.addEventListener("command", art_semanticturkey.menulistChangeListener, true);
+	useEditorMenulist.selectedItem = document.getElementById(useEditorPref);
 }
 
 art_semanticturkey.launchResourceView = function(){
@@ -19,14 +25,10 @@ art_semanticturkey.launchResourceView = function(){
 		return;
 	}
 	
-	//update the preference set from the menulist
-	var useEditorPref = document.getElementById("useEditorMenulist").selectedItem.value;
-	art_semanticturkey.Preferences.set("extensions.semturkey.useEditor", useEditorPref);
-	
-	
+	var useEditorPref = art_semanticturkey.Preferences.get("extensions.semturkey.useEditor");
 	var params = new Object();
 	if (useEditorPref == "legacy"){
-		//this parameters should be provided already in the .js where the old editor panel is used
+		//the params object and its parameters should be provided already in the .js where the old editor panel is used
 		params.isFirstEditor = true;
 		params.parentWindow = window;
 		params.sourceType = "cls";//just for demo
@@ -35,7 +37,13 @@ art_semanticturkey.launchResourceView = function(){
 		params.deleteForbidden = false;
 		art_semanticturkey.ResourceViewLauncher.openResourceView(params);
 	} else {
-		params.resource = resourceName;
-		art_semanticturkey.ResourceViewLauncher.openResourceView(params);
+//		params.resource = resourceName;
+//		art_semanticturkey.ResourceViewLauncher.openResourceView(params);
+		art_semanticturkey.ResourceViewLauncher.openResourceView(resourceName);
 	}
+}
+
+art_semanticturkey.menulistChangeListener = function(){
+	var useEditorPref = useEditorMenulist.selectedItem.value;
+	art_semanticturkey.Preferences.set("extensions.semturkey.useEditor", useEditorPref);
 }

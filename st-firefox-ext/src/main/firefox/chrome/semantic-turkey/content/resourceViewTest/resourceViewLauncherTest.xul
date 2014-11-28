@@ -31,9 +31,9 @@
 		<label value="extensions.semturkey.useEditor" />
 		<menulist id="useEditorMenulist">
 			<menupopup>
-				<menuitem label="Legacy" value="legacy" />
-				<menuitem label="Tab" value="tab" />
-				<menuitem label="Window" value="window" />
+				<menuitem label="Legacy" value="legacy" id="legacy" />
+				<menuitem label="Tab" value="tab" id="tab" />
+				<menuitem label="Window" value="window" id="window" />
 			</menupopup>
 		</menulist>
 	</hbox>

@@ -3,6 +3,7 @@ if (typeof art_semanticturkey == 'undefined')
 Components.utils.import("resource://stservices/SERVICE_SKOS_ICV.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 
 window.onload = function() {
 	art_semanticturkey.init();
@@ -87,13 +88,7 @@ art_semanticturkey.fixButtonClickListener = function() {
 	parameters.sourceElementName = concept;
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
-	//TODO: restore if the new editor panel becomes active
-//	window.openDialog("chrome://semantic-turkey/content/editorsNew/editorPanel.xul", 
-//			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
-//			parameters);
-	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul",
-			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
-			parameters);
+	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
 }
 
 /**
@@ -107,11 +102,5 @@ art_semanticturkey.conceptDblClickListener = function() {
 	parameters.sourceElementName = concept;
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
-	//TODO: restore if the new editor panel becomes active
-//	window.openDialog("chrome://semantic-turkey/content/editorsNew/editorPanel.xul", 
-//			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
-//			parameters);
-	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul",
-			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
-			parameters);
+	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
 }

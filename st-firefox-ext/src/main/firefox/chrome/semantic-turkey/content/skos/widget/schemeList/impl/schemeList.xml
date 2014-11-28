@@ -23,11 +23,8 @@
 				deleteForbidden : false, 	 // cancellazione vietata 
 				parentWindow : window		 // finestra da cui viene aperto l'editor
 			};
-			window.openDialog(
-					"chrome://semantic-turkey/content/editors/editorPanel.xul",
-					"_blank",
-					"chrome,dependent,dialog,modal=yes,resizable,centerscreen",
-					parameters);
+			art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+			
 			]]>
 			</handler>
 		</handlers>
@@ -46,6 +43,7 @@
 				Components.utils.import("resource://stmodules/PrefUtils.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Preferences.jsm", this.art_semanticturkey);	
 				Components.utils.import("resource://stmodules/ARTResources.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 				
 				//var mozIJSSubScriptLoader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
 				//                                      .getService(Components.interfaces.mozIJSSubScriptLoader);

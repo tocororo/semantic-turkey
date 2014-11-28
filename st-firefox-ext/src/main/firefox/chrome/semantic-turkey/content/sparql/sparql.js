@@ -40,6 +40,7 @@ Components.utils.import("resource://stmodules/ResponseContentType.jsm",
 		art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm",
 		art_semanticturkey);
+Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("submitQuery").addEventListener("command",
@@ -1062,8 +1063,6 @@ art_semanticturkey.SPARQLResourcedblClick = function(event) {
 		parameters.sourceElement = treecell;
 		parameters.sourceElementName = treecell.getAttribute("label");
 		parameters.isFirstEditor = true;
-		window.openDialog(
-				"chrome://semantic-turkey/content/editors/editorPanel.xul",
-				"_blank", "modal=yes,resizable,left=400,top=100", parameters);
+		art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
 	}
 };

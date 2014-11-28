@@ -3,6 +3,7 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 
 
 art_semanticturkey.associateEventsOnGraphicElements = function() {
@@ -184,14 +185,7 @@ art_semanticturkey.myPropertyTreedoubleClick = function(event) {
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	
-	//NEWEDITOR TEST
-	if(art_semanticturkey.Preferences.get("extensions.semturkey.useNewEditor", false) == true){
-		window.openDialog("chrome://semantic-turkey/content/editorsNew/editorPanel.xul",
-			"_blank", "modal=yes,resizable,centerscreen", parameters);
-	} else {
-		window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul",
-				"_blank", "modal=yes,resizable,centerscreen", parameters);
-	}
+	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
 };
 art_semanticturkey.getCellNodeAt = function(row, col) {
 	var tree = document.getElementById("propertiesTree");

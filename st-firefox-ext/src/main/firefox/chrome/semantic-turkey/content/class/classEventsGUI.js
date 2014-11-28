@@ -29,6 +29,7 @@ if (typeof art_semanticturkey == 'undefined')
 
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 
 
 art_semanticturkey.associateEventsOnGraphicElementsClasses = function() {
@@ -881,20 +882,7 @@ art_semanticturkey.classesTreedoubleClick = function(event) {
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	
-	//NEWEDITOR TEST
-	if(art_semanticturkey.Preferences.get("extensions.semturkey.useNewEditor", false) == true){
-		window.openDialog(
-			"chrome://semantic-turkey/content/editorsNew/editorPanel.xul",
-			"_blank",
-			"chrome,dependent,dialog,modal=yes,resizable,centerscreen",
-			parameters);
-	} else {
-		window.openDialog(
-			"chrome://semantic-turkey/content/editors/editorPanel.xul",
-			"_blank",
-			"chrome,dependent,dialog,modal=yes,resizable,centerscreen",
-			parameters);
-	}
+	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
 
 };
 
