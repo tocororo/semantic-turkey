@@ -85,6 +85,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -376,7 +377,11 @@ public class ResourceView extends STServiceAdapter {
 				art2STRDFPredicates.put(pred, stPred);
 			}
 
-			for (ARTStatement stmt : stmtCollector.getStatements()) {
+			Iterator<ARTStatement> stmtIt = stmtCollector.getStatements().iterator();
+			
+			while (stmtIt.hasNext()) {
+				ARTStatement stmt = stmtIt.next();
+				
 				Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 
 				if (!stmt.getSubject().equals(resource))
@@ -410,6 +415,7 @@ public class ResourceView extends STServiceAdapter {
 				stNode.setInfo("graphs", Joiner.on(",").join(graphs));
 
 				resultPredicateObjectValues.put(pred, stNode);
+				stmtIt.remove();
 			}
 
 			result.put("lexicalizations", new PredicateObjectsListSection(predicateObjectsList));
