@@ -36,8 +36,12 @@
 							value = "\""+rdfResource.getLabel()+"\"";
 							if(rdfResource.isTypedLiteral())
 								value += "^^<"+rdfResource.getDatatype()+">";
-							else
-								value += "@"+rdfResource.getLang();
+							else {
+								var lang = rdfResource.getLang();
+								if (lang != null) {
+									value += "@"+lang;
+								}
+							}
 						} else if(rdfResource instanceof art_semanticturkey.ARTBNode){
 							value = rdfResource.getId();
 						}

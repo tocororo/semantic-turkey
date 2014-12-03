@@ -96,7 +96,7 @@ function createLiteral(response){
 	var label = literalElement.textContent;
 	var datatype;
 	if(isTypedLiteral)
-		datatype = literalElement.getAttribute("typeQName");
+		datatype = literalElement.getAttribute("type");
 	else
 		datatype = "";
 	var lang;
