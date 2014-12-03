@@ -13,6 +13,14 @@
 	was developed by the Artificial Intelligence Research Group * (art.uniroma2.it) 
 	at the University of Roma Tor Vergata (ART) * Current information about SemanticTurkey 
 	can be obtained at * http://semanticturkey.uniroma2.it * */ -->
+
+<!-- 
+	chrome://semantic-turkey/content/resourceView/resourceView.xul?resource=<resource to be shown>
+	
+	e.g.
+	
+	chrome://semantic-turkey/content/resourceView/resourceView.xul?resource=owl:Thing
+-->	
 <window title="Resource View" id="resourceView"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"

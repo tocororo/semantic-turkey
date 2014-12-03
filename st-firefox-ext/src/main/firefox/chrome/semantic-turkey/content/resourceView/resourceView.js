@@ -22,12 +22,15 @@ art_semanticturkey.resourceView.init = function() {
 
 	if (typeof resource != "string") {
 		alert("Missing argument for mandatory parameter \"resource\"");
+		window.close();
+		return;
 	}
 
 	try {
 		var response = art_semanticturkey.STRequests.ResourceView.getResourceView(resource);
 	} catch (e) {
 		alert(e.message);
+		window.close();
 		return;
 	}
 	
@@ -85,15 +88,15 @@ art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 	// ----------------------
 	// Handles the partitions
 
-	// Specially handled partitions
-	var excludedPartitions = [ "resource" ];
-
-	var responsePartitions = responseDataElement.children;
-
 	var partitionsBox = document.getElementById("partitionsBox");
 	while (partitionsBox.firstChild) {
 		partitionsBox.removeChild(partitionsBox.firstChild);
 	}
+	
+	// Specially handled partitions
+	var excludedPartitions = [ "resource" ];
+
+	var responsePartitions = responseDataElement.children;
 	
 	// For each partition
 	for (var i = 0; i < responsePartitions.length; i++) {	
@@ -132,27 +135,48 @@ art_semanticturkey.resourceView.renderPartitionDefault = function(subjectResourc
 
 	// Handles the partition content
 
-	var predicateObjectsList = art_semanticturkey.Deserializer
-			.createPredicateObjectList(responsePartition.children[0]);
+	var partitionContent = responsePartition.children[0];
+	
+	if (typeof partitionContent != "undefined") {
+	
+		// A predicateObjectsList
+		if (art_semanticturkey.resourceView.isPredicateObjectsList(partitionContent)) {
+			var predicateObjectsList = art_semanticturkey.Deserializer
+					.createPredicateObjectsList(partitionContent);
+		
+			for (var j = 0; j < predicateObjectsList.length; j++) {
+				var po = predicateObjectsList[j];
+				var predicateObjectsBox = document.createElement("box");
+				predicateObjectsBox.rdfSubject = subjectResource;
+				predicateObjectsBox.showSubjInGUI = false;
+				predicateObjectsBox.rdfPredicate = po.getPredicate();
+				predicateObjectsBox.rdfResourcesArray = po.getObjects();
+				predicateObjectsBox.operations = "add;remove";
+				predicateObjectsBox.classList.add("predicate-objects-widget");
+		
+				predicateObjectsBox.addEventListener("rdfnodeBaseEvent",
+						art_semanticturkey.resourceView.dblClickHandler);
+				predicateObjectsBox.addEventListener("predicateObjectsEvent",
+						art_semanticturkey.resourceView.predicateObjectsEventHandler);
+		
+				predicateObjectsBox.setAttribute("st-partitionName", partitionName);
+		
+				partitionGroupBox.appendChild(predicateObjectsBox);
+			}
+		} else { // Otherwise, assume an objects list
+			var objects = art_semanticturkey.Deserializer.createRDFArray(responsePartition);	
+			var objectListBox = document.createElement("box");
+			objectListBox.rdfResourcesArray = objects;
+			objectListBox.addRemoveButton = true;
+			objectListBox.operations = "add;remove";
+			objectListBox.classList.add("object-list-widget");
+			
+			objectListBox.addEventListener("rdfnodeBaseEvent",
+					art_semanticturkey.resourceView.dblClickHandler);
+			objectListBox.setAttribute("st-partitionName", partitionName);
 
-	for (var j = 0; j < predicateObjectsList.length; j++) {
-		var po = predicateObjectsList[j];
-		var predicateObjectsBox = document.createElement("box");
-		predicateObjectsBox.rdfSubject = subjectResource;
-		predicateObjectsBox.showSubjInGUI = false;
-		predicateObjectsBox.rdfPredicate = po.getPredicate();
-		predicateObjectsBox.rdfResourcesArray = po.getObjects();
-		predicateObjectsBox.operations = "add;remove";
-		predicateObjectsBox.classList.add("predicate-objects-widget");
-
-		predicateObjectsBox.addEventListener("rdfnodeBaseEvent",
-				art_semanticturkey.resourceView.dblClickHandler);
-		predicateObjectsBox.addEventListener("predicateObjectsEvent",
-				art_semanticturkey.resourceView.predicateObjectsEventHandler);
-
-		predicateObjectsBox.setAttribute("st-partitionName", partitionName);
-
-		partitionGroupBox.appendChild(predicateObjectsBox);
+			partitionGroupBox.appendChild(objectListBox);
+		}
 	}
 	
 	// Append the partition
@@ -171,7 +195,7 @@ art_semanticturkey.ARTPredicateObjects = function(predicate, objects) {
 
 };
 
-art_semanticturkey.Deserializer.createPredicateObjectList = function(element) {
+art_semanticturkey.Deserializer.createPredicateObjectsList = function(element) {
 	if (element.tagName != "collection") {
 		new Error("Not a collection");
 	}
@@ -196,6 +220,11 @@ art_semanticturkey.Deserializer.createPredicateObjectList = function(element) {
 
 	return result;
 };
+
+art_semanticturkey.resourceView.isPredicateObjectsList = function(element) {
+	return element && element.tagName == "collection" && element.children[0] && element.children[0].tagName == "predicateObjects";
+};
+
 
 art_semanticturkey.resourceView.dblClickHandler = function(event) {
 	var res = event.detail.rdfResource;
