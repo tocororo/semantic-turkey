@@ -274,7 +274,7 @@ public class ResourceView extends STServiceAdapter {
 
 					String render = literalFormAsLiteral.getLabel();
 					if (literalFormAsLiteral.getLanguage() != null) {
-						render = render + "(" + literalForm + ")";
+						render = render + " (" + literalFormAsLiteral.getLanguage() + ")";
 					}
 
 					result.put(xLabel, render);
