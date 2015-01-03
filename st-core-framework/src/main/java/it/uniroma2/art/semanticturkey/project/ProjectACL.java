@@ -190,12 +190,25 @@ public class ProjectACL {
 	// SERIALIZATION
 
 	
+	/**
+	 * serialization of the ACL for a specific consumer. 
+	 * 
+	 * @param consumerName
+	 * @param accessLevel
+	 * @return
+	 */
 	public static String serializeACL(String consumerName, AccessLevel accessLevel) {
 		Map<String, AccessLevel> acl = new HashMap<String, ProjectACL.AccessLevel>();
 		acl.put(consumerName, accessLevel);
 		return serializeACL(acl);
 	}
 	
+	/**
+	 * serialization of the whole ACL (of a project), containing all of its consumers and access levels
+	 * 
+	 * @param acl
+	 * @return
+	 */
 	public static String serializeACL(Map<String, AccessLevel> acl) {
 		StringBuilder aclString = new StringBuilder();
 		for (Entry<String, AccessLevel> entry : acl.entrySet()) {

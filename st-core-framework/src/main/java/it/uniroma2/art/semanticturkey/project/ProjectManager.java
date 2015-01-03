@@ -80,8 +80,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * a manager/factory class for creating new projects, for retrieving existing ones or for accessing the loaded
- * projects <br/>
+ * projects
+ * <p/>
+ * 
+ * <p>
+ * Apart from project factoring, The ProjectManager allows to specify the ACL (Access Control List) and to
+ * administer the online status of each project.
+ * </p>
+ * <p>
+ * The ACL is described by the {@link ProjectACL} class, and provides information about which
+ * {@link ProjectConsumer}s can access to this project, and which grants they have. Specifically,
+ * for each project, it contains the following descriptions:
+ * <ul>
+ * <li>a list of {@link ProjectConsumer}s, together with their access permissions {@link AccessLevel}.</li>
+ * <li>a "lockable" property, telling if the project associated to this ACL, can be locked for use by a
+ * {@link ProjectConsumer}, and by which modality</li>
+ * </ul>
+ * </p>
+ * <p>
+ * the online status of each project reports:
+ * <ul>
+ * <li>the list of its consumers, together with the {@link AccessLevel for each of them}</li>
+ * <li>the {@link LockStatus}, which is represented by a &lt;{@link LockLevel}, {@link ProjectConsumer}&rt;</li>
+ * </ul>
+ * </p>
+ * 
  * TODO We should split ProjectManager into two classes: the real ProjectManager, and a ProjectFactory.
  * ProjectManager should not deal with things like having "hands-in-the-details" of how a project is
  * structured. ProjectFactory should do this.
@@ -324,7 +349,8 @@ public class ProjectManager {
 			// return activateProject(projectName);
 			Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
 					LockLevel.NO);
-			// TODO this has to be removed, once all references to currentProject have been removed from ST (filters etc..)
+			// TODO this has to be removed, once all references to currentProject have been removed from ST
+			// (filters etc..)
 			// setCurrentProject(project);
 			return project;
 		} catch (Exception e) {
@@ -1132,10 +1158,22 @@ public class ProjectManager {
 	}
 
 	/**
+	 * <p>
 	 * This private class holds the information related to projects open at runtime <br/>
 	 * the methods in this class should be available from the outer class {@link ProjectManager}<br/>
 	 * here we just factorize the code and assure that the data structures necessary for holding this
-	 * information remain consistent
+	 * information remain consistent.
+	 * </p>
+	 * <br/>
+	 * <p>
+	 * the online status of each project reports:
+	 * <ul>
+	 * <li>the list of its consumers, together with the {@link AccessLevel for each of them}</li>
+	 * <li>the {@link LockStatus}, which is represented by a &lt;{@link LockLevel}, {@link ProjectConsumer}
+	 * &rt;</li>
+	 * </ul>
+	 * </p>
+	 * 
 	 * 
 	 * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
 	 * @author Armando Stellato &lt;stellato@info.uniroma2.it&gt;
@@ -1162,6 +1200,13 @@ public class ProjectManager {
 			return projectsAccessStatus.get(project);
 		}
 
+		/**
+		 * {@link AccessLevel#RW} if there is one project accessing it in {@link AccessLevel#RW}, otherwise
+		 * {@link AccessLevel#R}
+		 * 
+		 * @param project
+		 * @return
+		 */
 		public ProjectACL.AccessLevel getAccessStatus(Project<?> project) {
 			for (ProjectACL.AccessLevel accessLevel : getAccessStatusMap(project).values()) {
 				if (accessLevel == ProjectACL.AccessLevel.RW)
