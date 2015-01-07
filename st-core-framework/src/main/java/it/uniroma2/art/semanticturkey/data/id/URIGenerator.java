@@ -114,6 +114,7 @@ public class URIGenerator {
 				randomCode = ProjectManager.getProjectProperty(projectName, "uriRndCodeGenerator");
 			} catch (IOException | InvalidProjectNameException | ProjectInexistentException e) {}
 		}
+		//If the property is not found in the project truncuuid8 is assumed as default
 		if (randomCode == null){
 			randomCode = DEFAULT_VALUE;
 		}
