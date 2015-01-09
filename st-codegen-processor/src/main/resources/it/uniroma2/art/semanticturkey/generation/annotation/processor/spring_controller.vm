@@ -73,7 +73,7 @@ public class ${generatedClassSimpleName}
 #end
 #end
 
-    @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = RequestMethod.GET, produces = "application/xml;charset=UTF-8")
+    @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = $tools.getRequestMethodAsSource($method), produces = "application/xml;charset=UTF-8")
 	public @ResponseBody String  ${method.simpleName}Published(${arguments}) $throwsDeclaration
 	{
 #if($tools.isVoidMethod($method))

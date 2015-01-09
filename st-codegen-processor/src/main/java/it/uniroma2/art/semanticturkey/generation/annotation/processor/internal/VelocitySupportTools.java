@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor.internal;
 
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+
 import java.util.Map.Entry;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -67,5 +69,17 @@ public class VelocitySupportTools {
 
 	public String toStringLiteral(String string) {
 		return "\"" + string.replaceAll("\"", "\\\"") + "\"";
+	}
+	
+	public String getRequestMethodAsSource(ExecutableElement executableElement) {
+		GenerateSTServiceController ann = executableElement.getAnnotation(GenerateSTServiceController.class);
+		String requestMethodName = ann.method().toString();
+		if (requestMethodName.equals("GET")) {
+			return "RequestMethod.GET";
+		} else if (requestMethodName.equals("POST")){
+			return "RequestMethod.POST";
+		} else {
+			throw new IllegalArgumentException("Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
+		}
 	}
 }
