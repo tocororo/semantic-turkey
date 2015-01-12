@@ -23,6 +23,8 @@ window.onload = function() {
 			true);
 	document.getElementById("cloneProject")
 			.addEventListener("command", art_semanticturkey.cloneProject, true);
+	document.getElementById("projectProperty")
+			.addEventListener("command", art_semanticturkey.projectProperty, true);
 	document.getElementById("fixProject")
 			.addEventListener("command", art_semanticturkey.tryRepairProject, true);
 	
@@ -61,6 +63,7 @@ art_semanticturkey.clickOnAProject = function(event){
 			document.getElementById("cloneProject").setAttribute("hidden", "true");
 			document.getElementById("setDeafultProject").setAttribute("hidden", "true");
 			document.getElementById("fixProject").setAttribute("hidden", "false");
+			document.getElementById("projectProperty").setAttribute("hidden", "false");
 		}
 		else{
 			document.getElementById("openProject").setAttribute("hidden", "false");
@@ -68,6 +71,7 @@ art_semanticturkey.clickOnAProject = function(event){
 			document.getElementById("cloneProject").setAttribute("hidden", "false");
 			document.getElementById("setDeafultProject").setAttribute("hidden", "false");
 			document.getElementById("fixProject").setAttribute("hidden", "true");
+			document.getElementById("projectProperty").setAttribute("hidden", "false");
 		}
 		return;
 	}
@@ -400,6 +404,27 @@ art_semanticturkey.tryRepairProject = function() {
 	
 	art_semanticturkey.populateProjectsList();
 	
+}
+
+art_semanticturkey.projectProperty = function() {
+	var tree = document.getElementById("projectsTree");
+	var range = tree.view.selection.getRangeCount();
+	if (range <= 0) {
+		alert("Please Select a Project");
+		return;
+	}
+	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
+	var treerow = currentElement.getElementsByTagName('treerow')[0];
+	var treecell = treerow.getElementsByTagName('treecell')[1];
+	var projectName = treecell.getAttribute("label");
+	
+	if (projectName == art_semanticturkey.CurrentProject.getProjectName()){
+		alert("Cannot edit project properties of an open project.")
+	} else {
+		var parameters = { projectName : projectName}; 
+		window.openDialog("chrome://semantic-turkey/content/projects/projectPropertiesEditor/propertiesEditor.xul",
+				"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+	}
 }
 
 /*

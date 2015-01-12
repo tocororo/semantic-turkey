@@ -7,7 +7,7 @@
 <script type="application/x-javascript" src="chrome://semantic-turkey/content/alerts/alertDetails.js" />
 
 	<vbox id="mainBox">
-		<label id="message" />
+		<label id="message" style="padding: 5px 3px;" />
 		<hbox pack="end">
 			<button id="btnOK" label="OK" />
 			<button id="btnDetails" label="Details >>>" />

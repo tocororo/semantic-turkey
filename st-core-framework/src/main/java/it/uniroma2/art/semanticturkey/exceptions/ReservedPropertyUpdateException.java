@@ -34,7 +34,7 @@ public class ReservedPropertyUpdateException extends Exception {
 	private static final long serialVersionUID = 3064229174972598895L;
 
 	public ReservedPropertyUpdateException(String propName) {
-		super(propName + "is a reserved system property. Either it can be modified through "
+		super(propName + " is a reserved system property. Either it can be modified through "
 				+ "existing project methods/services, or it cannot be changed through an " + "external call");
 	}
 

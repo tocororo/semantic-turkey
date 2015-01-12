@@ -57,13 +57,16 @@ import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.instrument.IllegalClassFormatException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -754,6 +757,74 @@ public class ProjectManager {
 		return stp_properties.getProperty(property);
 	}
 
+	/**
+	 * gets name-value pairs for each property of project with name <code>projectName</code>
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws IOException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
+	public static Map<String, String> getProjectPropertyMap(String projectName) throws IOException,
+			InvalidProjectNameException, ProjectInexistentException {
+		File projectDir = getProjectDir(projectName);
+		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
+		Properties stp_properties = new Properties();
+		FileInputStream fis = new FileInputStream(infoSTPFile);
+		stp_properties.load(fis);
+		fis.close();
+		Map<String, String> map = new HashMap<String, String>();
+		Set<String> propList = stp_properties.stringPropertyNames();
+		for (String p : propList){
+			map.put(p, stp_properties.getProperty(p));
+		}
+		return map;
+	}	
+	
+	/**
+	 * gets the project.info file content for project with name <code>projectName</code>
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws IOException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
+	public static String getProjectPropertyFileContent(String projectName) throws IOException,
+			InvalidProjectNameException, ProjectInexistentException {
+		File projectDir = getProjectDir(projectName);
+		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
+		
+		String content = "";
+		BufferedReader input = new BufferedReader(new FileReader(infoSTPFile));
+		StringBuffer buffer = new StringBuffer();
+		while ((content = input.readLine()) != null)
+			buffer.append(content + "\n");
+		input.close();
+		content = buffer.toString();
+		return content;
+	}	
+	
+	/**
+	 * saves the project.info file content for project with name <code>projectName</code>
+	 * 
+	 * @param projectName
+	 * @param content
+	 * @return
+	 * @throws IOException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
+	public static void saveProjectPropertyFileContent(String projectName, String content) throws IOException,
+			InvalidProjectNameException, ProjectInexistentException {
+		File projectDir = getProjectDir(projectName);
+		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
+		PrintWriter pw = new PrintWriter(infoSTPFile);
+		pw.print(content);
+		pw.close();
+	}	
+	
 	/**
 	 * as for {@link #getProjectProperty(String, String) but throws a {@link ProjectInconsistentException} if
 	 * the property has a null value}

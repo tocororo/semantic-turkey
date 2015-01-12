@@ -17,6 +17,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -37,7 +38,9 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +69,8 @@ public class Projects extends STServiceAdapter {
 			public final static String createProjectRequest = "createProject";
 			public final static String listProjectsRequest = "listProjects";
 			public final static String getProjectPropertyRequest = "getProjectProperty";
+			public final static String getProjectPropertyFileContentRequest = "getProjectPropertyFileContent";
+			public final static String getProjectPropertyMapRequest = "getProjectPropertyMap";
 			
 			/*public final static String isCurrentProjectActiveRequest = "isCurrentProjectActive";
 			public final static String openProjectRequest = "openProject";
@@ -388,6 +393,74 @@ public class Projects extends STServiceAdapter {
 		}
 
 		return resp;
+	}
+	
+	/**
+	 * this service returns a list name-value for all the property of a given project. Returns a response with
+	 * elements called {@link #propertyTag} with attributes {@link #propNameAttr} for property name and
+	 * 
+	 * @param projectName
+	 *            (optional)the project queried for properties
+	 * @param propNameList
+	 *            a ";" separated list of property names
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws IOException
+	 */
+	@GenerateSTServiceController
+	public Response getProjectPropertyMap(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+
+		Map<String, String> map = ProjectManager.getProjectPropertyMap(projectName);
+
+		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectPropertyMapRequest,
+				RepliesStatus.ok);
+		Element dataElem = resp.getDataElement();
+		
+		Set<String> keys = map.keySet();
+		for (String prop : keys) {
+			Element projElem = XMLHelp.newElement(dataElem, XMLNames.propertyTag);
+			projElem.setAttribute(XMLNames.propNameAttr, prop);
+			projElem.setAttribute(XMLNames.propValueAttr, map.get(prop));
+		}
+		return resp;
+	}
+	
+	/**
+	 * this service returns a list name-value for all the property of a given project. Returns a response with
+	 * elements called {@link #propertyTag} with attributes {@link #propNameAttr} for property name and
+	 * 
+	 * @param projectName
+	 *            (optional)the project queried for properties
+	 * @param propNameList
+	 *            a ";" separated list of property names
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws IOException
+	 */
+	@GenerateSTServiceController
+	public Response getProjectPropertyFileContent(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+		String rawFile = ProjectManager.getProjectPropertyFileContent(projectName);
+		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectPropertyFileContentRequest,
+				RepliesStatus.ok);
+		Element dataElem = resp.getDataElement();
+		Element contentElem = XMLHelp.newElement(dataElem, "content");
+		contentElem.setTextContent(rawFile);
+		return resp;
+	}
+	
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public void saveProjectPropertyFileContent(String projectName, String content)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+		ProjectManager.saveProjectPropertyFileContent(projectName, content);
 	}
 
 	/**

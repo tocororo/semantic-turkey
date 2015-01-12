@@ -48,6 +48,7 @@
 			<menuitem id="fixProject" flex="1" label="try to fix the issues regardig this project">
 				<!--<label value="try to fix the issues regardig this project" flex="0"/> -->						
 			</menuitem>
+			<menuitem id="projectProperty" flex="1" label="Edit the project property" />
 		</menupopup>
 	</popupset>
 	

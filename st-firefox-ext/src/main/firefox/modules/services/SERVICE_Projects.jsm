@@ -288,6 +288,45 @@ function setProjectProperty(projectName, propName, propValue, context) { //NEW
 	return reply;
 }
 
+/**
+ * Returns pairs name-value for each property of the project.
+ * @param projectName
+ * @returns
+ */
+function getProjectPropertyMap(projectName) {
+	Logger.debug('[SERVICE_Projects.jsm] getProjectPropertyMap');
+	var projectName = "projectName="+projectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.getProjectPropertyMapRequest, this.context, 
+			projectName);
+}
+
+/**
+ * Returns the content of the file project.info
+ * @param projectName
+ */
+function getProjectPropertyFileContent(projectName) {
+	Logger.debug('[SERVICE_Projects.jsm] getProjectPropertyFileContent');
+	var projectName = "projectName="+projectName;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.getProjectPropertyFileContentRequest, this.context, 
+			projectName);
+}
+
+/**
+ * Saves the content of the file project.info
+ * @param projectName
+ */
+function saveProjectPropertyFileContent(projectName, content) {
+	Logger.debug('[SERVICE_Projects.jsm] saveProjectPropertyFileContent');
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("projectName", projectName);
+	formData.append("content", content);
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	currentSTHttpMgr.POST(null, serviceName, service.saveProjectPropertyFileContentRequest, this.context, formData);
+}
+
 
 function isCurrentProjectActive() {
 	Logger.debug('[SERVICE_Projects.jsm] isCurrentProjectActive');
@@ -318,6 +357,9 @@ service.prototype.saveProject = saveProject;	//NEW
 service.prototype.listProjects = listProjects;	//NEW
 service.prototype.getCurrentProject = getCurrentProject;
 service.prototype.getProjectProperty = getProjectProperty;
+service.prototype.getProjectPropertyMap = getProjectPropertyMap;
+service.prototype.getProjectPropertyFileContent = getProjectPropertyFileContent;
+service.prototype.saveProjectPropertyFileContent = saveProjectPropertyFileContent;
 service.prototype.setProjectProperty = setProjectProperty;
 service.prototype.isCurrentProjectActive = isCurrentProjectActive;
 service.prototype.context = new Context();  // set the default context

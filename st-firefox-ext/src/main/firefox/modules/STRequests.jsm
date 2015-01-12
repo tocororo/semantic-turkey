@@ -375,8 +375,11 @@ STRequests.Projects.cloneProjectRequest = "cloneProject";	//NEW
 STRequests.Projects.saveProjectRequest = "saveProject";	//NEW
 STRequests.Projects.listProjectsRequest = "listProjects";	//NEW
 STRequests.Projects.getCurrentProjectRequest = "getCurrentProject";
-STRequests.Projects.getProjectPropertyRequest = "getProjectProperty";	//NEW
 STRequests.Projects.setProjectPropertyRequest = "setProjectProperty";	//NEW
+STRequests.Projects.getProjectPropertyRequest = "getProjectProperty";	//NEW
+STRequests.Projects.getProjectPropertyMapRequest = "getProjectPropertyMap";	//NEW
+STRequests.Projects.getProjectPropertyFileContentRequest = "getProjectPropertyFileContent";	//NEW
+STRequests.Projects.saveProjectPropertyFileContentRequest = "saveProjectPropertyFileContent";	//NEW
 STRequests.Projects.isCurrentProjectActiveRequest = "isCurrentProjectActive"; // ???
 
 
