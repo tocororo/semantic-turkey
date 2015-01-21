@@ -72,8 +72,8 @@
 				<splitter orient="horizontal" state="open" collapse="after"
 					resizeafter="closest" />
 				<vbox pack="center">
-					<button id="lockBtn" type="checkbox" crop="center"
-						image="chrome://semantic-turkey/skin/images/unlock.png" checked="false" label="Bind" orient="vertical"
+					<button id="lockBtn" type="checkbox" checked="true" crop="center"
+						image="chrome://semantic-turkey/skin/images/lock.png"  label="Bind" orient="vertical"
 						dir="vertical"></button>
 				</vbox>
 			</vbox>

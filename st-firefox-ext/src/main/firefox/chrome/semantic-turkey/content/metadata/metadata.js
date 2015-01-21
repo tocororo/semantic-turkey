@@ -34,21 +34,54 @@ Components.utils.import("resource://stservices/SERVICE_Refactor.jsm", art_semant
  */
 art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 	var buttonLockBtn = document.getElementById("lockBtn");
-	art_semanticturkey.Logger.debug("cheked  type " + buttonLockBtn.getAttribute("checked"));
-	art_semanticturkey.Logger.debug("type " + type);
 	
 	if(changed == "false"){
 		//nothing has changed, do nothing
 		return;
 	}
 	
-	if (buttonLockBtn.getAttribute("checked") == "true") {
+	if (buttonLockBtn.checked == true) {
 		var basetxbox = document.getElementById("baseUriTxtBox");
 		var nstxbox = document.getElementById("nsTxtBox");
 		var risp = confirm("Save change of baseuri and namespace?");
 		if (risp) {
 			var valBase = basetxbox.value;
-			if ( art_semanticturkey.stringEndsWith(basetxbox.value, '#') ) {
+			var valNs = nstxbox.value;
+			if ( art_semanticturkey.stringEndsWith(valNs, '#') || 
+					art_semanticturkey.stringEndsWith(valNs, '/') ){
+				//it is in the right form
+			} else{
+				valNs = valNs +"#";
+				document.getElementById("nsTxtBox").value = valNs;
+			}
+			try{
+				//call two differet service, setDefaultNamespace and replaceBaseURI
+				
+				//change DefaultNamespace
+				var responseXML = art_semanticturkey.STRequests.Metadata.setDefaultNamespace(nstxbox.value);
+				art_semanticturkey.setDefaultNamespace_RESPONSE(responseXML);
+				
+				//changebaseURI
+				var parameters = new Object();
+				parameters.useDefault = true;
+				parameters.targetBaseuri = valBase;
+				window.openDialog("chrome://semantic-turkey/content/metadata/replaceBaseUri/replaceBaseUriInProgress.xul",
+							"_blank", "modal=yes,resizable,centerscreen", parameters);
+				
+				//get the response 
+				var responseXML = parameters.responseXML;
+				if(!parameters.cancelRefactor){
+					//var responseXML = art_semanticturkey.STRequests.Refactor.replaceBaseURI(valBase);
+					art_semanticturkey.setBaseuri_RESPONSE(responseXML);
+				}
+				
+			}
+			catch (e) {
+				alert(e.name + ": " + e.message);
+			}
+		
+		
+			/*if ( art_semanticturkey.stringEndsWith(basetxbox.value, '#') ) {
 				var len = basetxbox.value.length - 1;
 				valBase = basetxbox.value.substring(0, len);
 			}
@@ -83,7 +116,7 @@ art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 				}
 			} else {
 				alert("Default Namespace should end with '#' or '/'");
-			}
+			}*/
 		}
 
 	} else {
@@ -117,7 +150,23 @@ art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 		} else {
 			var risp = confirm("Save change of namespace?");
 			if (risp) {
-				if ( art_semanticturkey.stringEndsWith(txbox.value, '#') || art_semanticturkey.stringEndsWith(txbox.value, '/') ) {
+				var valNs = nstxbox.value;
+				if ( art_semanticturkey.stringEndsWith(valNs, '#') || 
+						art_semanticturkey.stringEndsWith(valNs, '/') ){
+					//it is in the right form
+				} else{
+					valNs = valNs +"#";
+					document.getElementById("nsTxtBox").value = valNs;
+				}
+				try{
+					var responseXML = art_semanticturkey.STRequests.Metadata.setDefaultNamespace(txbox.value);
+					art_semanticturkey.setDefaultNamespace_RESPONSE(responseXML);
+				}
+				catch (e) {
+					alert(e.name + ": " + e.message);
+				}
+				
+				/*if ( art_semanticturkey.stringEndsWith(txbox.value, '#') || art_semanticturkey.stringEndsWith(txbox.value, '/') ) {
 					try{
 						var responseXML = art_semanticturkey.STRequests.Metadata.setDefaultNamespace(txbox.value);
 						art_semanticturkey.setDefaultNamespace_RESPONSE(responseXML);
@@ -127,7 +176,7 @@ art_semanticturkey.changeBaseuri_Namespace = function(type, txbox, changed) {
 					}
 				} else {
 					alert("Default Namespace should end with '#' or '/'");
-				}
+				}*/
 			}
 		}
 	}
@@ -166,6 +215,7 @@ art_semanticturkey.checkbind = function() {
 	var button = document.getElementById("lockBtn");
 	var baseUriTxtBox = document.getElementById("baseUriTxtBox");
 	var nsTxtBox = document.getElementById("nsTxtBox");
+	
 	if (button.checked == true) {
 		button.image = "chrome://semantic-turkey/skin/images/lock.png";
 		baseUriTxtBox.setAttribute("onkeyup", "art_semanticturkey.manageInputBind('base',this);");
@@ -181,6 +231,9 @@ art_semanticturkey.checkbind = function() {
  * @author NScarpato 17/04/2008 manageInput
  */
 art_semanticturkey.manageInputBind = function(type, txbox) {
+	
+	//art_semanticturkey.Logger.debug("manageInputBind " + buttonLockBtn.checked);  //da cancellare
+	
 	var isurl = art_semanticturkey.isUrl(txbox.value);//N.B. import utilities.js to use this function
 	var baseUriTxtBox = document.getElementById("baseUriTxtBox");
 	var nsTxtBox = document.getElementById("nsTxtBox");
@@ -191,17 +244,39 @@ art_semanticturkey.manageInputBind = function(type, txbox) {
 		baseUriTxtBox.style.color = 'red';
 		nsTxtBox.style.color = 'red';
 	}
+	
 	if (type == "ns") {
-		val = txbox.value;
+		var newBaseValue;
+		
+		if(art_semanticturkey.stringEndsWith(txbox.value, '#')){
+			var len = txbox.value.length - 1;
+			newBaseValue = txbox.value.substring(0, len);
+		} /*else if(art_semanticturkey.stringEndsWith(txbox.value, '/')){
+			newBaseValue = txbox.value;
+		} */else{
+			newBaseValue = txbox.value;
+			//document.getElementById("nsTxtBox").value = txbox.value+"#"
+		}
+		document.getElementById("baseUriTxtBox").value = newBaseValue;
+		document.getElementById("baseUriTxtBox").setAttribute("isChanged", "false");
+		
+		/*val = txbox.value;
 		if ( art_semanticturkey.stringEndsWith(txbox.value, '#') ) {
 			var len = txbox.value.length - 1;
 			val = txbox.value.substring(0, len);
 			art_semanticturkey.Logger.debug("value" + val);
 		}
 		document.getElementById("baseUriTxtBox").value = val;
-		document.getElementById("baseUriTxtBox").setAttribute("isChanged", "false");
-	} else {
-		document.getElementById("nsTxtBox").value = txbox.value + "#";
+		document.getElementById("baseUriTxtBox").setAttribute("isChanged", "false");*/
+	} else { // type == "base"
+		var newNsValue;
+		if(art_semanticturkey.stringEndsWith(txbox.value, '#') || 
+				art_semanticturkey.stringEndsWith(txbox.value, '/')){
+			newNsValue = txbox.value;
+		} else{
+			newNsValue = txbox.value + "#"
+		}
+		document.getElementById("nsTxtBox").value = newNsValue;
 		document.getElementById("nsTxtBox").setAttribute("isChanged", "false");
 	}
 };

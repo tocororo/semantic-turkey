@@ -193,6 +193,7 @@ art_semanticturkey.associateEventsOnGraphicElementsImports = function(){
 	
 	document.getElementById("lockBtn").addEventListener("command",
 			art_semanticturkey.checkbind, true);
+	art_semanticturkey.checkbind(); // execute the function to associate the right function to the textboxes
 	
 	document.getElementById("addPrefix").addEventListener("command",
 			art_semanticturkey.addPrefix, true);
