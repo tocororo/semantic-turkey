@@ -71,7 +71,7 @@ public class ProjectACL {
 
 	}
 
-	private Map<String, AccessLevel> acl = new HashMap<String, ProjectACL.AccessLevel>();;
+	private Map<String, AccessLevel> acl = new HashMap<String, ProjectACL.AccessLevel>();
 	private LockLevel lockLevel;
 
 	private Project<?> project;
@@ -142,6 +142,24 @@ public class ProjectACL {
 	 */
 	private boolean isLockableWithLevel(LockLevel reqLevel) {
 		return reqLevel.isAcceptedBy(lockLevel);
+	}
+	
+	/**
+	 * This method returns the AccessLevel granted from the project that is owning this ACL to the given
+	 * consumer. <code>null</code> if no AccessLevel is specified for the consumer.
+	 * @param consumer
+	 * @return
+	 */
+	public AccessLevel getAccessLevelForConsumer(ProjectConsumer consumer) {
+		return acl.get(consumer.getName());
+	}
+	
+	/**
+	 * Returns the lock level of the project that is owning this ACL
+	 * @return
+	 */
+	public LockLevel getLockLevel(){
+		return lockLevel;
 	}
 
 	/**

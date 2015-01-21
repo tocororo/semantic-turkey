@@ -1227,7 +1227,71 @@ public class ProjectManager {
 		project.getOntModel().close();
 		openProjects.removeProject(project);
 	}
-
+	
+	/**
+	 * Return the access level with which the consumer is accessing the project. Null if the consumer does not
+	 * access the given project.  
+	 * @param project
+	 * @param consumer
+	 * @return
+	 * @throws ProjectAccessException 
+	 * @throws ProjectInexistentException 
+	 * @throws InvalidProjectNameException 
+	 */
+	public static AccessLevel getAccessedLevel(String projectName, ProjectConsumer consumer)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException{
+		Project<RDFModel> project = getProjectDescription(projectName);
+		if (isOpen(project)){//look for the consumer only if the project is open
+			AccessLevel accessLevel = openProjects.getAccessStatusMap(project).get(consumer);
+			if (accessLevel != null) { //accessLevel could be null because project could be open but not from the given consumer
+				return accessLevel;
+			} else {
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * Returns the ProjectConsumer that is locking the given project. <code>null</code> if the project is not
+	 * currently locked
+	 * @param projectName
+	 * @param consumer
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
+	public static ProjectConsumer getLockingConsumer(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException{
+		if (isOpen(projectName)) {
+			return openProjects.getLockingConsumer(getProjectDescription(projectName));
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * Returns the LockLevel which with the project is locked by the consumer. <code>null</code> if the
+	 * project is not locked by the given consumer.
+	 * @param projectName
+	 * @param consumer
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
+	public static LockLevel getLockingLevel(String projectName, ProjectConsumer consumer)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException{
+		Project<RDFModel> project = getProjectDescription(projectName);
+		if (openProjects.isLockedBy(project , consumer)){
+			return openProjects.getLockLevel(project);
+		} else {
+			return null;
+		}
+	}
+	
 	/**
 	 * <p>
 	 * This private class holds the information related to projects open at runtime <br/>
@@ -1262,7 +1326,7 @@ public class ProjectManager {
 		private Map<String, Project<? extends RDFModel>> projects = new HashMap<String, Project<?>>();
 		private Map<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>> projectsAccessStatus = new HashMap<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>>();
 		private Map<Project<?>, LockStatus> projectsLockStatus = new HashMap<Project<?>, LockStatus>();
-
+		
 		public Project<? extends RDFModel> getProject(String projectName) {
 			return projects.get(projectName);
 		}

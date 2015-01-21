@@ -324,7 +324,7 @@ function saveProjectPropertyFileContent(projectName, content) {
 	formData.append("projectName", projectName);
 	formData.append("content", content);
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	currentSTHttpMgr.POST(null, serviceName, service.saveProjectPropertyFileContentRequest, this.context, formData);
+	return currentSTHttpMgr.POST(null, serviceName, service.saveProjectPropertyFileContentRequest, this.context, formData);
 }
 
 
@@ -332,6 +332,46 @@ function isCurrentProjectActive() {
 	Logger.debug('[SERVICE_Projects.jsm] isCurrentProjectActive');
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	return SemTurkeyHTTPLegacy.GET(serviceName, service.isCurrentProjectActiveRequest, contextAsArray);
+}
+
+/**
+ * Returns the access statuses for every project-consumer combination and the lock status for each project
+ * @returns
+ */
+function getAccessStatusMap(){
+	Logger.debug('[SERVICE_Projects.jsm] getAccessStatusMap');
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.getAccessStatusMapRequest, this.context);
+}
+
+/**
+ * Updates the access level granted by the project with the given <code>projectName</code>
+ * @param projectName
+ * @param consumerName
+ * @param accessLevel
+ * @returns
+ */
+function updateAccessLevel(projectName, consumerName, accessLevel){
+	Logger.debug('[SERVICE_Projects.jsm] updateAccessLevel');
+	var projectName = "projectName="+projectName;
+	var consumerName = "consumerName="+consumerName;
+	var accessLevel = "accessLevel="+accessLevel;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.updateAccessLevelRequest, this.context, projectName, consumerName, accessLevel);
+}
+
+/**
+ * Updates the lock level of the project with the given <code>projectName</code>
+ * @param projectName
+ * @param lockLevel
+ * @returns
+ */
+function updateLockLevel(projectName, lockLevel){
+	Logger.debug('[SERVICE_Projects.jsm] updateLockLevel');
+	var projectName = "projectName="+projectName;
+	var lockLevel = "lockLevel="+lockLevel;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.updateLockLevelRequest, this.context, projectName, lockLevel);
 }
 
 
@@ -362,6 +402,9 @@ service.prototype.getProjectPropertyFileContent = getProjectPropertyFileContent;
 service.prototype.saveProjectPropertyFileContent = saveProjectPropertyFileContent;
 service.prototype.setProjectProperty = setProjectProperty;
 service.prototype.isCurrentProjectActive = isCurrentProjectActive;
+service.prototype.getAccessStatusMap = getAccessStatusMap;
+service.prototype.updateAccessLevel = updateAccessLevel;
+service.prototype.updateLockLevel = updateLockLevel;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

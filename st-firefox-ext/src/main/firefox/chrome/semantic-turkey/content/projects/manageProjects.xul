@@ -49,6 +49,7 @@
 				<!--<label value="try to fix the issues regardig this project" flex="0"/> -->						
 			</menuitem>
 			<menuitem id="projectProperty" flex="1" label="Edit the project property" />
+			<menuitem id="editACLProject" flex="1" label="Edit the project ACL" />
 		</menupopup>
 	</popupset>
 	
@@ -111,6 +112,7 @@
 				</menupopup>
 			</menulist>
 		</toolbox>
+		<button id="aclMatrix" label="ACL matrix" tooltiptext="Visualize a matrix of projects' Access Control List"/>
 	    <spacer flex="1" />
 		<button id="close" label="Close" 
 					tooltiptext="Close this window"/>

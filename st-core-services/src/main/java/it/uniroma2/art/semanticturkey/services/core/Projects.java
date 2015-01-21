@@ -4,8 +4,6 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.io.RDFFormat;
-import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -22,6 +20,8 @@ import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
@@ -32,7 +32,6 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-//import it.uniroma2.art.semanticturkey.servlet.main.ProjectsOld.Req;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.io.File;
@@ -65,29 +64,30 @@ public class Projects extends STServiceAdapter {
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
 
 	// requests
-		public static class Req {
-			public final static String createProjectRequest = "createProject";
-			public final static String listProjectsRequest = "listProjects";
-			public final static String getProjectPropertyRequest = "getProjectProperty";
-			public final static String getProjectPropertyFileContentRequest = "getProjectPropertyFileContent";
-			public final static String getProjectPropertyMapRequest = "getProjectPropertyMap";
-			
-			/*public final static String isCurrentProjectActiveRequest = "isCurrentProjectActive";
-			public final static String openProjectRequest = "openProject";
-			public final static String createNewProjectRequest = "newProject";
-			public final static String createNewProjectFromFileRequest = "newProjectFromFile";
-			public final static String closeProjectRequest = "closeProject";
-			public final static String deleteProjectRequest = "deleteProject";
-			public final static String exportProjectRequest = "exportProject";
-			public final static String importProjectRequest = "importProject";
-			public final static String cloneProjectRequest = "cloneProject";
-			public final static String saveProjectRequest = "saveProject";
-			public final static String saveProjectAsRequest = "saveProjectAs";
-			public final static String listProjectsRequest = "listProjects";
-			public final static String getProjectPropertyRequest = "getProjectProperty";
-			public final static String setProjectPropertyRequest = "setProjectProperty";
-			public final static String getCurrentProjectRequest = "getCurrentProject";
-			public final static String repairProjectRequest = "repairProject";*/
+	public static class Req {
+		public final static String createProjectRequest = "createProject";
+		public final static String listProjectsRequest = "listProjects";
+		public final static String getProjectPropertyRequest = "getProjectProperty";
+		public final static String getProjectPropertyFileContentRequest = "getProjectPropertyFileContent";
+		public final static String getProjectPropertyMapRequest = "getProjectPropertyMap";
+		public final static String getProjectACLRequest = "getProjectACL";
+		
+		/*public final static String isCurrentProjectActiveRequest = "isCurrentProjectActive";
+		public final static String openProjectRequest = "openProject";
+		public final static String createNewProjectRequest = "newProject";
+		public final static String createNewProjectFromFileRequest = "newProjectFromFile";
+		public final static String closeProjectRequest = "closeProject";
+		public final static String deleteProjectRequest = "deleteProject";
+		public final static String exportProjectRequest = "exportProject";
+		public final static String importProjectRequest = "importProject";
+		public final static String cloneProjectRequest = "cloneProject";
+		public final static String saveProjectRequest = "saveProject";
+		public final static String saveProjectAsRequest = "saveProjectAs";
+		public final static String listProjectsRequest = "listProjects";
+		public final static String getProjectPropertyRequest = "getProjectProperty";
+		public final static String setProjectPropertyRequest = "setProjectProperty";
+		public final static String getCurrentProjectRequest = "getCurrentProject";
+		public final static String repairProjectRequest = "repairProject";*/
 	}
 	
 	public static class XMLNames {
@@ -479,11 +479,135 @@ public class Projects extends STServiceAdapter {
 	public void setProjectProperty(String projectName, String propName, String propValue)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
-
 		Project<?> project = ProjectManager.getProjectDescription(projectName);
-
 		project.setProperty(propName, propValue);
-
+	}
+	
+	//TODO
+	/**
+	 * Returns the access statuses for every project-consumer combination. Returns a response with a set of
+	 * <code>project</code> elements containing <code>consumer</code> elements and a <code>lock</code> element.
+	 * Each <code>project</code> element has a single attribute: its <code>name</code>.
+	 * The <code>consumer</code> elements have the following attributes:
+	 * <ul>
+	 * <li><code>name</code>: consumer's name</li>
+	 * <li><code>availableACLLevel</code>: ACL given from the project to the consumer</li>
+	 * <li><code>acquiredACLLevel</code>: The access level with which the consumer accesses the project
+	 * (only specified if the project is accessed by the consumer)</li>
+	 * </ul>
+	 * The <code>lock</code> element has the following attributes:
+	 * <ul>
+	 * <li><code>availableLockLevel</code>: lock level exposed by the project</li>
+	 * <li><code>lockingConsumer</code></li>: name of the consumer that locks the project. Specified only if
+	 * there is a consumer locking the current project.
+	 * <li><code>acquiredLockLevel</code>: lock level which with a consumer is locking the project (optional
+	 * as the previous</li>
+	 * </ul>
+	 *  
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws IOException
+	 * @throws ForbiddenProjectAccessException 
+	 */
+	@GenerateSTServiceController
+	public Response getAccessStatusMap()
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException {
+		
+		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectACLRequest,
+				RepliesStatus.ok);
+		Element dataElem = resp.getDataElement();
+		
+		Collection<AbstractProject> projects = ProjectManager.listProjects();
+		
+		for (AbstractProject project : projects){
+			Element projectElement = XMLHelp.newElement(dataElem, "project");
+			projectElement.setAttribute("name", project.getName());
+			
+			Collection<AbstractProject> consumers = ProjectManager.listProjects();
+			consumers.remove(project);//remove itself from its possible consumers
+			
+			ProjectACL projectAcl = ProjectManager.getProjectDescription(project.getName()).getACL();
+						
+			//status for SYSTEM
+			ProjectConsumer consumer = ProjectConsumer.SYSTEM;
+			Element consumerElement = XMLHelp.newElement(projectElement, "consumer");
+			consumerElement.setAttribute("name", consumer.getName());
+			AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
+			String acl = "R";
+			if (aclForConsumer != null)
+				acl = aclForConsumer.name();
+			consumerElement.setAttribute("availableACLLevel", acl);
+			AccessLevel accessedLevel = ProjectManager.getAccessedLevel(project.getName(), consumer);
+			if (accessedLevel != null){
+				consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
+			}
+			//ACL for other ProjectConsumer
+			for (AbstractProject c : consumers) {
+				consumerElement = XMLHelp.newElement(projectElement, "consumer");
+				consumerElement.setAttribute("name", c.getName());
+				aclForConsumer = projectAcl.getAccessLevelForConsumer(c);
+				acl = "R";
+				if (aclForConsumer != null)
+					acl = aclForConsumer.name();
+				consumerElement.setAttribute("availableACLLevel", acl);
+				accessedLevel = ProjectManager.getAccessedLevel(project.getName(), c);
+				if (accessedLevel != null){
+					consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
+				}
+			}
+			//LOCK for the project
+			Element lockElement = XMLHelp.newElement(projectElement, "lock");
+			lockElement.setAttribute("availableLockLevel", projectAcl.getLockLevel().name());
+			ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
+			if (lockingConsumer != null){ //the project could be not locked by any consumer
+				lockElement.setAttribute("lockingConsumer", lockingConsumer.getName());
+				lockElement.setAttribute("acquiredLockLevel", ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name());
+			}
+		}
+		return resp;
+	}
+	
+	/**
+	 * Updates the access level granted by the project with the given <code>projectName</code>
+	 * to the given consumer
+	 * @param projectName
+	 * @param consumer
+	 * @param accessLevel
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@GenerateSTServiceController
+	public void updateAccessLevel(String projectName, String consumerName, AccessLevel accessLevel) 
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException, ReservedPropertyUpdateException{
+		Project<RDFModel> project = ProjectManager.getProjectDescription(projectName);
+		project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
+	}
+	
+	/**
+	 * Updates the lock level of the project with the given <code>projectName</code>
+	 * @param projectName
+	 * @param lockLevel
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@GenerateSTServiceController
+	public void updateLockLevel(String projectName, LockLevel lockLevel)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException, ReservedPropertyUpdateException {
+		Project<RDFModel> project = ProjectManager.getProjectDescription(projectName);
+		project.getACL().setLockableWithLevel(lockLevel);
 	}
 
 }

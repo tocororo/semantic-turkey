@@ -381,6 +381,9 @@ STRequests.Projects.getProjectPropertyMapRequest = "getProjectPropertyMap";	//NE
 STRequests.Projects.getProjectPropertyFileContentRequest = "getProjectPropertyFileContent";	//NEW
 STRequests.Projects.saveProjectPropertyFileContentRequest = "saveProjectPropertyFileContent";	//NEW
 STRequests.Projects.isCurrentProjectActiveRequest = "isCurrentProjectActive"; // ???
+STRequests.Projects.getAccessStatusMapRequest = "getAccessStatusMap";	//NEW
+STRequests.Projects.updateAccessLevelRequest = "updateAccessLevel";	//NEW
+STRequests.Projects.updateLockLevelRequest = "updateLockLevel";	//NEW
 
 
 //ontManager service request

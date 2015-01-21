@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="aclMatrix.css" type="text/css"?>
+
+<!-- chrome://semantic-turkey/content/projects/aclEditor/aclMatrix.xul -->
+
+<window id="aclEditor" title="Project ACL editor"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/projects/aclEditor/aclMatrix.js" />
+		
+		<box flex="1" style="overflow:auto">
+			<grid id="grid"/>
+		</box>
+		
+</window>

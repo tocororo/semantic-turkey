@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="aclEditor.css" type="text/css"?>
+
+<!-- chrome://semantic-turkey/content/projects/aclEditor/aclEditor.xul -->
+
+<window id="aclEditor" title="ACL editor"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/projects/aclEditor/aclEditor.js" />
+		
+		<groupbox>
+			<caption label="Access Control List" style="font-weight:bold;"/>
+			<grid>
+				<columns>
+					<column flex="1"/>
+					<column/>
+				</columns>
+				<rows id="aclRows">
+					<!-- <row>
+						<label value="SYSTEM:"/>
+						<menulist>
+							<menupopup>
+								<menuitem label="RW" value="RW"/>
+							    <menuitem label="R" value="R"/>
+						  	</menupopup>
+						</menulist>
+					</row>
+					<row>
+						<label value="progetto1:"/>
+						<menulist>
+							<menupopup>
+								<menuitem label="RW" value="RW"/>
+							    <menuitem label="R" value="R"/>
+						  	</menupopup>
+						</menulist>
+					</row>
+					<row>
+						<label value="Progetto con nome lungo lungo:"/>
+						<menulist>
+							<menupopup>
+								<menuitem label="RW" value="RW"/>
+							    <menuitem label="R" value="R"/>
+						  	</menupopup>
+						</menulist>
+					</row> -->
+				</rows>
+			</grid>
+		</groupbox>
+		
+		<groupbox>
+			<caption label="Lock level" style="font-weight:bold;"/>
+			<hbox align="center">
+				<label value="Lockable:" />
+				<menulist id="lockMenu">
+					<menupopup>
+						<menuitem label="NO" value="NO"/>
+					    <menuitem label="W" value="W"/>
+					    <menuitem label="R" value="R"/>
+				  	</menupopup>
+				</menulist>
+			</hbox>
+		</groupbox>
+		
+</window>
