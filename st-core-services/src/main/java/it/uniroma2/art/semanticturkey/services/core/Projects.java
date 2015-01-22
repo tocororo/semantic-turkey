@@ -268,6 +268,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws IllegalAccessException
 	 * @throws ProjectUpdateException
 	 */
+	@GenerateSTServiceController
 	public void saveProject(String project) throws IllegalAccessException, ProjectUpdateException {
 		logger.info("requested to save project: " + project);
 
@@ -303,6 +304,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
 	 */
+	@GenerateSTServiceController
 	public void cloneProject(String projectName, String newProjectName) throws InvalidProjectNameException,
 			DuplicatedResourceException, IOException, UnavailableResourceException,
 			ProjectInexistentException {
@@ -323,6 +325,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ModelAccessException
 	 * @throws IOException
 	 */
+	@GenerateSTServiceController
 	public void exportProject(String projectName, String exportPackage) throws IOException,
 			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
 
@@ -346,6 +349,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ModelAccessException
 	 * @throws IOException
 	 */
+	@GenerateSTServiceController
 	public void importProject(String importPackage, String newProjectName) throws IOException,
 			ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,

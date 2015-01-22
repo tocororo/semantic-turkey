@@ -26,7 +26,7 @@ art_semanticturkey.onAccept = function() {
 	}
 	try{
 		var file = dir+"/"+fileName;
-		var projectName = CurrentProject.setCurrentNameProject(); // get the current project;
+		var projectName = art_semanticturkey.CurrentProject.getProjectName(); // get the current project;
 		art_semanticturkey.STRequests.Projects.exportProject(projectName, file);
 		close();
 	}

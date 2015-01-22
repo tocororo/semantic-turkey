@@ -205,11 +205,11 @@ function importProject(importPackage, newProjectName) { // new
 function cloneProject(projectName, newName) { // NEW
 	Logger.debug('[SERVICE_Projects.jsm] cloneProject');
 	var projectName = "projectName=" + projectName;
-	var newName = "newName=" + newName;
+	var newProjectName = "newProjectName=" + newName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 	return currentSTHttpMgr.GET(null, serviceName, service.cloneProjectRequest, this.context, 
-			projectName, newName);
+			projectName, newProjectName);
 }
 
 
@@ -222,7 +222,7 @@ function cloneProject(projectName, newName) { // NEW
  */
 function saveProject(project) {	//NEW
 	Logger.debug('[SERVICE_Projects.jsm] saveProject');
-	var project = "project"+project;
+	var project = "project="+project;
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 	return currentSTHttpMgr.GET(null, serviceName, service.saveProjectRequest, this.context, project);
 }
