@@ -113,6 +113,7 @@ public class Property extends ResourceOld {
 		final static public String addSuperPropertyRequest = "addSuperProperty";
 		final static public String createAndAddPropValueRequest = "createAndAddPropValue";
 		final static public String addExistingPropValueRequest = "addExistingPropValue";
+		final static public String addExternalPropValueRequest = "addExternalPropValue";
 		final static public String addValuesToDatarangeRequest = "addValuesToDatarange";
 		final static public String addValueToDatarangeRequest = "addValueToDatarange";
 		final static public String setDataRangeRequest = "setDataRange";
@@ -278,6 +279,7 @@ public class Property extends ResourceOld {
 				return editProperty(propertyQName, request, removeSuperProperty, superPropertyQName);
 			} else if (request.equals(Req.createAndAddPropValueRequest)
 					|| request.equals(Req.addExistingPropValueRequest)
+					|| request.equals(Req.addExternalPropValueRequest)
 					|| request.equals(Req.removePropValueRequest)
 					|| request.equals(Req.updatePropValueRequest)) {
 				// the parameter rangeClsQName is only passed in the createAndAddPropValue request, the
@@ -957,7 +959,22 @@ public class Property extends ResourceOld {
 				return servletUtilities.createExceptionResponse(request,
 						"error in adding a newly generated property value: " + e.getMessage());
 			}
-		} else if (request.equals(Req.removePropValueRequest)) {
+		}
+		// this one is only valid for ObjectProperties (and Normal Properties?)
+		else if (request.equals(Req.addExternalPropValueRequest)) {
+			String valueURI;
+			try {
+				valueURI = model.expandQName(valueString);
+				ARTURIResource valueObject = model.createURIResource(valueURI);
+				model.instantiatePropertyWithResource(individual, property, valueObject);
+			} catch (ModelAccessException e) {
+				return servletUtilities.createExceptionResponse(request, e);
+			} catch (ModelUpdateException e) {
+				return servletUtilities.createExceptionResponse(request,
+						"error in adding a newly generated property value: " + e.getMessage());
+			}
+		}
+		else if (request.equals(Req.removePropValueRequest)) {
 			try {
 				if (valueType == RDFTypesEnum.plainLiteral)
 					model.deleteTriple(individual, property, model.createLiteral(valueString, lang));
