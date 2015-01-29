@@ -14,7 +14,7 @@
 		<bundle>mvn:org.apache.commons/com.springsource.org.apache.commons.fileupload/1.2.0</bundle>
 
 		<!-- Owlart -->
-		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.2</bundle>
+		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.3-SNAPSHOT</bundle>
 
 		<!-- Web-Console -->
 		<feature>webconsole</feature>
