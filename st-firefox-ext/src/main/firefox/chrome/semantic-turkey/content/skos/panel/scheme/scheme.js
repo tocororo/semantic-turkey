@@ -18,9 +18,21 @@ art_semanticturkey.init = function() {
 
 		if (rowIndex == -1 || col == null || col.id != "check") return;
 		
-		art_semanticturkey.STRequests.Projects.setProjectProperty(
-				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
-				schemeList._view.visibleRows2[rowIndex].id);
+		/*
+		 * Check if the checbox was previously checked (and thus, it is going to be unchecked). In the
+		 * affirmative case, set the skos.selected_scheme property to *, meaning that "projectPropertySet"
+		 * listener is fired and it unchecks all schemes. Otherwise, if the checkbox was not checked, set
+		 * the skos.selected_scheme property to the name of the concept scheme and again fires the above
+		 * listener that unchecks the other schemes.
+		 */
+		if (schemeList._view.visibleRows2[rowIndex].record.check){
+			art_semanticturkey.STRequests.Projects.setProjectProperty(
+					art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", "*");
+		} else {
+			art_semanticturkey.STRequests.Projects.setProjectProperty(
+					art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
+					schemeList._view.visibleRows2[rowIndex].id);
+		}
 	}, false);
 	
 	var predefRoots = schemeList._view.sourceAdapter.fetchRoots;

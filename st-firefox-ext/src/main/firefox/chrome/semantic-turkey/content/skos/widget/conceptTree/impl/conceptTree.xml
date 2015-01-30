@@ -397,6 +397,11 @@
 							if (this._view.isPowered()) {
 								this._view.reload();
 							}
+							
+							if (val == "*") {
+								this._onStateChanged("mutable!");
+							}
+							
 							this._onStateChanged("conceptSchemeSelected");
 						} else {
 							this._view.powerOff();
