@@ -400,6 +400,8 @@
 							
 							if (val == "*") {
 								this._onStateChanged("mutable!");
+							} else {
+								this._onStateChanged("mutable");
 							}
 							
 							this._onStateChanged("conceptSchemeSelected");
