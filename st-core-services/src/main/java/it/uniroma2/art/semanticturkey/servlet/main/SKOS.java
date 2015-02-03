@@ -850,13 +850,7 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		} catch (MissingLanguageException e) {
 			return logAndSendException(e);
-		} catch (IOException e) {
-			return logAndSendException(e);
-		} catch (InvalidProjectNameException e) {
-			return logAndSendException(e);
-		} catch (ProjectInexistentException e) {
-			return logAndSendException(e);
-		}
+		} 
 		return response;
 	}
 

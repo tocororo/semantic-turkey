@@ -57,8 +57,8 @@ public class URIGenerator {
 	 * @throws IOException 
 	 * @throws ModelAccessException 
 	 */
-	public ARTURIResAndRandomString generateURI(String template, Map<String, String> valueMapping) throws IOException, 
-			InvalidProjectNameException, ProjectInexistentException, ModelAccessException {
+	public ARTURIResAndRandomString generateURI(String template, Map<String, String> valueMapping) 
+			throws ModelAccessException  {
 		
 		//validate template
 		if (!template.matches(TEMPLATE_REGEX)){
@@ -70,10 +70,11 @@ public class URIGenerator {
 		boolean newConceptGenerated = false;
 		while(!newConceptGenerated){
 			String localName = "";
-			while (template.length() > 0){
-				if (template.startsWith("${")){
+			String currentTemplate = template;
+			while (currentTemplate.length() > 0){
+				if (currentTemplate.startsWith("${")){
 					//get placeholder
-					String ph = template.substring(template.indexOf("${")+2, template.indexOf("}"));
+					String ph = currentTemplate.substring(currentTemplate.indexOf("${")+2, currentTemplate.indexOf("}"));
 					//retrieve the value to replace the placeholder
 					String value;
 					if (ph.matches(RAND_REGEX)) {
@@ -87,11 +88,11 @@ public class URIGenerator {
 							throw new IllegalArgumentException("The value \"" + value + "\" for the placeholder \"" + ph + "\" is not valid");
 					}
 					localName = localName + value; //compose the result
-					template = template.substring(template.indexOf("}")+1);//remove the parsed part
+					currentTemplate = currentTemplate.substring(currentTemplate.indexOf("}")+1);//remove the parsed part
 				} else {
 					//concat the fixed part of the template
-					localName = localName + template.substring(0, template.indexOf("${"));
-					template = template.substring(template.indexOf("${"));
+					localName = localName + currentTemplate.substring(0, currentTemplate.indexOf("${"));
+					currentTemplate = currentTemplate.substring(currentTemplate.indexOf("${"));
 				}
 			}
 			ARTURIResource uriRes = model.createURIResource(model.getDefaultNamespace() + localName);
