@@ -2,6 +2,12 @@ if (typeof art_semanticturkey == "undefined") {
 	var art_semanticturkey = {};
 }
 
+Components.utils.import("resource://stmodules/InputSanitizer.jsm", art_semanticturkey);
+
+window.onload = function() {
+	art_semanticturkey.sanitizeInput(document.getElementById("schemeName"));
+}
+
 art_semanticturkey.ondialogaccept = function() {
 	var schemeName = document.getElementById("schemeName");
 	var prefLabel = document.getElementById("prefLabel");

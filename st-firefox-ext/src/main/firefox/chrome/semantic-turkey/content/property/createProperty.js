@@ -29,6 +29,8 @@ var ptype = "";
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
+Components.utils.import("resource://stmodules/InputSanitizer.jsm", art_semanticturkey);
+
 window.onload = function() {
 	var parentWindow = window.arguments[0].parentWindow;
 	var propType = window.arguments[0].propType;
@@ -37,6 +39,7 @@ window.onload = function() {
 			art_semanticturkey.onAccept, true);
 	document.getElementById("name").addEventListener("command",
 			art_semanticturkey.onAccept, true);
+	art_semanticturkey.sanitizeInput(document.getElementById("name"));
 	document.getElementById("cancel").addEventListener("click",
 			art_semanticturkey.onClose, true);
 	

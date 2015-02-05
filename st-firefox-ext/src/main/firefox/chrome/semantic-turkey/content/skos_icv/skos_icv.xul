@@ -9,9 +9,10 @@
 		
 		<grid>
 			<columns>
-				<column flex="1" />
-				<column flex="3" />
+				<!-- <column flex="1" /> -->
 				<column flex="2" />
+				<column flex="6" />
+				<column flex="1" />
 			</columns>
 			<rows id="gridRows" >
 				<!-- Structural ICV -->	
@@ -22,28 +23,33 @@
 				<separator orient="orizontal" class="groove" />
 				
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/danglingConcept/danglingConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Dangling concepts"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have no skos:broader or are not skos:topConceptOf in the skos:ConceptScheme where they belong"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#DDDDDD" target="chrome://semantic-turkey/content/skos_icv/cyclicConcept/cyclicConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Cyclic hierarchical concepts"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that compose a hierarchical cycle through the skos:narrower and skos:broader properties"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/omittedTopConcept/omittedTopConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Omitted top concept"/>
+					<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no top concept"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#DDDDDD" target="chrome://semantic-turkey/content/skos_icv/conceptInNoScheme/conceptInNoScheme.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Concepts in no scheme"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that doesn't belong to any scheme"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/topConceptWithBroader/topConceptWithBroader.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="TopConcept with broader"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that are skos:topConceptOf some scheme and have some skos:broader concept"/>
 					<button label="Run check" />
 				</row>
 				
@@ -55,43 +61,51 @@
 				<separator orient="orizontal" class="groove" />
 				
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/noLabelConcept/noLabelConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="No label concept"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have no label"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#DDDDDD" target="chrome://semantic-turkey/content/skos_icv/noLabelScheme/noLabelScheme.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="No label scheme"/>
+					<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no label"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/onlyAltLabelConcept/onlyAltLabelConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Only altLabel concept"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have an alternative label but not a preferred label in the same language"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#DDDDDD" target="chrome://semantic-turkey/content/skos_icv/noLangTagLabel/noLangTagLabel.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="No language tag label"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have a label without language tag"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/sameLabelConcept/sameLabelConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Same prefLabel concepts"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have the same preferred label in the same language"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#DDDDDD" target="chrome://semantic-turkey/content/skos_icv/overlappedLabelConcept/overlappedLabelConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Overlapped label concepts"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have the same value as preferred and alternative label in the same language"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/extraWhitespaceLabel/extraWhitespaceLabel.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Extra whitespace label concepts"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have some extra whitespace in a label"/>
 					<button label="Run check" />
 				</row>
 				<row align="center" style="background-color:#DDDDDD" target="chrome://semantic-turkey/content/skos_icv/multiplePrefLabelConcept/multiplePrefLabelConcept.xul">
-					<checkbox />
+					<!-- <checkbox /> -->
 					<label value="Multiple prefLabel concepts"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have multiple preferred label in the same language"/>
 					<button label="Run check" />
 				</row>
 				
@@ -99,6 +113,6 @@
 		</grid>
 			
 		<separator orient="orizontal" class="groove" />
-		<button label="Run multiple checks" />
+		<!-- <button label="Run multiple checks" /> -->
 			
 </window>

@@ -1,10 +1,14 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
+
+Components.utils.import("resource://stmodules/InputSanitizer.jsm", art_semanticturkey);
+
 window.onload = function() {
 	document.getElementById("createIndividual").addEventListener("click",
 			art_semanticturkey.onAccept, true);
 	document.getElementById("IndividualName").addEventListener("command",
 			art_semanticturkey.onAccept, true);
+	art_semanticturkey.sanitizeInput(document.getElementById("IndividualName"));
 	document.getElementById("cancel").addEventListener("click",
 			art_semanticturkey.onClose, true);
 			

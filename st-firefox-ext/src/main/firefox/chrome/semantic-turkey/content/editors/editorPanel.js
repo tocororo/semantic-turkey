@@ -38,6 +38,7 @@ Components.utils
 Components.utils.import("resource://stmodules/Deserializer.jsm", art_semanticturkey);	
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/AnnotationCommons.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/InputSanitizer.jsm", art_semanticturkey);
 
 art_semanticturkey.eventListenerArrayObject = null;
 
@@ -365,6 +366,7 @@ art_semanticturkey.init = function(type, sourceElementName, superName,
 	txbox.setAttribute("actualValue", sourceElementName);
 	txbox.setAttribute("id", "name");
 	txbox.addEventListener("input", art_semanticturkey.setTextBluEvent, true);
+	art_semanticturkey.sanitizeInput(txbox);
 	txbox.setAttribute("flex", "1");
 	var titleBox = document.getElementById("titleBox");
 	titleBox.appendChild(img);
