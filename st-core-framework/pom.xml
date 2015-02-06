@@ -22,6 +22,10 @@
 			<organizationUrl>http://art.uniroma2.it</organizationUrl>
 		</developer>
 	</developers>
+	
+	<properties>
+		<coda.version>1.1-SNAPSHOT</coda.version>
+	</properties>
 
 	<build>
 		<finalName>${project.artifactId}</finalName>
@@ -143,6 +147,16 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>org.springframework.web</artifactId>
 			<version>3.2.4.RELEASE</version>
+		</dependency>
+		<dependency>
+  			<groupId>org.apache.uima</groupId>
+  			<artifactId>uimafit-core</artifactId>
+  			<version>2.0.0</version>
+  		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.coda</groupId>
+			<artifactId>coda-osgi-bundle</artifactId>
+			<version>${coda.version}</version>
 		</dependency>
 	</dependencies>
 </project>

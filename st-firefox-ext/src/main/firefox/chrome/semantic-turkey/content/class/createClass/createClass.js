@@ -22,14 +22,14 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
-Components.utils.import("resource://stmodules/InputSanitizer.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Sanitizer.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("createClass").addEventListener("click",
 			art_semanticturkey.onAccept, true);
 	document.getElementById("name").addEventListener("command",
 			art_semanticturkey.onAccept, true);
-	art_semanticturkey.sanitizeInput(document.getElementById("name"));
+	art_semanticturkey.Sanitizer.makeAutosanitizing(document.getElementById("name"));
 	document.getElementById("cancel").addEventListener("click",
 			art_semanticturkey.onClose, true);
 	

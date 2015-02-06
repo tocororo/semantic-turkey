@@ -31,7 +31,7 @@
 	</dependencies>
 	<build>
 		<plugins>
-			<!-- <plugin>
+			<plugin>
 				<version>2.3.2</version>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -39,11 +39,11 @@
 					<verbose>true</verbose>
 					<fork>true</fork>
 					<compilerArgument>-proc:none</compilerArgument>
-					<compilerVersion>1.6</compilerVersion>
-					<source>1.6</source>
-					<target>1.6</target>
+					<compilerVersion>1.7</compilerVersion>
+					<source>1.7</source>
+					<target>1.7</target>
 				</configuration>
-			</plugin>  -->
+			</plugin> 
 		</plugins>
 	</build>
 

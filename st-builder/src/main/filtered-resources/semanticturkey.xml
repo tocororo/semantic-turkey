@@ -2,6 +2,8 @@
 
 <features>
 
+	<repository>mvn:it.uniroma2.art.coda/coda-karaf/1.1-SNAPSHOT/xml/features</repository>
+	
 	<feature name="semantic_prereq" version="${project.version}">
 
 		
@@ -15,6 +17,9 @@
 
 		<!-- Owlart -->
 		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.3-SNAPSHOT</bundle>
+		
+		<!-- CODA -->
+		<feature>coda</feature>
 
 		<!-- Web-Console -->
 		<feature>webconsole</feature>

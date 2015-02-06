@@ -2,10 +2,10 @@ if (typeof art_semanticturkey == "undefined") {
 	var art_semanticturkey = {};
 }
 
-Components.utils.import("resource://stmodules/InputSanitizer.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Sanitizer.jsm", art_semanticturkey);
 
 window.onload = function() {
-	art_semanticturkey.sanitizeInput(document.getElementById("conceptName"));
+	art_semanticturkey.Sanitizer.makeAutosanitizing(document.getElementById("conceptName"));
 }
 
 art_semanticturkey.ondialogaccept = function() {
