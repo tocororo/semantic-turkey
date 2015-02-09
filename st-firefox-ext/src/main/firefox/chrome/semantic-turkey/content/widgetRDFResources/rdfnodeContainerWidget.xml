@@ -17,6 +17,7 @@
 					if (typeof art_semanticturkey == 'undefined')
 					var art_semanticturkey = {};
 					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 					
 					var widgetBox = document.getAnonymousElementByAttribute(this, "anonid", "widgetBoxId");
 					//var buttonsBox = document.getAnonymousElementByAttribute(this, "anonid", "boxbuttonId");
@@ -30,14 +31,18 @@
 						//now get the url of the image to use inside the button
 						if(typeof this.operations != "undefined"){
 							if(operations.contains("remove")){
-								var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource,
-							    					"remove");
+								
 								//var button = document.getAnonymousElementByAttribute(this, "anonid", 
 								//		"boxbuttonId");
 								var button = document.createElement("button");
 								button.setAttribute("label", "remove");
+								
+								if(this.rdfResource instanceof art_semanticturkey.ARTURIResource){
+								var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource,
+							    					"remove");
 								button.setAttribute("image", imageSrc);
-
+								}
+								
 								button.setAttribute("disabled", "" + (this.rdfResource.explicit == "false"));
 								
 								document.getAnonymousElementByAttribute(this, "anonid", "mainHbox")
