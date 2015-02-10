@@ -139,8 +139,10 @@ STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTr
 
 //Refactor service Request (old service name was ModifyName)
 STRequests.Refactor.serviceName = "Refactor";
-STRequests.Refactor.renameRequest = "rename";
-STRequests.Refactor.replaceBaseURIRequest = "replaceBaseUri";
+//STRequests.Refactor.renameRequest = "rename";
+//STRequests.Refactor.replaceBaseURIRequest = "replaceBaseUri";
+STRequests.Refactor.changeResourceNameRequest = "changeResourceName";
+STRequests.Refactor.replaceBaseURIRequest = "replaceBaseURI";
 
 
 

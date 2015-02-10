@@ -3,8 +3,8 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
+Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
 
-Components.utils.import("resource://stmodules/Context.jsm");
 
 EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
@@ -19,8 +19,9 @@ var serviceName = service.serviceName;
  * @param newName
  * @return
  */
-function rename(oldName,newName){
-	Logger.debug('[SERVICE_Refactor.jsm] rename '+oldName+" "+newName);
+function rename(oldResource,newResource){
+	//OLD VERSION CALLING OLD SERVER SERVICE
+	/*Logger.debug('[SERVICE_Refactor.jsm] rename '+oldName+" "+newName);
 	var oldName_p = "oldName=" + oldName;
 	var newName_p = "newName=" + newName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -30,11 +31,26 @@ function rename(oldName,newName){
 		evtMgr.fireEvent("resourceRenamed", {getOldName : function(){return oldName;}, getNewName : function(){return newName;}});
 	}
 
+	return reply;*/
+	
+	Logger.debug('[SERVICE_Refactor.jsm] rename '+oldResource+" "+newResource);
+	var oldResource_p = "oldResource=" + oldResource;
+	var newResource_p = "newResource=" + newResource;
+	var response = httpManager.GET(null, serviceName, service.changeResourceNameRequest, 
+			this.context, oldResource_p, newResource_p);
+	
+	//TODO check if this still works or not
+	if (!response.isFail()) {
+		evtMgr.fireEvent("resourceRenamed", {getOldName : function(){return oldResource;}, 
+			getNewName : function(){return newResource;}});
+	}
+
 	return reply;
 }
 
-function replaceBaseURI(newBaseUri, oldBaseUri){
-	Logger.debug('[SERVICE_Refactor.jsm] replaceBaseURI '+newBaseUri+" "+oldBaseUri);
+function replaceBaseURI(targetBaseURI, sourceBaseURI){
+	//OLD VERSION CALLING OLD SERVER SERVICE
+	/*Logger.debug('[SERVICE_Refactor.jsm] replaceBaseURI '+newBaseUri+" "+oldBaseUri);
 	var targetBaseURI = "targetBaseURI="+newBaseUri;
 	var sourceBaseURI = null;
 	if(typeof oldBaseUri != 'undefined'&& oldBaseUri != null){
@@ -53,7 +69,31 @@ function replaceBaseURI(newBaseUri, oldBaseUri){
 			getNewBaseUri : function(){return ewBaseUri;}});
 	}
 	
-	return reply;
+	return reply;*/
+	
+	
+	Logger.debug('[SERVICE_Refactor.jsm] replaceBaseURI '+newBaseUri+" "+oldBaseUri);
+	var targetBaseURI_p = "targetBaseURI="+targetBaseURI;
+	var sourceBaseURI_p = null;
+	if(typeof sourceBaseURI != 'undefined'&& sourceBaseURI != null){
+		sourceBaseURI_p = "sourceBaseURI="+sourceBaseURI;
+	}
+	var response;
+	if(sourceBaseURI!= null) {
+		response = httpManager.GET(null, serviceName, service.replaceBaseURIRequest, 
+				this.context, sourceBaseURI_p, targetBaseURI_p);
+	}else{ 
+		response = httpManager.GET(null, serviceName, service.replaceBaseURIRequest, 
+				this.context, targetBaseURI_p);
+	}
+	
+	//TODO check if this still works or not
+	if (!response.isFail()) {
+		evtMgr.fireEvent("replaceBaseURI", {getOldBaseUri : function(){return oldBaseUri;}, 
+			getNewBaseUri : function(){return ewBaseUri;}});
+	}
+	
+	return response;
 }
 
 //Refactor SERVICE INITIALIZATION
