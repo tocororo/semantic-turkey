@@ -30,24 +30,30 @@
 						// set the values in the textbox depending on the type of the resource
 						
 						var value;
+						var completeValue;
 						if(this.rdfResource instanceof art_semanticturkey.ARTURIResource) {
 							value = this.rdfResource.getShow();
+							completeValue = value;
 						}else if(rdfResource instanceof art_semanticturkey.ARTLiteral){
-							value = "\""+rdfResource.getLabel()+"\"";
-							if(rdfResource.isTypedLiteral())
-								value += "^^<"+rdfResource.getDatatype()+">";
-							else {
+							//value = "\""+rdfResource.getLabel()+"\"";
+							completeValue = "\""+rdfResource.getLabel()+"\""
+							value = rdfResource.getLabel();
+							if(rdfResource.isTypedLiteral()) {
+								completeValue += "^^<"+rdfResource.getDatatype()+">";
+							} else {
 								var lang = rdfResource.getLang();
 								if (lang != null) {
-									value += "@"+lang;
+									completeValue += "@"+lang;
 								}
 							}
 						} else if(rdfResource instanceof art_semanticturkey.ARTBNode){
 							value = rdfResource.getId();
+							completeValue = value;
 						}
 						
 						textbox.setAttribute("value", value);
 						textbox.setAttribute("readonly", true);
+						textbox.setAttribute("tooltiptext", completeValue);
 						
 						//now get the url of the image to use
 						var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource);
@@ -55,6 +61,7 @@
 						image.setAttribute("src", imageSrc);
 						image.setAttribute("maxwidth", "20");
 						image.setAttribute("maxheight", "20");
+						image.setAttribute("tooltiptext", completeValue);
 					}
 				]]>
 			</constructor>
