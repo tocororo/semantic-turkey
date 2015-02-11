@@ -22,6 +22,7 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
+Components.utils.import("resource://stservices/SERVICE_Refactor.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("renameResource").addEventListener("click",
@@ -40,9 +41,11 @@ art_semanticturkey.onAccept = function() {
 	var newResourceName = document.getElementById("name").value;
 	var resourceType =  window.arguments[0].resourceType;
 	try{
-		var responseXML = parentWindow.art_semanticturkey.STRequests.Refactor.renameResource(
+		/*var responseXML = parentWindow.art_semanticturkey.STRequests.Refactor.renameResource(
 				newResourceName,
-				oldResourceName);
+				oldResourceName);*/
+		var responseXML = art_semanticturkey.STRequests.Refactor.rename(
+				oldResourceName, newResourceName);
 		parentWindow.art_semanticturkey.renameResource_RESPONSE(responseXML,resourceType);
 	}
 	catch (e) {

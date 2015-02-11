@@ -4,6 +4,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
 Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
+Components.utils.import("resource://stmodules/STInfo.jsm");
 
 
 EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
@@ -36,7 +37,8 @@ function rename(oldResource,newResource){
 	Logger.debug('[SERVICE_Refactor.jsm] rename '+oldResource+" "+newResource);
 	var oldResource_p = "oldResource=" + oldResource;
 	var newResource_p = "newResource=" + newResource;
-	var response = httpManager.GET(null, serviceName, service.changeResourceNameRequest, 
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	var response = currentSTHttpMgr.GET(null, serviceName, service.changeResourceNameRequest, 
 			this.context, oldResource_p, newResource_p);
 	
 	//TODO check if this still works or not
@@ -45,7 +47,7 @@ function rename(oldResource,newResource){
 			getNewName : function(){return newResource;}});
 	}
 
-	return reply;
+	return response;
 }
 
 function replaceBaseURI(targetBaseURI, sourceBaseURI){
@@ -72,18 +74,19 @@ function replaceBaseURI(targetBaseURI, sourceBaseURI){
 	return reply;*/
 	
 	
-	Logger.debug('[SERVICE_Refactor.jsm] replaceBaseURI '+newBaseUri+" "+oldBaseUri);
+	Logger.debug('[SERVICE_Refactor.jsm] replaceBaseURI '+targetBaseURI+" "+sourceBaseURI);
 	var targetBaseURI_p = "targetBaseURI="+targetBaseURI;
 	var sourceBaseURI_p = null;
 	if(typeof sourceBaseURI != 'undefined'&& sourceBaseURI != null){
 		sourceBaseURI_p = "sourceBaseURI="+sourceBaseURI;
 	}
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 	var response;
 	if(sourceBaseURI!= null) {
-		response = httpManager.GET(null, serviceName, service.replaceBaseURIRequest, 
+		response = currentSTHttpMgr.GET(null, serviceName, service.replaceBaseURIRequest, 
 				this.context, sourceBaseURI_p, targetBaseURI_p);
 	}else{ 
-		response = httpManager.GET(null, serviceName, service.replaceBaseURIRequest, 
+		response = currentSTHttpMgr.GET(null, serviceName, service.replaceBaseURIRequest, 
 				this.context, targetBaseURI_p);
 	}
 	

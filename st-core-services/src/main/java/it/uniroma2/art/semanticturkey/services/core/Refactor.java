@@ -35,6 +35,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -144,7 +145,8 @@ public class Refactor extends STServiceAdapter {
 	}
 	
 	@GenerateSTServiceController
-	public Response replaceBaseURI(String sourceBaseURI, String targetBaseURI, String graphArrayString) 
+	public Response replaceBaseURI(@Optional String sourceBaseURI, String targetBaseURI, 
+			@Optional String graphArrayString) 
 			throws ModelAccessException, ModelUpdateException {
 		RDFModel ontModel = getOWLModel();
 		

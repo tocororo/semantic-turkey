@@ -14,8 +14,8 @@ var serviceName = service.serviceName;
 var deleteService = STRequests.Delete;
 var deleteServiceName = deleteService.serviceName;
 
-var refactorService = STRequests.Refactor;
-var refactorServiceName = STRequests.Refactor.serviceName;
+//var refactorService = STRequests.Refactor;
+//var refactorServiceName = STRequests.Refactor.serviceName;
 
 var graphService = STRequests.Graph;
 var graphServiceName = STRequests.Graph.serviceName;
@@ -139,13 +139,14 @@ function removeClass(name) {
  * @member STRequests.Refactor
  * @return
  */
-function renameResource(newResourceName, oldResourceName) {
-	Logger.debug('[SERVICE_Cls.jsm] renameResource ' + newResourceName+" "+oldResourceName);
+//Use the function rename in SERVICE_Refactor.jsm
+/*function renameResource(newResourceName, oldResourceName) {
+	/*Logger.debug('[SERVICE_Cls.jsm] renameResource ' + newResourceName+" "+oldResourceName);
 	var myNewName = "newName=" + newResourceName;
 	var myOldName = "oldName=" + oldResourceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	return SemTurkeyHTTPLegacy.GET(refactorServiceName, refactorService.renameRequest, myNewName, myOldName, contextAsArray);
-}
+}*/
 
 /**
  * as for <code>addSubClass</code>, but <code>superClassName</code> is set to <code>owl:Thing</code>
@@ -363,7 +364,7 @@ service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;
 
-refactorService.prototype.getAPI = function(specifiedContext){
+/*refactorService.prototype.getAPI = function(specifiedContext){
 	var newObj = new refactorService();
 	newObj.context = specifiedContext;
 	return newObj;
@@ -372,6 +373,7 @@ refactorService.prototype.renameResource = renameResource;
 refactorService.prototype.context = new Context();  // set the default context
 refactorService.constructor = refactorService;
 refactorService.__proto__ = refactorService.prototype;
+*/
 
 graphService.prototype.getAPI = function(specifiedContext){
 	var newObj = new refactorService();
