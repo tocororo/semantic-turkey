@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<?xml-stylesheet href="chrome://semantic-turkey/content/widgetRDFResources/stResourcesWidget.css" type="text/css"?>
-<?xml-stylesheet href="resourceView.css" type="text/css"?>
+<?xml-stylesheet href="renameDialog.css" type="text/css"?>
+
 
 <!-- /* * The contents of this file are subject to the Mozilla Public License 
 	* Version 1.1 (the "License"); you may not use this file except in compliance 
@@ -11,7 +11,7 @@
 	for * the specific language governing rights and limitations under the License. 
 	* * The Original Code is SemanticTurkey. * * The Initial Developer of the 
 	Original Code is University of Roma Tor Vergata. * Portions created by University 
-	of Roma Tor Vergata are Copyright (C) 2014. * All Rights Reserved. * * SemanticTurkey 
+	of Roma Tor Vergata are Copyright (C) 2015. * All Rights Reserved. * * SemanticTurkey 
 	was developed by the Artificial Intelligence Research Group * (art.uniroma2.it) 
 	at the University of Roma Tor Vergata (ART) * Current information about SemanticTurkey 
 	can be obtained at * http://semanticturkey.uniroma2.it * */ -->
@@ -23,26 +23,17 @@
 	
 	chrome://semantic-turkey/content/resourceView/resourceView.xul?resource=owl:Thing
 -->	
-<window title="Resource View" id="resourceView"
+<dialog
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	width="600" height="600">
-	<script type="application/x-javascript" src="resourceViewUtils.js" />
-	<script type="application/x-javascript" src="resourceView.js" />
-	<script type="text/javascript" src="chrome://semantic-turkey/content/event/eventObjects.js" />
-
-	<scrollbox style="overflow:auto" flex="1">
-		<vbox id="resourceViewBox" flex="1">
-			<hbox align="center">
-				<label value="Name:" control="resourceNameBox" />
-				<textbox id="resourceNameBox" flex="1" readonly="true" />
-				<hbox id="resourceButtonsBox">
-					<button id="renameResourceButton" label="Rename..." />
-				</hbox>
-			</hbox>
-			<vbox id="partitionsBox" flex="1">
-
-			</vbox>
-		</vbox>
-	</scrollbox>
-</window>
+	id="renameDialog"
+	title="Rename Resouce"
+	buttons="cancel,accept"
+	buttondisabledaccept="true"
+	buttonlabelcancel="Cancel"
+	buttonlabelaccept="OK">
+	
+	<script type="application/x-javascript" src="renameDialog.js" />
+	
+	<label value="New resource name:" control="nameBox" />
+    <textbox id="nameBox" />
+</dialog>

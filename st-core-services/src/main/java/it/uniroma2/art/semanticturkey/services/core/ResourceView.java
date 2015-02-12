@@ -77,6 +77,7 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -85,6 +86,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -102,6 +104,7 @@ import org.w3c.dom.Element;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 /**
@@ -162,9 +165,9 @@ public class ResourceView extends STServiceAdapter {
 
 		String gp_literalForm = "optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?xlabel_literalForm}";
 
-		String gp = String
-				.format("{{{%1$s ?resource ?object . %4$s} union {%1$s ?predicate ?resource}} {%2$s union %3$s}}",
-						RDFNodeSerializer.toNT(resource), gp_rendering, gp_role, gp_literalForm);
+		String gp = String.format(
+				"{{{%1$s ?resource ?object . %4$s} union {%1$s ?predicate ?resource}} {%2$s union %3$s}}",
+				RDFNodeSerializer.toNT(resource), gp_rendering, gp_role, gp_literalForm);
 
 		logger.debug("graph pattern for resource {} is {}", resource, gp);
 
@@ -211,6 +214,10 @@ public class ResourceView extends STServiceAdapter {
 				continue;
 
 			ARTURIResource pred = stmt.getPredicate();
+
+			if (STVocabUtilities.isHiddenResource(pred, getProject().getOntologyManager())) {
+				continue;
+			}
 
 			STRDFResource stPred = art2STRDFPredicates.get(pred);
 
@@ -288,7 +295,8 @@ public class ResourceView extends STServiceAdapter {
 
 	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource,
 			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
-			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering, Map<ARTResource, String> xLabel2LiteralForm)
+			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
+			Map<ARTResource, String> resource2Rendering, Map<ARTResource, String> xLabel2LiteralForm)
 			throws DOMException, ModelAccessException {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceView.ResourceViewSection>();
@@ -349,8 +357,13 @@ public class ResourceView extends STServiceAdapter {
 					superTypes.add(stRes);
 				}
 
-				result.put("supertypes", new NodeListSection(superTypes));
-
+				if (resourceRole == RDFResourceRolesEnum.cls) {
+					result.put("supertypes", new NodeListSection(superTypes));
+				} else if (resourceRole == RDFResourceRolesEnum.concept) {
+					result.put("broaders", new NodeListSection(superTypes));
+				} else {
+					result.put("superproperties", new NodeListSection(superTypes));
+				}
 				// Remove the super-typing statements from the resource view
 				superTypeStmts.clear();
 
@@ -362,7 +375,7 @@ public class ResourceView extends STServiceAdapter {
 		 */
 		{
 
-			Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new HashMap<ARTURIResource, STRDFResource>();
+			Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
 			Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
 
 			PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
@@ -371,17 +384,18 @@ public class ResourceView extends STServiceAdapter {
 			for (ARTURIResource pred : Arrays.asList(RDFS.Res.LABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL,
 					SKOS.Res.HIDDENLABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL)) {
 				STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(pred,
-						resource2Role.containsKey(pred) ? resource2Role.get(pred)
-								: RDFResourceRolesEnum.property, true,
-						getProject().getOntModel().getQName(pred.getURI()));
+						resource2Role.containsKey(pred) ? resource2Role.get(pred) : pred.getNamespace()
+								.equals(SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
+								: RDFResourceRolesEnum.annotationProperty, true, getProject().getOntModel()
+								.getQName(pred.getURI()));
 				art2STRDFPredicates.put(pred, stPred);
 			}
 
 			Iterator<ARTStatement> stmtIt = stmtCollector.getStatements().iterator();
-			
+
 			while (stmtIt.hasNext()) {
 				ARTStatement stmt = stmtIt.next();
-				
+
 				Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 
 				if (!stmt.getSubject().equals(resource))
@@ -401,9 +415,9 @@ public class ResourceView extends STServiceAdapter {
 
 				if (stNode.isResource()) {
 					RDFResourceRolesEnum role = resource2Role.get(obj);
-					
+
 					STRDFResource stRes = (STRDFResource) stNode;
-					
+
 					if (RDFResourceRolesEnum.xLabel == role) {
 						stRes.setRendering(xLabel2LiteralForm.get(obj));
 					} else {
@@ -505,15 +519,114 @@ public class ResourceView extends STServiceAdapter {
 				// Remove the inverse of statements from the resource view
 				inverseOfStmts.clear();
 
-				// TODO: handle domains and ranges
+				Set<ARTStatement> domainStmts = stmtCollector.getStatements(resource, RDFS.Res.DOMAIN,
+						NodeFilters.ANY);
+
+				List<STRDFNode> domains = new ArrayList<STRDFNode>();
+
+				for (ARTStatement stmt : domainStmts) {
+					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
+					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
+							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
+							resource2Rendering.get(stmt.getObject()));
+					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
+					domains.add(stRes);
+				}
+				domainStmts.clear();
+
+				minimizeDomainRanges(domains);
+
+				result.put("domains", new NodeListSection(domains));
+
+				Set<ARTStatement> rangeStmts = stmtCollector.getStatements(resource, RDFS.Res.RANGE,
+						NodeFilters.ANY);
+
+				List<STRDFNode> ranges = new ArrayList<STRDFNode>();
+
+				for (ARTStatement stmt : rangeStmts) {
+					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
+					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
+							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
+							resource2Rendering.get(stmt.getObject()));
+					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
+					ranges.add(stRes);
+				}
+				rangeStmts.clear();
+
+				minimizeDomainRanges(ranges);
+
+				result.put("ranges", new NodeListSection(ranges));
 
 			}
 
-			// TODO: handle ontology imports in ontologies
+			/*
+			 * Handle ontology imports
+			 */
+			{
+				if (resourceRole == RDFResourceRolesEnum.ontology) {
+					Set<ARTStatement> importStmts = stmtCollector.getStatements(resource, OWL.Res.IMPORTS,
+							NodeFilters.ANY);
 
+					List<STRDFNode> imports = new ArrayList<STRDFNode>();
+
+					for (ARTStatement stmt : importStmts) {
+						Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
+
+						ARTNode obj = stmt.getObject();
+
+						if (obj.isURIResource()) {
+							STRDFURI stUri = STRDFNodeFactory.createSTRDFURI(obj.asURIResource(),
+									resource2Role.get(stmt.getObject()),
+									graphs.contains(NodeFilters.MAINGRAPH),
+									resource2Rendering.get(stmt.getObject()));
+							stUri.setInfo("graphs", Joiner.on(",").join(graphs));
+							imports.add(stUri);
+						}
+					}
+
+					importStmts.clear();
+
+					result.put("imports", new NodeListSection(imports));
+				}
+			}
 		}
 
 		return result;
+	}
+
+	private void minimizeDomainRanges(List<STRDFNode> typeList) {
+		// @author starred
+		// TODO this should be replaced by an efficient procedure for producing the shortest number of ranges
+		// which are NOT in a hierarchical relationship among them has to be found. This can be complemented
+		// with quick heuristics. I'll write a few heuristic first, so this will not be a complete filter
+
+		// TODO also, restrictions should be reduced to a set of elements (it is possible, on a first attempt,
+		// that both OR and AND of types are translated to their sequence, as it is then up to the user, in
+		// case of an AND, to take an instance which respects all the ANDed types.
+
+		Set<STRDFNode> typeSet = new HashSet<STRDFNode>(typeList);
+
+		Iterator<STRDFNode> it = typeList.iterator();
+		while (it.hasNext()) {
+			STRDFNode node = it.next();
+
+			if (node.isExplicit())
+				continue;
+
+			if (node.getARTNode().equals(RDFS.Res.LITERAL)) {
+				it.remove();
+			} else if (node.getARTNode().equals(RDFS.Res.RESOURCE)) {
+
+				for (STRDFNode sn : typeSet) {
+					if (sn.getARTNode().equals(OWL.Res.THING)) {
+						it.remove();
+						break;
+					}
+				}
+
+			}
+
+		}
 	}
 
 	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition, String gp)

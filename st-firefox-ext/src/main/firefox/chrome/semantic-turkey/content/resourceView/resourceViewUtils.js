@@ -10,7 +10,7 @@ if (typeof art_semanticturkey.resourceView.utils == "undefined") {
 	art_semanticturkey.resourceView.utils = {};
 }
 
-art_semanticturkey.resourceView.utils.openResourceView = function(resourceName) {
+art_semanticturkey.resourceView.utils.openResourceView = function(resourceName, aWindow) {
 	var mainWindow = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(
 			Components.interfaces.nsIWebNavigation).QueryInterface(Components.interfaces.nsIDocShellTreeItem).rootTreeItem
 			.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(
@@ -19,7 +19,13 @@ art_semanticturkey.resourceView.utils.openResourceView = function(resourceName) 
 	var params = {};
 	params.resource = resourceName;
 	
-	mainWindow.gBrowser.addTab("chrome://semantic-turkey/content/resourceView/resourceView.xul" + art_semanticturkey.resourceView.utils.stringify(params));
+	var url = "chrome://semantic-turkey/content/resourceView/resourceView.xul" + art_semanticturkey.resourceView.utils.stringify(params);
+	
+	if (typeof aWindow == "undefined") {
+		mainWindow.gBrowser.addTab(url);
+	} else {
+		aWindow.location = url; 
+	}
 };
 
 art_semanticturkey.resourceView.utils.parseQueryString = function(queryString) {

@@ -10,6 +10,8 @@ Components.utils.import("resource://stservices/SERVICE_Refactor.jsm", art_semant
 
 Components.utils.import("resource://stservices/SERVICE_ResourceView.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Deserializer.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Sanitizer.jsm", art_semanticturkey);
+
 
 if (typeof art_semanticturkey.resourceView == "undefined") {
 	art_semanticturkey.resourceView = {};
@@ -25,7 +27,26 @@ art_semanticturkey.resourceView.init = function() {
 		window.close();
 		return;
 	}
+	
+	var resourceNameBox = document.getElementById("resourceNameBox");
 
+	var eventListenerArrayObject = new art_semanticturkey.eventListenerArrayClass();	
+	
+	// Add event handlers ....
+	
+	window.addEventListener("unload", function() {
+		eventListenerArrayObject.deregisterAllListener();
+	}, true);
+
+	resourceNameBox.addEventListener("input", art_semanticturkey.resourceView.resourceNameChangeHandler, false);
+	art_semanticturkey.Sanitizer.makeAutosanitizing(resourceNameBox);
+
+	
+	var renameResourceButton = document.getElementById("renameResourceButton");
+	renameResourceButton.addEventListener("command", art_semanticturkey.resourceView.renameResource, false);
+
+	var resourceViewBox = document.getElementById("resourceViewBox");
+	
 	try {
 		var response = art_semanticturkey.STRequests.ResourceView.getResourceView(resource);
 	} catch (e) {
@@ -34,36 +55,32 @@ art_semanticturkey.resourceView.init = function() {
 		return;
 	}
 	
-	var renameResourceButton = document.getElementById("renameResourceButton");
-	renameResourceButton.addEventListener("command", art_semanticturkey.resourceView.renameResource, false);
-
-	var resourceViewBox = document.getElementById("resourceViewBox");
 	art_semanticturkey.resourceView.getResourceView_RESPONSE(response);
+};
+
+art_semanticturkey.resourceView.resourceNameChangeHandler = function(event) {
+	alert(event.target.value);
 };
 
 art_semanticturkey.resourceView.renameResource = function(event) {
 	
 	try {
-		var responseXML = art_semanticturkey.STRequests.Refactor.rename(
-				elname, newName);
+		var resourceNameBox = document.getElementById("resourceNameBox");
+		
+		var parameters = {};
+		parameters.currentName = resourceNameBox.stRdfNode.getNominalValue();
+		
+		window.openDialog("renameDialog/renameDialog.xul", "dlg", "chrome=yes,dialog,resizable=yes,modal,centerscreen",  parameters);
 	} catch (e) {
 		alert("Exception: " + e.message);
 	}
-	art_semanticturkey.rename_RESPONSE(responseXML);
 };
 
-art_semanticturkey.resourceView.refreshView = function() {
-	var resourceNameElement = document.getElementById("resourceNameBox");
+art_semanticturkey.resourceView.refreshView = function(newName) {
+	var resourceNameBox = document.getElementById("resourceNameBox");
+	var resourceName = newName || resourceNameBox.stRdfNode.getNominalValue();
 	
-	try {
-		var response = art_semanticturkey.STRequests.ResourceView.getResourceView(resourceNameElement.value);
-	} catch (e) {
-		alert(e.message);
-		return;
-	}
-
-	var resourceViewBox = document.getElementById("resourceViewBox");
-	art_semanticturkey.resourceView.getResourceView_RESPONSE(response);
+	art_semanticturkey.resourceView.utils.openResourceView(resourceName, window);
 };
 
 art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
@@ -78,7 +95,8 @@ art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 
 	var resourceNameElement = document.getElementById("resourceNameBox");
 	resourceNameElement.value = resourceObj.getNominalValue();
-
+	resourceNameElement.stRdfNode = resourceObj;
+	
 	// Handles the resource editability (rename button)
 	var isResourceEditable = !(resourceObj.explicit == "false");
 
@@ -130,7 +148,15 @@ art_semanticturkey.resourceView.renderPartitionDefault = function(subjectResourc
 	// Handles the partition header
 	var partitionGroupBox = document.createElement("groupbox");
 	var partitionCaption = document.createElement("caption");
-	partitionCaption.setAttribute("label", partitionLabel);
+	
+	var partitionLabelElement = document.createElement("label");
+	partitionLabelElement.setAttribute("value", partitionLabel);
+	partitionCaption.appendChild(partitionLabelElement);
+
+	var partitionButton = document.createElement("button");
+	partitionButton.setAttribute("label", "add");
+	partitionCaption.appendChild(partitionButton);
+	
 	partitionGroupBox.appendChild(partitionCaption);
 
 	// Handles the partition content
@@ -141,6 +167,9 @@ art_semanticturkey.resourceView.renderPartitionDefault = function(subjectResourc
 	
 		// A predicateObjectsList
 		if (art_semanticturkey.resourceView.isPredicateObjectsList(partitionContent)) {
+			partitionButton.addEventListener("command", art_semanticturkey.resourceView.predicateObjectsHeaderHandler, true);
+			partitionButton.setAttribute("st-partitionName", partitionName);
+			
 			var predicateObjectsList = art_semanticturkey.Deserializer
 					.createPredicateObjectsList(partitionContent);
 		
@@ -166,6 +195,7 @@ art_semanticturkey.resourceView.renderPartitionDefault = function(subjectResourc
 		} else { // Otherwise, assume an objects list
 			var objects = art_semanticturkey.Deserializer.createRDFArray(responsePartition);	
 			var objectListBox = document.createElement("box");
+			objectListBox.labelValue = partitionLabel;
 			objectListBox.rdfResourcesArray = objects;
 			objectListBox.addRemoveButton = true;
 			objectListBox.operations = "add;remove";
@@ -173,6 +203,8 @@ art_semanticturkey.resourceView.renderPartitionDefault = function(subjectResourc
 			
 			objectListBox.addEventListener("rdfnodeBaseEvent",
 					art_semanticturkey.resourceView.dblClickHandler);
+			objectListBox.addEventListener("rdfnodeContainerEvent",
+					art_semanticturkey.resourceView.objectListEventHandler);
 			objectListBox.setAttribute("st-partitionName", partitionName);
 
 			partitionGroupBox.appendChild(objectListBox);
@@ -234,11 +266,66 @@ art_semanticturkey.resourceView.dblClickHandler = function(event) {
 	}
 };
 
+art_semanticturkey.resourceView.predicateObjectsHeaderHandler = function(event) {
+	var partitionName = event.target.getAttribute("st-partitionName");
+	var rdfSubject = undefined;
+	var rdfPredicate = undefined;
+	var rdfObject = undefined;
+	
+	var button = "add";
+	
+	var partitionHandler = partition2handlerMap[partitionName];
+
+	if (typeof partitionHandler == "undefined") {
+		alert("Unhandled operation");
+		return;
+	}
+
+	var handler = partitionHandler[button];
+
+	if (typeof handler == "undefined") {
+		alert("Unhandled operation");
+		return;
+	}
+
+	try {
+		handler(rdfSubject, rdfPredicate, rdfObject);
+	} catch (e) {
+		alert(e.message);
+	}
+};
+
 art_semanticturkey.resourceView.predicateObjectsEventHandler = function(event) {
 	var partitionName = event.target.getAttribute("st-partitionName");
 	var rdfSubject = event.detail.rdfSubject;
 	var rdfPredicate = event.detail.rdfPredicate;
 	var rdfObject = event.detail.rdfObject;
+	var button = art_semanticturkey.resourceView.getButtonType(event.detail.button);
+
+	var partitionHandler = partition2handlerMap[partitionName];
+
+	if (typeof partitionHandler == "undefined") {
+		alert("Unhandled operation");
+		return;
+	}
+
+	var handler = partitionHandler[button];
+
+	if (typeof handler == "undefined") {
+		alert("Unhandled operation");
+		return;
+	}
+
+	try {
+		handler(rdfSubject, rdfPredicate, rdfObject);
+	} catch (e) {
+		alert(e.message);
+	}
+};
+
+art_semanticturkey.resourceView.objectListEventHandler = function(event) {
+	var partitionName = event.target.getAttribute("st-partitionName");
+	var rdfResource = event.detail.rdfResource;
 	var button = art_semanticturkey.resourceView.getButtonType(event.detail.button);
 
 	var partitionHandler = partition2handlerMap[partitionName];
@@ -256,7 +343,7 @@ art_semanticturkey.resourceView.predicateObjectsEventHandler = function(event) {
 	}
 
 	try {
-		handler(rdfSubject, rdfPredicate, rdfObject);
+		handler(rdfResource);
 	} catch (e) {
 		alert(e.message);
 	}
@@ -339,8 +426,26 @@ var partition2handlerMap = {
 	"properties" : {
 		"partitionLabel" : "Properties",
 //      "render" : function(subjectResource, responsePartition, partitionsBox) {},
-		"add" : function(rdfSubject, rdfPredicate, rdfObject) {
-			alert("Add property");
+		"add" : function(rdfSubject, rdfPredicate, rdfObject) { // Based on sources by NScarpato
+			if (typeof rdfPredicate == "undefined") {
+				var parameters = new Object();
+				var selectedProp = "";
+				var selectedPropType = "";
+				parameters.selectedProp = selectedProp;
+				parameters.selectedPropType = selectedPropType;
+				parameters.oncancel = false;
+				parameters.source = "AddNewProperty";
+				parameters.type = "All";
+				window.openDialog(
+								"chrome://semantic-turkey/content/editors/property/propertyTree.xul",
+								"_blank", "modal=yes,resizable,centerscreen", parameters);
+				var propType = parameters.selectedPropType;
+				if (parameters.oncancel == false) {
+					
+					alert("selectedProp = " + parameters.selectedProp + "  /  propType = " + propType);
+					
+				}
+			}
 		},
 		"remove" : function(rdfSubject, rdfPredicate, rdfObject) {
 			art_semanticturkey.STRequests.Resource.removePropertyValue(rdfSubject.toNT(), rdfPredicate.toNT(), rdfObject.toNT());
