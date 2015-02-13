@@ -31,9 +31,6 @@
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/event/eventObjects.js" />
 	<hbox flex="1">
-		<splitter collapse="before" resizebefore="closest" resizeafter="grow">
-			<grippy />
-		</splitter>
 	
 		<tabbox  id="tabs" flex="1" >
 			<tabs id="tabs">

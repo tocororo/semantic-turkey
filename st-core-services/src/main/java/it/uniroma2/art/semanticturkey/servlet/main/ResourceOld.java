@@ -63,6 +63,9 @@ import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
+import it.uniroma2.art.semanticturkey.customrange.CustomRange;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
@@ -84,6 +87,7 @@ import it.uniroma2.art.semanticturkey.utilities.PropertyShowOrderComparator;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1234,6 +1238,33 @@ public class ResourceOld extends ServiceAdapter {
 					.toString());
 		} catch (IncompatibleRangeException e) {
 			rangesElement.setAttribute("rngType", "inconsistent");
+		}
+	}
+	
+	protected void injectCustomRangeXML(ARTURIResource property, Element treeElement){
+		try{
+			CustomRangeProvider provider = new CustomRangeProvider();
+			CustomRange cr = provider.loadCustomRange(property.getURI());
+			if (cr == null){//there is no custom range for the given property 
+				return;
+			}
+			Element crElem = XMLHelp.newElement(treeElement, "customRange");
+			crElem.setAttribute("property", property.getURI());
+			crElem.setAttribute("id", cr.getId());
+					
+			Collection<CustomRangeEntry> entries = cr.getEntries();
+			for (CustomRangeEntry e : entries){
+				Element entryElem = XMLHelp.newElement(crElem, "entry");
+				entryElem.setAttribute("ID", e.getID());
+				entryElem.setAttribute("name", e.getName());
+				entryElem.setAttribute("type", e.getType());
+				Element descElem = XMLHelp.newElement(entryElem, "description");
+				descElem.setTextContent(e.getDescription());
+				Element refElem = XMLHelp.newElement(entryElem, "ref");
+				refElem.setTextContent(e.getRef());
+			}
+		} catch (FileNotFoundException e){
+			e.printStackTrace();
 		}
 	}
 

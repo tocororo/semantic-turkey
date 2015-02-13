@@ -30,9 +30,6 @@
    >
 
 <hbox flex="1">
-    <splitter collapse="before" resizebefore="closest" resizeafter="grow">
-     <grippy />
-    </splitter>
 
     <tabbox  id="tabs" flex="1" >
       <tabs>
