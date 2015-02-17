@@ -13,9 +13,10 @@ art_semanticturkey.init = function(){
 	try {
 		var xmlResp = art_semanticturkey.STRequests.SKOS_ICV.listTopConceptsWithBroader();
 		var data = xmlResp.getElementsByTagName("data")[0];
-		var concepts = data.getElementsByTagName("concept");
-		for (var i=0; i<concepts.length; i++){
-			var concept = concepts[i].textContent;
+		var records = data.getElementsByTagName("record");
+		for (var i=0; i<records.length; i++){
+			var concept = records[i].getAttribute("concept");
+			var scheme = records[i].getAttribute("scheme");
 
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
@@ -23,6 +24,11 @@ art_semanticturkey.init = function(){
 			var cell = document.createElement("listcell");
 		    cell.setAttribute("label", concept);
 		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
+		    listitem.appendChild(cell);
+		    
+		    cell = document.createElement("listcell");
+		    cell.setAttribute("label", scheme);
+		    cell.addEventListener("dblclick", art_semanticturkey.schemeDblClickListener, false);
 		    listitem.appendChild(cell);
 		    
 		    var button = document.createElement("button");
@@ -62,6 +68,20 @@ art_semanticturkey.conceptDblClickListener = function() {
 	parameters.sourceType = "concept";
 	parameters.sourceElement = concept;
 	parameters.sourceElementName = concept;
+	parameters.parentWindow = window;
+	parameters.isFirstEditor = true;
+	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+}
+
+/**
+ * Listener to the concept, when double clicked it opens the editor panel
+ */
+art_semanticturkey.schemeDblClickListener = function() {
+	var scheme = this.getAttribute("label");//this in an actionListener represents the target of the listener
+	var parameters = new Object();
+	parameters.sourceType = "conceptScheme";
+	parameters.sourceElement = scheme;
+	parameters.sourceElementName = scheme;
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);

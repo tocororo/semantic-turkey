@@ -213,15 +213,15 @@ public class SKOS_ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
-	//TODO: controllo giusto? e se un concetto è top concept in uno scheme, ma ha broader in altri scheme?
 	public Response listTopConceptsWithBroader() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listTopConceptsWithBroader",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT DISTINCT ?concept WHERE {\n"
+		String q = "SELECT DISTINCT ?concept ?scheme WHERE {\n"
 				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
-				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader . }";
+				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "FILTER (EXISTS { ?broader <" + SKOS.INSCHEME + "> ?scheme . } ) }";
 		logger.info("query [listTopConceptsWithBroader]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
@@ -229,7 +229,10 @@ public class SKOS_ICV extends STServiceAdapter {
 		while (itTupleBinding.hasNext()){
 			TupleBindings tb = itTupleBinding.next();
 			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			XMLHelp.newElement(dataElement, "concept", concept);
+			String scheme = tb.getBinding("scheme").getBoundValue().getNominalValue();
+			Element recordElem = XMLHelp.newElement(dataElement, "record");
+			recordElem.setAttribute("concept", concept);
+			recordElem.setAttribute("scheme", scheme);
 		}
 		return response;
 	}
