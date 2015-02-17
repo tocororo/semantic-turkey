@@ -37,6 +37,7 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -48,6 +49,8 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -210,6 +213,8 @@ public abstract class ServiceAdapter implements ServiceInterface {
 			resp = getPreCheckedResponse(request);
 		} catch (HTTPParameterUnspecifiedException e) {
 			return servletUtilities.createUndefinedHttpParameterExceptionResponse(request, e);
+		} catch (MalformedURIException e) {
+			return servletUtilities.createMalformedURIExceptionResponse(request, e);
 		}
 
 		// } final {
@@ -254,9 +259,10 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @param request
 	 * @return
 	 * @throws HTTPParameterUnspecifiedException
+	 * @throws MalformedURIException 
 	 */
 	protected abstract Response getPreCheckedResponse(String request)
-			throws HTTPParameterUnspecifiedException;
+			throws HTTPParameterUnspecifiedException, MalformedURIException;
 
 	protected abstract Logger getLogger();
 
@@ -364,10 +370,17 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @return
 	 * @throws NonExistingRDFResourceException
 	 * @throws ModelAccessException
+	 * @throws MalformedURIException 
 	 */
-	protected ARTURIResource createNewResource(RDFModel model, String qname, ARTResource... graphs)
-			throws DuplicatedResourceException, ModelAccessException {
-		ARTURIResource res = model.createURIResource(model.expandQName(qname));
+	protected ARTURIResource createNewURIResource(RDFModel model, String qname, ARTResource... graphs)
+			throws DuplicatedResourceException, ModelAccessException, MalformedURIException {
+		String uri = model.expandQName(qname);
+		try { //check if uri is a valid URI (no space)
+			new URI(uri);
+		} catch (URISyntaxException e) {
+			throw new MalformedURIException(e);
+		}
+		ARTURIResource res = model.createURIResource(uri);
 		if (model.existsResource(res, graphs))
 			throw new DuplicatedResourceException("attempting to create resource: " + res
 					+ " which is already existing in graphs: " + graphs);

@@ -39,6 +39,7 @@ import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -517,6 +518,28 @@ public class ServletUtilities {
 
 	public ResponseProblem createUndefinedHttpParameterExceptionResponse(String request,
 			HTTPParameterUnspecifiedException e, SerializationType ser_type) {
+		if (ser_type == SerializationType.xml) {
+			Document xml = XMLHelp.createNewDoc();
+			return new XMLResponseEXCEPTION(xml, request, e.getMessage());
+		} else {
+			JSONObject json_content = new JSONObject();
+			try {
+				return new JSONResponseEXCEPTION(json_content, request, e.getMessage());
+			} catch (JSONException e1) {
+				logger.error("Error in Json response creation:" + e1.getMessage());
+				e1.printStackTrace();
+			}
+		}
+		return null;
+	}
+	
+	public XMLResponseEXCEPTION createMalformedURIExceptionResponse(String request, MalformedURIException e) {
+		return (XMLResponseEXCEPTION) createMalformedURIExceptionResponse(request, e,
+				SerializationType.xml);
+	}
+	
+	public ResponseProblem createMalformedURIExceptionResponse(String request,
+			MalformedURIException e, SerializationType ser_type) {
 		if (ser_type == SerializationType.xml) {
 			Document xml = XMLHelp.createNewDoc();
 			return new XMLResponseEXCEPTION(xml, request, e.getMessage());

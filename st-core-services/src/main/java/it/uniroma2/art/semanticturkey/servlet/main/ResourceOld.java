@@ -68,6 +68,7 @@ import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.filter.NoSystemResourcePredicate;
 import it.uniroma2.art.semanticturkey.filter.StatementWithAProperty_Predicate;
@@ -170,7 +171,7 @@ public class ResourceOld extends ServiceAdapter {
 		return logger;
 	}
 
-	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException {
+	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException, MalformedURIException {
 		logger.debug("request to Resource");
 
 		Response response = null;

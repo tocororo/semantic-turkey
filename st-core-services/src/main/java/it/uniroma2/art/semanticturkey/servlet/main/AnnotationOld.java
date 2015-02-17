@@ -48,6 +48,7 @@ import it.uniroma2.art.owlart.vocabulary.RDFTypesEnum;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -156,7 +157,7 @@ public class AnnotationOld extends ServiceAdapter {
 	 * 
 	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter#getResponse()
 	 */
-	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException {
+	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException, MalformedURIException {
 		Response response = null;
 
 		if (request.equals(getPageAnnotationsRequest)) {
@@ -585,16 +586,17 @@ public class AnnotationOld extends ServiceAdapter {
 	 * instanceName="Armando Stellato"/> </Tree>
 	 * 
 	 * @return
+	 * @throws MalformedURIException 
 	 */
 	public Response dragDropSelectionOverClass(String instanceQName, String clsQName, String urlPage,
-			String title) {
+			String title) throws MalformedURIException {
 		logger.debug("dragged: " + instanceQName + " over class: " + clsQName + " on url: " + urlPage
 				+ " with title: " + title);
 		String handledUrlPage = urlPage.replace(":", "%3A");
 		handledUrlPage = handledUrlPage.replace("/", "%2F");
 		RDFModel ontModel = getOWLModel();
 		try {
-			ARTURIResource instance = createNewResource(ontModel, instanceQName, getUserNamedGraphs());
+			ARTURIResource instance = createNewURIResource(ontModel, instanceQName, getUserNamedGraphs());
 			String instanceURI = instance.getURI();
 			ARTURIResource cls = retrieveExistingURIResource(ontModel, clsQName, getUserNamedGraphs());
 			ontModel.addInstance(instanceURI, cls, getWorkingGraph());
@@ -725,10 +727,11 @@ public class AnnotationOld extends ServiceAdapter {
 	 * @param urlPage
 	 * @param title
 	 * @return
+	 * @throws MalformedURIException 
 	 */
 	public Response bindAnnotatedObjectToNewInstanceAndRelateToDroppedInstance(String subjectInstanceQName,
 			String predicatePropertyQName, String objectInstanceQName, RDFTypesEnum type,
-			String rangeClsQName, String urlPage, String title, String lang) {
+			String rangeClsQName, String urlPage, String title, String lang) throws MalformedURIException {
 		ServletUtilities servletUtilities = new ServletUtilities();
 		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
@@ -769,7 +772,7 @@ public class AnnotationOld extends ServiceAdapter {
 				}
 
 				try {
-					ARTURIResource objectInstance = createNewResource(ontModel, objectInstanceQName,
+					ARTURIResource objectInstance = createNewURIResource(ontModel, objectInstanceQName,
 							getUserNamedGraphs());
 					ontModel.addInstance(objectInstance.getURI(), rangeClsRes, wgraph);
 					createLexicalization(ontModel, objectInstance, objectInstanceQName, urlPage, title,

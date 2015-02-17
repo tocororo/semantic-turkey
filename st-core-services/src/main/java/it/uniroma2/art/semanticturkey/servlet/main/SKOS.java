@@ -41,6 +41,7 @@ import it.uniroma2.art.semanticturkey.data.id.URIGenerator;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
@@ -150,7 +151,7 @@ public class SKOS extends ResourceOld {
 	}
 
 	@Override
-	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException {
+	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException, MalformedURIException {
 		logger.debug("request to skos");
 
 		Response response = null;
@@ -692,14 +693,14 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response createConceptScheme(String schemeQName, String prefLabel, String lang, String language) {
+	public Response createConceptScheme(String schemeQName, String prefLabel, String lang, String language) throws MalformedURIException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		logger.debug("new scheme name: " + schemeQName);
 
 		try {
 
 			SKOSModel skosModel = getSKOSModel();
-			ARTURIResource newScheme = createNewResource(skosModel, schemeQName, getUserNamedGraphs());
+			ARTURIResource newScheme = createNewURIResource(skosModel, schemeQName, getUserNamedGraphs());
 
 			// add a new concept scheme...
 			skosModel.addSKOSConceptScheme(newScheme, getWorkingGraph());
@@ -796,7 +797,7 @@ public class SKOS extends ResourceOld {
 	}
 
 	public Response createConcept(String conceptName, String superConceptName, String schemeName,
-			String prefLabel, String prefLabelLang, String language) {
+			String prefLabel, String prefLabelLang, String language) throws MalformedURIException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		logger.debug("conceptName: " + conceptName);
 		logger.debug("schemeName: " + schemeName);
@@ -817,7 +818,7 @@ public class SKOS extends ResourceOld {
 				newConcept = newConceptAndRandomValue.getArtURIResource();
 				randomConceptValue = newConceptAndRandomValue.getRandomValue();
 			} else{
-				newConcept = createNewResource(skosModel, conceptName, graphs);
+				newConcept = createNewURIResource(skosModel, conceptName, graphs);
 			}
 			//ARTURIResource newConcept = createNewResource(skosModel, conceptName, graphs);
 
