@@ -5,6 +5,7 @@ import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.converters.impl.STSpecificNodeChecks;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,9 @@ public class StringToARTResourceConverter implements Converter<String, ARTResour
 			if (NTTerm.equals("ANY")) return NodeFilters.ANY;
 			if (NTTerm.equals("DEFAULT")) return NodeFilters.MAINGRAPH;
 			
-			return RDFNodeSerializer.createResource(model, NTTerm);
+			ARTResource resource = RDFNodeSerializer.createResource(model, NTTerm);
+			STSpecificNodeChecks.checkURIResourceConstraints(resource);
+			return resource;
 		} catch (ModelAccessException e) {
 			throw new RuntimeException(e);
 		}
