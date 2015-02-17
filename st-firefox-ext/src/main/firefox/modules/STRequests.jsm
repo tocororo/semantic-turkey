@@ -115,6 +115,10 @@ STRequests.Resource = function(){};
  */
 STRequests.ResourceView = function(){};
 
+/**
+ * @class
+ */
+STRequests.XMLSchema = function(){};
 
 //systemStart service requests
 STRequests.SystemStart.serviceName = "systemStart";
@@ -409,3 +413,12 @@ STRequests.Resource.removePropertyValueRequest = "removePropertyValue";
 //ResourceView service request
 STRequests.ResourceView.serviceName = "ResourceView";
 STRequests.ResourceView.getResourceViewRequest = "getResourceView";
+
+//XMLSchema service request
+STRequests.XMLSchema.serviceName = "XMLSchema";
+STRequests.XMLSchema.formatDateTimeRequest = "formatDateTime";
+STRequests.XMLSchema.formatDateRequest = "formatDate";
+STRequests.XMLSchema.formatTimeRequest = "formatTime";
+STRequests.XMLSchema.formatDurationRequest = "formatDuration";
+STRequests.XMLSchema.formatCurrentLocalDateTimeRequest = "formatCurrentLocalDateTime";
+STRequests.XMLSchema.formatCurrentUTCDateTimeRequest = "formatCurrentUTCDateTime";

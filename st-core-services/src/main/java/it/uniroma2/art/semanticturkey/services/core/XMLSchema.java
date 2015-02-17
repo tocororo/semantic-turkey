@@ -59,11 +59,11 @@ public class XMLSchema extends STServiceAdapter{
 	}
 	
 	@GenerateSTServiceController
-	public Response formatDuration(@Optional(defaultValue="") String sign, @Optional(defaultValue="0") int year,
+	public Response formatDuration(@Optional(defaultValue="true") boolean isPositive, @Optional(defaultValue="0") int year,
 			@Optional(defaultValue="0") int month, @Optional(defaultValue="0") int day, 
 			@Optional(defaultValue="0") int hour, @Optional(defaultValue="0") int minute,
-			@Optional(defaultValue="0") int second) {
-		String formatted = sign + "P" + year + "Y" + month + "M" + day + "DT" + hour + "H" + minute + "M" + second + "S";
+			@Optional(defaultValue="0") int second) throws ParseException {
+		String formatted = XmlSchema.formatDuration(isPositive, year, month, day, hour, minute, second);
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatDuration",
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
