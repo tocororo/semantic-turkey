@@ -110,6 +110,8 @@ art_semanticturkey.setPanel= function() {
 			setIntegerInputInterface();
 		} else if (defaultRangeType == "http://www.w3.org/2001/XMLSchema#float"){
 			setFloatInputInterface();
+		} else if (defaultRangeType == "http://www.w3.org/2001/XMLSchema#boolean"){
+			setBooleanInputInterface();
 		}
 	}
 	
@@ -164,7 +166,6 @@ art_semanticturkey.onCancel= function() {
  */
 var rangeMenuListener = function(){
 	restoreStaticInterface();
-	var boxrows = document.getElementById("boxrows");
 	var selectedItem = this.selectedItem.label;
 	if (selectedItem == "http://www.w3.org/2001/XMLSchema#date"){		
 		setDateInputInterface();
@@ -178,6 +179,8 @@ var rangeMenuListener = function(){
 		setFloatInputInterface();
 	} else if (selectedItem == "http://www.w3.org/2001/XMLSchema#integer"){
 		setIntegerInputInterface();
+	} else if (selectedItem == "http://www.w3.org/2001/XMLSchema#boolean"){
+		setBooleanInputInterface();
 	}
 }
 
@@ -217,6 +220,34 @@ var setFloatInputInterface = function() {
 }
 
 /**
+ * Change the interface to allow only boolean input (add a radiogroup with true/false options)
+ */
+var setBooleanInputInterface = function() {
+	var mainBox = document.getElementById("mainBox");
+	var inputBox = document.createElement("hbox");
+	inputBox.setAttribute("id", "inputBox");
+	var groupbox = document.createElement("groupbox");
+	groupbox.setAttribute("flex", "1");
+	var radiogroup = document.createElement("radiogroup");
+	radiogroup.setAttribute("orient", "horizontal");
+	var radio = document.createElement("radio");
+	radio.setAttribute("label", "true");
+	radio.setAttribute("selected", "true");
+	radiogroup.appendChild(radio);
+	radio = document.createElement("radio");
+	radio.setAttribute("label", "false");
+	radiogroup.appendChild(radio);
+	groupbox.appendChild(radiogroup);
+	inputBox.appendChild(groupbox);
+	mainBox.appendChild(inputBox);
+	radiogroup.addEventListener("command", function(){
+		document.getElementById("newValue").value = this.selectedItem.label;}, false);
+	var newValueTxt = document.getElementById("newValue");
+	newValueTxt.readOnly = true;
+	newValueTxt.value = radiogroup.selectedItem.label;
+}
+
+/**
  * Add dynamically a row containing a datepicker and a timepicker (used in case of datetime range)
  */
 var setDatetimeInputInterface = function() {
@@ -228,6 +259,7 @@ var setDatetimeInputInterface = function() {
 	var groupbox = document.createElement("groupbox");
 	groupbox.setAttribute("align", "center");
 	groupbox.setAttribute("orient", "horizontal");
+	groupbox.setAttribute("flex", "1");
 	var datepicker = document.createElement("datepicker");
 	datepicker.setAttribute("type", "popup");
 	datepicker.setAttribute("id", "datepicker");
@@ -256,6 +288,7 @@ var setDateInputInterface = function() {
 	var groupbox = document.createElement("groupbox");
 	groupbox.setAttribute("orient", "horizontal");
 	groupbox.setAttribute("align", "center");
+	groupbox.setAttribute("flex", "1");
 	var label = document.createElement("label");
 	label.setAttribute("value", "Date:");
 	var datepicker = document.createElement("datepicker");
@@ -282,6 +315,7 @@ var setTimeInputInterface = function() {
 	var groupbox = document.createElement("groupbox");
 	groupbox.setAttribute("orient", "horizontal");
 	groupbox.setAttribute("align", "center");
+	groupbox.setAttribute("flex", "1");
 	var label = document.createElement("label");
 	label.setAttribute("value", "Time:");
 	var timepicker = document.createElement("timepicker");
@@ -307,6 +341,7 @@ var setDurationInputInterface = function() {
 	var groupbox = document.createElement("groupbox");
 	groupbox.setAttribute("orient", "horizontal");
 	groupbox.setAttribute("align", "center");
+	groupbox.setAttribute("flex", "1");
 	var minusCb = document.createElement("checkbox");
 	minusCb.setAttribute("id", "minusCb");
 	minusCb.setAttribute("tooltiptext", "negative");
@@ -316,37 +351,37 @@ var setDurationInputInterface = function() {
 	yearTxt.setAttribute("type", "number");
 	yearTxt.setAttribute("hidespinbuttons", "true");
 	yearTxt.setAttribute("tooltiptext", "year");
-	yearTxt.setAttribute("width", "25");
+	yearTxt.setAttribute("width", "28");
 	var monthTxt = document.createElement("textbox");
 	monthTxt.setAttribute("id", "monthTxt");
 	monthTxt.setAttribute("type", "number");
 	monthTxt.setAttribute("hidespinbuttons", "true");
 	monthTxt.setAttribute("tooltiptext", "month");
-	monthTxt.setAttribute("width", "25");
+	monthTxt.setAttribute("width", "23");
 	var dayTxt = document.createElement("textbox");
 	dayTxt.setAttribute("id", "dayTxt");
 	dayTxt.setAttribute("type", "number");
 	dayTxt.setAttribute("hidespinbuttons", "true");
 	dayTxt.setAttribute("tooltiptext", "day");
-	dayTxt.setAttribute("width", "25");
+	dayTxt.setAttribute("width", "23");
 	var hourTxt = document.createElement("textbox");
 	hourTxt.setAttribute("id", "hourTxt");
 	hourTxt.setAttribute("type", "number");
 	hourTxt.setAttribute("hidespinbuttons", "true");
 	hourTxt.setAttribute("tooltiptext", "hour");
-	hourTxt.setAttribute("width", "25");
+	hourTxt.setAttribute("width", "23");
 	var minuteTxt = document.createElement("textbox");
 	minuteTxt.setAttribute("id", "minuteTxt");
 	minuteTxt.setAttribute("type", "number");
 	minuteTxt.setAttribute("hidespinbuttons", "true");
 	minuteTxt.setAttribute("tooltiptext", "minute");
-	minuteTxt.setAttribute("width", "25");
+	minuteTxt.setAttribute("width", "23");
 	var secondTxt = document.createElement("textbox");
 	secondTxt.setAttribute("id", "secondTxt");
 	secondTxt.setAttribute("type", "number");
 	secondTxt.setAttribute("hidespinbuttons", "true");
 	secondTxt.setAttribute("tooltiptext", "second");
-	secondTxt.setAttribute("width", "25");
+	secondTxt.setAttribute("width", "23");
 	var okBtn = document.createElement("button");
 	okBtn.setAttribute("label", "OK");
 	okBtn.addEventListener("command", durationFormatListener, false);

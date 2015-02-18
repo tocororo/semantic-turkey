@@ -25,13 +25,13 @@
 
 <window id="properties" title="Create Property Value Dialog"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	width="350" height="200">
+	width="350" height="204">
 <script type="application/x-javascript" src="chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.js" />
 <script type="application/x-javascript" src="chrome://semantic-turkey/content/editors/property/datarangeList.js"/>
 
 <hbox id="title"></hbox>
 	<vbox id="mainBox" flex="1">
-		<grid flex="1">
+		<grid >
 			<columns>
 			 	<column flex="1"/>
 			</columns>
