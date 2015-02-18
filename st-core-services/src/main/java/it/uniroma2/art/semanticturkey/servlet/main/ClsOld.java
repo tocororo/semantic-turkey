@@ -133,9 +133,12 @@ public class ClsOld extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(ClsOld.class);
 
+	private Individual individual;
+
 	@Autowired
-	public ClsOld(@Value("Cls") String id) {
+	public ClsOld(@Value("Cls") String id, Individual individual) {
 		super(id);
+		this.individual = individual;
 	}
 
 	public Logger getLogger() {
@@ -146,7 +149,7 @@ public class ClsOld extends ResourceOld {
 		logger.debug("request to cls");
 
 		Response response = null;
-		Individual individual = new Individual("individual");
+//		Individual individual = new Individual("individual");
 
 		// all new fashoned requests are put inside these grace brackets
 
