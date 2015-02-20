@@ -25,19 +25,19 @@ Components.utils.import("resource://stservices/SERVICE_Property.jsm",
 		art_semanticturkey);
 
 window.onload = function() {
-	document.getElementById("cancel").addEventListener("click",
+	document.getElementById("cancel").addEventListener("command",
 			art_semanticturkey.onCancel, true);
-	document.getElementById("accept").addEventListener("click",
+	document.getElementById("accept").addEventListener("command",
 			art_semanticturkey.onAccept, true);
 	try {
 		var responseXML;
-		if (window.arguments[0].type.indexOf("ObjectProperty")!=-1) {	
+		if (window.arguments[0].type.toLowerCase().indexOf("objectproperty")!=-1) {	
 			responseXML = art_semanticturkey.STRequests.Property
 			.getObjPropertyTree();
-		} else if (window.arguments[0].type.indexOf("DatatypeProperty")!=-1) {
+		} else if (window.arguments[0].type.toLowerCase().indexOf("datatypeproperty")!=-1) {
 			responseXML = art_semanticturkey.STRequests.Property
 			.getDatatypePropertiesTree();
-		} else if (window.arguments[0].type.indexOf("AnnotationProperty")!=-1) {
+		} else if (window.arguments[0].type.toLowerCase().indexOf("annotationproperty")!=-1) {
 			responseXML = art_semanticturkey.STRequests.Property
 			.getAnnotationPropertyTree();
 		} else {

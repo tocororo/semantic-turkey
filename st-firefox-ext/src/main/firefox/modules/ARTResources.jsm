@@ -65,7 +65,7 @@ ARTLiteral = function(label, datatype, lang, isTypedLiteral){
 	this.toNT = function() {
 		var nt = label.quote();
 		
-		if (lang != null) {
+		if (lang != null && lang.length > 0) {
 			nt += "@" + lang;
 		} else if (datatype != null) {
 			nt += "^^" + datatype; // TODO: check!!!
@@ -121,7 +121,7 @@ ARTURIResource.constructor = ARTURIResource;
 
 /********** ARTBNode *******************/
 
-ARTBNode = function(id){
+ARTBNode = function(id, show){
 	var id = id;
 	
 	this.isResource = function(){
@@ -145,7 +145,7 @@ ARTBNode = function(id){
 	};
 
 	this.getShow = function() {
-		return this.toNT();
+		return show || thus.toNT();
 	};
 
 };

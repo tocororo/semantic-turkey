@@ -69,8 +69,8 @@ function createBlankNode(response){
 	var showValue = bnodeElement.getAttribute("show");
 	var explicitValue = bnodeElement.getAttribute('explicit');
 	
-	var bNodeRes = new ARTBNode(id);
-	bNodeRes.show = showValue;
+	var bNodeRes = new ARTBNode(id, showValue);
+	// bNodeRes.show = showValue;
 	bNodeRes.explicit = explicitValue;
 	return bNodeRes;
 	

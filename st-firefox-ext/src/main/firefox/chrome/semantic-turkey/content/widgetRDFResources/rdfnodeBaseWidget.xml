@@ -47,7 +47,7 @@
 								}
 							}
 						} else if(rdfResource instanceof art_semanticturkey.ARTBNode){
-							value = rdfResource.getId();
+							value = rdfResource.getShow();
 							completeValue = value;
 						}
 						
