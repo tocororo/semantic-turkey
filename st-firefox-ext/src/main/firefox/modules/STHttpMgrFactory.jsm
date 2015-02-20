@@ -130,21 +130,15 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			aURL += this.splitAndEncode(contextArray[i]);
 		}
 		
-		//Edited by Tiziano: if 5th argument is a FormData, then it will be setted directly as "parameters" 
-		if (arguments.length > 4) {
-			//using FormData
-			if (arguments.length == 5 && arguments[4] instanceof Components.interfaces.nsIDOMFormData){
-				parameters = arguments[4];
-			} else {
-				for ( var i = 4; i < arguments.length; i++) {
-					if(Array.isArray(arguments[i])){
-						for(var k=0; k<arguments[i].length; ++k){
-							parameters += this.splitAndEncode(arguments[i][k]);
-						}
-					} else{
-						Logger.debug("arg["+i+"] " +arguments[i] );
-						parameters += this.splitAndEncode(arguments[i]);
-					}
+		//for every further arguments (optional) check if is a FormData or a simple string parameter
+		//N.B. it is supposed that is allowed just one FormData in the arguments of a post
+		if (arguments.length > 4){
+			for (var i=4; i<arguments.length; i++){
+				if (arguments[i] instanceof Components.interfaces.nsIDOMFormData){
+					//a FormData is set directly as "parameters"
+					parameters = arguments[i];
+				} else {//a simple parameter is concatenated to the request URL
+					aURL += this.splitAndEncode(arguments[i]);
 				}
 			}
 		}
