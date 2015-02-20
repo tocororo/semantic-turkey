@@ -22,7 +22,8 @@ art_semanticturkey.resourceView.utils.openResourceView = function(resourceName, 
 	var url = "chrome://semantic-turkey/content/resourceView/resourceView.xul" + art_semanticturkey.resourceView.utils.stringify(params);
 	
 	if (typeof aWindow == "undefined") {
-		mainWindow.gBrowser.addTab(url);
+		var tab = mainWindow.gBrowser.addTab(url);
+		mainWindow.gBrowser.tabContainer.advanceSelectedTab(1, true)
 	} else {
 		aWindow.location = url; 
 	}
