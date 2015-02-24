@@ -35,6 +35,7 @@ import it.uniroma2.art.owlart.filter.NoSubclassPredicate;
 import it.uniroma2.art.owlart.filter.NoSubpropertyPredicate;
 import it.uniroma2.art.owlart.filter.NoTypePredicate;
 import it.uniroma2.art.owlart.filter.ResourceOfATypePredicate;
+import it.uniroma2.art.owlart.filter.RootPropertiesResourcePredicate;
 import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenPredicates_Predicate;
 import it.uniroma2.art.owlart.filter.StatementWithDatatypePropertyPredicate_Predicate;
 import it.uniroma2.art.owlart.filter.SubPropertyOf_Predicate;
@@ -80,6 +81,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
+import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -152,6 +154,7 @@ public class ResourceOld extends ServiceAdapter {
 		public static final String getTemplatePropertiesRequest = "getTemplateProperties";
 		public static final String getValuesOfDatatypePropertiesRequest = "getValuesOfDatatypeProperties";
 		public static final String getRoleRequest = "getRole";
+		public static final String getValuesOfAnnotationsPropertiesHierarchicallyRequest = "getValuesOfAnnotationsPropertiesHierarchically";
 	}
 
 	public static class Par {
@@ -199,7 +202,11 @@ public class ResourceOld extends ServiceAdapter {
 			checkRequestParametersAllNotNull(Par.resource, Par.properties);
 			response = getValuesOfProperties(resourceName, propertiesNames, subproperties, excludePropItSelf,
 					excludedProps);
-		} else if (request.equals(Req.getValuesOfPropertiesCountRequest)) {
+		} else if(request.equals(Req.getValuesOfAnnotationsPropertiesHierarchicallyRequest)){
+			String resourceName = setHttpPar(Par.resource);
+			String excludedProps = setHttpPar(Par.excludedProps);
+			response = getValuesOfAnnotationsPropertiesHierarchically(resourceName, excludedProps);
+		}else if (request.equals(Req.getValuesOfPropertiesCountRequest)) {
 			String resourceName = setHttpPar(Par.resource);
 			String propertiesNames = setHttpPar(Par.properties);
 			boolean subproperties = setHttpBooleanPar(Par.subProp);
@@ -403,6 +410,51 @@ public class ResourceOld extends ServiceAdapter {
 		}
 	}
 
+	public Response getValuesOfAnnotationsPropertiesHierarchically(String resourceName,  
+			String excludedProps){
+		OWLModel model = getOWLModel();
+		ARTResource[] graphs;
+		HashSet<String> excludedPropSet = new HashSet<String>();
+		try{
+			graphs = getUserNamedGraphs();
+			ARTResource resource = retrieveExistingResource(model, resourceName, graphs);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			
+			Element dataElement = response.getDataElement();
+			if (excludedProps != null) {
+				for (String excludedPropName : excludedProps.split("\\|_\\|"))
+					excludedPropSet.add(model.expandQName(excludedPropName));
+			}
+
+			//get the annotation property which do not have any super property
+			Predicate<ARTResource> exclusionPredicate;
+			if (Config.isAdminStatus()){
+				exclusionPredicate = Predicates.alwaysTrue();
+			} else{
+				exclusionPredicate = NoSystemResourcePredicate.getPredicate(getProject());
+			}
+			Predicate<ARTURIResource> rootUserPropsPred = Predicates.and(new RootPropertiesResourcePredicate(
+					model), exclusionPredicate);
+
+			Iterator<ARTURIResource> filteredPropsIterator = Iterators.filter(
+					model.listAnnotationProperties(true, NodeFilters.ANY), rootUserPropsPred);
+			
+			
+			//use this list to get all the values associated with this property, in a hierarchically way
+			while(filteredPropsIterator.hasNext()){
+				ARTURIResource property = filteredPropsIterator.next();
+				getValuesOfPropertiesHierarchically(resource, property, true, false, graphs,
+						model, dataElement, excludedPropSet);
+			}
+			
+			return response;
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		}
+	}
+	
 	public Response getValuesOfPropertiesHierarchically(String resourceName, String propertiesNames,
 			boolean subProp, boolean excludePropItSelf, String excludedProps) {
 		String[] propsNames = propertiesNames.split("\\|_\\|");
@@ -460,10 +512,11 @@ public class ResourceOld extends ServiceAdapter {
 			while (it.streamOpen()) {
 				ARTNode next = it.getNext();
 				boolean explicit;
-				if (explicitValues.contains(next))
+				if (explicitValues.contains(next)) {
 					explicit = true;
-				else
+				} else {
 					explicit = false;
+				}
 				values.add(STRDFNodeFactory.createSTRDFNode(model, next, true, explicit, true));
 			}
 			it.close();

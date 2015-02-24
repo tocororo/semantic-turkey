@@ -152,6 +152,7 @@ public class Property extends ResourceOld {
 		final public static String visualize = "visualize";
 		final public static String minimize = "minimize";
 		final public static String classes = "classes";
+		public static final String excludedProps = "excludedProps";
 	}
 
 	final public static String template = "template";
@@ -179,20 +180,30 @@ public class Property extends ResourceOld {
 
 			// PROPERTIES TREE METHODS
 			if (request.equals(Req.getPropertiesTreeRequest)) {
+				String requestName = Req.getPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
-				return getPropertyTree(true, true, true, true, true, inference);
+				String excludedProps = setHttpPar(Par.excludedProps);
+				return getPropertyTree(requestName, true, true, true, true, true, inference, excludedProps);
 			} else if (request.equals(Req.getObjPropertiesTreeRequest)) {
+				String requestName = Req.getObjPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
-				return getPropertyTree(true, true, false, false, false, inference);
+				String excludedProps = setHttpPar(Par.excludedProps);
+				return getPropertyTree(requestName, true, true, false, false, false, inference, excludedProps);
 			} else if (request.equals(Req.getDatatypePropertiesTreeRequest)) {
+				String requestName = Req.getDatatypePropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
-				return getPropertyTree(false, false, true, false, false, inference);
+				String excludedProps = setHttpPar(Par.excludedProps);
+				return getPropertyTree(requestName, false, false, true, false, false, inference, excludedProps);
 			} else if (request.equals(Req.getAnnotationPropertiesTreeRequest)) {
+				String requestName = Req.getAnnotationPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
-				return getPropertyTree(false, false, false, true, false, inference);
+				String excludedProps = setHttpPar(Par.excludedProps);
+				return getPropertyTree(requestName, false, false, false, true, false, inference, excludedProps);
 			} else if (request.equals(Req.getOntologyPropertiesTreeRequest)) {
+				String requestName = Req.getOntologyPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
-				return getPropertyTree(false, false, false, false, true, inference);
+				String excludedProps = setHttpPar(Par.excludedProps);
+				return getPropertyTree(requestName, false, false, false, false, true, inference, excludedProps);
 			}
 
 			// PROPERTY DESCRIPTION METHOD
@@ -427,14 +438,15 @@ public class Property extends ResourceOld {
 	// to their types. Separate handling is costly expecially considering the standard rdf:Property
 	/**
 	 * generates an xml tree representing properties of the knowledge base
+	 * @param excludedProps 
 	 * 
 	 * @return Response tree
 	 */
-	public Response getPropertyTree(boolean props, boolean objprops, boolean datatypeprops,
-			boolean annotationprops, boolean ontologyprops, boolean inference) {
+	public Response getPropertyTree(String requestName, boolean props, boolean objprops, boolean datatypeprops,
+			boolean annotationprops, boolean ontologyprops, boolean inference, String excludedProps) {
 		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
-				Req.getPropertiesTreeRequest, RepliesStatus.ok);
+				requestName, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
 		Predicate<ARTResource> exclusionPredicate;
@@ -450,6 +462,11 @@ public class Property extends ResourceOld {
 		Iterator<ARTURIResource> filteredPropsIterator;
 
 		try {
+			HashSet<String> excludedPropSet = new HashSet<String>();
+			if (excludedProps != null) {
+				for (String excludedPropName : excludedProps.split("\\|_\\|"))
+					excludedPropSet.add(ontModel.expandQName(excludedPropName));
+			}
 
 			// OBJECT PROPERTIES
 			if (objprops == true) {
@@ -459,7 +476,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root object properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:ObjectProperty");
+							"owl:ObjectProperty", excludedPropSet);
 			}
 
 			// DATATYPE PROPERTIES
@@ -469,7 +486,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root datatype properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:DatatypeProperty");
+							"owl:DatatypeProperty", excludedPropSet);
 			}
 
 			// ANNOTATION PROPERTIES
@@ -479,7 +496,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root annotation properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:AnnotationProperty");
+							"owl:AnnotationProperty", excludedPropSet);
 			}
 
 			// ONTOLOGY PROPERTIES
@@ -489,7 +506,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root annotation properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:OntologyProperty");
+							"owl:OntologyProperty", excludedPropSet);
 			}
 
 			// BASE PROPERTIES
@@ -501,7 +518,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root rdf:properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"rdf:Property");
+							"rdf:Property", excludedPropSet);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getPropertiesTreeRequest, e);
@@ -524,7 +541,9 @@ public class Property extends ResourceOld {
 	 * @throws DOMException
 	 **/
 	void recursiveCreatePropertiesXMLTree(OWLModel ontModel, ARTURIResource property, Element element,
-			String type) throws DOMException, ModelAccessException {
+			String type, HashSet<String> excludedPropSet) throws DOMException, ModelAccessException {
+		if (excludedPropSet.contains(property.getURI()))
+			return;
 		logger.trace("\t" + property);
 		ServletUtilities servletUtilities = new ServletUtilities();
 		Element propElement = XMLHelp.newElement(element, "Property");
@@ -540,7 +559,7 @@ public class Property extends ResourceOld {
 		Element subPropertiesElem = XMLHelp.newElement(propElement, "SubProperties");
 		while (subPropertiesIterator.hasNext()) {
 			ARTURIResource subProp = subPropertiesIterator.next();
-			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type);
+			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type, excludedPropSet);
 		}
 	}
 
