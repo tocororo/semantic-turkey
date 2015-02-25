@@ -336,7 +336,7 @@ public class Refactor extends STServiceAdapter {
 	 * @throws UnsupportedRDFFormatException
 	 */
 	@GenerateSTServiceController
-	public Response exportWithTransfortations(String exportPackage, @Optional(defaultValue="false") boolean copyAlsoSKOSXLabels,
+	public Response exportWithTransformations(String exportPackage, @Optional(defaultValue="false") boolean copyAlsoSKOSXLabels,
 			@Optional(defaultValue="false") boolean copyAlsoReifiedDefinition) 
 			throws UnavailableResourceException, ProjectInconsistentException, ProjectIncompatibleException,
 			ModelAccessException, ModelUpdateException, IOException, UnsupportedRDFFormatException {
