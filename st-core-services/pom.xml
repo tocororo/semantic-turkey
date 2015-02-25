@@ -129,6 +129,7 @@
 							{local-packages}
 						</Export-Package>
 						<Import-Package>
+							it.uniroma2.art.coda.osgi.bundle,
 							it.uniroma2.art.semanticturkey,
 							it.uniroma2.art.semanticturkey.exceptions,
 							it.uniroma2.art.semanticturkey.filter,

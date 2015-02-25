@@ -418,7 +418,7 @@ public class Property extends ResourceOld {
 				return servletUtilities.createExceptionResponse(request, "there is no resource with name: "
 						+ propQName);
 			injectPropertyRangeXML(ontModel, property, dataElement, boolVis, minimize);
-			injectCustomRangeXML(property, dataElement);
+			
 			return response;
 
 		} catch (ModelAccessException e) {

@@ -27,6 +27,7 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
+import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
@@ -90,17 +91,19 @@ import it.uniroma2.art.semanticturkey.utilities.PropertyShowOrderComparator;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -145,7 +148,10 @@ public class ResourceOld extends ServiceAdapter {
 	public static final String conceptSchemeDescriptionRequest = "getConceptSchemeDescription";
 
 	public static final String langTag = "lang";
-
+	
+	@Autowired
+	private ObjectFactory<CustomRangeProvider> crpProvider;
+	
 	public static class Req {
 		public static final String getPropertyValuesRequest = "getPropertyValues";
 		public static final String getPropertyValuesCountRequest = "getPropertyValuesCount";
@@ -1264,7 +1270,7 @@ public class ResourceOld extends ServiceAdapter {
 		}
 	}
 
-	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
+	private void injectClassicRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
 			boolean visualization, boolean minimize) throws ModelAccessException,
 			NonExistingRDFResourceException {
 		ARTResource wgraph = getWorkingGraph();
@@ -1295,30 +1301,57 @@ public class ResourceOld extends ServiceAdapter {
 		}
 	}
 	
-	protected void injectCustomRangeXML(ARTURIResource property, Element treeElement){
-		try{
-			CustomRangeProvider provider = new CustomRangeProvider();
-			CustomRange cr = provider.loadCustomRange(property.getURI());
-			if (cr == null){//there is no custom range for the given property 
-				return;
+	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
+		CustomRangeProvider provider = crpProvider.getObject();
+		CustomRange cr = provider.loadCustomRange(property.getURI());
+		if (cr == null){//there is no custom range for the given property 
+			return;//doesn't inject the custom range 
+		}
+		Element crElem = XMLHelp.newElement(treeElement, "customRange");
+		crElem.setAttribute("property", property.getURI());
+		crElem.setAttribute("id", cr.getId());
+				
+		Collection<CustomRangeEntry> crEntries = cr.getEntries();
+		for (CustomRangeEntry crEntrty : crEntries){
+			Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
+			crEntryElem.setAttribute("ID", crEntrty.getID());
+			crEntryElem.setAttribute("name", crEntrty.getName());
+			crEntryElem.setAttribute("type", crEntrty.getType());
+			Element descElem = XMLHelp.newElement(crEntryElem, "description");
+			descElem.setTextContent(crEntrty.getDescription());
+			Element refElem = XMLHelp.newElement(crEntryElem, "ref");
+			refElem.setTextContent(crEntrty.getRef());
+			
+			//inject form map
+			//TODO: se la entry è node? nella response che form mettere?
+			if (crEntrty.getType().equals("graph")){
+				Element formElem = XMLHelp.newElement(crEntryElem, "form");
+				try{
+					Map<String, String> formMap = crEntrty.getFormMap();
+					for (Entry<String, String> formEntry : formMap.entrySet()){
+						Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
+						formEntryElem.setAttribute("userPrompt", formEntry.getKey());
+						formEntryElem.setAttribute("type", formEntry.getValue());
+					}
+				} catch (PRParserException ex){
+					formElem.setAttribute("exception", ex.toString());
+					ex.printStackTrace();
+				}
 			}
-			Element crElem = XMLHelp.newElement(treeElement, "customRange");
-			crElem.setAttribute("property", property.getURI());
-			crElem.setAttribute("id", cr.getId());
-					
-			Collection<CustomRangeEntry> entries = cr.getEntries();
-			for (CustomRangeEntry e : entries){
-				Element entryElem = XMLHelp.newElement(crElem, "entry");
-				entryElem.setAttribute("ID", e.getID());
-				entryElem.setAttribute("name", e.getName());
-				entryElem.setAttribute("type", e.getType());
-				Element descElem = XMLHelp.newElement(entryElem, "description");
-				descElem.setTextContent(e.getDescription());
-				Element refElem = XMLHelp.newElement(entryElem, "ref");
-				refElem.setTextContent(e.getRef());
-			}
-		} catch (FileNotFoundException e){
-			e.printStackTrace();
+		}
+	}
+	
+	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
+			boolean visualization, boolean minimize) throws ModelAccessException, NonExistingRDFResourceException {
+		CustomRangeProvider provider = crpProvider.getObject();
+		String mode = provider.getResponseMode(property.getURI());
+		if (mode.equals(CustomRangeProvider.CR_MODE_OVERRIDE)){
+			injectCustomRangeXML(property, treeElement);
+		} else { //mode = "union"
+			//classic range
+			injectClassicRangeXML(ontModel, property, treeElement, visualization, minimize);
+			//custom range
+			injectCustomRangeXML(property, treeElement);
 		}
 	}
 

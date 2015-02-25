@@ -1,17 +1,22 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.coda.core.CODACore;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.w3c.dom.Element;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * A CustomRange is a class which describe the range of a property. It is compose by one or more
@@ -27,7 +32,8 @@ public class CustomRange {
 
 	private File customRangeFile;
 	private String id;
-	private Collection<CustomRangeEntry> entries; //range entries associated to the CustomRange instance TODO to initialize by parsing the xml and getting the CRE id
+	private Collection<CustomRangeEntry> entries; //range entries associated to the CustomRange instance
+	private CODACore codaCore;
 	
 	
 	/**
@@ -35,22 +41,22 @@ public class CustomRange {
 	 * @param customRangeId
 	 * @throws FileNotFoundException 
 	 */
-	public CustomRange(String customRangeId) throws FileNotFoundException{
-		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
-		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
-		for (File f : crFiles){//search for the custom range file with the given name
-			if (f.getName().equals(customRangeId+".xml")){
-				this.customRangeFile = f;
-				break;
-			}
-		}
-		if (customRangeFile == null){
-			throw new FileNotFoundException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
-		}
-		loadEntries();
-		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-		this.id = crReader.getId();
-	}
+//	public CustomRange(String customRangeId) throws FileNotFoundException {
+//		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
+//		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
+//		for (File f : crFiles){//search for the custom range file with the given name
+//			if (f.getName().equals(customRangeId+".xml")){
+//				this.customRangeFile = f;
+//				break;
+//			}
+//		}
+//		if (customRangeFile == null){
+//			throw new FileNotFoundException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
+//		}
+//		loadEntries();
+//		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
+//		this.id = crReader.getId();
+//	}
 	
 	/**
 	 * Constructor that given the CustomRange file loads its content
@@ -58,14 +64,15 @@ public class CustomRange {
 	 * @param projectFolderPath
 	 * @throws FileNotFoundException 
 	 */
-	public CustomRange(File customRangeFile) throws FileNotFoundException {
+	public CustomRange(File customRangeFile, CODACore codaCore) {
+		this.codaCore = codaCore;
 		this.customRangeFile = customRangeFile;
-		loadEntries();
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
 		this.id = crReader.getId();
+		loadEntries();
 	}
 	
-	private void loadEntries() throws FileNotFoundException{
+	private void loadEntries() {
 		entries = new ArrayList<CustomRangeEntry>();
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
 		Collection<String> creIdList = crReader.getCustomRangeEntries();
@@ -75,15 +82,15 @@ public class CustomRange {
 			CustomRangeEntry cre = null;
 			for (File f : creFiles){//search for the CustomRangeEntry file with the given name
 				if (f.getName().equals(creId+".xml")){
-					cre = new CustomRangeEntry(f);
+					cre = new CustomRangeEntry(f, codaCore);
 					break;
 				}
 			}
-			if (cre != null){//if the CustomRangeEntry file is found, add it to the entries collection
+			//add the CustomRangeEntry only if its file is found
+			if (cre != null){
 				entries.add(cre);
 			} else {
-				throw new FileNotFoundException("CustomRangeEntry file '" + creId + ".xml' cannot be found in the CustomRangeEntry folder."
-						+ " Please, check if it exists in the CustomRangeEntry folder or fix the CustomRange file '" + customRangeFile.getName() + "'");
+				//message to warn that the CustomRangeEntry with the specified "creId" has not been found  ??
 			}
 		}
 	}
@@ -103,50 +110,59 @@ public class CustomRange {
 	public Collection<CustomRangeEntry> getEntries(){
 		return entries;
 	}
+
 	
-	/**
-	 * Returns all the CustomRangeEntry that match the given object
-	 * @param object
-	 * @return
-	 */
-	public Collection<CustomRangeEntry> getMatches(ARTNode object){
-		Collection<CustomRangeEntry> coll = new ArrayList<CustomRangeEntry>();
-		for (CustomRangeEntry e : entries){
-			if (e.matches(object))
-				coll.add(e);
-		}
-		return coll;
-	}
-	
-	/**
-	 * Returns an XML representation of the range to put into the XML response (&lt;customRange&gt; tag)
-	 * @return
-	 */
-	public Element getSerialization(){
-		/* 
-		 * TODO: I would like to return an Element object, but with XMLHelp is possible to create such object
-		 * only if a parent element is provided, so what I should do?
-		 * - change return type
-		 * - pass a treeElement too (like injectPropertyRangeXML in servlet.main.ResourceOld st-core-services)  
-		 */
-		try {
-			BufferedReader bReader = new BufferedReader(new FileReader(customRangeFile));
-			StringBuffer sBuffer = new StringBuffer();
-			String content = "";
-			while ((content = bReader.readLine()) != null) {
-				sBuffer.append(content + "\n");
+	private class CustomRangeXMLReader {
+		
+		private Document doc;
+		
+		public CustomRangeXMLReader(File customRangeFile){
+			try {
+				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+				if (customRangeFile.exists()){
+					doc = dBuilder.parse(customRangeFile);
+					doc.getDocumentElement().normalize();
+				}
+			} catch (IOException | ParserConfigurationException | SAXException e) {
+				e.printStackTrace();
 			}
-			bReader.close();
-			//TODO do something with content: parse it and create serialization XML
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		
-		return null;
-	}
-	
+		/**
+		 * Return the attribute <code>id</code> of the custom range xml file. 
+		 * @return
+		 */
+		public String getId(){
+			if (doc != null){
+				Element customRangeEntryElement = doc.getDocumentElement();
+				String id = customRangeEntryElement.getAttribute("id");
+				return id.trim();
+			} else {
+				return null;
+			}
+		}
+		
+		/**
+		 * Return a collection of <code>id</code> contained in the <code>entry</code> tag of the custom 
+		 * range xml file. 
+		 * @return
+		 */
+		public Collection<String> getCustomRangeEntries() {
+			Collection<String> creList = new ArrayList<String>();
+			if (doc != null){
+				NodeList entryList = doc.getElementsByTagName("entry");
+				for (int i = 0; i < entryList.getLength(); i++) {
+					Node entryNode = entryList.item(i);
+					if (entryNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element entryElement = (Element) entryNode;
+						String idCREntry = entryElement.getAttribute("id");
+						creList.add(idCREntry);
+					}
+				}
+			}
+			return creList;
+		}
 
+	}
 }

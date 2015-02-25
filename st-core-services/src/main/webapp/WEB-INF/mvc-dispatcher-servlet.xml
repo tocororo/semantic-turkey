@@ -103,6 +103,9 @@
 	<bean id="multipartResolver"
 		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
 	</bean>
+	
+	<!-- Retrieves coda osgi factory -->	
+	<osgi:reference id="codaOSGiFactory" interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory"/>
 
 	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
 </beans>
