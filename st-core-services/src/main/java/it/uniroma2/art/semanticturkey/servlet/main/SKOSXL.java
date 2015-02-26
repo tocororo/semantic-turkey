@@ -128,7 +128,7 @@ public class SKOSXL extends SKOS {
 	}
 
 	@Override
-	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException, MalformedURIException {
+	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException {
 		logger.debug("request to SKOS-XL");
 
 		Response response = null;
@@ -516,7 +516,7 @@ public class SKOSXL extends SKOS {
 	}
 
 	public Response createConcept(String conceptName, String superConceptName, String schemeName,
-			String prefLabel, String prefLabelLang, String language) throws MalformedURIException {
+			String prefLabel, String prefLabelLang, String language) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		logger.debug("conceptName: " + conceptName);
 		logger.debug("schemeName: " + schemeName);
@@ -587,12 +587,14 @@ public class SKOSXL extends SKOS {
 			return logAndSendException(e);
 		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
+		} catch (MalformedURIException e) {
+			return logAndSendException(e);
 		}
 		return response;
 	}
 
 	public Response createConceptScheme(String schemeQName, String prefLabel, String prefLabelLang,
-			String language) throws MalformedURIException {
+			String language) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		logger.debug("new scheme name: " + schemeQName);
 
@@ -622,6 +624,8 @@ public class SKOSXL extends SKOS {
 		} catch (DuplicatedResourceException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (MalformedURIException e) {
 			return logAndSendException(e);
 		}
 		return response;
