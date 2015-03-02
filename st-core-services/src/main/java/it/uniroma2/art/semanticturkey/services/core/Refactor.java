@@ -61,7 +61,7 @@ public class Refactor extends STServiceAdapter {
 	
 	public static class Req {
 		public static String renameResourceRequest = "renameResource";
-		public static String replaceBaseURIRequest = "replaceBaseUri";
+		public static String replaceBaseURIRequest = "replaceBaseURI";
 		public static String convertLabelsToSKOSXLRequest = "convertLabelsToSKOSXL";
 		public static String exportWithSKOSLabelsRequest = "exportWithSKOSLabels";
 		public static String reifySKOSDefinitionsRequest = "reifySKOSDefinitions";
