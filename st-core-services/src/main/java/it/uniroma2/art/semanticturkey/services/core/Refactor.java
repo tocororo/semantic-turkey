@@ -60,12 +60,13 @@ public class Refactor extends STServiceAdapter {
 	protected static Logger logger = LoggerFactory.getLogger(Refactor.class);
 	
 	public static class Req {
-		public static String renameRequest = "rename";
+		public static String renameResourceRequest = "renameResource";
 		public static String replaceBaseURIRequest = "replaceBaseUri";
 		public static String convertLabelsToSKOSXLRequest = "convertLabelsToSKOSXL";
-		public static String exportWithSKOSLabelRequest = "exportWithSKOSLabel";
+		public static String exportWithSKOSLabelsRequest = "exportWithSKOSLabels";
 		public static String reifySKOSDefinitionsRequest = "reifySKOSDefinitions";
 		public static String exportWithFlatSKOSDefinitionsRequest = "exportWithFlatSKOSDefinitions";
+		public static String exportWithTransformationsRequest = "exportWithTransformations";
 	}
 	
 	// Temporarily disabled, since we still have not automatic handling of domain objects
@@ -103,7 +104,7 @@ public class Refactor extends STServiceAdapter {
 	}
 	
 	@GenerateSTServiceController
-	public Response changeResourceName(@Existing ARTResource oldResource, ARTResource newResource) throws 
+	public Response renameResource(@Existing ARTResource oldResource, ARTResource newResource) throws 
 			ModelAccessException, DuplicatedResourceException, ModelUpdateException {
 		RDFModel ontModel = getOWLModel();
 			if (ontModel.existsResource(newResource)){
@@ -135,7 +136,7 @@ public class Refactor extends STServiceAdapter {
 			}
 		}
 
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.renameRequest,
+		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.renameResourceRequest,
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element element = XMLHelp.newElement(dataElement, "UpdateResource");
@@ -178,7 +179,7 @@ public class Refactor extends STServiceAdapter {
 			throw new ModelUpdateException("sorry, unable to replace the baseuri, try to close the project " +
 					"and open it again");
 		}
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.renameRequest,
+		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.renameResourceRequest,
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element element = XMLHelp.newElement(dataElement, "changeResourceName");
@@ -247,7 +248,7 @@ public class Refactor extends STServiceAdapter {
 				e.printStackTrace();
 			}
 			tempTargetModel.close();
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithSKOSLabelRequest,
+			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithSKOSLabelsRequest,
 					RepliesStatus.ok);
 			return response;
 		} else {
@@ -350,7 +351,7 @@ public class Refactor extends STServiceAdapter {
 			ReifiedSKOSDefinitionsFlattener.convert(tempTargetModel, tempTargetModel, copyAlsoReifiedDefinition);
 			tempTargetModel.writeRDF(new File(exportPackage), RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
 			tempTargetModel.close();
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithFlatSKOSDefinitionsRequest,
+			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithTransformationsRequest ,
 					RepliesStatus.ok);
 			return response;
 		} else {

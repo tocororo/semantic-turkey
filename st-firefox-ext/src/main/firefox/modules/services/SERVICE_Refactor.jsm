@@ -38,7 +38,7 @@ function rename(oldResource,newResource){
 	var oldResource_p = "oldResource=" + oldResource;
 	var newResource_p = "newResource=" + newResource;
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	var response = currentSTHttpMgr.GET(null, serviceName, service.changeResourceNameRequest, 
+	var response = currentSTHttpMgr.GET(null, serviceName, service.renameResourceRequest, 
 			this.context, oldResource_p, newResource_p);
 	
 	//TODO check if this still works or not

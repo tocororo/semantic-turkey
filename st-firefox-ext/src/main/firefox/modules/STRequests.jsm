@@ -145,7 +145,7 @@ STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTr
 STRequests.Refactor.serviceName = "Refactor";
 //STRequests.Refactor.renameRequest = "rename";
 //STRequests.Refactor.replaceBaseURIRequest = "replaceBaseUri";
-STRequests.Refactor.changeResourceNameRequest = "changeResourceName";
+STRequests.Refactor.renameResourceRequest = "renameResource";
 STRequests.Refactor.replaceBaseURIRequest = "replaceBaseURI";
 
 
