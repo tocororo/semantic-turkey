@@ -61,7 +61,7 @@
 			</plugin>
 
 			<!-- This goal attaches the feature file semanticturkey.xml as an additional 
-				artifact to this compilation unit so that it can be referenced thtough Maven. -->
+				artifact to this compilation unit so that it can be referenced through Maven. -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -103,7 +103,7 @@
 							<goal>install-file</goal>
 						</goals>
 						<configuration>
-							<file>${project.basedir}/target/classes/org.ops4j.pax.web.cfg</file>
+							<file>${project.basedir}/src/main/distribution/etc/org.ops4j.pax.web.cfg</file>
 							<groupId>it.uniroma2.art.semanticturkey</groupId>
 							<artifactId>${project.artifactId}</artifactId>
 							<version>${project.version}</version>
@@ -118,7 +118,7 @@
 							<goal>install-file</goal>
 						</goals>
 						<configuration>
-							<file>${project.basedir}/target/classes/${project.groupId}.cfg</file>
+							<file>${project.basedir}/target/classes/etc/${project.groupId}.cfg</file>
 							<groupId>it.uniroma2.art.semanticturkey</groupId>
 							<artifactId>${project.artifactId}</artifactId>
 							<version>${project.version}</version>
@@ -126,24 +126,6 @@
 							<classifier>st</classifier>
 						</configuration>
 					</execution>
-					<!-- it seems the config.properties had no customization, so we removed it -->
-					<!-- 
-					<execution>
-						<id>install-prp-file</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>install-file</goal>
-						</goals>
-						<configuration>
-							<file>${project.basedir}/target/classes/config.properties</file>
-							<groupId>it.uniroma2.art.semanticturkey</groupId>
-							<artifactId>${project.artifactId}</artifactId>
-							<version>${project.version}</version>
-							<packaging>properties</packaging>
-							<classifier>prp</classifier>
-						</configuration>
-					</execution>
-					 -->
 				</executions>
 			</plugin>
 

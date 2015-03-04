@@ -6,21 +6,18 @@
 		<format>zip</format>
 	</formats>
 
-
-
 	<fileSets>
 
 		<!-- Expanded Karaf Standard Distribution -->
 		<fileSet>
-			<directory>${project.basedir}/target/dependencies/apache-karaf-2.3.3
-			</directory>
+			<directory>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}</directory>
 			<outputDirectory>/</outputDirectory>
 			<excludes>
 				<exclude>**/demos/**</exclude>
 				<exclude>bin/**</exclude>
-				<!-- <exclude>lib/**</exclude> -->
 				<exclude>etc/org.apache.karaf.features.cfg</exclude>
-				<exclude>etc/org.ops4j.pax.logging.cfg</exclude> 
+				<exclude>etc/org.ops4j.pax.logging.cfg</exclude>
+				<exclude>etc/org.ops4j.pax.web.cfg</exclude> 
 				<exclude>LICENSE</exclude>
 				<exclude>NOTICE</exclude>
 				<exclude>README</exclude>
@@ -32,8 +29,7 @@
 
 		<!-- Copy over bin/* separately to get the correct file mode -->
 		<fileSet>
-			<directory>${project.basedir}/target/dependencies/apache-karaf-2.3.3
-			</directory>
+			<directory>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
 				<include>bin/admin.bat</include>
@@ -58,29 +54,28 @@
 			<fileMode>0755</fileMode>
 		</fileSet>
 
-
+		<fileSet>
+			<directory>src/main/distribution/etc/</directory>
+			<outputDirectory>/etc/</outputDirectory>
+			<includes>
+				<include>*.cfg</include>
+			</includes>
+			<fileMode>0644</fileMode>
+		</fileSet>
+		
 		<fileSet>
 			<directory>${project.basedir}/target/classes/etc</directory>
 			<outputDirectory>/etc/</outputDirectory>
+			<includes>
+				<include>*.cfg</include>
+			</includes>
 			<fileMode>0644</fileMode>
 		</fileSet>
-
-		<fileSet>
-			<directory>src/main/filtered-resources</directory>
-			<outputDirectory>/etc/</outputDirectory>
-			<excludes>
-				<exclude>*.xml</exclude>
-			</excludes>
-			<filtered>true</filtered>
-			<fileMode>0644</fileMode>
-		</fileSet>
-
 
 		<fileSet>
 			<directory>${project.basedir}/target/features-repo</directory>
 			<outputDirectory>/system</outputDirectory>
 		</fileSet>
-
 
 		<fileSet>
 			<directory>${project.parent.basedir}/st-console/target</directory>
@@ -94,6 +89,7 @@
 	</fileSets>
 
 	<files>
+	
 		<file>
 			<source>${project.basedir}/target/dependencies/apache-karaf-2.3.3/bin/karaf.bat
 			</source>
@@ -101,25 +97,12 @@
 			<destName>st_server_run.bat</destName>
 			<fileMode>0755</fileMode>
 		</file>
-		
-		<file>
-			<source>src/main/distribution/etc/org.apache.karaf.features.cfg</source>
-			<outputDirectory>/etc/</outputDirectory>
-			<fileMode>0644</fileMode>
-		</file>
-		
-		<file>
-			<source>src/main/distribution/etc/org.ops4j.pax.logging.cfg</source>
-			<outputDirectory>/etc/</outputDirectory>
-			<fileMode>0644</fileMode>
-		</file>
-		
+
 
 		<file>
 			<source>${project.basedir}/target/classes/semanticturkey.xml</source>
-			<outputDirectory>/system/it/uniroma2/art/semanticturkey
-			</outputDirectory>
-			<destName>semanticturkey.xml</destName>
+			<outputDirectory>/system/it/uniroma2/art/semanticturkey/${project.artifactId}/${project.version}/</outputDirectory>
+			<destName>${project.artifactId}-${project.version}-features.xml</destName>
 			<fileMode>0644</fileMode>
 		</file>
 

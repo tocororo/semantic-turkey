@@ -67,16 +67,6 @@
 		<configfile finalname="/etc/${project.groupId}.cfg" override="true">
 			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/cfg/st
 		</configfile>
-		<!-- it seems the config.properties had no customization, so we removed it -->
-		<!-- 		
-		<configfile finalname="/etc/config.properties" override="true">
-			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/properties/prp
-		</configfile>
-		 -->		
-		<configfile finalname="/etc/org.ops4j.pax.web.cfg"
-			override="true">
-			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/cfg/pax
-		</configfile>
 	</feature>
 
 	<feature name="semantic_turkey" version="1.0">
