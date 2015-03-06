@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory;
 import it.uniroma2.art.semanticturkey.resources.Config;
 
 import java.io.File;
@@ -14,7 +12,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.osgi.framework.BundleContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -42,13 +39,10 @@ public class CustomRangeProvider {
 	public static final String CR_MODE_OVERRIDE = "override";
 	
 	private CustomRangeConfigXMLReader customRangeConfig; //contains the mapping between property and CustomRange
-	private CODACore codaCore;
 	
-	@Autowired
-	public CustomRangeProvider(CODAOSGiFactory codaFactory, BundleContext context) {
+	public CustomRangeProvider() {
 		String crConfigFilePath = getCustomRangeFolder().getPath() + File.separator + CUSTOM_RANGE_CONFIG_FILENAME;
 		File crConfigFile = new File(crConfigFilePath);
-		codaCore = codaFactory.getInstance(context);
 		customRangeConfig = new CustomRangeConfigXMLReader(crConfigFile);
 	}
 	
@@ -63,7 +57,7 @@ public class CustomRangeProvider {
 		File[] crFiles = getCustomRangeFolder().listFiles();//get list of files into custom range folder
 		for (File f : crFiles){//search for the custom range files
 			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange")){
-				customRanges.add(new CustomRange(f, codaCore));
+				customRanges.add(new CustomRange(f));
 			}
 		}
 		return customRanges;
@@ -84,7 +78,7 @@ public class CustomRangeProvider {
 			File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
 			for (File f : crFiles){//search for the custom range file with the given name
 				if (f.getName().equals(customRangeId+".xml")){
-					return new CustomRange(f, codaCore);
+					return new CustomRange(f);
 				}
 			} 
 			//message to warn that custom range with the specified "customRangeId" has not be found in customRange folder ?? 

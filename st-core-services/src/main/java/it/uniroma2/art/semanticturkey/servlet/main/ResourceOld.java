@@ -66,8 +66,10 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeCODAManager;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customrange.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
@@ -150,7 +152,7 @@ public class ResourceOld extends ServiceAdapter {
 	public static final String langTag = "lang";
 	
 	@Autowired
-	private ObjectFactory<CustomRangeProvider> crpProvider;
+	private ObjectFactory<CustomRangeCODAManager> crCODAMgrProvider;
 	
 	public static class Req {
 		public static final String getPropertyValuesRequest = "getPropertyValues";
@@ -1302,7 +1304,7 @@ public class ResourceOld extends ServiceAdapter {
 	}
 	
 	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
-		CustomRangeProvider provider = crpProvider.getObject();
+		CustomRangeProvider provider = new CustomRangeProvider();
 		CustomRange cr = provider.loadCustomRange(property.getURI());
 		if (cr == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
@@ -1312,26 +1314,38 @@ public class ResourceOld extends ServiceAdapter {
 		crElem.setAttribute("id", cr.getId());
 				
 		Collection<CustomRangeEntry> crEntries = cr.getEntries();
-		for (CustomRangeEntry crEntrty : crEntries){
+		for (CustomRangeEntry crEntry : crEntries){
 			Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
-			crEntryElem.setAttribute("ID", crEntrty.getID());
-			crEntryElem.setAttribute("name", crEntrty.getName());
-			crEntryElem.setAttribute("type", crEntrty.getType());
+			crEntryElem.setAttribute("id", crEntry.getId());
+			crEntryElem.setAttribute("name", crEntry.getName());
+			crEntryElem.setAttribute("type", crEntry.getType());
 			Element descElem = XMLHelp.newElement(crEntryElem, "description");
-			descElem.setTextContent(crEntrty.getDescription());
+			descElem.setTextContent(crEntry.getDescription());
 			Element refElem = XMLHelp.newElement(crEntryElem, "ref");
-			refElem.setTextContent(crEntrty.getRef());
+			refElem.setTextContent(crEntry.getRef());
 			
 			//inject form map
 			//TODO: se la entry è node? nella response che form mettere?
-			if (crEntrty.getType().equals("graph")){
+			CustomRangeCODAManager crCodaMgr = crCODAMgrProvider.getObject();
+			if (crEntry.getType().equals("graph")){
 				Element formElem = XMLHelp.newElement(crEntryElem, "form");
 				try{
-					Map<String, String> formMap = crEntrty.getFormMap();
-					for (Entry<String, String> formEntry : formMap.entrySet()){
-						Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
-						formEntryElem.setAttribute("userPrompt", formEntry.getKey());
-						formEntryElem.setAttribute("type", formEntry.getValue());
+					List<UserPromptStruct> form = crCodaMgr.getForm(crEntry);
+					if (!form.isEmpty()){
+						for (UserPromptStruct formEntry : form){
+							Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
+							formEntryElem.setAttribute("userPrompt", formEntry.getUserPromptName());
+							formEntryElem.setAttribute("type", formEntry.getRdfType());
+							formEntryElem.setAttribute("mandatory", "true");//TODO change as soon as there will be update in CODA (isMandatory() method)
+							if (formEntry.isLiteral()){
+								if (formEntry.hasDatatype())
+									formEntryElem.setAttribute("datatype", formEntry.getLiteralDatatype());
+								if (formEntry.hasLanguage())
+									formEntryElem.setAttribute("lang", formEntry.getLiteralLang());
+							}
+						}
+					} else {
+						formElem.setAttribute("exception", "No userPrompt/ features found");
 					}
 				} catch (PRParserException ex){
 					formElem.setAttribute("exception", ex.toString());
@@ -1343,7 +1357,7 @@ public class ResourceOld extends ServiceAdapter {
 	
 	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
 			boolean visualization, boolean minimize) throws ModelAccessException, NonExistingRDFResourceException {
-		CustomRangeProvider provider = crpProvider.getObject();
+		CustomRangeProvider provider = new CustomRangeProvider();
 		String mode = provider.getResponseMode(property.getURI());
 		if (mode.equals(CustomRangeProvider.CR_MODE_OVERRIDE)){
 			injectCustomRangeXML(property, treeElement);

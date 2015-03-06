@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.coda.core.CODACore;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -33,30 +31,28 @@ public class CustomRange {
 	private File customRangeFile;
 	private String id;
 	private Collection<CustomRangeEntry> entries; //range entries associated to the CustomRange instance
-	private CODACore codaCore;
-	
 	
 	/**
 	 * Constructor that given the CustomRange id, searches the CustomRange file and loads its content 
 	 * @param customRangeId
 	 * @throws FileNotFoundException 
 	 */
-//	public CustomRange(String customRangeId) throws FileNotFoundException {
-//		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
-//		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
-//		for (File f : crFiles){//search for the custom range file with the given name
-//			if (f.getName().equals(customRangeId+".xml")){
-//				this.customRangeFile = f;
-//				break;
-//			}
-//		}
-//		if (customRangeFile == null){
-//			throw new FileNotFoundException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
-//		}
-//		loadEntries();
-//		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-//		this.id = crReader.getId();
-//	}
+	public CustomRange(String customRangeId) throws FileNotFoundException {
+		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
+		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
+		for (File f : crFiles){//search for the custom range file with the given name
+			if (f.getName().equals(customRangeId+".xml")){
+				this.customRangeFile = f;
+				break;
+			}
+		}
+		if (customRangeFile == null){
+			throw new FileNotFoundException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
+		}
+		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
+		this.id = crReader.getId();
+		loadEntries();
+	}
 	
 	/**
 	 * Constructor that given the CustomRange file loads its content
@@ -64,8 +60,7 @@ public class CustomRange {
 	 * @param projectFolderPath
 	 * @throws FileNotFoundException 
 	 */
-	public CustomRange(File customRangeFile, CODACore codaCore) {
-		this.codaCore = codaCore;
+	public CustomRange(File customRangeFile) {
 		this.customRangeFile = customRangeFile;
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
 		this.id = crReader.getId();
@@ -82,7 +77,7 @@ public class CustomRange {
 			CustomRangeEntry cre = null;
 			for (File f : creFiles){//search for the CustomRangeEntry file with the given name
 				if (f.getName().equals(creId+".xml")){
-					cre = new CustomRangeEntry(f, codaCore);
+					cre = new CustomRangeEntry(f);
 					break;
 				}
 			}
@@ -109,6 +104,28 @@ public class CustomRange {
 	 */
 	public Collection<CustomRangeEntry> getEntries(){
 		return entries;
+	}
+	
+	/**
+	 * Returns the CustomRangeEntry with the given ID. Null if it doesn't exists.
+	 * @param entryId
+	 * @return
+	 */
+	public CustomRangeEntry getEntry(String entryId){
+		for (CustomRangeEntry cre : entries){
+			if (cre.getId().equals(entryId)){
+				return cre;
+			}
+		}
+		return null;
+	}
+	
+	public Collection<String> getEntriesId(){
+		Collection<String> ids = new ArrayList<String>();
+		for (CustomRangeEntry cre : entries){
+			ids.add(cre.getId());
+		}
+		return ids;
 	}
 
 	

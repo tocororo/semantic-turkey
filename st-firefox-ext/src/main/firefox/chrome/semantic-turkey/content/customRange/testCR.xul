@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<!-- chrome://semantic-turkey/content/test/testTiziano.xul -->
+
+<window id="TestWindow" title="Test Window" flex="1"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:html="http://www.w3.org/1999/xhtml">
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/testCR.js" />
+	
+	<hbox align="center">
+		<label value="property"/>
+		<textbox id="propertyTxt" value="skos:definition"/>
+		<button id="btn" label="test enrich property" />
+	</hbox>
+
+</window>

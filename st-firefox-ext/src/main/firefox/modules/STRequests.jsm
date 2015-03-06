@@ -28,7 +28,11 @@ STRequests.RangeAnnotation = function(){};
 /**
  * @class
  */
-STRequests.Cls = function(){};           
+STRequests.Cls = function(){};
+/**
+ * @class
+ */
+STRequests.CustomRanges = function(){};
 /**
  * @class
  */
@@ -140,6 +144,9 @@ STRequests.Cls.createClassRequest = "createClass";
 STRequests.Cls.getSubClassesRequest = "getSubClasses";
 STRequests.Cls.getSuperClassesRequest = "getSuperClasses";
 STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTree";
+
+STRequests.CustomRanges.serviceName = "CustomRanges";
+STRequests.CustomRanges.runCodaRequest = "runCoda";
 
 //Refactor service Request (old service name was ModifyName)
 STRequests.Refactor.serviceName = "Refactor";

@@ -435,8 +435,7 @@ var getDatetime = function(){
 	try {
 		var xmlResp = art_semanticturkey.STRequests.XMLSchema.formatDateTime(
 				dp.year, dp.month, dp.date, tp.hour, tp.minute, tp.second);
-		var data = xmlResp.getElementsByTagName("data")[0];
-		return data.getElementsByTagName("dateTime")[0].textContent;
+		return xmlResp.getElementsByTagName("dateTime")[0].textContent;
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 		return;
@@ -459,8 +458,7 @@ var getDate = function(){
 	var dp = document.getElementById("datepicker");
 	try {
 		var xmlResp = art_semanticturkey.STRequests.XMLSchema.formatDate(dp.year, dp.month, dp.date);
-		var data = xmlResp.getElementsByTagName("data")[0];
-		return data.getElementsByTagName("date")[0].textContent;
+		return xmlResp.getElementsByTagName("date")[0].textContent;
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 		return;
@@ -483,8 +481,7 @@ var getTime = function(){
 	var tp = document.getElementById("timepicker");
 	try {
 		var xmlResp = art_semanticturkey.STRequests.XMLSchema.formatTime(tp.hour, tp.minute, tp.second);
-		var data = xmlResp.getElementsByTagName("data")[0];
-		return data.getElementsByTagName("time")[0].textContent;
+		return xmlResp.getElementsByTagName("time")[0].textContent;
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 		return;
@@ -505,8 +502,7 @@ var getDuration = function(){
 	var second = document.getElementById("secondTxt").value;
 	try {
 		var xmlResp = art_semanticturkey.STRequests.XMLSchema.formatDuration(isPositive, year, month, day, hour, minute, second);
-		var data = xmlResp.getElementsByTagName("data")[0];
-		return data.getElementsByTagName("duration")[0].textContent;
+		return xmlResp.getElementsByTagName("duration")[0].textContent;
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 		return;
