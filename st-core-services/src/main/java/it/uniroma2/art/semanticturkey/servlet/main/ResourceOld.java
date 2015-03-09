@@ -1336,7 +1336,7 @@ public class ResourceOld extends ServiceAdapter {
 							Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
 							formEntryElem.setAttribute("userPrompt", formEntry.getUserPromptName());
 							formEntryElem.setAttribute("type", formEntry.getRdfType());
-							formEntryElem.setAttribute("mandatory", "true");//TODO change as soon as there will be update in CODA (isMandatory() method)
+							formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
 							if (formEntry.isLiteral()){
 								if (formEntry.hasDatatype())
 									formEntryElem.setAttribute("datatype", formEntry.getLiteralDatatype());

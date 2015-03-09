@@ -8,6 +8,7 @@ public class UserPromptStruct {
 	private String rdfType; //uri or literal
 	private String literalDatatype;
 	private String literalLang;
+	private boolean mandatory;
 	
 	/**
 	 * Creates a new UserPromptStruct with the given name and the given type
@@ -17,6 +18,7 @@ public class UserPromptStruct {
 	public UserPromptStruct(String userPromptName, String rdfType){
 		this.userPromptName = userPromptName;
 		this.rdfType = rdfType;
+		this.mandatory = true;
 	}
 	
 	public String getUserPromptName() {
@@ -49,6 +51,14 @@ public class UserPromptStruct {
 
 	public void setLiteralLang(String literalLang) {
 		this.literalLang = literalLang;
+	}
+	
+	public boolean isMandatory(){
+		return mandatory;
+	}
+	
+	public void setMandatory(boolean mandatory){
+		this.mandatory = mandatory;
 	}
 	
 	public boolean isUri(){

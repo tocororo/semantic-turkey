@@ -96,10 +96,7 @@ public class CustomRangeCODAManager {
 							//fill the UserPromptStruct independently from its type (literal or uri)
 							upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
 							upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
-//							String datatype = placeHolderStruct.getLiteralDatatype();
-//							if (type.equals("literal") && datatype != null){
-//								type = type + "^^" + datatype;
-//							}
+							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
 							form.add(upStruct);
 						}
 					}
