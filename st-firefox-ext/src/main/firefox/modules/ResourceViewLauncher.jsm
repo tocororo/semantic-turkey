@@ -7,17 +7,22 @@ Components.utils.import("resource://stservices/SERVICE_ResourceView.jsm", art_se
 
 EXPORTED_SYMBOLS = ["ResourceViewLauncher"];
 
-ResourceViewLauncher = {}
-
-ResourceViewLauncher.prototype = {
+ResourceViewLauncher = {
 	
 	/**
-	 * possible inputs
-	 * -resourceName:	simply the resource name (qname or uri)
-	 * -params:			an object with its attributes (like the input of the old editor panel)
-	 * based on the useEditor preference value it launches 
-	 * -editor panel:	it needs the params as input
-	 * -resource view:	it needs simply the resourceName as input
+	 * This method handle the launch of the "old" Editor Panel and the "new" Resource View.
+	 * Since the two get difference input parameters (the resource view get a simple qname or uri,
+	 * while the editor panel need an object containing multiple parameters) it need to handle 
+	 * difference scenarios  
+	 * 
+	 * allowed input (params)
+	 * -A simple resource name (qname or uri)
+	 * -An object with its attributes (like the input of the old editor panel)
+	 * 
+	 * based on the extensions.semturkey.useEditor preference value (legacy|tab|window) it launches
+	 * -editor panel (legacy):	it needs the params as input
+	 * -resource view (tab|window):	it needs simply the resourceName as input
+	 * 
 	 * So, the resourceViewLauncher should work in these scenarios:
 	 * 1) Simple scenarios
 	 * 	1.a) Input: params; Launch: editor panel
@@ -73,8 +78,3 @@ ResourceViewLauncher.prototype = {
 		}
 	}
 }
-
-//Give the constructor the same prototype as its instances, so users can access
-//preferences directly via the constructor without having to create an instance
-//first.
-ResourceViewLauncher.__proto__ = ResourceViewLauncher.prototype;

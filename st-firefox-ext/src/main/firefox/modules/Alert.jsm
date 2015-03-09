@@ -2,9 +2,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 
 EXPORTED_SYMBOLS = ["Alert"];
 
-Alert = {};
-
-Alert.prototype = {
+Alert = {
 		
 	/**
 	 * This function should simulate overloading for these function:
@@ -32,11 +30,6 @@ Alert.prototype = {
 				var alertComponent = Components.classes['@mozilla.org/embedcomp/prompt-service;1']
 					.getService(Components.interfaces.nsIPromptService);
 				alertComponent.alert(null, "Alert", message); //2nd parameter is title, if null the title is automatically setted to "Alert" ("Avviso" in IT)
-	
-//				var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-//					.getService(Components.interfaces.nsIWindowMediator);
-//				var mainWindow = wm.getMostRecentWindow("navigator:browser");
-//				mainWindow.alert(message);
 			}
 		} else {//first parameter is an exception
 			var exception = msgOrExc;
@@ -70,8 +63,3 @@ function isString(s){
 	} else
 		return false;
 }
-
-//Give the constructor the same prototype as its instances, so users can access
-//preferences directly via the constructor without having to create an instance
-//first.
-Alert.__proto__ = Alert.prototype;

@@ -354,6 +354,7 @@ STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSLabelRequest = "listConceptsWi
 STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSXLLabelRequest = "listConceptsWithOverlappedSKOSXLLabel";
 STRequests.SKOS_ICV.listConceptsWithExtraWhitespaceInSKOSLabelRequest = "listConceptsWithExtraWhitespaceInSKOSLabel";
 STRequests.SKOS_ICV.listConceptsWithExtraWhitespaceInSKOSXLLabelRequest = "listConceptsWithExtraWhitespaceInSKOSXLLabel";
+STRequests.SKOS_ICV.listHierarchicallyRedundantConceptsRequest = "listHierarchicallyRedundantConcepts";
 
 //projects service request (OLD VERSION, this it not used anymore, so maybe it could be removed)
 //STRequests.ProjectsOLD.serviceName = "projects";

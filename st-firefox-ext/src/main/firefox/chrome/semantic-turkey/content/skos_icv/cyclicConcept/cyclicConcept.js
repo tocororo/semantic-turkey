@@ -52,11 +52,11 @@ art_semanticturkey.init = function(){
 			var cycle = cycles[i];
 			var concept = cycle[0];
 			var graph = cycle[1];
-			art_semanticturkey.Logger.debug("concept: " + concept);
-			art_semanticturkey.Logger.debug("graph ("+graph.length+"): ");
+//			art_semanticturkey.Logger.debug("concept: " + concept);
+//			art_semanticturkey.Logger.debug("graph ("+graph.length+"): ");
 			for (var j=0; j<graph.length; j++){
 				var edge = graph[j];
-				art_semanticturkey.Logger.debug(edge[0]+" - "+edge[1]);
+//				art_semanticturkey.Logger.debug(edge[0]+" - "+edge[1]);
 			}
 		}
 			

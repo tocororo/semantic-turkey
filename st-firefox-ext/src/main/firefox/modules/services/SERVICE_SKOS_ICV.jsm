@@ -123,6 +123,12 @@ function listConceptsWithExtraWhitespaceInSKOSXLLabel() {
 	return currentSTHttpMgr.GET(null, serviceName, service.listConceptsWithExtraWhitespaceInSKOSXLLabelRequest, this.context);
 }
 
+function listHierarchicallyRedundantConcepts() {
+	Logger.debug('[SERVICE_SKOS_ICV.jsm] listHierarchicallyRedundantConcepts');
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.listHierarchicallyRedundantConceptsRequest, this.context);
+}
+
 //this return an implementation for Project with a specified context
 service.prototype.getAPI = function(specifiedContext){
 	var newObj = new service();
@@ -131,24 +137,25 @@ service.prototype.getAPI = function(specifiedContext){
 }
 
 service.prototype.listDanglingConcepts = listDanglingConcepts;
-service.prototype.listCyclicConcepts = listCyclicConcepts
-service.prototype.listConceptSchemesWithNoTopConcept = listConceptSchemesWithNoTopConcept
-service.prototype.listConceptsWithNoScheme = listConceptsWithNoScheme
-service.prototype.listTopConceptsWithBroader = listTopConceptsWithBroader
-service.prototype.listConceptsWithSameSKOSPrefLabel = listConceptsWithSameSKOSPrefLabel
-service.prototype.listConceptsWithSameSKOSXLPrefLabel = listConceptsWithSameSKOSXLPrefLabel
+service.prototype.listCyclicConcepts = listCyclicConcepts;
+service.prototype.listConceptSchemesWithNoTopConcept = listConceptSchemesWithNoTopConcept;
+service.prototype.listConceptsWithNoScheme = listConceptsWithNoScheme;
+service.prototype.listTopConceptsWithBroader = listTopConceptsWithBroader;
+service.prototype.listConceptsWithSameSKOSPrefLabel = listConceptsWithSameSKOSPrefLabel;
+service.prototype.listConceptsWithSameSKOSXLPrefLabel = listConceptsWithSameSKOSXLPrefLabel;
 service.prototype.listConceptsWithOnlySKOSAltLabel = listConceptsWithOnlySKOSAltLabel;
-service.prototype.listConceptsWithOnlySKOSXLAltLabel = listConceptsWithOnlySKOSXLAltLabel
-service.prototype.listConceptsWithNoLabel = listConceptsWithNoLabel
-service.prototype.listConceptSchemesWithNoLabel = listConceptSchemesWithNoLabel
-service.prototype.listConceptsWithMultipleSKOSPrefLabel = listConceptsWithMultipleSKOSPrefLabel
-service.prototype.listConceptsWithMultipleSKOSXLPrefLabel = listConceptsWithMultipleSKOSXLPrefLabel
-service.prototype.listConceptsWithNoLanguageTagSKOSLabel = listConceptsWithNoLanguageTagSKOSLabel
-service.prototype.listConceptsWithNoLanguageTagSKOSXLLabel = listConceptsWithNoLanguageTagSKOSXLLabel
-service.prototype.listConceptsWithOverlappedSKOSLabel = listConceptsWithOverlappedSKOSLabel
-service.prototype.listConceptsWithOverlappedSKOSXLLabel = listConceptsWithOverlappedSKOSXLLabel
-service.prototype.listConceptsWithExtraWhitespaceInSKOSLabel = listConceptsWithExtraWhitespaceInSKOSLabel
-service.prototype.listConceptsWithExtraWhitespaceInSKOSXLLabel = listConceptsWithExtraWhitespaceInSKOSXLLabel
+service.prototype.listConceptsWithOnlySKOSXLAltLabel = listConceptsWithOnlySKOSXLAltLabel;
+service.prototype.listConceptsWithNoLabel = listConceptsWithNoLabel;
+service.prototype.listConceptSchemesWithNoLabel = listConceptSchemesWithNoLabel;
+service.prototype.listConceptsWithMultipleSKOSPrefLabel = listConceptsWithMultipleSKOSPrefLabel;
+service.prototype.listConceptsWithMultipleSKOSXLPrefLabel = listConceptsWithMultipleSKOSXLPrefLabel;
+service.prototype.listConceptsWithNoLanguageTagSKOSLabel = listConceptsWithNoLanguageTagSKOSLabel;
+service.prototype.listConceptsWithNoLanguageTagSKOSXLLabel = listConceptsWithNoLanguageTagSKOSXLLabel;
+service.prototype.listConceptsWithOverlappedSKOSLabel = listConceptsWithOverlappedSKOSLabel;
+service.prototype.listConceptsWithOverlappedSKOSXLLabel = listConceptsWithOverlappedSKOSXLLabel;
+service.prototype.listConceptsWithExtraWhitespaceInSKOSLabel = listConceptsWithExtraWhitespaceInSKOSLabel;
+service.prototype.listConceptsWithExtraWhitespaceInSKOSXLLabel = listConceptsWithExtraWhitespaceInSKOSXLLabel;
+service.prototype.listHierarchicallyRedundantConcepts = listHierarchicallyRedundantConcepts;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

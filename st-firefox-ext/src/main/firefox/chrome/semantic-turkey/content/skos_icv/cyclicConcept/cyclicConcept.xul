@@ -10,7 +10,7 @@
 		
 		<vbox >
 			<description style="white-space: pre-wrap;">skos:Concept(s) that make a cycle in the hierarchy.</description>
-			<description style="white-space: pre-wrap;">Note: in the list below will be shown the skos:Concept(s) that can be the cause of one or more cycles.
+			<description style="white-space: pre-wrap;">Note: in the list below will be shown the skos:Concept(s) that likely is the cause of one or more cycles.
 It's recommended to fix one or more relationships of these concepts to eliminate the cycle(s) and to avoid the creation of danglind concept. 
 For further information check the concept tree.</description>
 		</vbox>

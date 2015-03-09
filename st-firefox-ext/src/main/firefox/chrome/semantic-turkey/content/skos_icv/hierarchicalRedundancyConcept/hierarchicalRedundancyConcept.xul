@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<window id="hierarchicalRedundance" title="Integrity Constraint Validation - Hierarchical Redundancy"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="700px" height="500px">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/skos_icv/hierarchicalRedundancyConcept/hierarchicalRedundancyConcept.js" />
+		
+		<hbox pack="center">
+			<description>skos:Concept(s) that have redundant hierarchical relations</description>
+		</hbox>
+		
+		<listbox id="listbox" flex="1">
+			<listhead flex="1">
+				<listheader label="skos:Concept" />
+				<listheader label="Redundant broader concept" />
+				<listheader label="Action" />
+			</listhead>
+			<listcols>
+				<listcol flex="4"/>
+				<listcol flex="2"/>
+				<listcol flex="1"/>
+			</listcols>
+		</listbox> 
+
+	
+</window>

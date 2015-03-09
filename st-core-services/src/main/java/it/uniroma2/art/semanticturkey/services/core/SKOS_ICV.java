@@ -237,6 +237,40 @@ public class SKOS_ICV extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Returns a list of skos:Concept that have redundant hierarchical relations
+	 * @return
+	 * @throws QueryEvaluationException
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 */
+	@GenerateSTServiceController
+	public Response listHierarchicallyRedundantConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
+			ModelAccessException, MalformedQueryException {
+		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listHierarchicallyRedundantConcepts",
+				RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		String q = "SELECT DISTINCT ?narrower ?broader WHERE{\n"
+				+ "?narrower <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "?narrower (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?middle .\n"
+				+ "?middle <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "FILTER(?narrower != ?middle)\n}";
+		logger.info("query [listHierarchicallyRedundantConcepts]:\n" + q);
+		OWLModel model = getOWLModel();
+		TupleQuery query = model.createTupleQuery(q);
+		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		while (itTupleBinding.hasNext()){
+			TupleBindings tb = itTupleBinding.next();
+			String narrower = tb.getBinding("narrower").getBoundValue().getNominalValue();
+			String broader = tb.getBinding("broader").getBoundValue().getNominalValue();
+			Element recordElem = XMLHelp.newElement(dataElement, "record");
+			recordElem.setAttribute("broader", broader);
+			recordElem.setAttribute("narrower", narrower);
+		}
+		return response;
+	}
+	
 	//-----ICV ON CONCEPTS LABELS-----
 	
 	/**

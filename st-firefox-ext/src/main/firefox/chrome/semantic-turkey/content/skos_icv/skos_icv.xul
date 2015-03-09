@@ -52,6 +52,12 @@
 					<label style="font-style: italic;" value="skos:Concept(s) that are skos:topConceptOf some scheme and have some skos:broader concept"/>
 					<button label="Run check" />
 				</row>
+				<row align="center" style="background-color:#E8E8E8" target="chrome://semantic-turkey/content/skos_icv/hierarchicalRedundancyConcept/hierarchicalRedundancyConcept.xul">
+					<!-- <checkbox /> -->
+					<label value="Hierarchical redundancy"/>
+					<label style="font-style: italic;" value="skos:Concept(s) that have redundant hierarchical relations"/>
+					<button label="Run check" />
+				</row>
 				
 				<!-- Labeling ICV -->	
 				<separator orient="orizontal" class="groove" />
