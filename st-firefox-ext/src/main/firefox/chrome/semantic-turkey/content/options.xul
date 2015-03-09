@@ -33,6 +33,19 @@
 		<listbox id="languageOptions" rows="5" flex="1">
 		</listbox>
 	</prefpane>
+	<prefpane id="EditorTypePanel" label="Editor type">
+		<label value="Active type editor:"/>
+		<hbox>
+			<textbox id="activeEditorTxt" readonly="true" />
+			<button id="changeEditorTypeBtn" label="Change editor type" />
+		</hbox>
+		<label value="Available editor type list"/>
+		<listbox id="editorTypeList" rows="5" flex="1">
+			<listitem label="legacy"/>
+			<listitem label="window"/>
+			<listitem label="tab"/>
+		</listbox>
+	</prefpane>
 	<hbox pack="end" flex="1">
 		<button id="acceptButton" label="Ok" /> <button id="cancelButton" label="Cancel" /> 
 	</hbox>

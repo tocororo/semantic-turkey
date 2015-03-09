@@ -87,6 +87,12 @@ art_semanticturkey.init = function() {
 	document.getElementById("cancelButton").addEventListener("command", function() {
 		document.documentElement.cancelDialog();
 	}, false);
+	
+	//Editor type tab
+	var useEditorPref = art_semanticturkey.Preferences.get("extensions.semturkey.useEditor");
+	var activeEditorTxt = document.getElementById("activeEditorTxt");
+	activeEditorTxt.value = useEditorPref;
+	document.getElementById("changeEditorTypeBtn").addEventListener("command", art_semanticturkey.changeActiveEditor, false);
 
 	document.addEventListener("dialogaccept", art_semanticturkey.onAccept, false);
 	document.addEventListener("dialogcancel", art_semanticturkey.onCancel, false);
@@ -188,5 +194,12 @@ art_semanticturkey.familyClick = function(event) {
 				"modal=yes,resizable,centerscreen", parameters);
 	}
 };
+
+art_semanticturkey.changeActiveEditor = function(){
+	var selectedEditorItem = document.getElementById("editorTypeList").selectedItem.label;
+	var activeEditorTxt = document.getElementById("activeEditorTxt");
+	activeEditorTxt.value = selectedEditorItem;
+	art_semanticturkey.Preferences.set("extensions.semturkey.useEditor", selectedEditorItem);
+}
 
 window.addEventListener("load", art_semanticturkey.init, false);
