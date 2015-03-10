@@ -164,6 +164,7 @@ public class ResourceOld extends ServiceAdapter {
 		public static final String getValuesOfDatatypePropertiesRequest = "getValuesOfDatatypeProperties";
 		public static final String getRoleRequest = "getRole";
 		public static final String getValuesOfAnnotationsPropertiesHierarchicallyRequest = "getValuesOfAnnotationsPropertiesHierarchically";
+		public static final String getValuesOfPlainRDFPropertiesRequest = "getValuesOfPlainRDFProperties";
 	}
 
 	public static class Par {
@@ -214,8 +215,14 @@ public class ResourceOld extends ServiceAdapter {
 		} else if(request.equals(Req.getValuesOfAnnotationsPropertiesHierarchicallyRequest)){
 			String resourceName = setHttpPar(Par.resource);
 			String excludedProps = setHttpPar(Par.excludedProps);
+			checkRequestParametersAllNotNull(Par.resource);
 			response = getValuesOfAnnotationsPropertiesHierarchically(resourceName, excludedProps);
-		}else if (request.equals(Req.getValuesOfPropertiesCountRequest)) {
+		} else if(request.equals(Req.getValuesOfPlainRDFPropertiesRequest)){
+			String resourceName = setHttpPar(Par.resource);
+			String excludedProps = setHttpPar(Par.excludedProps);
+			checkRequestParametersAllNotNull(Par.resource);
+			response = getValuesOfPlainRDFProperties(resourceName, excludedProps);
+		} else if (request.equals(Req.getValuesOfPropertiesCountRequest)) {
 			String resourceName = setHttpPar(Par.resource);
 			String propertiesNames = setHttpPar(Par.properties);
 			boolean subproperties = setHttpBooleanPar(Par.subProp);
@@ -779,6 +786,89 @@ public class ResourceOld extends ServiceAdapter {
 		}
 	}
 
+	
+	public Response getValuesOfPlainRDFProperties(String resourceName, String excludedProps) {
+
+		try {
+			OWLModel model = getOWLModel();
+			ARTResource graphs = getWorkingGraph();
+			
+			ARTResource resource = retrieveExistingResource(model, resourceName, graphs );
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			String resourceURI = resource.getNominalValue();
+			
+			String query;
+	
+			query = "CONSTRUCT { <" + resourceURI + ">  ?plainRDFProp ?value}" + 
+			"\nWHERE {";
+			
+			//get all the plainRDFProperty
+			query += "\n ?plainRDFProp <"+RDF.TYPE+"> <"+RDF.PROPERTY+"> .";
+			//exclude all the property which are ObjectProperty,, DatatypeProperty, AnnoatationProperty or OntologyProperty
+			query += "\nFILTER NOT EXISTS{?plainRDFProp <"+RDF.TYPE+"> <"+OWL.OBJECTPROPERTY+"> }"+
+					"\nFILTER NOT EXISTS{?plainRDFProp <"+RDF.TYPE+"> <"+OWL.DATATYPEPROPERTY+"> }"+
+					"\nFILTER NOT EXISTS{?plainRDFProp <"+RDF.TYPE+"> <"+OWL.ANNOTATIONPROPERTY+"> }"+
+					"\nFILTER NOT EXISTS{?plainRDFProp <"+RDF.TYPE+"> <"+OWL.ONTOLOGYPROPERTY+"> }";
+			//now get the value associated to this paliRDFProperty
+			query += "<" + resourceURI + ">  ?plainRDFProp ?value ." + 
+					 "}";
+			
+			GraphQuery graphQuery = model.createGraphQuery(query);
+			ARTStatementIterator inferretIt = graphQuery.evaluate(true);
+			ARTStatementIterator explicitIt = graphQuery.evaluate(false);
+			
+			// remove the excluded properties from the inferred list/iterator
+			List<String> excludedPropList = new ArrayList<String>();
+			if (excludedProps != null) {
+				for (String propName : excludedProps.split("\\|_\\|")) {
+					excludedPropList.add(model.expandQName(propName));
+				}
+			}
+			
+			List<ARTStatement> inferredList = new ArrayList<ARTStatement>();
+			while (inferretIt.hasNext()) {
+				ARTStatement stat = inferretIt.getNext();
+				String predURI = stat.getPredicate().getURI();
+				if (!excludedPropList.contains(predURI)) {
+					inferredList.add(stat);
+				}
+			}
+			inferretIt.close();
+			
+			List<ARTStatement> explicitList = new ArrayList<ARTStatement>();
+			while (explicitIt.hasNext()) {
+				ARTStatement stat = explicitIt.getNext();
+				String predURI = stat.getPredicate().getURI();
+				if (!excludedPropList.contains(predURI)) {
+					explicitList.add(stat);
+				}
+			}
+			explicitIt.close();
+	
+			PredicateObjectsList predObjList = PredicateObjectsListFactory.createPredicateObjectsList(model,
+					RDFResourceRolesEnum.property,
+					RDFIterators.createARTStatementIterator(inferredList.iterator()),
+					RDFIterators.createARTStatementIterator(explicitList.iterator())
+					);
+	
+	
+			RDFXMLHelp.addPredicateObjectList(response, predObjList);
+			
+			return response;
+		}  catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
+			return logAndSendException(e);
+		}
+
+	}
+	
 	/**
 	 * 
 	 * 
