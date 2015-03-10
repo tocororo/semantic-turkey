@@ -92,6 +92,7 @@ public class Property extends ResourceOld {
 
 		// GET REQUESTS
 		final static public String getPropertiesTreeRequest = "getPropertiesTree";
+		final static public String getPlainRDFPropertiesRequest = "getPlainRDFProperties";
 		final static public String getObjPropertiesTreeRequest = "getObjPropertiesTree";
 		final static public String getDatatypePropertiesTreeRequest = "getDatatypePropertiesTree";
 		final static public String getAnnotationPropertiesTreeRequest = "getAnnotationPropertiesTree";
@@ -184,11 +185,17 @@ public class Property extends ResourceOld {
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
 				return getPropertyTree(requestName, true, true, true, true, true, inference, excludedProps);
+			} else if (request.equals(Req.getPlainRDFPropertiesRequest)) {
+				String requestName = Req.getPlainRDFPropertiesRequest;
+				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
+				String excludedProps = setHttpPar(Par.excludedProps);
+				return getPropertyTree(requestName, true, false, false, false, false, inference, excludedProps);
 			} else if (request.equals(Req.getObjPropertiesTreeRequest)) {
 				String requestName = Req.getObjPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, true, true, false, false, false, inference, excludedProps);
+				return getPropertyTree(requestName, false, true, false, false, false, inference, excludedProps);
+				//return getPropertyTree(requestName, true, true, false, false, false, inference, excludedProps);
 			} else if (request.equals(Req.getDatatypePropertiesTreeRequest)) {
 				String requestName = Req.getDatatypePropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
@@ -509,10 +516,11 @@ public class Property extends ResourceOld {
 							"owl:OntologyProperty", excludedPropSet);
 			}
 
-			// BASE PROPERTIES
-			Predicate<ARTURIResource> rdfPropsPredicate = Predicates.and(
-					BaseRDFPropertyPredicate.getPredicate(ontModel), rootUserPropsPred);
+			// PlainRDF PROPERTIES
+			
 			if (props == true) {
+				Predicate<ARTURIResource> rdfPropsPredicate = Predicates.and(
+						BaseRDFPropertyPredicate.getPredicate(ontModel), rootUserPropsPred);
 				filteredPropsIterator = Iterators.filter(ontModel.listProperties(NodeFilters.ANY),
 						rdfPropsPredicate);
 				logger.debug("\n\nontology root rdf:properties: \n");

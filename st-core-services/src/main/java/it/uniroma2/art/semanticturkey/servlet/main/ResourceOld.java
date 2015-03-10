@@ -83,6 +83,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -508,8 +509,12 @@ public class ResourceOld extends ServiceAdapter {
 		Element propValuesElem = XMLHelp.newElement(extCollection, "propertyValues");
 
 		Element propElem = XMLHelp.newElement(propValuesElem, "property");
-		RDFXMLHelp.addRDFResource(propElem, STRDFNodeFactory.createSTRDFURI(property, true));
-
+		
+		STRDFURI strdfuri = STRDFNodeFactory.createSTRDFURI(property, true);
+		strdfuri.setRendering(model.getQName(property.getURI()));
+		
+		RDFXMLHelp.addRDFResource(propElem, strdfuri); 
+		
 		if (excludePropItSelf == false) {
 			Element valuesElem = XMLHelp.newElement(propValuesElem, "values");
 			ARTNodeIterator it = model.listValuesOfSubjPredPair(resource, property, true, graphs);
