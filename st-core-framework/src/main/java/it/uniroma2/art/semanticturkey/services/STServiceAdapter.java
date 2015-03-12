@@ -2,9 +2,13 @@ package it.uniroma2.art.semanticturkey.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
@@ -35,6 +39,19 @@ public class STServiceAdapter implements STService {
 	
 	public ARTResource getMetadataGraph() {
 		return stServiceContext.getProject().getMetadataGraph(stServiceContext.getExtensionPathComponent());
+	}
+	
+	/**
+	 * This should not be used (since there are the Converters). It can be used in particular cases to avoid
+	 * controls performed by the Converter (see Refactor#renameResource())
+	 */
+	protected ARTURIResource retrieveExistingURIResource(RDFModel model, String qname)
+			throws NonExistingRDFResourceException, ModelAccessException {
+		ARTURIResource res = RDFNodeSerializer.createURI(model, qname);
+		ARTResource[] graphs = stServiceContext.getRGraphs();
+		if (model.existsResource(res, graphs))
+			return res;
+		throw new NonExistingRDFResourceException(res, graphs);
 	}
 
 	private String getRequest() {

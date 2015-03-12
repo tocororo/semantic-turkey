@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<window id="omittedTopConcept" title="Integrity Constraint Validation - Same label concept"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="750px" height="500px">
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/integrityConstraintValidator/sameLabelConcept/sameLabelConcept.js" />
+		
+		<hbox pack="center">
+			<description>skos:Concept(s) that have the same preferred labels in the same language</description>
+		</hbox>
+		
+		<listbox id="listbox" flex="1">
+			<listhead flex="1">
+				<listheader label="Concept 1" />
+				<listheader label="Concept 2" />
+				<listheader label="Label" />
+				<listheader label="Lang" />
+				<listheader label="Change 1st concept" />
+				<listheader label="Change 2nd concept" />
+			</listhead>
+			<listcols flex="1">
+				<listcol flex="2"/>
+				<listcol flex="2"/>
+				<listcol flex="2"/>
+				<listcol flex="1"/>
+				<listcol />
+				<listcol />
+			</listcols>
+<!-- 			<listitem allowevents="true" >
+				<listcell label="http://baseuri.org#concept1" />
+				<listcell label="http://baseuri.org#concept2" />
+				<listcell label="concept" />
+				<listcell label="en" />
+				<button label="skos:prefLabel" flex="1"/>
+				<button label="skos:prefLabel" flex="1"/>
+			</listitem> -->
+		</listbox> 
+	
+</window>

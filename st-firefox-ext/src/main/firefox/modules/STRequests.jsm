@@ -40,7 +40,11 @@ STRequests.Delete = function(){};
 /**
  * @class
  */
-STRequests.Graph = function(){};         
+STRequests.Graph = function(){};
+/**
+ * @class
+ */
+STRequests.ICV = function(){};
 /**
  * @class
  */
@@ -81,10 +85,6 @@ STRequests.SKOS = function(){};
  * @class
  */
 STRequests.SKOSXL = function(){};
-/**
- * @class
- */
-STRequests.SKOS_ICV = function(){};
 /**
  * @class
  */
@@ -263,6 +263,30 @@ STRequests.Administration.deleteOntMirrorEntryRequest = "deleteOntMirrorEntry";
 STRequests.Administration.updateOntMirrorEntryRequest = "updateOntMirrorEntry";
 STRequests.Administration.getVersionRequest = "getVersion";
 
+//ICV requests
+STRequests.ICV.serviceName = "ICV";
+STRequests.ICV.listDanglingConceptsRequest = "listDanglingConcepts";
+STRequests.ICV.listCyclicConceptsRequest = "listCyclicConcepts";
+STRequests.ICV.listConceptSchemesWithNoTopConceptRequest = "listConceptSchemesWithNoTopConcept";
+STRequests.ICV.listConceptsWithNoSchemeRequest = "listConceptsWithNoScheme";
+STRequests.ICV.listTopConceptsWithBroaderRequest = "listTopConceptsWithBroader";
+STRequests.ICV.listConceptsWithSameSKOSPrefLabelRequest = "listConceptsWithSameSKOSPrefLabel";
+STRequests.ICV.listConceptsWithSameSKOSXLPrefLabelRequest = "listConceptsWithSameSKOSXLPrefLabel";
+STRequests.ICV.listConceptsWithOnlySKOSAltLabelRequest = "listConceptsWithOnlySKOSAltLabel";
+STRequests.ICV.listConceptsWithOnlySKOSXLAltLabelRequest = "listConceptsWithOnlySKOSXLAltLabel";
+STRequests.ICV.listConceptsWithNoLabelRequest = "listConceptsWithNoLabel";
+STRequests.ICV.listConceptSchemesWithNoLabelRequest = "listConceptSchemesWithNoLabel";
+STRequests.ICV.listConceptsWithMultipleSKOSPrefLabelRequest = "listConceptsWithMultipleSKOSPrefLabel";
+STRequests.ICV.listConceptsWithMultipleSKOSXLPrefLabelRequest = "listConceptsWithMultipleSKOSXLPrefLabel";
+STRequests.ICV.listConceptsWithNoLanguageTagSKOSLabelRequest = "listConceptsWithNoLanguageTagSKOSLabel";
+STRequests.ICV.listConceptsWithNoLanguageTagSKOSXLLabelRequest = "listConceptsWithNoLanguageTagSKOSXLLabel";
+STRequests.ICV.listConceptsWithOverlappedSKOSLabelRequest = "listConceptsWithOverlappedSKOSLabel";
+STRequests.ICV.listConceptsWithOverlappedSKOSXLLabelRequest = "listConceptsWithOverlappedSKOSXLLabel";
+STRequests.ICV.listConceptsWithExtraWhitespaceInSKOSLabelRequest = "listConceptsWithExtraWhitespaceInSKOSLabel";
+STRequests.ICV.listConceptsWithExtraWhitespaceInSKOSXLLabelRequest = "listConceptsWithExtraWhitespaceInSKOSXLLabel";
+STRequests.ICV.listHierarchicallyRedundantConceptsRequest = "listHierarchicallyRedundantConcepts";
+STRequests.ICV.listResourcesURIWithSpaceRequest = "listResourcesURIWithSpace";
+
 // inputoutput service request
 STRequests.InputOutput.serviceName = "inputOutput";
 STRequests.InputOutput.saveRepositoryRequest = "saveRDF";
@@ -332,29 +356,6 @@ STRequests.SKOSXL.removeTopConceptRequest = "removeTopConcept";
 STRequests.SKOSXL.removePrefLabelRequest = "removePrefLabel";
 STRequests.SKOSXL.removeAltLabelRequest = "removeAltLabel";
 STRequests.SKOSXL.removeHiddenLabelRequest = "removeHiddenLabel";
-
-//SKOS_ICV requests
-STRequests.SKOS_ICV.serviceName = "SKOS_ICV";
-STRequests.SKOS_ICV.listDanglingConceptsRequest = "listDanglingConcepts";
-STRequests.SKOS_ICV.listCyclicConceptsRequest = "listCyclicConcepts";
-STRequests.SKOS_ICV.listConceptSchemesWithNoTopConceptRequest = "listConceptSchemesWithNoTopConcept";
-STRequests.SKOS_ICV.listConceptsWithNoSchemeRequest = "listConceptsWithNoScheme";
-STRequests.SKOS_ICV.listTopConceptsWithBroaderRequest = "listTopConceptsWithBroader";
-STRequests.SKOS_ICV.listConceptsWithSameSKOSPrefLabelRequest = "listConceptsWithSameSKOSPrefLabel";
-STRequests.SKOS_ICV.listConceptsWithSameSKOSXLPrefLabelRequest = "listConceptsWithSameSKOSXLPrefLabel";
-STRequests.SKOS_ICV.listConceptsWithOnlySKOSAltLabelRequest = "listConceptsWithOnlySKOSAltLabel";
-STRequests.SKOS_ICV.listConceptsWithOnlySKOSXLAltLabelRequest = "listConceptsWithOnlySKOSXLAltLabel";
-STRequests.SKOS_ICV.listConceptsWithNoLabelRequest = "listConceptsWithNoLabel";
-STRequests.SKOS_ICV.listConceptSchemesWithNoLabelRequest = "listConceptSchemesWithNoLabel";
-STRequests.SKOS_ICV.listConceptsWithMultipleSKOSPrefLabelRequest = "listConceptsWithMultipleSKOSPrefLabel";
-STRequests.SKOS_ICV.listConceptsWithMultipleSKOSXLPrefLabelRequest = "listConceptsWithMultipleSKOSXLPrefLabel";
-STRequests.SKOS_ICV.listConceptsWithNoLanguageTagSKOSLabelRequest = "listConceptsWithNoLanguageTagSKOSLabel";
-STRequests.SKOS_ICV.listConceptsWithNoLanguageTagSKOSXLLabelRequest = "listConceptsWithNoLanguageTagSKOSXLLabel";
-STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSLabelRequest = "listConceptsWithOverlappedSKOSLabel";
-STRequests.SKOS_ICV.listConceptsWithOverlappedSKOSXLLabelRequest = "listConceptsWithOverlappedSKOSXLLabel";
-STRequests.SKOS_ICV.listConceptsWithExtraWhitespaceInSKOSLabelRequest = "listConceptsWithExtraWhitespaceInSKOSLabel";
-STRequests.SKOS_ICV.listConceptsWithExtraWhitespaceInSKOSXLLabelRequest = "listConceptsWithExtraWhitespaceInSKOSXLLabel";
-STRequests.SKOS_ICV.listHierarchicallyRedundantConceptsRequest = "listHierarchicallyRedundantConcepts";
 
 //projects service request (OLD VERSION, this it not used anymore, so maybe it could be removed)
 //STRequests.ProjectsOLD.serviceName = "projects";

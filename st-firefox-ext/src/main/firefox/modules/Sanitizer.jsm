@@ -20,7 +20,7 @@ Sanitizer = {
 	 * @returns
 	 */
 	sanitize : function(text){
-		return text.replace(new RegExp(sourceChar, 'g'), targetChar);
+		return text.replace(new RegExp(sourceChar, 'g'), targetChar);//'g' = global match (find all matches, doesn't stop after 1st match)
 	}
 		
 }

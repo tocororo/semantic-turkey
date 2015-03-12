@@ -1,0 +1,28 @@
+.oddHeader {
+	background:#DDDDDD;
+}
+
+.evenHeader {
+	background-color:#E8E8E8;
+}
+
+.level1Header {
+	text-align: center;
+	font-size: 16px;
+	font-weight: bold;
+	background:#7E7E7E;
+	color: white;
+    border-radius: 30px; 
+    outline:0; 
+    padding:3px; 
+}
+
+.level2Header {
+	text-align: center;
+
+	color: black;
+    border: 1px solid #848484; 
+    border-radius: 20px; 
+    outline:0; 
+    padding:3px; 
+}

@@ -39,7 +39,7 @@ art_semanticturkey.btnDetailsListener = function() {
 		txtDetails.setAttribute("multiline", "true");
 		txtDetails.setAttribute("readonly", "true");
 		txtDetails.setAttribute("wrap", "off");
-		txtDetails.setAttribute("rows", "2");
+		txtDetails.setAttribute("rows", "3");
 		var box = document.getElementById("mainBox");
 		box.appendChild(txtDetails);
 		window.sizeToContent();

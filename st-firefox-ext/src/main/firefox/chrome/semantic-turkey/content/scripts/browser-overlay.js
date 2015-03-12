@@ -75,8 +75,8 @@ art_semanticturkey.SPARQL = function() {
 	art_semanticturkey.openUrl("chrome://semantic-turkey/content/sparql/sparql.xul");
 };
 
-art_semanticturkey.openSkosICV = function() {
-	art_semanticturkey.openUrl("chrome://semantic-turkey/content/skos_icv/skos_icv.xul");
+art_semanticturkey.openICV = function() {
+	art_semanticturkey.openUrl("chrome://semantic-turkey/content/integrityConstraintValidator/icv.xul");
 };
 
 art_semanticturkey.semnavigation = function() {
@@ -231,8 +231,8 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 			true);
 	document.getElementById("SKOSToolBarButton").addEventListener("command",
 			art_semanticturkey.toggleSidebar3, true);
-	document.getElementById("SKOSICVToolBarButton").addEventListener("command",
-			art_semanticturkey.openSkosICV, true);
+	document.getElementById("ICVToolBarButton").addEventListener("command",
+			art_semanticturkey.openICV, true);
 	//document.getElementById("graphBarButton").addEventListener("command", art_semanticturkey.semnavigation,
 	//		true);
 
@@ -384,12 +384,12 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("ontPanelToolBarButton").disabled = false;
 		document.getElementById("importsToolBarButton").disabled = false;
 		document.getElementById("SPARQLToolBarButton").disabled = false;
+		document.getElementById("ICVToolBarButton").hidden = false;
+		document.getElementById("ICVToolBarButton").disabled = false;
 		//document.getElementById("graphBarButton").disabled = false;
 		if (projectInfo.getType().indexOf("SKOS") != -1) {
 			document.getElementById("SKOSToolBarButton").hidden = false;
 			document.getElementById("SKOSToolBarButton").disabled = false;
-			document.getElementById("SKOSICVToolBarButton").hidden = false;
-			document.getElementById("SKOSICVToolBarButton").disabled = false;
 			document.getElementById("key_openSTSKOSSidebar").hidden = false;
 			document.getElementById("key_openSTSKOSSidebar").disabled = false;
 			document.getElementById("humanReadableButton").hidden = false;
@@ -417,7 +417,6 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 					"projectPropertySet", art_semanticturkey.skosStateManagemenet.projectPropertySet);
 		} else {
 			document.getElementById("SKOSToolBarButton").hidden = true;
-			document.getElementById("SKOSICVToolBarButton").hidden = true;
 			document.getElementById("key_openSTSKOSSidebar").hidden = true;
 			document.getElementById("key_openSTSKOSSidebar").disabled = true;
 			document.getElementById("humanReadableButton").hidden = true;
@@ -453,7 +452,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("SPARQLToolBarButton").disabled = true;
 		//document.getElementById("graphBarButton").disabled = true;
 		document.getElementById("SKOSToolBarButton").disabled = true;
-		document.getElementById("SKOSICVToolBarButton").disabled = true;
+		document.getElementById("ICVToolBarButton").disabled = true;
 
 		if (typeof art_semanticturkey.skosStateManagemenet.stEventArray != "undefined") {
 			art_semanticturkey.skosStateManagemenet.stEventArray.unregister();

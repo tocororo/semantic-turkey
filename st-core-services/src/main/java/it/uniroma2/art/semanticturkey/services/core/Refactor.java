@@ -27,6 +27,7 @@ import it.uniroma2.art.owlart.utilities.transform.SKOS2SKOSXLConverter;
 import it.uniroma2.art.owlart.utilities.transform.SKOSXL2SKOSConverter;
 import it.uniroma2.art.semanticturkey.constraints.Existing;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
@@ -104,12 +105,14 @@ public class Refactor extends STServiceAdapter {
 	}
 	
 	@GenerateSTServiceController
-	public Response renameResource(@Existing ARTResource oldResource, ARTResource newResource) throws 
-			ModelAccessException, DuplicatedResourceException, ModelUpdateException {
+	//in this method oldResource is String (instead ARTURIResource) to avoid checks performed by StringToARTUriResource converter 
+	public Response renameResource(String oldResource, ARTResource newResource) throws 
+			ModelAccessException, DuplicatedResourceException, ModelUpdateException, NonExistingRDFResourceException {
 		RDFModel ontModel = getOWLModel();
+		ARTURIResource oldURIResource = retrieveExistingURIResource(ontModel, oldResource);
 			if (ontModel.existsResource(newResource)){
 				throw new DuplicatedResourceException("could not rename resource: " + 
-						oldResource.getNominalValue() + " to: " + newResource.getNominalValue()+
+						oldURIResource.getNominalValue() + " to: " + newResource.getNominalValue()+
 						" because a resource with this name already exists in the ontology");
 			}
 
@@ -122,7 +125,7 @@ public class Refactor extends STServiceAdapter {
 			}
 
 		try {
-			ontModel.renameResource(oldResource.asURIResource(), newResource.getNominalValue());
+			ontModel.renameResource(oldURIResource, newResource.getNominalValue());
 		} catch (ModelUpdateException e1) {
 			throw new ModelUpdateException(e1);
 		}
@@ -140,7 +143,7 @@ public class Refactor extends STServiceAdapter {
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element element = XMLHelp.newElement(dataElement, "UpdateResource");
-		element.setAttribute("name", oldResource.getNominalValue());
+		element.setAttribute("name", oldURIResource.getNominalValue());
 		element.setAttribute("newname", newResource.getNominalValue());
 		return response;
 	}
