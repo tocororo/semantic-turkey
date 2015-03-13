@@ -21,7 +21,6 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
@@ -48,8 +47,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listDanglingConcepts(@Optional (defaultValue="0") Integer limit) throws UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listDanglingConcepts",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		OWLModel model = getOWLModel();
@@ -132,8 +130,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listCyclicConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listCyclicConcepts",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?top ?n1 ?n2 WHERE{\n"
 				+ "{?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?n1 .\n"
@@ -181,8 +178,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptSchemesWithNoTopConcept() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptSchemeWithNoTopConcept",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?conceptScheme WHERE {\n"
 				+ "?conceptScheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
@@ -213,8 +209,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithNoScheme(@Optional (defaultValue="0") Integer limit) throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoScheme",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		OWLModel model = getOWLModel();
@@ -257,8 +252,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listTopConceptsWithBroader() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listTopConceptsWithBroader",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?concept ?scheme WHERE {\n"
 				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
@@ -290,8 +284,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listHierarchicallyRedundantConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listHierarchicallyRedundantConcepts",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?narrower ?broader WHERE{\n"
 				+ "?narrower <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
@@ -327,8 +320,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithSameSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithSameSKOSPrefLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE {\n"
 				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
@@ -368,8 +360,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithSameSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithSameSKOSXLPrefLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept1 ?concept2 ?label1 ?lang WHERE {\n"
 				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
@@ -411,8 +402,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithOnlySKOSAltLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOnlySKOSAltLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?lang WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -447,8 +437,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithOnlySKOSXLAltLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOnlySKOSXLAltLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?lang WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -485,8 +474,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithNoLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -519,8 +507,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptSchemesWithNoLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptSchemesWithNoLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?scheme WHERE {\n"
 				+ "?scheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
@@ -553,8 +540,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithMultipleSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithMultipleSKOSPrefLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -588,8 +574,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithMultipleSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithMultipleSKOSXLPrefLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -625,8 +610,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithNoLanguageTagSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLanguageTagSKOSLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?labelPred ?label WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -662,16 +646,10 @@ public class ICV extends STServiceAdapter {
 	 * @throws ModelAccessException
 	 * @throws MalformedQueryException
 	 */
-	/*MEMO: labelPred serve per tener traccia del tipo di label in caso di modifica da parte del client, idem
-	* per xlabel che serve a tener traccia del bnode della label.
-	* TODO: decidere se in fase di correzione eliminare il bnode e ricrearne uno nuovo o se eliminare solo
-	* il legame literalForm - literal e ricreare solo quello
-	*/
 	@GenerateSTServiceController
 	public Response listConceptsWithNoLanguageTagSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithNoLanguageTagSKOSXLLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?labelPred ?label WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -709,8 +687,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithOverlappedSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOverlappedSKOSLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?label ?lang WHERE {\n"
 				+ "?concept <" + SKOS.PREFLABEL + "> ?label .\n"
@@ -745,8 +722,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithOverlappedSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithOverlappedSKOSXLLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?label ?lang WHERE {\n"
 				+ "?concept <" + SKOSXL.PREFLABEL + "> ?xlabel1 .\n"
@@ -784,8 +760,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithExtraWhitespaceInSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithExtraWhitespaceInSKOSLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE {\n"
 				+ "{ bind(<" + SKOS.PREFLABEL + "> as ?labelPred)}\n"
@@ -827,8 +802,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listConceptsWithExtraWhitespaceInSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listConceptsWithExtraWhitespaceInSKOSXLLabel",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE {\n"
 				+ "{ bind(<" + SKOSXL.PREFLABEL + "> as ?labelPred)}\n"
@@ -863,8 +837,7 @@ public class ICV extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response listResourcesURIWithSpace(@Optional (defaultValue="0") Integer limit) throws QueryEvaluationException,
 		UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("listResourcesURIWithSpace",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		OWLModel model = getOWLModel();

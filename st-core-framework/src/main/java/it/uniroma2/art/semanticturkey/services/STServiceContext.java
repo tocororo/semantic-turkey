@@ -9,4 +9,5 @@ public interface STServiceContext {
 	ARTResource getWGraph();
 	ARTResource[] getRGraphs();
 	String getExtensionPathComponent();
+	STRequest getRequest();
 }

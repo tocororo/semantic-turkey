@@ -5,12 +5,13 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
+import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	protected static Logger logger = LoggerFactory.getLogger(STServiceHTTPContext.class);
 
 	@Autowired
-	private ServletRequest request;
+	private HttpServletRequest request;
 
 	@Autowired
 	private ApplicationContext applicationContext;
@@ -147,6 +148,11 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		this.conversionService = event.getApplicationContext().getBean(ConversionService.class);
+	}
+
+	@Override
+	public STRequest getRequest() {
+		return new STHTTPRequest(request);
 	}
 
 }

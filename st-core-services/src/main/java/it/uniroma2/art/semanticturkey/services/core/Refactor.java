@@ -38,7 +38,6 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
@@ -59,16 +58,6 @@ import org.w3c.dom.Element;
 public class Refactor extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Refactor.class);
-	
-	public static class Req {
-		public static String renameResourceRequest = "renameResource";
-		public static String replaceBaseURIRequest = "replaceBaseURI";
-		public static String convertLabelsToSKOSXLRequest = "convertLabelsToSKOSXL";
-		public static String exportWithSKOSLabelsRequest = "exportWithSKOSLabels";
-		public static String reifySKOSDefinitionsRequest = "reifySKOSDefinitions";
-		public static String exportWithFlatSKOSDefinitionsRequest = "exportWithFlatSKOSDefinitions";
-		public static String exportWithTransformationsRequest = "exportWithTransformations";
-	}
 	
 	// Temporarily disabled, since we still have not automatic handling of domain objects
 	//@GenerateSTServiceController
@@ -139,8 +128,7 @@ public class Refactor extends STServiceAdapter {
 			}
 		}
 
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.renameResourceRequest,
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element element = XMLHelp.newElement(dataElement, "UpdateResource");
 		element.setAttribute("name", oldURIResource.getNominalValue());
@@ -182,8 +170,7 @@ public class Refactor extends STServiceAdapter {
 			throw new ModelUpdateException("sorry, unable to replace the baseuri, try to close the project " +
 					"and open it again");
 		}
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.renameResourceRequest,
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element element = XMLHelp.newElement(dataElement, "changeResourceName");
 		element.setAttribute("sourceBaseURI", sourceBaseURI);
@@ -210,8 +197,7 @@ public class Refactor extends STServiceAdapter {
 		if (owlModel instanceof SKOSXLModel){
 			SKOSXLModel xlModel = (SKOSXLModel) owlModel;
 			SKOS2SKOSXLConverter.convert(xlModel, xlModel, true, copyAlsoSKOSLabels);
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.convertLabelsToSKOSXLRequest,
-					RepliesStatus.ok);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			return response;
 		} else {
 			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOSXL model");
@@ -251,8 +237,7 @@ public class Refactor extends STServiceAdapter {
 				e.printStackTrace();
 			}
 			tempTargetModel.close();
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithSKOSLabelsRequest,
-					RepliesStatus.ok);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			return response;
 		} else {
 			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOSXL model");
@@ -275,8 +260,7 @@ public class Refactor extends STServiceAdapter {
 		if (owlModel instanceof SKOSModel){//source model must be at least skos since it should contain skos definitions
 			SKOSModel model = (SKOSModel) owlModel;
 			ReifiedSKOSDefinitionsConverter.convert(model, model, true, true, copyAlsoPlainDefinitions);
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.reifySKOSDefinitionsRequest,
-					RepliesStatus.ok);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			return response;
 		} else {
 			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOS model");
@@ -312,8 +296,7 @@ public class Refactor extends STServiceAdapter {
 			ReifiedSKOSDefinitionsFlattener.convert(sourceModel, tempTargetModel, copyAlsoReifiedDefinition);
 			tempTargetModel.writeRDF(new File(exportPackage), RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
 			tempTargetModel.close();
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithFlatSKOSDefinitionsRequest,
-					RepliesStatus.ok);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			return response;
 		} else {
 			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOS model");
@@ -354,8 +337,7 @@ public class Refactor extends STServiceAdapter {
 			ReifiedSKOSDefinitionsFlattener.convert(tempTargetModel, tempTargetModel, copyAlsoReifiedDefinition);
 			tempTargetModel.writeRDF(new File(exportPackage), RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
 			tempTargetModel.close();
-			XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(Req.exportWithTransformationsRequest ,
-					RepliesStatus.ok);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			return response;
 		} else {
 			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOSXL model");

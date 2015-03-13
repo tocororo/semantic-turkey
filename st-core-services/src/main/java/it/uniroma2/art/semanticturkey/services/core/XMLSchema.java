@@ -11,7 +11,6 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
@@ -25,8 +24,7 @@ public class XMLSchema extends STServiceAdapter{
 	@GenerateSTServiceController
 	public Response formatDateTime(int year, int month, int day, int hour, int minute, int second, @Optional(defaultValue="Z") String offset) throws ParseException {
 		String formatted = XmlSchema.formatDateTime(year, month, day, hour, minute, second, offset);
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatDateTime",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
 		dateTimeElement.setTextContent(formatted);
@@ -37,8 +35,7 @@ public class XMLSchema extends STServiceAdapter{
 	@GenerateSTServiceController
 	public Response formatDate(int year, int month, int day) throws ParseException {
 		String formatted = XmlSchema.formatDate(year, month, day);
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatDate",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element dateElement = XMLHelp.newElement(dataElement, "date");
 		dateElement.setTextContent(formatted);
@@ -49,8 +46,7 @@ public class XMLSchema extends STServiceAdapter{
 	@GenerateSTServiceController
 	public Response formatTime(int hour, int minute, int second) throws ParseException {
 		String formatted = XmlSchema.formatTime(hour, minute, second);
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatTime",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element timeElement = XMLHelp.newElement(dataElement, "time");
 		timeElement.setTextContent(formatted);
@@ -64,8 +60,7 @@ public class XMLSchema extends STServiceAdapter{
 			@Optional(defaultValue="0") int hour, @Optional(defaultValue="0") int minute,
 			@Optional(defaultValue="0") int second) throws ParseException {
 		String formatted = XmlSchema.formatDuration(isPositive, year, month, day, hour, minute, second);
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatDuration",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element durationElement = XMLHelp.newElement(dataElement, "duration");
 		durationElement.setTextContent(formatted);
@@ -77,8 +72,7 @@ public class XMLSchema extends STServiceAdapter{
 	public Response formatCurrentLocalDateTime(){
 		String formatted = XmlSchema.formatCurrentLocalDateTime();
 		System.out.println("valid local datetime: " + XSDDatatypeValidator.isValidDateTime(formatted));
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatCurrentLocalDateTime",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
 		dateTimeElement.setTextContent(formatted);
@@ -90,12 +84,12 @@ public class XMLSchema extends STServiceAdapter{
 	public Response formatCurrentUTCDateTime(){
 		String formatted = XmlSchema.formatCurrentUTCDateTime();
 		System.out.println("valid local datetime: " + XSDDatatypeValidator.isValidDateTime(formatted));
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("formatCurrentUTCDateTime",
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
 		dateTimeElement.setTextContent(formatted);
 		dateTimeElement.setAttribute("validated", XSDDatatypeValidator.isValidDateTime(formatted)+"");
 		return response;
 	}
+	
 }

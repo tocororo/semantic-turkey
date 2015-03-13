@@ -104,7 +104,6 @@ import org.w3c.dom.Element;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 /**
@@ -245,7 +244,7 @@ public class ResourceView extends STServiceAdapter {
 
 		// ****************************************
 		// Step X : Produces the OLD-style response
-		XMLResponseREPLY response = servletUtilities.createReplyResponse("getResourceView", RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
 		// Append the subject resource

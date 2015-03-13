@@ -29,7 +29,6 @@ import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
@@ -62,33 +61,6 @@ import org.w3c.dom.Element;
 public class Projects extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
-
-	// requests
-	public static class Req {
-		public final static String createProjectRequest = "createProject";
-		public final static String listProjectsRequest = "listProjects";
-		public final static String getProjectPropertyRequest = "getProjectProperty";
-		public final static String getProjectPropertyFileContentRequest = "getProjectPropertyFileContent";
-		public final static String getProjectPropertyMapRequest = "getProjectPropertyMap";
-		public final static String getProjectACLRequest = "getProjectACL";
-		
-		/*public final static String isCurrentProjectActiveRequest = "isCurrentProjectActive";
-		public final static String openProjectRequest = "openProject";
-		public final static String createNewProjectRequest = "newProject";
-		public final static String createNewProjectFromFileRequest = "newProjectFromFile";
-		public final static String closeProjectRequest = "closeProject";
-		public final static String deleteProjectRequest = "deleteProject";
-		public final static String exportProjectRequest = "exportProject";
-		public final static String importProjectRequest = "importProject";
-		public final static String cloneProjectRequest = "cloneProject";
-		public final static String saveProjectRequest = "saveProject";
-		public final static String saveProjectAsRequest = "saveProjectAs";
-		public final static String listProjectsRequest = "listProjects";
-		public final static String getProjectPropertyRequest = "getProjectProperty";
-		public final static String setProjectPropertyRequest = "setProjectProperty";
-		public final static String getCurrentProjectRequest = "getCurrentProject";
-		public final static String repairProjectRequest = "repairProject";*/
-	}
 	
 	public static class XMLNames {
 		// response tags and attributes
@@ -117,9 +89,7 @@ public class Projects extends STServiceAdapter {
 		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration);
 		
-		String request = Req.createProjectRequest;
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
-				RepliesStatus.ok);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		XMLHelp.newElement(dataElement, "type", proj.getType());
 		return response;
@@ -202,11 +172,10 @@ public class Projects extends STServiceAdapter {
 			throws ProjectAccessException {
 
 		logger.debug("listProjects, asked by consumer: " + consumer);
-		String request = Req.listProjectsRequest;
 		Collection<AbstractProject> projects;
 
 		projects = ProjectManager.listProjects(consumer);
-		XMLResponseREPLY resp = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
+		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
 
 		for (AbstractProject absProj : projects) {
@@ -386,8 +355,7 @@ public class Projects extends STServiceAdapter {
 		for (int i = 0; i < propertyNames.length; i++)
 			propValues[i] = ProjectManager.getProjectProperty(projectName, propertyNames[i]);
 
-		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectPropertyRequest,
-				RepliesStatus.ok);
+		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
 
 		for (int i = 0; i < propValues.length; i++) {
@@ -420,8 +388,7 @@ public class Projects extends STServiceAdapter {
 
 		Map<String, String> map = ProjectManager.getProjectPropertyMap(projectName);
 
-		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectPropertyMapRequest,
-				RepliesStatus.ok);
+		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
 		
 		Set<String> keys = map.keySet();
@@ -452,8 +419,7 @@ public class Projects extends STServiceAdapter {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			IOException {
 		String rawFile = ProjectManager.getProjectPropertyFileContent(projectName);
-		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectPropertyFileContentRequest,
-				RepliesStatus.ok);
+		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
 		Element contentElem = XMLHelp.newElement(dataElem, "content");
 		contentElem.setTextContent(rawFile);
@@ -522,8 +488,7 @@ public class Projects extends STServiceAdapter {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException {
 		
-		XMLResponseREPLY resp = servletUtilities.createReplyResponse(Req.getProjectACLRequest,
-				RepliesStatus.ok);
+		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
 		
 		Collection<AbstractProject> projects = ProjectManager.listProjects();

@@ -11,8 +11,10 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
 public class STServiceAdapter implements STService {
 
@@ -105,6 +107,14 @@ public class STServiceAdapter implements STService {
 	protected Response logAndSendException(String request, String msg, SerializationType sertype) {
 		// getLogger().error(msg);
 		return servletUtilities.createExceptionResponse(request, msg, sertype);
+	}
+	
+	protected XMLResponseREPLY createReplyResponse(RepliesStatus status) {
+		return servletUtilities.createReplyResponse(stServiceContext.getRequest().getServiceMethod(), status);
+	}
+	
+	protected XMLResponseREPLY createReplyFAIL(String message) {
+		return servletUtilities.createReplyFAIL(stServiceContext.getRequest().getServiceMethod(), message);
 	}
 
 }
