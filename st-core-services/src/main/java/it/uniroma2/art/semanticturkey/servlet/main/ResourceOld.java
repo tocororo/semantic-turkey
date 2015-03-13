@@ -56,8 +56,12 @@ import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.navigation.RDFIterator;
+import it.uniroma2.art.owlart.query.Binding;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.TupleBindings;
+import it.uniroma2.art.owlart.query.TupleBindingsIterator;
+import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.OWL;
@@ -165,6 +169,7 @@ public class ResourceOld extends ServiceAdapter {
 		public static final String getRoleRequest = "getRole";
 		public static final String getValuesOfAnnotationsPropertiesHierarchicallyRequest = "getValuesOfAnnotationsPropertiesHierarchically";
 		public static final String getValuesOfPlainRDFPropertiesRequest = "getValuesOfPlainRDFProperties";
+		public static final String getValuesObjectPropertiesRequest = "getValuesObjectProperties";
 	}
 
 	public static class Par {
@@ -177,6 +182,7 @@ public class ResourceOld extends ServiceAdapter {
 		public static final String subPropOf = "subPropOf";
 		public static final String excludePropItSelf = "excludePropItSelf";
 		public static final String excludedProps = "excludedProps";
+		public static final String excludeSubProps = "excludeSubProps";
 		public static final String notSubPropOf = "notSubPropOf";
 	}
 
@@ -222,6 +228,12 @@ public class ResourceOld extends ServiceAdapter {
 			String excludedProps = setHttpPar(Par.excludedProps);
 			checkRequestParametersAllNotNull(Par.resource);
 			response = getValuesOfPlainRDFProperties(resourceName, excludedProps);
+		}  else if(request.equals(Req.getValuesObjectPropertiesRequest)){
+			String resourceName = setHttpPar(Par.resource);
+			String excludedProps = setHttpPar(Par.excludedProps);
+			boolean excludSubProps = setHttpBooleanPar(Par.excludeSubProps, true);
+			checkRequestParametersAllNotNull(Par.resource);
+			response = getValuesObjectProperties(resourceName, excludedProps, excludSubProps);
 		} else if (request.equals(Req.getValuesOfPropertiesCountRequest)) {
 			String resourceName = setHttpPar(Par.resource);
 			String propertiesNames = setHttpPar(Par.properties);
@@ -866,7 +878,122 @@ public class ResourceOld extends ServiceAdapter {
 		} catch (QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
+	}
+	
+	public Response getValuesObjectProperties(String resourceName, String excludedProps,
+			boolean excludeSubPropAsWell) {
 
+		try {
+			OWLModel model = getOWLModel();
+			ARTResource graphs = getWorkingGraph();
+			
+			ARTResource resource = retrieveExistingResource(model, resourceName, graphs );
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			String resourceURI = resource.getNominalValue();
+			
+			// generate a list from the excludedProps String
+			List<String> excludedPropList = new ArrayList<String>();
+			if (excludedProps != null) {
+				for (String propName : excludedProps.split("\\|_\\|")) {
+					String propToExlude = model.expandQName(propName);
+					if(!excludedPropList.contains(propToExlude)){
+						excludedPropList.add(propToExlude);
+					}
+				}
+			}
+			
+			//get, if requested, all the subProperty for the excluded properties
+			if(excludedPropList.size()>0 && excludeSubPropAsWell){
+				String selectQuery = "SELECT ?subPropToExclude"+
+						"\nWHERE {"+
+						"\n?subPropToExclude <"+RDFS.SUBPROPERTYOF+">* ?inputPropToExclude .";
+				boolean first = true;
+				selectQuery +="\nFILTER(";
+				for(String propToExlude : excludedPropList){
+					if(!first){
+						selectQuery += " || ";
+					}
+					first = false;
+					selectQuery += "?inputPropToExclude = <"+propToExlude+"> ";
+				}	
+				selectQuery += "\n)"+
+						"\n}";
+				logger.debug("selectQuery = "+selectQuery);
+				
+				TupleQuery tupleQuery = model.createTupleQuery(selectQuery);
+				TupleBindingsIterator iter = tupleQuery.evaluate(true);
+				while(iter.hasNext()){
+					TupleBindings tupleBindings = iter.next();
+					
+					
+					String subProp = tupleBindings.getBoundValue("subPropToExclude").getNominalValue();
+					if(!excludedPropList.contains(subProp)){
+						excludedPropList.add(subProp);
+					}
+				}
+				iter.close();
+			}
+			
+			String constructQuery = "CONSTRUCT { <" + resourceURI + ">  ?objectProp ?value}" + 
+					"\nWHERE {";
+					
+			//get all the objectProperty
+			constructQuery += "\n ?objectProp <"+RDF.TYPE+"> <"+OWL.OBJECTPROPERTY+"> .";
+					
+			//now get the value associated to this paliRDFProperty
+			constructQuery += "\n<" + resourceURI + ">  ?objectProp ?value ." + 
+					 "}";
+			
+			logger.debug("constructQuery = "+constructQuery);
+			
+			GraphQuery graphQuery = model.createGraphQuery(constructQuery);
+			ARTStatementIterator inferretIt = graphQuery.evaluate(true);
+			ARTStatementIterator explicitIt = graphQuery.evaluate(false);
+			
+			
+			
+			
+			List<ARTStatement> inferredList = new ArrayList<ARTStatement>();
+			while (inferretIt.hasNext()) {
+				ARTStatement stat = inferretIt.getNext();
+				String predURI = stat.getPredicate().getURI();
+				if (!excludedPropList.contains(predURI)) {
+					inferredList.add(stat);
+				}
+			}
+			inferretIt.close();
+			
+			List<ARTStatement> explicitList = new ArrayList<ARTStatement>();
+			while (explicitIt.hasNext()) {
+				ARTStatement stat = explicitIt.getNext();
+				String predURI = stat.getPredicate().getURI();
+				if (!excludedPropList.contains(predURI)) {
+					explicitList.add(stat);
+				}
+			}
+			explicitIt.close();
+	
+			PredicateObjectsList predObjList = PredicateObjectsListFactory.createPredicateObjectsList(model,
+					RDFResourceRolesEnum.objectProperty,
+					RDFIterators.createARTStatementIterator(inferredList.iterator()),
+					RDFIterators.createARTStatementIterator(explicitList.iterator())
+					);
+			
+	
+			RDFXMLHelp.addPredicateObjectList(response, predObjList);
+			
+			return response;
+		}  catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
+			return logAndSendException(e);
+		}
 	}
 	
 	/**
