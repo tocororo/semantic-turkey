@@ -571,8 +571,9 @@ public class SKOS extends ResourceOld {
 		SKOSModel skosModel = getSKOSModel();
 		ARTURIResourceIterator it;
 		try {
+			ARTURIResource skosScheme = null;
 			if (schemaUri != null) {
-				ARTURIResource skosScheme = retrieveExistingURIResource(skosModel, schemaUri,
+				skosScheme = retrieveExistingURIResource(skosModel, schemaUri,
 						getUserNamedGraphs());
 				it = skosModel.listTopConceptsInScheme(skosScheme, true, getUserNamedGraphs());
 			} else {
@@ -591,7 +592,7 @@ public class SKOS extends ResourceOld {
 			while (it.hasNext()) {
 				ARTURIResource concept = it.next();
 				STRDFResource stConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
-				SKOS.decorateForTreeView(skosModel, stConcept, getUserNamedGraphs());
+				SKOS.decorateForTreeView(skosModel, stConcept, skosScheme, true, getUserNamedGraphs());
 				concepts.add(stConcept);
 			}
 			it.close();
@@ -883,8 +884,9 @@ public class SKOS extends ResourceOld {
 			ARTURIResourceIterator unfilteredIt = skosModel.listNarrowerConcepts(concept, false, true,
 					getUserNamedGraphs());
 			Iterator<ARTURIResource> it;
+			ARTURIResource scheme = null;
 			if (schemeName != null) {
-				ARTURIResource scheme = retrieveExistingURIResource(skosModel, schemeName,
+				scheme = retrieveExistingURIResource(skosModel, schemeName,
 						getUserNamedGraphs());
 				it = Iterators.filter(unfilteredIt,
 						ConceptsInSchemePredicate.getFilter(skosModel, scheme, getUserNamedGraphs()));
@@ -902,7 +904,7 @@ public class SKOS extends ResourceOld {
 				ARTURIResource narrower = it.next();
 				STRDFResource stConcept = createSTConcept(skosModel, narrower, true, defaultLanguage);
 				if (TreeView)
-					SKOS.decorateForTreeView(skosModel, stConcept, getUserNamedGraphs());
+					SKOS.decorateForTreeView(skosModel, stConcept, scheme, true, getUserNamedGraphs());
 				concepts.add(stConcept);
 			}
 
@@ -1344,16 +1346,32 @@ public class SKOS extends ResourceOld {
 				defaultLanguage);
 	}
 
-	public static void decorateForTreeView(SKOSModel model, STRDFResource concept, ARTResource[] graphs)
+	public static void decorateForTreeView(SKOSModel model, STRDFResource concept, ARTURIResource scheme, 
+			boolean inference, ARTResource[] graphs)
 			throws ModelAccessException, NonExistingRDFResourceException {
-		ARTURIResourceIterator it = model.listNarrowerConcepts((ARTURIResource) concept.getARTNode(), false,
-				true, graphs);
-		if (it.streamOpen()) {
-			concept.setInfo("more", "1");
+		ARTURIResourceIterator unfilteredIt = model.listNarrowerConcepts((ARTURIResource) concept.getARTNode(), 
+				false, inference, graphs);
+		
+		if(scheme!=null){
+			Iterator<ARTURIResource> it = Iterators.filter(unfilteredIt,
+					ConceptsInSchemePredicate.getFilter(model, scheme, graphs));
+			if(it.hasNext()){
+				concept.setInfo("more", "1");
+			} else {
+				concept.setInfo("more", "0");
+			}
+		} else{
+			if (unfilteredIt.streamOpen()) {
+				concept.setInfo("more", "1");
 
-		} else
-			concept.setInfo("more", "0");
-		it.close();
+			} else
+				concept.setInfo("more", "0");
+		}
+		
+		unfilteredIt.close();
+		
+		
+		
 	}
 
 	private void addPrefLabel(SKOSModel skosModel, ARTURIResource res, String prefLabel, String lang)
