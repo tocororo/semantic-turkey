@@ -1,13 +1,12 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import java.util.List;
-
 public class UserPromptStruct {
 	
 	private String userPromptName; //name of the feature userPrompt/example
 	private String rdfType; //uri or literal
 	private String literalDatatype;
 	private String literalLang;
+	private String converter; //in the future this could be a list of string since a placeholder could be defined through multiple waterfall converters
 	private boolean mandatory;
 	
 	/**
@@ -29,6 +28,10 @@ public class UserPromptStruct {
 		this.userPromptName = userPromptName;
 	}
 
+	/**
+	 * Returns the type of the userPrompt (it can be uri or literal)
+	 * @return
+	 */
 	public String getRdfType() {
 		return rdfType;
 	}
@@ -53,6 +56,14 @@ public class UserPromptStruct {
 		this.literalLang = literalLang;
 	}
 	
+	public String getConverter(){
+		return converter;
+	}
+	
+	public void setConverter(String converter) {
+		this.converter = converter;
+	}
+	
 	public boolean isMandatory(){
 		return mandatory;
 	}
@@ -75,5 +86,9 @@ public class UserPromptStruct {
 	
 	public boolean hasLanguage(){
 		return literalLang != null;
+	}
+	
+	public boolean hasConverter(){
+		return converter != null;
 	}
 }

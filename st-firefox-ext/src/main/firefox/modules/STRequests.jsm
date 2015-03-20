@@ -32,7 +32,7 @@ STRequests.Cls = function(){};
 /**
  * @class
  */
-STRequests.CustomRanges = function(){};
+STRequests.CODA = function(){};
 /**
  * @class
  */
@@ -145,8 +145,9 @@ STRequests.Cls.getSubClassesRequest = "getSubClasses";
 STRequests.Cls.getSuperClassesRequest = "getSuperClasses";
 STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTree";
 
-STRequests.CustomRanges.serviceName = "CustomRanges";
-STRequests.CustomRanges.runCodaRequest = "runCoda";
+STRequests.CODA.serviceName = "CODA";
+STRequests.CODA.runCodaRequest = "runCoda";
+STRequests.CODA.executeURIConverterRequest = "executeURIConverter";
 
 //Refactor service Request (old service name was ModifyName)
 STRequests.Refactor.serviceName = "Refactor";
@@ -154,8 +155,6 @@ STRequests.Refactor.serviceName = "Refactor";
 //STRequests.Refactor.replaceBaseURIRequest = "replaceBaseUri";
 STRequests.Refactor.renameResourceRequest = "renameResource";
 STRequests.Refactor.replaceBaseURIRequest = "replaceBaseURI";
-
-
 
 //property service requests
 STRequests.Property.serviceName = "property";

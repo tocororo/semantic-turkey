@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<dialog id="crEntrySelectionDialog" title="Choose the range"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	buttons="accept,cancel"
+	ondialogaccept="return btnOkListener();"
+	ondialogcancel="return;"
+	width="300px"
+	height="200px">
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/rangeSelectDialog.js" />
+
+	<listbox id="rangesListbox" flex="1"/>
+	
+</dialog>

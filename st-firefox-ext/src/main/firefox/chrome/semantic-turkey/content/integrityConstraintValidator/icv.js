@@ -34,10 +34,14 @@ art_semanticturkey.init = function() {
 
 art_semanticturkey.btnCheckListener = function() {
 	var btn = this;
+	btn.setAttribute("disabled", "true");
 	var row = btn.parentNode;
 	var target = row.getAttribute("target");
+	getChromeWindow().setAttribute("style","cursor:progress");
 //	art_semanticturkey.Logger.debug("opening dialog " + target);
 	window.openDialog(target, "_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen");
+	getChromeWindow().setAttribute("style","cursor:auto");
+	btn.setAttribute("disabled", "false");
 }
 
 isOntoTypeCompatible = function(projectOntoType, icvOntoType){
@@ -45,10 +49,14 @@ isOntoTypeCompatible = function(projectOntoType, icvOntoType){
 		return true;
 	} else if (icvOntoType == "OWL") {
 		return (projectOntoType == icvOntoType);
-	} else if (icvOntoType == "SKOS") {
-		return (projectOntoType == icvOntoType);
 	} else if (icvOntoType == "SKOS-XL") {
-		return ((projectOntoType == icvOntoType) || (projectOntoType == "SKOS"));
+		return (projectOntoType == icvOntoType);
+	} else if (icvOntoType == "SKOS") {
+		return ((projectOntoType == icvOntoType) || (projectOntoType == "SKOS-XL"));
 	}
 	return false;
+}
+
+getChromeWindow = function(){
+	return document.getElementsByTagName("window")[0];
 }

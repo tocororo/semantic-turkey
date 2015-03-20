@@ -30,6 +30,7 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.NoLanguageResourcePredicate;
 import it.uniroma2.art.owlart.filter.NoSubclassPredicate;
@@ -47,9 +48,11 @@ import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.DirectReasoning;
+import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
@@ -78,6 +81,7 @@ import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedExcepti
 import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.filter.NoSystemResourcePredicate;
 import it.uniroma2.art.semanticturkey.filter.StatementWithAProperty_Predicate;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
@@ -88,6 +92,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -1531,7 +1536,7 @@ public class ResourceOld extends ServiceAdapter {
 		if (cr == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
-		Element crElem = XMLHelp.newElement(treeElement, "customRange");
+		Element crElem = XMLHelp.newElement(treeElement, "customRanges");
 		crElem.setAttribute("property", property.getURI());
 		crElem.setAttribute("id", cr.getId());
 				
@@ -1547,32 +1552,33 @@ public class ResourceOld extends ServiceAdapter {
 			refElem.setTextContent(crEntry.getRef());
 			
 			//inject form map
-			//TODO: se la entry è node? nella response che form mettere?
 			CustomRangeCODAManager crCodaMgr = crCODAMgrProvider.getObject();
-			if (crEntry.getType().equals("graph")){
-				Element formElem = XMLHelp.newElement(crEntryElem, "form");
-				try{
-					List<UserPromptStruct> form = crCodaMgr.getForm(crEntry);
-					if (!form.isEmpty()){
-						for (UserPromptStruct formEntry : form){
-							Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
-							formEntryElem.setAttribute("userPrompt", formEntry.getUserPromptName());
-							formEntryElem.setAttribute("type", formEntry.getRdfType());
-							formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
-							if (formEntry.isLiteral()){
-								if (formEntry.hasDatatype())
-									formEntryElem.setAttribute("datatype", formEntry.getLiteralDatatype());
-								if (formEntry.hasLanguage())
-									formEntryElem.setAttribute("lang", formEntry.getLiteralLang());
-							}
+
+			Element formElem = XMLHelp.newElement(crEntryElem, "form");
+			try{
+				ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
+				List<UserPromptStruct> form = crCodaMgr.getForm(getOWLModel(), ontFact, crEntry);
+				if (!form.isEmpty()){
+					for (UserPromptStruct formEntry : form){
+						Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
+						formEntryElem.setAttribute("userPrompt", formEntry.getUserPromptName());
+						formEntryElem.setAttribute("type", formEntry.getRdfType());
+						formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
+						if (formEntry.hasConverter())
+							formEntryElem.setAttribute("converter", formEntry.getConverter());
+						if (formEntry.isLiteral()){
+							if (formEntry.hasDatatype())
+								formEntryElem.setAttribute("datatype", formEntry.getLiteralDatatype());
+							if (formEntry.hasLanguage())
+								formEntryElem.setAttribute("lang", formEntry.getLiteralLang());
 						}
-					} else {
-						formElem.setAttribute("exception", "No userPrompt/ features found");
 					}
-				} catch (PRParserException ex){
-					formElem.setAttribute("exception", ex.toString());
-					ex.printStackTrace();
+				} else {
+					formElem.setAttribute("exception", "No userPrompt/ features found");
 				}
+			} catch (PRParserException | UnavailableResourceException | ProjectInconsistentException ex){
+				formElem.setAttribute("exception", ex.toString());
+				ex.printStackTrace();
 			}
 		}
 	}

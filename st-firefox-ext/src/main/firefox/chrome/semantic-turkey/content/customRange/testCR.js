@@ -4,31 +4,183 @@ if (typeof art_semanticturkey == 'undefined')
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Property.jsm", art_semanticturkey);
 
+var subject;
+
 window.onload = function() {
 	document.getElementById("btn").addEventListener("command", buttonListener, false);
+	subject = "http://baseuri.org#concept"; //TODO taken so just in this case
+	
 }
 
 buttonListener = function(){
-	var property = document.getElementById("propertyTxt").value;
-	var xmlResp = art_semanticturkey.STRequests.Property.getRange(property, "false");
+	predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
+	var xmlResp = art_semanticturkey.STRequests.Property.getRange(predicate, "false");
 	
-	var customRangeXml = xmlResp.getElementsByTagName("customRange")[0];
-	//if the getRange response has customRange section look for the node crEntry and open dialog to fill the userPrompt form
-	if (typeof customRangeXml != "undefined"){
+	var customRangeXml = xmlResp.getElementsByTagName("customRanges")[0];
+	var rangesXml = xmlResp.getElementsByTagName("ranges")[0];//classic ranges
+	
+	var parameters = new Object();
+	//if the getRange response has both customRange and ranges section
+	if (typeof customRangeXml != "undefined" && typeof rangesXml != "undefined"){
+		parameters.xmlResp = xmlResp;
+		parameters.selectedRange = null; //param for returned value
+		window.openDialog("chrome://semantic-turkey/content/customRange/rangeSelectDialog.xul",
+				"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+		//in case the dialog returned a value
+		if (parameters.selectedRange != null){
+			//check if the selected range is the classic range
+			if (rangesXml.getAttribute("rngType") == parameters.selectedRange){
+				classicRangesLaunch(rangesXml);
+			} else { //or look in the custom ranges
+				var crEntriesXml = customRangeXml.getElementsByTagName("crEntry");
+				for (var i=0; i<crEntriesXml.length; i++){
+					if (crEntriesXml[i].getAttribute("name") == parameters.selectedRange){
+						customRangeLaunch(crEntriesXml[i]);
+					}
+				}
+			}
+		} else {
+			return;
+		}
+	} else if (typeof customRangeXml != "undefined"){//if the getRange response has only customRange section
 		var crEntriesXml = customRangeXml.getElementsByTagName("crEntry");
-		for (var i=0; i<crEntriesXml.length; i++){
-			var crEntryXml = crEntriesXml[i];
-			if (crEntryXml.getAttribute("type") == "graph"){
-				var parameters = new Object();
-				parameters.crEntryXml = crEntryXml;
-				window.openDialog("chrome://semantic-turkey/content/customRange/customRangeForm.xul",
-						"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+		if (crEntriesXml.length > 1){ //multiple crEntry
+			parameters.xmlResp = xmlResp;
+			parameters.selectedRange = null; //param for returned value
+			window.openDialog("chrome://semantic-turkey/content/customRange/rangeSelectDialog.xul",
+					"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+			//in case the dialog returned a value look for the custom range selected
+			if (parameters.selectedRange != null){
+				for (var i=0; i<crEntriesXml.length; i++){
+					if (crEntriesXml[i].getAttribute("name") == parameters.selectedRange){
+						customRangeLaunch(crEntriesXml[i]);
+					}
+				}
+			} else {
+				return;
+			}
+		} else { //single crEntry
+			customRangeLaunch(crEntriesXml[0]);
+		}
+	} else if (typeof rangesXml != "undefined"){//if the getRange response has only ranges section
+		classicRangesLaunch(rangesXml);
+	}
+}
+
+customRangeLaunch = function(crEntryXml){
+	var parameters = {};
+	parameters.crEntryXml = crEntryXml;
+	parameters.subject = subject;
+	parameters.predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
+	window.openDialog("chrome://semantic-turkey/content/customRange/customForm.xul",
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+}
+
+classicRangesLaunch = function(rangesXml){
+	var parameters = {};
+	parameters.predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
+	parameters.winTitle = "Add Property Value";
+	parameters.action = "createAndAddPropValue";
+	parameters.subject = subject;
+	parameters.parentWindow = window;
+	parameters.oncancel = false;
+	
+	if (rangesXml.getAttribute("rngType").indexOf("resource") != -1) {
+		window.openDialog(
+				"chrome://semantic-turkey/content/enrichProperty/enrichProperty.xul",
+				"_blank", "modal=yes,resizable,centerscreen", parameters);
+
+	} else if (rangesXml.getAttribute("rngType").indexOf("plainLiteral") != -1) {
+		window.openDialog(
+				"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
+				"_blank", "modal=yes,resizable,centerscreen", parameters);
+	} else if (rangesXml.getAttribute("rngType").indexOf("typedLiteral") != -1) {
+		var rangeList = rangesXml.childNodes;
+		for (var i = 0; i < rangeList.length; ++i) {
+			if (typeof (rangeList[i].tagName) != 'undefined') {
+				parameters.rangeType = rangeList[i].textContent;
 			}
 		}
-	} else {
-		alert("apertura finestra classica per valorizzare le proprieta'");
+		window.openDialog(
+				"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
+				"_blank", "modal=yes,resizable,centerscreen", parameters);
+	} else if (rangesXml.getAttribute("rngType").indexOf("literal") != -1) {
+		var rangeList = rangesXml.childNodes;
+		var role = null;
+		if (rangeList.length > 0) {
+			for (var i = 0; i < rangeList.length; ++i) {
+				if (typeof (rangeList[i].tagName) != 'undefined') {
+					var dataRangeBNodeID = rangeList[i].textContent;
+					var role = rangeList[i].getAttribute("role");
+					var nodeType = rangeList[i].tagName;
+				}
+			}
+			if (role.indexOf("dataRange") != -1) {
+				var responseXML = art_semanticturkey.STRequests.Property.parseDataRange(
+						dataRangeBNodeID, nodeType);
+
+				var dataElement = responseXML.getElementsByTagName("data")[0];
+				var dataRangesList = dataElement.childNodes;
+				var dataRangesValueList = new Array();
+				var k = 0;
+				for (var i = 0; i < dataRangesList.length; ++i) {
+					if (typeof (dataRangesList[i].tagName) != 'undefined') {
+						var dataRangeValue = new Object();
+						dataRangeValue.type = dataRangesList[i].tagName;
+						dataRangeValue.rangeType = dataRangesList[i].getAttribute("type");
+						dataRangeValue.show = dataRangesList[i].getAttribute("show");
+						dataRangesValueList[k] = dataRangeValue;
+						k++;
+					}
+				}
+				parameters.rangeType = "dataRange";
+				parameters.dataRangesValueList = dataRangesValueList;
+				window.openDialog(
+						"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
+						"_blank", "modal=yes,resizable,centerscreen", parameters);
+			}
+		} else {
+			var literalsParameters = new Object();
+			literalsParameters.isLiteral = "literal";
+			window.openDialog(
+					"chrome://semantic-turkey/content/enrichProperty/isLiteral.xul",
+					"_blank", "modal=yes,resizable,centerscreen", literalsParameters);
+			if (literalsParameters.isLiteral == "plainLiteral") {
+				window.openDialog(
+						"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
+						"_blank", "modal=yes,resizable,centerscreen", parameters);
+			} else if (literalsParameters.isLiteral == "typedLiteral") {
+				window.openDialog(
+						"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
+						"_blank", "modal=yes,resizable,centerscreen", parameters);
+			}
+		}
+	} else if (rangesXml.getAttribute("rngType").indexOf("undetermined") != -1) {
+		var literalsParameters = new Object();
+		literalsParameters.isLiteral = "undetermined";
+		window.openDialog(
+				"chrome://semantic-turkey/content/enrichProperty/isLiteral.xul",
+				"_blank", "modal=yes,resizable,centerscreen", literalsParameters);
+		if (literalsParameters.isLiteral == "plainLiteral") {
+			window.openDialog(
+					"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
+					"_blank", "modal=yes,resizable,centerscreen", parameters);
+		} else if (literalsParameters.isLiteral == "typedLiteral") {
+			var rangeList = rangesXml.childNodes;
+			for (var i = 0; i < rangeList.length; ++i) {
+				if (typeof (rangeList[i].tagName) != 'undefined') {
+					parameters.rangeType = rangeList[i].textContent;
+				}
+			}
+			window.openDialog(
+					"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
+					"_blank", "modal=yes,resizable,centerscreen", parameters);
+		} else if (literalsParameters.isLiteral == "resource") {
+			window.openDialog(
+					"chrome://semantic-turkey/content/enrichProperty/enrichProperty.xul",
+					"_blank", "modal=yes,resizable,centerscreen", parameters);
+		}
+	} else if (rangesXml.getAttribute("rngType").indexOf("inconsistent") != -1) {
+		alert("Error range of " + propertyQName + " property is inconsistent");
 	}
-	
-	
-	
 }

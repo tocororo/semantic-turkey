@@ -99,6 +99,22 @@ public class CustomRangeEntry {
 		return ref;
 	}
 	
+	/**
+	 * Returns true if the type of the Custom Range Entry is "node", false otherwise
+	 * @return
+	 */
+	public boolean isTypeNode(){
+		return type.equals("node");
+	}
+	
+	/**
+	 * Returns true if the type of the Custom Range Entry is "graph", false otherwise
+	 * @return
+	 */
+	public boolean isTypeGraph(){
+		return type.equals("graph");
+	}
+	
 	private class CustomRangeEntryXMLReader {
 		
 		private Document doc;

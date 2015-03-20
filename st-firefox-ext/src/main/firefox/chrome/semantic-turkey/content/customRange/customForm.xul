@@ -3,7 +3,7 @@
 <window id="inputDialog" title="Input form data"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	width="500px">
-	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/customRangeForm.js" />
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/customForm.js" />
 
 	<vbox style="padding: 5px">
 		<grid id="grid" style="padding-bottom: 5px">

@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,6 +62,10 @@ public class CustomRangeCODAManager {
 		this.codaCore = codaFactory.getInstance(context);
 	}
 	
+	public CODACore getCODACore(){
+		return codaCore;
+	}
+	
 	/**
 	 * Parse the CODA rule contained in the <code>ref</code> tag and build a map of &ltuserPrompt, 
 	 * type&gt pairs, where <code>userPrompt</code> is a field of the <code>userPrompt/</code>
@@ -73,10 +76,11 @@ public class CustomRangeCODAManager {
 	 * @return
 	 * @throws PRParserException
 	 */
-	public List<UserPromptStruct> getForm(CustomRangeEntry crEntry) throws PRParserException{
+	public List<UserPromptStruct> getForm(RDFModel rdfModel, ModelFactory<?> modelFactory, CustomRangeEntry crEntry) throws PRParserException{
 		List<UserPromptStruct> form = new ArrayList<UserPromptStruct>();
 		if (crEntry.getType().equals("graph")){
 			InputStream pearlStream = new ByteArrayInputStream(crEntry.getRef().getBytes(StandardCharsets.UTF_8));
+			codaCore.initialize(rdfModel, modelFactory);
 			ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 			Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 			Set<String> prRuleIds = prRuleMap.keySet();
@@ -91,16 +95,50 @@ public class CustomRangeCODAManager {
 						String featurePath = placeHolderStruct.getFeaturePath();
 						if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
 							String userPromptField = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
-							String type = placeHolderStruct.getRDFType();
-							UserPromptStruct upStruct = new UserPromptStruct(userPromptField, type);
+							String rdfType = placeHolderStruct.getRDFType();
+							UserPromptStruct upStruct = new UserPromptStruct(userPromptField, rdfType);
 							//fill the UserPromptStruct independently from its type (literal or uri)
 							upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
 							upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
+							upStruct.setConverter(placeHolderStruct.getConverterList().get(0));//for now I suppesed there is used only one converter
 							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
 							form.add(upStruct);
 						}
 					}
 				}
+			}
+		} else { //crEntry.getType() == "node"
+			String ref = crEntry.getRef();
+			/* the ref in case of node CRE contains a rdfType (uri or literal), followed by an optional
+			 * datatype (in case of literal) and an optional converter. */
+			if (ref.startsWith("uri")){
+				UserPromptStruct upStruct = new UserPromptStruct("value", "uri");
+				if (ref.contains("(") && ref.contains(")")){
+					String converter = ref.substring(ref.indexOf("(")+1, ref.indexOf(")"));
+					upStruct.setConverter(converter);
+				} else {//if no converter is specified
+					upStruct.setConverter("http://art.uniroma2.it/coda/contracts/default");
+				}
+				form.add(upStruct);
+			} else if (ref.startsWith("literal")){
+				UserPromptStruct upStruct = new UserPromptStruct("value", "literal");
+				if (ref.contains("(") && ref.endsWith(")")){
+					String converter = ref.substring(ref.lastIndexOf("(")+1, ref.indexOf(")"));
+					upStruct.setConverter(converter);
+					ref = ref.substring(0, ref.lastIndexOf("("));//remove the converter from the end of the ref
+				} else {//if no converter is specified
+					upStruct.setConverter("http://art.uniroma2.it/coda/contracts/default");
+				}
+				if (ref.contains("^^")){
+					String datatype = ref.substring(ref.indexOf("^^")+2);
+					upStruct.setLiteralDatatype(datatype);
+				} else if (ref.contains("@")){
+					String lang = ref.substring(ref.indexOf("@")+1);
+					upStruct.setLiteralLang(lang);
+				}
+				form.add(upStruct);
+			} else {
+				throw new PRParserException("Invalid ref in CustomRangeEntry " + crEntry.getId());
 			}
 		}
 		return form;
@@ -114,6 +152,7 @@ public class CustomRangeCODAManager {
 	 * @param userPromptMap map containing userPrompt-value pairs, where userPrompt is a feature name
 	 * (the same indicated in the pearl userPrompt/...) and value is the value given by user.
 	 * @param crEntry CustomRangeEntry containing pearl rule used to generate TSD and to generate triples
+	 * @return 
 	 * @throws PRParserException 
 	 * @throws UIMAException 
 	 * @throws DependencyException 
@@ -124,10 +163,11 @@ public class CustomRangeCODAManager {
 	 * @throws ConverterException 
 	 * @throws ComponentProvisioningException 
 	 */
-	public void fillMapAndAddTriples(RDFModel rdfModel, ModelFactory<?> modelFactory, Map<String, String> userPromptMap, CustomRangeEntry crEntry)
+	public List<ARTTriple> executeCREntryPearl(RDFModel rdfModel, ModelFactory<?> modelFactory, Map<String, String> userPromptMap, CustomRangeEntry crEntry)
 			throws PRParserException, UIMAException, ComponentProvisioningException, 
 			ConverterException, UnsupportedQueryLanguageException, ModelAccessException,
 			MalformedQueryException, QueryEvaluationException, DependencyException {
+		List<ARTTriple> triples = null;
 		
 		codaCore.initialize(rdfModel, modelFactory);
 
@@ -169,15 +209,11 @@ public class CustomRangeCODAManager {
 		codaCore.setJCas(jcas);
 		while (codaCore.isAnotherAnnotationPresent()){
 			SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
-			
-			if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")){//returns only rilevant annotations
-				List<ARTTriple> triples = suggOntCoda.getAllARTTriple();
-				for (ARTTriple triple : triples){
-					System.out.println("s:\t" + triple.getSubject() + "\np:\t" + triple.getPredicate() + "\no:\t" + triple.getObject());
-//					rdfModel.addTriple(triple.getSubject(), triple.getPredicate(), triple.getObject(), NodeFilters.MAINGRAPH);
-				}
+			if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")){//get only triples of rilevant annotations
+				triples = suggOntCoda.getAllARTTriple();
 			}
 		}
+		return triples;
 	}
 	
 	/**
@@ -223,9 +259,7 @@ public class CustomRangeCODAManager {
 				annotationType.addFeature(USER_PROMPT_FEATURE_NAME, "", userPromptType.getName());
 			}
 		}
-		
 		describeTSD(tsd);
-		
 		return tsd;
 	}
 	

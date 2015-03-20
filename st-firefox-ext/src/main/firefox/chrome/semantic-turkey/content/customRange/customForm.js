@@ -2,13 +2,37 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
 Components.utils.import("resource://stservices/SERVICE_XMLSchema.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_CustomRanges.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_CODA.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
+/*
+ * For a better understanding of this code, here is an explanation of how the UI is built.
+ * For every formEntry in the getRange request, a row is added to the three-column grid.
+ * Every row of the grid is composed as follow:
+ * 	- label: Specified the value to insert. Its value represents the userPrompt feature written 
+ * 	 	in the PEARL (if the CRE is "node" type, the label is simply "value")
+ * 	- hbox: This box allows the user to input value and in turn its composed by some elements: 
+ * 		- Textbox: Independent from the type of the formEntry (uri or literal) the first child of 
+ * 			the box is a textbox that allows to input some value or that shows some validated
+ * 			value (converted or generated through some picker).
+ * 		- InputElements: This elements vary based on the type and the datatype of the formEntry,
+ * 			but basically they are elements that allows different type of input. For example, 
+ * 			if the entry is type=uri there will be a button that allows to input a value and convert it;
+ * 			if type=literal and datatype=xsd:date there will be a datepicker and so on.
+ * 	- label/checkbox: This 3rd element of the row is a label (*) if the formEntry is mandatory,
+ * 		otherwise is a checkbox that allows to choose if fill or not the field.
+ * 
+ * For further information check the createXXXInput methods.
+ */
+
 window.onload = function() {
+	
 	document.getElementById("okBtn").addEventListener("command", buttonOkListener, false);
+	
 	var crEntryXml = window.arguments[0].crEntryXml;
+	var type = crEntryXml.getAttribute("type");
+	
 	var formXml = crEntryXml.getElementsByTagName("form")[0];
 	/* if the pearl has some error, the form tag will contain the thrown exception in a "exception"
 	 * attribute and there will be no "formEntry" tags. Here perform the check */
@@ -45,11 +69,12 @@ addFieldToForm = function(formEntryXml){
 			} else { //for every other case
 				createGenericInput(formEntryXml);
 			}
-		} else {
+		} else { //for plain literal
 			createGenericInput(formEntryXml);
 		}
-	} else { //type == "uri"
-		createGenericInput(formEntryXml);
+	} else if (type == "uri") {
+		createUriInput(formEntryXml);
+//		createGenericInput(formEntryXml);
 	}
 }
 
@@ -61,20 +86,81 @@ createGenericInput = function(formEntryXml){
 	row.appendChild(createLabelForEntry(formEntryXml));
 	//2nd child: input box
 	var mainBox = document.createElement("hbox");
+	mainBox.setAttribute("align", "center");
 	var textbox = document.createElement("textbox");
 	textbox.setAttribute("flex", "1");
 	textbox.setAttribute("height", "25");
+	mainBox.appendChild(textbox);
 	var datatype = formEntryXml.getAttribute("datatype");
+	var lang = formEntryXml.getAttribute("lang");
 	if (datatype != null){
 		textbox.setAttribute("tooltiptext", datatype);
 	}
-	mainBox.appendChild(textbox);
-	var mandatory = (formEntryXml.getAttribute("mandatory") === "true");
+	if (lang != null){
+		var langLabel = document.createElement("label");
+		langLabel.setAttribute("value", "@"+lang);
+		mainBox.appendChild(langLabel);
+	}
 	row.appendChild(mainBox);
 	//3nd child: mandatory control
 	addMandatoryField(row, formEntryXml);
 	
 	gridrows.appendChild(row);
+}
+
+createUriInput = function(formEntryXml){
+	var gridrows = document.getElementById("gridrows");
+	var row = document.createElement("row");
+	row.setAttribute("align", "center");
+	//1st child: userPromptLabel
+	row.appendChild(createLabelForEntry(formEntryXml));
+	//2nd child: input box
+	var mainBox = document.createElement("hbox");
+	
+	var textbox = document.createElement("textbox");
+	textbox.setAttribute("flex", "1");
+	textbox.setAttribute("height", "25");
+	mainBox.appendChild(textbox);
+	
+	var converter = formEntryXml.getAttribute("converter");
+	if (converter != null){
+		var testConvertBtn = document.createElement("toolbarbutton");
+		testConvertBtn.setAttribute("image", "chrome://semantic-turkey/skin/images/tick.png");
+		testConvertBtn.setAttribute("type", "menu");
+		testConvertBtn.setAttribute("tooltiptext", "Conversion preview (generated URI)");
+		testConvertBtn.setAttribute("disabled", "true");
+		textbox.addEventListener("input", function() {
+			if (this.value == "") testConvertBtn.setAttribute("disabled", "true");
+			else testConvertBtn.setAttribute("disabled", "false");
+		}, false);
+		var menupopup = document.createElement("menupopup");
+		menupopup.setAttribute("converter", converter);
+		var menuTextbox = document.createElement("textbox");
+		menuTextbox.setAttribute("readonly", "true");
+		menuTextbox.setAttribute("width", "250");
+		menupopup.appendChild(menuTextbox);
+		//listener: when showing the popup, convert the text and show a preview of the conversion
+		menupopup.addEventListener("popupshowing", function(){
+			var converter = this.getAttribute("converter");
+			menuTextbox.value = convert(converter, textbox.value);
+		}, false);
+		testConvertBtn.appendChild(menupopup);
+		mainBox.appendChild(testConvertBtn);
+	}
+	row.appendChild(mainBox);
+	//3nd child: mandatory control
+	addMandatoryField(row, formEntryXml);
+	
+	gridrows.appendChild(row);
+}
+
+convert = function(converter, value){
+	try{
+		var xmlResp = art_semanticturkey.STRequests.CODA.executeURIConverter(converter, value);
+		return xmlResp.getElementsByTagName("value")[0].textContent;
+	} catch (e) {
+		art_semanticturkey.Alert.alert(e);
+	}
 }
 
 createDatetimeInput = function(formEntryXml){
@@ -315,16 +401,11 @@ buttonOkListener = function(){
 		var userPrompt = row.childNodes[0].value;//1st child is the label (userPrompt)
 		//check through the 3d child of the row if the field is optional
 		var optionalField = row.childNodes[2];
-		if (optionalField.tagName == "checkbox" && optionalField.checked){//the field is optional and checked
-			var inputValue = row.childNodes[1].childNodes[0].value;
-			if (inputValue == ""){
-				art_semanticturkey.Alert.alert("Field '" + userPrompt + "' cannot be empty, please provide a value");
-				return;
-			}
-			map.push({key: userPrompt, value: inputValue});
-		} else if (optionalField.tagName == "label"){ //the field is mandatory
-			var inputValue = row.childNodes[1].childNodes[0].value;
-			if (inputValue == ""){
+		// if the row is mandatory (optional field is a label "*") or if the row is optional and checked
+		if ((optionalField.tagName == "label") || (optionalField.tagName == "checkbox" && optionalField.checked)){
+			var inputTextbox = row.childNodes[1].childNodes[0];
+			var inputValue = inputTextbox.value;
+			if (inputValue == ""){//if the field is not filled
 				art_semanticturkey.Alert.alert("Field '" + userPrompt + "' cannot be empty, please provide a value");
 				return;
 			}
@@ -334,9 +415,11 @@ buttonOkListener = function(){
 	for (var i=0; i<map.length; i++){
 		art_semanticturkey.Logger.debug("key: " + map[i].key + ", value: " + map[i].value);
 	}
-	var crEntryId = window.arguments[0].crEntryXml.getAttribute("id");
 	try {
-		art_semanticturkey.STRequests.CustomRanges.runCoda(crEntryId, map);
+		var subject = window.arguments[0].subject;
+		var predicate = window.arguments[0].predicate;
+		var crEntryId = window.arguments[0].crEntryXml.getAttribute("id");
+		art_semanticturkey.STRequests.CODA.runCoda(subject, predicate, crEntryId, map);
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 	}
