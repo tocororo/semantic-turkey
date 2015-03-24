@@ -909,7 +909,9 @@ public class ResourceOld extends ServiceAdapter {
 			
 			//get, if requested, all the subProperty for the excluded properties
 			if(excludedPropList.size()>0 && excludeSubPropAsWell){
-				String selectQuery = "SELECT ?subPropToExclude"+
+				
+				// OLD
+				/*String selectQuery = "SELECT ?subPropToExclude"+
 						"\nWHERE {"+
 						"\n?subPropToExclude <"+RDFS.SUBPROPERTYOF+">* ?inputPropToExclude .";
 				boolean first = true;
@@ -923,6 +925,24 @@ public class ResourceOld extends ServiceAdapter {
 				}	
 				selectQuery += "\n)"+
 						"\n}";
+				*/
+				
+				String selectQuery = "SELECT ?subPropToExclude"+
+						"\nWHERE {";
+						
+				boolean isFirst = true;
+				for(String propToExlude : excludedPropList){
+					if(!isFirst){
+						selectQuery += "\nUNION ";
+					}
+					isFirst = false;
+					selectQuery += "\n{?subPropToExclude <"+RDFS.SUBPROPERTYOF+">* <"+propToExlude+"> . }";
+				}
+				
+				selectQuery += "\n}";
+				
+				
+				
 				logger.debug("selectQuery = "+selectQuery);
 				
 				TupleQuery tupleQuery = model.createTupleQuery(selectQuery);
