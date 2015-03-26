@@ -10,6 +10,8 @@ import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
 
 public class ResourceLocator {
+	public static final UnknownResourcePosition UNKNOWN_RESOURCE_POSITION = new UnknownResourcePosition();
+	
 	public static ResourcePosition locateResource(Project<?> project, ARTResource resource) throws ModelAccessException {
 		
 
@@ -21,7 +23,7 @@ public class ResourceLocator {
 		
 		RDFModel model = project.getOntModel();
 		
-		if (model.getDefaultNamespace() != null && model.getDefaultNamespace().equals(uriResource.getNamespace()) || model.existsResource(uriResource, NodeFilters.ANY)) {
+		if (model.getDefaultNamespace() != null && model.getDefaultNamespace().equals(uriResource.getNamespace()) || model.isLocallyDefined(uriResource, NodeFilters.ANY)) {
 			return new LocalResourcePosition(project);
 		}
 		
@@ -30,7 +32,7 @@ public class ResourceLocator {
 		if (meta != null) {
 			return new RemoteResourcePosition(meta);
 		} else {
-			return new UnknownResourcePosition();
+			return UNKNOWN_RESOURCE_POSITION;
 		}
 	}
 }

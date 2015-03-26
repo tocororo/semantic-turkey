@@ -33,39 +33,60 @@ function getPropertyTree(instanceQName, method) {
 }
 
 /**
- * gets the tree of all object properties in the ontology
+ * gets the tree of all object properties in the ontology. If specified, it only returns properties applicable to <code>instanceQName</code>
  * 
  * @member STRequests.Property
  * @return
  */
-function getObjPropertyTree() {
+function getObjPropertyTree(instanceQName) {
 	Logger.debug('[SERVICE_Property.jsm] getObjPropertyTree');
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.getObjPropertiesTreeRequest, contextAsArray);
+	
+	if (typeof instanceQName != "undefined") {
+		var instanceQName_p = "instanceQName=" + instanceQName;
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getObjPropertiesTreeRequest, instanceQName_p, contextAsArray);		
+	} else {
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getObjPropertiesTreeRequest, contextAsArray);		
+	}
 }
 
 /**
- * gets the tree of all datatype properties in the ontology
+ * gets the tree of all datatype properties in the ontology. If specified, it only returns properties applicable to <code>instanceQName</code>
  * 
  * @member STRequests.Property
  * @return
  */
-function getDatatypePropertiesTree() {
+function getDatatypePropertiesTree(instanceQName) {
 	Logger.debug('[SERVICE_Property.jsm] getDatatypePropertiesTree');
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.getDatatypePropertiesTreeRequest, contextAsArray);
+	
+	if (typeof instanceQName != "undefined") {
+		var instanceQName_p = "instanceQName=" + instanceQName;
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getDatatypePropertiesTreeRequest, instanceQName_p, contextAsArray);
+	} else {
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getDatatypePropertiesTreeRequest, contextAsArray);
+	}
 }
 
 /**
- * gets the tree of all annotation properties in the ontology
+ * gets the tree of all annotation properties in the ontology. If specified, it only returns properties applicable to <code>instanceQName</code>
  * 
  * @member STRequests.Property
  * @return
  */
-function getAnnotationPropertiesTree() {
+function getAnnotationPropertiesTree(instanceQName) {
 	Logger.debug('[SERVICE_Property.jsm] getAnnotationPropertiesTree');
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.getAnnotationPropertiesTreeRequest, contextAsArray);
+
+	if (typeof instanceQName != "undefined") {
+		var instanceQName_p = "instanceQName=" + instanceQName;
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getAnnotationPropertiesTreeRequest, instanceQName_p, contextAsArray);
+	} else {
+		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.getAnnotationPropertiesTreeRequest, contextAsArray);
+	}
 }
 
 /**

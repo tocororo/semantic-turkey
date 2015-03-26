@@ -29,6 +29,7 @@
 		src="chrome://semantic-turkey/content/property/propertyUtilities.js" />
 	<hbox flex="1">
 		<vbox flex="1" orient="vertical">
+			<checkbox label="Show all properties" id="checkAll" />
 			<tree hidecolumnpicker="true" id="propertiesTreePanel" flex="1"
 				context="clipmenu" seltype="single" class="PropertyTree">
 				<treecols width="1200">
@@ -55,6 +56,6 @@
 					</button>
 				</row>
 			</rows>
-		</grid>
+		</grid>		
 	</vbox>
 </window>

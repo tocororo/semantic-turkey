@@ -29,6 +29,31 @@ function getImageSrc(rdfRes, operation) {
 					src = "chrome://semantic-turkey/skin/images/class_imported.png";
 				else
 					src = "chrome://semantic-turkey/skin/images/class20x20.png";
+			} else if (role == "objectProperty") {
+				if (explicit == "false" || explicit == false)
+					src = "chrome://semantic-turkey/skin/images/propObject_imported.png";
+				else
+					src = "chrome://semantic-turkey/skin/images/propObject20x20.png";
+			} else if (role == "datatypeProperty") {
+				if (explicit == "false" || explicit == false)
+					src = "chrome://semantic-turkey/skin/images/propDatatype_imported.png";
+				else
+					src = "chrome://semantic-turkey/skin/images/propDatatype20x20.png";				
+			} else if (role == "annotationProperty") {
+				if (explicit == "false" || explicit == false)
+					src = "chrome://semantic-turkey/skin/images/propAnnotation_imported.png";
+				else
+					src = "chrome://semantic-turkey/skin/images/propAnnotation20x20.png";				
+			} else if (role == "ontologyProperty") {
+				if (explicit == "false" || explicit == false)
+					src = "chrome://semantic-turkey/skin/images/propOntology_imported.png";
+				else
+					src = "chrome://semantic-turkey/skin/images/propOntology20x20.png";				
+			} else if (role == "property") {
+				if (explicit == "false" || explicit == false)
+					src = "chrome://semantic-turkey/skin/images/prop_imported.png";
+				else
+					src = "chrome://semantic-turkey/skin/images/prop20x20.png";
 			}
 		} else if(operation == "remove"){
 			if (role == "concept") {
@@ -38,8 +63,19 @@ function getImageSrc(rdfRes, operation) {
 			} else if (role == "cls") {
 				src = "chrome://semantic-turkey/skin/images/class20x20.png";
 			}
+		} else if(operation == "add"){
+			if (role == "concept") {
+				src = "chrome://semantic-turkey/skin/images/skosC_create.png";
+			} else if (role == "individual") {
+				src = "chrome://semantic-turkey/skin/images/individual_add.png";
+			} else if (role == "cls") {
+				src = "chrome://semantic-turkey/skin/images/class_create.png";
+			} else if (role == "property") {
+				src = "chrome://semantic-turkey/skin/images/prop_create.png";
+			} else if (role == "conceptScheme") {
+				src = "chrome://semantic-turkey/skin/images/skosScheme_create.png"
+			}
 		}
-
 	} else if (rdfRes instanceof ARTLiteral) {
 		var lang = rdfRes.getLang();
 		if(typeof lang != "undefined" && lang != null && lang != "" ){

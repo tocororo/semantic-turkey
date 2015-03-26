@@ -1,5 +1,5 @@
 
-EXPORTED_SYMBOLS = ["ARTNode", "ARTLiteral", "ARTURIResource", "ARTBNode"];
+EXPORTED_SYMBOLS = ["ARTNode", "ARTLiteral", "ARTURIResource", "ARTBNode", "ARTPredicateObjects"];
 
 /********** ARTNode *******************/
 
@@ -152,3 +152,16 @@ ARTBNode = function(id, show){
 
 ARTBNode.prototype = new ARTNode();
 ARTBNode.constructor = ARTBNode;
+
+ARTPredicateObjects = function(predicate, objects) {
+
+	this.getPredicate = function() {
+		return predicate;
+	};
+
+	this.getObjects = function() {
+		return objects;
+	};
+
+};
+

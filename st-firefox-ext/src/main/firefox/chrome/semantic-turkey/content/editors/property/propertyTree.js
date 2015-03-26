@@ -23,38 +23,84 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stservices/SERVICE_Property.jsm",
 		art_semanticturkey);
+Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("cancel").addEventListener("command",
 			art_semanticturkey.onCancel, true);
 	document.getElementById("accept").addEventListener("command",
 			art_semanticturkey.onAccept, true);
-	try {
-		var responseXML;
-		if (window.arguments[0].type.toLowerCase().indexOf("objectproperty")!=-1) {	
-			responseXML = art_semanticturkey.STRequests.Property
-			.getObjPropertyTree();
-		} else if (window.arguments[0].type.toLowerCase().indexOf("datatypeproperty")!=-1) {
-			responseXML = art_semanticturkey.STRequests.Property
-			.getDatatypePropertiesTree();
-		} else if (window.arguments[0].type.toLowerCase().indexOf("annotationproperty")!=-1) {
-			responseXML = art_semanticturkey.STRequests.Property
-			.getAnnotationPropertyTree();
-		} else {
-			responseXML = art_semanticturkey.STRequests.Property.getPropertyTree();
-		}
-		art_semanticturkey.getPropertiesTreePanel_RESPONSE(responseXML);
-	}
-	catch (e) {
-		alert(e.name + ": " + e.message);
+
+	document.getElementById("checkAll").addEventListener("command",
+			art_semanticturkey.visualizeTree, true);
+
+	var forResource = window.arguments[0].forResource;
+
+	if (typeof forResource == "undefined") {
+		document.getElementById("checkAll").style.display = "none";
+		document.getElementById("checkAll").checked = true;
 	}
 
+	art_semanticturkey.visualizeTree();
 };
+
+art_semanticturkey.visualizeTree = function() {
+	var allPropertiesRequired = document.getElementById("checkAll").checked;
+
+	try {
+		var responseXML;
+
+		if (allPropertiesRequired) {
+			if (window.arguments[0].type.toLowerCase()
+					.indexOf("objectproperty") != -1) {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getObjPropertyTree();
+			} else if (window.arguments[0].type.toLowerCase().indexOf(
+					"datatypeproperty") != -1) {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getDatatypePropertiesTree();
+			} else if (window.arguments[0].type.toLowerCase().indexOf(
+					"annotationproperty") != -1) {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getAnnotationPropertiesTree();
+			} else {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getPropertyTree();
+			}
+			art_semanticturkey.getPropertiesTreePanel_RESPONSE(responseXML);
+		} else {
+			if (window.arguments[0].type.toLowerCase()
+					.indexOf("objectproperty") != -1) {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getObjPropertyTree(window.arguments[0].forResource);
+			} else if (window.arguments[0].type.toLowerCase().indexOf(
+					"datatypeproperty") != -1) {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getDatatypePropertiesTree(window.arguments[0].forResource);
+			} else if (window.arguments[0].type.toLowerCase().indexOf(
+					"annotationproperty") != -1) {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getAnnotationPropertiesTree(window.arguments[0].forResource);
+			} else {
+				responseXML = art_semanticturkey.STRequests.Property
+						.getPropertyTree(window.arguments[0].forResource);
+			}
+			art_semanticturkey.getPropertiesTreePanel_RESPONSE(responseXML);
+		}
+	} catch (e) {
+		art_semanticturkey.Alert.alert(e);
+	}
+};
+
 art_semanticturkey.getPropertiesTreePanel_RESPONSE = function(responseElement) {
 	var node = document.getElementById('rootPropertyTreePanelChildren');
+	while (node.lastChild != null) {
+		node.removeChild(node.lastChild);
+	}
+
 	var dataElement = responseElement.getElementsByTagName('data')[0];
 	var propertyList = dataElement.childNodes;
-	for ( var i = 0; i < propertyList.length; i++) {
+	for (var i = 0; i < propertyList.length; i++) {
 		if (propertyList[i].nodeType == 1) {
 			art_semanticturkey.parsingProperties(propertyList[i], node, true);
 		}
@@ -68,7 +114,7 @@ art_semanticturkey.onAccept = function() {
 		return;
 	}
 	var currentelement = tree.treeBoxObject.view
-	.getItemAtIndex(tree.currentIndex);
+			.getItemAtIndex(tree.currentIndex);
 	var myTreeSelectedProperty = currentelement.getAttribute("propertyName");
 	var treerow = currentelement.getElementsByTagName('treerow')[0];
 	var treecell = treerow.getElementsByTagName('treecell')[0];

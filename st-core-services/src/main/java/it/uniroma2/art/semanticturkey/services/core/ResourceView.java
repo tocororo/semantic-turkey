@@ -38,6 +38,8 @@ import it.uniroma2.art.owlart.models.LinkedDataResolver;
 import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.TripleQueryModelHTTPConnection;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
@@ -47,7 +49,6 @@ import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
@@ -59,8 +60,6 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
-import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -72,16 +71,28 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.rendering.RenderingOrchestrator;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.core.impl.BroaderStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.DomainsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.LexicalizationsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.OntologyImportsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.OtherPropertiesStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.PropertyFactesStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.RangesStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.impl.StatementCollector;
+import it.uniroma2.art.semanticturkey.services.core.impl.StatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.SubClassOfStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.SubPropertyOfStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.TopConceptsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.TypesStatementConsumer;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -101,10 +112,7 @@ import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Multimap;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -117,16 +125,67 @@ import com.google.common.collect.Multimap;
 public class ResourceView extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
+	
+	private Map<RDFResourceRolesEnum, List<StatementConsumer>> role2template;
 
+	private TypesStatementConsumer typesStatementConsumer;
+
+	private SubClassOfStatementConsumer subClassofStatementConsumer;
+
+	private LexicalizationsStatementConsumer lexicalizationsStatementConsumer;
+
+	private BroaderStatementConsumer broaderStatementConsumer;
+
+	private SubPropertyOfStatementConsumer subPropertyOfStatementConsumer;
+
+	private PropertyFactesStatementConsumer propertyFactesStatementConsumer;
+
+	private DomainsStatementConsumer domainsStatementConsumer;
+
+	private RangesStatementConsumer rangesStatementConsumer;
+
+	private TopConceptsStatementConsumer topConceptsStatementConsumer;
+
+	private OntologyImportsStatementConsumer ontologyImportsStatementConsumer;
+
+	private OtherPropertiesStatementConsumer otherPropertiesStatementConsumer;
+
+	public ResourceView() {
+		typesStatementConsumer = new TypesStatementConsumer();
+		subClassofStatementConsumer = new SubClassOfStatementConsumer();
+		lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer();
+		broaderStatementConsumer = new BroaderStatementConsumer();
+		subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer();
+		propertyFactesStatementConsumer = new PropertyFactesStatementConsumer();
+		domainsStatementConsumer = new DomainsStatementConsumer();
+		rangesStatementConsumer = new RangesStatementConsumer();
+		topConceptsStatementConsumer = new TopConceptsStatementConsumer();
+		ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer();
+		otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer();
+		
+		
+		role2template = new HashMap<RDFResourceRolesEnum, List<StatementConsumer>>();
+		role2template.put(RDFResourceRolesEnum.cls, Arrays.asList(typesStatementConsumer, subClassofStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.concept, Arrays.asList(typesStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.property, Arrays.asList(typesStatementConsumer, subPropertyOfStatementConsumer, lexicalizationsStatementConsumer, propertyFactesStatementConsumer, domainsStatementConsumer, rangesStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.conceptScheme, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, topConceptsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.ontology, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, ontologyImportsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.individual, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
+	}
+	
+	// TODO: implement a converter for ResourcePosition
 	@GenerateSTServiceController
-	public Response getResourceView(ARTResource resource) throws Exception {
+	public Response getResourceView(ARTResource resource, @Optional ResourcePosition resourcePosition) throws Exception {
 		OWLModel owlModel = getOWLModel();
 		ARTResource[] userNamedGraphs = getUserNamedGraphs();
 		ARTResource workingGraph = getWorkingGraph();
 
 		Project<? extends RDFModel> project = getProject();
 
-		ResourcePosition resourcePosition = ResourceLocator.locateResource(project, resource);
+		if (resourcePosition == null) {
+			resourcePosition = ResourceLocator.locateResource(project, resource);
+		}
+		
 		StatementCollector stmtCollector = new StatementCollector();
 
 		retrieveStatements(owlModel, resource, resourcePosition, stmtCollector);
@@ -140,7 +199,7 @@ public class ResourceView extends STServiceAdapter {
 		// A resource is editable iff it is a locally defined resource
 		boolean subjectResourceEditable = (resourcePosition instanceof LocalResourcePosition)
 				&& stmtCollector.hasStatement(resource, NodeFilters.ANY, NodeFilters.ANY,
-						NodeFilters.MAINGRAPH);
+						workingGraph);
 
 		STRDFResource stSubjectResource = STRDFNodeFactory.createSTRDFResource(resource,
 				RDFResourceRolesEnum.undetermined, subjectResourceEditable, null);
@@ -194,53 +253,9 @@ public class ResourceView extends STServiceAdapter {
 			stSubjectResource.setRole(subjectRole);
 		}
 
-		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource, subjectRole,
+		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource, resourcePosition, subjectRole,
 				stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
 
-		// ********************************************
-		// Step X : Populate other properties structure
-
-		Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new HashMap<ARTURIResource, STRDFResource>();
-		Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
-
-		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory.createPredicateObjectsList(
-				art2STRDFPredicates, resultPredicateObjectValues);
-
-		for (ARTStatement stmt : stmtCollector.getStatements()) {
-			Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-
-			if (!stmt.getSubject().equals(resource))
-				continue;
-
-			ARTURIResource pred = stmt.getPredicate();
-
-			if (STVocabUtilities.isHiddenResource(pred, getProject().getOntologyManager())) {
-				continue;
-			}
-
-			STRDFResource stPred = art2STRDFPredicates.get(pred);
-
-			if (stPred == null) {
-				stPred = STRDFNodeFactory.createSTRDFURI(pred,
-						resource2Role.containsKey(pred) ? resource2Role.get(pred)
-								: RDFResourceRolesEnum.property, true, owlModel.getQName(pred.getURI()));
-				art2STRDFPredicates.put(pred, stPred);
-			}
-
-			ARTNode obj = stmt.getObject();
-
-			STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(owlModel, obj, false,
-					graphs.contains(NodeFilters.MAINGRAPH), false);
-
-			if (stNode.isResource()) {
-				((STRDFResource) stNode).setRendering(resource2Rendering.get(obj));
-				((STRDFResource) stNode).setRole(resource2Role.get(obj));
-			}
-
-			stNode.setInfo("graphs", Joiner.on(",").join(graphs));
-
-			resultPredicateObjectValues.put(pred, stNode);
-		}
 
 		// ****************************************
 		// Step X : Produces the OLD-style response
@@ -258,11 +273,6 @@ public class ResourceView extends STServiceAdapter {
 			Element sectionElement = XMLHelp.newElement(dataElement, entry.getKey());
 			entry.getValue().appendToElement(sectionElement);
 		}
-
-		// Append the other properties
-
-		Element propertiesElement = XMLHelp.newElement(dataElement, "properties");
-		RDFXMLHelp.addPredicateObjectList(propertiesElement, predicateObjectsList);
 
 		return response;
 
@@ -292,308 +302,52 @@ public class ResourceView extends STServiceAdapter {
 		return result;
 	}
 
-	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource,
+	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource, ResourcePosition resourcePosition,
 			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering, Map<ARTResource, String> xLabel2LiteralForm)
 			throws DOMException, ModelAccessException {
 
-		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceView.ResourceViewSection>();
-
-		List<STRDFNode> types;
-
-		/*
-		 * Handle types
-		 */
-		{
-
-			Set<ARTStatement> typeStmts = stmtCollector
-					.getStatements(resource, RDF.Res.TYPE, NodeFilters.ANY);
-
-			types = new ArrayList<STRDFNode>();
-
-			for (ARTStatement stmt : typeStmts) {
-				Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-				STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-						resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
-						resource2Rendering.get(stmt.getObject()));
-				stRes.setInfo("graphs", Joiner.on(",").join(graphs));
-				types.add(stRes);
-			}
-
-			result.put("types", new NodeListSection(types));
-
-			// Remove the typing statements from the resource view
-			typeStmts.clear();
-
+		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
+		
+		for (StatementConsumer stmtConsumer : getTemplateForResourceRole(resourceRole)) {
+			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(getProject(), resource, resourcePosition, resourceRole, stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
+		
+			result.putAll(newResults);
 		}
-
-		/*
-		 * Handle supertypes
-		 */
-		{
-
-			Set<ARTStatement> superTypeStmts = null;
-
-			if (resourceRole == RDFResourceRolesEnum.cls) {
-				superTypeStmts = stmtCollector.getStatements(resource, RDFS.Res.SUBCLASSOF, NodeFilters.ANY);
-			} else if (RDFResourceRolesEnum.isProperty(resourceRole)) {
-				superTypeStmts = stmtCollector.getStatements(resource, RDFS.Res.SUBPROPERTYOF,
-						NodeFilters.ANY);
-			} else if (resourceRole == RDFResourceRolesEnum.concept) {
-				superTypeStmts = stmtCollector.getStatements(resource, SKOS.Res.BROADER, NodeFilters.ANY);
-			}
-
-			if (superTypeStmts != null) {
-				List<STRDFNode> superTypes = new ArrayList<STRDFNode>();
-
-				for (ARTStatement stmt : superTypeStmts) {
-					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
-							resource2Rendering.get(stmt.getObject()));
-					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
-					superTypes.add(stRes);
-				}
-
-				if (resourceRole == RDFResourceRolesEnum.cls) {
-					result.put("supertypes", new NodeListSection(superTypes));
-				} else if (resourceRole == RDFResourceRolesEnum.concept) {
-					result.put("broaders", new NodeListSection(superTypes));
-				} else {
-					result.put("superproperties", new NodeListSection(superTypes));
-				}
-				// Remove the super-typing statements from the resource view
-				superTypeStmts.clear();
-
-			}
-		}
-
-		/*
-		 * Handle lexicalizations
-		 */
-		{
-
-			Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
-			Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
-
-			PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
-					.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
-
-			for (ARTURIResource pred : Arrays.asList(RDFS.Res.LABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL,
-					SKOS.Res.HIDDENLABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL)) {
-				STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(pred,
-						resource2Role.containsKey(pred) ? resource2Role.get(pred) : pred.getNamespace()
-								.equals(SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
-								: RDFResourceRolesEnum.annotationProperty, true, getProject().getOntModel()
-								.getQName(pred.getURI()));
-				art2STRDFPredicates.put(pred, stPred);
-			}
-
-			Iterator<ARTStatement> stmtIt = stmtCollector.getStatements().iterator();
-
-			while (stmtIt.hasNext()) {
-				ARTStatement stmt = stmtIt.next();
-
-				Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-
-				if (!stmt.getSubject().equals(resource))
-					continue;
-
-				ARTURIResource pred = stmt.getPredicate();
-
-				STRDFResource stPred = art2STRDFPredicates.get(pred);
-
-				if (stPred == null)
-					continue;
-
-				ARTNode obj = stmt.getObject();
-
-				STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(getProject().getOntModel(), obj, false,
-						graphs.contains(NodeFilters.MAINGRAPH), false);
-
-				if (stNode.isResource()) {
-					RDFResourceRolesEnum role = resource2Role.get(obj);
-
-					STRDFResource stRes = (STRDFResource) stNode;
-
-					if (RDFResourceRolesEnum.xLabel == role) {
-						stRes.setRendering(xLabel2LiteralForm.get(obj));
-					} else {
-						stRes.setRendering(resource2Rendering.get(obj));
-					}
-					stRes.setRole(role);
-				}
-
-				stNode.setInfo("graphs", Joiner.on(",").join(graphs));
-
-				resultPredicateObjectValues.put(pred, stNode);
-				stmtIt.remove();
-			}
-
-			result.put("lexicalizations", new PredicateObjectsListSection(predicateObjectsList));
-		}
-
-		/*
-		 * Handle top concepts of SKOS concept schemes
-		 */
-		{
-			if (resourceRole == RDFResourceRolesEnum.conceptScheme) {
-				Set<ARTStatement> topConceptStmts = null;
-
-				topConceptStmts = stmtCollector.getStatements(resource, SKOS.Res.HASTOPCONCEPT,
-						NodeFilters.ANY);
-
-				List<STRDFNode> topConcepts = new ArrayList<STRDFNode>();
-
-				for (ARTStatement stmt : topConceptStmts) {
-					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
-							resource2Rendering.get(stmt.getObject()));
-					topConcepts.add(stRes);
-					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
-				}
-
-				result.put("topconcepts", new NodeListSection(topConcepts));
-
-				// Remove the top concept statements from the resource view
-				topConceptStmts.clear();
-
-			}
-		}
-
-		/*
-		 * Handle properties
-		 */
-		{
-			if (RDFResourceRolesEnum.isProperty(resourceRole)) {
-
-				boolean symmetric = false;
-				boolean symmetricExplicit = false;
-
-				boolean functional = false;
-				boolean functionalExplicit = false;
-
-				boolean inverseFunctional = false;
-				boolean inverseFunctionalExplicit = false;
-
-				boolean transitive = false;
-				boolean transitiveExplicit = false;
-
-				for (STRDFNode t : types) {
-					if (t.getARTNode().equals(OWL.Res.SYMMETRICPROPERTY)) {
-						symmetric = true;
-						symmetricExplicit = t.isExplicit();
-					} else if (t.getARTNode().equals(OWL.Res.FUNCTIONALPROPERTY)) {
-						functional = true;
-						functionalExplicit = t.isExplicit();
-					} else if (t.getARTNode().equals(OWL.Res.INVERSEFUNCTIONALPROPERTY)) {
-						inverseFunctional = true;
-						inverseFunctionalExplicit = t.isExplicit();
-					} else if (t.getARTNode().equals(OWL.Res.TRANSITIVEPROPERTY)) {
-						transitive = true;
-						transitiveExplicit = t.isExplicit();
-					}
-				}
-
-				Set<ARTStatement> inverseOfStmts = stmtCollector.getStatements(resource, OWL.Res.INVERSEOF,
-						NodeFilters.ANY);
-
-				List<STRDFNode> inverseOf = new ArrayList<STRDFNode>();
-
-				for (ARTStatement stmt : inverseOfStmts) {
-					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
-							resource2Rendering.get(stmt.getObject()));
-					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
-					inverseOf.add(stRes);
-				}
-
-				result.put("facets", new PropertyFacets(symmetric, symmetricExplicit, functional,
-						functionalExplicit, inverseFunctional, inverseFunctionalExplicit, transitive,
-						transitiveExplicit, inverseOf));
-
-				// Remove the inverse of statements from the resource view
-				inverseOfStmts.clear();
-
-				Set<ARTStatement> domainStmts = stmtCollector.getStatements(resource, RDFS.Res.DOMAIN,
-						NodeFilters.ANY);
-
-				List<STRDFNode> domains = new ArrayList<STRDFNode>();
-
-				for (ARTStatement stmt : domainStmts) {
-					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
-							resource2Rendering.get(stmt.getObject()));
-					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
-					domains.add(stRes);
-				}
-				domainStmts.clear();
-
-				minimizeDomainRanges(domains);
-
-				result.put("domains", new NodeListSection(domains));
-
-				Set<ARTStatement> rangeStmts = stmtCollector.getStatements(resource, RDFS.Res.RANGE,
-						NodeFilters.ANY);
-
-				List<STRDFNode> ranges = new ArrayList<STRDFNode>();
-
-				for (ARTStatement stmt : rangeStmts) {
-					Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-					STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-							resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
-							resource2Rendering.get(stmt.getObject()));
-					stRes.setInfo("graphs", Joiner.on(",").join(graphs));
-					ranges.add(stRes);
-				}
-				rangeStmts.clear();
-
-				minimizeDomainRanges(ranges);
-
-				result.put("ranges", new NodeListSection(ranges));
-
-			}
-
-			/*
-			 * Handle ontology imports
-			 */
-			{
-				if (resourceRole == RDFResourceRolesEnum.ontology) {
-					Set<ARTStatement> importStmts = stmtCollector.getStatements(resource, OWL.Res.IMPORTS,
-							NodeFilters.ANY);
-
-					List<STRDFNode> imports = new ArrayList<STRDFNode>();
-
-					for (ARTStatement stmt : importStmts) {
-						Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-
-						ARTNode obj = stmt.getObject();
-
-						if (obj.isURIResource()) {
-							STRDFURI stUri = STRDFNodeFactory.createSTRDFURI(obj.asURIResource(),
-									resource2Role.get(stmt.getObject()),
-									graphs.contains(NodeFilters.MAINGRAPH),
-									resource2Rendering.get(stmt.getObject()));
-							stUri.setInfo("graphs", Joiner.on(",").join(graphs));
-							imports.add(stUri);
-						}
-					}
-
-					importStmts.clear();
-
-					result.put("imports", new NodeListSection(imports));
-				}
-			}
-		}
-
+		
 		return result;
 	}
 
-	private void minimizeDomainRanges(List<STRDFNode> typeList) {
+	// TODO: implement a converter for ResourcePosition
+	@GenerateSTServiceController
+	public Response getLexicalizationProperties(@Optional ARTResource resource, @Optional ResourcePosition resourcePosition) throws ModelAccessException {
+		if (resourcePosition == null) {
+			resourcePosition = resource != null ? ResourceLocator.locateResource(getProject(), resource) : ResourceLocator.UNKNOWN_RESOURCE_POSITION;
+		}
+			
+		Collection<STRDFURI> lexicalizationProperties = STRDFNodeFactory.createEmptyURICollection();
+		for (ARTURIResource pred : getLexicalizationPropertiesHelper(resource, resourcePosition)) {
+			STRDFURI stPred = STRDFNodeFactory
+					.createSTRDFURI(
+							pred,
+							pred.getNamespace().equals(
+											SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
+											: RDFResourceRolesEnum.annotationProperty,
+							true,
+							getOWLModel().getQName(pred.getURI()));
+			lexicalizationProperties.add(stPred);
+		}
+
+		
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		RDFXMLHelp.addRDFNodes(response.getDataElement(), lexicalizationProperties);
+		
+		return response;
+	}
+	
+	// TODO place this method into a better place
+	public static void minimizeDomainRanges(List<STRDFNode> typeList) {
 		// @author starred
 		// TODO this should be replaced by an efficient procedure for producing the shortest number of ranges
 		// which are NOT in a hierarchical relationship among them has to be found. This can be complemented
@@ -626,6 +380,24 @@ public class ResourceView extends STServiceAdapter {
 			}
 
 		}
+	}
+	
+	// TODO place this method into a better place
+	public static List<ARTURIResource> getLexicalizationPropertiesHelper(ARTResource resource, ResourcePosition resourcePosition) throws ModelAccessException {
+		
+		if (resourcePosition instanceof LocalResourcePosition) {
+			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
+			RDFModel ontModel = hostingProject.getOntModel();
+			if (ontModel instanceof SKOSXLModel) {
+				return Arrays.asList(SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL);
+			} else if (ontModel instanceof SKOSModel) {
+				return Arrays.asList(SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL, SKOS.Res.HIDDENLABEL);
+			} else {
+				return Arrays.asList(RDFS.Res.LABEL);
+			}
+		}
+		
+		return Arrays.asList(RDFS.Res.LABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL, SKOS.Res.HIDDENLABEL);
 	}
 
 	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition, String gp)
@@ -767,99 +539,21 @@ public class ResourceView extends STServiceAdapter {
 			ProjectInconsistentException {
 		return PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 	}
-
-	private static interface ResourceViewSection {
-		void appendToElement(Element parent);
-	}
-
-	private static class PredicateObjectsListSection implements ResourceViewSection {
-
-		private PredicateObjectsList predicateObjectsList;
-
-		public PredicateObjectsListSection(PredicateObjectsList predicateObjectsList) {
-			this.predicateObjectsList = predicateObjectsList;
-		}
-
-		@Override
-		public void appendToElement(Element parent) {
-			RDFXMLHelp.addPredicateObjectList(parent, predicateObjectsList);
+	
+	private List<StatementConsumer> getTemplateForResourceRole(RDFResourceRolesEnum role) {
+		if (role.isProperty()) {
+			return role2template.get(RDFResourceRolesEnum.property);
+		} else if (role.isClass()) {
+			return role2template.get(RDFResourceRolesEnum.cls);
+		} else {
+			List<StatementConsumer> result = role2template.get(role);
+			
+			if (result != null) {
+				return result;
+			} else {
+				return role2template.get(RDFResourceRolesEnum.individual);
+			}
 		}
 	}
-
-	private static class NodeListSection implements ResourceViewSection {
-
-		private List<STRDFNode> nodeList;
-
-		public NodeListSection(List<STRDFNode> nodeList) {
-			this.nodeList = nodeList;
-		}
-
-		@Override
-		public void appendToElement(Element parent) {
-			RDFXMLHelp.addRDFNodes(parent, nodeList);
-		}
-	}
-
-	private static class PropertyFacets implements ResourceViewSection {
-
-		private boolean symmetric;
-		private boolean symmetricExplicit;
-
-		private boolean functional;
-		private boolean functionalExplicit;
-
-		private boolean inverseFunctional;
-		private boolean inverseFunctionalExplicit;
-
-		private boolean transitive;
-		private boolean transitiveExplicit;
-
-		private List<STRDFNode> inverseOf;
-
-		public PropertyFacets(boolean symmetric, boolean symmetricExplicit, boolean functional,
-				boolean functionalExplicit, boolean inverseFunctional, boolean inverseFunctionalExplicit,
-				boolean transitive, boolean transitiveExplicit, List<STRDFNode> inverseOf) {
-			this.symmetric = symmetric;
-			this.symmetricExplicit = symmetricExplicit;
-			this.functional = functional;
-			this.functionalExplicit = functionalExplicit;
-			this.inverseFunctional = inverseFunctional;
-			this.inverseFunctionalExplicit = inverseFunctionalExplicit;
-			this.transitive = transitive;
-			this.transitiveExplicit = transitiveExplicit;
-			this.inverseOf = inverseOf;
-		}
-
-		@Override
-		public void appendToElement(Element parent) {
-			if (symmetric) {
-				Element symmetricElement = XMLHelp.newElement(parent, "symmetric");
-				symmetricElement.setAttribute("value", "true");
-				symmetricElement.setAttribute("explicit", Boolean.toString(symmetricExplicit));
-			}
-
-			if (functional) {
-				Element functionalElement = XMLHelp.newElement(parent, "functional");
-				functionalElement.setAttribute("value", "true");
-				functionalElement.setAttribute("explicit", Boolean.toString(functionalExplicit));
-			}
-
-			if (inverseFunctional) {
-				Element functionalElement = XMLHelp.newElement(parent, "inverseFunctional");
-				functionalElement.setAttribute("value", "true");
-				functionalElement.setAttribute("explicit", Boolean.toString(inverseFunctionalExplicit));
-			}
-
-			if (transitive) {
-				Element functionalElement = XMLHelp.newElement(parent, "transitive");
-				functionalElement.setAttribute("value", "true");
-				functionalElement.setAttribute("explicit", Boolean.toString(transitiveExplicit));
-			}
-
-			Element inverseOfElement = XMLHelp.newElement(parent, "inverseof");
-			RDFXMLHelp.addRDFNodes(inverseOfElement, inverseOf);
-		}
-
-	}
-
+	
 }

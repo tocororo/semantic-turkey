@@ -12,7 +12,10 @@ Components.utils.import("resource://stservices/SERVICE_SKOSXL.jsm", art_semantic
 Components.utils.import("resource://stservices/SERVICE_ResourceView.jsm", art_semanticturkey);
 
 Components.utils.import("resource://stmodules/Deserializer.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
+
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/STResUtils.jsm", art_semanticturkey);
 
 if (typeof art_semanticturkey.resourceView == "undefined") {
 	art_semanticturkey.resourceView = {};
@@ -173,6 +176,22 @@ art_semanticturkey.resourceView.partitions.internal.wrapPojoHandler = function(p
 	if (typeof obj.render == "undefined") {
 		obj.render = art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender;
 	}
+	
+	if (typeof obj.addTooltiptext == "undefined") {
+		obj.addTooltiptext = "Add";
+	}
+
+	if (typeof obj.addIcon == "undefined") {
+		var stereotypicalRole;
+		
+		if (typeof obj["addIcon|fromRole"] != "undefined") {
+			stereotypicalRole = obj["addIcon|fromRole"];
+		} else {
+			stereotypicalRole = obj.expectedContentType == "predicateObjectsList" ? "property" : "individual";
+		}
+		
+		obj.addIcon = art_semanticturkey.STResUtils.getImageSrc(new art_semanticturkey.ARTURIResource("foo", stereotypicalRole, "http://foo.it"), "add")
+	}
 
 	return obj;
 };
@@ -198,9 +217,10 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 	var operations = [];
 
 	if (addSupported) {
-		partitionButton = document.createElement("button");
-		partitionButton.setAttribute("label", "add");
+		partitionButton = document.createElement("toolbarbutton");
+		partitionButton.setAttribute("tooltiptext", this.addTooltiptext);
 		partitionButton.setAttribute("disabled", "" + (!editable));
+		partitionButton.setAttribute("image", this.addIcon);
 		partitionCaption.appendChild(partitionButton);
 		partitionButton.setAttribute("st-partitionName", partitionName);
 		operations.push("add");
@@ -335,81 +355,102 @@ art_semanticturkey.resourceView.partitions
 				"lexicalizations",
 				{
 					"partitionLabel" : "Lexicalizations",
-					"expectedContentType" : "objectList",
+					"expectedContentType" : "predicateObjectsList",
+					"addTooltiptext" : "Add a lexicalization",
+//					"addTooltiptext|http://www.w3.org/2000/01/rdf-schema#label" : "Add an RDFS label",
+//					"addTooltiptext|http://www.w3.org/2004/02/skos/core#prefLabel" : "Add a SKOS preferred label",
+//					"addTooltiptext|http://www.w3.org/2004/02/skos/core#altLabel" : "Add a SKOS alternative label",
+//					"addTooltiptext|http://www.w3.org/2004/02/skos/core#hiddenLabel" : "Add a SKOS hidden label",
+//					"addTooltiptext|http://www.w3.org/2008/05/skos-xl#prefLabel" : "Add a SKOS-XL preferred label",
+//					"addTooltiptext|http://www.w3.org/2008/05/skos-xl#altLabel" : "Add a SKOS-XL alternative label",
+//					"addTooltiptext|http://www.w3.org/2008/05/skos-xl#hiddenLabel" : "Add a SKOS-XL hidden label",
+
 					"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) {
-						if (typeof rdfPredicate != "undefined") {
-							var predURI = rdfPredicate.getURI();
-
-							const
-							supportedProps = [ "http://www.w3.org/2000/01/rdf-schema#label",
-									"http://www.w3.org/2004/02/skos/core#prefLabel",
-									"http://www.w3.org/2004/02/skos/core#altLabel",
-									"http://www.w3.org/2004/02/skos/core#hiddenLabel",
-									"http://www.w3.org/2008/05/skos-xl#prefLabel",
-									"http://www.w3.org/2008/05/skos-xl#altLabel",
-									"http://www.w3.org/2008/05/skos-xl#hiddenLabel" ];
-
+						if (typeof rdfPredicate == "undefined") {
+							
 							var parameters = {};
+							parameters.resource = rdfSubject.getNominalValue();
+							parameters.out = {};
+							
+							window.openDialog("lexicalizationPropertyChooser/lexicalizationPropertyChooser.xul", "dlg",
+									"chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+							
+							if (typeof parameters.out.chosenProperty == "undefined") {
+								return;
+							}
+							
+							rdfPredicate = parameters.out.chosenProperty;
+						}
+						
+						var predURI = rdfPredicate.getURI();
 
-							parameters.winTitle = "Add " + rdfPredicate.getShow() + " Lexicalization";
-							parameters.action = function(label, lang) {
+						const
+						supportedProps = [ "http://www.w3.org/2000/01/rdf-schema#label",
+								"http://www.w3.org/2004/02/skos/core#prefLabel",
+								"http://www.w3.org/2004/02/skos/core#altLabel",
+								"http://www.w3.org/2004/02/skos/core#hiddenLabel",
+								"http://www.w3.org/2008/05/skos-xl#prefLabel",
+								"http://www.w3.org/2008/05/skos-xl#altLabel",
+								"http://www.w3.org/2008/05/skos-xl#hiddenLabel" ];
 
-								try {
-									switch (predURI) {
-									case "http://www.w3.org/2004/02/skos/core#prefLabel":
-										art_semanticturkey.STRequests.SKOS.setPrefLabel(rdfSubject.getURI(),
-												label, lang);
-										break;
-									case "http://www.w3.org/2004/02/skos/core#altLabel":
-										art_semanticturkey.STRequests.SKOS.addAltLabel(rdfSubject.getURI(),
-												label, lang);
-										break;
-									case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
-										art_semanticturkey.STRequests.SKOS.addHiddenLabel(
-												rdfSubject.getURI(), label, lang);
-										break;
+						var parameters = {};
 
-									case "http://www.w3.org/2008/05/skos-xl#prefLabel":
-										art_semanticturkey.STRequests.SKOSXL.setPrefLabel(
-												rdfSubject.getURI(), label, lang, "bnode");
-										break;
-									case "http://www.w3.org/2008/05/skos-xl#altLabel":
-										art_semanticturkey.STRequests.SKOSXL.addAltLabel(rdfSubject.getURI(),
-												label, lang, "bnode");
-										break;
-									case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
-										art_semanticturkey.STRequests.SKOSXL.addHiddenLabel(rdfSubject
-												.getURI(), label, lang, "bnode");
-										break;
-									case "http://www.w3.org/2000/01/rdf-schema#label":
-										art_semanticturkey.STRequests.Property.createAndAddPropValue(
-												rdfSubject.getURI(), predURI, label, null, "plainLiteral",
-												lang);
-										break;
-									}
+						parameters.winTitle = "Add " + rdfPredicate.getShow() + " Lexicalization";
+						parameters.action = function(label, lang) {
 
-									art_semanticturkey.resourceView.refreshView();
-								} catch (e) {
-									art_semanticturkey.Alert.alert(e);
+							try {
+								switch (predURI) {
+								case "http://www.w3.org/2004/02/skos/core#prefLabel":
+									art_semanticturkey.STRequests.SKOS.setPrefLabel(rdfSubject.getURI(),
+											label, lang);
+									break;
+								case "http://www.w3.org/2004/02/skos/core#altLabel":
+									art_semanticturkey.STRequests.SKOS.addAltLabel(rdfSubject.getURI(),
+											label, lang);
+									break;
+								case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
+									art_semanticturkey.STRequests.SKOS.addHiddenLabel(
+											rdfSubject.getURI(), label, lang);
+									break;
+
+								case "http://www.w3.org/2008/05/skos-xl#prefLabel":
+									art_semanticturkey.STRequests.SKOSXL.setPrefLabel(
+											rdfSubject.getURI(), label, lang, "bnode");
+									break;
+								case "http://www.w3.org/2008/05/skos-xl#altLabel":
+									art_semanticturkey.STRequests.SKOSXL.addAltLabel(rdfSubject.getURI(),
+											label, lang, "bnode");
+									break;
+								case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
+									art_semanticturkey.STRequests.SKOSXL.addHiddenLabel(rdfSubject
+											.getURI(), label, lang, "bnode");
+									break;
+								case "http://www.w3.org/2000/01/rdf-schema#label":
+									art_semanticturkey.STRequests.Property.createAndAddPropValue(
+											rdfSubject.getURI(), predURI, label, null, "plainLiteral",
+											lang);
+									break;
 								}
-							};
-							parameters.oncancel = false;
 
-							if (typeof window.arguments != "undefined"
-									&& typeof window.arguments[0] != "undefined") {
-								parameters.skos = window.arguments[0].skos;
+								art_semanticturkey.resourceView.refreshView();
+							} catch (e) {
+								art_semanticturkey.Alert.alert(e);
 							}
+						};
+						parameters.oncancel = false;
 
-							if (supportedProps.indexOf(predURI) != -1) {
-								window
-										.openDialog(
-												"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
-												"_blank", "modal=yes,resizable,centerscreen", parameters);
-							} else {
-								alert("Unsupported predicate type");
-							}
+						if (typeof window.arguments != "undefined"
+								&& typeof window.arguments[0] != "undefined") {
+							parameters.skos = window.arguments[0].skos;
+						}
+
+						if (supportedProps.indexOf(predURI) != -1) {
+							window
+									.openDialog(
+											"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
+											"_blank", "modal=yes,resizable,centerscreen", parameters);
 						} else {
-							alert("Choose lexicalization property");
+							alert("Unsupported predicate type");
 						}
 					},
 					"onRemove" : function(rdfSubject, rdfPredicate, rdfObject) {
@@ -430,7 +471,22 @@ art_semanticturkey.resourceView.partitions
 						case "http://www.w3.org/2008/05/skos-xl#prefLabel":
 						case "http://www.w3.org/2008/05/skos-xl#altLabel":
 						case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
-							alert("TO BE IMPLEMENTED");
+							// TODO: this is just an hack!!
+							var renderizedLabel = rdfObject.getShow();
+							var re = /(.*)\s\((.*)\)/;
+							var m = renderizedLabel.match(re);
+							
+							var label = m[1];
+							var lang = m[2];
+							
+							if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#prefLabel") {
+								art_semanticturkey.STRequests.SKOSXL.removePrefLabel(rdfSubject.getURI(), label, lang);
+							} else if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#altLabel") {
+								art_semanticturkey.STRequests.SKOSXL.removeAltLabel(rdfSubject.getURI(), label, lang);
+							} else {
+								art_semanticturkey.STRequests.SKOSXL.removeHiddenLabel(rdfSubject.getURI(), label, lang);
+							}
+							
 							break;
 						case "http://www.w3.org/2000/01/rdf-schema#label":
 							art_semanticturkey.STRequests.Property.removePropValue(rdfSubject.getNominalValue(),	rdfPredicate.getNominalValue(), rdfObject.getLabel(), null, "plainLiteral", rdfObject.getLang());
@@ -441,44 +497,6 @@ art_semanticturkey.resourceView.partitions
 					}
 				});
 
-art_semanticturkey.ARTPredicateObjects = function(predicate, objects) {
-
-	this.getPredicate = function() {
-		return predicate;
-	};
-
-	this.getObjects = function() {
-		return objects;
-	};
-
-};
-
-art_semanticturkey.Deserializer.createPredicateObjectsList = function(element) {
-	if (element.tagName != "collection") {
-		new Error("Not a collection");
-	}
-
-	var elements = element.children;
-
-	var result = [];
-
-	for (var i = 0; i < elements.length; i++) {
-		var el = elements[i];
-
-		if (el.tagName != "predicateObjects")
-			continue;
-
-		var predicate = art_semanticturkey.Deserializer
-				.createRDFNode(el.getElementsByTagName("predicate")[0].children[0]);
-		var objects = art_semanticturkey.Deserializer.createRDFArray(el.getElementsByTagName("objects")[0]);
-
-		var predicateObjects = new art_semanticturkey.ARTPredicateObjects(predicate, objects);
-		result.push(predicateObjects);
-	}
-
-	return result;
-};
-
 window.addEventListener("load", art_semanticturkey.resourceView.init, true);
 
 art_semanticturkey.resourceView.partitions
@@ -487,6 +505,7 @@ art_semanticturkey.resourceView.partitions
 				{
 					"partitionLabel" : "Properties",
 					"expectedContentType" : "predicateObjectsList",
+					"addTooltiptext" : "Add a property value",
 					"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) { // Based on sources by
 						// NScarpato
 						var predicateName;
@@ -500,6 +519,8 @@ art_semanticturkey.resourceView.partitions
 							parameters.oncancel = false;
 							parameters.source = "AddNewProperty";
 							parameters.type = "All";
+							parameters.forResource = rdfSubject.getNominalValue();
+							
 							window.openDialog(
 									"chrome://semantic-turkey/content/editors/property/propertyTree.xul",
 									"_blank", "modal=yes,resizable,centerscreen", parameters);
@@ -664,6 +685,8 @@ art_semanticturkey.resourceView.partitions
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("types", {
 	"partitionLabel" : "Types",
 	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a type",
+	"addIcon|fromRole" : "cls",
 	"onAdd" : function(rdfSubject) { // Based on sources by
 		// NScarpato
 		var parameters = {};
@@ -718,6 +741,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("types", {
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("supertypes", {
 	"partitionLabel" : "Supertypes",
 	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a super-type",
+	"addIcon|fromRole" : "cls",
 	"onAdd" : function(rdfSubject) { // Based on sources by
 		// NScarpato
 		var parameters = {};
@@ -763,6 +788,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("supertypes"
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("superproperties", {
 	"partitionLabel" : "Superproperties",
 	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a super-property",
+	"addIcon|fromRole" : "cls",
 	"onAdd" : function(rdfSubject) { // Based on sources by
 		// NScarpato
 		var parameters = {};
@@ -794,6 +821,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("superproper
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("domains", {
 	"partitionLabel" : "Domains",
 	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a domain",
+	"addIcon|fromRole" : "cls",
 	"onAdd" : function(rdfSubject) { // Based on sources by
 		// NScarpato
 
@@ -829,7 +858,9 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("domains", {
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("ranges", {
 	"partitionLabel" : "Ranges",
+	"addTooltiptext" : "Add a range",
 	"expectedContentType" : "objectList",
+	"addIcon|fromRole" : "cls",
 	"onAdd" : function(rdfSubject) { // Based on sources by
 		// NScarpato
 
@@ -877,6 +908,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("ranges", {
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("broaders", {
 	"partitionLabel" : "Broaders",
 	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a broader concept",
+	"addIcon|fromRole" : "concept",
 	"onAdd" : function(rdfSubject) {
 		var parameters = {};
 		parameters.conceptScheme = "*"; // TODO which concept scheme?
@@ -908,6 +941,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("broaders", 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("topconcepts", {
 	"partitionLabel" : "Top Concepts",
 	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a top concept",
+	"addIcon|fromRole" : "concept",
 	"onAdd" : function(rdfSubject) {
 		var parameters = {};
 		parameters.conceptScheme = "*"; // TODO which concept scheme?

@@ -324,6 +324,10 @@ public class STRDFNodeFactory {
 		return new ArrayList<STRDFNode>();
 	}
 
+	public static Collection<STRDFURI> createEmptyURICollection() {
+		return new ArrayList<STRDFURI>();
+	}
+
 	/*
 	 * public static Collection<STRDFURIImpl> createSTRDFURICollection(RDFModel model, ARTURIResourceIterator
 	 * it, RDFResourceRolesEnum role, boolean explicit) { Collection<STRDFURIImpl> uris = new

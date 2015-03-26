@@ -5,6 +5,7 @@ import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 
 import java.util.Map.Entry;
@@ -66,7 +67,7 @@ public class StatementCollector {
 
 	public boolean hasStatement(ARTResource subj, ARTURIResource pred, ARTNode obj, ARTResource graph) {
 		for (ARTStatement stmt : Collections2.filter(getStatements(), StatementWithAnyOfGivenComponents_Predicate.getFilter(subj, pred, obj))) {
-			if (getGraphsFor(stmt).contains(graph)) {
+			if (NodeFilters.ANY.equals(graph) || getGraphsFor(stmt).contains(graph)) {
 				return true;
 			}
 		}

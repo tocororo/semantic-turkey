@@ -1,0 +1,71 @@
+package it.uniroma2.art.semanticturkey.services.core.impl;
+
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+
+import java.util.List;
+
+import org.w3c.dom.Element;
+
+public class PropertyFacets implements ResourceViewSection {
+
+	private boolean symmetric;
+	private boolean symmetricExplicit;
+
+	private boolean functional;
+	private boolean functionalExplicit;
+
+	private boolean inverseFunctional;
+	private boolean inverseFunctionalExplicit;
+
+	private boolean transitive;
+	private boolean transitiveExplicit;
+
+	private List<STRDFNode> inverseOf;
+
+	public PropertyFacets(boolean symmetric, boolean symmetricExplicit, boolean functional,
+			boolean functionalExplicit, boolean inverseFunctional, boolean inverseFunctionalExplicit,
+			boolean transitive, boolean transitiveExplicit, List<STRDFNode> inverseOf) {
+		this.symmetric = symmetric;
+		this.symmetricExplicit = symmetricExplicit;
+		this.functional = functional;
+		this.functionalExplicit = functionalExplicit;
+		this.inverseFunctional = inverseFunctional;
+		this.inverseFunctionalExplicit = inverseFunctionalExplicit;
+		this.transitive = transitive;
+		this.transitiveExplicit = transitiveExplicit;
+		this.inverseOf = inverseOf;
+	}
+
+	@Override
+	public void appendToElement(Element parent) {
+		if (symmetric) {
+			Element symmetricElement = XMLHelp.newElement(parent, "symmetric");
+			symmetricElement.setAttribute("value", "true");
+			symmetricElement.setAttribute("explicit", Boolean.toString(symmetricExplicit));
+		}
+
+		if (functional) {
+			Element functionalElement = XMLHelp.newElement(parent, "functional");
+			functionalElement.setAttribute("value", "true");
+			functionalElement.setAttribute("explicit", Boolean.toString(functionalExplicit));
+		}
+
+		if (inverseFunctional) {
+			Element functionalElement = XMLHelp.newElement(parent, "inverseFunctional");
+			functionalElement.setAttribute("value", "true");
+			functionalElement.setAttribute("explicit", Boolean.toString(inverseFunctionalExplicit));
+		}
+
+		if (transitive) {
+			Element functionalElement = XMLHelp.newElement(parent, "transitive");
+			functionalElement.setAttribute("value", "true");
+			functionalElement.setAttribute("explicit", Boolean.toString(transitiveExplicit));
+		}
+
+		Element inverseOfElement = XMLHelp.newElement(parent, "inverseof");
+		RDFXMLHelp.addRDFNodes(inverseOfElement, inverseOf);
+	}
+
+}

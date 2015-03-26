@@ -14,6 +14,8 @@
 			<field name="labelValue" />
 			<field name="rdfResourcesArray" />
 			<field name="addRemoveButton" />
+			<field name="forceList" />
+			
 			<constructor>
 				<![CDATA[
 					const OBJECT_COUNT_TRESHOLD = 5;
@@ -33,7 +35,7 @@
 					
 					if(typeof this.rdfResourcesArray != "undefined"){
 						maindOLWbox.setAttribute("flex", "1");
-						if(this.rdfResourcesArray.length >= OBJECT_COUNT_TRESHOLD){
+						if(this.rdfResourcesArray.length >= OBJECT_COUNT_TRESHOLD || (typeof this.forceList != "undefined" && this.forceList == true)){
 							//create the buttons
 							if(typeof this.addRemoveButton == "undefined" || this.addRemoveButton == true ){
 							var button = document.createElement("button");
@@ -86,10 +88,11 @@
 			<method name="getSelectedRDFResource">
 				<body>
 				<![CDATA[
-					if(typeof this.rdfResourcesArray == "undefined" || this.rdfResourcesArray.length<5)
-						return null;
 					var richlistbox =  document.getAnonymousElementByAttribute(this, "anonid", 
 								"mainOLWboxId").getElementsByTagName("richlistbox")[0];
+				
+					if(typeof this.rdfResourcesArray == "undefined" || richlistbox == null)
+						return null;
 					var richListItem = richlistbox.selectedItem;
 					var selectedBox = richListItem.getElementsByTagName("box")[0];
 					return selectedBox.rdfResource;

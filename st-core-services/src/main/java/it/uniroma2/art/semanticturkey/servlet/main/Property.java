@@ -27,6 +27,7 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.filter.BaseRDFPropertyPredicate;
+import it.uniroma2.art.owlart.filter.NoLanguageResourcePredicate;
 import it.uniroma2.art.owlart.filter.RootPropertiesResourcePredicate;
 import it.uniroma2.art.owlart.filter.SubPropertyOf_Predicate;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
@@ -43,6 +44,7 @@ import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.navigation.RDFIterator;
 import it.uniroma2.art.owlart.navigation.RDFIteratorImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFTypesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
@@ -65,6 +67,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +80,7 @@ import org.w3c.dom.Element;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 
 /**
  * This services handles requests regarding property management and assignment of values to properties of
@@ -184,33 +188,38 @@ public class Property extends ResourceOld {
 				String requestName = Req.getPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, true, true, true, true, true, inference, excludedProps);
+				String instanceQName = setHttpPar(Par.instanceQNamePar);
+				return getPropertyTree(requestName, true, true, true, true, true, inference, excludedProps, instanceQName);
 			} else if (request.equals(Req.getPlainRDFPropertiesRequest)) {
 				String requestName = Req.getPlainRDFPropertiesRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, true, false, false, false, false, inference, excludedProps);
+				String instanceQName = setHttpPar(Par.instanceQNamePar);
+				return getPropertyTree(requestName, true, false, false, false, false, inference, excludedProps, instanceQName);
 			} else if (request.equals(Req.getObjPropertiesTreeRequest)) {
 				String requestName = Req.getObjPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, false, true, false, false, false, inference, excludedProps);
+				String instanceQName = setHttpPar(Par.instanceQNamePar);
+				return getPropertyTree(requestName, false, true, false, false, false, inference, excludedProps, instanceQName);
 				//return getPropertyTree(requestName, true, true, false, false, false, inference, excludedProps);
 			} else if (request.equals(Req.getDatatypePropertiesTreeRequest)) {
 				String requestName = Req.getDatatypePropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, false, false, true, false, false, inference, excludedProps);
+				String instanceQName = setHttpPar(Par.instanceQNamePar);
+				return getPropertyTree(requestName, false, false, true, false, false, inference, excludedProps, instanceQName);
 			} else if (request.equals(Req.getAnnotationPropertiesTreeRequest)) {
 				String requestName = Req.getAnnotationPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, false, false, false, true, false, inference, excludedProps);
+				String instanceQName = setHttpPar(Par.instanceQNamePar);
+				return getPropertyTree(requestName, false, false, false, true, false, inference, excludedProps, instanceQName);
 			} else if (request.equals(Req.getOntologyPropertiesTreeRequest)) {
 				String requestName = Req.getOntologyPropertiesTreeRequest;
 				boolean inference = setHttpBooleanPar(Par.inferencePar, true);
 				String excludedProps = setHttpPar(Par.excludedProps);
-				return getPropertyTree(requestName, false, false, false, false, true, inference, excludedProps);
+				return getPropertyTree(requestName, false, false, false, false, true, inference, excludedProps, null);
 			}
 
 			// PROPERTY DESCRIPTION METHOD
@@ -450,12 +459,12 @@ public class Property extends ResourceOld {
 	 * @return Response tree
 	 */
 	public Response getPropertyTree(String requestName, boolean props, boolean objprops, boolean datatypeprops,
-			boolean annotationprops, boolean ontologyprops, boolean inference, String excludedProps) {
+			boolean annotationprops, boolean ontologyprops, boolean inference, String excludedProps, String instanceQName) {
 		OWLModel ontModel = getOWLModel();
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
 				requestName, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-
+	
 		Predicate<ARTResource> exclusionPredicate;
 		// if (Config.isAdminStatus()) exclusionPredicate = NoLanguageResourcePredicate.nlrPredicate;
 		// else exclusionPredicate = DomainResourcePredicate.domResPredicate;
@@ -466,6 +475,24 @@ public class Property extends ResourceOld {
 		Predicate<ARTURIResource> rootUserPropsPred = Predicates.and(new RootPropertiesResourcePredicate(
 				ontModel), exclusionPredicate);
 
+		ARTResource instanceResource = null;
+		Set<ARTResource> relevantDomains = null;
+		
+		try {
+			if (instanceQName != null) {
+				instanceResource = retrieveExistingResource(ontModel, instanceQName);
+				
+				try (ARTResourceIterator typesIt = ontModel.listTypes(instanceResource, true)) {
+					Predicate<ARTResource> typesFilter = NoLanguageResourcePredicate.nlrPredicate;
+					typesFilter = Predicates.and(typesFilter, NoSystemResourcePredicate.getPredicate(getProject()));
+
+					relevantDomains = Sets.newHashSet(Iterators.filter(typesIt, typesFilter));
+				}
+			}
+		} catch (NonExistingRDFResourceException | ModelAccessException e) {
+			return logAndSendException(e);
+		}
+		
 		Iterator<ARTURIResource> filteredPropsIterator;
 
 		try {
@@ -483,7 +510,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root object properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:ObjectProperty", excludedPropSet);
+							"owl:ObjectProperty", excludedPropSet, relevantDomains);
 			}
 
 			// DATATYPE PROPERTIES
@@ -493,7 +520,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root datatype properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:DatatypeProperty", excludedPropSet);
+							"owl:DatatypeProperty", excludedPropSet, relevantDomains);
 			}
 
 			// ANNOTATION PROPERTIES
@@ -503,7 +530,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root annotation properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:AnnotationProperty", excludedPropSet);
+							"owl:AnnotationProperty", excludedPropSet, relevantDomains);
 			}
 
 			// ONTOLOGY PROPERTIES
@@ -513,7 +540,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root annotation properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:OntologyProperty", excludedPropSet);
+							"owl:OntologyProperty", excludedPropSet, relevantDomains);
 			}
 
 			// PlainRDF PROPERTIES
@@ -526,7 +553,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root rdf:properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"rdf:Property", excludedPropSet);
+							"rdf:Property", excludedPropSet, relevantDomains);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getPropertiesTreeRequest, e);
@@ -549,9 +576,21 @@ public class Property extends ResourceOld {
 	 * @throws DOMException
 	 **/
 	void recursiveCreatePropertiesXMLTree(OWLModel ontModel, ARTURIResource property, Element element,
-			String type, HashSet<String> excludedPropSet) throws DOMException, ModelAccessException {
+			String type, HashSet<String> excludedPropSet, Set<ARTResource> relevantDomains) throws DOMException, ModelAccessException {
 		if (excludedPropSet.contains(property.getURI()))
 			return;
+		
+		if (relevantDomains != null) {
+			Set<ARTResource> propertyDomains = RDFIterators.getSetFromIterator(ontModel.listPropertyDomains(property, true));
+			
+			if (Sets.intersection(relevantDomains, propertyDomains).isEmpty()) {
+				return;
+			}
+			
+			relevantDomains = null; // all subproperties are relevant
+		}
+
+		
 		logger.trace("\t" + property);
 		ServletUtilities servletUtilities = new ServletUtilities();
 		Element propElement = XMLHelp.newElement(element, "Property");
@@ -567,7 +606,7 @@ public class Property extends ResourceOld {
 		Element subPropertiesElem = XMLHelp.newElement(propElement, "SubProperties");
 		while (subPropertiesIterator.hasNext()) {
 			ARTURIResource subProp = subPropertiesIterator.next();
-			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type, excludedPropSet);
+			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type, excludedPropSet, relevantDomains);
 		}
 	}
 

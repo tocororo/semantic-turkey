@@ -141,6 +141,30 @@ function createPropertyValue(response){
 	return propertyElement.getAttribute('value');
 } 
 
+function createPredicateObjectsList(element) {
+	if (element.tagName != "collection") {
+		new Error("Not a collection");
+	}
+
+	var elements = element.children;
+
+	var result = [];
+
+	for (var i = 0; i < elements.length; i++) {
+		var el = elements[i];
+
+		if (el.tagName != "predicateObjects")
+			continue;
+
+		var predicate = createRDFNode(el.getElementsByTagName("predicate")[0].children[0]);
+		var objects = createRDFArray(el.getElementsByTagName("objects")[0]);
+
+		var predicateObjects = new ARTPredicateObjects(predicate, objects);
+		result.push(predicateObjects);
+	}
+
+	return result;
+};
 
 
 Deserializer.createRDFArray = createRDFArray;
@@ -151,3 +175,4 @@ Deserializer.createLiteral = createLiteral;
 Deserializer.createRDFNode = createRDFNode;
 Deserializer.createRDFResource = createRDFResource;
 Deserializer.createPropertyValue = createPropertyValue;
+Deserializer.createPredicateObjectsList = createPredicateObjectsList;
