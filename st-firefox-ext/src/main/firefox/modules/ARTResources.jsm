@@ -145,7 +145,7 @@ ARTBNode = function(id, show){
 	};
 
 	this.getShow = function() {
-		return show || thus.toNT();
+		return show || this.toNT();
 	};
 
 };
