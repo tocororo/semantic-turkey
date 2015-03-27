@@ -2,7 +2,7 @@
 
 <features>
 
-	<repository>mvn:it.uniroma2.art.coda/coda-karaf/1.1-SNAPSHOT/xml/features</repository>
+	<repository>mvn:it.uniroma2.art.coda/coda-karaf/${coda.version}/xml/features</repository>
 	
 	<feature name="semantic_prereq" version="${project.version}">
 
@@ -16,7 +16,7 @@
 		<bundle>mvn:org.apache.commons/com.springsource.org.apache.commons.fileupload/1.2.0</bundle>
 
 		<!-- Owlart -->
-		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/2.3-SNAPSHOT</bundle>
+		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/${owlart-api.version}</bundle>
 		
 		<!-- CODA -->
 		<feature>coda</feature>

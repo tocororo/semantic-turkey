@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>semanticturkey</artifactId>
-		<version>0.11</version>
+		<version>0.12-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>st-core-services</artifactId>
@@ -31,11 +31,6 @@
 			<organizationUrl>http://art.uniroma2.it</organizationUrl>
 		</developer>
 	</developers>
-
-
-	<properties>
-		<spring.version>3.2.4.RELEASE</spring.version>
-	</properties>
 
 	<dependencies>
 		<dependency>
