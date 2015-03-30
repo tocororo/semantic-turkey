@@ -9,9 +9,12 @@
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/testCR.js" />
 	
 	<hbox align="center">
+		<label value="subject"/>
+		<textbox id="subjectTxt" value="http://baseuri.org#concept"/>
 		<label value="property"/>
 		<textbox id="propertyTxt" value="skos:definition"/>
-		<button id="btn" label="test enrich property" />
+		<button id="enrichPropBtn" label="test enrich property" />
+		<button id="readPropBtn" label="test read property" />
 	</hbox>
 
 </window>

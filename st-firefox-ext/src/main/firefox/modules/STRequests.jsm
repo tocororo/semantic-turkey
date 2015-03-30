@@ -32,7 +32,7 @@ STRequests.Cls = function(){};
 /**
  * @class
  */
-STRequests.CODA = function(){};
+STRequests.CustomRanges = function(){};
 /**
  * @class
  */
@@ -145,9 +145,15 @@ STRequests.Cls.getSubClassesRequest = "getSubClasses";
 STRequests.Cls.getSuperClassesRequest = "getSuperClasses";
 STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTree";
 
-STRequests.CODA.serviceName = "CODA";
-STRequests.CODA.runCodaRequest = "runCoda";
-STRequests.CODA.executeURIConverterRequest = "executeURIConverter";
+STRequests.CustomRanges.serviceName = "CustomRanges";
+STRequests.CustomRanges.runCodaRequest = "runCoda";
+STRequests.CustomRanges.executeURIConverterRequest = "executeURIConverter";
+STRequests.CustomRanges.getReifiedResDescriptionRequest = "getReifiedResDescription";
+STRequests.CustomRanges.hasCustomRangeRequest = "hasCustomRange";
+STRequests.CustomRanges.getCustomRangeConfigMapRequest = "getCustomRangeConfigMap"; 
+STRequests.CustomRanges.getCustomRangeRequest = "getCustomRange";
+STRequests.CustomRanges.getCustomRangeEntryRequest = "getCustomRangeEntry";
+STRequests.CustomRanges.getCustomRangeEntriesRequest = "getCustomRangeEntries";
 
 //Refactor service Request (old service name was ModifyName)
 STRequests.Refactor.serviceName = "Refactor";
@@ -421,7 +427,6 @@ STRequests.Resource.removePropertyValueRequest = "removePropertyValue";
 //ResourceView service request
 STRequests.ResourceView.serviceName = "ResourceView";
 STRequests.ResourceView.getResourceViewRequest = "getResourceView";
-STRequests.ResourceView.getLexicalizationPropertiesRequest = "getLexicalizationProperties";
 
 //XMLSchema service request
 STRequests.XMLSchema.serviceName = "XMLSchema";

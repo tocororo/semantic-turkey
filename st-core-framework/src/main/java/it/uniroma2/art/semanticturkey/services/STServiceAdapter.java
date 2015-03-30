@@ -116,5 +116,9 @@ public class STServiceAdapter implements STService {
 	protected XMLResponseREPLY createReplyFAIL(String message) {
 		return servletUtilities.createReplyFAIL(stServiceContext.getRequest().getServiceMethod(), message);
 	}
+	
+	protected XMLResponseREPLY createBooleanResponse(boolean resp) {
+		return servletUtilities.createBooleanResponse(stServiceContext.getRequest().getServiceMethod(), resp);
+	}
 
 }

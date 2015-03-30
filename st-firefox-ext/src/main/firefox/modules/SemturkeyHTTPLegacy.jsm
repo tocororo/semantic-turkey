@@ -112,6 +112,7 @@ SemTurkeyHTTPLegacy = new function() {
 				}
 			}
 		}
+		Logger.debug("ST HTTP POST: "+aURL); // DEBUG
 		return this.submitHTTPRequest(realRespType, aURL, "POST", false, parameters);
 	};
 
@@ -153,6 +154,7 @@ SemTurkeyHTTPLegacy = new function() {
 				}
 			}
 		}
+		Logger.debug("ST HTTP GET: "+aURL); // DEBUG
 		return this.submitHTTPRequest(realRespType, aURL, "GET", false);
 	};
 
@@ -170,7 +172,7 @@ SemTurkeyHTTPLegacy = new function() {
 	
 	this.submitHTTPRequest = function(respType, aURL, method, async, parameters) {
 		// Logger.debug("httpRequest: " + method + ": " + aURL + "| async:" + async + " parameters: " + parameters + " port: " + serverport);
-		Logger.debug(aURL);
+//		Logger.debug(aURL);
 
 		var httpReq;
 		// NScarpato add try/catch block for BridgeComponents

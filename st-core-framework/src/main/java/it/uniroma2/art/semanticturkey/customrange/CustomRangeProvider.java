@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
+import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
 import it.uniroma2.art.semanticturkey.resources.Config;
 
 import java.io.File;
@@ -12,9 +13,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -22,28 +20,48 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-/**
- * This class is a provider of CustomRange. 
- * @author Tiziano Lorenzetti
- *
+/*
+ * This class should be used as Autowired (singleton scoped) component, because its initialization 
+ * is an heavy process so, this should be automatically initialized by Karaf at the start. 
  */
 @Component
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CustomRangeProvider {
 	
 	private static final String CUSTOM_RANGE_CONFIG_FILENAME = "customRangeConfig.xml";
 	private static final String CUSTOM_RANGE_FOLDER_NAME = "customRange";
 	private static final String CUSTOM_RANGE_ENTRY_FOLDER_NAME = "customRangeEntry";
 	
-	public static final String CR_MODE_UNION = "union";
-	public static final String CR_MODE_OVERRIDE = "override";
-	
-	private CustomRangeConfigXMLReader customRangeConfig; //contains the mapping between property and CustomRange
+	private Collection<CustomRangeConfigEntry> crConfig;
+	private Collection<CustomRange> crList;
+	private Collection<CustomRangeEntry> creList;
 	
 	public CustomRangeProvider() {
-		String crConfigFilePath = getCustomRangeFolder().getPath() + File.separator + CUSTOM_RANGE_CONFIG_FILENAME;
-		File crConfigFile = new File(crConfigFilePath);
-		customRangeConfig = new CustomRangeConfigXMLReader(crConfigFile);
+		//initialize config
+		CustomRangeConfigXMLReader crConfReader = new CustomRangeConfigXMLReader();
+		crConfig = crConfReader.getCustomRangeConfigEntries();
+		//initialize CR list (load files from CR folder)
+		crList = new ArrayList<CustomRange>();
+		File[] crFiles = getCustomRangeFolder().listFiles();
+		for (File f : crFiles){
+			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange"))
+				crList.add(new CustomRange(f));
+		}
+		//initialize CRE list (load files from CRE folder)
+		creList = new ArrayList<CustomRangeEntry>();
+		File[] creFiles = getCustomRangeEntryFolder().listFiles();
+		for (File f : creFiles){
+			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.entry")){
+				try {
+					creList.add(CustomRangeEntryFactory.createCustomRangeEntry(f));
+				} catch (CustomRangeInitializationException e) {
+					//TODO nel log scrivere che non è stato inizializzato il CRE del file f
+				}
+			}
+		}
+	}
+	
+	public Collection<CustomRangeConfigEntry> getCustomRangeConfig(){
+		return crConfig;
 	}
 	
 	/**
@@ -52,38 +70,115 @@ public class CustomRangeProvider {
 	 * @throws FileNotFoundException 
 	 * @throws IOException 
 	 */
-	public Collection<CustomRange> loadCustomRanges() {
-		Collection<CustomRange> customRanges = new ArrayList<CustomRange>();
-		File[] crFiles = getCustomRangeFolder().listFiles();//get list of files into custom range folder
-		for (File f : crFiles){//search for the custom range files
-			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange")){
-				customRanges.add(new CustomRange(f));
-			}
-		}
-		return customRanges;
+	public Collection<CustomRange> getAllCustomRanges() {
+		return crList;
+	}
+	
+	/**
+	 * Returns all the CustomRangeEntry available into the custom range entry folder of the project
+	 * @return
+	 * @throws FileNotFoundException 
+	 * @throws IOException 
+	 */
+	public Collection<CustomRangeEntry> getAllCustomRangeEntries() {
+		return creList;
 	}
 	
 	/**
 	 * Given a property returns the CustomRange associated to that property. <code>null</code> if no
 	 * custom range is specified for that property.
-	 * @param property
+	 * @param propertyUri
 	 * @return
 	 * @throws FileNotFoundException 
 	 * @throws IOException 
 	 */
-	public CustomRange loadCustomRange(String property) {
-		String customRangeId = customRangeConfig.getCustomRangeId(property);
-		if (customRangeId != null){ //custom range of the given property specified in customRangeConfig
-			File crFolder = CustomRangeProvider.getCustomRangeFolder();
-			File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
-			for (File f : crFiles){//search for the custom range file with the given name
-				if (f.getName().equals(customRangeId+".xml")){
-					return new CustomRange(f);
-				}
-			} 
-			//message to warn that custom range with the specified "customRangeId" has not be found in customRange folder ?? 
+	public CustomRange getCustomRangeForProperty(String propertyUri) {
+		for (CustomRangeConfigEntry crcEntry : crConfig){
+			if (crcEntry.getProperty().equals(propertyUri))
+				return crcEntry.getCutomRange();
 		}
 		return null;
+	}
+	
+	/**
+	 * Returns all the CustomRangeEntry for the given property
+	 * @param propertyUri
+	 * @return
+	 */
+	public Collection<CustomRangeEntry> getCustomRangeEntriesForProperty(String propertyUri){
+		CustomRange cr = getCustomRangeForProperty(propertyUri);
+		return cr.getEntries();
+	}
+	
+	/**
+	 * Returns all the CustomRangeEntryGraph for the given property
+	 * @param propertyUri
+	 * @return
+	 */
+	public Collection<CustomRangeEntryGraph> getCustomRangeEntriesGraphForProperty(String propertyUri){
+		Collection<CustomRangeEntryGraph> creGraph = new ArrayList<CustomRangeEntryGraph>();
+		CustomRange cr = getCustomRangeForProperty(propertyUri);
+		for (CustomRangeEntry cre : cr.getEntries()){
+			if (cre.isTypeGraph())
+				creGraph.add(cre.asCustomRangeEntryGraph());
+		}
+		return creGraph;
+	}
+	
+	/**
+	 * Returns all the CustomRangeEntryNode for the given property
+	 * @param propertyUri
+	 * @return
+	 */
+	public Collection<CustomRangeEntryNode> getCustomRangeEntriesNodeForProperty(String propertyUri){
+		Collection<CustomRangeEntryNode> creNode = new ArrayList<CustomRangeEntryNode>();
+		CustomRange cr = getCustomRangeForProperty(propertyUri);
+		for (CustomRangeEntry cre : cr.getEntries()){
+			if (cre.isTypeNode())
+				creNode.add(cre.asCustomRangeEntryNode());
+		}
+		return creNode;
+	}
+	
+	/**
+	 * Returns the CustomRange with the given ID. <code>null</code> if there is no CR with that id.
+	 * @param crEntryId
+	 * @return
+	 */
+	public CustomRange getCustomRangeById(String crId){
+		for (CustomRange cr : crList){
+			if (cr.getId().equals(crId)){
+				return cr;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns the CustomRangeEntry with the given ID
+	 * @param crEntryId
+	 * @return
+	 */
+	public CustomRangeEntry getCustomRangeEntryById(String crEntryId){
+		for (CustomRangeEntry cre : creList){
+			if (cre.getId().equals(crEntryId)){
+				return cre;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Tells whether a CustomRange exists or not for the given property 
+	 * @param propertyUri
+	 * @return
+	 */
+	public boolean existsCustomRangeForProperty(String propertyUri){
+		for (CustomRangeConfigEntry crcEntry : crConfig){
+			if (crcEntry.getProperty().equals(propertyUri))
+				return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -91,18 +186,22 @@ public class CustomRangeProvider {
 	 * <code>union</code>). <code>mode</code> can assume two different values: <code>union</code> or
 	 * <code>override</code> and tells if the CustomRange should be joined in the legacy getRange
 	 * response or it should override it.
-	 * @param property
+	 * @param propertyUri
 	 * @return
 	 */
-	public String getResponseMode(String property){
-		return customRangeConfig.getResponseMode(property);
+	public boolean getReplaceRanges(String propertyUri){
+		for (CustomRangeConfigEntry crcEntry : crConfig){
+			if (crcEntry.getProperty().equals(propertyUri))
+				return crcEntry.getReplaceRange();
+		}
+		return false;
 	}
 	
 	/**
 	 * Returns the CustomRange folder, located under SemanticTurkeyData/ folder
 	 * @return
 	 */
-	public static File getCustomRangeFolder(){
+	protected static File getCustomRangeFolder(){
 		return new File(Config.getDataDir() + File.separator + CUSTOM_RANGE_FOLDER_NAME);
 	}
 	
@@ -110,28 +209,29 @@ public class CustomRangeProvider {
 	 * Returns the CustoRangeEntry folder, located under SemanticTurkeyData/custoRange/ folder
 	 * @return
 	 */
-	public static File getCustomRangeEntryFolder(){
+	protected static File getCustomRangeEntryFolder(){
 		return new File(getCustomRangeFolder() + File.separator + CUSTOM_RANGE_ENTRY_FOLDER_NAME);
 	}
-
 	
 	
 	private class CustomRangeConfigXMLReader {
 		
-		private Document doc;
-		
 		private static final String CONFIG_ENTRY_TAG = "configEntry";
 		private static final String PROPERTY_ATTRIBUTE_TAG = "property";
-		private static final String MODE_ATTRIBUTE_TAG = "responseMode";
+		private static final String REPLACE_RANGES_ATTRIBUTE_TAG = "replaceRanges";
 		private static final String ID_ATTRIBUTE_TAG = "idCustomRange";
+		
+		private Document doc;
 		
 		/**
 		 * Initialize the reader for the given file. If the file doesn't exists, no Exception will
 		 * be thrown.
 		 * @param crConfigFile
 		 */
-		public CustomRangeConfigXMLReader(File crConfigFile){
+		public CustomRangeConfigXMLReader(){
 			try {
+				String crConfigFilePath = CustomRangeProvider.getCustomRangeFolder().getPath() + File.separator + CUSTOM_RANGE_CONFIG_FILENAME;
+				File crConfigFile = new File(crConfigFilePath);
 				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 				if (crConfigFile.exists()){
@@ -143,13 +243,8 @@ public class CustomRangeProvider {
 			}
 		}
 		
-		/**
-		 * Returns the id of the customRange related to the given property
-		 * @param property
-		 * @return
-		 */
-		public String getCustomRangeId(String property){
-			String crId = null;
+		public Collection<CustomRangeConfigEntry> getCustomRangeConfigEntries() {
+			Collection<CustomRangeConfigEntry> crcEntries = new ArrayList<CustomRangeConfigEntry>();
 			if (doc != null){
 				NodeList entryList = doc.getElementsByTagName(CONFIG_ENTRY_TAG);
 				for (int i=0; i<entryList.getLength(); i++){
@@ -157,49 +252,21 @@ public class CustomRangeProvider {
 					if (crNode.getNodeType() == Node.ELEMENT_NODE) {
 						Element crElement = (Element) crNode;
 						String crProp = crElement.getAttribute(PROPERTY_ATTRIBUTE_TAG);
-						if (crProp.equals(property)){
-							crId = crElement.getAttribute(ID_ATTRIBUTE_TAG);
-							break;
+						String crId = crElement.getAttribute(ID_ATTRIBUTE_TAG);
+						boolean replace = Boolean.parseBoolean(crElement.getAttribute(REPLACE_RANGES_ATTRIBUTE_TAG));
+						try {
+							CustomRange cr = new CustomRange(crId);
+							crcEntries.add(new CustomRangeConfigEntry(crProp, cr, replace));
+						} catch (CustomRangeInitializationException e) {
+							//TODO testare
+							System.out.println("CR with id " + crId + " was not found");
 						}
 					}
 				}
 			}
-			return crId;
-		}
-		
-		/**
-		 * Returns the mode of the customRange related to the given property. <code>mode</code> can
-		 * assume two different values: <code>union</code> (default) or <code>override</code> and tells
-		 * if the CustomRange should be joined in the legacy getRange response or it should override it.
-		 * @param property
-		 * @return
-		 */
-		public String getResponseMode(String property){
-			String mode = null;
-			if (doc != null){
-				NodeList entryList = doc.getElementsByTagName(CONFIG_ENTRY_TAG);
-				for (int i=0; i<entryList.getLength(); i++){
-					Node entryNode = entryList.item(i);
-					if (entryNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element crElement = (Element) entryNode;
-						String crProp = crElement.getAttribute(PROPERTY_ATTRIBUTE_TAG);
-						if (crProp.equals(property)){
-							mode = crElement.getAttribute(MODE_ATTRIBUTE_TAG);
-							break;
-						}
-					}
-				}
-			}
-			//if mode is not specified, or it is an invalid value, return "union", otherwise return
-			//the specified value
-			if (mode == null) {
-				return CR_MODE_UNION;
-			} else if (mode.equals(CR_MODE_OVERRIDE) || mode.equals(CR_MODE_UNION)) {
-				return mode;
-			} else {
-				return CR_MODE_UNION;
-			}
+			return crcEntries;
 		}
 
 	}
+
 }

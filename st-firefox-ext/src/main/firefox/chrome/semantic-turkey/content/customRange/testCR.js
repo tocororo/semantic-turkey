@@ -4,15 +4,12 @@ if (typeof art_semanticturkey == 'undefined')
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Property.jsm", art_semanticturkey);
 
-var subject;
-
 window.onload = function() {
-	document.getElementById("btn").addEventListener("command", buttonListener, false);
-	subject = "http://baseuri.org#concept"; //TODO taken so just in this case
-	
+	document.getElementById("enrichPropBtn").addEventListener("command", enrichPropListener, false);
+	document.getElementById("readPropBtn").addEventListener("command", readPropListener, false);
 }
 
-buttonListener = function(){
+enrichPropListener = function(){
 	predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
 	var xmlResp = art_semanticturkey.STRequests.Property.getRange(predicate, "false");
 	
@@ -67,10 +64,18 @@ buttonListener = function(){
 	}
 }
 
+readPropListener = function(){
+	var parameters = {};
+	parameters.subject = document.getElementById("subjectTxt").value;//TODO taken so just in this case
+	parameters.predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
+	window.openDialog("chrome://semantic-turkey/content/customRange/fakeResourceView.xul",
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+}
+
 customRangeLaunch = function(crEntryXml){
 	var parameters = {};
 	parameters.crEntryXml = crEntryXml;
-	parameters.subject = subject;
+	parameters.subject = document.getElementById("subjectTxt").value;//TODO taken so just in this case
 	parameters.predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
 	window.openDialog("chrome://semantic-turkey/content/customRange/customForm.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
@@ -81,7 +86,7 @@ classicRangesLaunch = function(rangesXml){
 	parameters.predicate = document.getElementById("propertyTxt").value;//TODO taken so just in this case
 	parameters.winTitle = "Add Property Value";
 	parameters.action = "createAndAddPropValue";
-	parameters.subject = subject;
+	parameters.subject = document.getElementById("subjectTxt").value;//TODO taken so just in this case
 	parameters.parentWindow = window;
 	parameters.oncancel = false;
 	

@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
+import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,7 +30,6 @@ import org.xml.sax.SAXException;
  */
 public class CustomRange {
 
-	private File customRangeFile;
 	private String id;
 	private Collection<CustomRangeEntry> entries; //range entries associated to the CustomRange instance
 	
@@ -36,56 +37,56 @@ public class CustomRange {
 	 * Constructor that given the CustomRange id, searches the CustomRange file and loads its content 
 	 * @param customRangeId
 	 * @throws FileNotFoundException 
+	 * @throws CustomRangeInitializationException 
 	 */
-	public CustomRange(String customRangeId) throws FileNotFoundException {
+	public CustomRange(String customRangeId) throws CustomRangeInitializationException {
+		File customRangeFile = null;
 		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
 		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
 		for (File f : crFiles){//search for the custom range file with the given name
 			if (f.getName().equals(customRangeId+".xml")){
-				this.customRangeFile = f;
+				customRangeFile = f;
 				break;
 			}
 		}
 		if (customRangeFile == null){
-			throw new FileNotFoundException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
+			throw new CustomRangeInitializationException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
 		}
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
 		this.id = crReader.getId();
-		loadEntries();
+		loadEntries(customRangeFile);
 	}
 	
 	/**
 	 * Constructor that given the CustomRange file loads its content
 	 * @param customRangeName something like it.uniroma2.art.semanticturkey.customrange.reifiedNotes.xml
 	 * @param projectFolderPath
+	 * @throws CustomRangeInitializationException 
 	 * @throws FileNotFoundException 
 	 */
 	public CustomRange(File customRangeFile) {
-		this.customRangeFile = customRangeFile;
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
 		this.id = crReader.getId();
-		loadEntries();
+		loadEntries(customRangeFile);
 	}
 	
-	private void loadEntries() {
+	private void loadEntries(File customRangeFile) {
 		entries = new ArrayList<CustomRangeEntry>();
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
 		Collection<String> creIdList = crReader.getCustomRangeEntries();
 		File creFolder = CustomRangeProvider.getCustomRangeEntryFolder();
 		File[] creFiles = creFolder.listFiles();//get list of files into custom range entry folder
 		for (String creId : creIdList){
-			CustomRangeEntry cre = null;
 			for (File f : creFiles){//search for the CustomRangeEntry file with the given name
 				if (f.getName().equals(creId+".xml")){
-					cre = new CustomRangeEntry(f);
+					try {
+						CustomRangeEntry cre = CustomRangeEntryFactory.createCustomRangeEntry(f);
+						entries.add(cre);
+					} catch (CustomRangeInitializationException e) {
+						// TODO Log per avvertire che il CRE con ID creId non è stato inizializzato
+					}
 					break;
 				}
-			}
-			//add the CustomRangeEntry only if its file is found
-			if (cre != null){
-				entries.add(cre);
-			} else {
-				//message to warn that the CustomRangeEntry with the specified "creId" has not been found  ??
 			}
 		}
 	}

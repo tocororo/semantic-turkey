@@ -2,7 +2,7 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
 Components.utils.import("resource://stservices/SERVICE_XMLSchema.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_CODA.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_CustomRanges.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
@@ -156,7 +156,7 @@ createUriInput = function(formEntryXml){
 
 convert = function(converter, value){
 	try{
-		var xmlResp = art_semanticturkey.STRequests.CODA.executeURIConverter(converter, value);
+		var xmlResp = art_semanticturkey.STRequests.CustomRanges.executeURIConverter(converter, value);
 		return xmlResp.getElementsByTagName("value")[0].textContent;
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
@@ -419,7 +419,7 @@ buttonOkListener = function(){
 		var subject = window.arguments[0].subject;
 		var predicate = window.arguments[0].predicate;
 		var crEntryId = window.arguments[0].crEntryXml.getAttribute("id");
-		art_semanticturkey.STRequests.CODA.runCoda(subject, predicate, crEntryId, map);
+		art_semanticturkey.STRequests.CustomRanges.runCoda(subject, predicate, crEntryId, map);
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 	}

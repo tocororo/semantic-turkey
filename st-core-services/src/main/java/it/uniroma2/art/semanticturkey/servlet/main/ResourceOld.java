@@ -27,6 +27,7 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
+import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
@@ -59,7 +60,6 @@ import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.navigation.RDFIterator;
-import it.uniroma2.art.owlart.query.Binding;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindings;
@@ -72,8 +72,8 @@ import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
+import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeCODAManager;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.customrange.UserPromptStruct;
@@ -109,8 +109,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -138,6 +136,11 @@ public class ResourceOld extends ServiceAdapter {
 	protected ArrayList<Predicate<ARTResource>> basePropertyPruningPredicates;
 
 	protected ArrayList<ARTURIResource> bannedPredicatesForResourceDescription;
+	
+	@Autowired
+	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
+	@Autowired
+	private CustomRangeProvider crProvider;
 
 	@Autowired
 	public ResourceOld(@Value("Resource") String id) {
@@ -161,8 +164,6 @@ public class ResourceOld extends ServiceAdapter {
 
 	public static final String langTag = "lang";
 	
-	@Autowired
-	private ObjectFactory<CustomRangeCODAManager> crCODAMgrProvider;
 	
 	public static class Req {
 		public static final String getPropertyValuesRequest = "getPropertyValues";
@@ -1551,8 +1552,7 @@ public class ResourceOld extends ServiceAdapter {
 	}
 	
 	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
-		CustomRangeProvider provider = new CustomRangeProvider();
-		CustomRange cr = provider.loadCustomRange(property.getURI());
+		CustomRange cr = crProvider.getCustomRangeForProperty(property.getURI());
 		if (cr == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
@@ -1572,12 +1572,12 @@ public class ResourceOld extends ServiceAdapter {
 			refElem.setTextContent(crEntry.getRef());
 			
 			//inject form map
-			CustomRangeCODAManager crCodaMgr = crCODAMgrProvider.getObject();
-
 			Element formElem = XMLHelp.newElement(crEntryElem, "form");
 			try{
 				ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-				List<UserPromptStruct> form = crCodaMgr.getForm(getOWLModel(), ontFact, crEntry);
+				CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
+				codaCore.initialize(getOWLModel(), ontFact);
+				Collection<UserPromptStruct> form = crEntry.getForm(codaCore);
 				if (!form.isEmpty()){
 					for (UserPromptStruct formEntry : form){
 						Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
@@ -1605,11 +1605,10 @@ public class ResourceOld extends ServiceAdapter {
 	
 	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
 			boolean visualization, boolean minimize) throws ModelAccessException, NonExistingRDFResourceException {
-		CustomRangeProvider provider = new CustomRangeProvider();
-		String mode = provider.getResponseMode(property.getURI());
-		if (mode.equals(CustomRangeProvider.CR_MODE_OVERRIDE)){
+		boolean replace = crProvider.getReplaceRanges(property.getURI());
+		if (replace){
 			injectCustomRangeXML(property, treeElement);
-		} else { //mode = "union"
+		} else {
 			//classic range
 			injectClassicRangeXML(ontModel, property, treeElement, visualization, minimize);
 			//custom range
