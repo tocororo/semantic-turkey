@@ -57,8 +57,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	/**
-	 * Returns a list of predicates contained in the CustomRangeEntry with the given id.
-	 * The returned predicates are only the predicate associated to the graph entry.
+	 * Returns a list (without duplicates) of predicates contained in the pearl of the CustomRangeEntryGraph.
 	 * @param codaCore an instance of CODACore already initialized, used to parse and retrieve
 	 * necessary information from PEARL code.
 	 * @param onlyShowable tells if the returned collection should contain all the predicate or just
@@ -87,7 +86,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 					if (gs.getSubject().getValueAsString().equals(graphEntry)){
 						GraphSingleElement predGraphElem = gs.getPredicate();
 						if (predGraphElem instanceof GraphSingleElemUri){
-							predicates.add(((GraphSingleElemUri) predGraphElem).getURI());
+							String pred = ((GraphSingleElemUri) predGraphElem).getURI();
+							if (!predicates.contains(pred)){//prevent duplicates
+								predicates.add(pred);
+							}
 						}
 					}
 				} else { //g.isOptionalGraphStruct
@@ -99,7 +101,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 							if (gs.getSubject().getValueAsString().equals(graphEntry)){
 								GraphSingleElement predGraphElem = gs.getPredicate();
 								if (predGraphElem instanceof GraphSingleElemUri){
-									predicates.add(((GraphSingleElemUri) predGraphElem).getURI());
+									String pred = ((GraphSingleElemUri) predGraphElem).getURI();
+									if (!predicates.contains(pred)){//prevent duplicates
+										predicates.add(pred);
+									}
 								}
 							}
 						} //2nd level optional graph are not considered.
@@ -180,7 +185,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
 			ann.setFeatureValue(userPromptFeature, userPromptFS);
 			aCAS.addFsToIndexes(ann);
-			analyseCas(aCAS);
+//			analyseCas(aCAS);
 			//run coda with the given pearl and the cas just created.
 			System.out.println("pearl:\t" + getRef());
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
@@ -240,7 +245,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			//finally add to the main annotation a feature named "userPrompt" of the type just created
 			annotationType.addFeature(USER_PROMPT_FEATURE_NAME, "", userPromptType.getName());
 		}
-		describeTSD(tsd);
+//		describeTSD(tsd);
 		return tsd;
 	}
 	

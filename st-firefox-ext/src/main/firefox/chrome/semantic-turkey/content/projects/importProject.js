@@ -24,8 +24,7 @@ art_semanticturkey.onAccept = function() {
 	try{
 		window.arguments[0].parentWindow.art_semanticturkey.closeProject();
 		var responseXML = art_semanticturkey.STRequests.Projects.importProject(
-				srcLocalFile,
-				projectName);
+				new File(srcLocalFile),	projectName);
 		art_semanticturkey.importProject_RESPONSE(responseXML, projectName);
 	}
 	catch (e) {

@@ -187,11 +187,12 @@ function exportProject(projectName, exportPackage) {	//NEW
  */
 function importProject(importPackage, newProjectName) { // new 
 	Logger.debug('[SERVICE_Projects.jsm] importProject');
-	var importPackage = "importPackage=" + importPackage;
-	var newProjectName = "newProjectName=" + newProjectName;
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+    	.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("importPackage", importPackage);
+	formData.append("newProjectName", newProjectName);
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	return currentSTHttpMgr.GET(null, serviceName, service.importProjectRequest, this.context, 
-			importPackage, newProjectName);
+	currentSTHttpMgr.POST(null, serviceName, service.importProjectRequest, this.context, formData);
 }
 
 /**

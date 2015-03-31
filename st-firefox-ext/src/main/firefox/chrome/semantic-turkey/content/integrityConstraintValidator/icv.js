@@ -15,7 +15,6 @@ art_semanticturkey.init = function() {
 	var j=0;
 	for (var i=0; i<rows.length; i++){
 		var rowsItem = rows[i];
-		art_semanticturkey.Logger.debug("onto type=" + rowsItem.getAttribute("ontoType"));
 		if (!isOntoTypeCompatible(projectOntoType, rowsItem.getAttribute("ontoType"))){
 			rowsItem.hidden = true;
 		}

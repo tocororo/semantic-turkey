@@ -142,7 +142,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 				}
 			}
 		}
-		Logger.debug("POST: aURL  = "+aURL); // DEBUG
+		Logger.debug("ST HTTP POST: "+aURL); // DEBUG
 		
 		return this.submitHTTPRequest(realRespType, aURL, "POST", false, parameters);
 	};
@@ -192,7 +192,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 		}
 		
 		
-		Logger.debug("GET: aURL  = "+aURL); // DEBUG
+		Logger.debug("ST HTTP GET: "+aURL); // DEBUG
 		return this.submitHTTPRequest(realRespType, aURL, "GET", false);
 	};
 
@@ -212,7 +212,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 	this.submitHTTPRequest = function(respType, aURL, method, async, parameters) {
 //		Logger.debug("httpRequest: " + method + ": " + aURL + "| async:" + async + " parameters: " + 
 //				parameters + " port: " + serverport);
-		Logger.debug(aURL);
+//		Logger.debug(aURL);
 
 		var httpReq;
 		try {
@@ -380,6 +380,12 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			};
 
 			return newResponseJSON;
+		}
+		
+		//if serializationType is not application/json or application/xml check if response has a file attached
+		var contentDisposition = httpReq.getResponseHeader("Content-Disposition");
+		if (contentDisposition.indexOf("attachment; filename=") != -1){
+			return httpReq.responseText;
 		}
 
 	};

@@ -149,7 +149,6 @@ STRequests.CustomRanges.serviceName = "CustomRanges";
 STRequests.CustomRanges.runCodaRequest = "runCoda";
 STRequests.CustomRanges.executeURIConverterRequest = "executeURIConverter";
 STRequests.CustomRanges.getReifiedResDescriptionRequest = "getReifiedResDescription";
-STRequests.CustomRanges.hasCustomRangeRequest = "hasCustomRange";
 STRequests.CustomRanges.getCustomRangeConfigMapRequest = "getCustomRangeConfigMap"; 
 STRequests.CustomRanges.getCustomRangeRequest = "getCustomRange";
 STRequests.CustomRanges.getCustomRangeEntryRequest = "getCustomRangeEntry";
@@ -293,10 +292,10 @@ STRequests.ICV.listHierarchicallyRedundantConceptsRequest = "listHierarchicallyR
 STRequests.ICV.listResourcesURIWithSpaceRequest = "listResourcesURIWithSpace";
 
 // inputoutput service request
-STRequests.InputOutput.serviceName = "inputOutput";
-STRequests.InputOutput.saveRepositoryRequest = "saveRDF";
-STRequests.InputOutput.loadRepositoryRequest = "loadRDF";
-STRequests.InputOutput.clearRepositoryRequest = "clearData";
+STRequests.InputOutput.serviceName = "InputOutput";
+STRequests.InputOutput.saveRDFRequest = "saveRDF";
+STRequests.InputOutput.loadRDFRequest = "loadRDF";
+STRequests.InputOutput.clearDataRequest = "clearData";
 
 // SPARQL service request
 STRequests.SPARQL.serviceName = "sparql";

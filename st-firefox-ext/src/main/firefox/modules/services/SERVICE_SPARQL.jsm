@@ -22,15 +22,20 @@ var serviceName = service.serviceName;
  * @return
  */
 function resolveQuery(queryPar, languagePar, inferPar, mode) {
-	var queryPar = "query=" + queryPar;
-	var languagePar = "lang=" + languagePar;
-	var inferPar = "infer=" + inferPar;
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("query", queryPar);
+	Logger.debug("query " + queryPar);
+	formData.append("lang", languagePar);
+	formData.append("infer", inferPar);
+	if (mode != "undefined")
+		formData.append("mode", mode);
+	
 	var respType = RespContType.json;
-	var modePar = typeof mode != "undefined" ? "mode=" + mode : "";
+	
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	//var respType = RespContType.xml;
-	var resp=SemTurkeyHTTPLegacy.POST(respType, serviceName, service.resolveQueryRequest, queryPar, languagePar, inferPar,
-			modePar, contextAsArray);
+	var resp=SemTurkeyHTTPLegacy.POST(respType, serviceName, service.resolveQueryRequest, formData, contextAsArray);
 	resp.respType = respType;
 //	Ramon Orr� (2010): introduzione campo per memorizzare la serializzazione adottata
 	//service.serializationType=SemTurkeyHTTPLegacy.serializationType;	

@@ -182,6 +182,15 @@ public class CustomRangeProvider {
 	}
 	
 	/**
+	 * Tells whether a property has or not a CustomRangeEntry of type graph 
+	 * @param propertyUri
+	 * @return
+	 */
+	public boolean existsCustomRangeEntryGraphForProperty(String propertyUri){
+		return (!getCustomRangeEntriesGraphForProperty(propertyUri).isEmpty());
+	}
+	
+	/**
 	 * Given a property returns the <code>mode</code> associated to that property (default 
 	 * <code>union</code>). <code>mode</code> can assume two different values: <code>union</code> or
 	 * <code>override</code> and tells if the CustomRange should be joined in the legacy getRange

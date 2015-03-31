@@ -42,12 +42,6 @@ function getCustomRangeConfigMap() {
 	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeConfigMapRequest, this.context);
 }
 
-function hasCustomRange(property) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] hasCustomRange');
-	p_prop = "property=" + property;
-	return currentSTHttpMgr.GET(null, serviceName, service.hasCustomRangeRequest, this.context, p_prop);
-}
-
 function getCustomRange(id) {
 	Logger.debug('[SERVICE_CustomRanges.jsm] getCustomRange');
 	p_id = "id=" + id;
@@ -70,7 +64,6 @@ service.prototype.executeURIConverter = executeURIConverter;
 service.prototype.runCoda = runCoda;
 service.prototype.getReifiedResDescription = getReifiedResDescription;
 service.prototype.getCustomRangeConfigMap = getCustomRangeConfigMap;
-service.prototype.hasCustomRange = hasCustomRange;
 service.prototype.getCustomRange = getCustomRange;
 service.prototype.getCustomRangeEntry = getCustomRangeEntry;
 service.prototype.getCustomRangeEntries = getCustomRangeEntries;

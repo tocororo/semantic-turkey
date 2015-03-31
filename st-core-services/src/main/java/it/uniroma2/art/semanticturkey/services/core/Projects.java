@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 
@@ -318,15 +319,16 @@ public class Projects extends STServiceAdapter {
 	 * @throws ModelAccessException
 	 * @throws IOException
 	 */
-	@GenerateSTServiceController
-	public void importProject(String importPackage, String newProjectName) throws IOException,
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public void importProject(MultipartFile importPackage, String newProjectName) throws IOException,
 			ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
 			ModelUpdateException, InvalidProjectNameException {
 
 		logger.info("requested to import project from file: " + importPackage);
 
-		File projectFile = new File(importPackage);
+		File projectFile = File.createTempFile("prefix", "suffix");
+		importPackage.transferTo(projectFile);
 		ProjectManager.importProject(projectFile, newProjectName);
 	}
 

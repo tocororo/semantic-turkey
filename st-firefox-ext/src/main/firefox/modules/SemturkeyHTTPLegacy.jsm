@@ -84,33 +84,39 @@ SemTurkeyHTTPLegacy = new function() {
 		var parameters;
 		if ((respType instanceof XMLRespContType) || (respType instanceof JSONRespContType)) {
 			realRespType = respType;
-			parameters = "service=" + service + "&request=" + request;
-			Logger.debug("get: #arguments:" + arguments.length + " arguments: " + arguments);
+			aURL += "?service=" + service + "&request=" + request;
 		} else {
 			realRespType = RespContType.xml;
 			var realService = respType;
 			var realRequest = service;
-			parameters += "?service=" + realService + "&request=" + realRequest;
+			aURL += "?service=" + realService + "&request=" + realRequest;
 			if (arguments.length > 2) { // arguments[2] = request
-				if(Array.isArray(arguments[2])){
+				if (arguments[2] instanceof Components.interfaces.nsIDOMFormData){
+					//a FormData is set directly as "parameters"
+					parameters = arguments[2];
+				} else if(Array.isArray(arguments[i])){
 					for(var k=0; k<arguments[2].length; ++k){
-						parameters += this.splitAndEncode(arguments[2][k]);
+						aURL += this.splitAndEncode(arguments[2][k]);
 					}
-				} else{
-					parameters += this.splitAndEncode(arguments[2]);
+				} else {//a simple parameter is concatenated to the request URL
+					aURL += this.splitAndEncode(arguments[2]);
 				}
 			}
 		}
 		if (arguments.length > 3) {
-			for ( var i = 3; i < arguments.length; i++) {
-				if(Array.isArray(arguments[i])){
+			for (var i=3; i<arguments.length; i++){
+				if (arguments[i] instanceof Components.interfaces.nsIDOMFormData){
+					//a FormData is set directly as "parameters"
+					parameters = arguments[i];
+				} else if(Array.isArray(arguments[i])){
 					for(var k=0; k<arguments[i].length; ++k){
-						parameters += this.splitAndEncode(arguments[i][k]);
+						aURL += this.splitAndEncode(arguments[i][k]);
 					}
-				} else{
-					parameters += this.splitAndEncode(arguments[i]);
+				} else {//a simple parameter is concatenated to the request URL
+					aURL += this.splitAndEncode(arguments[i]);
 				}
 			}
+			
 		}
 		Logger.debug("ST HTTP POST: "+aURL); // DEBUG
 		return this.submitHTTPRequest(realRespType, aURL, "POST", false, parameters);
@@ -213,7 +219,10 @@ SemTurkeyHTTPLegacy = new function() {
 		// try {
 		httpReq.setRequestHeader("User-Agent", USER_AGENT);
 		if (method == "POST") {
-			httpReq.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			//content-type is set to application/x-www-form-urlencoded only if parameters is not a FormData 
+			if (!parameters instanceof Components.interfaces.nsIDOMFormData) {
+				httpReq.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			}
 			httpReq.setRequestHeader("Content-length", parameters.length);
 			// httpReq.setRequestHeader("Connection", "close");
 		}

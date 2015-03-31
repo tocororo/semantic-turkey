@@ -1,13 +1,15 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
-
+Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
+Components.utils.import("resource://stmodules/STInfo.jsm");
 Components.utils.import("resource://stmodules/Context.jsm");
 
-EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
+EXPORTED_SYMBOLS = [ "STRequests" ];
 
 var service = STRequests.InputOutput;
 var serviceName = service.serviceName;
 
+const currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 
 /**
  * saves an RDF file with the content of current ontology.<br/>
@@ -17,10 +19,11 @@ var serviceName = service.serviceName;
  * @param file
  * @return
  */
-function saveRepository(file){
-	var file = "file="+file;
+function saveRDF(format){
+	Logger.debug('[SERVICE_InputOutput.jsm] saveRDF');
+	var format = "format="+format;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.saveRepositoryRequest, file, contextAsArray);
+	return currentSTHttpMgr.GET(null, serviceName, service.saveRDFRequest, this.context, format);
 }
 
 /**
@@ -31,11 +34,13 @@ function saveRepository(file){
  * @param baseUri
  * @return
  */
-function loadRepository(file, baseUri){
-	var file = "file="+file;
-	var baseUri = "baseUri="+baseUri;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.loadRepositoryRequest, file, baseUri, contextAsArray);
+function loadRDF(file, baseUri){
+	Logger.debug('[SERVICE_InputOutput.jsm] loadRDF');
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("inputFile", file);
+	formData.append("baseUri", baseUri);
+	return currentSTHttpMgr.POST(null, serviceName, service.loadRDFRequest, this.context, formData);
 }
 
 /**
@@ -44,9 +49,9 @@ function loadRepository(file, baseUri){
  * @member STRequests.InputOutput
  * @return
  */
-function clearRepository(){
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.clearRepositoryRequest, contextAsArray);
+function clearData(){
+	Logger.debug('[SERVICE_InputOutput.jsm] clearData');
+	return currentSTHttpMgr.GET(null, serviceName, service.clearDataRequest, this.context);
 }
 
 
@@ -57,9 +62,9 @@ service.prototype.getAPI = function(specifiedContext){
 	newObj.context = specifiedContext;
 	return newObj;
 }
-service.prototype.saveRepository = saveRepository;
-service.prototype.loadRepository = loadRepository;
-service.prototype.clearRepository = clearRepository;
+service.prototype.saveRDF = saveRDF;
+service.prototype.loadRDF = loadRDF;
+service.prototype.clearData = clearData;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

@@ -5,6 +5,7 @@ Components.utils.import("resource://stservices/SERVICE_XMLSchema.jsm", art_seman
 Components.utils.import("resource://stservices/SERVICE_CustomRanges.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Sanitizer.jsm", art_semanticturkey);
 
 /*
  * For a better understanding of this code, here is an explanation of how the UI is built.
@@ -120,8 +121,10 @@ createUriInput = function(formEntryXml){
 	var textbox = document.createElement("textbox");
 	textbox.setAttribute("flex", "1");
 	textbox.setAttribute("height", "25");
+	art_semanticturkey.Sanitizer.makeAutosanitizing(textbox);
 	mainBox.appendChild(textbox);
 	
+	//if there's a converter add a popup to see a conversion preview
 	var converter = formEntryXml.getAttribute("converter");
 	if (converter != null){
 		var testConvertBtn = document.createElement("toolbarbutton");

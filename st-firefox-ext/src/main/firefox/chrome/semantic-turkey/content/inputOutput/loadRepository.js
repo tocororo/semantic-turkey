@@ -1,8 +1,8 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_InputOutput.jsm",
-		art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_InputOutput.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 
 window.onload = function(){
 	document.getElementById("dirBtn").addEventListener("click", art_semanticturkey.chooseFile, true);
@@ -12,14 +12,16 @@ window.onload = function(){
 
 
 art_semanticturkey.onAccept = function() {
+	document.getElementById("loadRepository").setAttribute("disabled", "true");
 	try{
-		var responseXML = art_semanticturkey.STRequests.InputOutput.loadRepository(
-				document.getElementById("srcLocalFile").value,
+		var file = new File(document.getElementById("srcLocalFile").value);
+		var responseXML = art_semanticturkey.STRequests.InputOutput.loadRDF(
+				new File(document.getElementById("srcLocalFile").value),
 				document.getElementById("baseURI").value);
 		art_semanticturkey.loadRepository_RESPONSE(responseXML);
 	}
 	catch (e) {
-		alert(e.name + ": " + e.message);
+		art_semanticturkey.Alert.alert(e);
 	}
 };
 

@@ -100,7 +100,7 @@ art_semanticturkey.ContexMenu.clearRepository = function clearRepository() {
 	var risp = confirm("Clear Repository?");
 	if (risp) {
 		try{
-			var responseXML = art_semanticturkey.STRequests.InputOutput.clearRepository();
+			var responseXML = art_semanticturkey.STRequests.InputOutput.clearData();
 			art_semanticturkey.clearRepository_RESPONSE(responseXML);
 		}
 		catch (e) {
