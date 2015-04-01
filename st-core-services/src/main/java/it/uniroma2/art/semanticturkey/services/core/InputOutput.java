@@ -36,11 +36,21 @@ import org.w3c.dom.Element;
 @GenerateSTServiceController
 @Validated
 @Component
-@Controller
+@Controller //just for saveRDF service
 public class InputOutput extends STServiceAdapter {
 	
 	protected static Logger logger = LoggerFactory.getLogger(InputOutput.class);
 	
+	/**
+	 * This method returns into the response content an RDF serialization of the model
+	 *  
+	 * @param oRes
+	 * @param format
+	 * @param allNGs
+	 * @throws IOException
+	 * @throws ModelAccessException
+	 * @throws UnsupportedRDFFormatException
+	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/InputOutput/saveRDF", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
 	public void saveRDF(HttpServletResponse oRes, @RequestParam(value = "format") String format,
@@ -81,9 +91,8 @@ public class InputOutput extends STServiceAdapter {
 	public Response loadRDF(MultipartFile inputFile, String baseUri, @Optional String formatName) 
 			throws FileNotFoundException, IOException, ModelAccessException, ModelUpdateException, UnsupportedRDFFormatException {
 		
-		String fileName = inputFile.getOriginalFilename();
 		//create a temp file (in karaf data/temp folder) to copy the received file 
-		File inputServerFile = File.createTempFile("loadRDF", fileName.substring(fileName.lastIndexOf(".")));
+		File inputServerFile = File.createTempFile("loadRDF", inputFile.getOriginalFilename());
 		inputFile.transferTo(inputServerFile);
 		
 		RDFFormat rdfFormat = null;

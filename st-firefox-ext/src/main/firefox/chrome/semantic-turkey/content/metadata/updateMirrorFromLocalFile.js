@@ -15,11 +15,10 @@ art_semanticturkey.onLocalFileAccept = function() {
 	if(updateFilePath == null || updateFilePath == "")
 		return
 	try{
-		var responseXML = art_semanticturkey.STRequests.Administration.updateOntMirrorEntry(
+		var responseXML = art_semanticturkey.STRequests.Administration.updateOntMirrorEntryFromLocalFile(
 				baseURI_FilePair.baseURI,
 				baseURI_FilePair.file,
-				"lf",
-				updateFilePath);
+				new File(updateFilePath));
 	}
 	catch (e) {
 		alert(e.name + ": " + e.message);

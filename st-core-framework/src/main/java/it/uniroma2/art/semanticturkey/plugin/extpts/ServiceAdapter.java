@@ -41,6 +41,7 @@ import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.servlet.HttpServiceRequestWrapper;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceRequest;
@@ -49,6 +50,8 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -56,8 +59,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 /**
  * @author Armando Stellato
@@ -104,6 +111,30 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		String value = _oReq.getParameter(parameterName);
 		httpParameters.put(parameterName, value);
 		return value;
+	}
+	
+	/**
+	 * Retrieves the MultipartFile parameter from the http POST request, copies it to a temp
+	 * file on server and return it. Returns null if the POST request doesn't contain a MultipartFile
+	 * @param parameterName
+	 * @return
+	 */
+	public File setHttpMultipartFilePar(String parameterName) {
+		try {
+			HttpServiceRequestWrapper reqWrapper = (HttpServiceRequestWrapper) _oReq;
+			HttpServletRequest httpReq = reqWrapper.getHttpRequest();
+			if (httpReq instanceof MultipartHttpServletRequest){
+				MultipartHttpServletRequest reqMultipart = (MultipartHttpServletRequest) httpReq;
+				MultipartFile multipartFile = reqMultipart.getFile(parameterName);
+				File tempLocalFile = File.createTempFile("temp", multipartFile.getOriginalFilename());
+				multipartFile.transferTo(tempLocalFile);
+				return tempLocalFile;
+			} else {
+				return null;
+			}
+		} catch (IOException e){
+			return null;
+		}
 	}
 
 	/**

@@ -268,12 +268,15 @@ function addFromWebToMirror(baseuri, mirrorFile, alturl, format) {
  *            the name of the cache file which is saved locally in the ontologies mirror of Semantic Turkey
  * @return
  */
-function addFromLocalFile(baseuri, localFilePath, mirrorFile) {
-	var baseuri = "baseuri=" + baseuri;
-	var localFilePath = "localFilePath=" + localFilePath;
-	var mirrorFile = "mirrorFile=" + mirrorFile;
+function addFromLocalFile(baseuri, localFile, mirrorFile) {
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("baseuri", baseuri);
+	formData.append("localFile", localFile);
+	formData.append("mirrorFile", mirrorFile);
+
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.addFromLocalFileRequest, baseuri, localFilePath, mirrorFile, contextAsArray);
+	return SemTurkeyHTTPLegacy.POST(serviceName, service.addFromLocalFileRequest, formData, contextAsArray);
 }
 
 /**

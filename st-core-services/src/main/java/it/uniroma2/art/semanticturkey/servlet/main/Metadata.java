@@ -42,7 +42,6 @@ import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -53,6 +52,7 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashSet;
@@ -120,6 +120,7 @@ public class Metadata extends ResourceOld {
 	public static final String mirrorFilePar = "mirrorFile";
 	public static final String prefixPar = "prefix";
 	public static final String localFilePathPar = "localFilePath";
+	public static final String localFilePar = "localFile";
 	public static final String alturlPar = "alturl";
 	public static final String rdfFormatPar = "rdfFormat";
 
@@ -208,11 +209,15 @@ public class Metadata extends ResourceOld {
 		// ontology mirror location
 		else if (request.equals(addFromLocalFileRequest)) {
 			String baseuri = setHttpPar(baseuriPar);
-			String localFilePath = setHttpPar(localFilePathPar);
+			
+			File sourceFile = setHttpMultipartFilePar(localFilePar);
+			if (sourceFile == null) //in case of missing multipart file in POST request
+				throw new HTTPParameterUnspecifiedException(localFilePar);
+			String localFilePath = sourceFile.getAbsolutePath();
 			String mirrorFile = setHttpPar(mirrorFilePar);
 			// String rdfFormat = setHttpPar(rdfFormatPar); commented, unless able to specifiy it even in
 			// OntManager
-			checkRequestParametersAllNotNull(baseuriPar, localFilePathPar, mirrorFilePar);
+			checkRequestParametersAllNotNull(baseuriPar, mirrorFilePar);
 			return addOntImport(fromLocalFile, baseuri, localFilePath, mirrorFile, null,
 					addFromLocalFileRequest);
 		}

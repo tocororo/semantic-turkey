@@ -63,29 +63,42 @@ function deleteOntMirrorEntry(ns, file) {
  * @return
  */
 function updateOntMirrorEntry(baseURI, mirrorFileName, srcLoc, location) {
-	var baseURI = "baseURI=" + baseURI;
-	var mirrorFileName = "mirrorFileName=" + mirrorFileName;
-	var srcLoc = "srcLoc=" + srcLoc;
-	var loc;
+	var p_baseURI = "baseURI=" + baseURI;
+	var p_mirrorFileName = "mirrorFileName=" + mirrorFileName;
+	var p_srcLoc = "srcLoc=" + srcLoc;
 
 	Logger.debug("inizio updateOntMirrorEntry");
-
 	Logger.debug("dentro updateOntMirrorEntry e location = " + location);
 
-	if (srcLoc == "srcLoc=wbu"){
-		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-		return SemTurkeyHTTPLegacy.GET(serviceName, service.updateOntMirrorEntryRequest, baseURI, mirrorFileName, srcLoc, contextAsArray);
-	}
-	else if (srcLoc == "srcLoc=walturl")
-		loc = "altURL=" + location;
-	else if (srcLoc == "srcLoc=lf")
-		loc = "updateFilePath=" + location;
-
-	Logger.debug("dentro updateOntMirrorEntry e loc = " + loc);
-
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy
-			.GET(serviceName, service.updateOntMirrorEntryRequest, baseURI, mirrorFileName, srcLoc, loc, contextAsArray);
+	if (srcLoc == "wbu"){
+		return SemTurkeyHTTPLegacy.GET(serviceName, service.updateOntMirrorEntryRequest, p_baseURI, p_mirrorFileName, p_srcLoc, contextAsArray);
+	} else if (srcLoc == "walturl"){
+		var p_location = "altURL=" + location;
+		return SemTurkeyHTTPLegacy
+				.GET(serviceName, service.updateOntMirrorEntryRequest, p_baseURI, p_mirrorFileName, p_srcLoc, p_location, contextAsArray);
+	}
+}
+
+/**
+ * this method tells the Ontology Mirror to refresh the cached file of an ontology by downloading again the
+ * RDF content of its original ontology from a local file
+ * 
+ * @member STRequests.Administration
+ * @param baseURI
+ * @param mirrorFileName
+ * @param localFile
+ * @return
+ */
+function updateOntMirrorEntryFromLocalFile(baseURI, mirrorFileName, localFile){
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("baseURI", baseURI);
+	formData.append("localFile", localFile);
+	formData.append("mirrorFileName", mirrorFileName);
+	formData.append("srcLoc", "lf");
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.POST(serviceName, service.updateOntMirrorEntryRequest, formData, contextAsArray);
 }
 
 /**
@@ -108,6 +121,7 @@ service.prototype.setAdminLevel = setAdminLevel;
 service.prototype.getOntologyMirror = getOntologyMirror;
 service.prototype.deleteOntMirrorEntry = deleteOntMirrorEntry;
 service.prototype.updateOntMirrorEntry = updateOntMirrorEntry;
+service.prototype.updateOntMirrorEntryFromLocalFile = updateOntMirrorEntryFromLocalFile;
 service.prototype.getVersion = getVersion;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;

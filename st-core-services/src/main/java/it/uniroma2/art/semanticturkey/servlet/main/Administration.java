@@ -28,7 +28,6 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.resources.Config;
@@ -106,7 +105,8 @@ public class Administration extends ServiceAdapter {
 			else if (srcLoc.equals("walturl"))
 				location = setHttpPar("altURL");
 			else if (srcLoc.equals("lf")) {
-				location = setHttpPar("updateFilePath");
+				File localFile = setHttpMultipartFilePar("localFile");
+				location = localFile.getAbsolutePath();
 				updateType = 1;
 			} else
 				return ServletUtilities.getService().createExceptionResponse(request,

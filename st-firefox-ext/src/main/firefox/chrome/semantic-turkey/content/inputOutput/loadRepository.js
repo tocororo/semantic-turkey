@@ -16,8 +16,7 @@ art_semanticturkey.onAccept = function() {
 	try{
 		var file = new File(document.getElementById("srcLocalFile").value);
 		var responseXML = art_semanticturkey.STRequests.InputOutput.loadRDF(
-				new File(document.getElementById("srcLocalFile").value),
-				document.getElementById("baseURI").value);
+				file, document.getElementById("baseURI").value);
 		art_semanticturkey.loadRepository_RESPONSE(responseXML);
 	}
 	catch (e) {

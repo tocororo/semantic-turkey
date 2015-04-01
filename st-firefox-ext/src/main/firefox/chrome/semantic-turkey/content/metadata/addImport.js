@@ -329,6 +329,7 @@ art_semanticturkey.checkAllNotNull = function(){
 };
 
 art_semanticturkey.onAccept = function() {
+	document.getElementById("addImport").setAttribute("disabled", "true");
 	var parentWindow = window.arguments[0].parentWindow;
 	var selectedIndex = window.arguments[0].selectIndex;
 	var responseXML;
@@ -402,10 +403,9 @@ art_semanticturkey.onAccept = function() {
 			var destLocalFile = document.getElementById("destLocalFile").value;
 			if(!art_semanticturkey.checkAllNotNull(base, srcLocalFile, destLocalFile))
 				return;
+			var localFile = new File(srcLocalFile);
 			responseXML = parentWindow.art_semanticturkey.STRequests.Metadata.addFromLocalFile(
-					base,
-					srcLocalFile,
-					destLocalFile);
+					base, localFile, destLocalFile);
 			parentWindow.art_semanticturkey.addFromLocalFile_RESPONSE(responseXML);
 		} else if (selectedIndex == 5) {
 			var local = document.getElementById("local").value;
