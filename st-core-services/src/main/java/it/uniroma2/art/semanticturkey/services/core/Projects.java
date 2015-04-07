@@ -34,16 +34,23 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
@@ -59,6 +66,7 @@ import org.w3c.dom.Element;
 @GenerateSTServiceController
 @Validated
 @Component
+@Controller //just for exportProject service
 public class Projects extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
@@ -284,24 +292,20 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.cloneProjectToNewProject(projectName, newProjectName);
 
 	}
-
-	/**
-	 * exports a project to a given project file in Semantic Turkey project archive format
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws UnavailableResourceException
-	 * @throws UnsupportedRDFFormatException
-	 * @throws ModelAccessException
-	 * @throws IOException
-	 */
-	@GenerateSTServiceController
-	public void exportProject(String projectName, String exportPackage) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
-
+	
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Projects/exportProject", 
+			method = org.springframework.web.bind.annotation.RequestMethod.GET)
+	public void exportProject(HttpServletResponse oRes,	@RequestParam(value = "projectName") String projectName)
+			throws IOException,	ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
+		File tempServerFile = File.createTempFile("export", ".zip");
 		logger.info("requested to export current project");
-		File projectFile = new File(exportPackage);
-		ProjectManager.exportProject(projectName, projectFile);
+		ProjectManager.exportProject(projectName, tempServerFile);
+		FileInputStream is = new FileInputStream(tempServerFile);
+		IOUtils.copy(is, oRes.getOutputStream());
+		oRes.setContentType("application/zip");
+		oRes.setHeader("Content-Disposition", "attachment; filename=export.zip");
+		oRes.flushBuffer();
+		is.close();
 	}
 
 	/**

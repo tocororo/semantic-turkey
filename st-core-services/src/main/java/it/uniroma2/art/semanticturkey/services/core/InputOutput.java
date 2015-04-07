@@ -70,6 +70,7 @@ public class InputOutput extends STServiceAdapter {
 		oRes.setContentType(rdfFormat.getMIMEType());
 		oRes.setHeader("Content-Disposition", "attachment; filename=save." + format);
 		oRes.flushBuffer();
+		is.close();
 	}
 	
 	/**

@@ -166,13 +166,16 @@ function deleteProject(projectName) { // NEW
  * @param projfile
  * @return
  */
-function exportProject(projectName, exportPackage) {	//NEW
+function exportProject(projectName) {	//NEW
 	Logger.debug('[SERVICE_Projects.jsm] exportProject');
 	var projectName = "projectName=" + projectName;
-	var exportPackage = "exportPackage="+exportPackage;
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	return currentSTHttpMgr.GET(null, serviceName, service.exportProjectRequest, this.context, 
-			projectName, exportPackage);
+	//get and open directly the request url that returns the file in the response
+	var target = currentSTHttpMgr.getRequestUrl(serviceName, service.exportProjectRequest, this.context, projectName);
+	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+    	.getService(Components.interfaces.nsIWindowMediator);
+	var mainWindow = wm.getMostRecentWindow("navigator:browser");
+	mainWindow.openDialog(target, "_blank");
 }
 
 /**

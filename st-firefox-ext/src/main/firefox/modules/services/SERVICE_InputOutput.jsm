@@ -23,7 +23,12 @@ function saveRDF(format){
 	Logger.debug('[SERVICE_InputOutput.jsm] saveRDF');
 	var format = "format="+format;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return currentSTHttpMgr.GET(null, serviceName, service.saveRDFRequest, this.context, format);
+	//get and open directly the request url that returns the file in the response
+	var target = currentSTHttpMgr.getRequestUrl(serviceName, service.saveRDFRequest, this.context, format);
+	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+    	.getService(Components.interfaces.nsIWindowMediator);
+	var mainWindow = wm.getMostRecentWindow("navigator:browser");
+	mainWindow.openDialog(target, "_blank");
 }
 
 /**

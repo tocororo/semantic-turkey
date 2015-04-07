@@ -124,10 +124,8 @@ art_semanticturkey.save_project = function() {
 };*/
 
 art_semanticturkey.export_project = function() {
-	var parameters = new Object();
-
-	window.openDialog("chrome://semantic-turkey/content/projects/exportProject.xul", "_blank",
-			"modal=yes,resizable,centerscreen", parameters);
+	var projectName = art_semanticturkey.CurrentProject.getProjectName(); // get the current project;
+	art_semanticturkey.STRequests.Projects.exportProject(projectName);
 };
 
 art_semanticturkey.manage_all_projects = function() {

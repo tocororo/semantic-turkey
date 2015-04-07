@@ -103,6 +103,32 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 	this.hasRequestHandler = function(request) {
 		return (requestHandler[request] != null);
 	};
+	
+	/**
+	 * This function simply composes and returns a GET url request (but doesn't send it).
+	 */
+	this.getRequestUrl = function(service, request, context) {
+		var aURL = "http://"+ serverhost + ":" + serverport + "/" + serverpath + "/" + groupId + "/" +
+			artifactId + "/" + service + "/"+ request +"?";
+		// process the context
+		var contextArray = context.getContextValuesForHTTPGetAsArray();
+		for ( var i = 0; i < contextArray.length; i++) {
+			aURL += this.splitAndEncode(contextArray[i]);
+		}
+		//see if there are other arguments
+		if (arguments.length > 3) {
+			for ( var i = 3; i < arguments.length; i++) {
+				if(Array.isArray(arguments[i])){
+					for(var k=0; k<arguments[i].length; ++k){
+						aURL += this.splitAndEncode(arguments[i][k]);
+					}
+				} else{
+					aURL += this.splitAndEncode(arguments[i]);
+				}
+			}
+		}
+		return aURL;
+	}
 
 	/**
 	 * this function composes a POST request (with async argument always set to false). It can be invoked with
@@ -381,19 +407,11 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 
 			return newResponseJSON;
 		}
-		
-		//if serializationType is not application/json or application/xml check if response has a file attached
-		var contentDisposition = httpReq.getResponseHeader("Content-Disposition");
-		if (contentDisposition.indexOf("attachment; filename=") != -1){
-			return httpReq.responseText;
-		}
-
 	};
 
 	function httpError(e) {
 		Logger.debug("HTTP Error: status: " + e.target.status + " - " + e.target.statusText);
-	}
-	;
+	};
 
 	this.parseXMLSource = function(document) {
 		var serializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance();
