@@ -3,10 +3,10 @@
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 	<binding id="object-list-widget">
 		<content>
-			<xul:vbox flex="1">
+			<xul:vbox anonid="externalOWLid" flex="1"  >
 				<xul:label anonid="labelId"/>
 				<xul:hbox anonid="buttonBoxOLW" />
-				<xul:vbox anonid="mainOLWboxId" />
+				<xul:vbox anonid="mainOLWboxId" style='overflow: auto;' />
 			</xul:vbox>
 		</content>
 		<implementation>
@@ -19,6 +19,7 @@
 			<constructor>
 				<![CDATA[
 					const OBJECT_COUNT_TRESHOLD = 5;
+					const MAXHEIGHT_VALUE = 200;
 					
 					if (typeof art_semanticturkey == 'undefined')
 					var art_semanticturkey = {};
@@ -26,6 +27,11 @@
 					
 					var label = document.getAnonymousElementByAttribute(this, "anonid", "labelId");
 					var maindOLWbox = document.getAnonymousElementByAttribute(this, "anonid", "mainOLWboxId");
+					
+					maindOLWbox.setAttribute("maxheight", MAXHEIGHT_VALUE);
+					
+					var externalOWLid = document.getAnonymousElementByAttribute(this, "anonid", "externalOWLid");
+					externalOWLid.setAttribute("maxheight", MAXHEIGHT_VALUE+20);
 					
 					if(typeof this.labelValue != "undefined"){
 						label.setAttribute("value", this.labelValue);

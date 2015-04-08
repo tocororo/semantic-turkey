@@ -95,8 +95,16 @@ window.onload = function(){
 	rdfResArray2[9] = new art_semanticturkey.ARTLiteral("gatto", "", "sp", false);
 	rdfResArray2[10] = new art_semanticturkey.ARTLiteral("123", "http://type#integer", "", true);
 	rdfResArray2[11] = new art_semanticturkey.ARTLiteral("computer", "http://type@string", "", true);
+	rdfResArray2[12] = new art_semanticturkey.ARTURIResource("pippo7", "concept", "http://test#pippo7");
+	rdfResArray2[13] = new art_semanticturkey.ARTURIResource("pippo8", "concept", "http://test#pippo8");
+	rdfResArray2[14] = new art_semanticturkey.ARTURIResource("pippo9", "concept", "http://test#pippo9");
+	rdfResArray2[15] = new art_semanticturkey.ARTURIResource("pippo10", "concept", "http://test#pippo10");
+	rdfResArray2[16] = new art_semanticturkey.ARTURIResource("pippo11", "concept", "http://test#pippo11");
+	rdfResArray2[17] = new art_semanticturkey.ARTURIResource("pippo12", "concept", "http://test#pippo12");
+	rdfResArray2[18] = new art_semanticturkey.ARTURIResource("pippo13", "concept", "http://test#pippo13");
+	rdfResArray2[19] = new art_semanticturkey.ARTURIResource("pippo14", "concept", "http://test#pippo14");
 	//widgetBoxOLW2.labelValue = "More Resources";
-	widgetBoxOLW2.operations = "remove"
+	widgetBoxOLW2.operations = "remove";
 	widgetBoxOLW2.rdfResourcesArray = rdfResArray2;
 	
 	widgetBoxOLW2.addEventListener("rdfnodeBaseEvent", art_semanticturkey.rdfnodeBaseEventHandler);
