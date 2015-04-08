@@ -2,6 +2,7 @@ var EXPORTED_SYMBOLS = ["CommandBroker", "MenuPopupTrackerAdapter", "ToolbarTrac
 
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Preferences.jsm");
+Components.utils.import("resource://stmodules/ProjectST.jsm");
 
 var CommandBroker = (function(){
 	var broker = {};
@@ -241,6 +242,7 @@ function ToolbarTrackerAdapter(topicName, host, toolbar, isGlobalScope) {
 
 
 Components.utils.import("resource://stservices/SERVICE_SKOS.jsm");
+Components.utils.import("resource://stservices/SERVICE_SKOSXL.jsm");
 
 CommandBroker.offerCommand("skos:concept*edit",
 	{
@@ -279,7 +281,11 @@ CommandBroker.offerCommand("skos:concept*edit",
 					language = Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");
 				}
 				
-				var responseXML=STRequests.SKOS.createConcept(obj.out.name, null, host.conceptScheme, prefLabel, prefLabelLanguage, language);
+				if (CurrentProject.getOntoType() == "SKOS-XL") {
+					var responseXML=STRequests.SKOSXL.createConcept(obj.out.name, null, host.conceptScheme, prefLabel, prefLabelLanguage, language);				
+				} else {
+					var responseXML=STRequests.SKOS.createConcept(obj.out.name, null, host.conceptScheme, prefLabel, prefLabelLanguage, language);
+				}
 			}catch (e) {
 				var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
 				prompts.alert(null,"Exception", e.name + ": " + e.message);
@@ -340,7 +346,11 @@ CommandBroker.offerCommand("skos:concept*edit",
 					language = Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");
 				}
 				
-				var responseXML=STRequests.SKOS.createConcept(obj.out.name, conceptQName, host.conceptScheme, prefLabel, prefLabelLanguage, language);
+				if (CurrentProject.getOntoType() == "SKOS-XL") {
+					var responseXML=STRequests.SKOSXL.createConcept(obj.out.name, conceptQName, host.conceptScheme, prefLabel, prefLabelLanguage, language);					
+				} else {
+					var responseXML=STRequests.SKOS.createConcept(obj.out.name, conceptQName, host.conceptScheme, prefLabel, prefLabelLanguage, language);				
+				}
 			}catch (e) {
 				var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
 				prompts.alert(null,"Exception", e.name + ": " + e.message);
@@ -451,8 +461,12 @@ CommandBroker.offerCommand("skos:scheme*edit",
 					language = Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");
 				}
 
-				
-				var responseXML=STRequests.SKOS.createScheme(obj.out.name, prefLabel, prefLabelLanguage, language);
+					
+				if (CurrentProject.getOntoType() == "SKOS-XL") {
+					var responseXML=STRequests.SKOSXL.createScheme(obj.out.name, prefLabel, prefLabelLanguage, language);
+				} else {
+					var responseXML=STRequests.SKOS.createScheme(obj.out.name, prefLabel, prefLabelLanguage, language);
+				}
 			}catch (e) {
 				var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
 				prompts.alert(null,"Exception", e.name + ": " + e.message);

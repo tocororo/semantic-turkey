@@ -65,7 +65,12 @@ public class RoleRecognitionOrchestrator {
 		// ///////////////////////
 		// Process tuple bindings
 
-		String resourceTypeVar = varPrefix + "type";
+		String resourceTypeVar = varPrefix + "_subject_type";
+		String predicateTypeVar = varPrefix + "_predicate_type";
+		String objectTypeVar = varPrefix + "_object_type";
+
+		String objectVar = "object";
+		String predicateVar = "predicate";
 		String resourceVar = "resource";
 
 		for (TupleBindings aBinding : bindings) {
@@ -75,6 +80,12 @@ public class RoleRecognitionOrchestrator {
 			if (aBinding.hasBinding(resourceTypeVar)) {
 				res = aBinding.getBoundValue(resourceVar).asResource();
 				type = aBinding.getBoundValue(resourceTypeVar).asResource();
+			} else if(aBinding.hasBinding(predicateTypeVar)) {
+				res = aBinding.getBoundValue(predicateVar).asResource();
+				type = aBinding.getBoundValue(predicateTypeVar).asResource();				
+			} else if(aBinding.hasBinding(objectTypeVar)) {
+				res = aBinding.getBoundValue(objectVar).asResource();
+				type = aBinding.getBoundValue(objectTypeVar).asResource();				
 			} else
 				continue;
 
@@ -146,7 +157,7 @@ public class RoleRecognitionOrchestrator {
 
 	public String getGraphPatternForDescribe(ResourcePosition resourcePosition,
 			ARTResource resourceToBeRoled, String varPrefix) {
-		return String.format("{?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$stype .}",
+		return String.format("{{?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_object_type .} union {?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_subject_type .} union {?predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_predicate_type .}}",
 				varPrefix);
 	}
 }

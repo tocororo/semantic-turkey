@@ -4,6 +4,9 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -68,8 +71,17 @@ public class RenderingOrchestrator implements RenderingEngine {
 
 	private RenderingEngine getRenderingEngine(ResourcePosition subjectPosition) {
 		if (subjectPosition instanceof LocalResourcePosition) {
-			// return ((LocalResourcePosition) (subjectPosition)).getProject().getRenderingEngine();
-			return new RDFSRenderingEngine();
+			Project<?> project = ((LocalResourcePosition) (subjectPosition)).getProject();
+			RDFModel ontModel = project.getOntModel();
+			
+			if (ontModel instanceof SKOSXLModel) {
+				return new SKOSXLRenderingEngine();
+			} else if (ontModel instanceof SKOSModel) {
+				return new SKOSRenderingEngine();
+			} else {
+				return new RDFSRenderingEngine();
+			}
+			
 		} else if ((subjectPosition instanceof RemoteResourcePosition)) {
 			DatasetMetadata meta = ((RemoteResourcePosition) subjectPosition).getDatasetMetadata();
 			// return meta.getRenderingEngine();

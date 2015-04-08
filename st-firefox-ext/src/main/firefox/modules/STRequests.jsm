@@ -426,6 +426,7 @@ STRequests.Resource.removePropertyValueRequest = "removePropertyValue";
 //ResourceView service request
 STRequests.ResourceView.serviceName = "ResourceView";
 STRequests.ResourceView.getResourceViewRequest = "getResourceView";
+STRequests.ResourceView.getLexicalizationPropertiesRequest = "getLexicalizationProperties";
 
 //XMLSchema service request
 STRequests.XMLSchema.serviceName = "XMLSchema";

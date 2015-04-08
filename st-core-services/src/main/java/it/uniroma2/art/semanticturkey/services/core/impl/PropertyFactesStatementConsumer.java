@@ -7,6 +7,7 @@ import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -33,37 +34,51 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 			Map<ARTResource, String> xLabel2LiteralForm)
 			throws ModelAccessException {
 		boolean symmetric = false;
-		boolean symmetricExplicit = false;
+		boolean symmetricExplicit = true;
 
 		boolean functional = false;
-		boolean functionalExplicit = false;
+		boolean functionalExplicit = true;
 
 		boolean inverseFunctional = false;
-		boolean inverseFunctionalExplicit = false;
+		boolean inverseFunctionalExplicit = true;
 
 		boolean transitive = false;
-		boolean transitiveExplicit = false;
+		boolean transitiveExplicit = true;
 
+		Set<ARTStatement> stmts;
+		Set<ARTResource> graphs;
+		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY, NodeFilters.ANY)) {
 			symmetric = true;
-			symmetricExplicit = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY).contains(StatementCollector.INFERENCE_GRAPH);
+			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY));
+			symmetricExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			stmts.clear();
 		}
 		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY, NodeFilters.ANY)) {
 			functional = true;
-			functionalExplicit = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY).contains(StatementCollector.INFERENCE_GRAPH);
+			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY));
+			functionalExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			stmts.clear();
 		}
 		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY, NodeFilters.ANY)) {
 			inverseFunctional = true;
-			inverseFunctionalExplicit = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY).contains(StatementCollector.INFERENCE_GRAPH);
+			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY));
+			inverseFunctionalExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			stmts.clear();
 		}
 		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY, NodeFilters.ANY)) {
 			transitive = true;
-			transitiveExplicit = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY).contains(StatementCollector.INFERENCE_GRAPH);
+			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY));
+			transitiveExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			stmts.clear();
 		}
-
 
 		Set<ARTStatement> inverseOfStmts = stmtCollector.getStatements(resource, OWL.Res.INVERSEOF,
 				NodeFilters.ANY);
@@ -71,7 +86,7 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 		List<STRDFNode> inverseOf = new ArrayList<STRDFNode>();
 
 		for (ARTStatement stmt : inverseOfStmts) {
-			Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
+			graphs = stmtCollector.getGraphsFor(stmt);
 			STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
 					resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
 					resource2Rendering.get(stmt.getObject()));

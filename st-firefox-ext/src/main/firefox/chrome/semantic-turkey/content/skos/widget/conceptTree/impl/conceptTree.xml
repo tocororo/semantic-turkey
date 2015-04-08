@@ -181,24 +181,33 @@
 				var taxonomyToolbar = document.getAnonymousElementByAttribute(this, "ano_id", "taxonomyToolbar");
 
 				this.stEventArray = new this.art_semanticturkey.eventListenerArrayClass();
-				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptRemoved", function(eventId, skosConceptRemovedObj) {
-					bound._view.removeRows(skosConceptRemovedObj.getConceptName());
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptAdded", function(eventId, skosConceptAddedObj) {
-					var narrowerConcept = skosConceptAddedObj.getConcept();
-					var broaderConcept = skosConceptAddedObj.getBroaderConceptName();
+				
+				function skosConceptRemovedHandler(eventId, eventObj) {
+					bound._view.removeRows(eventObj.getConceptName());
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptRemoved", skosConceptRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlConceptRemoved", skosConceptRemovedHandler, null);
+				
+				function skosConceptAddedHandler(eventId, eventObj) {
+					var narrowerConcept = eventObj.getConcept();
+					var broaderConcept = eventObj.getBroaderConceptName();
 					var u = narrowerConcept.getURI();
 					var hasSubsumees = narrowerConcept.more;
 					var l = narrowerConcept.getShow();
 
 					var row = new DataRow({concept : u, more : hasSubsumees ? "1" : "0", label : l, uri : u});
 
-					bound._view.addRow(broaderConcept, row);					
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosBroaderConceptAdded", function(eventId, skosBroaderConceptAddedObj) {
-					var aConcept = skosBroaderConceptAddedObj.getConcept();
+					bound._view.addRow(broaderConcept, row);
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptAdded", skosConceptAddedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlConceptAdded", skosConceptAddedHandler, null);
+				
+				function skosBroaderConceptAddedHandler(eventId, eventObj) {
+					var aConcept = eventObj.getConcept();
 					var narrowerConcept = aConcept.getURI();
-					var broaderConcept = skosBroaderConceptAddedObj.getBroaderConceptName();
+					var broaderConcept = eventObj.getBroaderConceptName();
 					var u = aConcept.getURI();
 					var hasSubsumees = aConcept.more;
 					var l = aConcept.getShow();
@@ -217,18 +226,26 @@
 					if (topNoMore) {
 						bound._view.removeRows(narrowerConcept, 0);					
 					}
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosBroaderConceptRemoved", function(eventId, skosBroaderConceptRemovedObj) {
-					var conceptName = skosBroaderConceptRemovedObj.getConceptName();
-					var broaderConceptName = skosBroaderConceptRemovedObj.getBroaderConceptName();
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosBroaderConceptAdded",skosBroaderConceptAddedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlBroaderConceptAdded",skosBroaderConceptAddedHandler, null);
+				
+				function skosBroaderConceptRemovedHandler(eventId, eventObj) {
+					var conceptName = eventObj.getConceptName();
+					var broaderConceptName = eventObj.getBroaderConceptName();
 					bound._view.removeRows(conceptName, broaderConceptName);
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosTopConceptAdded", function(eventId, skosTopConceptAddedObj) {
-					if (skosTopConceptAddedObj.getSchemeName() != bound.conceptScheme) {
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosBroaderConceptRemoved", skosBroaderConceptRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlBroaderConceptRemoved", skosBroaderConceptRemovedHandler, null);
+				
+				function skosTopConceptAddedHandler(eventId, eventObj) {
+					if (eventObj.getSchemeName() != bound.conceptScheme) {
 						return;
 					}
 					
-					var topConcept = skosTopConceptAddedObj.getTopConcept();
+					var topConcept = eventObj.getTopConcept();
 					var concept = topConcept.getURI();
 					var u = topConcept.getURI();
 					var hs = topConcept.more;
@@ -236,17 +253,24 @@
 								
 					var row = new DataRow({concept : concept, more : hs ? "1" : "0", label : l, uri : u});
 					
-					bound._view.addRow(null, row);
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosTopConceptRemoved", function(eventId, skosTopConceptRemovedObj) {
-					if (skosTopConceptRemovedObj.getSchemeName() != bound.conceptScheme) {
+					bound._view.addRow(null, row);				
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosTopConceptAdded", skosTopConceptAddedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlTopConceptAdded", skosTopConceptAddedHandler, null);
+				
+				function skosTopConceptRemovedHandler(eventId, eventObj) {
+					if (eventObj.getSchemeName() != bound.conceptScheme) {
 						return;
 					}
 					
-					var concept = skosTopConceptRemovedObj.getConceptName();
+					var concept = eventObj.getConceptName();
 
 					bound._view.removeRows(concept, 0);
-				}, null);
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosTopConceptRemoved", skosTopConceptRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlTopConceptRemoved", skosTopConceptRemovedHandler, null);
 
 				this.stEventArray.addEventListenerToArrayAndRegister("resourceRenamed", function(eventId, resourceRenamedObj) {
 					
@@ -278,22 +302,27 @@
 						}
 					}
 				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelSet", function(eventId, skosPrefLabelSetObj) {
+				
+				function skosPrefLabelSetHandler(eventId, eventObj) {
 					if (!isHumanReadable) return;
-					
-					if (skosPrefLabelSetObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
+										
+					if (eventObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
 						return;
 					}
 					
 					for (var i = 0 ; i < bound._view.visibleRows2.length ; i++) {
-						if (bound._view.visibleRows2[i].id == skosPrefLabelSetObj.getConceptName()) {
-							bound._view.visibleRows2[i].record["label"] = skosPrefLabelSetObj.getLabel();
+						if (bound._view.visibleRows2[i].id == eventObj.getConceptName()) {
+							bound._view.visibleRows2[i].record["label"] = eventObj.getLabel();
 							bound._view.invalidateRow(i);
 						}
-					}
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelRemoved", function(eventId, skosPrefLabelRemovedObj) {
-					if (skosPrefLabelRemovedObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
+					}				
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelSet", skosPrefLabelSetHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlPrefLabelSet", skosPrefLabelSetHandler, null);
+			
+				function skosPrefLabelRemovedHandler(eventId, eventObj) {
+					if (eventObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
 						return;
 					}
 										
@@ -302,25 +331,29 @@
 					var newLabel = "";
 					
 					try {
-						newLabel = bound.art_semanticturkey.STRequests.SKOS.getShow(skosPrefLabelRemovedObj.getConceptName());
+						newLabel = bound.art_semanticturkey.STRequests.SKOS.getShow(eventObj.getConceptName());
 					} catch(e) {
 						alert(e);
 					}
 					
 					for (var i = 0 ; i < bound._view.visibleRows2.length ; i++) {
-						if (bound._view.visibleRows2[i].id == skosPrefLabelRemovedObj.getConceptName()) {
+						if (bound._view.visibleRows2[i].id == eventObj.getConceptName()) {
 							bound._view.visibleRows2[i].record["label"] = newLabel;
 							bound._view.invalidateRow(i);
 						}
 					}
-				}, null);
-
+				}
 				
-				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeRemoved", function(eventId, skosSchemeRemovedObj) {
-					if (skosSchemeRemovedObj.getSchemeName() == bound.conceptScheme) {
+				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelRemoved", skosPrefLabelRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlPrefLabelRemoved", skosPrefLabelRemovedHandler, null);
+
+				function skosSchemeRemovedHandler(eventId, eventObj) {
+					if (eventObj.getSchemeName() == bound.conceptScheme) {
 						bound.conceptScheme = "";
 					}
-				}, null);
+				}
+				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeRemoved", skosSchemeRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlSchemeRemoved", skosSchemeRemovedHandler, null);
 
 				this.ctxMenuTracker = new this.art_semanticturkey.MenuPopupTrackerAdapter("skos:concept*edit", this, ctxMenu);
 				this.art_semanticturkey.CommandBroker.registerTracker(this.ctxMenuTracker);

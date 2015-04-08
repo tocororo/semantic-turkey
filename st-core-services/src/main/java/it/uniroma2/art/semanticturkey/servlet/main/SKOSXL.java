@@ -556,23 +556,35 @@ public class SKOSXL extends SKOS {
 
 			//ARTURIResource prefXLabel = skosxlModel.addXLabel(createURIForXLabel(skosxlModel), prefLabel,
 			//		prefLabelLang, getWorkingGraph());
-			ARTURIResAndRandomString prefXLabelURIAndRandomValue = generateXLabelURI(skosxlModel, 
-					prefLabelLang, graphs);
-			ARTURIResource prefXLabelURI = prefXLabelURIAndRandomValue.getArtURIResource();
-			String randomXLabelValue = prefXLabelURIAndRandomValue.getRandomValue();
-			ARTURIResource prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel,
-					prefLabelLang, getWorkingGraph());
 			
-			skosxlModel.setPrefXLabel(newConcept, prefXLabel, getWorkingGraph());
+			ARTURIResource prefXLabel = null;
+			String randomXLabelValue = null;
+			
+			if (prefLabel != null && prefLabelLang != null) {
+				ARTURIResAndRandomString prefXLabelURIAndRandomValue = generateXLabelURI(skosxlModel, 
+						prefLabelLang, graphs);
+				ARTURIResource prefXLabelURI = prefXLabelURIAndRandomValue.getArtURIResource();
+				randomXLabelValue = prefXLabelURIAndRandomValue.getRandomValue();
+				prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel,
+						prefLabelLang, getWorkingGraph());
+				
+				skosxlModel.setPrefXLabel(newConcept, prefXLabel, getWorkingGraph());				
+			}
+
 
 			RDFXMLHelp.addRDFNode(response, createSTConcept(skosxlModel, newConcept, true, language));
 			
 			if(randomConceptValue != null){
 				XMLHelp.newElement(response.getDataElement(), "randomForConcept", randomConceptValue);
 			}
-			RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabel, true));
-			XMLHelp.newElement(response.getDataElement(), "randomForPrefXLabel", randomXLabelValue);
-
+			
+			if (prefXLabel != null) {
+				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabel, true));
+			}
+			
+			if (randomXLabelValue != null) {
+				XMLHelp.newElement(response.getDataElement(), "randomForPrefXLabel", randomXLabelValue);
+			}
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {

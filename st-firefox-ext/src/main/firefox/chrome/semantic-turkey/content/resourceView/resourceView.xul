@@ -31,9 +31,16 @@
 	<script type="application/x-javascript" src="resourceView.js" />
 	<script type="text/javascript" src="chrome://semantic-turkey/content/event/eventObjects.js" />
 
+	<popupset>
+		<menupopup id="web-link-context-menu">
+			<menuitem label="Copy URL" id="web-link-copy"/>
+		</menupopup>
+	</popupset>
+
 	<scrollbox style="overflow:auto" flex="1">
 		<vbox id="resourceViewBox" flex="1">
 			<hbox align="center">
+				<image id="resourceRoleIcon" style="max-height:20px; max-width:20px" />
 				<label value="Name:" control="resourceNameBox" />
 				<textbox id="resourceNameBox" flex="1" readonly="true" />
 				<hbox id="resourceButtonsBox">

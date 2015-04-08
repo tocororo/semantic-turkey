@@ -53,15 +53,15 @@ public class PropertyFacets implements ResourceViewSection {
 		}
 
 		if (inverseFunctional) {
-			Element functionalElement = XMLHelp.newElement(parent, "inverseFunctional");
-			functionalElement.setAttribute("value", "true");
-			functionalElement.setAttribute("explicit", Boolean.toString(inverseFunctionalExplicit));
+			Element inverseFunctionalElement = XMLHelp.newElement(parent, "inverseFunctional");
+			inverseFunctionalElement.setAttribute("value", "true");
+			inverseFunctionalElement.setAttribute("explicit", Boolean.toString(inverseFunctionalExplicit));
 		}
 
 		if (transitive) {
-			Element functionalElement = XMLHelp.newElement(parent, "transitive");
-			functionalElement.setAttribute("value", "true");
-			functionalElement.setAttribute("explicit", Boolean.toString(transitiveExplicit));
+			Element transitiveElement = XMLHelp.newElement(parent, "transitive");
+			transitiveElement.setAttribute("value", "true");
+			transitiveElement.setAttribute("explicit", Boolean.toString(transitiveExplicit));
 		}
 
 		Element inverseOfElement = XMLHelp.newElement(parent, "inverseof");

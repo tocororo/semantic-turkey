@@ -174,22 +174,26 @@
 					}
 				}, null);
 				
-				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelSet", function(eventId, skosPrefLabelSetObj) {
+				function skosPrefLabelSetHandler(eventId, eventObj) {
 					if (!isHumanReadable) return;
 					
-					if (skosPrefLabelSetObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
+					if (eventObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
 						return;
 					}
 					
 					for (var i = 0 ; i < bound._view.visibleRows2.length ; i++) {
-						if (bound._view.visibleRows2[i].id == skosPrefLabelSetObj.getConceptName()) {
-							bound._view.visibleRows2[i].record.label = skosPrefLabelSetObj.getLabel();
+						if (bound._view.visibleRows2[i].id == eventObj.getConceptName()) {
+							bound._view.visibleRows2[i].record.label = eventObj.getLabel();
 							bound._view.invalidateRow(i);
 						}
-					}
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelRemoved", function(eventId, skosPrefLabelRemovedObj) {
-					if (skosPrefLabelRemovedObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
+					}				
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelSet", skosPrefLabelSetHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlPrefLabelSet", skosPrefLabelSetHandler, null);
+			
+				function skosPrefLabelRemovedHandler(eventId, eventObj) {
+					if (eventObj.getLang() != bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en")) {
 						return;
 					}
 					
@@ -197,32 +201,42 @@
 					
 					var newLabel = "";
 					try {
-						newLabel = bound.art_semanticturkey.STRequests.SKOS.getShow(skosPrefLabelRemovedObj.getConceptName());
+						newLabel = bound.art_semanticturkey.STRequests.SKOS.getShow(eventObj.getConceptName());
 					} catch(e) {
 						alert(e);
 					}
 					
 					
 					for (var i = 0 ; i < bound._view.visibleRows2.length ; i++) {
-						if (bound._view.visibleRows2[i].id == skosPrefLabelRemovedObj.getConceptName()) {
+						if (bound._view.visibleRows2[i].id == eventObj.getConceptName()) {
 							bound._view.visibleRows2[i].record["label"] = newLabel;
 							bound._view.invalidateRow(i);
 						}
-					}
-				}, null);
+					}				
+				}
+			
+				this.stEventArray.addEventListenerToArrayAndRegister("skosPrefLabelRemoved", skosPrefLabelRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlPrefLabelRemoved", skosPrefLabelRemovedHandler, null);
 				
-				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeRemoved", function(eventId, skosSchemeRemovedObj) {
-					bound._view.removeRows(skosSchemeRemovedObj.getSchemeName());
-				}, null);
-				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeAdded", function(eventId, skosSchemeAddedObj) {
-					var n = skosSchemeAddedObj.getSchemeName();
-					var l = skosSchemeAddedObj.getLabel();
-					var u = skosSchemeAddedObj.getURI();
+				function skosSchemeRemovedHandler(eventId, eventObj) {
+					bound._view.removeRows(eventObj.getSchemeName());
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeRemoved", skosSchemeRemovedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlSchemeRemoved", skosSchemeRemovedHandler, null);
+				
+				function skosSchemeAddedHandler(eventId, eventObj) {
+					var n = eventObj.getSchemeName();
+					var l = eventObj.getLabel();
+					var u = eventObj.getURI();
 
 					var row = new DataRow({uri : u, name : n, label : l});
 
-					bound._view.addRow(null, row);
-				}, null);
+					bound._view.addRow(null, row);				
+				}
+				
+				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeAdded", skosSchemeAddedHandler, null);
+				this.stEventArray.addEventListenerToArrayAndRegister("skosxlSchemeAdded", skosSchemeAddedHandler, null);
 
 				var ctxMenu = document.getAnonymousElementByAttribute(this, "ano_id", "ctx");
 				var taxonomyToolbar = document.getAnonymousElementByAttribute(this, "ano_id", "taxonomyToolbar");

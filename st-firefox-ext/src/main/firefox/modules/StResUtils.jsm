@@ -58,6 +58,8 @@ function getImageSrc(rdfRes, operation) {
 		} else if(operation == "remove"){
 			if (role == "concept") {
 				src = "chrome://semantic-turkey/skin/images/skosConcept20x20.png";
+			} else if (role == "conceptScheme") {
+				src = "chrome://semantic-turkey/skin/images/skosScheme20x20.png";
 			} else if (role == "individual") {
 				src = "chrome://semantic-turkey/skin/images/individual20x20.png";
 			} else if (role == "cls") {

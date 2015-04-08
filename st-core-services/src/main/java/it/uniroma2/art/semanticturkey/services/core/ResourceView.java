@@ -72,20 +72,10 @@ import it.uniroma2.art.semanticturkey.rendering.RenderingOrchestrator;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.core.impl.BroaderStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.DomainsStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.LexicalizationsStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.OntologyImportsStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.OtherPropertiesStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.PropertyFactesStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.RangesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.impl.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.impl.StatementCollector;
 import it.uniroma2.art.semanticturkey.services.core.impl.StatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.SubClassOfStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.SubPropertyOfStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.TopConceptsStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.impl.TypesStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.impl.StatementConsumerProvider;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -126,54 +116,6 @@ public class ResourceView extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
 	
-	private Map<RDFResourceRolesEnum, List<StatementConsumer>> role2template;
-
-	private TypesStatementConsumer typesStatementConsumer;
-
-	private SubClassOfStatementConsumer subClassofStatementConsumer;
-
-	private LexicalizationsStatementConsumer lexicalizationsStatementConsumer;
-
-	private BroaderStatementConsumer broaderStatementConsumer;
-
-	private SubPropertyOfStatementConsumer subPropertyOfStatementConsumer;
-
-	private PropertyFactesStatementConsumer propertyFactesStatementConsumer;
-
-	private DomainsStatementConsumer domainsStatementConsumer;
-
-	private RangesStatementConsumer rangesStatementConsumer;
-
-	private TopConceptsStatementConsumer topConceptsStatementConsumer;
-
-	private OntologyImportsStatementConsumer ontologyImportsStatementConsumer;
-
-	private OtherPropertiesStatementConsumer otherPropertiesStatementConsumer;
-
-	public ResourceView() {
-		typesStatementConsumer = new TypesStatementConsumer();
-		subClassofStatementConsumer = new SubClassOfStatementConsumer();
-		lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer();
-		broaderStatementConsumer = new BroaderStatementConsumer();
-		subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer();
-		propertyFactesStatementConsumer = new PropertyFactesStatementConsumer();
-		domainsStatementConsumer = new DomainsStatementConsumer();
-		rangesStatementConsumer = new RangesStatementConsumer();
-		topConceptsStatementConsumer = new TopConceptsStatementConsumer();
-		ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer();
-		otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer();
-		
-		
-		role2template = new HashMap<RDFResourceRolesEnum, List<StatementConsumer>>();
-		role2template.put(RDFResourceRolesEnum.cls, Arrays.asList(typesStatementConsumer, subClassofStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.concept, Arrays.asList(typesStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.property, Arrays.asList(typesStatementConsumer, subPropertyOfStatementConsumer, lexicalizationsStatementConsumer, propertyFactesStatementConsumer, domainsStatementConsumer, rangesStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.conceptScheme, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, topConceptsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.ontology, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, ontologyImportsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.individual, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-	}
-	
-	// TODO: implement a converter for ResourcePosition
 	@GenerateSTServiceController
 	public Response getResourceView(ARTResource resource, @Optional ResourcePosition resourcePosition) throws Exception {
 		OWLModel owlModel = getOWLModel();
@@ -224,16 +166,20 @@ public class ResourceView extends STServiceAdapter {
 		String gp_literalForm = "optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?xlabel_literalForm}";
 
 		String gp = String.format(
-				"{{{%1$s ?resource ?object . %4$s} union {%1$s ?predicate ?resource}} {%2$s union %3$s}}",
-				RDFNodeSerializer.toNT(resource), gp_rendering, gp_role, gp_literalForm);
+				"{{?resource ?predicate ?object . %1$s} {%2$s union %3$s}}",gp_literalForm,gp_rendering, gp_role);
 
 		logger.debug("graph pattern for resource {} is {}", resource, gp);
 
-		Collection<TupleBindings> bindings = matchGraphPattern(resourcePosition, gp);
+		Collection<TupleBindings> bindings = matchGraphPattern(resourcePosition, resource, gp);
 
 		Map<ARTResource, String> resource2Rendering = renderingOrchestrator.render(project, resourcePosition,
 				resource, stmtCollector.getStatements(), resourcesToBeRendered, bindings, "rendering_");
 
+		logger.debug("graph pattern: {}", gp);
+		logger.debug("resources to be rendered: {}", resourcesToBeRendered);
+		logger.debug("resource2Rendering: {}", resource2Rendering);
+		
+		
 		Map<ARTResource, RDFResourceRolesEnum> resource2Role = roleRecognitionOrchestrator.computeRoleOf(
 				project, resourcePosition, resource, stmtCollector.getStatements(), resourcesToBeRendered,
 				bindings, "role_");
@@ -310,7 +256,7 @@ public class ResourceView extends STServiceAdapter {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
 		
-		for (StatementConsumer stmtConsumer : getTemplateForResourceRole(resourceRole)) {
+		for (StatementConsumer stmtConsumer : StatementConsumerProvider.getInstace().getTemplateForResourceRole(resourceRole)) {
 			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(getProject(), resource, resourcePosition, resourceRole, stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
 		
 			result.putAll(newResults);
@@ -400,7 +346,7 @@ public class ResourceView extends STServiceAdapter {
 		return Arrays.asList(RDFS.Res.LABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL, SKOS.Res.HIDDENLABEL);
 	}
 
-	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition, String gp)
+	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition, ARTResource resource, String gp)
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
 			QueryEvaluationException, UnavailableResourceException, ProjectInconsistentException,
 			ModelCreationException {
@@ -410,6 +356,7 @@ public class ResourceView extends STServiceAdapter {
 					((LocalResourcePosition) resourcePosition).getProject());
 			RDFModel ontModel = ((LocalResourcePosition) resourcePosition).getProject().getOntModel();
 			TupleQuery q = ontModel.createTupleQuery("select * where " + gp);
+			q.setBinding("resource", resource);
 			TupleBindingsIterator bindingsIt = q.evaluate(true);
 			try {
 				return Arrays.asList(Iterators.toArray(bindingsIt, TupleBindings.class));
@@ -431,6 +378,7 @@ public class ResourceView extends STServiceAdapter {
 				TripleQueryModelHTTPConnection conn = fact.loadTripleQueryHTTPConnection(sparqlEndpoint);
 				try {
 					TupleQuery q = conn.createTupleQuery(QueryLanguage.SPARQL, "select * where " + gp, null);
+					q.setBinding("resource", resource);
 					TupleBindingsIterator bindingsIt = q.evaluate(true);
 					try {
 						return Arrays.asList(Iterators.toArray(bindingsIt, TupleBindings.class));
@@ -538,22 +486,6 @@ public class ResourceView extends STServiceAdapter {
 	private ModelFactory<?> getCurrentModelFactory() throws UnavailableResourceException,
 			ProjectInconsistentException {
 		return PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-	}
-	
-	private List<StatementConsumer> getTemplateForResourceRole(RDFResourceRolesEnum role) {
-		if (role.isProperty()) {
-			return role2template.get(RDFResourceRolesEnum.property);
-		} else if (role.isClass()) {
-			return role2template.get(RDFResourceRolesEnum.cls);
-		} else {
-			List<StatementConsumer> result = role2template.get(role);
-			
-			if (result != null) {
-				return result;
-			} else {
-				return role2template.get(RDFResourceRolesEnum.individual);
-			}
-		}
 	}
 	
 }
