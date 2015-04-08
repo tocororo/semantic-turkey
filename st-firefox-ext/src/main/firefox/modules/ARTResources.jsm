@@ -121,8 +121,10 @@ ARTURIResource.constructor = ARTURIResource;
 
 /********** ARTBNode *******************/
 
-ARTBNode = function(id, show){
+ARTBNode = function(id, role, show){
 	var id = id;
+	var role = role;
+	var show = show;
 	
 	this.isResource = function(){
 		return true;
@@ -138,6 +140,10 @@ ARTBNode = function(id, show){
 	
 	this.getNominalValue = function() {
 		return "_:" + id;
+	};
+	
+	this.getRole = function(){
+		return role;	
 	};
 	
 	this.toNT = function() {

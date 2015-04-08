@@ -67,9 +67,10 @@ function createBlankNode(response){
 		bnodeElement = response.getElementsByTagName('bnode')[0];
 	var id = bnodeElement.textContent;
 	var showValue = bnodeElement.getAttribute("show");
+	var roleValue = bnodeElement.getAttribute('role');
 	var explicitValue = bnodeElement.getAttribute('explicit');
 	
-	var bNodeRes = new ARTBNode(id, showValue);
+	var bNodeRes = new ARTBNode(id, roleValue, showValue);
 	// bNodeRes.show = showValue;
 	bNodeRes.explicit = explicitValue;
 	return bNodeRes;

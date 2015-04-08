@@ -10,7 +10,7 @@ function getImageSrc(rdfRes, operation) {
 	// src
 	var src="";
 
-	if (rdfRes instanceof ARTURIResource) {
+	if (rdfRes instanceof ARTURIResource || rdfRes instanceof ARTBNode) {
 		var role = rdfRes.getRole();
 		var explicit = rdfRes.explicit;
 		if (typeof operation == "undefined") {
@@ -82,9 +82,7 @@ function getImageSrc(rdfRes, operation) {
 			src = "chrome://semantic-turkey/skin/images/flags/"+lang+".gif";
 		}
 
-	} else { // rdfRes instanceof ARTBNode
-
-	}
+	} 
 
 	return src;
 };
