@@ -6,6 +6,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey)
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/OntManager.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/PrefUtils.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("projects-main-window").setAttribute("title",
@@ -38,7 +39,18 @@ window.onload = function() {
 
 	document.getElementById("projectsTree")
 			.addEventListener("click", art_semanticturkey.clickOnAProject, true);		
-			
+	
+	document.getElementById("nonClosingMode").addEventListener("command", art_semanticturkey.toggleClosingModality,true);
+	
+	
+	var prefListener = new art_semanticturkey.PrefListener("extensions.semturkey.nonClosingMode", function(branch, name) {
+		document.getElementById("nonClosingMode").checked = art_semanticturkey.Preferences.get("extensions.semturkey.nonClosingMode", false);
+	});
+	prefListener.register(true);
+	
+	window.addEventListener("unload", function() {prefListener.unregister();}, false);
+	
+	
 	art_semanticturkey.populateProjectsList();
 };
 
@@ -57,8 +69,8 @@ art_semanticturkey.clickOnAProject = function(event){
 	var part = {};
 	tree.treeBoxObject.getCellAt(event.clientX, event.clientY, row, col, part);
 	var selTreeitem = tree.contentView.getItemAtIndex(row.value);
-	var projName = selTreeitem.getElementsByTagName("treecell")[1].getAttribute("label");
-	var hasIssues = selTreeitem.getElementsByTagName("treecell")[5].getAttribute("hasIssues");
+	var projName = selTreeitem.getElementsByTagName("treecell")[2].getAttribute("label");
+	var hasIssues = selTreeitem.getElementsByTagName("treecell")[6].getAttribute("hasIssues");
 	if(event.button == 2){
 		if(hasIssues == "true"){
 			document.getElementById("openProject").setAttribute("hidden", "true");
@@ -98,13 +110,13 @@ art_semanticturkey.setDeafultProject = function(event, hasIssues){
 	alert("b row.value = "+row.value+" col.value = "+col.value+" tree.currentIndex = "+tree.currentIndex);*/
 	var selTreeitem = tree.contentView.getItemAtIndex(tree.currentIndex);
 	if( typeof hasIssues == 'undefined' ){
-		hasIssues = selTreeitem.getElementsByTagName("treecell")[5].getAttribute("hasIssues") ;
+		hasIssues = selTreeitem.getElementsByTagName("treecell")[6].getAttribute("hasIssues") ;
 	}
 	//check if the selected problem does not have any issues
 	if(hasIssues == "false"){
 		var hint = art_semanticturkey.Preferences.get("extensions.semturkey.hints.defaultProject", true);
 		if(hint == true){
-			var projectName = selTreeitem.getElementsByTagName("treecell")[1].getAttribute("label");
+			var projectName = selTreeitem.getElementsByTagName("treecell")[2].getAttribute("label");
 			var parameters = new Object();
 			parameters.parentWindow = window;
 			parameters.projectName = projectName;
@@ -123,9 +135,9 @@ art_semanticturkey.setDeafultProject = function(event, hasIssues){
 			//set this project as the default one
 			selTreeitem.getElementsByTagName("treecell")[0].setAttribute("src", "chrome://global/skin/checkbox/cbox-check.gif");
 			art_semanticturkey.Preferences.set("extensions.semturkey.isDefaultSet", true);
-			var projName = selTreeitem.getElementsByTagName("treecell")[1].getAttribute("label");
+			var projName = selTreeitem.getElementsByTagName("treecell")[2].getAttribute("label");
 			art_semanticturkey.Preferences.set("extensions.semturkey.defaultProjectName", projName);
-			var projOntType = selTreeitem.getElementsByTagName("treecell")[4].getAttribute("label");
+			var projOntType = selTreeitem.getElementsByTagName("treecell")[5].getAttribute("label");
 			art_semanticturkey.Preferences.set("extensions.semturkey.defaultProjectOntType", projOntType);
 		}
 	}
@@ -159,6 +171,7 @@ art_semanticturkey.getListProjects_RESPONSE = function(responseElement) {
 		var status = projects[i].getAttribute("status");
 		var type = projects[i].getAttribute("type");
 		var ontoType = projects[i].getAttribute("ontoType");
+		var projectOpen = projects[i].getAttribute("open");
 
 		var tr = document.createElement("treerow");
 		
@@ -169,6 +182,11 @@ art_semanticturkey.getListProjects_RESPONSE = function(responseElement) {
 		else
 			tcMainProject.setAttribute("src", "");
 		tr.appendChild(tcMainProject);
+		
+		var tcOpen = document.createElement("treecell");
+		tcOpen.setAttribute("src", projectOpen == "true" ? "chrome://semantic-turkey/skin/images/folder-open.gif" : "chrome://semantic-turkey/skin/images/folder.gif");
+		tcOpen.setAttribute("open", projectOpen);
+		tr.appendChild(tcOpen);
 		
 		var tcName = document.createElement("treecell");
 		tcName.setAttribute("label", projectName);
@@ -216,11 +234,11 @@ art_semanticturkey.openProject = function() {
 	}
 	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
 	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecellName = treerow.getElementsByTagName('treecell')[1];
+	var treecellName = treerow.getElementsByTagName('treecell')[2];
 	var projectName = treecellName.getAttribute("label");
 	var projectType = treecellName.getAttribute("typeProject");
-	var ontoType = treerow.getElementsByTagName('treecell')[4].getAttribute("label");
-	var issueItem = currentElement.getElementsByTagName("treecell")[5];
+	var ontoType = treerow.getElementsByTagName('treecell')[5].getAttribute("label");
+	var issueItem = currentElement.getElementsByTagName("treecell")[6];
 	if(issueItem.getAttribute("hasIssues") == "true"){
 		var issue = issueItem.getAttribute("issue");
 		alert(issue);
@@ -335,7 +353,7 @@ art_semanticturkey.deleteProject = function() {
 	}
 	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
 	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecell = treerow.getElementsByTagName('treecell')[1];
+	var treecell = treerow.getElementsByTagName('treecell')[2];
 	var projectName = treecell.getAttribute("label");
 
 	try {
@@ -364,7 +382,7 @@ art_semanticturkey.cloneProject = function() {
 	}
 	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
 	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecell = treerow.getElementsByTagName('treecell')[1];
+	var treecell = treerow.getElementsByTagName('treecell')[2];
 	var projectName = treecell.getAttribute("label");
 
 	var parameters = new Object();
@@ -391,10 +409,10 @@ art_semanticturkey.tryRepairProject = function() {
 	}
 	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
 	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecell = treerow.getElementsByTagName('treecell')[1];
+	var treecell = treerow.getElementsByTagName('treecell')[2];
 	var projectName = treecell.getAttribute("label");
 
-	var issue = treerow.getElementsByTagName('treecell')[5].getAttribute("issue");
+	var issue = treerow.getElementsByTagName('treecell')[6].getAttribute("issue");
 	
 	var parameters = new Object();
 	parameters.parentWindow = window;
@@ -418,7 +436,7 @@ art_semanticturkey.projectProperty = function() {
 	}
 	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
 	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecell = treerow.getElementsByTagName('treecell')[1];
+	var treecell = treerow.getElementsByTagName('treecell')[2];
 	var projectName = treecell.getAttribute("label");
 	
 	if (projectName == art_semanticturkey.CurrentProject.getProjectName()){
@@ -439,7 +457,7 @@ art_semanticturkey.editACL = function() {
 	}
 	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
 	var treerow = currentElement.getElementsByTagName('treerow')[0];
-	var treecell = treerow.getElementsByTagName('treecell')[1];
+	var treecell = treerow.getElementsByTagName('treecell')[2];
 	var projectName = treecell.getAttribute("label");
 	
 	var parameters = { projectName : projectName}; 
@@ -451,6 +469,10 @@ art_semanticturkey.openACLMatrix = function() {
 	window.openDialog("chrome://semantic-turkey/content/projects/aclEditor/aclMatrix.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,centerscreen");
 }
+
+art_semanticturkey.toggleClosingModality = function() {
+	art_semanticturkey.Preferences.set("extensions.semturkey.nonClosingMode", document.getElementById("nonClosingMode").checked);
+};
 
 /*
 art_semanticturkey.closeAndRestartFirefox = function() {

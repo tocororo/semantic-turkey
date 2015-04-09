@@ -58,6 +58,8 @@
 			<treecols>
 				<treecol id="defaultProjectSel" label="D" flex="1"
 						 tooltiptext="if checkbox is enabled, the project will be loaded by default when ST is started"/>
+				<treecol id="projectOpen" label="O" flex="1"
+						 tooltiptext="tells if the project is already open in the backing server"/>			 
 				<treecol id="projectName" label="Project Name" flex="7" 
 						 tooltiptext="the name of the project"/>
 				<splitter class="tree-splitter" />
@@ -113,6 +115,7 @@
 			</menulist>
 		</toolbox>
 		<button id="aclMatrix" label="ACL matrix" tooltiptext="Visualize a matrix of projects' Access Control List"/>
+		<checkbox id="nonClosingMode" label="Non-closing mode" tooltiptext="Enable this option to avoid that the current project is closed when another project is opened"/>
 	    <spacer flex="1" />
 		<button id="close" label="Close" 
 					tooltiptext="Close this window"/>

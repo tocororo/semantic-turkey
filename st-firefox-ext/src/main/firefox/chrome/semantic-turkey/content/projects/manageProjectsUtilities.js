@@ -2,6 +2,7 @@ if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
@@ -28,10 +29,13 @@ art_semanticturkey.closeProject = function(){
 		}
 		art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "nullProject", "nullModel");
 		
-		var responseXML = art_semanticturkey.STRequests.Projects.disconnectFromProject(currentProjectName);
+		var responseXML = null;
 		
+		if (!art_semanticturkey.Preferences.get("extensions.semturkey.nonClosingMode", false)) {
+			responseXML = art_semanticturkey.STRequests.Projects.disconnectFromProject(currentProjectName);
+		}
 		
-		
+		// It seems that the argument responseXML is never used in the method, so it is safe to pass null, when the project is not close
 		art_semanticturkey.closeProject_RESPONSE(responseXML, currentProectName);
 	}
 	catch (e) {
