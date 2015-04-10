@@ -19,9 +19,12 @@
  * http://semanticturkey.uniroma2.it
  * 
  */
-
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
+
+Components.utils.import("resource://stmodules/Logger.jsm");
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 
 art_semanticturkey.associateOntologySearchEventsOnGraphicElements = function(
 		types) {
@@ -31,6 +34,9 @@ art_semanticturkey.associateOntologySearchEventsOnGraphicElements = function(
 	} else if (types == "property") {
 		document.getElementById("ontosearch_prop").addEventListener("keypress",
 				art_semanticturkey.ontoSearch_prop, true);
+	} else if (types == "concept") {
+		document.getElementById("ontosearch_conc").addEventListener("keypress",
+				art_semanticturkey.ontoSearch_conc, true);
 	}
 };
 art_semanticturkey.ontoSearch_clsNInd = function(event) {
@@ -42,6 +48,12 @@ art_semanticturkey.ontoSearch_prop = function(event) {
 	var types = "property";
 	art_semanticturkey.ontoSearch(event, types);
 };
+
+art_semanticturkey.ontoSearch_conc = function(event) {
+	var types = "concept";
+	art_semanticturkey.ontoSearch(event, types);
+};
+
 /**
  * @author Noemi 13/01/2010 invoke ontoSearch request for class and instance
  */
@@ -49,13 +61,23 @@ art_semanticturkey.ontoSearch = function(event, types) {
 	try {
 		// 13 is enter key code
 		if (event.keyCode == 13) {
-			if (types == "clsNInd") {
-				var inputString = document.getElementById("ontosearch").value;
+			var responseCollection;
+			if (types == "concept"){
+				var inputString = document.getElementById("ontosearch_conc").value;
+				var xmlResp = art_semanticturkey.STRequests.Projects.getProjectProperty(
+					    art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
+				var scheme = xmlResp.getElementsByTagName("property")[0].getAttribute("value");
+				responseCollection = art_semanticturkey.STRequests.OntoSearch
+					.searchOntology(inputString, types, scheme);
 			} else {
-				var inputString = document.getElementById("ontosearch_prop").value;
-			}
-			var responseCollection = art_semanticturkey.STRequests.OntoSearch
+				if (types == "clsNInd") {
+					var inputString = document.getElementById("ontosearch").value;
+				} else if (types == "property") {
+					var inputString = document.getElementById("ontosearch_prop").value;
+				}
+				responseCollection = art_semanticturkey.STRequests.OntoSearch
 					.searchOntology(inputString, types);
+			}
 			art_semanticturkey.OntoSearch_RESPONSE(responseCollection, types);
 		}
 	} catch (e) {
@@ -71,11 +93,10 @@ art_semanticturkey.OntoSearch_RESPONSE = function(responseCollection, types) {
 		parameters.foundList = responseCollection;
 		parameters.parentWindow = window;
 		parameters.types = types;
-		window
-				.openDialog(
-						"chrome://semantic-turkey/content/ontologySearch/searchResults.xul",
-						"_blank", "modal=yes,resizable,centerscreen",
-						parameters);
+		window.openDialog(
+				"chrome://semantic-turkey/content/ontologySearch/searchResults.xul",
+				"_blank", "modal=yes,resizable,centerscreen",
+				parameters);
 	} else if (responseCollection.length == 1) {
 		var typeNameCollection = "";
 		//if (resType == "owl:Individual") {
@@ -90,14 +111,21 @@ art_semanticturkey.OntoSearch_RESPONSE = function(responseCollection, types) {
 		}
 		var myTree = null;
 		var myList = null;
-		if (types == "clsNInd") {
-			myTree = document.getElementById("classesTree");
-			myList = document.getElementById("IndividualsList");
-		} else if (types == "property") {
-			myTree = document.getElementById("propertiesTree");
+		if (types == "concept"){
+			myTree = document.getElementById("conceptTree");
+			//in this case, as "resName" (4th parameter), pass the URI, not the show attribute that could be the concept label
+			art_semanticturkey.searchFocus(myTree, myList, responseCollection[0].getRole(), responseCollection[0].getURI(),
+					typeNameCollection);
+		} else {
+			if (types == "clsNInd") {
+				myTree = document.getElementById("classesTree");
+				myList = document.getElementById("IndividualsList");
+			} else if (types == "property") {
+				myTree = document.getElementById("propertiesTree");
+			}
+			art_semanticturkey.searchFocus(myTree, myList, responseCollection[0].getRole(), responseCollection[0].getShow(),
+					typeNameCollection);
 		}
-		art_semanticturkey.searchFocus(myTree, myList, responseCollection[0].getRole(), responseCollection[0].getShow(),
-				typeNameCollection);
 	} else if (responseCollection.length == 0) {
 		alert("No match found");
 	}
@@ -135,14 +163,15 @@ art_semanticturkey.searchFocus = function(myTree, myList, resType, resName,
 		var responseArray = art_semanticturkey.STRequests.Cls
 				.getClassAndInstancesInfo(resName);
 		art_semanticturkey.getClassAndInstancesInfo_RESPONSE(responseArray, myList);
-		
 	} else if (resType == "lexicalization") {
 		// TODO Mancano le lexicalization nella ricerca
-	} else if (resType.indexOf("Property")) {
+	} else if (resType == "concept") {
+		art_semanticturkey.selectElementConcept(myTree, resName);
+	} else if (resType.indexOf("Property") > 0) {
 		art_semanticturkey.selectElementClass(myTree, resName);
-	}
-
+	} 
 };
+
 art_semanticturkey.selectElementClass = function(myTree, resNameShow) {
 	var visible = false;
 
@@ -200,3 +229,10 @@ art_semanticturkey.selectElementClass = function(myTree, resNameShow) {
 		}
 	}
 };
+
+art_semanticturkey.selectElementConcept = function(myTree, concUri) {
+	var xmlResp = art_semanticturkey.STRequests.Projects.getProjectProperty(
+		    art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
+	var scheme = xmlResp.getElementsByTagName("property")[0].getAttribute("value");
+	myTree.focusOnConcept(concUri, scheme);
+}

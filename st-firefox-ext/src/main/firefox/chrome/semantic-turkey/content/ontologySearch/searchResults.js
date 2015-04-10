@@ -22,6 +22,7 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
+Components.utils.import("resource://stmodules/Logger.jsm");
 
 window.onload = function() {
 	document.getElementById("selectResult").addEventListener("click",
@@ -65,14 +66,16 @@ art_semanticturkey.selectResult = function() {
 	var myList="";
 	if (types == "clsNInd") {
 		myTree = parentWindow.document.getElementById("classesTree");  
-		myList =parentWindow.document.getElementById("IndividualsList");
-	}else if (types == "property"){
-		myTree =parentWindow.document.getElementById("propertiesTree");
+		myList = parentWindow.document.getElementById("IndividualsList");
+	} else if (types == "property") {
+		myTree = parentWindow.document.getElementById("propertiesTree");
+	} else if (types == "concept") {
+		resName = sourceElement.getAttribute("uri");//in this case I need uri of concept, not the label
+		myTree = parentWindow.document.getElementById("conceptTree");
 	}
 	close();	
-	
+
 	parentWindow.art_semanticturkey.searchFocus(myTree, myList, resType, resName, typeNameCollection);
-	
 };
 
 /**
@@ -83,11 +86,13 @@ art_semanticturkey.initList = function(foundList) {
 	for (var i = 0; i < foundList.length; i++) {
 		var type = foundList[i].getRole();
 		var name = foundList[i].getShow();
+		var uri = foundList[i].getURI();
 		// var typeName = foundList[i].getAttribute("type");
 		var myList = document.getElementById("SearchList"); 
 		var lsti = document.createElement("listitem");
 		lsti.setAttribute("resType", type);
 		lsti.setAttribute("typeName", name);
+		lsti.setAttribute("uri", uri);
 		var lci = document.createElement("listitem-iconic");
 		var img = document.createElement("image");
 		var lbl = document.createElement("label");
@@ -119,11 +124,13 @@ art_semanticturkey.initList = function(foundList) {
 			img.setAttribute("src", "chrome://semantic-turkey/skin/images/propDatatype20x20.png");
 		} else if (type == "annotationProperty") {
 			img.setAttribute("src", "chrome://semantic-turkey/skin/images/propAnnotation20x20.png");
+		} else if (type == "concept") {
+			img.setAttribute("src", "chrome://semantic-turkey/skin/images/skosConcept20x20.png");
 		} else {
 			img.setAttribute("src", "chrome://semantic-turkey/skin/images/prop20x20.png");
 		}
 		var name = foundList[i].getShow();
-		lsti.setAttribute("label", foundList[i].getShow());
+		lsti.setAttribute("label", name);
 		lbl.setAttribute("value", name);
 		lci.appendChild(img);
 		lci.appendChild(lbl);

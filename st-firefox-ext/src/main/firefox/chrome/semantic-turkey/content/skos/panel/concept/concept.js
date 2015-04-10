@@ -11,6 +11,8 @@ Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey
 
 art_semanticturkey.init = function() {
 	
+	art_semanticturkey.associateOntologySearchEventsOnGraphicElements("concept");
+	
 	var selectSchemeHint = document.getElementById("selectSchemeHint");
 	selectSchemeHint.addEventListener("click", art_semanticturkey.onSelectSchemeHint, false);
 	

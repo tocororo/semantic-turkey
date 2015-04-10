@@ -32,10 +32,14 @@
         xmlns:st="http://semanticturkey.uniroma2.it/xmlns/widget#">
 	<script type="text/javascript" src="concept.js" />
 	<script type="text/javascript" src="chrome://semantic-turkey/content/event/eventObjects.js" />
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/ontologySearch/ontologySearch.js"/>
 	<stack flex="1">
 		<vbox id="stackedMessages">
 			<html:div id="selectSchemeMsg">Please, <html:a id="selectSchemeHint" href="#">select a concept scheme</html:a></html:div>
 		</vbox>
 		<st:conceptTree id="conceptTree" xul:flex="1" hideheading="true" />
 	</stack>
+	<textbox value="Enter query..." id="ontosearch_conc"
+	         onfocus="this.style.color='red'; this.value='';"
+	         onblur="this.style.color='black'; this.value='Search element...';" flex="0" />
 </window>

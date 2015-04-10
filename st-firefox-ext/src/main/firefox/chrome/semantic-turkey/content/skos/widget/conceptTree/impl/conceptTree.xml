@@ -35,6 +35,7 @@
 				Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Commands.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stservices/SERVICE_OntoSearch.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/PrefUtils.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Preferences.jsm", this.art_semanticturkey);				
 				Components.utils.import("resource://stmodules/ARTResources.jsm", this.art_semanticturkey);
@@ -445,6 +446,50 @@
 					}
 				</setter>
 			</property>
+			<method name="focusOnConcept">
+				<parameter name="concUri"/>
+				<parameter name="schemeName"/>
+				<body>
+				<![CDATA[
+					var tree = document.getAnonymousElementByAttribute(this, "ano_id", "taxonomyTree");
+					var rowCount = tree.view.rowCount;
+					indexOfRes = -1;
+					for (var i=0; i<rowCount; i++){
+						var row = this._view.getRow(i);
+						if (row.id == concUri){
+							indexOfRes = i;
+							break;
+						}
+					}
+					if (indexOfRes != -1){ //concept found in visible tree
+						//Logger.debug(concUri + " found at index " + indexOfRes);
+						tree.boxObject.ensureRowIsVisible(indexOfRes);
+						tree.view.selection.select(indexOfRes);
+					} else { //concept NOT found in visible tree
+						//get the path from root to concept 
+						var xmlResp = this.art_semanticturkey.STRequests.OntoSearch.getPathFromRoot(concUri, schemeName);
+						var path = xmlResp.getElementsByTagName("concept");
+						//Logger.debug("looking for " + concUri);
+						for (i=0; i<path.length; i++){
+							var pathElemUri = path[i].textContent;
+							for (var j=0; j<rowCount; j++){
+								var row = this._view.getRow(j);
+								if (row.id == concUri) {
+									//Logger.debug("searched concept " + concUri + " found, selecting");
+									tree.view.selection.select(j);
+									return;
+								} else if (row.id == pathElemUri){
+									//Logger.debug(pathElemUri + " found at level " + row.level + ". Opening");
+									if (!this._view.getRow(j).isContainerOpen){//open row only if is close
+										this._view.toggleOpenState(j);
+									}
+								}
+							}
+						}
+					}
+				]]>
+				</body>
+			</method> 
 		</implementation>
 	</binding>
 </bindings>

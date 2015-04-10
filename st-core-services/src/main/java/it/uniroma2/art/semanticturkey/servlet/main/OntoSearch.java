@@ -24,6 +24,7 @@
 package it.uniroma2.art.semanticturkey.servlet.main;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -44,12 +45,12 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.CompareNames;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -58,6 +59,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
+
+import com.google.common.collect.Iterators;
 
 /**Classe che effettua la ricerca di una parola all'interno dell'ontologia*/
 /**
@@ -77,6 +82,7 @@ public class OntoSearch extends ServiceAdapter {
 	public final double THRESHOLD = 0.70;
 
 	public static String searchOntologyRequest = "searchOntology";
+	public static String getPathFromRootRequest = "getPathFromRoot";
 
 	@Autowired
 	public OntoSearch(@Value("OntoSearch") String id) {
@@ -99,8 +105,14 @@ public class OntoSearch extends ServiceAdapter {
 		if (request.equals(searchOntologyRequest)) {
 			String inputString = setHttpPar("inputString");
 			String types = setHttpPar("types");
+			String scheme = setHttpPar("scheme");
 			checkRequestParametersAllNotNull("inputString", "types");
-			return searchOntology(inputString, types); // types
+			return searchOntology(inputString, types, scheme); // types
+		} else if (request.equals(getPathFromRootRequest)){
+			String conceptName = setHttpPar("concept");
+			String schemeName = setHttpPar("scheme");
+			checkRequestParametersAllNotNull("concept", "scheme");
+			return getPathFromRoot(conceptName, schemeName);
 		} else
 			return servletUtilities.createNoSuchHandlerExceptionResponse(request);
 
@@ -118,16 +130,17 @@ public class OntoSearch extends ServiceAdapter {
 	 * admitted types are given by strings in {@link}VocabularyTypesStrings class
 	 * 
 	 * @param inputString
+	 * @param types can be "clsNInd", "property" or "concept"
+	 * @param scheme useful only if types=="concept"
 	 * @return
 	 */
-	public Response searchOntology(String inputString, String types) {
+	public Response searchOntology(String inputString, String types, String scheme) {
 		ServletUtilities servletUtilities = ServletUtilities.getService();
 		String request = searchOntologyRequest;
 		logger.debug("searchString: " + inputString);
 
 		// consistency check on proposed types
-		if (!types.equals("property") && !types.equals("clsNInd") &&
-				!types.equals("skos") && !types.equals("skosxl"))
+		if (!types.equals("property") && !types.equals("clsNInd") && !types.equals("concept"))
 			return servletUtilities.createExceptionResponse(request,
 					"\"types\" parameter not correctly specified in GET request");
 
@@ -262,11 +275,20 @@ public class OntoSearch extends ServiceAdapter {
 					searchedProperties = ontModel.listProperties(NodeFilters.MAINGRAPH);
 					collectResults(searchedProperties, ontModel, results, searchStringNamespace, 
 							searchStringLocalName, namespaceGiven);
-				} else if(types.equals("skos") || types.equals("skosxl")){
-					ARTURIResourceIterator searchedConcepts;
-					searchedConcepts = ((SKOSModel) ontModel).listConcepts(true, NodeFilters.MAINGRAPH);
-					collectResults(searchedConcepts, ontModel, results, searchStringNamespace, 
-							searchStringLocalName,  namespaceGiven);
+				} else if(types.equals("concept")){
+					SKOSModel skosModel = (SKOSModel) ontModel;
+					ARTURIResourceIterator searchedConcepts = skosModel.listConcepts(true, NodeFilters.MAINGRAPH);
+					ARTURIResource schemeRes = null;
+					if (scheme != null) {
+						schemeRes = skosModel.createURIResource(scheme); 
+						Iterator<ARTURIResource> filteredForScheme = Iterators.filter(
+								searchedConcepts, ConceptsInSchemePredicate.getFilter(skosModel, schemeRes, NodeFilters.MAINGRAPH));
+						collectResults(filteredForScheme, ontModel, results, searchStringNamespace, 
+								searchStringLocalName,  namespaceGiven);
+					} else {					
+						collectResults(searchedConcepts, ontModel, results, searchStringNamespace, 
+								searchStringLocalName,  namespaceGiven);
+					}
 				}
 
 			}
@@ -424,6 +446,88 @@ public class OntoSearch extends ServiceAdapter {
 				return 0;
 			return 1;
 		}
+	}
+	
+	/**
+	 * At the moment returns just a path that goes from a root to the given concept in the given scheme
+	 * @param concept uri (not QName)
+	 * @param scheme uri (not QName)
+	 * @return
+	 */
+	public Response getPathFromRoot(String concept, String scheme) {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		
+		SKOSModel skosModel = (SKOSModel) getOntModel();
+		try {
+			ARTURIResource conceptRes = retrieveExistingURIResource(skosModel, concept, getUserNamedGraphs());
+			ARTURIResource schemeRes = null;
+			if (scheme != null) {
+				schemeRes = retrieveExistingURIResource(skosModel, scheme, getUserNamedGraphs());
+			}
+			List<ARTURIResource> path = new ArrayList<ARTURIResource>();
+			path = getPathToRoot(path, skosModel, conceptRes, schemeRes);
+			Collections.reverse(path);
+
+			Element pathElem = XMLHelp.newElement(response.getDataElement(), "path");
+			pathElem.setAttribute("concept", concept);
+			if (path != null){
+				for (ARTURIResource c : path){
+					Element concElem = XMLHelp.newElement(pathElem, "concept");
+					concElem.setAttribute("show", c.getLocalName());
+					concElem.setTextContent(c.getNominalValue());
+				}
+			}
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+	
+	//Returns a single path that goes from the given concept to a topConcept
+	private List<ARTURIResource> getPathToRoot(List<ARTURIResource> path, SKOSModel skosModel, ARTURIResource concept, ARTURIResource scheme) 
+			throws ModelAccessException, NonExistingRDFResourceException {
+		if (path.contains(concept)){
+			//detected cycle, returning null path
+			return null;
+		}
+		path.add(concept);
+		if (skosModel.isTopConcept(concept, scheme, NodeFilters.MAINGRAPH)){
+			//concept is top concept, returning a valid path			
+			return path;
+		} else {
+			Iterator<ARTURIResource> itBroad = getBroaders(skosModel, concept, scheme);
+			if (itBroad.hasNext()){
+				while (itBroad.hasNext()) {
+					ARTURIResource broader = itBroad.next();
+					ArrayList<ARTURIResource> tempPath = new ArrayList<ARTURIResource>(path);
+					List<ARTURIResource> returnedPath = getPathToRoot(tempPath, skosModel, broader, scheme);
+					if (returnedPath != null){
+						//Returned valid path from recursive call. Return it recursively.
+						return returnedPath;
+					} //otherwise continue, trying to explore paths from other broaders to the root
+				}
+			} else { //concept is not top concept and has no broader (concept is dangling) => try next path to root
+				return null;
+			}
+		}
+		//no valid path found from concept to root, returnting null path
+		return null;
+	}	
+	
+	//Return broaders of a concept belonging to the given scheme
+	private Iterator<ARTURIResource> getBroaders(SKOSModel skosModel, ARTURIResource concept, ARTURIResource scheme) 
+			throws ModelAccessException, NonExistingRDFResourceException{
+		ARTURIResourceIterator unfilteredIt = skosModel.listBroaderConcepts(concept, false, true, getUserNamedGraphs());
+		Iterator<ARTURIResource> it;
+		if (scheme != null) {
+			it = Iterators.filter(unfilteredIt, ConceptsInSchemePredicate.getFilter(skosModel, scheme, getUserNamedGraphs()));
+		} else {
+			it = unfilteredIt;
+		}
+		unfilteredIt.close();
+		return it;
 	}
 
 }

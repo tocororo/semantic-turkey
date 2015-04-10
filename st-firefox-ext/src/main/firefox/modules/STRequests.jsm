@@ -412,6 +412,7 @@ STRequests.OntManager.getOntManagerParametersRequest = "getOntManagerParameters"
 //OntoSearch service request
 STRequests.OntoSearch.serviceName = "OntoSearch";
 STRequests.OntoSearch.searchOntologyRequest = "searchOntology";
+STRequests.OntoSearch.getPathFromRootRequest = "getPathFromRoot";
 
 //Statement service request
 STRequests.Statement.serviceName = "statement";
