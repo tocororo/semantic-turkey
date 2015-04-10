@@ -460,6 +460,7 @@ public class Projects extends STServiceAdapter {
 	}
 	
 	//TODO
+	@SuppressWarnings("unchecked")
 	/**
 	 * Returns the access statuses for every project-consumer combination. Returns a response with a set of
 	 * <code>project</code> elements containing <code>consumer</code> elements and a <code>lock</code> element.
@@ -499,49 +500,55 @@ public class Projects extends STServiceAdapter {
 		
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		
-		for (AbstractProject project : projects){
-			Element projectElement = XMLHelp.newElement(dataElem, "project");
-			projectElement.setAttribute("name", project.getName());
-			
-			Collection<AbstractProject> consumers = ProjectManager.listProjects();
-			consumers.remove(project);//remove itself from its possible consumers
-			
-			ProjectACL projectAcl = ProjectManager.getProjectDescription(project.getName()).getACL();
-						
-			//status for SYSTEM
-			ProjectConsumer consumer = ProjectConsumer.SYSTEM;
-			Element consumerElement = XMLHelp.newElement(projectElement, "consumer");
-			consumerElement.setAttribute("name", consumer.getName());
-			AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
-			String acl = "R";
-			if (aclForConsumer != null)
-				acl = aclForConsumer.name();
-			consumerElement.setAttribute("availableACLLevel", acl);
-			AccessLevel accessedLevel = ProjectManager.getAccessedLevel(project.getName(), consumer);
-			if (accessedLevel != null){
-				consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
-			}
-			//ACL for other ProjectConsumer
-			for (AbstractProject c : consumers) {
-				consumerElement = XMLHelp.newElement(projectElement, "consumer");
-				consumerElement.setAttribute("name", c.getName());
-				aclForConsumer = projectAcl.getAccessLevelForConsumer(c);
-				acl = "R";
+		for (AbstractProject absProj : projects){
+			if (absProj instanceof Project<?>) {
+				Project<? extends RDFModel> project = (Project<? extends RDFModel>) absProj;
+				Element projectElement = XMLHelp.newElement(dataElem, "project");
+				projectElement.setAttribute("name", project.getName());
+				
+				Collection<AbstractProject> consumers = ProjectManager.listProjects();
+				consumers.remove(project);//remove itself from its possible consumers
+				
+				ProjectACL projectAcl = ProjectManager.getProjectDescription(project.getName()).getACL();
+							
+				//status for SYSTEM
+				ProjectConsumer consumer = ProjectConsumer.SYSTEM;
+				Element consumerElement = XMLHelp.newElement(projectElement, "consumer");
+				consumerElement.setAttribute("name", consumer.getName());
+				AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
+				String acl = "R";
 				if (aclForConsumer != null)
 					acl = aclForConsumer.name();
 				consumerElement.setAttribute("availableACLLevel", acl);
-				accessedLevel = ProjectManager.getAccessedLevel(project.getName(), c);
+				AccessLevel accessedLevel = ProjectManager.getAccessedLevel(project.getName(), consumer);
 				if (accessedLevel != null){
 					consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
 				}
-			}
-			//LOCK for the project
-			Element lockElement = XMLHelp.newElement(projectElement, "lock");
-			lockElement.setAttribute("availableLockLevel", projectAcl.getLockLevel().name());
-			ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
-			if (lockingConsumer != null){ //the project could be not locked by any consumer
-				lockElement.setAttribute("lockingConsumer", lockingConsumer.getName());
-				lockElement.setAttribute("acquiredLockLevel", ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name());
+				//ACL for other ProjectConsumer
+				for (AbstractProject absCons : consumers) {
+					if (absCons instanceof Project<?>) {
+						Project<? extends RDFModel> cons = (Project<? extends RDFModel>) absCons;
+						consumerElement = XMLHelp.newElement(projectElement, "consumer");
+						consumerElement.setAttribute("name", cons.getName());
+						aclForConsumer = projectAcl.getAccessLevelForConsumer(cons);
+						acl = "R";
+						if (aclForConsumer != null)
+							acl = aclForConsumer.name();
+						consumerElement.setAttribute("availableACLLevel", acl);
+						accessedLevel = ProjectManager.getAccessedLevel(project.getName(), cons);
+						if (accessedLevel != null){
+							consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
+						}
+					}
+				}
+				//LOCK for the project
+				Element lockElement = XMLHelp.newElement(projectElement, "lock");
+				lockElement.setAttribute("availableLockLevel", projectAcl.getLockLevel().name());
+				ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
+				if (lockingConsumer != null){ //the project could be not locked by any consumer
+					lockElement.setAttribute("lockingConsumer", lockingConsumer.getName());
+					lockElement.setAttribute("acquiredLockLevel", ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name());
+				}
 			}
 		}
 		return resp;

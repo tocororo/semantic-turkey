@@ -482,6 +482,7 @@
 									//Logger.debug(pathElemUri + " found at level " + row.level + ". Opening");
 									if (!this._view.getRow(j).isContainerOpen){//open row only if is close
 										this._view.toggleOpenState(j);
+										rowCount = tree.view.rowCount;//update rowCount that change after open/close a row
 									}
 								}
 							}

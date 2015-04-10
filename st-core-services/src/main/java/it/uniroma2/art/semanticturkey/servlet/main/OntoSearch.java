@@ -355,7 +355,7 @@ public class OntoSearch extends ServiceAdapter {
 				//Preferred XLabels
 				labelIter = skosxlModel.listPrefXLabels(nextRes, NodeFilters.MAINGRAPH);
 				while(labelIter.hasNext()){
-					ARTURIResource prefLabelRes = labelIter.next().asURIResource();
+					ARTResource prefLabelRes = labelIter.next();
 					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes, NodeFilters.MAINGRAPH);
 					String label = labelLiteral.getLabel();
 					if ((match = CompareNames
