@@ -45,22 +45,24 @@ public class CustomRangeProvider {
 		//check existing of CR folders
 		File crFolder = getCustomRangeFolder();
 		File creFolder = getCustomRangeEntryFolder();
-		if (crFolder.exists() && creFolder.exists()){
-			//initialize CR list (load files from CR folder)
-			File[] crFiles = crFolder.listFiles();
-			for (File f : crFiles){
-				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange"))
-					crList.add(new CustomRange(f));
-			}
-			//initialize CRE list (load files from CRE folder)
-			File[] creFiles = creFolder.listFiles();
-			for (File f : creFiles){
-				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.entry")){
-					try {
-						creList.add(CustomRangeEntryFactory.createCustomRangeEntry(f));
-					} catch (CustomRangeInitializationException e) {
-						//TODO nel log scrivere che non è stato inizializzato il CRE del file f
-					}
+		if (!crFolder.exists() && !creFolder.exists()){
+			crFolder.mkdir();
+			creFolder.mkdir();
+		}
+		//initialize CR list (load files from CR folder)
+		File[] crFiles = crFolder.listFiles();
+		for (File f : crFiles){
+			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange"))
+				crList.add(new CustomRange(f));
+		}
+		//initialize CRE list (load files from CRE folder)
+		File[] creFiles = creFolder.listFiles();
+		for (File f : creFiles){
+			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.entry")){
+				try {
+					creList.add(CustomRangeEntryFactory.createCustomRangeEntry(f));
+				} catch (CustomRangeInitializationException e) {
+					//TODO nel log scrivere che non è stato inizializzato il CRE del file f
 				}
 			}
 		}

@@ -60,15 +60,18 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * Returns a list (without duplicates) of predicates contained in the pearl of the CustomRangeEntryGraph.
 	 * @param codaCore an instance of CODACore already initialized, used to parse and retrieve
 	 * necessary information from PEARL code.
-	 * @param onlyShowable tells if the returned collection should contain all the predicate or just
-	 * the ones to show to the user. 
-	 * TODO: this last parameter will be useful when the CRE will provide further information to
+	 * @param onlyMandatory <code>false</code> returns all the predicate; <code>true</code> returns
+	 * just the ones non-optional
+	 * @param onlyShowable <code>false</code> returns all the predicate; <code>true</code> returns
+	 * just the ones to show to the user.
+	 * tells if the returned collection should contain all the predicate or 
+	 * TODO: onlyShowable parameter will be useful when the CRE will provide further information to
 	 * know whether or not a predicate-object has to be shown to the user in the UI (through pearl 
 	 * annotation or other attribute in CRE xml)
 	 * @return
 	 * @throws PRParserException 
 	 */
-	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyShowable) throws PRParserException{
+	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) throws PRParserException{
 		Collection<String> predicates = new ArrayList<String>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
@@ -93,21 +96,23 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 						}
 					}
 				} else { //g.isOptionalGraphStruct
-					OptionalGraphStruct ogs = g.asOptionalGraphStruct();
-					Collection<GraphElement> optionalGraphList = ogs.getOptionalTriples();
-					for (GraphElement otpG : optionalGraphList) {
-						if (otpG.isGraphStruct()){
-							GraphStruct gs = otpG.asGraphStruct();
-							if (gs.getSubject().getValueAsString().equals(graphEntry)){
-								GraphSingleElement predGraphElem = gs.getPredicate();
-								if (predGraphElem instanceof GraphSingleElemUri){
-									String pred = ((GraphSingleElemUri) predGraphElem).getURI();
-									if (!predicates.contains(pred)){//prevent duplicates
-										predicates.add(pred);
+					if (!onlyMandatory){
+						OptionalGraphStruct ogs = g.asOptionalGraphStruct();
+						Collection<GraphElement> optionalGraphList = ogs.getOptionalTriples();
+						for (GraphElement otpG : optionalGraphList) {
+							if (otpG.isGraphStruct()){
+								GraphStruct gs = otpG.asGraphStruct();
+								if (gs.getSubject().getValueAsString().equals(graphEntry)){
+									GraphSingleElement predGraphElem = gs.getPredicate();
+									if (predGraphElem instanceof GraphSingleElemUri){
+										String pred = ((GraphSingleElemUri) predGraphElem).getURI();
+										if (!predicates.contains(pred)){//prevent duplicates
+											predicates.add(pred);
+										}
 									}
 								}
-							}
-						} //2nd level optional graph are not considered.
+							} //2nd level optional graph are not considered.
+						}
 					}
 				}
 			}
@@ -250,7 +255,8 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	
-	
+	//For debug decomment in createTypeSystemDescription
+	@SuppressWarnings("unused")
 	private void describeTSD(TypeSystemDescription tsd){
 		System.out.println("================ TSD structure ================");
 		TypeDescription[] types = tsd.getTypes();
@@ -270,6 +276,8 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		System.out.println("===============================================");
 	}
 
+	//For debug decomment in executePearl
+	@SuppressWarnings("unused")
 	private void analyseCas(CAS aCAS){
 		System.out.println("======== CAS ==========");
 		AnnotationIndex<AnnotationFS> anIndex = aCAS.getAnnotationIndex();
