@@ -13,7 +13,6 @@ import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
-import it.uniroma2.art.semanticturkey.data.id.URIGenerator;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -23,6 +22,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -533,8 +533,7 @@ public class SKOSXL extends SKOS {
 			String randomConceptValue = null;
 			if(conceptName == null){
 				
-				URIGenerator uriGen = new URIGenerator(skosxlModel, graphs, serviceContext.getProject().getName());
-				ARTURIResAndRandomString newConceptAndRandomValue = uriGen.generateURI("c_${rand()}", null);
+				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("c_${rand()}", null);
 				
 				newConcept = newConceptAndRandomValue.getArtURIResource();
 				randomConceptValue = newConceptAndRandomValue.getRandomValue();
@@ -600,6 +599,8 @@ public class SKOSXL extends SKOS {
 		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
 		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
 			return logAndSendException(e);
 		}
 		return response;
@@ -703,6 +704,8 @@ public class SKOSXL extends SKOS {
 			return logAndSendException(e);
 		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
+		} catch (URIGenerationException e) {
+			return logAndSendException(e);
 		}
 		return response;
 	}
@@ -753,6 +756,8 @@ public class SKOSXL extends SKOS {
 			return logAndSendException(e);
 		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
+		} catch (URIGenerationException e) {
+			return logAndSendException(e);
 		}
 		return response;
 	}
@@ -802,6 +807,8 @@ public class SKOSXL extends SKOS {
 		} catch (InvalidProjectNameException e) {
 			return logAndSendException(e);
 		} catch (ProjectInexistentException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
 			return logAndSendException(e);
 		}
 		return response;
@@ -1015,12 +1022,11 @@ public class SKOSXL extends SKOS {
 	
 	protected ARTURIResAndRandomString generateXLabelURI(SKOSXLModel skosxlModel, String lang,
 			ARTResource[] graphs) 
-			throws ModelAccessException, IOException, InvalidProjectNameException, ProjectInexistentException {
+			throws ModelAccessException, IOException, InvalidProjectNameException, ProjectInexistentException, URIGenerationException {
 		
-		URIGenerator uriGenerator = new URIGenerator(skosxlModel, graphs, serviceContext.getProject().getName());
 		Map<String, String> valueMapping = new HashMap<String, String>();
 		valueMapping.put("lang", lang);
-		return uriGenerator.generateURI("xl_${lang}_${rand()}", valueMapping);
+		return generateURI("xl_${lang}_${rand()}", valueMapping);
 	}
 	
 }

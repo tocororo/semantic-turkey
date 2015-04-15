@@ -18,4 +18,7 @@
 	<!-- Retrieves coda osgi factory -->	
 	<osgi:reference id="codaOSGiFactory" interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory"/>
 
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.impls.DefaultTemplateBasedURIGeneratorFactory">
+		<bean class="it.uniroma2.art.semanticturkey.plugin.impls.DefaultTemplateBasedURIGeneratorFactory" />
+	</osgi:service>
 </beans>

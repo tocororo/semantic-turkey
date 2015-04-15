@@ -10,6 +10,8 @@ public interface PluginFactory<T extends PluginConfiguration> {
 
 	Collection<PluginConfiguration> getPluginConfigurations();
 
+	T createDefaultPluginConfiguration();
+	
 	T createPluginConfiguration(String confType)
 			throws UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, ClassNotFoundException;

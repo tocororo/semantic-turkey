@@ -126,9 +126,11 @@ public class CustomRangeProvider {
 	public Collection<CustomRangeEntryGraph> getCustomRangeEntriesGraphForProperty(String propertyUri){
 		Collection<CustomRangeEntryGraph> creGraph = new ArrayList<CustomRangeEntryGraph>();
 		CustomRange cr = getCustomRangeForProperty(propertyUri);
-		for (CustomRangeEntry cre : cr.getEntries()){
-			if (cre.isTypeGraph())
-				creGraph.add(cre.asCustomRangeEntryGraph());
+		if (cr != null) {
+			for (CustomRangeEntry cre : cr.getEntries()){
+				if (cre.isTypeGraph())
+					creGraph.add(cre.asCustomRangeEntryGraph());
+			}
 		}
 		return creGraph;
 	}

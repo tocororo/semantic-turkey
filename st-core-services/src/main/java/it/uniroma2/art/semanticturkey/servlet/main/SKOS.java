@@ -37,24 +37,21 @@ import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
-import it.uniroma2.art.semanticturkey.data.id.URIGenerator;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -815,8 +812,7 @@ public class SKOS extends ResourceOld {
 			String randomConceptValue = null;
 			if(conceptName == null){
 				
-				URIGenerator uriGen = new URIGenerator(skosModel, graphs, serviceContext.getProject().getName());
-				ARTURIResAndRandomString newConceptAndRandomValue = uriGen.generateURI("c_${rand()}", null);
+				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("c_${rand()}", null);
 				
 				newConcept = newConceptAndRandomValue.getArtURIResource();
 				randomConceptValue = newConceptAndRandomValue.getRandomValue();
@@ -855,6 +851,8 @@ public class SKOS extends ResourceOld {
 		} catch (MissingLanguageException e) {
 			return logAndSendException(e);
 		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
 			return logAndSendException(e);
 		} 
 		return response;

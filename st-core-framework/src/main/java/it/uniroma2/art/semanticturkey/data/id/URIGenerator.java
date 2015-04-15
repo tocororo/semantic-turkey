@@ -12,6 +12,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * 
+ * @deprecated use instead the extension point {@link it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator}
+ */
+@Deprecated
 public class URIGenerator {
 
 	public enum RandCode {

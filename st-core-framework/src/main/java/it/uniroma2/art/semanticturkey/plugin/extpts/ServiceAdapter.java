@@ -35,6 +35,7 @@ import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
+import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -418,4 +420,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return res;
 	}
 
+	protected ARTURIResAndRandomString generateURI(String template, Map<String, String> valueMapping) throws URIGenerationException {
+		return getProject().getURIGenerator().generateURI(serviceContext, template, valueMapping);
+	}
 }

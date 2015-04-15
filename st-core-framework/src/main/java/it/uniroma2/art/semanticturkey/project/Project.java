@@ -51,7 +51,13 @@ import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.plugin.impls.DefaultTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 import java.io.File;
@@ -79,6 +85,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public static final String INFOFILENAME = "project.info";
 	public static final String MODELCONFIG_FILENAME = "model.config";
+	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
 	public static final String TIMESTAMP_PROP = "timeStamp";
 	public static final String PROJECT_NAME_PROP = "name";
 	public static final String MODELCONFIG_ID = "modelConfigID";
@@ -89,6 +96,12 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String PROJECT_MODEL_TYPE = "ModelType";
 	public static final String PROJECT_STORE_DIR_NAME = "store";
 	public static final String PLUGINS_PROP = "plugins";
+	
+	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
+	public static final String URI_GENERATOR_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".urigen";
+	public static final String URI_GENERATOR_FACTORY_ID_PROP = URI_GENERATOR_PROP_PREFIX + ".factoryID";
+	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX + ".configType";
+
 
 	// this hashset, used by the setProperty(...) method, prevents ST system properties from being
 	// accidentally overwritten by third party plugins/extensions
@@ -117,6 +130,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public NSPrefixMappings nsPrefixMappingsPersistence;
 
 	private ProjectACL acl;
+	private URIGenerator uriGenerator;
 
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -178,6 +192,30 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			if (baseURI == null)
 				throw new ProjectInconsistentException("baseURI is not specified");
 
+			// Activation of the URI Generator for this project
+			String uriGenFactoryID = getProperty(URI_GENERATOR_FACTORY_ID_PROP);
+			String uriGenConfigType = getProperty(URI_GENERATOR_CONFIGURATION_TYPE_PROP);
+
+			if (uriGenFactoryID == null) {
+				uriGenFactoryID = DefaultTemplateBasedURIGeneratorFactory.class.getName();
+			}
+			
+			try {
+				PluginFactory<?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
+				PluginConfiguration uriGenConfig;
+				
+				if (uriGenConfigType != null) {
+					uriGenConfig = uriGenFactory.createPluginConfiguration(uriGenConfigType);
+					uriGenConfig.loadParameters(new File(_projectDir, URI_GENERATOR_CONFIG_FILENAME));
+				} else {
+					uriGenConfig = uriGenFactory.createDefaultPluginConfiguration();
+				}
+				
+				this.uriGenerator = (URIGenerator)uriGenFactory.createInstance(uriGenConfig);
+			} catch (IOException | it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException | ClassNotFoundException | UnsupportedPluginConfigurationException | UnloadablePluginConfigurationException e) {
+				throw new ProjectAccessException(e);
+			}
+			
 			logger.debug("activation of project: " + getName() + ": baseuri and OntologyManager ok");
 
 			// activates the ontModel loads the triples (implementation depends on project type)
@@ -250,7 +288,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public String getOntologyManagerImplID() throws ProjectInconsistentException {
 		return getRequiredProperty(ONTOLOGY_MANAGER_ID_PROP);
 	}
-
+	
 	/*
 	 * @SuppressWarnings("unchecked") public Class<? extends STOntologyManager> getOntologyManagerImplClass()
 	 * throws ProjectInconsistentException { return getClassTypedProperty(ONTOLOGY_MANAGER_ID_PROP,
@@ -523,6 +561,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public ProjectACL getACL() {
 		return acl;
+	}
+	
+	public URIGenerator getURIGenerator() {
+		return this.uriGenerator;
 	}
 
 	// Auxiliary graphs management
