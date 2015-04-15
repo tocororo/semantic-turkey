@@ -1,14 +1,30 @@
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/ARTResources.jsm");
 
+Components.utils.import("resource://gre/modules/FileUtils.jsm");
+
+
 EXPORTED_SYMBOLS = [ "STResUtils" ];
 
 var STResUtils = new Object();
 
+
+function getImageSrcOrNull(rdfRes, operation){
+	var src = getImageSrc(rdfRes, operation);
+	//check if the src refers to an existing file, or retunr null if it does not refer to an existing file
+	var exist = checkExistenceOfPath(getAbsolutePathForImageFileName(src));
+	
+	if(exist){
+		return getRelativePathForImageName(src);
+	} else{
+		return null;
+	}
+	
+}
+
 function getImageSrc(rdfRes, operation) {
-	// check the information contained inside the rdfRes, to decide the right
-	// src
-	var src="";
+	// check the information contained inside the rdfRes, to decide the right fileName
+	var fileName="";
 
 	if (rdfRes instanceof ARTURIResource || rdfRes instanceof ARTBNode) {
 		var role = rdfRes.getRole();
@@ -16,77 +32,112 @@ function getImageSrc(rdfRes, operation) {
 		if (typeof operation == "undefined") {
 			if (role == "concept") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/skosConcept_imported.png";
+					fileName = "skosConcept_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/skosConcept20x20.png";
+					fileName = "skosConcept20x20.png";
 			} else if (role == "individual") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/individual_noexpl.png";
+					fileName = "individual_noexpl.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/individual20x20.png";
+					fileName = "individual20x20.png";
 			} else if (role == "cls") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/class_imported.png";
+					fileName = "class_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/class20x20.png";
+					fileName = "class20x20.png";
 			} else if (role == "objectProperty") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/propObject_imported.png";
+					fileName = "propObject_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/propObject20x20.png";
+					fileName = "propObject20x20.png";
 			} else if (role == "datatypeProperty") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/propDatatype_imported.png";
+					fileName = "propDatatype_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/propDatatype20x20.png";				
+					fileName = "propDatatype20x20.png";				
 			} else if (role == "annotationProperty") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/propAnnotation_imported.png";
+					fileName = "propAnnotation_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/propAnnotation20x20.png";				
+					fileName = "propAnnotation20x20.png";				
 			} else if (role == "ontologyProperty") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/propOntology_imported.png";
+					fileName = "propOntology_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/propOntology20x20.png";				
+					fileName = "propOntology20x20.png";				
 			} else if (role == "property") {
 				if (explicit == "false" || explicit == false)
-					src = "chrome://semantic-turkey/skin/images/prop_imported.png";
+					fileName = "prop_imported.png";
 				else
-					src = "chrome://semantic-turkey/skin/images/prop20x20.png";
+					fileName = "prop20x20.png";
 			}
 		} else if(operation == "remove"){
 			if (role == "concept") {
-				src = "chrome://semantic-turkey/skin/images/skosConcept20x20.png";
+				fileName = "skosConcept20x20.png";
 			} else if (role == "conceptScheme") {
-				src = "chrome://semantic-turkey/skin/images/skosScheme20x20.png";
+				fileName = "skosScheme20x20.png";
 			} else if (role == "individual") {
-				src = "chrome://semantic-turkey/skin/images/individual20x20.png";
+				fileName = "individual20x20.png";
 			} else if (role == "cls") {
-				src = "chrome://semantic-turkey/skin/images/class20x20.png";
+				fileName = "class20x20.png";
 			}
 		} else if(operation == "add"){
 			if (role == "concept") {
-				src = "chrome://semantic-turkey/skin/images/skosC_create.png";
+				fileName = "skosC_create.png";
 			} else if (role == "individual") {
-				src = "chrome://semantic-turkey/skin/images/individual_add.png";
+				fileName = "individual_add.png";
 			} else if (role == "cls") {
-				src = "chrome://semantic-turkey/skin/images/class_create.png";
+				fileName = "class_create.png";
 			} else if (role == "property") {
-				src = "chrome://semantic-turkey/skin/images/prop_create.png";
+				fileName = "prop_create.png";
 			} else if (role == "conceptScheme") {
-				src = "chrome://semantic-turkey/skin/images/skosScheme_create.png"
+				fileName = "skosScheme_create.png"
 			}
 		}
 	} else if (rdfRes instanceof ARTLiteral) {
 		var lang = rdfRes.getLang();
 		if(typeof lang != "undefined" && lang != null && lang != "" ){
-			src = "chrome://semantic-turkey/skin/images/flags/"+lang+".gif";
+			fileName = "flags/"+lang+".gif";
 		}
 
 	} 
 
-	return src;
+	return fileName;
 };
 
+
+function getRelativePathForImageName(fileName){
+	var path;
+	
+	path = "chrome://semantic-turkey/skin/images/"+fileName;
+	
+	return path;
+}
+
+function getAbsolutePathForImageFileName(fileName){
+	var path;
+	
+	var file = FileUtils.getFile("ProfD", []);
+	
+	path = file.path +"\\extensions\\semanticturkey@art.uniroma2.it\\chrome\\semantic-turkey\\skin\\" +
+			"classic\\images\\"+
+	fileName.replace(new RegExp("/", 'g'), "\\");
+	
+	return path;
+}
+
+
+function checkExistenceOfPath(path){
+	var exist = false;
+	
+	var nsifile = new FileUtils.File(path);
+	exist = nsifile.exists();
+	
+	return exist;
+}
+
+STResUtils.getImageSrcOrNull = getImageSrcOrNull;
 STResUtils.getImageSrc = getImageSrc;
+STResUtils.getRelativePathForImageName = getRelativePathForImageName;
+STResUtils.getAbsolutePathForImageFileName = getAbsolutePathForImageFileName;
+STResUtils.checkExistenceOfPath = checkExistenceOfPath;

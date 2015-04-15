@@ -4,10 +4,10 @@
 	<binding id="rdfnode-base-widget">
 		<content>
 			<xul:hbox flex="1">
-				<xul:vbox>
-					<xul:spacer flex="1"/>
+				<xul:vbox anonid="vboxForImageId" width="20">
+					<!-- <xul:spacer flex="1"/>
 					<xul:image anonid="imageId" />
-					<xul:spacer flex="1"/>
+					<xul:spacer flex="1"/> -->
 				</xul:vbox>
 				<xul:textbox anonid="textboxId" flex="1">
 					<!-- <xul:box>
@@ -24,6 +24,7 @@
 					var art_semanticturkey = {};
 					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
 					Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 					
 					var textbox = document.getAnonymousElementByAttribute(this, "anonid", "textboxId");
 					if(typeof this.rdfResource != "undefined"){
@@ -56,12 +57,50 @@
 						textbox.setAttribute("tooltiptext", completeValue);
 						
 						//now get the url of the image to use
-						var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource);
-						var image = document.getAnonymousElementByAttribute(this, "anonid", "imageId");
-						image.setAttribute("src", imageSrc);
-						image.setAttribute("maxwidth", "20");
-						image.setAttribute("maxheight", "20");
-						image.setAttribute("tooltiptext", completeValue);
+						//var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource); // OLD
+						var imageSrc = art_semanticturkey.STResUtils.getImageSrcOrNull(this.rdfResource);
+						
+						var vboxForImage = document.getAnonymousElementByAttribute(this, "anonid", "vboxForImageId");
+							
+						var spacer1 = document.createElement("spacer");
+						spacer1.setAttribute("flex", "1");
+						vboxForImage.appendChild(spacer1);
+						if(imageSrc!= null){
+							var image = document.getAnonymousElementByAttribute(this, "anonid", "imageId");
+							var image = document.createElement("image");
+
+							image.setAttribute("src", imageSrc);
+							
+							//image.setAttribute("maxwidth", "20");
+							image.setAttribute("maxheight", "20");
+							image.setAttribute("tooltiptext", completeValue);
+							vboxForImage.appendChild(image);
+							
+						} else{
+							// no image can be found for this resource
+							//check if it is a literal and if it has a language
+							
+							if(this.rdfResource instanceof art_semanticturkey.ARTLiteral){
+								var lang = this.rdfResource.getLang();
+								if(typeof lang != "undefined" && lang != null && lang != "" ){
+									var textboxLang = document.createElement("textbox");
+									textboxLang.setAttribute("value", lang);
+									textboxLang.setAttribute("readonly", true);
+									//textboxLang.setAttribute("maxwidth", "16");
+									//textboxLang.setAttribute("maxheight", "20");
+									//textboxLang.setAttribute("size", "1");
+									textboxLang.setAttribute("style", "height:20px;width:18px;margin:0px;padding:0px;");
+									textboxLang.setAttribute("tooltiptext", completeValue);
+									vboxForImage.appendChild(textboxLang);
+								}
+								
+							}
+						}
+						
+						var spacer2 = document.createElement("spacer");
+						spacer2.setAttribute("flex", "1");
+						vboxForImage.appendChild(spacer2);
+						
 					}
 				]]>
 			</constructor>

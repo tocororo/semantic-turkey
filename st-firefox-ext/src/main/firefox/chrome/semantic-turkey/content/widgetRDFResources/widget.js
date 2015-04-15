@@ -3,6 +3,10 @@ if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 
+Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
+
+Components.utils.import("resource://gre/modules/FileUtils.jsm");
+
 window.onload = function(){
 	//document.getElementById("explicitButton").addEventListener("command", art_semanticturkey.testFunc, true);
 	var tempBox = document.getElementById("temp");
@@ -51,7 +55,7 @@ window.onload = function(){
 	var widgetBoxOLW1 = document.createElement("box");
 	var rdfResArray1 = new Array();
 	rdfResArray1[0] = new art_semanticturkey.ARTURIResource("paperone", "concept", "http://test#paperone");
-	rdfResArray1[1] = new art_semanticturkey.ARTURIResource("topolino", "concept", "http://test#topolino");
+	rdfResArray1[1] = new art_semanticturkey.ARTLiteral("dog", "", "de", false);
 	rdfResArray1[2] = new art_semanticturkey.ARTURIResource("paperino", "cls", "http://test#paperino");
 	rdfResArray1[3] = new art_semanticturkey.ARTLiteral("dog", "", "en", false);
 	//widgetBoxOLW1.labelValue = "Few Resources";
@@ -244,6 +248,8 @@ window.onload = function(){
 	tempBox.appendChild(widgetBoxOLW5);
 	
 }
+
+
 
 art_semanticturkey.rdfnodeBaseEventHandler2 = function(event, pippo){
 	alert("pippo = "+pippo);
