@@ -26,12 +26,14 @@ package it.uniroma2.art.semanticturkey.plugin;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
 
 import java.util.ArrayList;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,4 +212,12 @@ public class PluginManager {
 		return servletExtensionsList;
 	}
 
+	//// New Methods
+	public static <T extends PluginConfiguration> PluginFactory<T> getPluginFactory(String factoryID) {
+		ServiceReference sr = m_felix.getServiceReference(factoryID);
+		PluginFactory<T> fact = (PluginFactory<T>)m_felix.getService(sr);
+		m_felix.ungetService(sr);
+		
+		return fact; 
+	}
 }

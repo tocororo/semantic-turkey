@@ -24,15 +24,16 @@ public class StatementConsumerProvider {
 		PropertyFactesStatementConsumer propertyFactesStatementConsumer = new PropertyFactesStatementConsumer();
 		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer();
 		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer();
-		HasTopConceptStatementConsumer topConceptsStatementConsumer = new HasTopConceptStatementConsumer();
 		OntologyImportsStatementConsumer ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer();
 		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(customRangeProvider);
+		TopConceptOfStatementConsumer topConceptOfStatementConsumer = new TopConceptOfStatementConsumer();
+		InSchemeStatementConsumer inSchemeStatementConsumer = new InSchemeStatementConsumer();
 		
 		role2template = new HashMap<RDFResourceRolesEnum, List<StatementConsumer>>();
 		role2template.put(RDFResourceRolesEnum.cls, Arrays.asList(typesStatementConsumer, subClassofStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.concept, Arrays.asList(typesStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.concept, Arrays.asList(typesStatementConsumer, topConceptOfStatementConsumer, inSchemeStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.property, Arrays.asList(subPropertyOfStatementConsumer, lexicalizationsStatementConsumer, propertyFactesStatementConsumer, domainsStatementConsumer, rangesStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRolesEnum.conceptScheme, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, topConceptsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.conceptScheme, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.ontology, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, ontologyImportsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.individual, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 	}
