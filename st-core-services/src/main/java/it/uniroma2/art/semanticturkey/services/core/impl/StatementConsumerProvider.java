@@ -4,23 +4,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 
+@Component
 public class StatementConsumerProvider {
-	private static StatementConsumerProvider instance;
-
-	public static synchronized StatementConsumerProvider getInstace() {
-		if (instance == null) {
-			instance = new StatementConsumerProvider();
-			
-		}
-
-		return instance;
-	}
-
 	private HashMap<RDFResourceRolesEnum, List<StatementConsumer>> role2template;
 	
-	public StatementConsumerProvider() {
+	@Autowired
+	public StatementConsumerProvider(CustomRangeProvider customRangeProvider) {
 		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer();
 		SubClassOfStatementConsumer subClassofStatementConsumer = new SubClassOfStatementConsumer();
 		LexicalizationsStatementConsumer lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer();
@@ -29,10 +24,9 @@ public class StatementConsumerProvider {
 		PropertyFactesStatementConsumer propertyFactesStatementConsumer = new PropertyFactesStatementConsumer();
 		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer();
 		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer();
-		TopConceptsStatementConsumer topConceptsStatementConsumer = new TopConceptsStatementConsumer();
+		HasTopConceptStatementConsumer topConceptsStatementConsumer = new HasTopConceptStatementConsumer();
 		OntologyImportsStatementConsumer ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer();
-		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer();
-		
+		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(customRangeProvider);
 		
 		role2template = new HashMap<RDFResourceRolesEnum, List<StatementConsumer>>();
 		role2template.put(RDFResourceRolesEnum.cls, Arrays.asList(typesStatementConsumer, subClassofStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));

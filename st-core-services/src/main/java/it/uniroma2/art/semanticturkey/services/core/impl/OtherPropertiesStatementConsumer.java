@@ -8,6 +8,7 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
@@ -28,6 +29,12 @@ import com.google.common.collect.Multimap;
 
 public class OtherPropertiesStatementConsumer implements StatementConsumer {
 
+	private CustomRangeProvider customRangeProvider;
+
+	public OtherPropertiesStatementConsumer(CustomRangeProvider customRangeProvider) {
+		this.customRangeProvider = customRangeProvider;
+	}
+	
 	@Override
 	public LinkedHashMap<String, ResourceViewSection> consumeStatements(
 			Project<?> project, ARTResource resource, ResourcePosition resourcePosition,
@@ -64,6 +71,7 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 				stPred = STRDFNodeFactory.createSTRDFURI(pred,
 						resource2Role.containsKey(pred) ? resource2Role.get(pred)
 								: RDFResourceRolesEnum.property, true, ontModel.getQName(pred.getURI()));
+				stPred.setInfo("hasCustomRange", Boolean.toString(customRangeProvider.existsCustomRangeEntryGraphForProperty(pred.getURI())));
 				art2STRDFPredicates.put(pred, stPred);
 			}
 

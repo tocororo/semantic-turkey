@@ -97,6 +97,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.DOMException;
@@ -116,6 +117,9 @@ public class ResourceView extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
 	
+	@Autowired
+	private StatementConsumerProvider statementConsumerProvider ;
+
 	@GenerateSTServiceController
 	public Response getResourceView(ARTResource resource, @Optional ResourcePosition resourcePosition) throws Exception {
 		OWLModel owlModel = getOWLModel();
@@ -256,7 +260,7 @@ public class ResourceView extends STServiceAdapter {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
 		
-		for (StatementConsumer stmtConsumer : StatementConsumerProvider.getInstace().getTemplateForResourceRole(resourceRole)) {
+		for (StatementConsumer stmtConsumer : statementConsumerProvider.getTemplateForResourceRole(resourceRole)) {
 			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(getProject(), resource, resourcePosition, resourceRole, stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
 		
 			result.putAll(newResults);
