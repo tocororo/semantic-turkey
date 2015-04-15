@@ -349,9 +349,9 @@ art_semanticturkey.resourceView.partitions.internal.wrapPojoHandler = function(
 					: "individual";
 		}
 
-		obj.addIcon = art_semanticturkey.STResUtils.getImageSrc(
+		obj.addIcon = art_semanticturkey.STResUtils.getImageSrcOrNull(
 				new art_semanticturkey.ARTURIResource("foo", stereotypicalRole,
-						"http://foo.it"), "add")
+						"http://foo.it"), "add");
 	}
 
 	return obj;
