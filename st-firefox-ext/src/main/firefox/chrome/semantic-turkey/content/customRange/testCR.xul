@@ -17,4 +17,34 @@
 		<button id="readPropBtn" label="test read property" />
 	</hbox>
 
+	<grid>
+    	<columns>
+      		<column flex="1"/>
+      		<column flex="10"/>
+    	</columns>
+    	<rows>
+      		<row>
+        		<label value="id"/>
+        		<textbox id="idTxt" value="it.uniroma2.art.semanticturkey.entry.reifiednote"/>
+      		</row>
+      		<row>
+        		<label value="type"/>
+        		<textbox id="typeTxt" value="graph"/>
+      		</row>
+      		<row>
+        		<label value="description"/>
+        		<textbox id="descTxt" value="A reified note, described by an RDF Resource linked through rdf:value to its lexical representation and to other metadata"/>
+      		</row>
+      		<row>
+        		<label value="name"/>
+        		<textbox id="nameTxt" value="Reified note"/>
+      		</row>
+      		<row>
+        		<label value="ref"/>
+        		<textbox id="refTxt" multiline="true" height="200"/>
+      		</row>
+      	</rows>
+	</grid>
+	<button id="testPostCRE" label="test post CRE" />
+	
 </window>

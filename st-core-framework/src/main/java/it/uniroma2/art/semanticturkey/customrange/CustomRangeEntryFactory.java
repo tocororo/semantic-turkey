@@ -16,12 +16,12 @@ import org.xml.sax.SAXException;
 
 public class CustomRangeEntryFactory {
 	
-	public static CustomRangeEntry createCustomRangeEntry(String crEntryId) throws CustomRangeInitializationException{
+	public static CustomRangeEntry loadCustomRangeEntry(String crEntryId) throws CustomRangeInitializationException{
 		File creFolder = CustomRangeProvider.getCustomRangeEntryFolder();
 		File[] creFiles = creFolder.listFiles();//get list of files into custom range entry folder
 		for (File f : creFiles){//search for the custom range entry file with the given id/name
 			if (f.getName().equals(crEntryId+".xml")){
-				createCustomRangeEntry(f);
+				loadCustomRangeEntry(f);
 			}
 		}
 		throw new CustomRangeInitializationException("CustomRangeEntry file '" + crEntryId + ".xml' "
@@ -29,7 +29,7 @@ public class CustomRangeEntryFactory {
 		
 	}
 
-	public static CustomRangeEntry createCustomRangeEntry(File creFile) throws CustomRangeInitializationException{
+	public static CustomRangeEntry loadCustomRangeEntry(File creFile) throws CustomRangeInitializationException{
 		CustomRangeEntryXMLReader creReader = new CustomRangeEntryXMLReader(creFile);
 		String id = creReader.getId();
 		String name = creReader.getName();
@@ -46,7 +46,13 @@ public class CustomRangeEntryFactory {
 		}
 	}
 	
-
+	public static CustomRangeEntry createCustomRangeEntry(String type, String id, String name, String description, String ref){
+		if (type.equals("graph")){
+			return new CustomRangeEntryGraph(id, name, description, ref);
+		} else { //type.equals("node")
+			return new CustomRangeEntryNode(id, name, description, ref);
+		}
+	}
 	
 	private static class CustomRangeEntryXMLReader {
 		

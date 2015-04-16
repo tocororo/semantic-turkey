@@ -7,6 +7,23 @@ Components.utils.import("resource://stservices/SERVICE_Property.jsm", art_semant
 window.onload = function() {
 	document.getElementById("enrichPropBtn").addEventListener("command", enrichPropListener, false);
 	document.getElementById("readPropBtn").addEventListener("command", readPropListener, false);
+	document.getElementById("testPostCRE").addEventListener("command", testPostCRE, false);
+}
+
+testPostCRE = function(){
+	art_semanticturkey.Logger.debug("requesting");
+	var oReq = new XMLHttpRequest();
+	var url = "http://127.0.0.1:1979/semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/CustomRanges/createCustomRangeEntry"; 
+	oReq.open("POST", url, true);
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("id", document.getElementById("idTxt").value);
+	formData.append("name", document.getElementById("nameTxt").value);
+	formData.append("type", document.getElementById("typeTxt").value);
+	formData.append("description", document.getElementById("descTxt").value);
+	formData.append("ref", document.getElementById("refTxt").value);
+	oReq.send(formData);
+	art_semanticturkey.Logger.debug("response:\n" + oReq.responseXML);
 }
 
 enrichPropListener = function(){

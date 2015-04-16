@@ -1605,7 +1605,7 @@ public class ResourceOld extends ServiceAdapter {
 	
 	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
 			boolean visualization, boolean minimize) throws ModelAccessException, NonExistingRDFResourceException {
-		boolean replace = crProvider.getReplaceRanges(property.getURI());
+		boolean replace = crProvider.getCustomRangeConfig().getReplaceRanges(property.getURI());
 		if (replace){
 			injectCustomRangeXML(property, treeElement);
 		} else {

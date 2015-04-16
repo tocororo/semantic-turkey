@@ -4,21 +4,10 @@ import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationExcept
 import it.uniroma2.art.semanticturkey.resources.Config;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /*
  * This class should be used as Autowired (singleton scoped) component, because its initialization 
@@ -27,69 +16,77 @@ import org.xml.sax.SAXException;
 @Component
 public class CustomRangeProvider {
 	
-	private static final String CUSTOM_RANGE_CONFIG_FILENAME = "customRangeConfig.xml";
 	private static final String CUSTOM_RANGE_FOLDER_NAME = "customRange";
 	private static final String CUSTOM_RANGE_ENTRY_FOLDER_NAME = "customRangeEntry";
 	
-	private Collection<CustomRangeConfigEntry> crConfig;
+	private CustomRangeConfig crConfig;
 	private Collection<CustomRange> crList;
 	private Collection<CustomRangeEntry> creList;
 	
 	public CustomRangeProvider() {
-		//initialize config
-		CustomRangeConfigXMLReader crConfReader = new CustomRangeConfigXMLReader();
-		crConfig = crConfReader.getCustomRangeConfigEntries();
-		
+		crConfig = new CustomRangeConfig();
 		crList = new ArrayList<CustomRange>();
 		creList = new ArrayList<CustomRangeEntry>();
-		//check existing of CR folders
+		//check existing of CR folders hierarchy
 		File crFolder = getCustomRangeFolder();
 		File creFolder = getCustomRangeEntryFolder();
 		if (!crFolder.exists() && !creFolder.exists()){
-			crFolder.mkdir();
-			creFolder.mkdir();
-		}
-		//initialize CR list (load files from CR folder)
-		File[] crFiles = crFolder.listFiles();
-		for (File f : crFiles){
-			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange"))
-				crList.add(new CustomRange(f));
-		}
-		//initialize CRE list (load files from CRE folder)
-		File[] creFiles = creFolder.listFiles();
-		for (File f : creFiles){
-			if (f.getName().startsWith("it.uniroma2.art.semanticturkey.entry")){
-				try {
-					creList.add(CustomRangeEntryFactory.createCustomRangeEntry(f));
-				} catch (CustomRangeInitializationException e) {
-					//TODO nel log scrivere che non è stato inizializzato il CRE del file f
+			initializeCRBasicHierarchy();
+		} else {
+			//initialize CR list (load files from CR folder)
+			File[] crFiles = crFolder.listFiles();
+			for (File f : crFiles){
+				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange"))
+					crList.add(CustomRangeFactory.loadCustomRange(f));
+			}
+			//initialize CRE list (load files from CRE folder)
+			File[] creFiles = creFolder.listFiles();
+			for (File f : creFiles){
+				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.entry")){
+					try {
+						creList.add(CustomRangeEntryFactory.loadCustomRangeEntry(f));
+					} catch (CustomRangeInitializationException e) {
+						//TODO Write in the log to warn that the CRE defined by f has not been initialized
+					}
 				}
 			}
 		}
 	}
 	
-	public Collection<CustomRangeConfigEntry> getCustomRangeConfig(){
+	public CustomRangeConfig getCustomRangeConfig(){
 		return crConfig;
 	}
 	
 	/**
 	 * Returns all the CustomRange available into the custom range folder of the project
 	 * @return
-	 * @throws FileNotFoundException 
-	 * @throws IOException 
 	 */
 	public Collection<CustomRange> getAllCustomRanges() {
 		return crList;
 	}
 	
 	/**
+	 * Adds a CustomRange to the CR collection
+	 * @param customRange
+	 */
+	public void addCustomRange(CustomRange customRange){
+		crList.add(customRange);
+	}
+	
+	/**
 	 * Returns all the CustomRangeEntry available into the custom range entry folder of the project
 	 * @return
-	 * @throws FileNotFoundException 
-	 * @throws IOException 
 	 */
 	public Collection<CustomRangeEntry> getAllCustomRangeEntries() {
 		return creList;
+	}
+	
+	/**
+	 * Adds a CustomRange to the CRE collection
+	 * @param crEntry
+	 */
+	public void addCustomRangeEntries(CustomRangeEntry crEntry){
+		creList.add(crEntry);
 	}
 	
 	/**
@@ -97,25 +94,23 @@ public class CustomRangeProvider {
 	 * custom range is specified for that property.
 	 * @param propertyUri
 	 * @return
-	 * @throws FileNotFoundException 
-	 * @throws IOException 
 	 */
 	public CustomRange getCustomRangeForProperty(String propertyUri) {
-		for (CustomRangeConfigEntry crcEntry : crConfig){
-			if (crcEntry.getProperty().equals(propertyUri))
-				return crcEntry.getCutomRange();
-		}
-		return null;
+		return crConfig.getCustomRangeForProperty(propertyUri);
 	}
 	
 	/**
-	 * Returns all the CustomRangeEntry for the given property
+	 * Returns all the CustomRangeEntry for the given property. If the property has not a CustomRange
+	 * associated, then returns an empty collection
 	 * @param propertyUri
 	 * @return
 	 */
 	public Collection<CustomRangeEntry> getCustomRangeEntriesForProperty(String propertyUri){
 		CustomRange cr = getCustomRangeForProperty(propertyUri);
-		return cr.getEntries();
+		if (cr != null){
+			return cr.getEntries();	
+		}
+		else return new ArrayList<CustomRangeEntry>();
 	}
 	
 	/**
@@ -126,7 +121,7 @@ public class CustomRangeProvider {
 	public Collection<CustomRangeEntryGraph> getCustomRangeEntriesGraphForProperty(String propertyUri){
 		Collection<CustomRangeEntryGraph> creGraph = new ArrayList<CustomRangeEntryGraph>();
 		CustomRange cr = getCustomRangeForProperty(propertyUri);
-		if (cr != null) {
+		if (cr != null){
 			for (CustomRangeEntry cre : cr.getEntries()){
 				if (cre.isTypeGraph())
 					creGraph.add(cre.asCustomRangeEntryGraph());
@@ -158,6 +153,7 @@ public class CustomRangeProvider {
 	public CustomRange getCustomRangeById(String crId){
 		for (CustomRange cr : crList){
 			if (cr.getId().equals(crId)){
+				System.out.println("same");
 				return cr;
 			}
 		}
@@ -184,11 +180,7 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public boolean existsCustomRangeForProperty(String propertyUri){
-		for (CustomRangeConfigEntry crcEntry : crConfig){
-			if (crcEntry.getProperty().equals(propertyUri))
-				return true;
-		}
-		return false;
+		return crConfig.existsCustomRangeForProperty(propertyUri);
 	}
 	
 	/**
@@ -198,22 +190,6 @@ public class CustomRangeProvider {
 	 */
 	public boolean existsCustomRangeEntryGraphForProperty(String propertyUri){
 		return (!getCustomRangeEntriesGraphForProperty(propertyUri).isEmpty());
-	}
-	
-	/**
-	 * Given a property returns the <code>mode</code> associated to that property (default 
-	 * <code>union</code>). <code>mode</code> can assume two different values: <code>union</code> or
-	 * <code>override</code> and tells if the CustomRange should be joined in the legacy getRange
-	 * response or it should override it.
-	 * @param propertyUri
-	 * @return
-	 */
-	public boolean getReplaceRanges(String propertyUri){
-		for (CustomRangeConfigEntry crcEntry : crConfig){
-			if (crcEntry.getProperty().equals(propertyUri))
-				return crcEntry.getReplaceRange();
-		}
-		return false;
 	}
 	
 	/**
@@ -232,60 +208,28 @@ public class CustomRangeProvider {
 		return new File(getCustomRangeFolder() + File.separator + CUSTOM_RANGE_ENTRY_FOLDER_NAME);
 	}
 	
-	
-	private class CustomRangeConfigXMLReader {
-		
-		private static final String CONFIG_ENTRY_TAG = "configEntry";
-		private static final String PROPERTY_ATTRIBUTE_TAG = "property";
-		private static final String REPLACE_RANGES_ATTRIBUTE_TAG = "replaceRanges";
-		private static final String ID_ATTRIBUTE_TAG = "idCustomRange";
-		
-		private Document doc;
-		
-		/**
-		 * Initialize the reader for the given file. If the file doesn't exists, no Exception will
-		 * be thrown.
-		 * @param crConfigFile
-		 */
-		public CustomRangeConfigXMLReader(){
-			try {
-				String crConfigFilePath = CustomRangeProvider.getCustomRangeFolder().getPath() + File.separator + CUSTOM_RANGE_CONFIG_FILENAME;
-				File crConfigFile = new File(crConfigFilePath);
-				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				if (crConfigFile.exists()){
-					doc = dBuilder.parse(crConfigFile);
-					doc.getDocumentElement().normalize();
-				}
-			} catch (IOException | ParserConfigurationException | SAXException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		public Collection<CustomRangeConfigEntry> getCustomRangeConfigEntries() {
-			Collection<CustomRangeConfigEntry> crcEntries = new ArrayList<CustomRangeConfigEntry>();
-			if (doc != null){
-				NodeList entryList = doc.getElementsByTagName(CONFIG_ENTRY_TAG);
-				for (int i=0; i<entryList.getLength(); i++){
-					Node crNode = entryList.item(i);
-					if (crNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element crElement = (Element) crNode;
-						String crProp = crElement.getAttribute(PROPERTY_ATTRIBUTE_TAG);
-						String crId = crElement.getAttribute(ID_ATTRIBUTE_TAG);
-						boolean replace = Boolean.parseBoolean(crElement.getAttribute(REPLACE_RANGES_ATTRIBUTE_TAG));
-						try {
-							CustomRange cr = new CustomRange(crId);
-							crcEntries.add(new CustomRangeConfigEntry(crProp, cr, replace));
-						} catch (CustomRangeInitializationException e) {
-							//TODO testare
-							System.out.println("CR with id " + crId + " was not found");
-						}
-					}
-				}
-			}
-			return crcEntries;
-		}
-
+	/**
+	 * Creates the following hierarchy in SemanticTurkeyData folder:
+	 * <ul>
+	 *  <li>SemanticTurkeyData</li>
+	 *   <ul>
+	 *    <li>CustomRange</li>
+	 *     <ul>
+	 *      <li>customRangeConfig.xml</li>
+	 *      <li>customRangeEntry</li>
+	 *     </ul>
+	 *   </ul>
+	 * </ul>
+	 * Where customRangeConfig.xml is a sample config file.
+	 * To invoke only at the first start of SemanticTurkey server if the hierarchy is not ready
+	 */
+	private void initializeCRBasicHierarchy(){
+		File crFolder = getCustomRangeFolder();
+		File creFolder = getCustomRangeEntryFolder();
+		crFolder.mkdir();
+		creFolder.mkdir();
+		crConfig.createBasicCustomRangeConfig();
 	}
+	
 
 }

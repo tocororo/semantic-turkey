@@ -19,16 +19,20 @@ import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfig;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfigEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryGraph;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryNode;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.customrange.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -75,7 +79,7 @@ public class CustomRanges extends STServiceAdapter {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
 		Element crcElem = XMLHelp.newElement(dataElem, "customRangeConfig");
-		Collection<CustomRangeConfigEntry> crConfEntries = crProvider.getCustomRangeConfig();
+		Collection<CustomRangeConfigEntry> crConfEntries = crProvider.getCustomRangeConfig().getCustomRangeConfigEntries();
 		for (CustomRangeConfigEntry crConfEntry : crConfEntries){
 			Element confEntryElem = XMLHelp.newElement(crcElem, "configEntry");
 			confEntryElem.setAttribute("property", crConfEntry.getProperty());
@@ -94,7 +98,6 @@ public class CustomRanges extends STServiceAdapter {
 	public Response getCustomRangeEntry(String id){
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-//		CustomRangeProvider crProvider = new CustomRangeProvider();
 		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
 		if (crEntry != null){
 			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
@@ -110,7 +113,7 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns the serialization of all the CustomRangeEntry availabel for the given property
+	 * Returns the serialization of all the CustomRangeEntry available for the given property
 	 * @param property
 	 * @return
 	 * @throws ModelAccessException
@@ -119,7 +122,6 @@ public class CustomRanges extends STServiceAdapter {
 	public Response getCustomRangeEntries(String property) throws ModelAccessException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-//		CustomRangeProvider crProvider = new CustomRangeProvider();
 		Collection<CustomRangeEntry> crEntries = crProvider.getCustomRangeEntriesForProperty(getOWLModel().expandQName(property));
 		for (CustomRangeEntry cre : crEntries){
 			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
@@ -144,7 +146,6 @@ public class CustomRanges extends STServiceAdapter {
 	public Response getCustomRange(String id){
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-//		CustomRangeProvider crProvider = new CustomRangeProvider();
 		CustomRange cr = crProvider.getCustomRangeById(id);
 		if (cr != null){
 			Element crElem = XMLHelp.newElement(dataElem, "customRange");
@@ -251,8 +252,9 @@ public class CustomRanges extends STServiceAdapter {
 	
 	/**
 	 * This service returns a description of a reified resource based on the existing CustomRangeEntry
-	 * of the given property. First it retrieves, from the pearl of the CRE, the predicates that 
-	 * describe the resource, then get the values for that predicates.
+	 * of the given predicate. First it retrieves, from the pearl of the CRE, the predicates that 
+	 * describe the resource, then get the values for that predicates. If no CustomRangeEntryGraph
+	 * is found for the given predicate, returns an empty description
 	 * 
 	 * @param crEntryId
 	 * @return
@@ -275,32 +277,34 @@ public class CustomRanges extends STServiceAdapter {
 		RDFModel rdfModel = getOWLModel();
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(rdfModel, ontFact);
-		CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
 		//try to identify the CRE which has generated the reified resource
-		Collection<String> predicateList = creGraph.getGraphPredicates(codaCore, false, true);
-		for (String pred : predicateList){
-			ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(pred), false, getWorkingGraph());
-			if (itValues.hasNext()){
-				Element propertyElem = XMLHelp.newElement(descriptionElem, "property");
-				propertyElem.setAttribute("predicate", pred);
-				propertyElem.setAttribute("show", rdfModel.getQName(pred));
-				Element objectElem = XMLHelp.newElement(propertyElem, "object");
-				while (itValues.hasNext()){
-					ARTNode value = itValues.next();
-					if (value.isURIResource()){
-						Element uriElem = XMLHelp.newElement(objectElem, "uri");
-						uriElem.setTextContent(value.getNominalValue());
-					} else { //is literal (since being generated by coda, it cannot be a bnode)
-							ARTLiteral valueLit = value.asLiteral();
-						if (valueLit.getDatatype() != null){
-							Element typedElem = XMLHelp.newElement(objectElem, "typedLiteral");
-							typedElem.setTextContent(valueLit.getLabel());
-							typedElem.setAttribute("datatype", valueLit.getDatatype().getNominalValue());
-						} else {
-							Element plainElem = XMLHelp.newElement(objectElem, "plainLiteral");
-							plainElem.setTextContent(valueLit.getLabel());
-							if (valueLit.getLanguage() != null){
-								plainElem.setAttribute("lang", valueLit.getLanguage());
+		CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
+		if (creGraph != null){
+			Collection<String> predicateList = creGraph.getGraphPredicates(codaCore, false, true);
+			for (String pred : predicateList){
+				ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(pred), false, getWorkingGraph());
+				if (itValues.hasNext()){
+					Element propertyElem = XMLHelp.newElement(descriptionElem, "property");
+					propertyElem.setAttribute("predicate", pred);
+					propertyElem.setAttribute("show", rdfModel.getQName(pred));
+					Element objectElem = XMLHelp.newElement(propertyElem, "object");
+					while (itValues.hasNext()){
+						ARTNode value = itValues.next();
+						if (value.isURIResource()){
+							Element uriElem = XMLHelp.newElement(objectElem, "uri");
+							uriElem.setTextContent(value.getNominalValue());
+						} else { //is literal (since being generated by coda, it cannot be a bnode)
+								ARTLiteral valueLit = value.asLiteral();
+							if (valueLit.getDatatype() != null){
+								Element typedElem = XMLHelp.newElement(objectElem, "typedLiteral");
+								typedElem.setTextContent(valueLit.getLabel());
+								typedElem.setAttribute("datatype", valueLit.getDatatype().getNominalValue());
+							} else {
+								Element plainElem = XMLHelp.newElement(objectElem, "plainLiteral");
+								plainElem.setTextContent(valueLit.getLabel());
+								if (valueLit.getLanguage() != null){
+									plainElem.setAttribute("lang", valueLit.getLanguage());
+								}
 							}
 						}
 					}
@@ -317,19 +321,19 @@ public class CustomRanges extends STServiceAdapter {
 	 * which its PEARL fits better the given reified resource description. 
 	 * This choice in the last case is made through the following algorithm:
 	 * <ul>
-	 *  <li> Collect the perfect match candidates, namely the CREs which all the mandatory predicates
-	 * are valued in the resource
-	 *  <li> If there is only one perfect candidate return that
-	 *  <li> If there are multiple perfect candidates, return the one with more predicates
+	 *  <li>Collect the perfect match candidates, namely the CREs which all the mandatory predicates
+	 * are valued in the resource</li>
+	 *  <li>If there is only one perfect candidate return that</li>
+	 *  <li>If there are multiple perfect candidates, return the one with more predicates</li>
 	 *   <ul>
-	 *    <li> If also in this case the candidates have the same number of matched mandatory predicates,
-	 *    return the one that has more total matched predicate (if multiple candidates returns the first)
+	 *    <li>If also in this case the candidates have the same number of matched mandatory predicates,
+	 *    return the one that has more total matched predicate (if multiple candidates returns the first)</li>
 	 *   </ul>
-	 *  <li> If there is no perfect candidate, return the one with more mandatory matched predicates
+	 *  <li>If there is no perfect candidate, return the one with more mandatory matched predicates</li>
 	 *   <ul>
-	 *    <li> If there is only one "best fit" candidate, return that
-	 *    <li> If there are multiple best fit candidates, return the one with more total matched
-	 *    predicate (if multiple candidates, returns the first)
+	 *    <li>If there is only one "best fit" candidate, return that</li>
+	 *    <li>If there are multiple best fit candidates, return the one with more total matched
+	 *    predicate (if multiple candidates, returns the first)</li>
 	 *   </ul>
 	 * </ul>
 	 * @param resource
@@ -514,6 +518,77 @@ public class CustomRanges extends STServiceAdapter {
 		Element valueElement = XMLHelp.newElement(dataElement, "value");
 		valueElement.setAttribute("converter", converter);
 		valueElement.setTextContent(result);
+		return response;
+	}
+	
+	/**
+	 * This service is thought to create a custom range entry from client. To be useful is necessary
+	 * a proper UI for client support (e.g. a wizard)
+	 * This is a POST because ref and description could be quite long for a GET parameter
+	 * @param id
+	 * @param name
+	 * @param type
+	 * @param description
+	 * @param ref
+	 * @return
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response createCustomRangeEntry(String id, String name, String type, String description, String ref){
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		CustomRangeEntry cre = CustomRangeEntryFactory.createCustomRangeEntry(type, id, name, description, ref);
+		cre.saveXML();
+		crProvider.addCustomRangeEntries(cre);
+		return response;
+	}
+	
+	/**
+	 * This service is thought to add an existing entry to an existing custom range entry from client.
+	 * To be useful is necessary a proper UI for client support (e.g. a wizard)
+	 * TODO: check or not that cr and cre exist?
+	 * @param customRangeId
+	 * @param customRangeEntryId
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response addEntryToCustomRange(String customRangeId, String customRangeEntryId){
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
+		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(customRangeEntryId);
+		cr.addEntry(cre);
+		cr.saveXML();
+		return response;
+	}
+	
+	/**
+	 * Creates an empty CustomRange (a CR without CREntries related)
+	 * @param id
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response createCustomRange(String id){
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		CustomRange cr = CustomRangeFactory.createEmptyCustomRange(id);
+		cr.saveXML();
+		crProvider.addCustomRange(cr);
+		return response;
+	}
+	
+	/**
+	 * Adds a CustomRangeEntry to the configuration, namely an entry that relates a predicate with an
+	 * existing CustomRange
+	 * TODO: check or not that cr exists?
+	 * @param predicate
+	 * @param customRangeId
+	 * @param replaceRanges
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response addCustomRangeToPredicate(ARTURIResource predicate, String customRangeId, @Optional (defaultValue = "false") boolean replaceRanges){
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
+		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
+		crConfig.addEntry(new CustomRangeConfigEntry(predicate.getURI(), cr, replaceRanges));
+		crConfig.saveXML();
 		return response;
 	}
 

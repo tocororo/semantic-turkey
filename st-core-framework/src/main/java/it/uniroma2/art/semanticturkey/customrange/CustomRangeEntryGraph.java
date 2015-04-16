@@ -51,8 +51,8 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	private static final String USER_PROMPT_FEATURE_NAME = "userPrompt";
 	private static final String USER_PROMPT_TYPE_PATH = "it.uniroma2.art.semanticturkey.userPromptFS";
 	private String annotationTypeName;//UIMA type taken from pearl rule (rule ....)
-
-	public CustomRangeEntryGraph(String id, String name, String description, String ref) {
+	
+	CustomRangeEntryGraph(String id, String name, String description, String ref) {
 		super(id, name, description, ref);
 	}
 	

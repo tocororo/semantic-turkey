@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class CustomRangeEntryNode extends CustomRangeEntry {
-
-	public CustomRangeEntryNode(String id, String name, String description, String ref) {
+	
+	CustomRangeEntryNode(String id, String name, String description, String ref) {
 		super(id, name, description, ref);
 	}
 

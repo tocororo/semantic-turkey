@@ -1,22 +1,21 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
-
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * A CustomRange is a class which describe the range of a property. It is compose by one or more
@@ -33,62 +32,14 @@ public class CustomRange {
 	private String id;
 	private Collection<CustomRangeEntry> entries; //range entries associated to the CustomRange instance
 	
-	/**
-	 * Constructor that given the CustomRange id, searches the CustomRange file and loads its content 
-	 * @param customRangeId
-	 * @throws FileNotFoundException 
-	 * @throws CustomRangeInitializationException 
-	 */
-	public CustomRange(String customRangeId) throws CustomRangeInitializationException {
-		File customRangeFile = null;
-		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
-		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
-		for (File f : crFiles){//search for the custom range file with the given name
-			if (f.getName().equals(customRangeId+".xml")){
-				customRangeFile = f;
-				break;
-			}
-		}
-		if (customRangeFile == null){
-			throw new CustomRangeInitializationException("CustomRange file '" + customRangeId + ".xml' cannot be found in the CustomRange folder");
-		}
-		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-		this.id = crReader.getId();
-		loadEntries(customRangeFile);
+	CustomRange(String id, Collection<CustomRangeEntry> entries){
+		this.id = id;
+		this.entries = entries;
 	}
 	
-	/**
-	 * Constructor that given the CustomRange file loads its content
-	 * @param customRangeName something like it.uniroma2.art.semanticturkey.customrange.reifiedNotes.xml
-	 * @param projectFolderPath
-	 * @throws CustomRangeInitializationException 
-	 * @throws FileNotFoundException 
-	 */
-	public CustomRange(File customRangeFile) {
-		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-		this.id = crReader.getId();
-		loadEntries(customRangeFile);
-	}
-	
-	private void loadEntries(File customRangeFile) {
-		entries = new ArrayList<CustomRangeEntry>();
-		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-		Collection<String> creIdList = crReader.getCustomRangeEntries();
-		File creFolder = CustomRangeProvider.getCustomRangeEntryFolder();
-		File[] creFiles = creFolder.listFiles();//get list of files into custom range entry folder
-		for (String creId : creIdList){
-			for (File f : creFiles){//search for the CustomRangeEntry file with the given name
-				if (f.getName().equals(creId+".xml")){
-					try {
-						CustomRangeEntry cre = CustomRangeEntryFactory.createCustomRangeEntry(f);
-						entries.add(cre);
-					} catch (CustomRangeInitializationException e) {
-						// TODO Log per avvertire che il CRE con ID creId non è stato inizializzato
-					}
-					break;
-				}
-			}
-		}
+	CustomRange(String id){
+		this.id = id;
+		this.entries = new ArrayList<CustomRangeEntry>();
 	}
 	
 	/**
@@ -121,6 +72,18 @@ public class CustomRange {
 		return null;
 	}
 	
+	/**
+	 * adds a CustomRangeEntry to the CustomRange
+	 * @param crEntry
+	 */
+	public void addEntry(CustomRangeEntry crEntry){
+		entries.add(crEntry);
+	}
+	
+	/**
+	 * Returns all the id of the entry contained in the CustomRange
+	 * @return
+	 */
 	public Collection<String> getEntriesId(){
 		Collection<String> ids = new ArrayList<String>();
 		for (CustomRangeEntry cre : entries){
@@ -128,59 +91,40 @@ public class CustomRange {
 		}
 		return ids;
 	}
-
 	
-	private class CustomRangeXMLReader {
-		
-		private Document doc;
-		
-		public CustomRangeXMLReader(File customRangeFile){
-			try {
-				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				if (customRangeFile.exists()){
-					doc = dBuilder.parse(customRangeFile);
-					doc.getDocumentElement().normalize();
-				}
-			} catch (IOException | ParserConfigurationException | SAXException e) {
-				e.printStackTrace();
+	/**
+	 * Serialize the CustomRange on a xml file.
+	 * @throws ParserConfigurationException 
+	 */
+	public void saveXML(){
+		try {
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
+			Document doc = docBuilder.newDocument();
+			
+			Element crElement = doc.createElement("customRange");
+			doc.appendChild(crElement);
+			crElement.setAttribute("id", this.getId());
+			
+			for (CustomRangeEntry entry : entries){
+				Element entryElement = doc.createElement("entry");
+				crElement.appendChild(entryElement);
+				entryElement.setAttribute("id", entry.getId());
 			}
+			// write the content into xml file
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			Properties outputProps = new Properties();
+			outputProps.setProperty("encoding", "UTF-8");
+			outputProps.setProperty("indent", "yes");
+			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			transformer.setOutputProperties(outputProps);
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeFolder(), this.getId() + ".xml"));
+			transformer.transform(source, result);
+		} catch (ParserConfigurationException | TransformerException e) {
+			e.printStackTrace();
 		}
-		
-		/**
-		 * Return the attribute <code>id</code> of the custom range xml file. 
-		 * @return
-		 */
-		public String getId(){
-			if (doc != null){
-				Element customRangeEntryElement = doc.getDocumentElement();
-				String id = customRangeEntryElement.getAttribute("id");
-				return id.trim();
-			} else {
-				return null;
-			}
-		}
-		
-		/**
-		 * Return a collection of <code>id</code> contained in the <code>entry</code> tag of the custom 
-		 * range xml file. 
-		 * @return
-		 */
-		public Collection<String> getCustomRangeEntries() {
-			Collection<String> creList = new ArrayList<String>();
-			if (doc != null){
-				NodeList entryList = doc.getElementsByTagName("entry");
-				for (int i = 0; i < entryList.getLength(); i++) {
-					Node entryNode = entryList.item(i);
-					if (entryNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element entryElement = (Element) entryNode;
-						String idCREntry = entryElement.getAttribute("id");
-						creList.add(idCREntry);
-					}
-				}
-			}
-			return creList;
-		}
-
 	}
+	
 }
