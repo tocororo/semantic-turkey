@@ -46,6 +46,9 @@ createGroupboxForPredicate = function(predObjXml) {
 			} else {//if not, don't expand the resource
 				var label = document.createElement("label");
 				label.setAttribute("value", objectsColl[i].textContent);
+				label.addEventListener("dblclick", function(){
+					art_semanticturkey.ResourceViewLauncher.openResourceView(this.value);
+				}, false);
 				objectsBox.appendChild(label);
 			}
 		} else if (objectsColl[i].tagName == "plainLiteral"){
@@ -65,8 +68,9 @@ createGroupboxForPredicate = function(predObjXml) {
 }
 
 crateRowForReifiedRes = function(reifiedRes, predicate){
-	var xmlResp = art_semanticturkey.STRequests.CustomRanges.getReifiedResDescription(reifiedRes, predicate);
+	var xmlResp = art_semanticturkey.STRequests.CustomRanges.getReifiedResourceDescription(reifiedRes, predicate);
 	var resource = xmlResp.getElementsByTagName("description")[0].getAttribute("resource");
+	var resourceShow = xmlResp.getElementsByTagName("description")[0].getAttribute("show");
 	
 	var propertyCollXml = xmlResp.getElementsByTagName("property");
 	if (propertyCollXml.length > 0){ //create the expandable section only if the description has some prop-value pairs
@@ -75,10 +79,11 @@ crateRowForReifiedRes = function(reifiedRes, predicate){
 		var reifIdBox = document.createElement("hbox");
 		reifIdBox.setAttribute("align", "center");
 		var resLabel = document.createElement("label");
-		resLabel.setAttribute("value", resource);
+		resLabel.setAttribute("value", resourceShow);
+		resLabel.setAttribute("resource", resource);
 		resLabel.setAttribute("flex", "1");
 		resLabel.addEventListener("dblclick", function(){
-			art_semanticturkey.ResourceViewLauncher.openResourceView(this.value);
+			art_semanticturkey.ResourceViewLauncher.openResourceView(this.getAttribute("resource"));
 		}, false);
 		var expandBtn = document.createElement("toolbarbutton");
 		expandBtn.setAttribute("tooltiptext", "Expand");
@@ -152,11 +157,13 @@ crateRowForReifiedRes = function(reifiedRes, predicate){
 		return container;
 	} else {//if the resource doesn't have a description, return just a label (uri of the resource)
 		var label = document.createElement("label");
-		label.setAttribute("value", resource);
+		label.setAttribute("value", resourceShow);
+		label.setAttribute("resource", resource);
 		label.addEventListener("dblclick", function(){
-			art_semanticturkey.ResourceViewLauncher.openResourceView(this.value);
+			art_semanticturkey.ResourceViewLauncher.openResourceView(this.getAttribute("resource"));
 		}, false);
 		return label;
+		art_semanticturkey.Logger.debug(lable.innerHTML);
 	}
 }
 

@@ -96,10 +96,11 @@ public class CustomRanges extends STServiceAdapter {
 	 */
 	@GenerateSTServiceController
 	public Response getCustomRangeEntry(String id){
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = response.getDataElement();
+		
 		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
 		if (crEntry != null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElem = response.getDataElement();
 			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
 			creElem.setAttribute("id", crEntry.getId());
 			creElem.setAttribute("name", crEntry.getName());
@@ -108,8 +109,11 @@ public class CustomRanges extends STServiceAdapter {
 			descriptionElem.setTextContent(crEntry.getDescription());
 			Element refElem = XMLHelp.newElement(creElem, "ref");
 			refElem.setTextContent(crEntry.getRef());
+			return response;
+		} else {
+			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");
 		}
-		return response;
+		
 	}
 	
 	/**
@@ -144,18 +148,20 @@ public class CustomRanges extends STServiceAdapter {
 	 */
 	@GenerateSTServiceController
 	public Response getCustomRange(String id){
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = response.getDataElement();
 		CustomRange cr = crProvider.getCustomRangeById(id);
 		if (cr != null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElem = response.getDataElement();
 			Element crElem = XMLHelp.newElement(dataElem, "customRange");
 			crElem.setAttribute("id", cr.getId());
 			for (String creId : cr.getEntriesId()){
 				Element entryElem = XMLHelp.newElement(crElem, "entry");
 				entryElem.setAttribute("id", creId);
 			}
+			return response;
+		} else {
+			return createReplyFAIL("CustomRange with id " + id + " not found");
 		}
-		return response;
 	}
 	
 	/**
@@ -266,7 +272,7 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController
-	public Response getReifiedResDescription(ARTURIResource resource, ARTURIResource predicate) 
+	public Response getReifiedResourceDescription(ARTURIResource resource, ARTURIResource predicate) 
 			throws UnavailableResourceException, ProjectInconsistentException, 
 			PRParserException, ModelAccessException, CustomRangeInitializationException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -280,6 +286,23 @@ public class CustomRanges extends STServiceAdapter {
 		//try to identify the CRE which has generated the reified resource
 		CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
 		if (creGraph != null){
+			//set the show for the reified resource
+			String showProp = rdfModel.expandQName(creGraph.getShowProperty());
+			if (showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
+				descriptionElem.setAttribute("show", resource.getNominalValue());
+			} else { //if the showProperty is specified, look for its value
+				ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
+				if (itShow.hasNext()){//if the value is found is set as show attribute
+					ARTNode showNode = itShow.next();
+					if (showNode.isLiteral())
+						descriptionElem.setAttribute("show", showNode.asLiteral().getLabel());
+					else
+						descriptionElem.setAttribute("show", showNode.getNominalValue());
+				} else { //otherwise set the same resource ID as show attribute
+					descriptionElem.setAttribute("show", resource.getNominalValue());
+				}
+			}
+			//set the predicate-object list
 			Collection<String> predicateList = creGraph.getGraphPredicates(codaCore, false, true);
 			for (String pred : predicateList){
 				ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(pred), false, getWorkingGraph());
@@ -478,7 +501,7 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
-	public Response removeReifiedRes(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource) throws ModelUpdateException{
+	public Response removeReifiedResource(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource) throws ModelUpdateException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		RDFModel model = getOWLModel();
 		model.deleteTriple(subject, predicate, resource, getWorkingGraph());
@@ -512,6 +535,10 @@ public class CustomRanges extends STServiceAdapter {
 		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(getOWLModel(), ontFact);
+		if (datatype != null && datatype.equals(""))
+			datatype = null;
+		if (lang != null && lang.equals(""))
+			lang = null;
 		String result = codaCore.executeLiteralConverter(converter, value, datatype, lang).getNominalValue();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -522,41 +549,50 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
-	 * This service is thought to create a custom range entry from client. To be useful is necessary
-	 * a proper UI for client support (e.g. a wizard)
+	 * This service is thought to create a custom range entry from client.
+	 * To be useful is necessary a proper UI for client support (e.g. a wizard)
 	 * This is a POST because ref and description could be quite long for a GET parameter
+	 * @param type
 	 * @param id
 	 * @param name
-	 * @param type
 	 * @param description
 	 * @param ref
+	 * @param showProp Useful only if type is "graph"
 	 * @return
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response createCustomRangeEntry(String id, String name, String type, String description, String ref){
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		CustomRangeEntry cre = CustomRangeEntryFactory.createCustomRangeEntry(type, id, name, description, ref);
+	public Response createCustomRangeEntry(String type, String id, String name, String description, String ref, @Optional String showProp){
+		CustomRangeEntry cre = null;
+		if (type.equals(CustomRangeEntry.Types.node.toString())){
+			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.node, id, name, description, ref);
+		} else {
+			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.graph, id, name, description, ref);
+			if (showProp != null && !showProp.equals(""))
+				cre.asCustomRangeEntryGraph().setShowProperty(showProp);
+		}
 		cre.saveXML();
 		crProvider.addCustomRangeEntries(cre);
-		return response;
+		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
 	 * This service is thought to add an existing entry to an existing custom range entry from client.
 	 * To be useful is necessary a proper UI for client support (e.g. a wizard)
-	 * TODO: check or not that cr and cre exist?
 	 * @param customRangeId
 	 * @param customRangeEntryId
 	 * @return
 	 */
 	@GenerateSTServiceController
 	public Response addEntryToCustomRange(String customRangeId, String customRangeEntryId){
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
 		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(customRangeEntryId);
+		if (cr == null)
+			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
+		if (cre == null)
+			return createReplyFAIL("CustomRangeEntry with id " + customRangeEntryId + " not found");
 		cr.addEntry(cre);
 		cr.saveXML();
-		return response;
+		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
@@ -566,30 +602,29 @@ public class CustomRanges extends STServiceAdapter {
 	 */
 	@GenerateSTServiceController
 	public Response createCustomRange(String id){
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		CustomRange cr = CustomRangeFactory.createEmptyCustomRange(id);
 		cr.saveXML();
 		crProvider.addCustomRange(cr);
-		return response;
+		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
 	 * Adds a CustomRangeEntry to the configuration, namely an entry that relates a predicate with an
 	 * existing CustomRange
-	 * TODO: check or not that cr exists?
 	 * @param predicate
 	 * @param customRangeId
 	 * @param replaceRanges
 	 * @return
 	 */
 	@GenerateSTServiceController
-	public Response addCustomRangeToPredicate(ARTURIResource predicate, String customRangeId, @Optional (defaultValue = "false") boolean replaceRanges){
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+	public Response addCustomRangeToPredicate(String customRangeId, ARTURIResource predicate, @Optional (defaultValue = "false") boolean replaceRanges){
 		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
+		if (cr == null)
+			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
 		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
 		crConfig.addEntry(new CustomRangeConfigEntry(predicate.getURI(), cr, replaceRanges));
 		crConfig.saveXML();
-		return response;
+		return createReplyResponse(RepliesStatus.ok);
 	}
 
 }

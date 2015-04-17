@@ -22,13 +22,24 @@ import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
@@ -45,15 +56,32 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.metadata.FeatureDescription;
 import org.apache.uima.resource.metadata.TypeDescription;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
+import org.w3c.dom.CDATASection;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class CustomRangeEntryGraph extends CustomRangeEntry {
 	
 	private static final String USER_PROMPT_FEATURE_NAME = "userPrompt";
 	private static final String USER_PROMPT_TYPE_PATH = "it.uniroma2.art.semanticturkey.userPromptFS";
 	private String annotationTypeName;//UIMA type taken from pearl rule (rule ....)
+	private String showProp;
 	
 	CustomRangeEntryGraph(String id, String name, String description, String ref) {
 		super(id, name, description, ref);
+	}
+	
+	/**
+	 * Returns the property that suggests which of the property in the pearl determines the value to
+	 * show instead of the URL
+	 * @return
+	 */
+	public String getShowProperty(){
+		return this.showProp;
+	}
+	
+	public void setShowProperty(String property){
+		this.showProp = property;
 	}
 	
 	/**
@@ -254,6 +282,46 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		return tsd;
 	}
 	
+	@Override
+	public void saveXML(){
+		try {
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
+			Document doc = docBuilder.newDocument();
+			
+			Element creElement = doc.createElement("customRangeEntry");
+			doc.appendChild(creElement);
+			creElement.setAttribute("id", this.getId());
+			creElement.setAttribute("name", this.getName());
+			creElement.setAttribute("type", this.getType());
+			
+			Element descrElement = doc.createElement("description");
+			descrElement.setTextContent(this.getDescription());
+			creElement.appendChild(descrElement);
+			
+			Element refElement = doc.createElement("ref"); 
+			CDATASection cdata = doc.createCDATASection(this.getRef());
+			refElement.appendChild(cdata);
+			if (this.showProp != ""){
+				refElement.setAttribute("showProperty", showProp);
+			}
+			creElement.appendChild(refElement);
+			
+			// write the content into xml file
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			Properties outputProps = new Properties();
+			outputProps.setProperty("encoding", "UTF-8");
+			outputProps.setProperty("indent", "yes");
+			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			transformer.setOutputProperties(outputProps);
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeEntryFolder(), this.getId() + ".xml"));
+			transformer.transform(source, result);
+		} catch (ParserConfigurationException | TransformerException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	//For debug decomment in createTypeSystemDescription
 	@SuppressWarnings("unused")

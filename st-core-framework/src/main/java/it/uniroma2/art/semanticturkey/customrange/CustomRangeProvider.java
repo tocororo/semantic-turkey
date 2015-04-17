@@ -153,7 +153,6 @@ public class CustomRangeProvider {
 	public CustomRange getCustomRangeById(String crId){
 		for (CustomRange cr : crList){
 			if (cr.getId().equals(crId)){
-				System.out.println("same");
 				return cr;
 			}
 		}

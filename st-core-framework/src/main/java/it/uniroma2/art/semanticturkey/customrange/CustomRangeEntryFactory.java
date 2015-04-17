@@ -36,9 +36,11 @@ public class CustomRangeEntryFactory {
 		String description = creReader.getDescription();
 		String ref = creReader.getRef();
 		String type = creReader.getType();
-		if (type.equals("graph")){
-			return new CustomRangeEntryGraph(id, name, description, ref);
-		} else if (type.equals("node")){
+		if (type.equals(CustomRangeEntry.Types.graph.toString())){
+			CustomRangeEntryGraph cre = new CustomRangeEntryGraph(id, name, description, ref);
+			cre.setShowProperty(creReader.getShowProperty());
+			return cre;
+		} else if (type.equals(CustomRangeEntry.Types.node.toString())){
 			return new CustomRangeEntryNode(id, name, description, ref);
 		} else {
 			throw new CustomRangeInitializationException("Invalid type '" + type + "' in "
@@ -46,10 +48,10 @@ public class CustomRangeEntryFactory {
 		}
 	}
 	
-	public static CustomRangeEntry createCustomRangeEntry(String type, String id, String name, String description, String ref){
-		if (type.equals("graph")){
+	public static CustomRangeEntry createCustomRangeEntry(CustomRangeEntry.Types type, String id, String name, String description, String ref){
+		if (type.equals(CustomRangeEntry.Types.graph)){
 			return new CustomRangeEntryGraph(id, name, description, ref);
-		} else { //type.equals("node")
+		} else { //type.equals(CustomRangeEntry.EntryType.node)
 			return new CustomRangeEntryNode(id, name, description, ref);
 		}
 	}
@@ -127,6 +129,22 @@ public class CustomRangeEntryFactory {
 				ref = refElement.getTextContent();
 			}
 			return ref.trim();
+		}
+		
+		/**
+		 * Return the <code>show</code> attribute of the <code>ref</code> tag contained in the 
+		 * custom range entry xml file. N.B. the <code>showPredicate</code> attribute is available
+		 * only if the type of the entry is <code>graph</code>
+		 * @return
+		 */
+		public String getShowProperty(){
+			String showProp = "";
+			Node refNode = doc.getElementsByTagName("ref").item(0);
+			if (refNode.getNodeType() == Node.ELEMENT_NODE) {
+				Element refElement = (Element) refNode;
+				showProp = refElement.getAttribute("showProperty");
+			}
+			return showProp;
 		}
 	}
 }

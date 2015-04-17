@@ -148,11 +148,17 @@ STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTr
 STRequests.CustomRanges.serviceName = "CustomRanges";
 STRequests.CustomRanges.runCodaRequest = "runCoda";
 STRequests.CustomRanges.executeURIConverterRequest = "executeURIConverter";
-STRequests.CustomRanges.getReifiedResDescriptionRequest = "getReifiedResDescription";
+STRequests.CustomRanges.executeLiteralConverterRequest = "executeLiteralConverter";
 STRequests.CustomRanges.getCustomRangeConfigMapRequest = "getCustomRangeConfigMap"; 
 STRequests.CustomRanges.getCustomRangeRequest = "getCustomRange";
 STRequests.CustomRanges.getCustomRangeEntryRequest = "getCustomRangeEntry";
 STRequests.CustomRanges.getCustomRangeEntriesRequest = "getCustomRangeEntries";
+STRequests.CustomRanges.getReifiedResourceDescriptionRequest = "getReifiedResourceDescription";
+STRequests.CustomRanges.removeReifiedResourceRequest = "removeReifiedResource";
+STRequests.CustomRanges.createCustomRangeEntryRequest = "createCustomRangeEntry";
+STRequests.CustomRanges.createCustomRangeRequest = "createCustomRange";
+STRequests.CustomRanges.addEntryToCustomRangeRequest = "addEntryToCustomRange";
+STRequests.CustomRanges.addCustomRangeToPredicateRequest = "addCustomRangeToPredicate";
 
 //Refactor service Request (old service name was ModifyName)
 STRequests.Refactor.serviceName = "Refactor";
