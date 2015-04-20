@@ -12,7 +12,7 @@ var serviceName = service.serviceName;
 const currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 
 function runCoda(subject, predicate, crEntryId, map) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] addTriples');
+	Logger.debug('[SERVICE_CustomRanges.jsm] runCoda');
 	var params = [];
 	for (var i=0; i<map.length; i++){
 		params.push(map[i].key + "=" + map[i].value);

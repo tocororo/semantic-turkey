@@ -18,23 +18,29 @@ initUI = function(){
 		var listitem = document.createElement("listitem");
 		var crEntryName = crEntriesXml[i].getAttribute("name");
 		listitem.setAttribute("label", crEntryName);
+		listitem.setAttribute("value", crEntryName);
 		var description = crEntriesXml[i].getElementsByTagName("description")[0].textContent;
 		listitem.setAttribute("tooltiptext", description);
 		rangesListbox.appendChild(listitem);
 	}
 	//eventually add the classic range to the list	
 	var rangesXml = xmlResp.getElementsByTagName("ranges")[0];//classic ranges
-	if (typeof rangesXml != "undetermined"){
+	if (typeof rangesXml != "undefined"){
 		var listitem = document.createElement("listitem");
-		var classicRangeType = rangesXml.getAttribute("rngType")
-		listitem.setAttribute("label", classicRangeType);
-		listitem.setAttribute("tooltiptext", "Classic range");
+		var classicRangeType = rangesXml.getAttribute("rngType");
+		var itemLabel = classicRangeType;
+		if (classicRangeType == "undetermined"){
+			itemLabel = "PlainLiteral/typedLiteral/resource";
+		}
+		listitem.setAttribute("label", itemLabel);
+		listitem.setAttribute("value", classicRangeType);
+		listitem.setAttribute("tooltiptext", "Range: " + itemLabel);
 		rangesListbox.appendChild(listitem);
 	}
 }
 
 btnOkListener = function() {
-	var selectedRange = rangesListbox.selectedItem.label;
+	var selectedRange = rangesListbox.selectedItem.value;
 	window.arguments[0].selectedRange = selectedRange;
 	return;
 }

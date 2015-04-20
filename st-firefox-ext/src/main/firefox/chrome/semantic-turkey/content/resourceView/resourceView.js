@@ -754,11 +754,8 @@ art_semanticturkey.resourceView.partitions
 					"partitionLabel" : "Properties",
 					"expectedContentType" : "predicateObjectsList",
 					"addTooltiptext" : "Add a property value",
-					"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) { // Based
-						// on
-						// sources
-						// by
-						// NScarpato
+					"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) { 
+						// Based on sources by NScarpato
 						var predicateName;
 
 						if (typeof rdfPredicate == "undefined") {
@@ -788,186 +785,13 @@ art_semanticturkey.resourceView.partitions
 						} else {
 							predicateName = rdfPredicate.getNominalValue();
 						}
-
-						var parameters = {};
-						parameters.predicate = predicateName;
-						parameters.winTitle = "Add Property Value";
-						parameters.action = "createAndAddPropValue";
-						parameters.subject = rdfSubject.getNominalValue();
-						// parameters.parentBox =
-						// document.getElementById("parentBoxRows");;
-						// parameters.rowBox =
-						// document.getElementById("rowsBox");
-						// parameters.typeValue = typeValue;
-						// parameters.parentWindow =
-						// window.arguments[0].parentWindow;
-						parameters.parentWindow = window;
-						parameters.oncancel = false;
-						// parameters.skos = window.arguments[0].skos;
-
-						var responseXML = art_semanticturkey.STRequests.Property
-								.getRange(predicateName, "false");
-						var ranges = responseXML.getElementsByTagName("ranges")[0];
-
-						if (ranges.getAttribute("rngType").indexOf("resource") != -1) {
-							window
-									.openDialog(
-											"chrome://semantic-turkey/content/enrichProperty/enrichProperty.xul",
-											"_blank",
-											"modal=yes,resizable,centerscreen",
-											parameters);
-
-						} else if (ranges.getAttribute("rngType").indexOf(
-								"plainLiteral") != -1) {
-							window
-									.openDialog(
-											"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
-											"_blank",
-											"modal=yes,resizable,centerscreen",
-											parameters);
-						} else if (ranges.getAttribute("rngType").indexOf(
-								"typedLiteral") != -1) {
-							var rangeList = ranges.childNodes;
-							for (var i = 0; i < rangeList.length; ++i) {
-								if (typeof (rangeList[i].tagName) != 'undefined') {
-
-									parameters.rangeType = rangeList[i].textContent;
-								}
-							}
-							window
-									.openDialog(
-											"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
-											"_blank",
-											"modal=yes,resizable,centerscreen",
-											parameters);
-						} else if (ranges.getAttribute("rngType").indexOf(
-								"literal") != -1) {
-							var rangeList = ranges.childNodes;
-							var role = null;
-							if (rangeList.length > 0) {
-								for (var i = 0; i < rangeList.length; ++i) {
-									if (typeof (rangeList[i].tagName) != 'undefined') {
-										var dataRangeBNodeID = rangeList[i].textContent;
-										var role = rangeList[i]
-												.getAttribute("role");
-										var nodeType = rangeList[i].tagName;
-									}
-								}
-								if (role.indexOf("dataRange") != -1) {
-									var responseXML = art_semanticturkey.STRequests.Property
-											.parseDataRange(dataRangeBNodeID,
-													nodeType);
-
-									var dataElement = responseXML
-											.getElementsByTagName("data")[0];
-									var dataRangesList = dataElement.childNodes;
-									var dataRangesValueList = new Array();
-									var k = 0;
-									for (var i = 0; i < dataRangesList.length; ++i) {
-										if (typeof (dataRangesList[i].tagName) != 'undefined') {
-											var dataRangeValue = new Object();
-											dataRangeValue.type = dataRangesList[i].tagName;
-											dataRangeValue.rangeType = dataRangesList[i]
-													.getAttribute("type");
-											dataRangeValue.show = dataRangesList[i]
-													.getAttribute("show");
-											dataRangesValueList[k] = dataRangeValue;
-											k++;
-										}
-									}
-									parameters.rangeType = "dataRange";
-									parameters.dataRangesValueList = dataRangesValueList;
-									window
-											.openDialog(
-													"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
-													"_blank",
-													"modal=yes,resizable,centerscreen",
-													parameters);
-								}
-							} else {
-								var literalsParameters = new Object();
-								literalsParameters.isLiteral = "literal";
-								window
-										.openDialog(
-												"chrome://semantic-turkey/content/enrichProperty/isLiteral.xul",
-												"_blank",
-												"modal=yes,resizable,centerscreen",
-												literalsParameters);
-								if (literalsParameters.isLiteral == "plainLiteral") {
-									window
-											.openDialog(
-													"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
-													"_blank",
-													"modal=yes,resizable,centerscreen",
-													parameters);
-								} else if (literalsParameters.isLiteral == "typedLiteral") {
-									window
-											.openDialog(
-													"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
-													"_blank",
-													"modal=yes,resizable,centerscreen",
-													parameters);
-								}
-							}
-						} else if (ranges.getAttribute("rngType").indexOf(
-								"undetermined") != -1) {
-							var literalsParameters = new Object();
-							literalsParameters.isLiteral = "undetermined";
-							window
-									.openDialog(
-											"chrome://semantic-turkey/content/enrichProperty/isLiteral.xul",
-											"_blank",
-											"modal=yes,resizable,centerscreen",
-											literalsParameters);
-							if (literalsParameters.isLiteral == "plainLiteral") {
-								window
-										.openDialog(
-												"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
-												"_blank",
-												"modal=yes,resizable,centerscreen",
-												parameters);
-							} else if (literalsParameters.isLiteral == "typedLiteral") {
-								var rangeList = ranges.childNodes;
-								for (var i = 0; i < rangeList.length; ++i) {
-									if (typeof (rangeList[i].tagName) != 'undefined') {
-										parameters.rangeType = rangeList[i].textContent;
-									}
-								}
-								window
-										.openDialog(
-												"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
-												"_blank",
-												"modal=yes,resizable,centerscreen",
-												parameters);
-							} else if (literalsParameters.isLiteral == "resource") {
-								window
-										.openDialog(
-												"chrome://semantic-turkey/content/enrichProperty/enrichProperty.xul",
-												"_blank",
-												"modal=yes,resizable,centerscreen",
-												parameters);
-							}
-						} else if (ranges.getAttribute("rngType").indexOf(
-								"inconsistent") != -1) {
-							alert("Error range of " + propertyQName
-									+ " property is inconsistent");
+						
+						var changesDone = enrichProperty(rdfSubject.getNominalValue(), predicateName);
+						if (changesDone){
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
 						}
 
-						if (parameters.oncancel == false) {
-							// if (window.arguments[0].sourceType ==
-							// "skosConcept") {
-							// // Luca Mastrogiovanni: fire event
-							// propertyValueAdded
-							// var obj = new Object();
-							// art_semanticturkey.evtMgr.fireEvent("propertyValueAdded",
-							// obj);
-							//
-							// }
-							art_semanticturkey.evtMgr
-									.fireEvent(
-											"refreshEditor",
-											(new art_semanticturkey.genericEventClass()));
-						}
 					},
 					"onRemove" : function(rdfSubject, rdfPredicate, rdfObject) {
 						if (rdfObject.explicit == "true") {

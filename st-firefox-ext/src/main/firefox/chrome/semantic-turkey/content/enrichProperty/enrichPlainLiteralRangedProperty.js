@@ -110,6 +110,7 @@ art_semanticturkey.onAccept = function() {
 		window.arguments[0].action(label, lang);
 		close();
 	}
+	window.arguments[0].completed = true;
 };
 
 art_semanticturkey.onCancel = function() {

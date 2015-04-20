@@ -11,6 +11,7 @@ Components.utils.import("resource://stservices/SERVICE_Property.jsm", art_semant
  * choose what range to use.
  * @param subject
  * @param predicate
+ * @returns a boolean that specifies if the enrichment process has been completed or less.
  */
 enrichProperty = function(subject, predicate){
 	var xmlResp = art_semanticturkey.STRequests.Property.getRange(predicate, "false");
@@ -29,17 +30,17 @@ enrichProperty = function(subject, predicate){
 		if (parameters.selectedRange != null){
 			//check if the selected range is the classic range
 			if (rangesXml.getAttribute("rngType") == parameters.selectedRange){
-				classicRangesLaunch(rangesXml);
+				return classicRangesLaunch(rangesXml, subject, predicate);
 			} else { //or look in the custom ranges
 				var crEntriesXml = customRangeXml.getElementsByTagName("crEntry");
 				for (var i=0; i<crEntriesXml.length; i++){
 					if (crEntriesXml[i].getAttribute("name") == parameters.selectedRange){
-						customRangeLaunch(crEntriesXml[i]);
+						return customRangeLaunch(crEntriesXml[i], subject, predicate);
 					}
 				}
 			}
 		} else {
-			return;
+			return false;
 		}
 	} else if (typeof customRangeXml != "undefined"){//if the getRange response has only customRange section
 		var crEntriesXml = customRangeXml.getElementsByTagName("crEntry");
@@ -52,28 +53,29 @@ enrichProperty = function(subject, predicate){
 			if (parameters.selectedRange != null){
 				for (var i=0; i<crEntriesXml.length; i++){
 					if (crEntriesXml[i].getAttribute("name") == parameters.selectedRange){
-						customRangeLaunch(crEntriesXml[i]);
+						return customRangeLaunch(crEntriesXml[i], subject, predicate);
 					}
 				}
 			} else {
-				return;
+				return false;
 			}
 		} else { //single crEntry
-			customRangeLaunch(crEntriesXml[0]);
+			return customRangeLaunch(crEntriesXml[0], subject, predicate);
 		}
 	} else if (typeof rangesXml != "undefined"){//if the getRange response has only ranges section
-		classicRangesLaunch(rangesXml);
+		return classicRangesLaunch(rangesXml);
 	}
 }
-
 
 customRangeLaunch = function(crEntryXml, subject, predicate){
 	var parameters = {};
 	parameters.crEntryXml = crEntryXml;
 	parameters.subject = subject;
 	parameters.predicate = predicate;
+	parameters.completed = false;
 	window.openDialog("chrome://semantic-turkey/content/customRange/customForm.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+	return parameters.completed;
 }
 
 classicRangesLaunch = function(rangesXml, subject, predicate){
@@ -83,7 +85,7 @@ classicRangesLaunch = function(rangesXml, subject, predicate){
 	parameters.winTitle = "Add Property Value";
 	parameters.action = "createAndAddPropValue";
 	parameters.parentWindow = window;
-	parameters.oncancel = false;
+	parameters.completed = false;
 	
 	if (rangesXml.getAttribute("rngType").indexOf("resource") != -1) {
 		window.openDialog(
@@ -176,6 +178,7 @@ classicRangesLaunch = function(rangesXml, subject, predicate){
 					"chrome://semantic-turkey/content/enrichProperty/enrichTypedLiteralRangedProperty.xul",
 					"_blank", "modal=yes,resizable,centerscreen", parameters);
 		} else if (literalsParameters.isLiteral == "resource") {
+			parameters.rangeType = "resource";
 			window.openDialog(
 					"chrome://semantic-turkey/content/enrichProperty/enrichProperty.xul",
 					"_blank", "modal=yes,resizable,centerscreen", parameters);
@@ -183,4 +186,5 @@ classicRangesLaunch = function(rangesXml, subject, predicate){
 	} else if (rangesXml.getAttribute("rngType").indexOf("inconsistent") != -1) {
 		alert("Error range of " + propertyQName + " property is inconsistent");
 	}
+	return parameters.completed;
 }

@@ -220,7 +220,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			aCAS.addFsToIndexes(ann);
 //			analyseCas(aCAS);
 			//run coda with the given pearl and the cas just created.
-			System.out.println("pearl:\t" + getRef());
+//			System.out.println("pearl:\t" + getRef());
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 			codaCore.setProjectionRulesModel(pearlStream);
 			codaCore.setJCas(jcas);

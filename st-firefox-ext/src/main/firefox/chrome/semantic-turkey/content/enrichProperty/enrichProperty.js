@@ -305,7 +305,8 @@ art_semanticturkey.bind = function() {
 			}
 			close();
 		}	
-};7
+		window.arguments[0].completed = true;
+};
 // NScarpato 28/05/2007 add sole annotate function ("add new annotation for
 // selected instance")
 // NScarpato 10/03/2008 add annotate function "addExistingPropValue"
@@ -316,6 +317,7 @@ art_semanticturkey.annotateInst = function(){
 	art_semanticturkey.listDragDropAnnotateInstance(window, instanceName);
 		
 	close();
+	window.arguments[0].completed = true;
 };
 
 art_semanticturkey.showAllClasses = function() {
@@ -418,10 +420,11 @@ art_semanticturkey.listDragDropBind = function(win, tree) {
 						objectInstanceName);				 
 				win.arguments[0].functors.addAnnotation(event2);
 				close();
+				window.arguments[0].completed = true;
 			}
 		} catch (e) {
 			alert(e.name + ": " + e.message);
-		}		
+		}
 	}
 };
 
@@ -459,7 +462,6 @@ art_semanticturkey.listDragDropAnnotateInstance = function(win, instanceName /*m
 			}
 		} else {
 			win.close();
-
 			art_semanticturkey.STRequests.Property.addExistingPropValue(win.arguments[0].subject,
 					win.arguments[0].predicate,
 					instanceName, "resource")
@@ -472,6 +474,7 @@ art_semanticturkey.listDragDropAnnotateInstance = function(win, instanceName /*m
 					
 			return win.arguments[0].functors.addAnnotation(event2);
 		}
+		window.arguments[0].completed = true;
 	} catch (e) {
 		alert(e.name + ": " + e.message);
 	}

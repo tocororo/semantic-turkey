@@ -426,5 +426,6 @@ buttonOkListener = function(){
 	} catch (e){
 		art_semanticturkey.Alert.alert(e);
 	}
+	window.arguments[0].completed = true;
 	window.close();
 }

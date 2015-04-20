@@ -154,6 +154,7 @@ art_semanticturkey.onAccept= function() {
 	catch (e) {
 		alert(e.name + ": " + e.message);
 	}
+	window.arguments[0].completed = true;
 };
 
 art_semanticturkey.onCancel= function() {
