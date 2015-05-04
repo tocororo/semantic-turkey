@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<bindings xmlns="http://www.mozilla.org/xbl"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<binding id="reifiable-object-widget">
+		<content>
+			<xul:vbox anonid="mainBox" flex="1">
+				<xul:hbox flex="1" anonid="resourceBox">
+					<xul:box anonid="baseWidgetBox" flex="1"/>
+				</xul:hbox>
+				<!-- <xul:groupbox flex="1" anonid="expandableBox" hidden="true"/> -->
+			</xul:vbox>
+		</content>
+		<implementation>
+			<field name="rdfResource" /> <!-- reified resource to describe -->
+			<field name="rdfPredicate" />
+			<!-- predicate of the s-p-o triple, where o is the reified resource.
+				This field is necessary to know the predicate's CustomRangeEntry according to which 
+				the reified resource has been created and so, to know how to describe the resource -->
+			<constructor>
+				<![CDATA[
+					if (typeof art_semanticturkey == 'undefined')
+						var art_semanticturkey = {};
+					
+					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/Deserializer.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
+					Components.utils.import("resource://stservices/SERVICE_CustomRanges.jsm", art_semanticturkey);
+					
+					var baseWidgetBox = document.getAnonymousElementByAttribute(this, "anonid", "baseWidgetBox");
+					//var expandBtn = document.getAnonymousElementByAttribute(this, "anonid", "expandBtn");
+					
+					if(typeof this.rdfResource != "undefined" && typeof this.rdfPredicate != "undefined"){
+						
+						var xmlResp = art_semanticturkey.STRequests.CustomRanges.
+							getReifiedResourceDescription(rdfResource.getURI(), rdfPredicate.getURI());
+						var responseDataElement = xmlResp.getElementsByTagName("data")[0];
+						var responseResourceElement = responseDataElement.getElementsByTagName("resource")[0];
+						var resourceObj = art_semanticturkey.Deserializer.createRDFNode(responseResourceElement.children[0]);
+						resourceObj.explicit = this.rdfResource.explicit; //set the explicit attribute the same of the reifiable resource 
+						
+						//bind the box with the widget rdfnode-base-widget
+						baseWidgetBox.rdfResource = resourceObj;
+						baseWidgetBox.setAttribute("class","rdfnode-base-widget");
+						
+						var responsePropertiesElement = responseDataElement.getElementsByTagName("properties")[0];
+						
+						if (typeof responsePropertiesElement != "undefined"){
+							var predicateObjectsList = art_semanticturkey.Deserializer.createPredicateObjectsList(responsePropertiesElement.children[0]);
+						
+							//var expandableBox = document.getAnonymousElementByAttribute(this, "anonid", "expandableBox");
+							var expandableBox = document.createElement("groupbox");
+							expandableBox.setAttribute("flex", "1");
+							expandableBox.setAttribute("hidden", "true");
+									
+							//expand button creation
+							var expandBtn = document.createElement("toolbarbutton");
+							expandBtn.setAttribute("label", "+");
+							expandBtn.setAttribute("tooltiptext", "Expand");
+							var resourceBox = document.getAnonymousElementByAttribute(this, "anonid", "resourceBox");
+							resourceBox.appendChild(expandBtn);
+							
+							expandBtn.addEventListener("command", expandListener = function(){
+								if (expandableBox.getAttribute("hidden") ==  "true"){
+									expandableBox.setAttribute("hidden", "false");
+									this.setAttribute("label", "-");
+									this.setAttribute("tooltiptext", "Collapse");
+								} else if (expandableBox.getAttribute("hidden") ==  "false"){
+									expandableBox.setAttribute("hidden", "true");
+									this.setAttribute("label", "+");
+									this.setAttribute("tooltiptext", "Expand");
+								}
+							}, false);
+							
+							//description grid creation
+							var resourceInfoGrid = document.createElement("grid");
+							var gridColumns = document.createElement("columns");
+							var gridColumn = document.createElement("column");
+							gridColumn.setAttribute("style", "margin-right:10px;");
+							gridColumns.appendChild(gridColumn);
+							gridColumn = document.createElement("column");
+							gridColumn.setAttribute("flex", "1");
+							gridColumns.appendChild(gridColumn);
+							resourceInfoGrid.appendChild(gridColumns);
+							var gridRows = document.createElement("rows");
+							
+							//create and add grid rows (property-value)
+							for (var i = 0; i < predicateObjectsList.length; i++) {
+								var po = predicateObjectsList[i];
+								var predicate = po.getPredicate();
+								var objects = po.getObjects();
+								for (var j=0; j<objects.length; j++){
+									//predicate label
+									var row = document.createElement("row");
+									row.setAttribute("align", "center");
+									var label = document.createElement("label");
+									label.setAttribute("value", predicate.getShow());
+									row.appendChild(label);
+									//object widget
+									var valueBox = document.createElement("box");
+									valueBox.rdfResource = objects[j];
+									valueBox.setAttribute("class", "rdfnode-base-widget");
+									row.appendChild(valueBox);
+									gridRows.appendChild(row);
+								}
+							}
+							resourceInfoGrid.appendChild(gridRows);
+								
+							expandableBox.appendChild(resourceInfoGrid);
+							var mainBox = document.getAnonymousElementByAttribute(this, "anonid", "mainBox");
+							mainBox.appendChild(expandableBox);
+						}
+					}
+				]]>
+			</constructor>
+			<method name="getRdfResource">
+				<body>
+				<![CDATA[
+					return this.rdfResource;
+				]]>
+				</body>
+			</method>
+		</implementation>
+		<handlers>
+			<handler event="command">
+				<![CDATA[
+					
+					if(event.originalTarget.tagName == "button"){
+						//stop the event propagation to not generate confusion
+						event.stopPropagation();
+					
+						var customEvent = new CustomEvent("rdfnodeContainerEvent", {
+							detail: {
+								rdfResource: this.rdfResource,
+								button: event.originalTarget
+							},
+							bubble: true,
+							cancellable: true
+						})
+						event.originalTarget.dispatchEvent(customEvent)
+					}
+				]]>
+			</handler>
+		</handlers>
+	</binding>
+</bindings>

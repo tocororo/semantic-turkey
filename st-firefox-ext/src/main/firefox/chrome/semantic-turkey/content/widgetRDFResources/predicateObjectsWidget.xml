@@ -17,6 +17,7 @@
 			<field name="labelValue" />
 			<field name="rdfSubject" />
 			<field name="rdfPredicate" />
+			<field name="hasCustomRange" />
 			<field name="rdfResourcesArray" />
 			<field name="operations" />
 			<field name="showSubjInGUI" />
@@ -95,6 +96,8 @@
 					var mainOLWbox = document.getAnonymousElementByAttribute(this, "anonid", "mainPOWboxId");
 					mainOLWbox.labelValue = this.labelValue;
 					mainOLWbox.rdfResourcesArray = this.rdfResourcesArray;
+					mainOLWbox.rdfPredicate = this.rdfPredicate;
+					mainOLWbox.hasCustomRange = this.hasCustomRange;
 					mainOLWbox.operations = this.operations;
 					mainOLWbox.addRemoveButton = false;
 					mainOLWbox.setAttribute("class","object-list-widget");
@@ -193,6 +196,25 @@
 					})
 					//event.originalTarget.dispatchEvent(customEvent);
 					document.getAnonymousElementByAttribute(this, "anonid", "mainPOWboxId").dispatchEvent(customEvent);
+				]]>
+			</handler>
+			<handler event="rdfnodeBaseSelectionEvent">
+				<![CDATA[
+					//stop the event propagation to not generate confusion
+					event.stopPropagation();
+					
+					var buttonBox = document.getAnonymousElementByAttribute(this, "anonid", "buttonBoxPOLW");
+					var buttons = buttonBox.children;
+					for (var i=0; i<buttons.length; i++){
+						var btn = buttons[i];
+						if (btn.label == "remove"){
+							if (event.detail.rdfResource.explicit == "false"){
+								btn.setAttribute("disabled", "true");
+							} else {
+								btn.setAttribute("disabled", "false");
+							}		
+						}
+					}
 				]]>
 			</handler>
 		</handlers>

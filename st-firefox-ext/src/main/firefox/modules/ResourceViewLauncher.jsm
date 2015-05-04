@@ -52,8 +52,8 @@ ResourceViewLauncher = {
 			}
 			//open the resource view
 			if (useEditor == "tab"){//as tab
-				mainWindow.gBrowser.addTab("chrome://semantic-turkey/content/resourceView/resourceView.xul" + 
-						queryString);
+				mainWindow.gBrowser.selectedTab = mainWindow.gBrowser.addTab(
+						"chrome://semantic-turkey/content/resourceView/resourceView.xul" + queryString);
 			} else { //as window
 				mainWindow.openDialog(
 						"chrome://semantic-turkey/content/resourceView/resourceView.xul" + queryString,

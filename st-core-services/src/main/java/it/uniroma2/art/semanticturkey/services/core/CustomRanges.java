@@ -8,7 +8,6 @@ import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -17,6 +16,7 @@ import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
+import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfig;
@@ -33,6 +33,13 @@ import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationExcept
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
+import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
+import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -45,6 +52,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,6 +64,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 @GenerateSTServiceController
 @Validated
@@ -260,7 +271,8 @@ public class CustomRanges extends STServiceAdapter {
 	 * This service returns a description of a reified resource based on the existing CustomRangeEntry
 	 * of the given predicate. First it retrieves, from the pearl of the CRE, the predicates that 
 	 * describe the resource, then get the values for that predicates. If no CustomRangeEntryGraph
-	 * is found for the given predicate, returns an empty description
+	 * is found for the given predicate, returns an empty description.
+	 * If there is no CustomRangeEntry for the given predicate, returns an empty description.
 	 * 
 	 * @param crEntryId
 	 * @return
@@ -272,13 +284,13 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController
-	public Response getReifiedResourceDescription(ARTURIResource resource, ARTURIResource predicate) 
+	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
 			throws UnavailableResourceException, ProjectInconsistentException, 
 			PRParserException, ModelAccessException, CustomRangeInitializationException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		Element descriptionElem = XMLHelp.newElement(dataElement, "description");
-		descriptionElem.setAttribute("resource", resource.getNominalValue());
+		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
+		
 		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 		RDFModel rdfModel = getOWLModel();
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
@@ -288,51 +300,60 @@ public class CustomRanges extends STServiceAdapter {
 		if (creGraph != null){
 			//set the show for the reified resource
 			String showProp = rdfModel.expandQName(creGraph.getShowProperty());
+			String show;
 			if (showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
-				descriptionElem.setAttribute("show", resource.getNominalValue());
+				show = resource.getNominalValue();
 			} else { //if the showProperty is specified, look for its value
 				ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
 				if (itShow.hasNext()){//if the value is found is set as show attribute
 					ARTNode showNode = itShow.next();
 					if (showNode.isLiteral())
-						descriptionElem.setAttribute("show", showNode.asLiteral().getLabel());
+						show = showNode.asLiteral().getLabel();
 					else
-						descriptionElem.setAttribute("show", showNode.getNominalValue());
+						show = showNode.getNominalValue();
 				} else { //otherwise set the same resource ID as show attribute
-					descriptionElem.setAttribute("show", resource.getNominalValue());
+					show = resource.getNominalValue();
 				}
 			}
+			STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
+					resource, ModelUtilities.getResourceRole(resource, rdfModel), true, show);
+			RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
+			
 			//set the predicate-object list
+			boolean descrAvailable = false;
+			
+			Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
+			Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
+			PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
+					.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
+			
 			Collection<String> predicateList = creGraph.getGraphPredicates(codaCore, false, true);
-			for (String pred : predicateList){
-				ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(pred), false, getWorkingGraph());
+			for (String predString : predicateList){
+				ARTURIResource predResource = rdfModel.createURIResource(predString);
+				STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(predResource, null, true, rdfModel.getQName(predString));
+				
+				ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, predResource, false, getWorkingGraph());
 				if (itValues.hasNext()){
-					Element propertyElem = XMLHelp.newElement(descriptionElem, "property");
-					propertyElem.setAttribute("predicate", pred);
-					propertyElem.setAttribute("show", rdfModel.getQName(pred));
-					Element objectElem = XMLHelp.newElement(propertyElem, "object");
+					art2STRDFPredicates.put(predResource, stPred);
+					descrAvailable = true;
 					while (itValues.hasNext()){
 						ARTNode value = itValues.next();
-						if (value.isURIResource()){
-							Element uriElem = XMLHelp.newElement(objectElem, "uri");
-							uriElem.setTextContent(value.getNominalValue());
-						} else { //is literal (since being generated by coda, it cannot be a bnode)
-								ARTLiteral valueLit = value.asLiteral();
-							if (valueLit.getDatatype() != null){
-								Element typedElem = XMLHelp.newElement(objectElem, "typedLiteral");
-								typedElem.setTextContent(valueLit.getLabel());
-								typedElem.setAttribute("datatype", valueLit.getDatatype().getNominalValue());
-							} else {
-								Element plainElem = XMLHelp.newElement(objectElem, "plainLiteral");
-								plainElem.setTextContent(valueLit.getLabel());
-								if (valueLit.getLanguage() != null){
-									plainElem.setAttribute("lang", valueLit.getLanguage());
-								}
-							}
-						}
+						STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(rdfModel, value, false, true, true);
+						resultPredicateObjectValues.put(predResource, stNode);
 					}
 				}
 			}
+			//is possible that there's a CRE for the given property, but the resource has no values
+			//for all the predicates that describe the CRE, so add the propertiesElem to the response
+			//only if at least one predicate has a value
+			if (descrAvailable){
+				Element propertiesElem = XMLHelp.newElement(dataElement, "properties");
+				RDFXMLHelp.addPredicateObjectList(propertiesElem, predicateObjectsList);
+			}
+		} else {
+			STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
+					resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
+			RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
 		}
 		return response;
 	}
@@ -367,7 +388,7 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws PRParserException
 	 * @throws ModelAccessException
 	 */
-	private CustomRangeEntryGraph getCREGraphSeed(ARTURIResource resource, ARTURIResource predicate, CODACore codaCore) 
+	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore) 
 			throws UnavailableResourceException, ProjectInconsistentException, PRParserException, ModelAccessException{
 		RDFModel rdfModel = getOWLModel();
 		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
@@ -456,7 +477,7 @@ public class CustomRanges extends STServiceAdapter {
 		private int nMandatoryPredsMatched = 0;
 		private int nTotalPredsMatched = 0;
 		
-		public CREMatchingStruct(CustomRangeEntryGraph creGraph, ARTURIResource reifRes, RDFModel model, CODACore codaCore)
+		public CREMatchingStruct(CustomRangeEntryGraph creGraph, ARTResource reifRes, RDFModel model, CODACore codaCore)
 				throws PRParserException, ModelAccessException{
 			this.cre = creGraph;
 			Collection<String> mandatoryPreds = creGraph.getGraphPredicates(codaCore, true, true);

@@ -9,7 +9,7 @@
 					<xul:image anonid="imageId" />
 					<xul:spacer flex="1"/> -->
 				</xul:vbox>
-				<xul:textbox anonid="textboxId" flex="1">
+				<xul:textbox anonid="textboxId" flex="1" minheight="20">
 					<!-- <xul:box>
 						<xul:image anonid="imageId" />
 					</xul:box> -->
@@ -129,6 +129,21 @@
 					var textbox = document.getAnonymousElementByAttribute(this, "anonid", "textboxId");
 					textbox.dispatchEvent(event);
 	     		]]>
+			</handler>
+			<handler event="click">
+				<![CDATA[					
+					//stop the event propagation to not generate confusion
+					event.stopPropagation();
+				
+					var customEvent = new CustomEvent("rdfnodeBaseSelectionEvent", {
+						detail: {
+							rdfResource: this.rdfResource,
+						},
+						bubble: true,
+						cancellable: true
+					})
+					event.originalTarget.dispatchEvent(customEvent)
+				]]>
 			</handler>
 		</handlers>
 	</binding>

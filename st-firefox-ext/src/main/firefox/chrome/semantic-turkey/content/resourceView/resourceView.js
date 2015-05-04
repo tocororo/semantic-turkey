@@ -446,6 +446,7 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 				predicateObjectsBox.rdfSubject = subjectResource;
 				predicateObjectsBox.showSubjInGUI = false;
 				predicateObjectsBox.rdfPredicate = po.getPredicate();
+				predicateObjectsBox.hasCustomRange = po.getPredicate().hasCustomRange;
 				predicateObjectsBox.rdfResourcesArray = po.getObjects();
 				predicateObjectsBox.operations = operations.join(";");
 				predicateObjectsBox.classList.add("predicate-objects-widget");

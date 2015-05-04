@@ -49,13 +49,15 @@ function createURI(response){
 	var deleteForbiddenValue = uriElement.getAttribute('deleteForbidden');
 	var moreValue = uriElement.getAttribute('more');
 	var roleValue = uriElement.getAttribute('role');
-	var numInst = uriElement.getAttribute("numInst")
+	var numInst = uriElement.getAttribute("numInst");
+	var hasCustomRange = uriElement.getAttribute("hasCustomRange");//indicates if a property has a CustomRange
 	
 	var artURIRes = new ARTURIResource(showValue, roleValue, uriValue);
 	artURIRes.explicit = explicitValue; 
 	artURIRes.deleteForbidden = deleteForbiddenValue;
 	artURIRes.more = moreValue; 
-	artURIRes.numInst = numInst; 
+	artURIRes.numInst = numInst;
+	artURIRes.hasCustomRange = hasCustomRange;
 	return artURIRes;
 }
 

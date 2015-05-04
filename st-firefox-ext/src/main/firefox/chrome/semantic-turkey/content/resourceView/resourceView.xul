@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="chrome://semantic-turkey/content/widgetRDFResources/stResourcesWidget.css" type="text/css"?>
+<?xml-stylesheet href="chrome://semantic-turkey/content/widgetRDFResources/widgetStyle.css" type="text/css"?>
 <?xml-stylesheet href="resourceView.css" type="text/css"?>
 
 <!-- /* * The contents of this file are subject to the Mozilla Public License 

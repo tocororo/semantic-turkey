@@ -13,6 +13,8 @@
 			<field name="operations" />
 			<field name="labelValue" />
 			<field name="rdfResourcesArray" />
+			<field name="rdfPredicate" />
+			<field name="hasCustomRange" />
 			<field name="addRemoveButton" />
 			<field name="forceList" />
 			
@@ -24,6 +26,8 @@
 					if (typeof art_semanticturkey == 'undefined')
 					var art_semanticturkey = {};
 					Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+					Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 					
 					var label = document.getAnonymousElementByAttribute(this, "anonid", "labelId");
 					var maindOLWbox = document.getAnonymousElementByAttribute(this, "anonid", "mainOLWboxId");
@@ -63,7 +67,15 @@
 								richListItem.appendChild(widgetBox);
 								richListBox.appendChild(richListItem);
 								widgetBox.rdfResource = rdfRes;
-								widgetBox.setAttribute("class","rdfnode-base-widget");
+								if (typeof this.rdfPredicate != "undefined" && 
+										this.hasCustomRange == "true" &&
+										(rdfRes instanceof art_semanticturkey.ARTURIResource ||
+										rdfRes instanceof art_semanticturkey.ARTBNode)){
+									widgetBox.rdfPredicate = this.rdfPredicate;
+									widgetBox.setAttribute("class","reifiable-object-widget");
+								} else { //rdfRes instanceof art_semanticturkey.ARTLiteral
+									widgetBox.setAttribute("class","rdfnode-base-widget");
+								}
 							}
 							maindOLWbox.appendChild(richListBox);
 						
@@ -78,6 +90,8 @@
 								widgetBox.rdfResource = rdfRes;
 								//TODO check if it is correct to have just the remove button
 								widgetBox.operations = this.operations;
+								widgetBox.rdfPredicate = this.rdfPredicate;
+								widgetBox.hasCustomRange = this.hasCustomRange;
 								widgetBox.setAttribute("class","rdfnode-container-widget");
 							}
 						}

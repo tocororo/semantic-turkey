@@ -2,6 +2,10 @@
     -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/rdfnodeBaseWidget.xml#rdfnode-base-widget');
 }
 
+.reifiable-object-widget {
+    -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/reifiableObjectWidget.xml#reifiable-object-widget');
+}
+
 .rdfnode-container-widget {
     -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/rdfnodeContainerWidget.xml#rdfnode-container-widget');
 }
