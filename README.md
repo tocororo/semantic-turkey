@@ -4,6 +4,20 @@ Semantic Turkey is a platform for Knowledge Acquisition and Management realized 
 
 Everything about Semantic Turkey (user manual, build information etc..) is in its [official site](http://semanticturkey.uniroma2.it/)
 
+## Building the system ##
+
+just a plain:
+
+```
+#!cmd
+
+mvn clean install
+```
+
+should suffice. In any case, more detailed instructions can be found here:
+
+http://semanticturkey.uniroma2.it/documentation/dev/building.jsf
+
 ## Notes for previous releases ##
 
 ### Installing the old ST 0.9.1 on a recent Firefox (v. >= 29) ###
