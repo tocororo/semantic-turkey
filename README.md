@@ -6,7 +6,7 @@ Everything about Semantic Turkey (user manual, build information etc..) is in it
 
 ## Building the project ##
 ### Requirements ###
-1. a properly installed JDK version 7 or superior
+1. a properly installed JDK version 7 or superior (currently, ST should be run with Java 7)
 2. a recent version of Apache Maven, preferably version 3.3.3 or superior (see section troubleshooting below)
 
 ### Building ###
@@ -22,7 +22,7 @@ should suffice. In any case, more detailed instructions can be found here:
 
 http://semanticturkey.uniroma2.it/documentation/dev/building.jsf
 
-### troubleshooting ###
+### Troubleshooting ###
 If ST is built with an old version of Maven, it may happen that the build fails with an error like the one below:
 
 ```
