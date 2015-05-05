@@ -4,7 +4,7 @@ Semantic Turkey is a platform for Knowledge Acquisition and Management realized 
 
 Everything about Semantic Turkey (user manual, build information etc..) is in its [official site](http://semanticturkey.uniroma2.it/)
 
-## Building the system ##
+## Building the project ##
 
 just a plain:
 
