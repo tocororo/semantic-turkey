@@ -1406,3 +1406,79 @@ art_semanticturkey.resourceView.partitions
 
 					}
 				});
+
+art_semanticturkey.resourceView.partitions
+.registerPartitionHandler(
+		"topconceptof",
+		{
+			"partitionLabel" : "Top concept of",
+			"expectedContentType" : "objectList",
+			"addTooltiptext" : "Add to concept scheme as top concept",
+			"addIcon|fromRole" : "scheme",
+			"onAdd" : function(rdfSubject) { 
+				var parameters = {};
+
+				window.openDialog("chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul", "dlg",
+						"chrome=yes,dialog,resizable=yes,modal,centerscreen",
+						parameters);
+
+				if (typeof parameters.out == "undefined") {
+					return;
+				}
+				
+				art_semanticturkey.STRequests.SKOS.addTopConcept(parameters.out.selectedScheme, rdfSubject.getNominalValue());
+				
+				art_semanticturkey.evtMgr
+						.fireEvent(
+								"refreshEditor",
+								(new art_semanticturkey.genericEventClass()));
+			},
+			"onRemove" : function(rdfSubject, rdfObject) {
+				if (rdfObject.explicit == "true") {
+
+					art_semanticturkey.STRequests.SKOS.removeTopConcept(rdfObject.getNominalValue(), rdfSubject.getNominalValue());
+					
+					art_semanticturkey.evtMgr
+							.fireEvent(
+									"refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert
+							.alert("You cannot remove this concept scheme, it's a system resource!");
+				}
+
+			}
+		});
+
+art_semanticturkey.resourceView.partitions
+.registerPartitionHandler(
+		"schemes",
+		{
+			"partitionLabel" : "Schemes",
+			"expectedContentType" : "objectList",
+			"addTooltiptext" : "Add to a concept scheme",
+			"addIcon|fromRole" : "scheme",
+			"onAdd" : function(rdfSubject) { 
+				alert("added!");
+				
+				art_semanticturkey.evtMgr
+						.fireEvent(
+								"refreshEditor",
+								(new art_semanticturkey.genericEventClass()));
+			},
+			"onRemove" : function(rdfSubject, rdfObject) {
+				if (rdfObject.explicit == "true") {
+
+					alert("removed!");
+					
+					art_semanticturkey.evtMgr
+							.fireEvent(
+									"refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert
+							.alert("You cannot remove this concept scheme, it's a system resource!");
+				}
+
+			}
+		});
