@@ -68,6 +68,7 @@ public class InputOutput extends STServiceAdapter {
 		FileInputStream is = new FileInputStream(tempServerFile);
 		IOUtils.copy(is, oRes.getOutputStream());
 		oRes.setContentType(rdfFormat.getMIMEType());
+		oRes.setContentLength((int) tempServerFile.length());
 		oRes.setHeader("Content-Disposition", "attachment; filename=save." + format);
 		oRes.flushBuffer();
 		is.close();

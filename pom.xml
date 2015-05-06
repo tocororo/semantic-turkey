@@ -88,10 +88,10 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 
 		<dist.client>${dist}/st-client</dist.client>
 		<dist.client.lib>${dist.client}/${dist.lib}</dist.client.lib>
-		<coda.version>1.2-SNAPSHOT</coda.version>
-		<owlart-api.version>2.4-SNAPSHOT</owlart-api.version>
+		<coda.version>1.1.2</coda.version>
+		<owlart-api.version>2.3</owlart-api.version>
 		<spring.version>3.2.4.RELEASE</spring.version>
-		<owlart-sesame2impl.version>1.4-SNAPSHOT</owlart-sesame2impl.version>
+		<owlart-sesame2impl.version>1.3</owlart-sesame2impl.version>
 	</properties>
 
 	<scm>

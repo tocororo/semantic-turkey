@@ -22,13 +22,12 @@ const currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInf
 function saveRDF(format){
 	Logger.debug('[SERVICE_InputOutput.jsm] saveRDF');
 	var format = "format="+format;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	//get and open directly the request url that returns the file in the response
-	var target = currentSTHttpMgr.getRequestUrl(serviceName, service.saveRDFRequest, this.context, format);
-	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-    	.getService(Components.interfaces.nsIWindowMediator);
-	var mainWindow = wm.getMostRecentWindow("navigator:browser");
-	mainWindow.openDialog(target, "_blank");
+	//here doesn't use the GET method, because it needs of the raw responseText 
+	var url = currentSTHttpMgr.getRequestUrl(serviceName, service.saveRDFRequest, this.context, format);
+	var httpReq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
+	httpReq.open("GET", url, false);
+	httpReq.send(null);
+	return httpReq.responseText;
 }
 
 /**
