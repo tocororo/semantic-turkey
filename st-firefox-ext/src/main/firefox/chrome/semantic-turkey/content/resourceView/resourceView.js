@@ -20,7 +20,6 @@ Components.utils.import("resource://stmodules/Deserializer.jsm",
 Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm",
 		art_semanticturkey);
 
-
 Components.utils.import("resource://stservices/SERVICE_ResourceView.jsm",
 		art_semanticturkey);
 
@@ -134,10 +133,11 @@ art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 	var resourceNameElement = document.getElementById("resourceNameBox");
 	resourceNameElement.value = resourceObj.getNominalValue();
 	resourceNameElement.stRdfNode = resourceObj;
-	
+
 	// Handles the resource role icon
 	var resourceRoleIconElement = document.getElementById("resourceRoleIcon");
-	resourceRoleIconElement.setAttribute("src", art_semanticturkey.STResUtils.getImageSrc(resourceObj));
+	resourceRoleIconElement.setAttribute("src", art_semanticturkey.STResUtils
+			.getImageSrc(resourceObj));
 
 	// Handles the resource editability (rename button)
 	var isResourceEditable = art_semanticturkey.resourceView
@@ -433,8 +433,11 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 				|| art_semanticturkey.resourceView.partitions.internal
 						.isPredicateObjectsList(partitionContent)) {
 			if (addSupported) {
-				partitionButton.addEventListener("command", this["onAdd"].bind(
-						this, subjectResource, undefined, undefined), true);
+				partitionButton.addEventListener("command",
+						art_semanticturkey.resourceView.partitions.internal
+								.wrapFunctionWithErrorManagement(this["onAdd"]
+										.bind(this, subjectResource, undefined,
+												undefined)), true);
 			}
 
 			var predicateObjectsList = art_semanticturkey.Deserializer
@@ -463,8 +466,10 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 			}
 		} else { // Otherwise, assume an objects list
 			if (addSupported) {
-				partitionButton.addEventListener("command", this["onAdd"].bind(
-						this, subjectResource), true);
+				partitionButton.addEventListener("command",
+						art_semanticturkey.resourceView.partitions.internal
+								.wrapFunctionWithErrorManagement(this["onAdd"]
+										.bind(this, subjectResource)), true);
 			}
 
 			var objects = art_semanticturkey.Deserializer
@@ -494,6 +499,17 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 	partitionsBox.appendChild(partitionGroupBox);
 };
 
+art_semanticturkey.resourceView.partitions.internal.wrapFunctionWithErrorManagement = function(
+		aFun) {
+	return function() {
+		try {
+			aFun.apply(null, arguments);
+		} catch (e) {
+			art_semanticturkey.Alert.alert(e);
+		}
+	};
+};
+
 art_semanticturkey.resourceView.partitions.internal.isPredicateObjectsList = function(
 		element) {
 	return element && element.tagName == "collection" && element.children[0]
@@ -505,7 +521,8 @@ art_semanticturkey.resourceView.partitions.internal.dblClickHandler = function(
 	var res = event.detail.rdfResource;
 
 	if (res.isResource()) {
-		art_semanticturkey.ResourceViewLauncher.openResourceView(res.getNominalValue());
+		art_semanticturkey.ResourceViewLauncher.openResourceView(res
+				.getNominalValue());
 	}
 };
 
@@ -755,7 +772,7 @@ art_semanticturkey.resourceView.partitions
 					"partitionLabel" : "Properties",
 					"expectedContentType" : "predicateObjectsList",
 					"addTooltiptext" : "Add a property value",
-					"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) { 
+					"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) {
 						// Based on sources by NScarpato
 						var predicateName;
 
@@ -786,11 +803,14 @@ art_semanticturkey.resourceView.partitions
 						} else {
 							predicateName = rdfPredicate.getNominalValue();
 						}
-						
-						var changesDone = enrichProperty(rdfSubject.getNominalValue(), predicateName);
-						if (changesDone){
-							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
-									(new art_semanticturkey.genericEventClass()));
+
+						var changesDone = enrichProperty(rdfSubject
+								.getNominalValue(), predicateName);
+						if (changesDone) {
+							art_semanticturkey.evtMgr
+									.fireEvent(
+											"refreshEditor",
+											(new art_semanticturkey.genericEventClass()));
 						}
 
 					},
@@ -1408,77 +1428,81 @@ art_semanticturkey.resourceView.partitions
 				});
 
 art_semanticturkey.resourceView.partitions
-.registerPartitionHandler(
-		"topconceptof",
-		{
-			"partitionLabel" : "Top concept of",
-			"expectedContentType" : "objectList",
-			"addTooltiptext" : "Add to concept scheme as top concept",
-			"addIcon|fromRole" : "scheme",
-			"onAdd" : function(rdfSubject) { 
-				var parameters = {};
+		.registerPartitionHandler(
+				"topconceptof",
+				{
+					"partitionLabel" : "Top concept of",
+					"expectedContentType" : "objectList",
+					"addTooltiptext" : "Add to concept scheme as top concept",
+					"addIcon|fromRole" : "scheme",
+					"onAdd" : function(rdfSubject) {
+						var parameters = {};
 
-				window.openDialog("chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul", "dlg",
-						"chrome=yes,dialog,resizable=yes,modal,centerscreen",
-						parameters);
+						window
+								.openDialog(
+										"chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul",
+										"dlg",
+										"chrome=yes,dialog,resizable=yes,modal,centerscreen",
+										parameters);
 
-				if (typeof parameters.out == "undefined") {
-					return;
-				}
-				
-				art_semanticturkey.STRequests.SKOS.addTopConcept(parameters.out.selectedScheme, rdfSubject.getNominalValue());
-				
-				art_semanticturkey.evtMgr
-						.fireEvent(
-								"refreshEditor",
+						if (typeof parameters.out == "undefined") {
+							return;
+						}
+
+						art_semanticturkey.STRequests.SKOS.addTopConcept(
+								parameters.out.selectedScheme, rdfSubject
+										.getNominalValue());
+
+						art_semanticturkey.evtMgr.fireEvent("refreshEditor",
 								(new art_semanticturkey.genericEventClass()));
-			},
-			"onRemove" : function(rdfSubject, rdfObject) {
-				if (rdfObject.explicit == "true") {
+					},
+					"onRemove" : function(rdfSubject, rdfObject) {
+						if (rdfObject.explicit == "true") {
 
-					art_semanticturkey.STRequests.SKOS.removeTopConcept(rdfObject.getNominalValue(), rdfSubject.getNominalValue());
-					
-					art_semanticturkey.evtMgr
-							.fireEvent(
-									"refreshEditor",
-									(new art_semanticturkey.genericEventClass()));
-				} else {
-					art_semanticturkey.Alert
-							.alert("You cannot remove this concept scheme, it's a system resource!");
-				}
+							art_semanticturkey.STRequests.SKOS
+									.removeTopConcept(rdfObject
+											.getNominalValue(), rdfSubject
+											.getNominalValue());
 
-			}
-		});
+							art_semanticturkey.evtMgr
+									.fireEvent(
+											"refreshEditor",
+											(new art_semanticturkey.genericEventClass()));
+						} else {
+							art_semanticturkey.Alert
+									.alert("You cannot remove this concept scheme, it's a system resource!");
+						}
+
+					}
+				});
 
 art_semanticturkey.resourceView.partitions
-.registerPartitionHandler(
-		"schemes",
-		{
-			"partitionLabel" : "Schemes",
-			"expectedContentType" : "objectList",
-			"addTooltiptext" : "Add to a concept scheme",
-			"addIcon|fromRole" : "scheme",
-			"onAdd" : function(rdfSubject) { 
-				alert("added!");
-				
-				art_semanticturkey.evtMgr
-						.fireEvent(
-								"refreshEditor",
+		.registerPartitionHandler(
+				"schemes",
+				{
+					"partitionLabel" : "Schemes",
+					"expectedContentType" : "objectList",
+					"addTooltiptext" : "Add to a concept scheme",
+					"addIcon|fromRole" : "scheme",
+					"onAdd" : function(rdfSubject) {
+						alert("added!");
+
+						art_semanticturkey.evtMgr.fireEvent("refreshEditor",
 								(new art_semanticturkey.genericEventClass()));
-			},
-			"onRemove" : function(rdfSubject, rdfObject) {
-				if (rdfObject.explicit == "true") {
+					},
+					"onRemove" : function(rdfSubject, rdfObject) {
+						if (rdfObject.explicit == "true") {
 
-					alert("removed!");
-					
-					art_semanticturkey.evtMgr
-							.fireEvent(
-									"refreshEditor",
-									(new art_semanticturkey.genericEventClass()));
-				} else {
-					art_semanticturkey.Alert
-							.alert("You cannot remove this concept scheme, it's a system resource!");
-				}
+							alert("removed!");
 
-			}
-		});
+							art_semanticturkey.evtMgr
+									.fireEvent(
+											"refreshEditor",
+											(new art_semanticturkey.genericEventClass()));
+						} else {
+							art_semanticturkey.Alert
+									.alert("You cannot remove this concept scheme, it's a system resource!");
+						}
+
+					}
+				});
