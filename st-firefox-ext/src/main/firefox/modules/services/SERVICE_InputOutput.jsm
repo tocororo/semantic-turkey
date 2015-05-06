@@ -37,14 +37,18 @@ function saveRDF(format){
  * @member STRequests.InputOutput
  * @param file
  * @param baseUri
+ * @param format
  * @return
  */
-function loadRDF(file, baseUri){
+function loadRDF(file, baseUri, format){
 	Logger.debug('[SERVICE_InputOutput.jsm] loadRDF');
 	var formData = Components.classes["@mozilla.org/files/formdata;1"]
 		.createInstance(Components.interfaces.nsIDOMFormData);
 	formData.append("inputFile", file);
 	formData.append("baseUri", baseUri);
+	if(typeof format != 'undefined'){
+		formData.append("formatName", format);
+	}
 	return currentSTHttpMgr.POST(null, serviceName, service.loadRDFRequest, this.context, formData);
 }
 

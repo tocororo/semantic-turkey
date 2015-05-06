@@ -34,7 +34,7 @@
 				<column flex="1" />
 				<column flex="1" />
 			</columns>
-			<rows flex="1">
+			<rows flex="1" id="rows">
 				<row>
 					<label id="dir" value="Select RDF File:" control="dirBtn" />
 				</row>
@@ -48,6 +48,14 @@
 				<row>
 					<textbox id="baseURI" />
 				</row>
+				<row>
+					<hbox flex="1" id="hboxForFormatList"/>
+					<hbox>
+						<checkbox id="forceFormat" />
+						<label value="Force Format" flex="1"/>
+					</hbox>
+				</row>
+				
 			</rows>
 		</grid>
 	</vbox>
