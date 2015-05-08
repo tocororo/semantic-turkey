@@ -16,6 +16,10 @@
 				<menuitem label="N-TRIPLES" value="nt" />
 				<menuitem label="N3" value="n3" />
 				<menuitem label="TURTLE" value="ttl" />
+				<menuitem label="TRIG" value="trig" />
+				<menuitem label="TRIX" value="trix" />
+				<menuitem label="TRIX-EXT" value="trix-ext" />
+				<menuitem label="NQUADS" value="nq" />
 			</menupopup>
 		</menulist>
 	</hbox>
