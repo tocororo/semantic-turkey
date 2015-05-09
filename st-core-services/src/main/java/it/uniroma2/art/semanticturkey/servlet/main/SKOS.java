@@ -24,6 +24,8 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
 import it.uniroma2.art.owlart.filter.RootConceptsPredicate;
 import it.uniroma2.art.owlart.model.ARTLiteral;
@@ -34,6 +36,9 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.TupleBindingsIterator;
+import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
@@ -233,9 +238,11 @@ public class SKOS extends ResourceOld {
 		} else if (request.equals(Req.addTopConceptRequest)) {
 			String scheme = setHttpPar(Par.scheme);
 			String concept = setHttpPar(Par.concept);
+			String language = setHttpPar(Par.lang);
+
 			checkRequestParametersAllNotNull(Par.scheme, Par.concept);
 			logger.debug("SKOS." + Req.addTopConceptRequest + ":\n" + response);
-			response = addTopConcept(scheme, concept);
+			response = addTopConcept(scheme, concept, language);
 		} else if (request.equals(Req.removeTopConceptRequest)) {
 			String scheme = setHttpPar(Par.scheme);
 			String concept = setHttpPar(Par.concept);
@@ -281,9 +288,9 @@ public class SKOS extends ResourceOld {
 		} else if (request.equals(Req.addConceptToSchemeRequest)) {
 			String concept = setHttpPar(Par.concept);
 			String scheme = setHttpPar(Par.scheme);
+			String language = setHttpPar(Par.lang);
 			checkRequestParametersAllNotNull(Par.concept, Par.scheme);
-			response = addConceptToScheme(concept, scheme);
-
+			response = addConceptToScheme(concept, scheme,language);
 		} else if (request.equals(Req.setPrefLabelRequest)) {
 			String skosConceptName = setHttpPar(Par.concept);
 			String lang = setHttpPar(Par.lang);
@@ -409,7 +416,7 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response addTopConcept(String schemeName, String conceptName) {
+	public Response addTopConcept(String schemeName, String conceptName, String defaultLanguage) {
 		SKOSModel skosModel = getSKOSModel();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
@@ -418,8 +425,9 @@ public class SKOS extends ResourceOld {
 			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, graphs);
 			skosModel.setTopConcept(concept, scheme, true, getWorkingGraph());
 
-			RDFXMLHelp.addRDFNode(response, createSTConcept(skosModel, concept, true, null));
-
+			STRDFResource stTopConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
+			decorateForTreeView(skosModel,stTopConcept, scheme, true, graphs);
+			RDFXMLHelp.addRDFNode(response,stTopConcept);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
@@ -753,7 +761,8 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response addConceptToScheme(String conceptQName, String schemeQName) {
+	public Response addConceptToScheme(String conceptQName, String schemeQName,
+			String defaultLanguage) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 
 		try {
@@ -764,6 +773,46 @@ public class SKOS extends ResourceOld {
 
 			skosModel.addConceptToScheme(concept, scheme, getWorkingGraph());
 
+			String querySpec = "select distinct ?c where {\n"
+					+ "  ?concept <http://www.w3.org/2004/02/skos/core#broader>|^<http://www.w3.org/2004/02/skos/core#narrower> ?c .\n"
+					+ "  ?c <http://www.w3.org/2004/02/skos/core#inScheme>|<http://www.w3.org/2004/02/skos/core#topConceptOf>|^<http://www.w3.org/2004/02/skos/core#hasTopConcept> ?scheme. \n"
+					+ "  FILTER(IsIRI(?c))\n"
+					+ "}";
+			
+
+			Collection<STRDFResource> affectedConcepts = STRDFNodeFactory.createEmptyResourceCollection();
+			
+			try {
+				TupleQuery query = skosModel.createTupleQuery(querySpec);
+				query.setBinding("concept", concept);
+				query.setBinding("scheme", scheme);
+	
+				try (TupleBindingsIterator it = query.evaluate(true)) {
+					while (it.streamOpen()) {
+						ARTResource affectedConcept = it.getNext().getBoundValue("c").asResource();
+						affectedConcepts.add(STRDFNodeFactory.createSTRDFResource(affectedConcept, RDFResourceRolesEnum.concept, true, null));
+					}
+				}
+			} catch (QueryEvaluationException | UnsupportedQueryLanguageException | MalformedQueryException e) {
+				return logAndSendException(e);
+			}
+			
+			Element treeChangeElement = XMLHelp.newElement(
+					response.getDataElement(), "treeChange");
+			Element schemeElement = XMLHelp.newElement(treeChangeElement,
+					"scheme");
+			RDFXMLHelp.addRDFNode(schemeElement, scheme);
+
+			Element affectedConceptsElement = XMLHelp.newElement(
+					treeChangeElement, "affectedConcepts");
+			RDFXMLHelp.addRDFNodes(affectedConceptsElement, affectedConcepts);
+
+			Element narrowerConceptElement = XMLHelp.newElement(
+					treeChangeElement, "narrowerConcept");
+
+			STRDFResource stNarrowerConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
+			decorateForTreeView(skosModel,stNarrowerConcept, scheme, true, graphs);
+			RDFXMLHelp.addRDFNode(narrowerConceptElement, stNarrowerConcept);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
@@ -773,6 +822,7 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
+
 
 	public Response removeConceptFromScheme(String conceptQName, String schemeQName) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);

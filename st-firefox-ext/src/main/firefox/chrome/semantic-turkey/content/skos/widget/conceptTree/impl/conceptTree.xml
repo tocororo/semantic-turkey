@@ -110,7 +110,7 @@
 					    //                                                        label : conceptList[i].getAttribute("label"),
 					    //                                                        uri : conceptList[i].getAttribute("uri")							
 					    //                                                        }); 
-						item = new DataRow({concept : uriElem.getURI(), 
+						var item = new DataRow({concept : uriElem.getURI(), 
                                             more : uriElem.more,
                                             label : uriElem.getShow(),
                                             uri : uriElem.getURI()							
@@ -355,6 +355,39 @@
 				}
 				this.stEventArray.addEventListenerToArrayAndRegister("skosSchemeRemoved", skosSchemeRemovedHandler, null);
 				this.stEventArray.addEventListenerToArrayAndRegister("skosxlSchemeRemoved", skosSchemeRemovedHandler, null);
+				
+				function skosConceptRemovedFromSchemeHandler(eventId, eventObj) {
+					// Ignore this event, since it affects a different concept scheme then the one
+					// associated with this concept tree
+					if (bound.conceptScheme != eventObj.getSchemeName()) return;					
+					
+					bound._view.removeRows(eventObj.getConceptName());
+				}
+				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptRemovedFromScheme", skosConceptRemovedFromSchemeHandler, null);
+
+				function skosConceptAddedToSchemeHandler(eventId, eventObj) {
+					try {
+						// Ignore this event, since it affects a different concept scheme then the one
+						// associated with this concept tree
+						if (bound.conceptScheme != eventObj.getSchemeName()) return;					
+											
+						var affectedConcepts = [];
+						eventObj.getAffectedConcepts().forEach(function(el){return affectedConcepts.push(el.getNominalValue());});
+						var narrowerConcept = eventObj.getNarrowerConcept();
+						
+						var u = narrowerConcept.getURI();
+						var hs = narrowerConcept.more;
+						var l = narrowerConcept.getShow();
+									
+						var row = new DataRow({concept : u, more : hs ? "1" : "0", label : l, uri : u});
+						
+						bound._view.addRow(affectedConcepts, row);						
+						
+					} catch(e) {
+						alert(e);
+					}
+				}
+				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptAddedToScheme", skosConceptAddedToSchemeHandler, null);
 
 				this.ctxMenuTracker = new this.art_semanticturkey.MenuPopupTrackerAdapter("skos:concept*edit", this, ctxMenu);
 				this.art_semanticturkey.CommandBroker.registerTracker(this.ctxMenuTracker);

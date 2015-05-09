@@ -30,7 +30,8 @@ Components.utils.import("resource://stmodules/ARTResources.jsm",
 		art_semanticturkey);
 Components.utils.import("resource://stmodules/STResUtils.jsm",
 		art_semanticturkey);
-
+Components.utils.import("resource://stmodules/Preferences.jsm",
+		art_semanticturkey);
 if (typeof art_semanticturkey.resourceView == "undefined") {
 	art_semanticturkey.resourceView = {};
 }
@@ -1434,7 +1435,7 @@ art_semanticturkey.resourceView.partitions
 					"partitionLabel" : "Top concept of",
 					"expectedContentType" : "objectList",
 					"addTooltiptext" : "Add to concept scheme as top concept",
-					"addIcon|fromRole" : "scheme",
+					"addIcon|fromRole" : "conceptScheme",
 					"onAdd" : function(rdfSubject) {
 						var parameters = {};
 
@@ -1449,9 +1450,15 @@ art_semanticturkey.resourceView.partitions
 							return;
 						}
 
+						var language = null;
+						
+						if (art_semanticturkey.Preferences.get("extensions.semturkey.skos.humanReadable", false)) {
+							language = art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");
+						}
+						
 						art_semanticturkey.STRequests.SKOS.addTopConcept(
 								parameters.out.selectedScheme, rdfSubject
-										.getNominalValue());
+										.getNominalValue(), language);
 
 						art_semanticturkey.evtMgr.fireEvent("refreshEditor",
 								(new art_semanticturkey.genericEventClass()));
@@ -1483,17 +1490,36 @@ art_semanticturkey.resourceView.partitions
 					"partitionLabel" : "Schemes",
 					"expectedContentType" : "objectList",
 					"addTooltiptext" : "Add to a concept scheme",
-					"addIcon|fromRole" : "scheme",
+					"addIcon|fromRole" : "conceptScheme",
 					"onAdd" : function(rdfSubject) {
-						alert("added!");
+						var parameters = {};
+
+						window
+								.openDialog(
+										"chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul",
+										"dlg",
+										"chrome=yes,dialog,resizable=yes,modal,centerscreen",
+										parameters);
+
+						if (typeof parameters.out == "undefined") {
+							return;
+						}
+						
+						var language = null;
+						
+						if (art_semanticturkey.Preferences.get("extensions.semturkey.skos.humanReadable", false)) {
+							language = art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");
+						}
+
+						art_semanticturkey.STRequests.SKOS.addConceptToScheme(rdfSubject.getNominalValue(), parameters.out.selectedScheme, language);
 
 						art_semanticturkey.evtMgr.fireEvent("refreshEditor",
 								(new art_semanticturkey.genericEventClass()));
 					},
 					"onRemove" : function(rdfSubject, rdfObject) {
 						if (rdfObject.explicit == "true") {
-
-							alert("removed!");
+							
+							art_semanticturkey.STRequests.SKOS.removeConceptFromScheme(rdfSubject.getNominalValue(), rdfObject.getNominalValue());
 
 							art_semanticturkey.evtMgr
 									.fireEvent(

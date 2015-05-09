@@ -154,12 +154,22 @@ function addBroaderConcept(concept, broaderConcept) {
 	return reply;
 }
 
-function addTopConcept(scheme, concept) {
+/**
+ * Adds a top concept to a scheme.
+ * 
+ * @member STRequests.SKOS
+ * @param concept the concept to be added as top concept
+ * @param scheme the scheme
+ * @param lang the language used for generating a human readable representation of the top concept. It can be left undefined or set to <code>null</code>, when human readability is not desired.
+ * @return
+ */
+function addTopConcept(scheme, concept, lang) {
 	var scheme_p = "scheme=" + scheme;
 	var concept_p = "concept=" + concept;
+	var lang_p = lang == null || typeof lang == "undefined" ? "" : "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTopConceptRequest, scheme_p, concept_p, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTopConceptRequest, scheme_p, concept_p, lang_p, contextAsArray);
 
 	if (!reply.isFail()) {
 		var topConcept = Deserializer.createRDFResource(reply.getElementsByTagName("data")[0].children[0]);
@@ -425,6 +435,56 @@ function getShow(resourceName, language) {
 	return reply.getElementsByTagName("show")[0].getAttribute("value");
 }
 
+/**
+ * Adds a concept to a scheme.
+ * 
+ * @member STRequests.SKOS
+ * @param concept the concept to be added to a scheme
+ * @param scheme the scheme
+ * @param lang the language used for generating a human readable representation of the concept. It can be left undefined or set to <code>null</code>, when human readability is not desired.
+ * @return
+ */
+function addConceptToScheme(concept, scheme,lang) {
+	var concept_p = "concept=" + concept;
+	var scheme_p = "scheme=" + scheme;
+	var lang_p = lang == null || typeof lang == "undefined" ? "" : "lang=" + lang;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addConceptToSchemeRequest, concept_p, scheme_p, lang_p, contextAsArray);
+
+	if (!reply.isFail()) {
+		var affectedConcepts = Deserializer.createRDFArray(reply.getElementsByTagName("treeChange")[0].getElementsByTagName("affectedConcepts")[0]) || [];
+		var narrowerConcept = Deserializer.createRDFResource(reply.getElementsByTagName("treeChange")[0].getElementsByTagName("narrowerConcept")[0].children[0]);
+		evtMgr.fireEvent("skosConceptAddedToScheme", {
+			getConceptName : function(){return concept;}, 
+			getSchemeName : function(){return scheme;},
+			getAffectedConcepts : function(){return affectedConcepts;},
+			getNarrowerConcept : function(){return narrowerConcept;}
+		});
+	}
+
+	
+	return reply;
+}
+
+function removeConceptFromScheme(concept, scheme) {
+	var concept_p = "concept=" + concept;
+	var scheme_p = "scheme=" + scheme;
+	
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeConceptFromSchemeRequest, concept_p, scheme_p, contextAsArray);
+
+	if (!reply.isFail()) {
+		evtMgr.fireEvent("skosConceptRemovedFromScheme", {
+			getConceptName : function(){return concept;}, 
+			getSchemeName : function(){return scheme;} 
+		});
+	}
+
+	
+	return reply;
+}
 
 // SKOS SERVICE INITIALIZATION
 //this return an implementation for Project with a specified context
@@ -445,6 +505,7 @@ service.prototype.addAltLabel = addAltLabel;
 service.prototype.addHiddenLabel = addHiddenLabel;
 service.prototype.addBroaderConcept = addBroaderConcept;
 service.prototype.addTopConcept = addTopConcept;
+service.prototype.addConceptToScheme = addConceptToScheme;
 
 service.prototype.setPrefLabel = setPrefLabel;
 
@@ -459,6 +520,7 @@ service.prototype.removeHiddenLabel = removeHiddenLabel;
 service.prototype.removeBroaderConcept = removeBroaderConcept;
 service.prototype.removeTopConcept = removeTopConcept;
 service.prototype.removePrefLabel = removePrefLabel;
+service.prototype.removeConceptFromScheme = removeConceptFromScheme;
 
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;

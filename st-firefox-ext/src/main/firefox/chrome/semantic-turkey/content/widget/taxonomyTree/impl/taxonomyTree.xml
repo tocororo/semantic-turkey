@@ -235,6 +235,10 @@
 						return undefined;
 					}
 					
+					if (typeof cache[colId][key] == "undefined") {
+						return undefined;
+					}
+					
 					return cache[colId][key];
 				};
 				
@@ -297,7 +301,11 @@
 						treeBoxObject.rowCountChanged(0, -delta);						
 					}
 					
-					treeBoxObject.view.selection.clearSelection();
+					// It seems that in some circumstances treeBoxObject.view may be undefined
+					if (typeof treeBoxObject.view != "undefined") {
+						treeBoxObject.view.selection.clearSelection();
+					}
+
 					this.invalidate();				
 				}
 				
@@ -385,8 +393,12 @@
 					visibleRows = roots;
 						
 					treeBoxObject.rowCountChanged(0, delta);
-					treeBoxObject.invalidate();	
-					treeBoxObject.view.selection.clearSelection();
+					treeBoxObject.invalidate();
+					
+					// It seems that in some circumstances treeBoxObject.view may be undefined
+					if (typeof treeBoxObject.view != "undefined") {
+						treeBoxObject.view.selection.clearSelection();
+					}
 					
 					if (typeof bound._onStateChanged != "undefined") {
 						bound._onStateChanged("powerOn");
@@ -520,22 +532,39 @@
                 	treeBoxObject.beginUpdateBatch();
 
                 	for (var i = 0 ; i < visibleRows.length ; i++) {
-                		if (visibleRows[i].id == parentName) {
-                			visibleRows[i].isContainerEmpty = false;
-							
-							treeBoxObject.invalidateRow(i);
-
-							if (visibleRows[i].isContainerOpen) {
-								var clone = {};
-	                			clone.__proto__ = childRow;
-	
-	                			visibleRows.splice(i+1, 0, clone);
-	                			clone.level = visibleRows[i].level + 1;
-	                			treeBoxObject.rowCountChanged(i+1,1);
-							}
-
-                			i++;
+                		if (typeof parentName == "string" || parentName instanceof String) {
+                			if (visibleRows[i].id != parentName) continue;
+                		} else { // parentName is an array of element names
+                			if (parentName.indexOf(visibleRows[i].id) == -1) continue;
                 		}
+                		
+                		var childFound = false;
+                		
+                		for (var j = i + 1 ; j < visibleRows.length ; j++) {
+                			if (visibleRows[j].level <= visibleRows[i].level) break;
+                			
+                			if (visibleRows[j].id == childRow.id) {
+                				childFound = true;
+                				break;
+                			}
+                		}
+                		
+                		if (childFound) continue; // child already there
+                		
+               			visibleRows[i].isContainerEmpty = false;
+						
+						treeBoxObject.invalidateRow(i);
+
+						if (visibleRows[i].isContainerOpen) {
+							var clone = {};
+                			clone.__proto__ = childRow;
+
+                			visibleRows.splice(i+1, 0, clone);
+                			clone.level = visibleRows[i].level + 1;
+                			treeBoxObject.rowCountChanged(i+1,1);
+						}
+
+               			i++;
                 	}
                 	
                 	treeBoxObject.endUpdateBatch();
@@ -552,9 +581,9 @@
 						var part = {};
 						taxonomyTree.treeBoxObject.getCellAt(event.clientX, event.clientY, row, col, part);
 						
-						var event = document.createEvent("CustomEvent");
-						event.initCustomEvent("it.uniroma2.art.semanticturkey.event.widget.tree.dblclick", true, true, {rowIndex : row.value, col : col.value, part : part});
-						bound.dispatchEvent(event);
+						var customEvent = document.createEvent("CustomEvent");
+						customEvent.initCustomEvent("it.uniroma2.art.semanticturkey.event.widget.tree.dblclick", true, true, {rowIndex : row.value, col : col.value, part : part});
+						bound.dispatchEvent(customEvent);
 			},true);
 			
 			var eventsHandler = new function() {

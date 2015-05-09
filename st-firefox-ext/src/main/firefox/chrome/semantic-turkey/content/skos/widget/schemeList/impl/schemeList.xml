@@ -87,9 +87,10 @@
 					return [];
 				};
 
+				var overriddenGetLabel = bound._view.provider.getLabel;
 				this._view.provider.getLabel = function(row, col) {
 					if (col.id != "name") {
-						return bound._view.__proto__.getLabel(row, col);
+						return overriddenGetLabel.call(bound._view.provider, row, col);
 					}
 					
 //					if (isHumanReadable) {
@@ -128,7 +129,7 @@
 					    //                    name : schemeList[i].getAttribute("name")							
 					    //                   }); 
 						
-						item = new DataRow({
+						var item = new DataRow({
 											uri : uriElem.getURI(),
 											label : uriElem.getShow(),
                                             name: uriElem.getURI()
@@ -143,7 +144,7 @@
 
 				if (!this.columns) {
 					this.columns = "name, uri, label";
-					buildHeading();
+//					buildHeading();
 				}
 				
 				this.projectType = "^.*SKOS.*$";
