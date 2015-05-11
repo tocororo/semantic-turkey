@@ -24,6 +24,8 @@ window.onload = function() {
 			true);
 	document.getElementById("cloneProject")
 			.addEventListener("command", art_semanticturkey.cloneProject, true);
+	document.getElementById("closeProject")
+			.addEventListener("command", art_semanticturkey.closeProjectCommand, true);
 	document.getElementById("projectProperty")
 			.addEventListener("command", art_semanticturkey.projectProperty, true);
 	document.getElementById("editACLProject")
@@ -40,11 +42,11 @@ window.onload = function() {
 	document.getElementById("projectsTree")
 			.addEventListener("click", art_semanticturkey.clickOnAProject, true);		
 	
-	document.getElementById("nonClosingMode").addEventListener("command", art_semanticturkey.toggleClosingModality,true);
+	document.getElementById("multiClientMode").addEventListener("command", art_semanticturkey.toggleClosingModality,true);
 	
 	
-	var prefListener = new art_semanticturkey.PrefListener("extensions.semturkey.nonClosingMode", function(branch, name) {
-		document.getElementById("nonClosingMode").checked = art_semanticturkey.Preferences.get("extensions.semturkey.nonClosingMode", false);
+	var prefListener = new art_semanticturkey.PrefListener("extensions.semturkey.multiClientMode", function(branch, name) {
+		document.getElementById("multiClientMode").checked = art_semanticturkey.Preferences.get("extensions.semturkey.multiClientMode", false);
 	});
 	prefListener.register(true);
 	
@@ -145,6 +147,9 @@ art_semanticturkey.setDeafultProject = function(event, hasIssues){
 
 art_semanticturkey.populateProjectsList = function() {
 	try {
+		document.getElementById("projects-main-window").setAttribute("title",
+				"Projects Management ( " + art_semanticturkey.CurrentProject.getProjectName() + " )");
+		
 		var responseXML = art_semanticturkey.STRequests.Projects.listProjects();
 		art_semanticturkey.getListProjects_RESPONSE(responseXML);
 	} catch (e) {
@@ -249,6 +254,41 @@ art_semanticturkey.openProject = function() {
 		art_semanticturkey.closeProject(); // close the current project
 		var responseXML = art_semanticturkey.STRequests.Projects.accessProject(projectName);
 		art_semanticturkey.openProject_RESPONSE(responseXML, projectName, projectType,ontoType);
+	} catch (e) {
+		alert(e.name + ": " + e.message);
+		//art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "");
+		art_semanticturkey.properClose();
+		art_semanticturkey.DisabledAllButton(false);
+	}
+};
+
+art_semanticturkey.closeProjectCommand = function() {
+
+	var tree = document.getElementById("projectsTree");
+	var range = tree.view.selection.getRangeCount();
+	if (range <= 0) {
+		alert("Please Select a Project");
+		return;
+	}
+	var currentElement = tree.treeBoxObject.view.getItemAtIndex(tree.currentIndex);
+	var treerow = currentElement.getElementsByTagName('treerow')[0];
+	var treecellOpen = treerow.getElementsByTagName('treecell')[1];
+	var treecellName = treerow.getElementsByTagName('treecell')[2];
+	var projectName = treecellName.getAttribute("label");
+	var projectType = treecellName.getAttribute("typeProject");
+	var ontoType = treerow.getElementsByTagName('treecell')[5].getAttribute("label");
+	var issueItem = currentElement.getElementsByTagName("treecell")[6];
+
+	if (!(treecellOpen.getAttribute("open") == "true")) {
+		alert("Cannot close an already closed project");
+		return;
+	}
+	
+	try {
+		art_semanticturkey.DisabledAllButton(true);
+		art_semanticturkey.closeProject(projectName, projectType == "continuosEditing", true); // close the selected project
+		art_semanticturkey.populateProjectsList();
+		art_semanticturkey.DisabledAllButton(false);
 	} catch (e) {
 		alert(e.name + ": " + e.message);
 		//art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "");
@@ -471,7 +511,7 @@ art_semanticturkey.openACLMatrix = function() {
 }
 
 art_semanticturkey.toggleClosingModality = function() {
-	art_semanticturkey.Preferences.set("extensions.semturkey.nonClosingMode", document.getElementById("nonClosingMode").checked);
+	art_semanticturkey.Preferences.set("extensions.semturkey.multiClientMode", document.getElementById("multiClientMode").checked);
 };
 
 /*

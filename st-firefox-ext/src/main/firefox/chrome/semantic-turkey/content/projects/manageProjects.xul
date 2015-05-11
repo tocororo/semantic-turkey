@@ -42,6 +42,9 @@
 			<menuitem id="cloneProject" flex="1" label="Clone the selected project">
 				<!--<label value="Clone the selected project" flex="0"/>--> 						
 			</menuitem>
+			<menuitem id="closeProject" flex="1" label="Close the selected project">
+				<!--<label value="Clone the selected project" flex="0"/>--> 						
+			</menuitem>
 			<menuitem id="setDeafultProject" flex="1" label="set the selected project as the default one">
 				<!--<label value="set the selected project as the default one" flex="0"/> -->						
 			</menuitem>
@@ -115,7 +118,7 @@
 			</menulist>
 		</toolbox>
 		<button id="aclMatrix" label="ACL matrix" tooltiptext="Visualize a matrix of projects' Access Control List"/>
-		<checkbox id="nonClosingMode" label="Non-closing mode" tooltiptext="Enable this option to avoid that the current project is closed when another project is opened"/>
+		<checkbox id="multiClientMode" label="Multi-client mode" tooltiptext="In multi-client mode, the currently open project is not closed, when the client switches to another project"/>
 	    <spacer flex="1" />
 		<button id="close" label="Close" 
 					tooltiptext="Close this window"/>

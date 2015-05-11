@@ -6,17 +6,35 @@ Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturk
 
 Components.utils.import("resource://stmodules/Context.jsm");
 
-art_semanticturkey.closeProject = function(){
-	try{
-		var isContinuosEditing = art_semanticturkey.CurrentProject.isContinuosEditing();
-		var isNull = art_semanticturkey.CurrentProject.isNull();
-		var currentProjectName = art_semanticturkey.CurrentProject.getProjectName();
-		art_semanticturkey.projectClosed(currentProjectName); 
+/*
+ * Helper function to close a project. Invoked without parameters, it will close the currently open project,
+ * starting the relevant client-side procedures. However, it will not disconnect the SYSTEM consumer from
+ * the server-side project, if the client is in multiClient mode.
+ * 
+ * It is also possible to specify the project to close, by providing its name an whether it is in continuous
+ * editing mode or not. The third argument is still optional, and can be used to override the behavior with respect
+ * the disconnection of the server-side project. Setting the parameter to <code>true</code> forces the disconnection
+ * from the project, even if the client is in multi-client mode. 
+ */
+art_semanticturkey.closeProject = function(projectName, isContinuosEditing, forceDisconnect){
+	try {
+		var isNull = false
+
+		if (typeof forceDisconnect == "undefined") {
+			forceDisconnect = false;
+		}
+
+		if (arguments.length == 0) {
+			projectName = art_semanticturkey.CurrentProject.getProjectName();
+			isContinuosEditing = art_semanticturkey.CurrentProject.isContinuosEditing();
+			isNull = art_semanticturkey.CurrentProject.isNull();
+		}
+		 
 		if((isNull == false) && (isContinuosEditing == false)){
 			
 			var parameters = new Object();
 			parameters.parentWindow = window;
-			parameters.projectName = currentProjectName;
+			parameters.projectName = projectName;
 			parameters.save = false;
 			
 			window.openDialog("chrome://semantic-turkey/content/projects/saveProject.xul", "_blank",
@@ -27,16 +45,19 @@ art_semanticturkey.closeProject = function(){
 			if(parameters.save)
 				parentWindow.art_semanticturkey.save_project();
 		}
-		art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "nullProject", "nullModel");
-		
+		if (projectName == art_semanticturkey.CurrentProject.getProjectName() && !art_semanticturkey.CurrentProject.isNull()) {
+			art_semanticturkey.projectClosed(projectName);
+			art_semanticturkey.CurrentProject.setCurrentProjet("no project currently active", true, "nullProject", "nullModel");
+		}
 		var responseXML = null;
 		
-		if (!art_semanticturkey.Preferences.get("extensions.semturkey.nonClosingMode", false)) {
-			responseXML = art_semanticturkey.STRequests.Projects.disconnectFromProject(currentProjectName);
+		if (forceDisconnect || !art_semanticturkey.Preferences.get("extensions.semturkey.multiClientMode", false)) {
+			responseXML = art_semanticturkey.STRequests.Projects.disconnectFromProject(projectName);
 		}
 		
-		// It seems that the argument responseXML is never used in the method, so it is safe to pass null, when the project is not close
-		art_semanticturkey.closeProject_RESPONSE(responseXML, currentProectName);
+		// I won't call the closeProject_RESPONSE anymore, because the current project is already properly handled
+		//// It seems that the argument responseXML is never used in the method, so it is safe to pass null, when the project is not close
+		//art_semanticturkey.closeProject_RESPONSE(responseXML, projectName);
 	}
 	catch (e) {
 		art_semanticturkey.Logger.debug("Catch in closeProject: "+e.name + ": " + e.message);

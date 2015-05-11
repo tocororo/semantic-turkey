@@ -348,6 +348,8 @@ art_semanticturkey.myObserverFirefoxClosed = function() {
 
 art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 	if (eventId == "projectOpened") {
+		art_semanticturkey.Logger.debug("browser-overlay: Opening project: " + projectInfo.getProjectName());
+
 		var projectName = projectInfo.getProjectName();
 		var broadcasterList = document.getElementById("mainBroadcasterSet").getElementsByTagName(
 				"broadcaster");
@@ -420,6 +422,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 			document.getElementById("humanReadableButton").hidden = true;
 		}
 	} else if (eventId == "projectClosed") {
+		art_semanticturkey.Logger.debug("browser-overlay: Closing project: " + projectInfo.getProjectName());
 		var broadcasterList = document.getElementById("mainBroadcasterSet").getElementsByTagName(
 				"broadcaster");
 		for ( var i = 0; i < broadcasterList.length; ++i) {
@@ -453,7 +456,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("ICVToolBarButton").disabled = true;
 
 		if (typeof art_semanticturkey.skosStateManagemenet.stEventArray != "undefined") {
-			art_semanticturkey.skosStateManagemenet.stEventArray.unregister();
+			art_semanticturkey.skosStateManagemenet.stEventArray.deregisterAllListener();
 			art_semanticturkey.skosStateManagemenet.stEventArray = undefined;
 		}
 	} else if (eventId == "projectChangedName") {

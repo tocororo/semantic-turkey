@@ -330,8 +330,8 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			};
 
 			if (newResponseXML.isException()) {
-				Logger.debug("[STHttpMgrFactory.jsm] EXCEPTION: "+ newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
-				throw new STException("java.prova.exception", newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
+				Logger.debug("[STHttpMgrFactory.jsm] EXCEPTION: "+ newResponseXML.getElementsByTagName("msg")[0].textContent);
+				throw new STException("java.prova.exception", newResponseXML.getElementsByTagName("msg")[0].textContent);
 			}
 			
 			newResponseXML.isError = function() {
@@ -339,8 +339,8 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 			};
 			
 			if (newResponseXML.isError()) {
-				Logger.debug("[STHttpMgrFactory.jsm] ERROR: "+ newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
-				throw new STError("java.prova.exception", newResponseXML.getElementsByTagName("msg")[0].firstChild.textContent);
+				Logger.debug("[STHttpMgrFactory.jsm] ERROR: "+ newResponseXML.getElementsByTagName("msg")[0].textContent);
+				throw new STError("java.prova.exception", newResponseXML.getElementsByTagName("msg")[0].textContent);
 			}
 			newResponseXML.getContent = function() {
 				return this.getElementsByTagName("data")[0];
