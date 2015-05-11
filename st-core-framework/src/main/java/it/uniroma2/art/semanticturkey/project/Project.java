@@ -97,9 +97,12 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String PROJECT_STORE_DIR_NAME = "store";
 	public static final String PLUGINS_PROP = "plugins";
 	
+	// Constants concerning project plugins
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
 	public static final String URI_GENERATOR_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".urigen";
 	public static final String URI_GENERATOR_FACTORY_ID_PROP = URI_GENERATOR_PROP_PREFIX + ".factoryID";
+	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = DefaultTemplateBasedURIGeneratorFactory.class.getName();
+
 	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX + ".configType";
 
 
@@ -197,7 +200,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			String uriGenConfigType = getProperty(URI_GENERATOR_CONFIGURATION_TYPE_PROP);
 
 			if (uriGenFactoryID == null) {
-				uriGenFactoryID = DefaultTemplateBasedURIGeneratorFactory.class.getName();
+				uriGenFactoryID = URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
 			}
 			
 			try {
