@@ -51,7 +51,7 @@ art_semanticturkey.closeProject = function(projectName, isContinuosEditing, forc
 		}
 		var responseXML = null;
 		
-		if (forceDisconnect || !art_semanticturkey.Preferences.get("extensions.semturkey.multiClientMode", false)) {
+		if (!isNull && (forceDisconnect || !art_semanticturkey.Preferences.get("extensions.semturkey.multiClientMode", false))) {
 			responseXML = art_semanticturkey.STRequests.Projects.disconnectFromProject(projectName);
 		}
 		
@@ -60,7 +60,7 @@ art_semanticturkey.closeProject = function(projectName, isContinuosEditing, forc
 		//art_semanticturkey.closeProject_RESPONSE(responseXML, projectName);
 	}
 	catch (e) {
-		art_semanticturkey.Logger.debug("Catch in closeProject: "+e.name + ": " + e.message);
+		art_semanticturkey.Logger.debug("Catch in closeProject: "+e.name + ": " + e.message + "\nStack: " + e.stack);
 		//alert(e.name + ": " + e.message);
 	}
 };
@@ -103,7 +103,7 @@ art_semanticturkey.projectOpened = function(newProjectName, type){
 
 //These two function sends the events of project
 art_semanticturkey.projectClosed = function(oldProjectName){
-	var projectInfo = art_semanticturkey.projectClosedClass(oldProjectName);
+	var projectInfo = new art_semanticturkey.projectClosedClass(oldProjectName);
 	Context.removeValue("project"); 
 	art_semanticturkey.evtMgr.fireEvent("projectClosed", projectInfo);
 };
