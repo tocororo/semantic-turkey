@@ -128,6 +128,8 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 	}
 
 	private String getRandomPart(STServiceContext stServiceContext, String placheholder) {
+		String DEFAULT_VALUE = RandCode.TRUNCUUID8.name();
+
 		String randomCode = placheholder.substring(
 				placheholder.indexOf("(") + 1, placheholder.indexOf(")"));
 		// if in the template there's no rand code, try to get it from project
@@ -138,6 +140,11 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 			} catch (IOException | InvalidProjectNameException | ProjectInexistentException e) {
 			}
 		}
+		// If the property is not found in the project truncuuid8 is assumed as default
+		if (randomCode == null) {
+			randomCode = DEFAULT_VALUE;
+		}
+
 		String randomValue;
 		if (randomCode.equalsIgnoreCase(RandCode.DATETIMEMS.name())) {
 			randomValue = new java.util.Date().getTime() + "";
