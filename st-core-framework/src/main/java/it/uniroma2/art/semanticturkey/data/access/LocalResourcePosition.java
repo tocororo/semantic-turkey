@@ -13,5 +13,10 @@ public class LocalResourcePosition extends ResourcePosition {
 	public Project<?> getProject() {
 		return project;
 	}
+	
+	@Override
+	public String toString() {
+		return "local:" + project.getName();
+	}
 
 }

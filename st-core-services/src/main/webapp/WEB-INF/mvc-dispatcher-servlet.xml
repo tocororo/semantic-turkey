@@ -36,6 +36,9 @@
 					class="it.uniroma2.art.semanticturkey.converters.StringToARTResourceConverter" />
 				<bean id="StringToARTURIResourceConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToARTURIResourceConverter" />
+				<bean id="StringToResourcePositionConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter" />
+					
 			</list>
 		</property>
 	</bean>

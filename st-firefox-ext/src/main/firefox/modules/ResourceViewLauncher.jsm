@@ -45,8 +45,12 @@ ResourceViewLauncher = {
 		if (useEditor == "tab" || useEditor == "window") {
 			//detect type of the input (params) and build the queryString
 			var queryString = "?";
-			if (typeof params.sourceElementName == 'undefined'){ //params is simply a string (resource name)
+			if (typeof params.sourceElementName == 'undefined'){ //params is simply a string (resource name). There could be an optional argument for the resource position.
 				queryString += "resource=" + mainWindow.encodeURIComponent(params);
+				
+				if (typeof arguments[1] != "undefined") {
+					queryString += "&resourcePosition=" + mainWindow.encodeURIComponent(arguments[1]);
+				}
 			} else { //params is an object
 				queryString += "resource=" + mainWindow.encodeURIComponent(params.sourceElementName);
 			}

@@ -104,6 +104,7 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 
 import com.google.common.collect.Iterators;
+import com.google.common.util.concurrent.CycleDetectingLockFactory.PotentialDeadlockException;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -122,8 +123,7 @@ public class ResourceView extends STServiceAdapter {
 
 	@GenerateSTServiceController
 	public Response getResourceView(ARTResource resource, @Optional ResourcePosition resourcePosition) throws Exception {
-		OWLModel owlModel = getOWLModel();
-		ARTResource[] userNamedGraphs = getUserNamedGraphs();
+		// ARTResource[] userNamedGraphs = getUserNamedGraphs();
 		ARTResource workingGraph = getWorkingGraph();
 
 		Project<? extends RDFModel> project = getProject();
@@ -134,9 +134,9 @@ public class ResourceView extends STServiceAdapter {
 		
 		StatementCollector stmtCollector = new StatementCollector();
 
-		retrieveStatements(owlModel, resource, resourcePosition, stmtCollector);
+		retrieveStatements(resource, resourcePosition, stmtCollector);
 
-		logger.debug("Requested view for resource {} which the position of which is {}", resource,
+		logger.debug("Requested view for resource {} whose position is {}", resource,
 				resourcePosition);
 
 		// ************************************
@@ -149,6 +149,7 @@ public class ResourceView extends STServiceAdapter {
 
 		STRDFResource stSubjectResource = STRDFNodeFactory.createSTRDFResource(resource,
 				RDFResourceRolesEnum.undetermined, subjectResourceEditable, null);
+		stSubjectResource.setInfo("resourcePosition", resourcePosition.toString());
 
 		// ******************************************
 		// Step X: Renderize resources & compute role
@@ -201,6 +202,8 @@ public class ResourceView extends STServiceAdapter {
 		RDFResourceRolesEnum subjectRole = resource2Role.get(resource);
 		if (subjectRole != null) {
 			stSubjectResource.setRole(subjectRole);
+		} else {
+			subjectRole = RDFResourceRolesEnum.undetermined;
 		}
 
 		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource, resourcePosition, subjectRole,
@@ -398,12 +401,13 @@ public class ResourceView extends STServiceAdapter {
 		return Collections.emptyList();
 	}
 
-	private void retrieveStatements(RDFModel model, ARTResource resource, ResourcePosition position,
+	private void retrieveStatements(ARTResource resource, ResourcePosition position,
 			StatementCollector collector) throws ModelAccessException, ModelCreationException,
 			UnavailableResourceException, ProjectInconsistentException, UnsupportedQueryLanguageException,
 			MalformedQueryException, QueryEvaluationException, MalformedURLException, IOException {
 		if (position instanceof LocalResourcePosition) {
 			logger.debug("Retrieving statements for resource {} locally", resource);
+			RDFModel model = ((LocalResourcePosition)position).getProject().getOntModel();
 			ARTStatementIterator it = model.listStatements(resource, NodeFilters.ANY, NodeFilters.ANY, false,
 					NodeFilters.ANY);
 			try {

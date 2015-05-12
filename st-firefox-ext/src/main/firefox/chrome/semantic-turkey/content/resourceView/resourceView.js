@@ -44,6 +44,7 @@ art_semanticturkey.resourceView.init = function() {
 			.parseQueryString(window.location.search);
 
 	var resource = parametersFromURL.resource;
+	var resourcePosition = parametersFromURL.resourcePosition || null;
 
 	if (typeof resource != "string") {
 		art_semanticturkey.Alert
@@ -97,7 +98,7 @@ art_semanticturkey.resourceView.init = function() {
 
 	try {
 		var response = art_semanticturkey.STRequests.ResourceView
-				.getResourceView(resource);
+				.getResourceView(resource, resourcePosition);
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
 		window.close();
@@ -185,21 +186,23 @@ art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 	// TODO: maybe it is the case to move this information into the resource
 	// decription so that it can be processed as the other partitions
 
-	var defaultAnnotationFamily = art_semanticturkey.annotation.AnnotationManager
-			.getDefaultFamily();
-
-	if (typeof defaultAnnotationFamily.getAnnotatedContentResources != "undefined") {
-		var annotatedContentResources = defaultAnnotationFamily
-				.getAnnotatedContentResources(resourceObj.getNominalValue());
-		art_semanticturkey.resourceView.getWebLinks_RESPONSE(partitionsBox,
-				annotatedContentResources);
-	}
-
-	if (resourceObj.getRole() == "concept") {
-		var responseXML = art_semanticturkey.STRequests.Annotation
-				.getBookmarksByTopic(resourceObj.getNominalValue());
-		art_semanticturkey.resourceView.getBookmarksByTopic_RESPONSE(
-				partitionsBox, responseXML);
+	if (resourceObj.isURIResource()) {
+		var defaultAnnotationFamily = art_semanticturkey.annotation.AnnotationManager
+				.getDefaultFamily();
+	
+		if (typeof defaultAnnotationFamily.getAnnotatedContentResources != "undefined") {
+			var annotatedContentResources = defaultAnnotationFamily
+					.getAnnotatedContentResources(resourceObj.getNominalValue());
+			art_semanticturkey.resourceView.getWebLinks_RESPONSE(partitionsBox,
+					annotatedContentResources);
+		}
+	
+		if (resourceObj.getRole() == "concept") {
+			var responseXML = art_semanticturkey.STRequests.Annotation
+					.getBookmarksByTopic(resourceObj.getNominalValue());
+			art_semanticturkey.resourceView.getBookmarksByTopic_RESPONSE(
+					partitionsBox, responseXML);
+		}
 	}
 };
 
@@ -519,11 +522,20 @@ art_semanticturkey.resourceView.partitions.internal.isPredicateObjectsList = fun
 
 art_semanticturkey.resourceView.partitions.internal.dblClickHandler = function(
 		event) {
+	var resourceNameElement = document.getElementById("resourceNameBox");
+	var subjectObj = resourceNameElement.stRdfNode;
+	
 	var res = event.detail.rdfResource;
 
 	if (res.isResource()) {
-		art_semanticturkey.ResourceViewLauncher.openResourceView(res
-				.getNominalValue());
+		// If the resource to be shown is a bnode, then assume it is always located together with the subject resource
+		if (res.isBNode()) {
+			art_semanticturkey.ResourceViewLauncher.openResourceView(res
+					.getNominalValue(), subjectObj.resourcePosition);
+		} else {
+			art_semanticturkey.ResourceViewLauncher.openResourceView(res
+					.getNominalValue());
+		}
 	}
 };
 

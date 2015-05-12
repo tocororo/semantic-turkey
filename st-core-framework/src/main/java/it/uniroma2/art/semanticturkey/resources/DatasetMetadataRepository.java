@@ -22,18 +22,12 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.rendering.RDFSRenderingEngine;
 import it.uniroma2.art.semanticturkey.rendering.SKOSXLRenderingEngine;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,6 +63,11 @@ public class DatasetMetadataRepository {
 
 	}
 
+	/**
+	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method returns <code>null</code>.
+	 * @param uriResource
+	 * @return
+	 */
 	public DatasetMetadata findDatasetForResource(ARTURIResource uriResource) {
 		//-------------------------------------------------------------------------------------------
 		// The following resolution strategy might be subject to ambiguity in some rare circumstances

@@ -19,14 +19,17 @@ httpManager = STHttpMgrFactory.getInstance("it.uniroma2.art.semanticturkey",
  * @member STRequests.ResourceView
  * @param resource
  *            a resource
+ * @param resourcePosition
+ *            the resource position (optional)
  * @return
  */
-function getResourceView(resource) {
+function getResourceView(resource, resourcePosition) {
 	Logger.debug('[SERVICE_ResourceView.jsm] getResourceView');
 	var resource_p = "resource=" + resource;
+	var resourcePosition_p = typeof resourcePosition != "undefined" && resourcePosition != null ? "resourcePosition=" + resourcePosition : "";
 
 	var response = httpManager.GET(null, serviceName,
-			service.getResourceViewRequest, this.context, resource_p);
+			service.getResourceViewRequest, this.context, resource_p, resourcePosition_p);
 
 	return response;
 }
