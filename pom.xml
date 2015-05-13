@@ -146,6 +146,12 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 				<configuration>
 					<links>
 						<link>http://art.uniroma2.it/owlart/documentation/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-codegen-annotations/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-codegen-processor/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-core-framework/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-core-services/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-sesame2-ontmanager/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-core-framework/apidocs/</link>
 					</links>
 				</configuration>
 			</plugin>
