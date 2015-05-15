@@ -166,20 +166,46 @@ public class OntoSearch extends ServiceAdapter {
 			ARTURIResource perfectMatchingResource = null;
 			if (wellFormedAndAbsolute)
 				perfectMatchingResource = ontModel.createURIResource(inputStringExpandedQName);
-			if ((perfectMatchingResource != null)
-					&& (ontModel.existsResource(perfectMatchingResource))) {
-				results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
-						perfectMatchingResource, null, 1));
-				/*if ((ontModel instanceof RDFSModel)
-						&& ((RDFSModel) ontModel).isClass(perfectMatchingResource))
-					results.add(new Struct(RDFResourceRolesEnum.cls, perfectMatchingResource, null, 1));
-				else if (ontModel.isProperty(perfectMatchingResource))
-					results.add(new Struct(RDFResourceRolesEnum.property, perfectMatchingResource, null, 1));
-				else if(ontModel instanceof OWLModel && ((OWLModel)ontModel).is)
-					results.add(new Struct(RDFResourceRolesEnum.individual, perfectMatchingResource, null,
-							1));*/
-			} else {
-
+			/* 
+			 * The following IF block has been commented and replace with the succeeding one to 
+			 * avoid strange results in case of perfect match in other types of the requested one:
+			 * For example, if there's a concept with local name "prefLabel", the inputString 
+			 * is "prefLabel" and the types is "property", it will find and return the concept 
+			 * prefLabel as perfect match, despite it was ask only "property" types. 
+			 */
+//			if ((perfectMatchingResource != null) && (ontModel.existsResource(perfectMatchingResource))) {
+//				results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
+//						perfectMatchingResource, null, 1));
+//			}
+			if ((perfectMatchingResource != null) && ontModel.existsResource(perfectMatchingResource)) {
+				if (types.equals("property") && ontModel.isProperty(perfectMatchingResource, NodeFilters.MAINGRAPH)){
+					results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
+							perfectMatchingResource, null, 1));
+				} else if (types.equals("clsNInd") && ontModel instanceof OWLModel){
+					if (((OWLModel) ontModel).isClass(perfectMatchingResource, NodeFilters.MAINGRAPH)){
+						results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
+								perfectMatchingResource, null, 1));
+					} else { //check if is an instance/individual
+						ARTResourceIterator instances = ((OWLModel) ontModel).listInstances(NodeFilters.ANY, true, NodeFilters.MAINGRAPH);
+						while (instances.hasNext()){
+							ARTResource i = instances.next();
+							if (i.equals(perfectMatchingResource)){
+								results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
+										perfectMatchingResource, null, 1));
+								break;
+							}
+						}
+					}
+				} else if (types.equals("concept") && ontModel instanceof SKOSModel && 
+						((SKOSModel) ontModel).isConcept(perfectMatchingResource, NodeFilters.MAINGRAPH)) {
+					results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
+							perfectMatchingResource, null, 1));
+				}
+			}
+			//if a perfect match has been found but not for the given types, the results could be still empty
+			if (results.isEmpty()) {
+				System.out.println("NO perfect match "); //TODO remove
+				
 				String searchStringNamespace = null;
 				String searchStringLocalName = null;
 				String searchStringPrefix = null;
@@ -203,9 +229,9 @@ public class OntoSearch extends ServiceAdapter {
 				} else
 					searchStringLocalName = inputString;
 
-				System.out.println(searchStringNamespace + " " + searchStringLocalName);
-				System.out.println("searchStringNamespace availability: "
-						+ ModelUtilities.isAvailableNamespace(ontModel, searchStringNamespace));
+//				System.out.println(searchStringNamespace + " " + searchStringLocalName);
+//				System.out.println("searchStringNamespace availability: "
+//						+ ModelUtilities.isAvailableNamespace(ontModel, searchStringNamespace));
 
 				if (namespaceGiven && !ModelUtilities.isAvailableNamespace(ontModel, searchStringNamespace)) {
 					logger.debug("namespace: "
@@ -296,7 +322,7 @@ public class OntoSearch extends ServiceAdapter {
 			StructComparator sc = new StructComparator();
 			Collections.sort(results, sc);
 
-			System.out.println("results: " + results);
+//			System.out.println("results: " + results);
 
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(request, e);
@@ -337,15 +363,19 @@ public class OntoSearch extends ServiceAdapter {
 	private void collectResults(Iterator<ARTURIResource> searchedResources, RDFModel ontModel, 
 			ArrayList<Struct> results,  String searchStringNamespace, String searchStringLocalName, 
 			boolean namespaceGiven)  throws ModelAccessException {
+		System.out.println("collecting result "); //TODO remove
 		double match;
 		while (searchedResources.hasNext()) {
 			ARTURIResource nextRes = searchedResources.next();
 			System.out.println("comparing resource: " + nextRes);
 			if (checkNS(namespaceGiven, nextRes.getNamespace(), searchStringNamespace))
 				if ((match = CompareNames
-						.compareSimilarNames(nextRes.getLocalName(), searchStringLocalName)) >= THRESHOLD)
-					results.add(new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), 
-							nextRes, null, match));
+						.compareSimilarNames(nextRes.getLocalName(), searchStringLocalName)) >= THRESHOLD){
+					Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
+					if (!listContainsStruct(results, s))
+						results.add(s);
+				}
+					
 			
 			//in skos/skoskl search also inside the labels/xlabels
 			if(ontModel instanceof SKOSXLModel){
@@ -358,10 +388,11 @@ public class OntoSearch extends ServiceAdapter {
 					ARTResource prefLabelRes = labelIter.next();
 					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes, NodeFilters.MAINGRAPH);
 					String label = labelLiteral.getLabel();
-					if ((match = CompareNames
-							.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD)
-						results.add(new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), 
-								nextRes, null, match));
+					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
+						Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
+						if (!listContainsStruct(results, s))
+							results.add(s);
+					}
 				}
 				//Alternative XLabels
 				labelIter = skosxlModel.listAltXLabels(nextRes, NodeFilters.MAINGRAPH);
@@ -369,10 +400,11 @@ public class OntoSearch extends ServiceAdapter {
 					ARTURIResource prefLabelRes = labelIter.next().asURIResource();
 					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes, NodeFilters.MAINGRAPH);
 					String label = labelLiteral.getLabel();
-					if ((match = CompareNames
-							.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD)
-						results.add(new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), 
-								nextRes, null, match));
+					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
+						Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
+						if (!listContainsStruct(results, s))
+							results.add(s);
+					}
 				}
 			} else if(ontModel instanceof SKOSModel){
 				SKOSModel skosModel = (SKOSModel)ontModel;
@@ -381,19 +413,21 @@ public class OntoSearch extends ServiceAdapter {
 				labelIter = skosModel.listPrefLabels(nextRes, true, NodeFilters.MAINGRAPH);
 				while(labelIter.hasNext()){
 					String label = labelIter.next().getLabel();
-					if ((match = CompareNames
-							.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD)
-						results.add(new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), 
-								nextRes, null, match));
+					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
+						Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
+						if (!listContainsStruct(results, s))
+							results.add(s);
+					}
 				}
 				//Alternative Label
 				labelIter = ((SKOSModel)ontModel).listAltLabels(nextRes, true, NodeFilters.MAINGRAPH);
 				while(labelIter.hasNext()){
 					String label = labelIter.next().getLabel();
-					if ((match = CompareNames
-							.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD)
-						results.add(new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), 
-								nextRes, null, match));
+					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
+						Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
+						if (!listContainsStruct(results, s))
+							results.add(s);
+					}
 				}
 			}
 		}
@@ -434,6 +468,14 @@ public class OntoSearch extends ServiceAdapter {
 			return (_resource + ";type:" + _type + "match:" + _value);
 		}
 
+	}
+	
+	private boolean listContainsStruct(List<Struct> list, Struct struct){
+		for (Struct s : list){
+			if (s._resource.equals(struct._resource))
+				return true;
+		}
+		return false;
 	}
 
 	private class StructComparator implements Comparator<Struct> {
