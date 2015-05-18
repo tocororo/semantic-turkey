@@ -204,7 +204,6 @@ public class OntoSearch extends ServiceAdapter {
 			}
 			//if a perfect match has been found but not for the given types, the results could be still empty
 			if (results.isEmpty()) {
-				System.out.println("NO perfect match "); //TODO remove
 				
 				String searchStringNamespace = null;
 				String searchStringLocalName = null;
@@ -363,11 +362,10 @@ public class OntoSearch extends ServiceAdapter {
 	private void collectResults(Iterator<ARTURIResource> searchedResources, RDFModel ontModel, 
 			ArrayList<Struct> results,  String searchStringNamespace, String searchStringLocalName, 
 			boolean namespaceGiven)  throws ModelAccessException {
-		System.out.println("collecting result "); //TODO remove
 		double match;
 		while (searchedResources.hasNext()) {
 			ARTURIResource nextRes = searchedResources.next();
-			System.out.println("comparing resource: " + nextRes);
+//			System.out.println("comparing resource: " + nextRes);
 			if (checkNS(namespaceGiven, nextRes.getNamespace(), searchStringNamespace))
 				if ((match = CompareNames
 						.compareSimilarNames(nextRes.getLocalName(), searchStringLocalName)) >= THRESHOLD){

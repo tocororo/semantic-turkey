@@ -116,13 +116,13 @@ art_semanticturkey.OntoSearch_RESPONSE = function(responseCollection, types) {
 			//in this case, as "resName" (4th parameter), pass the URI, not the show attribute that could be the concept label
 			art_semanticturkey.searchFocus(myTree, myList, responseCollection[0].getRole(), responseCollection[0].getURI(),
 					typeNameCollection);
-		} else {
-			if (types == "clsNInd") {
-				myTree = document.getElementById("classesTree");
-				myList = document.getElementById("IndividualsList");
-			} else if (types == "property") {
-				myTree = document.getElementById("propertiesTree");
-			}
+		} else if (types == "clsNInd"){
+			myTree = document.getElementById("classesTree");
+			myList = document.getElementById("IndividualsList");
+			art_semanticturkey.searchFocus(myTree, myList, responseCollection[0].getRole(), responseCollection[0].getShow(),
+					typeNameCollection);
+		} else if (types == "property") {
+			myTree = document.getElementById("propertiesTree");
 			art_semanticturkey.searchFocus(myTree, myList, responseCollection[0].getRole(), responseCollection[0].getShow(),
 					typeNameCollection);
 		}
@@ -168,7 +168,7 @@ art_semanticturkey.searchFocus = function(myTree, myList, resType, resName,
 	} else if (resType == "concept") {
 		art_semanticturkey.selectElementConcept(myTree, resName);
 	} else if (resType.indexOf("Property") > 0) {
-		art_semanticturkey.selectElementClass(myTree, resName);
+		art_semanticturkey.selectElementProperty(myTree, resName);
 	} 
 };
 
@@ -229,6 +229,37 @@ art_semanticturkey.selectElementClass = function(myTree, resNameShow) {
 		}
 	}
 };
+
+art_semanticturkey.selectElementProperty = function(myTree, prop) {
+	var visible = false;
+
+	var treeitemLists = myTree.getElementsByTagName("treeitem");
+	// iterate over all the visible class elements in the class tree
+	for (var index = 0; index < treeitemLists.length; index++) {
+		var current = treeitemLists[index];
+		var treerow = current.getElementsByTagName('treerow')[0];
+		var treecell = treerow.getElementsByTagName('treecell')[0];
+		var propShow = treecell.getAttribute("label");
+
+		if (propShow == prop) {
+			var pi = current;
+			var pTreecell = treecell;
+			while (pTreecell.getAttribute("isRootNode") == "false") {
+				pi = pi.parentNode.parentNode;
+				pTreecell = pi.getElementsByTagName('treecell')[0];
+				pi.setAttribute("open", true);
+				index = myTree.contentView.getIndexOfItem(current);
+			}
+			myTree.view.selection.clearSelection();
+			myTree.view.selection.toggleSelect(index);
+			myTree.boxObject.scrollToRow(index);
+			visible = true;
+			// found the desired element, exit
+			return;
+		}
+
+	}
+}
 
 art_semanticturkey.selectElementConcept = function(myTree, concUri) {
 	var xmlResp = art_semanticturkey.STRequests.Projects.getProjectProperty(
