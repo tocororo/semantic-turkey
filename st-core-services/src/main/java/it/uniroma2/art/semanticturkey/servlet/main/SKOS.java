@@ -780,7 +780,7 @@ public class SKOS extends ResourceOld {
 					+ "}";
 			
 
-			Collection<STRDFResource> affectedConcepts = STRDFNodeFactory.createEmptyResourceCollection();
+			Collection<STRDFResource> insertionPoints = STRDFNodeFactory.createEmptyResourceCollection();
 			
 			try {
 				TupleQuery query = skosModel.createTupleQuery(querySpec);
@@ -790,7 +790,7 @@ public class SKOS extends ResourceOld {
 				try (TupleBindingsIterator it = query.evaluate(true)) {
 					while (it.streamOpen()) {
 						ARTResource affectedConcept = it.getNext().getBoundValue("c").asResource();
-						affectedConcepts.add(STRDFNodeFactory.createSTRDFResource(affectedConcept, RDFResourceRolesEnum.concept, true, null));
+						insertionPoints.add(STRDFNodeFactory.createSTRDFResource(affectedConcept, RDFResourceRolesEnum.concept, true, null));
 					}
 				}
 			} catch (QueryEvaluationException | UnsupportedQueryLanguageException | MalformedQueryException e) {
@@ -803,16 +803,17 @@ public class SKOS extends ResourceOld {
 					"scheme");
 			RDFXMLHelp.addRDFNode(schemeElement, scheme);
 
-			Element affectedConceptsElement = XMLHelp.newElement(
-					treeChangeElement, "affectedConcepts");
-			RDFXMLHelp.addRDFNodes(affectedConceptsElement, affectedConcepts);
+			Element addedConceptElement = XMLHelp.newElement(
+					treeChangeElement, "addedConcept");
 
-			Element narrowerConceptElement = XMLHelp.newElement(
-					treeChangeElement, "narrowerConcept");
+			STRDFResource stAddedConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
+			decorateForTreeView(skosModel,stAddedConcept, scheme, true, graphs);
+			RDFXMLHelp.addRDFNode(addedConceptElement, stAddedConcept);
+			
+			Element insertionPointsElement = XMLHelp.newElement(
+					treeChangeElement, "insertionPoints");
+			RDFXMLHelp.addRDFNodes(insertionPointsElement, insertionPoints);
 
-			STRDFResource stNarrowerConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
-			decorateForTreeView(skosModel,stNarrowerConcept, scheme, true, graphs);
-			RDFXMLHelp.addRDFNode(narrowerConceptElement, stNarrowerConcept);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {

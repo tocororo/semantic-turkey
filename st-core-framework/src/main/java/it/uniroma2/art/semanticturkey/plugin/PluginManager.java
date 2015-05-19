@@ -31,6 +31,8 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -219,5 +221,9 @@ public class PluginManager {
 		m_felix.ungetService(sr);
 		
 		return fact; 
+	}
+
+	public static Collection<PluginFactory<?>> getPluginFactories(String extensionPoint) {
+		return Collections.emptyList();
 	}
 }

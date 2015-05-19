@@ -197,7 +197,7 @@
 					var hasSubsumees = narrowerConcept.more;
 					var l = narrowerConcept.getShow();
 
-					var row = new DataRow({concept : u, more : hasSubsumees ? "1" : "0", label : l, uri : u});
+					var row = new DataRow({concept : u, more : hasSubsumees, label : l, uri : u});
 
 					bound._view.addRow(broaderConcept, row);
 				}
@@ -213,7 +213,7 @@
 					var hasSubsumees = aConcept.more;
 					var l = aConcept.getShow();
 								
-					var row = new DataRow({concept : narrowerConcept, more : hasSubsumees ? "1" : "0", label : l, uri : u});
+					var row = new DataRow({concept : narrowerConcept, more : hasSubsumees, label : l, uri : u});
 					
 					bound._view.addRow(broaderConcept, row);
 					
@@ -252,7 +252,7 @@
 					var hs = topConcept.more;
 					var l = topConcept.getShow();
 								
-					var row = new DataRow({concept : concept, more : hs ? "1" : "0", label : l, uri : u});
+					var row = new DataRow({concept : concept, more : hs, label : l, uri : u});
 					
 					bound._view.addRow(null, row);				
 				}
@@ -371,17 +371,18 @@
 						// associated with this concept tree
 						if (bound.conceptScheme != eventObj.getSchemeName()) return;					
 											
-						var affectedConcepts = [];
-						eventObj.getAffectedConcepts().forEach(function(el){return affectedConcepts.push(el.getNominalValue());});
-						var narrowerConcept = eventObj.getNarrowerConcept();
+						var insertionPoints = [];
+						eventObj.getInsertionPoints().forEach(function(el){return insertionPoints.push(el.getNominalValue());});
+						var addedConcept = eventObj.getAddedConcept();
 						
-						var u = narrowerConcept.getURI();
-						var hs = narrowerConcept.more;
-						var l = narrowerConcept.getShow();
+						var u = addedConcept.getURI();
+						var hs = addedConcept.more;
+						var l = addedConcept.getShow();
 									
-						var row = new DataRow({concept : u, more : hs ? "1" : "0", label : l, uri : u});
+						alert(hs ? "1" : "0");
+						var row = new DataRow({concept : u, more : hs, label : l, uri : u});
 						
-						bound._view.addRow(affectedConcepts, row);						
+						bound._view.addRow(insertionPoints, row);						
 						
 					} catch(e) {
 						alert(e);

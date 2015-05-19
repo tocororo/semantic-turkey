@@ -16,6 +16,6 @@ public interface PluginFactory<T extends PluginConfiguration> {
 			throws UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, ClassNotFoundException;
 
-	Object createInstance(PluginConfiguration uriGenConfig);
+	Object createInstance(PluginConfiguration conf);
 
 }

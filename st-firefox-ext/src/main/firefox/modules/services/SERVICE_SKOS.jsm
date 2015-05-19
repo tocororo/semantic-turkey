@@ -453,13 +453,14 @@ function addConceptToScheme(concept, scheme,lang) {
 	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addConceptToSchemeRequest, concept_p, scheme_p, lang_p, contextAsArray);
 
 	if (!reply.isFail()) {
-		var affectedConcepts = Deserializer.createRDFArray(reply.getElementsByTagName("treeChange")[0].getElementsByTagName("affectedConcepts")[0]) || [];
-		var narrowerConcept = Deserializer.createRDFResource(reply.getElementsByTagName("treeChange")[0].getElementsByTagName("narrowerConcept")[0].children[0]);
+		var addedConcept = Deserializer.createRDFResource(reply.getElementsByTagName("treeChange")[0].getElementsByTagName("addedConcept")[0].children[0]);
+		var insertionPoints = Deserializer.createRDFArray(reply.getElementsByTagName("treeChange")[0].getElementsByTagName("insertionPoints")[0]) || [];
+		
 		evtMgr.fireEvent("skosConceptAddedToScheme", {
 			getConceptName : function(){return concept;}, 
 			getSchemeName : function(){return scheme;},
-			getAffectedConcepts : function(){return affectedConcepts;},
-			getNarrowerConcept : function(){return narrowerConcept;}
+			getAddedConcept : function(){return addedConcept;},
+			getInsertionPoints : function(){return insertionPoints;}
 		});
 	}
 

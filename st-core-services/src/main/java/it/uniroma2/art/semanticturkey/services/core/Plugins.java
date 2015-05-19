@@ -27,6 +27,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.AbstractPluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.ContentType;
@@ -39,7 +41,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -56,29 +57,17 @@ public class Plugins extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Plugins.class);
 
-	public static class SamplePluginConfiguration extends AbstractPluginConfiguration {
-
-		@Override
-		public String getShortName() {
-			return "Sample Plugin Configuration";
-		}
-		
-		@PluginConfigurationParameter(description="This is a string parameter")
-		public String stringParameter = "Hello";
-		
-
-		@PluginConfigurationParameter(description="This is an url parameter")
-		@ContentType(value = "url")
-		public String urlParameter = "http://example.org/";
-		
-		@PluginConfigurationParameter(description="This is a required string parameter")
-		@RequiredConfigurationParameter
-		public String requiredUrlParameter;
-	}
-	
+	/**
+	 * Returns the available configuration options for a given plug-in
+	 * @param factoryID the identifier of the plug-in factory
+	 * @return
+	 * @throws ConfParameterNotFoundException
+	 */
 	@GenerateSTServiceController
-	public Response getPluginConfiguratons(String pluginImplId) throws ConfParameterNotFoundException {
-		Collection<PluginConfiguration> mConfs = Arrays.<PluginConfiguration>asList(new SamplePluginConfiguration());
+	public Response getPluginConfigurations(String factoryID) throws ConfParameterNotFoundException  {
+		PluginFactory<?> pluginFactory = PluginManager.getPluginFactory(factoryID);
+		
+		Collection<PluginConfiguration> mConfs = pluginFactory.getPluginConfigurations();
 		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		
@@ -114,5 +103,20 @@ public class Plugins extends STServiceAdapter {
 
 		return response;
 	}
-
+	
+	@GenerateSTServiceController
+	public Response getAvailablePlugins(String extensionPoint) throws ConfParameterNotFoundException {
+		Collection<PluginFactory<?>> pluginFactoryCollection = PluginManager.getPluginFactories(extensionPoint);
+		
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element data = response.getDataElement();
+		
+			
+		for (PluginFactory<?> pluginFactory : pluginFactoryCollection) {
+			Element pluginElement = XMLHelp.newElement(data, "plugin");
+			pluginElement.setAttribute("factoryID", pluginFactory.getClass().getName());
+		}
+		
+		return response;
+	}
 }
