@@ -17,6 +17,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+
+/**
+ * Implementation of the {@link URIGenerator} extension point based on templates. 
+ * 
+ */
 public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 
 	public static class Configuration extends AbstractPluginConfiguration {
@@ -57,9 +62,16 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 		this.conf = conf;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator#generateURI(it.uniroma2.art.semanticturkey.services.STServiceContext, java.lang.String, java.util.Map)
+	 */
 	@Override
-	public ARTURIResAndRandomString generateURI(STServiceContext stServiceContext, String template,
-			Map<String, String> valueMapping) throws URIGenerationException {
+	public ARTURIResAndRandomString generateURI(STServiceContext stServiceContext, String xRole,
+			Map<String, String> args) throws URIGenerationException {
+		
+		String template = "res_${rand()}";
+		
 		// validate template
 		if (!template.matches(TEMPLATE_REGEX)) {
 			throw new IllegalArgumentException("The template \"" + template
@@ -84,7 +96,7 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 						value = getRandomPart(stServiceContext, ph);
 						resRand.setRandomValue(value);
 					} else {
-						value = valueMapping.get(ph);
+						value = args.get(ph);
 						if (value == null)
 							throw new IllegalArgumentException(
 									"The placeholder \""

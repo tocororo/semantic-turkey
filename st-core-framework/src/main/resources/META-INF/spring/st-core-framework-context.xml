@@ -21,4 +21,9 @@
 	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.impls.DefaultTemplateBasedURIGeneratorFactory">
 		<bean class="it.uniroma2.art.semanticturkey.plugin.impls.DefaultTemplateBasedURIGeneratorFactory" />
 	</osgi:service>
+	
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.impls.DefaultCODABasedURIGeneratorFactory">
+		<bean class="it.uniroma2.art.semanticturkey.plugin.impls.DefaultCODABasedURIGeneratorFactory" />
+	</osgi:service>
+
 </beans>

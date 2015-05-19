@@ -31,6 +31,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -533,7 +534,7 @@ public class SKOSXL extends SKOS {
 			String randomConceptValue = null;
 			if(conceptName == null){
 				
-				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("c_${rand()}", null);
+				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("concept", Collections.<String,String>emptyMap());
 				
 				newConcept = newConceptAndRandomValue.getArtURIResource();
 				randomConceptValue = newConceptAndRandomValue.getRandomValue();
@@ -1026,7 +1027,7 @@ public class SKOSXL extends SKOS {
 		
 		Map<String, String> valueMapping = new HashMap<String, String>();
 		valueMapping.put("lang", lang);
-		return generateURI("xl_${lang}_${rand()}", valueMapping);
+		return generateURI("xLabel", valueMapping);
 	}
 	
 }
