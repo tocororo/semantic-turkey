@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls;
+package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
@@ -15,38 +15,27 @@ import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.configuration.AbstractPluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.uima.fit.descriptor.ConfigurationParameter;
 import org.springframework.beans.factory.ObjectFactory;
 
 /**
  * Implementation of the {@link URIGenerator} extension point that delegates to a CODA converter. 
  * 
  */
-public class DefaultCODABasedURIGenerator implements URIGenerator {
+public class CODABasedURIGenerator implements URIGenerator {
 
-	public static class Configuration extends AbstractPluginConfiguration {
 
-		@Override
-		public String getShortName() {
-			return "Default URI Gen Configuration";
-		}
-
-		@ConfigurationParameter(defaultValue = { "it.uniroma2.art.coda.converters.RandomTemplateBasedIdGenerator" })
-		public String converterClassName;
-	}
-
-	private Configuration config;
+	private CODABasedURIGeneratorConfiguration config;
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
-	public DefaultCODABasedURIGenerator(Configuration config,
+	public CODABasedURIGenerator(CODABasedURIGeneratorConfiguration config,
 			ObjectFactory<CODACoreProvider> codaCoreProviderFactory) {
 		this.config = config;
 		this.codaCoreProviderFactory = codaCoreProviderFactory;
@@ -66,7 +55,7 @@ public class DefaultCODABasedURIGenerator implements URIGenerator {
 					stServiceContext.getProject().getOntologyManagerImplID()).createModelFactory();
 			codaCore.initialize(stServiceContext.getProject().getOntModel(), ontFact);
 			ConverterMention converterMention = new ConverterMention(
-					"http://art.uniroma2.it/coda/contracts/randIdGen",
+					CODABasedURIGeneratorConfiguration.CODA_RANDOM_ID_GENERATOR_CONTRACT,
 					Arrays.<ConverterArgumentExpression> asList(new ConverterStringLiteralArgument(xRole),
 							new ConverterMapLiteralArgument(args)));
 

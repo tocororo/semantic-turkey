@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls;
+package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTResource;
@@ -7,9 +7,9 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.AbstractPluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
@@ -17,21 +17,15 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Implementation of the {@link URIGenerator} extension point based on templates. 
  * 
  */
-public class DefaultTemplateBasedURIGenerator implements URIGenerator {
-
-	public static class Configuration extends AbstractPluginConfiguration {
-
-		@Override
-		public String getShortName() {
-			return "Default URI Gen Configuration";
-		}
-		
-	}
+public class NativeTemplateBasedURIGenerator implements URIGenerator {
 
 	public enum RandCode {
 		DATETIMEMS, UUID, TRUNCUUID4, TRUNCUUID8, TRUNCUUID12;
@@ -56,9 +50,9 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 			+ "\\}"
 			+ "([A-Za-z0-9_]*(\\$\\{[A-Za-z0-9]+\\})*[A-Za-z0-9_]*)*";
 
-	private Configuration conf;
+	private NativeTemplateBasedURIGeneratorConfiguration conf;
 
-	public DefaultTemplateBasedURIGenerator(Configuration conf) {
+	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorConfiguration conf) {
 		this.conf = conf;
 	}
 
@@ -70,8 +64,14 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 	public ARTURIResAndRandomString generateURI(STServiceContext stServiceContext, String xRole,
 			Map<String, String> args) throws URIGenerationException {
 		
-		String template = "res_${rand()}";
+		String template = conf.fallback;
 		
+		if (xRole.equals("xLabel")) {
+			template = conf.xLabel;
+		} else if (xRole.equals("concept")) {
+			template = conf.concept;
+		}
+				
 		// validate template
 		if (!template.matches(TEMPLATE_REGEX)) {
 			throw new IllegalArgumentException("The template \"" + template
@@ -135,7 +135,7 @@ public class DefaultTemplateBasedURIGenerator implements URIGenerator {
 				throw new URIGenerationException(e);
 			}
 		}
-
+		
 		return resRand;
 	}
 

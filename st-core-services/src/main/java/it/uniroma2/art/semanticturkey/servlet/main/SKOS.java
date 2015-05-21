@@ -59,6 +59,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.slf4j.Logger;
@@ -863,7 +864,7 @@ public class SKOS extends ResourceOld {
 			String randomConceptValue = null;
 			if(conceptName == null){
 				
-				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("c_${rand()}", null);
+				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("concept", Collections.<String, String>emptyMap());
 				
 				newConcept = newConceptAndRandomValue.getArtURIResource();
 				randomConceptValue = newConceptAndRandomValue.getRandomValue();

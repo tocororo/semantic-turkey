@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
@@ -60,10 +61,11 @@ public class PluginManager {
 	public static void setDirectAccessTest(boolean test) {
 		PluginManager.directAccessTest = test;
 	}
-	public static void setContext(BundleContext toSet)
-	{
-		m_felix=toSet;
+
+	public static void setContext(BundleContext toSet) {
+		m_felix = toSet;
 	}
+
 	public static void setTestOntManagerFactoryImpl(
 			Class<? extends OntologyManagerFactory<ModelConfiguration>> ontmgrcls) {
 		testOntManagerFactoryCls = ontmgrcls;
@@ -151,8 +153,7 @@ public class PluginManager {
 		ServiceTracker m_tracker = null;
 		int num = 0;
 
-		m_tracker = new ServiceTracker(m_felix, OntologyManagerFactory.class.getName(),
-				null);
+		m_tracker = new ServiceTracker(m_felix, OntologyManagerFactory.class.getName(), null);
 		m_tracker.open();
 
 		Object[] services = m_tracker.getServices();
@@ -214,16 +215,39 @@ public class PluginManager {
 		return servletExtensionsList;
 	}
 
-	//// New Methods
+	// // New Methods
 	public static <T extends PluginConfiguration> PluginFactory<T> getPluginFactory(String factoryID) {
-		ServiceReference sr = m_felix.getServiceReference(factoryID);
-		PluginFactory<T> fact = (PluginFactory<T>)m_felix.getService(sr);
-		m_felix.ungetService(sr);
-		
-		return fact; 
+		ServiceTracker tracker = new ServiceTracker(m_felix, PluginFactory.class.getName(), null);
+		tracker.open();
+		PluginFactory<T> repImpl = null;
+		Object[] services = tracker.getServices();
+		for (int i = 0; (services != null) && i < services.length; ++i) {
+			if (((PluginFactory<T>) services[i]).getID().equals(factoryID)) {
+				repImpl = (PluginFactory<T>) services[i];
+				break;
+			}
+		}
+		tracker.close();
+		return repImpl;
 	}
 
 	public static Collection<PluginFactory<?>> getPluginFactories(String extensionPoint) {
-		return Collections.emptyList();
+		ServiceTracker tracker = null;
+		try {
+			tracker = new ServiceTracker(m_felix, m_felix.createFilter(String.format(
+					"(&(objectClass=%s)(it.uniroma2.art.semanticturkey.extensionpoint=%s))",
+					PluginFactory.class.getName(), extensionPoint)), null);
+		} catch (InvalidSyntaxException e) {
+			new RuntimeException("This should have never happened", e);
+		}
+		
+		tracker.open();
+		Collection<PluginFactory<?>> pluginFactories = new ArrayList<PluginFactory<?>>();
+		Object[] services = tracker.getServices();
+		for (int i = 0; (services != null) && i < services.length; ++i) {
+			pluginFactories.add((PluginFactory<?>)services[i]);
+		}
+		tracker.close();
+		return pluginFactories;
 	}
 }

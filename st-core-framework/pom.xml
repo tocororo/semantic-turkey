@@ -150,6 +150,11 @@
 			<version>${coda.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>it.uniroma2.art.coda</groupId>
+			<artifactId>coda-converters</artifactId>
+			<version>${coda.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>xerces</groupId>
 			<artifactId>xercesImpl</artifactId>
 			<version>2.11.0</version>

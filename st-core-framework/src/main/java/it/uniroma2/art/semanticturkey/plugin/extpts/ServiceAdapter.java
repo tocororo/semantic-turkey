@@ -74,10 +74,10 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
  * 
  */
 public abstract class ServiceAdapter implements ServiceInterface {
-	
+
 	@Autowired
 	protected STServiceContext serviceContext;
-	
+
 	protected String id;
 	protected ServiceRequest _oReq = null;
 	protected List<ServletListener> listeners = new ArrayList<ServletListener>();
@@ -114,10 +114,11 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		httpParameters.put(parameterName, value);
 		return value;
 	}
-	
+
 	/**
-	 * Retrieves the MultipartFile parameter from the http POST request, copies it to a temp
-	 * file on server and return it. Returns null if the POST request doesn't contain a MultipartFile
+	 * Retrieves the MultipartFile parameter from the http POST request, copies it to a temp file on server
+	 * and return it. Returns null if the POST request doesn't contain a MultipartFile
+	 * 
 	 * @param parameterName
 	 * @return
 	 */
@@ -125,7 +126,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		try {
 			HttpServiceRequestWrapper reqWrapper = (HttpServiceRequestWrapper) _oReq;
 			HttpServletRequest httpReq = reqWrapper.getHttpRequest();
-			if (httpReq instanceof MultipartHttpServletRequest){
+			if (httpReq instanceof MultipartHttpServletRequest) {
 				MultipartHttpServletRequest reqMultipart = (MultipartHttpServletRequest) httpReq;
 				MultipartFile multipartFile = reqMultipart.getFile(parameterName);
 				File tempLocalFile = File.createTempFile("temp", multipartFile.getOriginalFilename());
@@ -134,7 +135,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 			} else {
 				return null;
 			}
-		} catch (IOException e){
+		} catch (IOException e) {
 			return null;
 		}
 	}
@@ -292,7 +293,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @param request
 	 * @return
 	 * @throws HTTPParameterUnspecifiedException
-	 * @throws MalformedURIException 
+	 * @throws MalformedURIException
 	 */
 	protected abstract Response getPreCheckedResponse(String request)
 			throws HTTPParameterUnspecifiedException, MalformedURIException;
@@ -365,11 +366,11 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	protected Project<? extends RDFModel> getProject() {
 		return serviceContext.getProject();
 	}
-	
+
 	protected RDFModel getOntModel() {
 		return serviceContext.getProject().getOntModel();
 	}
-	
+
 	protected OWLModel getOWLModel() {
 		return serviceContext.getProject().getOWLModel();
 	}
@@ -403,12 +404,12 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @return
 	 * @throws NonExistingRDFResourceException
 	 * @throws ModelAccessException
-	 * @throws MalformedURIException 
+	 * @throws MalformedURIException
 	 */
 	protected ARTURIResource createNewURIResource(RDFModel model, String qname, ARTResource... graphs)
 			throws DuplicatedResourceException, ModelAccessException, MalformedURIException {
 		String uri = model.expandQName(qname);
-		try { //check if uri is a valid URI (no space)
+		try { // check if uri is a valid URI (no space)
 			new URI(uri);
 		} catch (URISyntaxException e) {
 			throw new MalformedURIException(e);
@@ -420,7 +421,19 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return res;
 	}
 
-	protected ARTURIResAndRandomString generateURI(String template, Map<String, String> valueMapping) throws URIGenerationException {
-		return getProject().getURIGenerator().generateURI(serviceContext, template, valueMapping);
+	/**
+	 * Returns a new URI for a resource. The parameter {@code xRole} holds the nature of the resource that
+	 * will be identified with the given URI. Depending on the value of the parameter {@code xRole}, a
+	 * conforming converter may generate differently shaped URIs, possibly using specific arguments passed via
+	 * the map {@code args}.
+	 * 
+	 * @param xRole
+	 * @param valueMapping
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	protected ARTURIResAndRandomString generateURI(String xRole, Map<String, String> valueMapping)
+			throws URIGenerationException {
+		return getProject().getURIGenerator().generateURI(serviceContext, xRole, valueMapping);
 	}
 }

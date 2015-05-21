@@ -104,6 +104,15 @@ public class Plugins extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Returns the implementations of a given extension point
+	 * 
+	 * @param extensionPoint
+	 *            the name of the extension point (it should be the fully qualified name of the interface
+	 *            implemented by the plug-in instances)
+	 * @return
+	 * @throws ConfParameterNotFoundException
+	 */
 	@GenerateSTServiceController
 	public Response getAvailablePlugins(String extensionPoint) throws ConfParameterNotFoundException {
 		Collection<PluginFactory<?>> pluginFactoryCollection = PluginManager.getPluginFactories(extensionPoint);

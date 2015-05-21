@@ -57,7 +57,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.impls.DefaultCODABasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODABasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 import java.io.File;
@@ -101,7 +101,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
 	public static final String URI_GENERATOR_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".urigen";
 	public static final String URI_GENERATOR_FACTORY_ID_PROP = URI_GENERATOR_PROP_PREFIX + ".factoryID";
-	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = DefaultCODABasedURIGeneratorFactory.class.getName();
+	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = CODABasedURIGeneratorFactory.class.getName();
 
 	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX + ".configType";
 
@@ -214,6 +214,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 					uriGenConfig = uriGenFactory.createDefaultPluginConfiguration();
 				}
 				
+				logger.debug("instantiating URIGenerator. PluginFactory.getID() = {} // PluginConfiguration = {}", uriGenFactory.getID(), uriGenConfig); 
+
 				this.uriGenerator = (URIGenerator)uriGenFactory.createInstance(uriGenConfig);
 			} catch (IOException | it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException | ClassNotFoundException | UnsupportedPluginConfigurationException | UnloadablePluginConfigurationException e) {
 				throw new ProjectAccessException(e);

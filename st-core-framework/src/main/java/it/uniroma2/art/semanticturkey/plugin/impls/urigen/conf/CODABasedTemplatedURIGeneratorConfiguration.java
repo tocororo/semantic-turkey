@@ -1,0 +1,23 @@
+package it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf;
+
+import it.uniroma2.art.coda.converters.TemplateBasedRandomIdGenerator;
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfigurationParameter;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODABasedURIGeneratorFactory;
+
+/**
+ * Configuration class for {@link CODABasedURIGeneratorFactory} that uses the converter {@link TemplateBasedRandomIdGenerator}.
+ *
+ */
+public class CODABasedTemplatedURIGeneratorConfiguration extends CODABasedURIGeneratorConfiguration {
+	
+	@Override
+	public String getShortName() {
+		return "CODA-based templated URI generator";
+	}
+
+	@PluginConfigurationParameter(description="Template for SKOS concepts")
+	public String concept = "c_${rand()}";
+	
+	@PluginConfigurationParameter(description="Template for SKOS eXtended Labels")
+	public String xLabel = "xl_${lang}_${rand()}";	
+}
