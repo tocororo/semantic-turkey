@@ -41,7 +41,6 @@ import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
@@ -861,13 +860,8 @@ public class SKOS extends ResourceOld {
 			
 			
 			ARTURIResource newConcept = null;
-			String randomConceptValue = null;
-			if(conceptName == null){
-				
-				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("concept", Collections.<String, String>emptyMap());
-				
-				newConcept = newConceptAndRandomValue.getArtURIResource();
-				randomConceptValue = newConceptAndRandomValue.getRandomValue();
+			if(conceptName == null){		
+				newConcept = generateURI("concept", Collections.<String, String>emptyMap());
 			} else{
 				newConcept = createNewURIResource(skosModel, conceptName, graphs);
 			}
@@ -886,9 +880,6 @@ public class SKOS extends ResourceOld {
 			
 			if (prefLabel != null && prefLabelLang != null) {
 				addPrefLabel(skosModel, newConcept, prefLabel, prefLabelLang);
-			}
-			if(randomConceptValue != null){
-				XMLHelp.newElement(response.getDataElement(), "randomForConcept", randomConceptValue);
 			}
 			RDFXMLHelp.addRDFNode(response, createSTConcept(skosModel, newConcept, true, language));
 

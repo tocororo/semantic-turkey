@@ -111,4 +111,14 @@
 	<osgi:reference id="codaOSGiFactory" interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory"/>
 
 	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
+	
+	<!-- Publishes the CODA converter that wraps the extension point URIGenerator -->
+	<bean class="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator" id="stSpecificRandomIDGenerator" />
+	
+	<osgi:service ref="stSpecificRandomIDGenerator" interface="it.uniroma2.art.coda.contracts.RandomIdGenerator">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.coda.contract" value="http://art.uniroma2.it/coda/contracts/randIdGen" />
+			<entry key="it.uniroma2.art.coda.converter" value="http://art.uniroma2.it/coda/converters/stSpecificRandomIDGenerator" />
+		</osgi:service-properties>
+	</osgi:service>
 </beans>

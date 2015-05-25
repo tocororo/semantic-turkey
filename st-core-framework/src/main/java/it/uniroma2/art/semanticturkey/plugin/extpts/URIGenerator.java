@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.plugin.extpts;
 
-import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
+import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.util.Map;
@@ -23,6 +23,6 @@ public interface URIGenerator {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	ARTURIResAndRandomString generateURI(STServiceContext stServiceContext, String xRole,
+	ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
 			Map<String, String> args) throws URIGenerationException;
 }

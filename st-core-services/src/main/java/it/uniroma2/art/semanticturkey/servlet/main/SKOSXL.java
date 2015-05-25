@@ -12,7 +12,6 @@ import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -531,13 +530,8 @@ public class SKOSXL extends SKOS {
 			// - the uri is passed, so that URI should be used to create the concept
 			// - the uri is null, so it should be created using the specified method
 			ARTURIResource newConcept = null;
-			String randomConceptValue = null;
-			if(conceptName == null){
-				
-				ARTURIResAndRandomString newConceptAndRandomValue = generateURI("concept", Collections.<String,String>emptyMap());
-				
-				newConcept = newConceptAndRandomValue.getArtURIResource();
-				randomConceptValue = newConceptAndRandomValue.getRandomValue();
+			if(conceptName == null){	
+				newConcept = generateURI("concept", Collections.<String,String>emptyMap());
 			} else{
 				newConcept = createNewURIResource(skosxlModel, conceptName, graphs);
 			}
@@ -558,13 +552,10 @@ public class SKOSXL extends SKOS {
 			//		prefLabelLang, getWorkingGraph());
 			
 			ARTURIResource prefXLabel = null;
-			String randomXLabelValue = null;
 			
 			if (prefLabel != null && prefLabelLang != null) {
-				ARTURIResAndRandomString prefXLabelURIAndRandomValue = generateXLabelURI(skosxlModel, 
+				ARTURIResource prefXLabelURI = generateXLabelURI(skosxlModel, 
 						prefLabelLang, graphs);
-				ARTURIResource prefXLabelURI = prefXLabelURIAndRandomValue.getArtURIResource();
-				randomXLabelValue = prefXLabelURIAndRandomValue.getRandomValue();
 				prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel,
 						prefLabelLang, getWorkingGraph());
 				
@@ -574,16 +565,8 @@ public class SKOSXL extends SKOS {
 
 			RDFXMLHelp.addRDFNode(response, createSTConcept(skosxlModel, newConcept, true, language));
 			
-			if(randomConceptValue != null){
-				XMLHelp.newElement(response.getDataElement(), "randomForConcept", randomConceptValue);
-			}
-			
 			if (prefXLabel != null) {
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabel, true));
-			}
-			
-			if (randomXLabelValue != null) {
-				XMLHelp.newElement(response.getDataElement(), "randomForPrefXLabel", randomXLabelValue);
 			}
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
@@ -682,15 +665,12 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode){
 				skosxlmodel.setPrefXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResAndRandomString prefXLabelURIAndRandomValue = generateXLabelURI(skosxlmodel, 
+				ARTURIResource prefXLabelURI = generateXLabelURI(skosxlmodel, 
 						lang, getUserNamedGraphs());
-				ARTURIResource prefXLabelURI = prefXLabelURIAndRandomValue.getArtURIResource();
-				String randomXLabelValue = prefXLabelURIAndRandomValue.getRandomValue();
 				ARTURIResource prefXLabel = skosxlmodel.addXLabel(prefXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				skosxlmodel.setPrefXLabel(skosConcept, prefXLabel, getWorkingGraph());
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlmodel, prefXLabel, true));
-				XMLHelp.newElement(response.getDataElement(), "randomForPrefXLabel", randomXLabelValue);
 			}
 
 		} catch (ModelUpdateException e) {
@@ -734,15 +714,12 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.addAltXLabel(skosConcept, label, lang, getWorkingGraph());
 			}else {
-				ARTURIResAndRandomString altXLabelURIAndRandomValue = generateXLabelURI(skosxlmodel, 
+				ARTURIResource altXLabelURI = generateXLabelURI(skosxlmodel, 
 						lang, getUserNamedGraphs());
-				ARTURIResource altXLabelURI = altXLabelURIAndRandomValue.getArtURIResource();
-				String randomXLabelValue = altXLabelURIAndRandomValue.getRandomValue();
 				ARTURIResource altXLabel = skosxlmodel.addXLabel(altXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				skosxlmodel.addAltXLabel(skosConcept, altXLabel, getWorkingGraph());
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlmodel, altXLabel, true));
-				XMLHelp.newElement(response.getDataElement(), "randomForAltXLabel", randomXLabelValue);
 			}
 
 		} catch (ModelUpdateException e) {
@@ -786,15 +763,12 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.addHiddenXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResAndRandomString hiddenXLabelURIRandomValue = generateXLabelURI(skosxlmodel, lang,
+				ARTURIResource hiddenXLabelURI = generateXLabelURI(skosxlmodel, lang,
 						getUserNamedGraphs());
-				ARTURIResource hiddenXLabelURI = hiddenXLabelURIRandomValue.getArtURIResource();
-				String randomXLabelValue = hiddenXLabelURIRandomValue.getRandomValue();
 				ARTURIResource hiddenXLabel = skosxlmodel.addXLabel(hiddenXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				skosxlmodel.addHiddenXLabel(skosConcept, hiddenXLabel, getWorkingGraph());
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlmodel, hiddenXLabelURI, true));
-				XMLHelp.newElement(response.getDataElement(), "randomForHiddenXLabel", randomXLabelValue);
 			}
 
 		} catch (ModelUpdateException e) {
@@ -1021,7 +995,7 @@ public class SKOSXL extends SKOS {
 	}
 
 	
-	protected ARTURIResAndRandomString generateXLabelURI(SKOSXLModel skosxlModel, String lang,
+	protected ARTURIResource generateXLabelURI(SKOSXLModel skosxlModel, String lang,
 			ARTResource[] graphs) 
 			throws ModelAccessException, IOException, InvalidProjectNameException, ProjectInexistentException, URIGenerationException {
 		

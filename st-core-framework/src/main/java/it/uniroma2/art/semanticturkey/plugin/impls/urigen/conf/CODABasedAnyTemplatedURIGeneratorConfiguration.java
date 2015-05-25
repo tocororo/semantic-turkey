@@ -16,6 +16,6 @@ public class CODABasedAnyTemplatedURIGeneratorConfiguration extends CODABasedURI
 	}
 
 	@PluginConfigurationParameter(description="The class name for the selection of the desired CODA converter")
-	public String converterClassName = "it.uniroma2.art.coda.converters.TemplateBasedRandomIdGenerator";
+	public String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
 
 }

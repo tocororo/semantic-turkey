@@ -4,7 +4,6 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.semanticturkey.data.id.ARTURIResAndRandomString;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -16,9 +15,6 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -61,7 +57,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator#generateURI(it.uniroma2.art.semanticturkey.services.STServiceContext, java.lang.String, java.util.Map)
 	 */
 	@Override
-	public ARTURIResAndRandomString generateURI(STServiceContext stServiceContext, String xRole,
+	public ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
 			Map<String, String> args) throws URIGenerationException {
 		
 		String template = conf.fallback;
@@ -78,7 +74,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 					+ "\" is not valid");
 		}
 
-		ARTURIResAndRandomString resRand = new ARTURIResAndRandomString();
+		ARTURIResource uriRes = null;
 
 		boolean newConceptGenerated = false;
 		while (!newConceptGenerated) {
@@ -94,7 +90,6 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 					String value;
 					if (ph.matches(RAND_REGEX)) {
 						value = getRandomPart(stServiceContext, ph);
-						resRand.setRandomValue(value);
 					} else {
 						value = args.get(ph);
 						if (value == null)
@@ -123,9 +118,8 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 
 			RDFModel model = stServiceContext.getProject().getOntModel();
 			ARTResource[] graphs = stServiceContext.getRGraphs();
-			ARTURIResource uriRes = model.createURIResource(model
+			uriRes = model.createURIResource(model
 					.getDefaultNamespace() + localName);
-			resRand.setArtURIResource(uriRes);
 
 			try {
 				if (!model.existsResource(uriRes, graphs)) {
@@ -136,7 +130,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			}
 		}
 		
-		return resRand;
+		return uriRes;
 	}
 
 	private String getRandomPart(STServiceContext stServiceContext, String placheholder) {
