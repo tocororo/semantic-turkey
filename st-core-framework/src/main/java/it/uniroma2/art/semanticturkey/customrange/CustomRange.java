@@ -75,9 +75,42 @@ public class CustomRange {
 	/**
 	 * adds a CustomRangeEntry to the CustomRange
 	 * @param crEntry
+	 * @return true if the entry is added, false if it is already assigned to the CustomRange 
 	 */
-	public void addEntry(CustomRangeEntry crEntry){
+	public boolean addEntry(CustomRangeEntry crEntry){
+		for (CustomRangeEntry cre : entries){
+			if (cre.getId().equals(crEntry.getId()))
+				return false;
+		}
 		entries.add(crEntry);
+		return true;
+	}
+	
+	/**
+	 * Removes the CustomRangeEntry with the given id from the CustomRange
+	 * @param creId
+	 */
+	public void removeEntry(String creId){
+		for (CustomRangeEntry e : entries){
+			if (e.getId().equals(creId)){
+				entries.remove(e);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Returns true if the CustomRange contains a CustomRangeEntry with the given ID
+	 * @param creId
+	 * @return
+	 */
+	public boolean containsEntry(String creId){
+		for (CustomRangeEntry e : entries){
+			if (e.getId().equals(creId)){
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**

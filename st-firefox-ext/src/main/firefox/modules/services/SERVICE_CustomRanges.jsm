@@ -55,15 +55,59 @@ function getReifiedResourceDescription(resource, predicate) {
 	return currentSTHttpMgr.GET(null, serviceName, service.getReifiedResourceDescriptionRequest, this.context, p_resource, p_predicate);
 }
 
+function removeReifiedResource(subject, predicate, resource) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] removeReifiedResource');
+	params = [];
+	params.push("subject=" + subject);
+	params.push("predicate=" + predicate);
+	params.push("resource=" + resource);
+	return currentSTHttpMgr.GET(null, serviceName, service.removeReifiedResourceRequest, this.context, params);
+}
+
 function getCustomRangeConfigMap() {
 	Logger.debug('[SERVICE_CustomRanges.jsm] getCustomRangeConfigMap');
 	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeConfigMapRequest, this.context);
+}
+
+function addCustomRangeToPredicate(customRangeId, predicate, replaceRanges) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] addCustomRangeToPredicate');
+	var params = [];
+	params.push("customRangeId=" + customRangeId);
+	params.push("predicate=" + predicate);
+	if (typeof replaceRanges != "undefined")
+		params.push("replaceRanges=" + replaceRanges);
+	return currentSTHttpMgr.GET(null, serviceName, service.addCustomRangeToPredicateRequest, this.context, params);
+}
+
+function removeCustomRangeFromPredicate(predicate, customRangeId) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] removeCustomRangeFromPredicate');
+	var params = [];
+	params.push("customRangeId=" + customRangeId);
+	params.push("predicate=" + predicate);
+	return currentSTHttpMgr.GET(null, serviceName, service.removeCustomRangeFromPredicateRequest, this.context, params);
 }
 
 function getCustomRange(id) {
 	Logger.debug('[SERVICE_CustomRanges.jsm] getCustomRange');
 	p_id = "id=" + id;
 	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeRequest, this.context, p_id);
+}
+
+function getAllCustomRanges() {
+	Logger.debug('[SERVICE_CustomRanges.jsm] getAllCustomRanges');
+	return currentSTHttpMgr.GET(null, serviceName, service.getAllCustomRangesRequest, this.context);
+}
+
+function createCustomRange(id) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] createCustomRange');
+	var p_id = "id=" + id;
+	return currentSTHttpMgr.GET(null, serviceName, service.createCustomRangeRequest, this.context, p_id);
+}
+
+function deleteCustomRange(id) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] deleteCustomRange');
+	var p_id = "id=" + id;
+	return currentSTHttpMgr.GET(null, serviceName, service.deleteCustomRangeRequest, this.context, p_id);
 }
 
 function getCustomRangeEntry(id) {
@@ -78,13 +122,9 @@ function getCustomRangeEntries(property) {
 	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeEntriesRequest, this.context, p_prop);
 }
 
-function removeReifiedResource(subject, predicate, resource) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] removeReifiedResource');
-	params = [];
-	params.push("subject=" + subject);
-	params.push("predicate=" + predicate);
-	params.push("resource=" + resource);
-	return currentSTHttpMgr.GET(null, serviceName, service.removeReifiedResourceRequest, this.context, params);
+function getAllCustomRangeEntries() {
+	Logger.debug('[SERVICE_CustomRanges.jsm] getAllCustomRangeEntries');
+	return currentSTHttpMgr.GET(null, serviceName, service.getAllCustomRangeEntriesRequest, this.context);
 }
 
 function createCustomRangeEntry(type, id, name, description, ref, showProp) {
@@ -96,15 +136,28 @@ function createCustomRangeEntry(type, id, name, description, ref, showProp) {
 	formData.append("name", name);
 	formData.append("description", description);
 	formData.append("ref", ref);
-	if (typeof showProp != "undefined")
+	if (typeof showProp != "undefined" && showProp != null)
 		formData.append("showProp", showProp);
 	return currentSTHttpMgr.POST(null, serviceName, service.createCustomRangeEntryRequest, this.context, formData);
 }
 
-function createCustomRange(id) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] createCustomRange');
+function deleteCustomRangeEntry(id) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] deleteCustomRangeEntry');
 	var p_id = "id=" + id;
-	return currentSTHttpMgr.GET(null, serviceName, service.createCustomRangeRequest, this.context, p_id);
+	return currentSTHttpMgr.GET(null, serviceName, service.deleteCustomRangeEntryRequest, this.context, p_id);
+}
+
+function updateCustomRangeEntry(id, name, description, ref, showProp) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] updateCustomRangeEntry');
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("id", id);
+	formData.append("name", name);
+	formData.append("description", description);
+	formData.append("ref", ref);
+	if (typeof showProp != "undefined" && showProp != null)
+		formData.append("showProp", showProp);
+	return currentSTHttpMgr.POST(null, serviceName, service.updateCustomRangeEntryRequest, this.context, formData);
 }
 
 function addEntryToCustomRange(customRangeId, customRangeEntryId) {
@@ -115,30 +168,34 @@ function addEntryToCustomRange(customRangeId, customRangeEntryId) {
 	return currentSTHttpMgr.GET(null, serviceName, service.addEntryToCustomRangeRequest, this.context, params);
 }
 
-function addCustomRangeToPredicate(customRangeId, predicate, replaceRanges) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] addCustomRangeToPredicate');
+function removeEntryFromCustomRange(customRangeId, customRangeEntryId) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] removeEntryFromCustomRange');
 	var params = [];
 	params.push("customRangeId=" + customRangeId);
-	params.push("predicate=" + predicate);
-	if (typeof replaceRanges != "undefined")
-		params.push("replaceRanges=" + replaceRanges);
-	return currentSTHttpMgr.GET(null, serviceName, service.addCustomRangeToPredicateRequest, this.context, params);
+	params.push("customRangeEntryId=" + customRangeEntryId);
+	return currentSTHttpMgr.GET(null, serviceName, service.removeEntryFromCustomRangeRequest, this.context, params);
 }
 
-service.prototype.executeURIConverter = executeURIConverter;
 service.prototype.runCoda = runCoda;
+service.prototype.executeURIConverter = executeURIConverter;
+service.prototype.executeLiteralConverter = executeLiteralConverter;
 service.prototype.getReifiedResourceDescription = getReifiedResourceDescription;
+service.prototype.removeReifiedResource = removeReifiedResource;
 service.prototype.getCustomRangeConfigMap = getCustomRangeConfigMap;
+service.prototype.addCustomRangeToPredicate = addCustomRangeToPredicate;
+service.prototype.removeCustomRangeFromPredicate = removeCustomRangeFromPredicate;
 service.prototype.getCustomRange = getCustomRange;
+service.prototype.getAllCustomRanges = getAllCustomRanges;
+service.prototype.createCustomRange = createCustomRange;
+service.prototype.deleteCustomRange = deleteCustomRange;
 service.prototype.getCustomRangeEntry = getCustomRangeEntry;
 service.prototype.getCustomRangeEntries = getCustomRangeEntries;
-service.prototype.executeLiteralConverter = executeLiteralConverter;
-service.prototype.removeReifiedResource = removeReifiedResource;
+service.prototype.getAllCustomRangeEntries = getAllCustomRangeEntries;
 service.prototype.createCustomRangeEntry = createCustomRangeEntry;
-service.prototype.createCustomRange = createCustomRange;
+service.prototype.deleteCustomRangeEntry = deleteCustomRangeEntry;
+service.prototype.updateCustomRangeEntry = updateCustomRangeEntry;
 service.prototype.addEntryToCustomRange = addEntryToCustomRange;
-service.prototype.addCustomRangeToPredicate = addCustomRangeToPredicate;
-
+service.prototype.removeEntryFromCustomRange = removeEntryFromCustomRange;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

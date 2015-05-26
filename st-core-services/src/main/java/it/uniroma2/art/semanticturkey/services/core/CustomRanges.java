@@ -81,101 +81,6 @@ public class CustomRanges extends STServiceAdapter {
 	private ServletRequest request;
 	
 	/**
-	 * Returns all the property-CustomRange pairs defined in the CustomRange configuration
-	 * @return
-	 * @throws CustomRangeInitializationException 
-	 */
-	@GenerateSTServiceController
-	public Response getCustomRangeConfigMap() throws CustomRangeInitializationException{
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = response.getDataElement();
-		Element crcElem = XMLHelp.newElement(dataElem, "customRangeConfig");
-		Collection<CustomRangeConfigEntry> crConfEntries = crProvider.getCustomRangeConfig().getCustomRangeConfigEntries();
-		for (CustomRangeConfigEntry crConfEntry : crConfEntries){
-			Element confEntryElem = XMLHelp.newElement(crcElem, "configEntry");
-			confEntryElem.setAttribute("property", crConfEntry.getProperty());
-			confEntryElem.setAttribute("idCustomRange", crConfEntry.getCutomRange().getId());
-			confEntryElem.setAttribute("replaceRanges", crConfEntry.getReplaceRange()+"");
-		}
-		return response;
-	}
-	
-	/**
-	 * Returns the serialization of the CurtomRangeEntry with the given id
-	 * @param id
-	 * @return
-	 */
-	@GenerateSTServiceController
-	public Response getCustomRangeEntry(String id){
-		
-		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
-		if (crEntry != null){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-			Element dataElem = response.getDataElement();
-			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
-			creElem.setAttribute("id", crEntry.getId());
-			creElem.setAttribute("name", crEntry.getName());
-			creElem.setAttribute("type", crEntry.getType());
-			Element descriptionElem = XMLHelp.newElement(creElem, "description");
-			descriptionElem.setTextContent(crEntry.getDescription());
-			Element refElem = XMLHelp.newElement(creElem, "ref");
-			refElem.setTextContent(crEntry.getRef());
-			return response;
-		} else {
-			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");
-		}
-		
-	}
-	
-	/**
-	 * Returns the serialization of all the CustomRangeEntry available for the given property
-	 * @param property
-	 * @return
-	 * @throws ModelAccessException
-	 */
-	@GenerateSTServiceController
-	public Response getCustomRangeEntries(String property) throws ModelAccessException{
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = response.getDataElement();
-		Collection<CustomRangeEntry> crEntries = crProvider.getCustomRangeEntriesForProperty(getOWLModel().expandQName(property));
-		for (CustomRangeEntry cre : crEntries){
-			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
-			creElem.setAttribute("id", cre.getId());
-			creElem.setAttribute("name", cre.getName());
-			creElem.setAttribute("type", cre.getType());
-			Element descriptionElem = XMLHelp.newElement(creElem, "description");
-			descriptionElem.setTextContent(cre.getDescription());
-			Element refElem = XMLHelp.newElement(creElem, "ref");
-			refElem.setTextContent(cre.getRef());
-		}
-		return response;
-	}
-	
-	/**
-	 * Returns the serialization of the CurtomRange with the given id
-	 * This serialization doesn't contain the real range, it contains just the id(s) of the entries.
-	 * @param id
-	 * @return
-	 */
-	@GenerateSTServiceController
-	public Response getCustomRange(String id){
-		CustomRange cr = crProvider.getCustomRangeById(id);
-		if (cr != null){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-			Element dataElem = response.getDataElement();
-			Element crElem = XMLHelp.newElement(dataElem, "customRange");
-			crElem.setAttribute("id", cr.getId());
-			for (String creId : cr.getEntriesId()){
-				Element entryElem = XMLHelp.newElement(crElem, "entry");
-				entryElem.setAttribute("id", creId);
-			}
-			return response;
-		} else {
-			return createReplyFAIL("CustomRange with id " + id + " not found");
-		}
-	}
-	
-	/**
 	 * This service get as parameters a custom range id and a set of userPrompt key-value pairs
 	 * (userPrompt are unknown a priori, so pairs are dynamic and have to be get from the request
 	 * TODO: find a better solution), then run CODA on the pearl specified in the CustomRangeEntry
@@ -570,6 +475,142 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
+	 * Returns the serialization of the CurtomRange with the given id
+	 * This serialization doesn't contain the real range, it contains just the id(s) of the entries.
+	 * @param id
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response getCustomRange(String id){
+		CustomRange cr = crProvider.getCustomRangeById(id);
+		if (cr != null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElem = response.getDataElement();
+			Element crElem = XMLHelp.newElement(dataElem, "customRange");
+			crElem.setAttribute("id", cr.getId());
+			for (String creId : cr.getEntriesId()){
+				Element entryElem = XMLHelp.newElement(crElem, "entry");
+				entryElem.setAttribute("id", creId);
+			}
+			return response;
+		} else {
+			return createReplyFAIL("CustomRange with id " + id + " not found");
+		}
+	}
+	
+	/**
+	 * Returns all the CustomRange available
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response getAllCustomRanges(){
+		Collection<CustomRange> crColl = crProvider.getAllCustomRanges();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		for (CustomRange cr : crColl){
+			XMLHelp.newElement(dataElem, "customRange", cr.getId());
+		}
+		return response;
+	}
+	
+	/**
+	 * Creates an empty CustomRange (a CR without CREntries related)
+	 * @param id
+	 * @return
+	 * @throws CustomRangeInitializationException 
+	 */
+	@GenerateSTServiceController
+	public Response createCustomRange(String id) throws CustomRangeInitializationException{
+		if (crProvider.getCustomRangeById(id) != null) {
+			throw new CustomRangeInitializationException("Impossible to create a CustomRange with "
+					+ "ID '" + id + "'. A CustomRange with the same ID already exists");
+		}
+		CustomRange cr = CustomRangeFactory.createEmptyCustomRange(id);
+		cr.saveXML();
+		crProvider.addCustomRange(cr);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Deletes the CustomRange with the given id
+	 * @param id
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response deleteCustomRange(String id){
+		crProvider.removeCustomRange(id);
+		//remove the CustomRangeConfigEntry(es) with that CustomRange
+		CustomRangeConfig crConf = crProvider.getCustomRangeConfig();
+		crConf.removeConfigEntryWithCrId(id);
+		crConf.saveXML();
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Returns all the CustomRangeEntry available
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response getAllCustomRangeEntries(){
+		Collection<CustomRangeEntry> creColl = crProvider.getAllCustomRangeEntries();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		for (CustomRangeEntry cre : creColl){
+			XMLHelp.newElement(dataElem, "customRangeEntry", cre.getId());
+		}
+		return response;
+	}
+	
+	/**
+	 * Returns the serialization of the CurtomRangeEntry with the given id
+	 * @param id
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response getCustomRangeEntry(String id){
+		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
+		if (crEntry != null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElem = response.getDataElement();
+			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
+			creElem.setAttribute("id", crEntry.getId());
+			creElem.setAttribute("name", crEntry.getName());
+			creElem.setAttribute("type", crEntry.getType());
+			Element descriptionElem = XMLHelp.newElement(creElem, "description");
+			descriptionElem.setTextContent(crEntry.getDescription());
+			Element refElem = XMLHelp.newElement(creElem, "ref");
+			refElem.setTextContent(crEntry.getRef());
+			return response;
+		} else {
+			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");
+		}
+	}
+	
+	/**
+	 * Returns the serialization of all the CustomRangeEntry available for the given property
+	 * @param property
+	 * @return
+	 * @throws ModelAccessException
+	 */
+	@GenerateSTServiceController
+	public Response getCustomRangeEntries(String property) throws ModelAccessException{
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Collection<CustomRangeEntry> crEntries = crProvider.getCustomRangeEntriesForProperty(getOWLModel().expandQName(property));
+		for (CustomRangeEntry cre : crEntries){
+			Element creElem = XMLHelp.newElement(dataElem, "customRangeEntry");
+			creElem.setAttribute("id", cre.getId());
+			creElem.setAttribute("name", cre.getName());
+			creElem.setAttribute("type", cre.getType());
+			Element descriptionElem = XMLHelp.newElement(creElem, "description");
+			descriptionElem.setTextContent(cre.getDescription());
+			Element refElem = XMLHelp.newElement(creElem, "ref");
+			refElem.setTextContent(cre.getRef());
+		}
+		return response;
+	}
+	
+	/**
 	 * This service is thought to create a custom range entry from client.
 	 * To be useful is necessary a proper UI for client support (e.g. a wizard)
 	 * This is a POST because ref and description could be quite long for a GET parameter
@@ -580,11 +621,17 @@ public class CustomRanges extends STServiceAdapter {
 	 * @param ref
 	 * @param showProp Useful only if type is "graph"
 	 * @return
+	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response createCustomRangeEntry(String type, String id, String name, String description, String ref, @Optional String showProp){
+	public Response createCustomRangeEntry(String type, String id, String name, String description, String ref, @Optional String showProp)
+			throws CustomRangeInitializationException {
+		if (crProvider.getCustomRangeEntryById(id) != null){
+			throw new CustomRangeInitializationException("Impossible to create a CustomRangeEntry with "
+					+ "ID '" + id + "'. A CustomRangeEntry with the same ID already exists");
+		}
 		CustomRangeEntry cre = null;
-		if (type.equals(CustomRangeEntry.Types.node.toString())){
+		if (type.equalsIgnoreCase(CustomRangeEntry.Types.node.toString())){
 			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.node, id, name, description, ref);
 		} else {
 			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.graph, id, name, description, ref);
@@ -597,8 +644,55 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
-	 * This service is thought to add an existing entry to an existing custom range entry from client.
-	 * To be useful is necessary a proper UI for client support (e.g. a wizard)
+	 * Deletes the CustomRangeEntry with the given id. Removes also the CRE on cascade from the CR
+	 * that contain it. 
+	 * @param id
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response deleteCustomRangeEntry(String id){
+		crProvider.removeCustomRangeEntry(id);
+		//remove the entry from the CustomRange that use it
+		Collection<CustomRange> crColl = crProvider.getAllCustomRanges();
+		for (CustomRange cr : crColl){
+			if (cr.containsEntry(id)){
+				cr.removeEntry(id);
+				cr.saveXML();
+			}
+		}
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Updates a CustomRangeEntry. Allows to change the name, the description, the ref and eventually
+	 * (if the CRE is graph) the showProp of the CRE with the given id. It doesn't allow to change 
+	 * the type.
+	 * @param id
+	 * @param name
+	 * @param description
+	 * @param ref
+	 * @param showProp
+	 * @return
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp){
+		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(id);
+		if (cre != null){
+			cre.setName(name);
+			cre.setDescription(description);
+			cre.setRef(ref);
+			if (showProp != null && !showProp.equals("")){
+				cre.asCustomRangeEntryGraph().setShowProperty(showProp);
+			}
+			cre.saveXML();
+			return createReplyResponse(RepliesStatus.ok);
+		} else {
+			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");
+		}
+	}
+	
+	/**
+	 * Adds an existing CustomRangeEntry to an existing CustomRange entry
 	 * @param customRangeId
 	 * @param customRangeEntryId
 	 * @return
@@ -611,27 +705,50 @@ public class CustomRanges extends STServiceAdapter {
 			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
 		if (cre == null)
 			return createReplyFAIL("CustomRangeEntry with id " + customRangeEntryId + " not found");
-		cr.addEntry(cre);
-		cr.saveXML();
+		if (cr.addEntry(cre))
+			cr.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
-	 * Creates an empty CustomRange (a CR without CREntries related)
-	 * @param id
+	 * Removes a CustomRangeEntry from an existing CustomRange
+	 * @param customRangeId
+	 * @param customRangeEntryId
 	 * @return
 	 */
 	@GenerateSTServiceController
-	public Response createCustomRange(String id){
-		CustomRange cr = CustomRangeFactory.createEmptyCustomRange(id);
+	public Response removeEntryFromCustomRange(String customRangeId, String customRangeEntryId){
+		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
+		if (cr == null)
+			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
+		cr.removeEntry(customRangeEntryId);
 		cr.saveXML();
-		crProvider.addCustomRange(cr);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
-	 * Adds a CustomRangeEntry to the configuration, namely an entry that relates a predicate with an
-	 * existing CustomRange
+	 * Returns all the property-CustomRange pairs defined in the CustomRange configuration
+	 * @return
+	 * @throws CustomRangeInitializationException 
+	 */
+	@GenerateSTServiceController
+	public Response getCustomRangeConfigMap() throws CustomRangeInitializationException{
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element crcElem = XMLHelp.newElement(dataElem, "customRangeConfig");
+		Collection<CustomRangeConfigEntry> crConfEntries = crProvider.getCustomRangeConfig().getCustomRangeConfigEntries();
+		for (CustomRangeConfigEntry crConfEntry : crConfEntries){
+			Element confEntryElem = XMLHelp.newElement(crcElem, "configEntry");
+			confEntryElem.setAttribute("property", crConfEntry.getProperty());
+			confEntryElem.setAttribute("idCustomRange", crConfEntry.getCutomRange().getId());
+			confEntryElem.setAttribute("replaceRanges", crConfEntry.getReplaceRange()+"");
+		}
+		return response;
+	}
+	
+	/**
+	 * Adds a CustomRangeConfigEntry to the configuration, namely an entry that relates a predicate 
+	 * with an existing CustomRange
 	 * @param predicate
 	 * @param customRangeId
 	 * @param replaceRanges
@@ -643,7 +760,25 @@ public class CustomRanges extends STServiceAdapter {
 		if (cr == null)
 			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
 		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
-		crConfig.addEntry(new CustomRangeConfigEntry(predicate.getURI(), cr, replaceRanges));
+		if (crConfig.addEntry(new CustomRangeConfigEntry(predicate.getURI(), cr, replaceRanges)))
+				crConfig.saveXML();
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Remove a CustomRangeConfigEntry from configuration, namely the entry that relates the given
+	 * predicate with a CustomRange
+	 * @param predicate
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response removeCustomRangeFromPredicate(ARTURIResource predicate, String customRangeId){
+		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
+		if (cr == null){
+			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
+		}
+		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
+		crConfig.removeConfigEntryFromProperty(predicate.getURI(), cr);
 		crConfig.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
 	}

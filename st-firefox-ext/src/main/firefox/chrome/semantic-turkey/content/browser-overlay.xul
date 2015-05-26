@@ -171,14 +171,15 @@
 						<menuitem id="manage_all_projects" label="Projects Management" />
 					</menupopup>
 				</menu>
-				 <menu id="checkAnnotation_ST_Menu" label="Check Annotations" position="7">
+				<menu id="checkAnnotation_ST_Menu" label="Check Annotations" position="7">
 				 	<menupopup id="checkAnnotation_ST_ToolsPopup">
 						<menuitem id="enableCheckAnnotation_menuitem" label="enable check annotation" 
 							disabled="false" />
 						<menuitem id="disableCheckAnnotation_menuitem" label="disable check annotation" 
 							disabled="false" />
 						</menupopup>
-				</menu>					
+				</menu>
+				<menuitem id="customRange" label="CustomRange" disabled="true" />					
 			</menupopup>
 		</menu>
 

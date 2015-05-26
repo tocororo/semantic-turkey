@@ -74,6 +74,21 @@ public class CustomRangeProvider {
 	}
 	
 	/**
+	 * Removes a CustomRange from the CR collection and its file from file-system
+	 * @param crId
+	 */
+	public void removeCustomRange(String crId){
+		crList.remove(getCustomRangeById(crId));
+		File[] crFiles = getCustomRangeFolder().listFiles();
+		for (File f : crFiles){//search for the custom range file with the given id/name
+			if (f.getName().equals(crId+".xml")){
+				f.delete();
+				return;
+			}
+		}
+	}
+	
+	/**
 	 * Returns all the CustomRangeEntry available into the custom range entry folder of the project
 	 * @return
 	 */
@@ -82,11 +97,26 @@ public class CustomRangeProvider {
 	}
 	
 	/**
-	 * Adds a CustomRange to the CRE collection
+	 * Adds a CustomRangeEntry to the CRE collection
 	 * @param crEntry
 	 */
 	public void addCustomRangeEntries(CustomRangeEntry crEntry){
 		creList.add(crEntry);
+	}
+	
+	/**
+	 * Removes a CustomRangeEntry from the CRE collection and its file from file-system
+	 * @param creId
+	 */
+	public void removeCustomRangeEntry(String creId){
+		creList.remove(getCustomRangeEntryById(creId));
+		File[] creFiles = getCustomRangeEntryFolder().listFiles();
+		for (File f : creFiles){//search for the custom range entry file with the given id/name
+			if (f.getName().equals(creId+".xml")){
+				f.delete();
+				return;
+			}
+		}
 	}
 	
 	/**

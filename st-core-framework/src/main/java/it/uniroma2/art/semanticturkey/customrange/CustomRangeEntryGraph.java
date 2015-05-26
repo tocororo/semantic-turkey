@@ -171,7 +171,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 						//fill the UserPromptStruct independently from its type (literal or uri)
 						upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
 						upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
-						upStruct.setConverter(placeHolderStruct.getConverterList().get(0).getURI());//for now I suppesed there is used only one converter
+						upStruct.setConverter(placeHolderStruct.getConverterList().get(0).getURI());//for now I suppese there is used only one converter
 						upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
 						form.add(upStruct);
 					}

@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -56,9 +57,45 @@ public class CustomRangeConfig {
 	/**
 	 * Adds an entry (property-CustomRange-override)
 	 * @param crConfEntry
+	 * @return true if the entry is added to the conf, false if an entry with the same prop-CR pair 
+	 * already exists
 	 */
-	public void addEntry(CustomRangeConfigEntry crConfEntry){
+	public boolean addEntry(CustomRangeConfigEntry crConfEntry){
+		for (CustomRangeConfigEntry e : crConfEntries){
+			if (e.getProperty().equals(crConfEntry.getProperty()) && 
+					e.getCutomRange().getId().equals(crConfEntry.getCutomRange().getId()))
+				return false;
+		}
 		crConfEntries.add(crConfEntry);
+		return true;
+	}
+	
+	/**
+	 * Remove property-CustomRange pair with the given property
+	 * @param propertyUri
+	 * @param cr
+	 */
+	public void removeConfigEntryFromProperty(String propertyUri, CustomRange cr){
+		for (CustomRangeConfigEntry e : crConfEntries){
+			if (e.getProperty().equals(propertyUri) && e.getCutomRange().getId().equals(cr.getId())){
+				crConfEntries.remove(e);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Remove property-CustomRange pair with the given CustomRange
+	 * @param crId
+	 */
+	public void removeConfigEntryWithCrId(String crId){
+		Iterator<CustomRangeConfigEntry> it = crConfEntries.iterator();
+		while (it.hasNext()){
+			CustomRangeConfigEntry crcEntry = it.next();
+			if (crcEntry.getCutomRange().getId().equals(crId)){
+				it.remove();
+			}
+		}
 	}
 	
 	/**

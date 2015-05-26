@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<window id="crConfigurator" title="Custom Range Configurator"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="800px">
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/crConfigurator/crConfigurator.js" />
+	
+	<!-- chrome://semantic-turkey/content/customRange/crConfigurator/crConfigurator.xul -->
+
+	<vbox>
+	
+		<groupbox>
+			<caption label="Property - CustomRange associations" />
+			<hbox>
+				<listbox id="propCrList" rows="6" flex="1">
+					<listhead>
+						<listheader label="Property" />
+						<listheader label="Custom Range" />
+					</listhead>		
+					<listcols>
+						<listcol flex="1"/>
+						<listcol flex="1"/>
+					</listcols>
+				</listbox>
+				<vbox>
+					<button label="New" id="newPropCr" />
+					<button label="Remove" id="removePropCr" disabled="true" />
+				</vbox>
+			</hbox>
+		</groupbox>
+			
+		<groupbox>
+			<caption label="Custom Range" />
+			<hbox>
+				<listbox id="crList" rows="6" flex="1"/>
+				<vbox>
+					<button label="New" id="newCr" />
+					<button label="Edit" id="editCr" disabled="true" />
+					<button label="Remove" id="removeCr" disabled="true" />
+				</vbox>
+			</hbox>
+		</groupbox>
+			
+		<groupbox>
+			<caption label="Custom Range Entry" />
+			<hbox>
+				<listbox id="creList" rows="6" flex="1"/>
+				<vbox>
+					<button label="New" id="newCre" />
+					<button label="Edit" id="editCre" disabled="true" />
+					<button label="Remove" id="removeCre" disabled="true" />
+				</vbox>
+			</hbox>
+		</groupbox>
+	
+	</vbox>
+	
+</window>

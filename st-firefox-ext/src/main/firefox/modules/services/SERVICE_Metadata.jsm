@@ -151,6 +151,15 @@ function removeNSPrefixMapping(namespace) {
 }
 
 /**
+ * Expands the given qname and returns the URI
+ */
+function expandQName(qname) {
+	var qname = "qname=" + qname;
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.expandQNameRequest, qname, contextAsArray);
+}
+
+/**
  * overwrites an entry in the prefix-namespace mapping table
  * 
  * @member STRequests.Metadata
@@ -403,6 +412,7 @@ service.prototype.setDefaultNamespace = setDefaultNamespace;
 service.prototype.setNSPrefixMapping = setNSPrefixMapping;
 service.prototype.removeNSPrefixMapping = removeNSPrefixMapping;
 service.prototype.changeNSPrefixMapping = changeNSPrefixMapping;
+service.prototype.expandQName = expandQName;
 service.prototype.removeImport = removeImport;
 service.prototype.addFromWeb = addFromWeb;
 service.prototype.addFromWebToMirror = addFromWebToMirror;

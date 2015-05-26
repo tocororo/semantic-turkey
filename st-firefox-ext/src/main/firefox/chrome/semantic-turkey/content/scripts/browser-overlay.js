@@ -79,6 +79,11 @@ art_semanticturkey.openICV = function() {
 	art_semanticturkey.openUrl("chrome://semantic-turkey/content/integrityConstraintValidator/icv.xul");
 };
 
+art_semanticturkey.openCustomRange = function() {
+	window.openDialog("chrome://semantic-turkey/content/customRange/crConfigurator/crConfigurator.xul",
+			"_blank", "modal=yes,resizable,centerscreen");
+};
+
 art_semanticturkey.semnavigation = function() {
 	var isHumanReadable = art_semanticturkey.Preferences
 			.get("extensions.semturkey.skos.humanReadable", false);
@@ -179,6 +184,7 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 	document.getElementById("key_openSTSKOSSidebar").addEventListener("command",
 			art_semanticturkey.toggleSidebar3, true);
 	document.getElementById("SPARQL").addEventListener("command", art_semanticturkey.SPARQL, true);
+	document.getElementById("customRange").addEventListener("command", art_semanticturkey.openCustomRange, true);
 	/*
 	 * document.getElementById("sidebar_openSageSidebar").addEventListener("command",art_semanticturkey.toggleSidebar1,true);
 	 * document.getElementById("sidebar_openSageSidebar2").addEventListener("command",art_semanticturkey.toggleSidebar2,true);
@@ -373,6 +379,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("key_openSTOntologySidebar").disabled = false;
 		document.getElementById("key_openSTImportsSidebar").disabled = false;
 		document.getElementById("SPARQL").disabled = false;
+		document.getElementById("customRange").disabled = false;
 		document.getElementById("key_openSTSKOSSidebar").disabled = false;
 		document.getElementById("visualization").disabled = false;
 		document.getElementById("visualization2").disabled = false;

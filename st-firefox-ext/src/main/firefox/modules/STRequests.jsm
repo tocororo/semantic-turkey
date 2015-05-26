@@ -147,18 +147,25 @@ STRequests.Cls.getClassesInfoAsRootsForTreeRequest = "getClassesInfoAsRootsForTr
 
 STRequests.CustomRanges.serviceName = "CustomRanges";
 STRequests.CustomRanges.runCodaRequest = "runCoda";
+STRequests.CustomRanges.getReifiedResourceDescriptionRequest = "getReifiedResourceDescription";
+STRequests.CustomRanges.removeReifiedResourceRequest = "removeReifiedResource";
 STRequests.CustomRanges.executeURIConverterRequest = "executeURIConverter";
 STRequests.CustomRanges.executeLiteralConverterRequest = "executeLiteralConverter";
 STRequests.CustomRanges.getCustomRangeConfigMapRequest = "getCustomRangeConfigMap"; 
+STRequests.CustomRanges.addCustomRangeToPredicateRequest = "addCustomRangeToPredicate";
+STRequests.CustomRanges.removeCustomRangeFromPredicateRequest = "removeCustomRangeFromPredicate";
 STRequests.CustomRanges.getCustomRangeRequest = "getCustomRange";
+STRequests.CustomRanges.getAllCustomRangesRequest = "getAllCustomRanges";
+STRequests.CustomRanges.createCustomRangeRequest = "createCustomRange";
+STRequests.CustomRanges.deleteCustomRangeRequest = "deleteCustomRange";
 STRequests.CustomRanges.getCustomRangeEntryRequest = "getCustomRangeEntry";
 STRequests.CustomRanges.getCustomRangeEntriesRequest = "getCustomRangeEntries";
-STRequests.CustomRanges.getReifiedResourceDescriptionRequest = "getReifiedResourceDescription";
-STRequests.CustomRanges.removeReifiedResourceRequest = "removeReifiedResource";
+STRequests.CustomRanges.getAllCustomRangeEntriesRequest = "getAllCustomRangeEntries";
 STRequests.CustomRanges.createCustomRangeEntryRequest = "createCustomRangeEntry";
-STRequests.CustomRanges.createCustomRangeRequest = "createCustomRange";
+STRequests.CustomRanges.deleteCustomRangeEntryRequest = "deleteCustomRangeEntry";
+STRequests.CustomRanges.updateCustomRangeEntryRequest = "updateCustomRangeEntry";
 STRequests.CustomRanges.addEntryToCustomRangeRequest = "addEntryToCustomRange";
-STRequests.CustomRanges.addCustomRangeToPredicateRequest = "addCustomRangeToPredicate";
+STRequests.CustomRanges.removeEntryFromCustomRangeRequest = "removeEntryFromCustomRange";
 
 //Refactor service Request (old service name was ModifyName)
 STRequests.Refactor.serviceName = "Refactor";
@@ -254,6 +261,7 @@ STRequests.Metadata.setDefaultNamespaceRequest = "setDefaultNamespace";
 STRequests.Metadata.setNSPrefixMappingRequest = "setNSPrefixMapping";
 STRequests.Metadata.removeNSPrefixMappingRequest = "removeNSPrefixMapping";
 STRequests.Metadata.changeNSPrefixMappingRequest = "changeNSPrefixMapping";
+STRequests.Metadata.expandQNameRequest = "expandQName";
 STRequests.Metadata.removeImportRequest = "removeImport";
 STRequests.Metadata.addFromWebRequest = "addFromWeb";
 STRequests.Metadata.addFromWebToMirrorRequest = "addFromWebToMirror";

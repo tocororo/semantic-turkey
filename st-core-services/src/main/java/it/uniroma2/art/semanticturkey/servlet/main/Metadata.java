@@ -99,6 +99,7 @@ public class Metadata extends ResourceOld {
 	public static final String setNSPrefixMappingRequest = "setNSPrefixMapping";
 	public static final String changeNSPrefixMappingRequest = "changeNSPrefixMapping";
 	public static final String removeNSPrefixMappingRequest = "removeNSPrefixMapping";
+	public static final String expandQNameRequest = "expandQName";
 	// imports info
 	public static final String getImportsRequest = "getImports";
 	public static final String removeImportRequest = "removeImport";
@@ -123,6 +124,7 @@ public class Metadata extends ResourceOld {
 	public static final String localFilePar = "localFile";
 	public static final String alturlPar = "alturl";
 	public static final String rdfFormatPar = "rdfFormat";
+	public static final String qnamePar = "qname";
 
 	// response tags
 	public static final String baseuriTag = "BaseURI";
@@ -172,6 +174,10 @@ public class Metadata extends ResourceOld {
 			String namespace = setHttpPar(namespacePar);
 			checkRequestParametersAllNotNull(namespacePar);
 			return removeNamespaceMapping(namespace);
+		} else if (request.equals(expandQNameRequest)) {
+			String qname = setHttpPar(qnamePar);
+			checkRequestParametersAllNotNull(qnamePar);
+			return expandQName(qname);
 		} else if (request.equals(getImportsRequest)) {
 			return getOntologyImports();
 		}
@@ -573,6 +579,32 @@ public class Metadata extends ResourceOld {
 		Element nsPrefMapElement = XMLHelp.newElement(dataElement, "Mapping");
 		nsPrefMapElement.setAttribute(prefixPar, namespace);
 
+		return response;
+	}
+	
+	/**
+	 * Expands the given qname and returns the URI
+	 * @param qname
+	 * @return
+	 */
+	public Response expandQName(String qname){
+		String request = expandQNameRequest;
+		ServletUtilities servletUtilities = new ServletUtilities();
+		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
+				RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		OWLModel ontModel = getOWLModel();
+		String uri = null;
+		try {
+			uri = ontModel.expandQName(qname);
+		} catch (ModelAccessException e){
+			e.printStackTrace();
+			return servletUtilities.createExceptionResponse(request, e.getMessage());
+		}
+		Element uriElem = XMLHelp.newElement(dataElement, "uri");
+		uriElem.setAttribute("qname", qname);
+		uriElem.setTextContent(uri);
+		
 		return response;
 	}
 
