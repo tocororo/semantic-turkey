@@ -1,16 +1,17 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -19,59 +20,32 @@ import org.xml.sax.SAXException;
 
 public class CustomRangeFactory {
 	
-	/**
-	 * Given a CustomRange id, searches the CustomRange file and loads its content 
-	 * @param crId
-	 * @return
-	 * @throws CustomRangeInitializationException
-	 */
-	public static CustomRange loadCustomRange(String crId) throws CustomRangeInitializationException{
-		File customRangeFile = null;
-		File crFolder = CustomRangeProvider.getCustomRangeFolder(); 
-		File[] crFiles = crFolder.listFiles();//get list of files into custom range folder
-		for (File f : crFiles){//search for the custom range file with the given name
-			if (f.getName().equals(crId+".xml")){
-				customRangeFile = f;
-				break;
-			}
-		}
-		if (customRangeFile == null){
-			throw new CustomRangeInitializationException("CustomRange file '" + crId + ".xml' cannot be found in the CustomRange folder");
-		}
-		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-		return new CustomRange(crReader.getId(), loadEntries(crReader));
-	}
+	private static Logger logger = LoggerFactory.getLogger(CustomRangeFactory.class);
 	
 	/**
 	 * Given the CustomRange file loads its content
 	 * @param customRangeFile
 	 * @return
 	 */
-	public static CustomRange loadCustomRange(File customRangeFile) {
+	public static CustomRange loadCustomRange(File customRangeFile, Map<String, CustomRangeEntry> creMap) {
 		CustomRangeXMLReader crReader = new CustomRangeXMLReader(customRangeFile);
-		return new CustomRange(crReader.getId(), loadEntries(crReader));
+		return new CustomRange(crReader.getId(), loadEntries(crReader, creMap));
 	}
 	
 	public static CustomRange createEmptyCustomRange(String id){
 		return new CustomRange(id);
 	}
 	
-	private static ArrayList<CustomRangeEntry> loadEntries(CustomRangeXMLReader crReader) {
+	private static ArrayList<CustomRangeEntry> loadEntries(CustomRangeXMLReader crReader, Map<String, CustomRangeEntry> creMap) {
 		ArrayList<CustomRangeEntry> entries = new ArrayList<CustomRangeEntry>();
 		Collection<String> creIdList = crReader.getCustomRangeEntries();
-		File creFolder = CustomRangeProvider.getCustomRangeEntryFolder();
-		File[] creFiles = creFolder.listFiles();//get list of files into custom range entry folder
 		for (String creId : creIdList){
-			for (File f : creFiles){//search for the CustomRangeEntry file with the given name
-				if (f.getName().equals(creId+".xml")){
-					try {
-						CustomRangeEntry cre = CustomRangeEntryFactory.loadCustomRangeEntry(f);
-						entries.add(cre);
-					} catch (CustomRangeInitializationException e) {
-						// TODO Log per avvertire che il CRE con ID creId non è stato inizializzato
-					}
-					break;
-				}
+			CustomRangeEntry cre = creMap.get(creId);
+			if (cre != null){
+				entries.add(cre);
+			} else {
+				logger.warn("The CustomRange '" + crReader.getId() + "' points to a not existing "
+						+ "CustomRangeEntry '" + creId + "'");
 			}
 		}
 		return entries;

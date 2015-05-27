@@ -16,19 +16,6 @@ import org.xml.sax.SAXException;
 
 public class CustomRangeEntryFactory {
 	
-	public static CustomRangeEntry loadCustomRangeEntry(String crEntryId) throws CustomRangeInitializationException{
-		File creFolder = CustomRangeProvider.getCustomRangeEntryFolder();
-		File[] creFiles = creFolder.listFiles();//get list of files into custom range entry folder
-		for (File f : creFiles){//search for the custom range entry file with the given id/name
-			if (f.getName().equals(crEntryId+".xml")){
-				loadCustomRangeEntry(f);
-			}
-		}
-		throw new CustomRangeInitializationException("CustomRangeEntry file '" + crEntryId + ".xml' "
-				+ "cannot be found in the CustomRangeEntry folder");
-		
-	}
-
 	public static CustomRangeEntry loadCustomRangeEntry(File creFile) throws CustomRangeInitializationException{
 		CustomRangeEntryXMLReader creReader = new CustomRangeEntryXMLReader(creFile);
 		String id = creReader.getId();

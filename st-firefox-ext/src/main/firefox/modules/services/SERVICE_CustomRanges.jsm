@@ -69,22 +69,21 @@ function getCustomRangeConfigMap() {
 	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeConfigMapRequest, this.context);
 }
 
-function addCustomRangeToPredicate(customRangeId, predicate, replaceRanges) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] addCustomRangeToPredicate');
+function addCustomRangeToProperty(customRangeId, property, replaceRanges) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] addCustomRangeToProperty');
 	var params = [];
 	params.push("customRangeId=" + customRangeId);
-	params.push("predicate=" + predicate);
+	params.push("property=" + property);
 	if (typeof replaceRanges != "undefined")
 		params.push("replaceRanges=" + replaceRanges);
-	return currentSTHttpMgr.GET(null, serviceName, service.addCustomRangeToPredicateRequest, this.context, params);
+	return currentSTHttpMgr.GET(null, serviceName, service.addCustomRangeToPropertyRequest, this.context, params);
 }
 
-function removeCustomRangeFromPredicate(predicate, customRangeId) {
-	Logger.debug('[SERVICE_CustomRanges.jsm] removeCustomRangeFromPredicate');
+function removeCustomRangeFromProperty(property) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] removeCustomRangeFromProperty');
 	var params = [];
-	params.push("customRangeId=" + customRangeId);
-	params.push("predicate=" + predicate);
-	return currentSTHttpMgr.GET(null, serviceName, service.removeCustomRangeFromPredicateRequest, this.context, params);
+	params.push("property=" + property);
+	return currentSTHttpMgr.GET(null, serviceName, service.removeCustomRangeFromPropertyRequest, this.context, params);
 }
 
 function getCustomRange(id) {
@@ -182,8 +181,8 @@ service.prototype.executeLiteralConverter = executeLiteralConverter;
 service.prototype.getReifiedResourceDescription = getReifiedResourceDescription;
 service.prototype.removeReifiedResource = removeReifiedResource;
 service.prototype.getCustomRangeConfigMap = getCustomRangeConfigMap;
-service.prototype.addCustomRangeToPredicate = addCustomRangeToPredicate;
-service.prototype.removeCustomRangeFromPredicate = removeCustomRangeFromPredicate;
+service.prototype.addCustomRangeToProperty = addCustomRangeToProperty;
+service.prototype.removeCustomRangeFromProperty = removeCustomRangeFromProperty;
 service.prototype.getCustomRange = getCustomRange;
 service.prototype.getAllCustomRanges = getAllCustomRanges;
 service.prototype.createCustomRange = createCustomRange;

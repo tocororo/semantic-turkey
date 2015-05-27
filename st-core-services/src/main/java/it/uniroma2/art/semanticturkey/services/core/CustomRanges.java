@@ -747,38 +747,32 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
-	 * Adds a CustomRangeConfigEntry to the configuration, namely an entry that relates a predicate 
-	 * with an existing CustomRange
-	 * @param predicate
+	 * Adds a CustomRange to a property 
+	 * @param property
 	 * @param customRangeId
 	 * @param replaceRanges
 	 * @return
 	 */
 	@GenerateSTServiceController
-	public Response addCustomRangeToPredicate(String customRangeId, ARTURIResource predicate, @Optional (defaultValue = "false") boolean replaceRanges){
+	public Response addCustomRangeToProperty(String customRangeId, ARTURIResource property, @Optional (defaultValue = "false") boolean replaceRanges){
 		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
 		if (cr == null)
 			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
 		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
-		if (crConfig.addEntry(new CustomRangeConfigEntry(predicate.getURI(), cr, replaceRanges)))
+		if (crConfig.addEntry(new CustomRangeConfigEntry(property.getURI(), cr, replaceRanges)))
 				crConfig.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
-	 * Remove a CustomRangeConfigEntry from configuration, namely the entry that relates the given
-	 * predicate with a CustomRange
-	 * @param predicate
+	 * Remove the CustomRange of the given property
+	 * @param property
 	 * @return
 	 */
 	@GenerateSTServiceController
-	public Response removeCustomRangeFromPredicate(ARTURIResource predicate, String customRangeId){
-		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
-		if (cr == null){
-			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
-		}
+	public Response removeCustomRangeFromProperty(ARTURIResource property){
 		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
-		crConfig.removeConfigEntryFromProperty(predicate.getURI(), cr);
+		crConfig.removeConfigEntryFromProperty(property.getURI());
 		crConfig.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
 	}

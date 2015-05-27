@@ -75,7 +75,7 @@ art_semanticturkey.newPropCustomRangeListener = function(){
 			//call service to add CR to the predicate
 			var crId = parameters.returnedCrId;
 			var prop = parameters.returnedProp;
-			art_semanticturkey.STRequests.CustomRanges.addCustomRangeToPredicate(crId, prop);
+			art_semanticturkey.STRequests.CustomRanges.addCustomRangeToProperty(crId, prop);
 			//update UI
 			var propCrListbox = document.getElementById("propCrList");
 			var listitem = document.createElement("listitem");
@@ -96,10 +96,10 @@ art_semanticturkey.removePropCustomRangeListener = function(){
 	var propCrListbox = document.getElementById("propCrList");
 	var selectedItem = propCrListbox.selectedItem;
 	var prop = selectedItem.children[0].getAttribute("label");
-	var cr = selectedItem.children[1].getAttribute("label");
-	art_semanticturkey.STRequests.CustomRanges.removeCustomRangeFromPredicate(prop, cr);
+	art_semanticturkey.STRequests.CustomRanges.removeCustomRangeFromProperty(prop);
 	propCrListbox.removeItemAt(propCrListbox.selectedIndex);
 	this.setAttribute("disabled", "true");
+	
 }
 
 art_semanticturkey.newCustomRangeListener = function(){
@@ -137,6 +137,14 @@ art_semanticturkey.removeCustomRangeListener = function(){
 	art_semanticturkey.STRequests.CustomRanges.deleteCustomRange(crId);
 	crListbox.removeItemAt(crListbox.selectedIndex);
 	this.setAttribute("disabled", "true");
+	document.getElementById("editCr").setAttribute("disabled", "true");
+	//remove from prop-CR listbox the item with the removed CR
+	var propCrListbox = document.getElementById("propCrList");
+	for (var i=propCrListbox.itemCount-1; i>=0; i--){
+		var item = propCrListbox.getItemAtIndex(i);
+		if (item.children[1].getAttribute("label") == crId)
+			propCrListbox.removeItemAt(i);
+	}
 }
 
 art_semanticturkey.newCustomRangeEntryListener = function(){
@@ -174,4 +182,5 @@ art_semanticturkey.removeCustomRangeEntryListener = function(){
 	art_semanticturkey.STRequests.CustomRanges.deleteCustomRangeEntry(creId);
 	creListbox.removeItemAt(creListbox.selectedIndex);
 	this.setAttribute("disabled", "true");
+	document.getElementById("editCre").setAttribute("disabled", "true");
 }

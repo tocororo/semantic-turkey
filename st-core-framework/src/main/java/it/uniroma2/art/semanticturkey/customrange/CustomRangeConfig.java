@@ -1,12 +1,11 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -18,6 +17,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -31,9 +32,19 @@ public class CustomRangeConfig {
 	
 	private Collection<CustomRangeConfigEntry> crConfEntries;
 	
-	public CustomRangeConfig(){
+	private static Logger logger = LoggerFactory.getLogger(CustomRangeConfig.class);
+	
+	/**
+	 * Initialize the CustomRange configuration tree, a structure that links properties with
+	 * CustomRanges and in turn CustomRanges with CustomRangeEntries. The initialization need a map
+	 * of all the CustomRange and CustomRangeEntry already initialized and found respectively in the
+	 * customRange folder and customRangeEntry folder.
+	 * @param crMap
+	 * @param creMap
+	 */
+	public CustomRangeConfig(Map<String, CustomRange> crMap, Map<String, CustomRangeEntry> creMap){
 		CustomRangeConfigXMLReader crConfReader = new CustomRangeConfigXMLReader();
-		crConfEntries = crConfReader.getCustomRangeConfigEntries();
+		crConfEntries = crConfReader.getCustomRangeConfigEntries(crMap, creMap);
 	}
 	
 	public Collection<CustomRangeConfigEntry> getCustomRangeConfigEntries(){
@@ -75,9 +86,9 @@ public class CustomRangeConfig {
 	 * @param propertyUri
 	 * @param cr
 	 */
-	public void removeConfigEntryFromProperty(String propertyUri, CustomRange cr){
+	public void removeConfigEntryFromProperty(String propertyUri){
 		for (CustomRangeConfigEntry e : crConfEntries){
-			if (e.getProperty().equals(propertyUri) && e.getCutomRange().getId().equals(cr.getId())){
+			if (e.getProperty().equals(propertyUri)){
 				crConfEntries.remove(e);
 				return;
 			}
@@ -233,7 +244,7 @@ public class CustomRangeConfig {
 			}
 		}
 		
-		public Collection<CustomRangeConfigEntry> getCustomRangeConfigEntries() {
+		public Collection<CustomRangeConfigEntry> getCustomRangeConfigEntries(Map<String, CustomRange> crMap, Map<String, CustomRangeEntry> creMap) {
 			Collection<CustomRangeConfigEntry> crcEntries = new ArrayList<CustomRangeConfigEntry>();
 			if (doc != null){
 				NodeList entryList = doc.getElementsByTagName(CONFIG_ENTRY_TAG);
@@ -244,12 +255,12 @@ public class CustomRangeConfig {
 						String crProp = crElement.getAttribute(PROPERTY_ATTRIBUTE_TAG);
 						String crId = crElement.getAttribute(ID_ATTRIBUTE_TAG);
 						boolean replace = Boolean.parseBoolean(crElement.getAttribute(REPLACE_RANGES_ATTRIBUTE_TAG));
-						try {
-							CustomRange cr = CustomRangeFactory.loadCustomRange(crId);
+						CustomRange cr = crMap.get(crId);
+						if (cr != null){
 							crcEntries.add(new CustomRangeConfigEntry(crProp, cr, replace));
-						} catch (CustomRangeInitializationException e) {
-							//TODO testare
-							System.out.println("CR with id " + crId + " was not found");
+						} else {
+							logger.warn("An entry in CustomRangeConfig.xml points to a not existing"
+									+ " CustomRange '" + crId + "'");
 						}
 					}
 				}

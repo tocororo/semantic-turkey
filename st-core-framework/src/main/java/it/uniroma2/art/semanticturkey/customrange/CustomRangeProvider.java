@@ -6,7 +6,11 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /*
@@ -20,37 +24,47 @@ public class CustomRangeProvider {
 	private static final String CUSTOM_RANGE_ENTRY_FOLDER_NAME = "customRangeEntry";
 	
 	private CustomRangeConfig crConfig;
-	private Collection<CustomRange> crList;
-	private Collection<CustomRangeEntry> creList;
+	
+	//Map of id-CR object pairs (contains all the CR, also the ones that are not reachable from the
+	//config tree, namely the ones that are not associated to any property)
+	private Map<String, CustomRange> crMap = new HashMap<String, CustomRange>();
+	//Map of id-CRE object pairs (contains all the CRE, also the ones that are not reachable from the
+	//config tree, namely the ones that are not contained in any CR)
+	private Map<String, CustomRangeEntry> creMap = new HashMap<String, CustomRangeEntry>();
+	
+	private static Logger logger = LoggerFactory.getLogger(CustomRangeProvider.class);
 	
 	public CustomRangeProvider() {
-		crConfig = new CustomRangeConfig();
-		crList = new ArrayList<CustomRange>();
-		creList = new ArrayList<CustomRangeEntry>();
 		//check existing of CR folders hierarchy
 		File crFolder = getCustomRangeFolder();
 		File creFolder = getCustomRangeEntryFolder();
 		if (!crFolder.exists() && !creFolder.exists()){
 			initializeCRBasicHierarchy();
 		} else {
-			//initialize CR list (load files from CR folder)
-			File[] crFiles = crFolder.listFiles();
-			for (File f : crFiles){
-				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange"))
-					crList.add(CustomRangeFactory.loadCustomRange(f));
-			}
-			//initialize CRE list (load files from CRE folder)
+			//initialize CRE list (load files from CRE folder) and store them in the CRE map
 			File[] creFiles = creFolder.listFiles();
 			for (File f : creFiles){
 				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.entry")){
 					try {
-						creList.add(CustomRangeEntryFactory.loadCustomRangeEntry(f));
+						CustomRangeEntry cre = CustomRangeEntryFactory.loadCustomRangeEntry(f);
+						creMap.put(cre.getId(), cre);
 					} catch (CustomRangeInitializationException e) {
-						//TODO Write in the log to warn that the CRE defined by f has not been initialized
+						logger.error("Failed to initialize CustomRangeEntry " + f.getName() + ". It may contain"
+								+ "some errors.");
 					}
 				}
 			}
+			//initialize CR list (load files from CR folder) and store them in the CR map
+			File[] crFiles = crFolder.listFiles();
+			for (File f : crFiles){
+				if (f.getName().startsWith("it.uniroma2.art.semanticturkey.customrange")){
+					CustomRange cr = CustomRangeFactory.loadCustomRange(f, creMap);
+					crMap.put(cr.getId(), cr);
+				}
+			}
 		}
+		//initialize the config (that composes a tree prop->CR->CREs)
+		crConfig = new CustomRangeConfig(crMap, creMap);
 	}
 	
 	public CustomRangeConfig getCustomRangeConfig(){
@@ -62,7 +76,7 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public Collection<CustomRange> getAllCustomRanges() {
-		return crList;
+		return crMap.values();
 	}
 	
 	/**
@@ -70,7 +84,7 @@ public class CustomRangeProvider {
 	 * @param customRange
 	 */
 	public void addCustomRange(CustomRange customRange){
-		crList.add(customRange);
+		crMap.put(customRange.getId(), customRange);
 	}
 	
 	/**
@@ -78,7 +92,7 @@ public class CustomRangeProvider {
 	 * @param crId
 	 */
 	public void removeCustomRange(String crId){
-		crList.remove(getCustomRangeById(crId));
+		crMap.remove(crId);
 		File[] crFiles = getCustomRangeFolder().listFiles();
 		for (File f : crFiles){//search for the custom range file with the given id/name
 			if (f.getName().equals(crId+".xml")){
@@ -93,7 +107,7 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public Collection<CustomRangeEntry> getAllCustomRangeEntries() {
-		return creList;
+		return creMap.values();
 	}
 	
 	/**
@@ -101,7 +115,7 @@ public class CustomRangeProvider {
 	 * @param crEntry
 	 */
 	public void addCustomRangeEntries(CustomRangeEntry crEntry){
-		creList.add(crEntry);
+		creMap.put(crEntry.getId(), crEntry);
 	}
 	
 	/**
@@ -109,7 +123,7 @@ public class CustomRangeProvider {
 	 * @param creId
 	 */
 	public void removeCustomRangeEntry(String creId){
-		creList.remove(getCustomRangeEntryById(creId));
+		creMap.remove(creId);
 		File[] creFiles = getCustomRangeEntryFolder().listFiles();
 		for (File f : creFiles){//search for the custom range entry file with the given id/name
 			if (f.getName().equals(creId+".xml")){
@@ -181,12 +195,7 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public CustomRange getCustomRangeById(String crId){
-		for (CustomRange cr : crList){
-			if (cr.getId().equals(crId)){
-				return cr;
-			}
-		}
-		return null;
+		return crMap.get(crId);
 	}
 	
 	/**
@@ -195,12 +204,7 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public CustomRangeEntry getCustomRangeEntryById(String crEntryId){
-		for (CustomRangeEntry cre : creList){
-			if (cre.getId().equals(crEntryId)){
-				return cre;
-			}
-		}
-		return null;
+		return creMap.get(crEntryId);
 	}
 	
 	/**
