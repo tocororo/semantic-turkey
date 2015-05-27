@@ -107,7 +107,7 @@ public class CustomRanges extends STServiceAdapter {
 //			System.out.println("param: " + par.getKey() + ", value: " + par.getValue()[0]);
 			userPromptMap.put(par.getKey(), par.getValue()[0]);
 		}
-		//Remove useless parameters for fillMapAndAddTriples method (parameters not belonging to userPrompt feature)
+		//Remove useless parameters for executePearl method (parameters not belonging to userPrompt feature)
 		/* N.B. if some other parameters will be put in this map, there should be no problem since
 		 * when this map will be used to valorize the CAS, the value will be get based on the feature 
 		 * in the TSD and the unnecessary params will be simply ignored */
@@ -580,6 +580,9 @@ public class CustomRanges extends STServiceAdapter {
 			descriptionElem.setTextContent(crEntry.getDescription());
 			Element refElem = XMLHelp.newElement(creElem, "ref");
 			refElem.setTextContent(crEntry.getRef());
+			if (crEntry.isTypeGraph()){
+				refElem.setAttribute("showProperty", crEntry.asCustomRangeEntryGraph().getShowProperty());
+			}
 			return response;
 		} else {
 			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");

@@ -84,7 +84,7 @@ public abstract class CustomRangeEntry {
 		if (this instanceof CustomRangeEntryNode)
 			return CustomRangeEntry.Types.node.toString();
 		else
-			return CustomRangeEntry.Types.node.toString();
+			return CustomRangeEntry.Types.graph.toString();
 	}
 	
 	/**

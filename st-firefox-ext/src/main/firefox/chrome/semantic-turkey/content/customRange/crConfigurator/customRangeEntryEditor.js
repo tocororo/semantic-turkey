@@ -50,6 +50,11 @@ window.onload = function() {
 		document.getElementById("txtboxCreDescription").setAttribute("value", descr);
 		var ref = resp.getElementsByTagName("ref")[0].textContent;
 		document.getElementById("txtboxCreRef").setAttribute("value", ref);
+		if (type == "graph"){
+			document.getElementById("showPropRow").setAttribute("hidden", "false");
+			var showProp = resp.getElementsByTagName("ref")[0].getAttribute("showProperty");
+			var txtShowProp = document.getElementById("txtboxShowProp").setAttribute("value", showProp);
+		}
 	}
 	
 	document.getElementById("txtboxCreId").addEventListener("input", art_semanticturkey.updateOkButtonStatus, false);
