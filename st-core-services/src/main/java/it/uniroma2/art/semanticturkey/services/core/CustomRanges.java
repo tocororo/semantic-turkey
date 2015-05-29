@@ -190,8 +190,7 @@ public class CustomRanges extends STServiceAdapter {
 	 */
 	@GenerateSTServiceController
 	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
-			throws UnavailableResourceException, ProjectInconsistentException, 
-			PRParserException, ModelAccessException, CustomRangeInitializationException{
+			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
@@ -200,62 +199,68 @@ public class CustomRanges extends STServiceAdapter {
 		RDFModel rdfModel = getOWLModel();
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(rdfModel, ontFact);
-		//try to identify the CRE which has generated the reified resource
-		CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
-		if (creGraph != null){
-			//set the show for the reified resource
-			String showProp = rdfModel.expandQName(creGraph.getShowProperty());
-			String show;
-			if (showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
-				show = resource.getNominalValue();
-			} else { //if the showProperty is specified, look for its value
-				ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
-				if (itShow.hasNext()){//if the value is found is set as show attribute
-					ARTNode showNode = itShow.next();
-					if (showNode.isLiteral())
-						show = showNode.asLiteral().getLabel();
-					else
-						show = showNode.getNominalValue();
-				} else { //otherwise set the same resource ID as show attribute
+		try {
+			//try to identify the CRE which has generated the reified resource
+			CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
+			if (creGraph != null){
+				//set the show for the reified resource
+				String showProp = rdfModel.expandQName(creGraph.getShowProperty());
+				String show;
+				if (showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
 					show = resource.getNominalValue();
-				}
-			}
-			STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
-					resource, ModelUtilities.getResourceRole(resource, rdfModel), true, show);
-			RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
-			
-			//set the predicate-object list
-			boolean descrAvailable = false;
-			
-			Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
-			Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
-			PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
-					.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
-			
-			Collection<String> predicateList = creGraph.getGraphPredicates(codaCore, false, true);
-			for (String predString : predicateList){
-				ARTURIResource predResource = rdfModel.createURIResource(predString);
-				STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(predResource, null, true, rdfModel.getQName(predString));
-				
-				ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, predResource, false, getWorkingGraph());
-				if (itValues.hasNext()){
-					art2STRDFPredicates.put(predResource, stPred);
-					descrAvailable = true;
-					while (itValues.hasNext()){
-						ARTNode value = itValues.next();
-						STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(rdfModel, value, false, true, true);
-						resultPredicateObjectValues.put(predResource, stNode);
+				} else { //if the showProperty is specified, look for its value
+					ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
+					if (itShow.hasNext()){//if the value is found is set as show attribute
+						ARTNode showNode = itShow.next();
+						if (showNode.isLiteral())
+							show = showNode.asLiteral().getLabel();
+						else
+							show = showNode.getNominalValue();
+					} else { //otherwise set the same resource ID as show attribute
+						show = resource.getNominalValue();
 					}
 				}
+				STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
+						resource, ModelUtilities.getResourceRole(resource, rdfModel), true, show);
+				RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
+				
+				//set the predicate-object list
+				boolean descrAvailable = false;
+				
+				Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
+				Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
+				PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
+						.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
+				
+				Collection<String> predicateList = creGraph.getGraphPredicates(codaCore, false, true);
+				for (String predString : predicateList){
+					ARTURIResource predResource = rdfModel.createURIResource(predString);
+					STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(predResource, null, true, rdfModel.getQName(predString));
+					
+					ARTNodeIterator itValues = rdfModel.listValuesOfSubjPredPair(resource, predResource, false, getWorkingGraph());
+					if (itValues.hasNext()){
+						art2STRDFPredicates.put(predResource, stPred);
+						descrAvailable = true;
+						while (itValues.hasNext()){
+							ARTNode value = itValues.next();
+							STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(rdfModel, value, false, true, true);
+							resultPredicateObjectValues.put(predResource, stNode);
+						}
+					}
+				}
+				//is possible that there's a CRE for the given property, but the resource has no values
+				//for all the predicates that describe the CRE, so add the propertiesElem to the response
+				//only if at least one predicate has a value
+				if (descrAvailable){
+					Element propertiesElem = XMLHelp.newElement(dataElement, "properties");
+					RDFXMLHelp.addPredicateObjectList(propertiesElem, predicateObjectsList);
+				}
+			} else { //if a CRE of type Graph is not found, simply return the resource (without description)
+				STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
+						resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
+				RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
 			}
-			//is possible that there's a CRE for the given property, but the resource has no values
-			//for all the predicates that describe the CRE, so add the propertiesElem to the response
-			//only if at least one predicate has a value
-			if (descrAvailable){
-				Element propertiesElem = XMLHelp.newElement(dataElement, "properties");
-				RDFXMLHelp.addPredicateObjectList(propertiesElem, predicateObjectsList);
-			}
-		} else {
+		} catch (PRParserException e) { //if there's some error in the GRE, return the sole resource (without description)
 			STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
 					resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
 			RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
@@ -679,6 +684,8 @@ public class CustomRanges extends STServiceAdapter {
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
 	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp){
+		//avoid proliferate of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
+		ref = ref.replace("\r", "");
 		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(id);
 		if (cre != null){
 			cre.setName(name);
