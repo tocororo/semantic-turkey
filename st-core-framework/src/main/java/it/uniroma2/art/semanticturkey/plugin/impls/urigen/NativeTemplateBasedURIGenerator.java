@@ -46,6 +46,8 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			+ "\\}"
 			+ "([A-Za-z0-9_]*(\\$\\{[A-Za-z0-9]+\\})*[A-Za-z0-9_]*)*";
 
+	private static final String XROLE = "xRole";
+	
 	private NativeTemplateBasedURIGeneratorConfiguration conf;
 
 	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorConfiguration conf) {
@@ -66,6 +68,8 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			template = conf.xLabel;
 		} else if (xRole.equals("concept")) {
 			template = conf.concept;
+		} else if(xRole.equals("xDefintion")){
+			template = conf.xDefinition;
 		}
 				
 		// validate template
@@ -91,7 +95,12 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 					if (ph.matches(RAND_REGEX)) {
 						value = getRandomPart(stServiceContext, ph);
 					} else {
-						value = args.get(ph);
+						if(ph.equals(XROLE)){
+							value = xRole;
+						}
+						else {
+							value = args.get(ph);
+						}
 						if (value == null)
 							throw new IllegalArgumentException(
 									"The placeholder \""
