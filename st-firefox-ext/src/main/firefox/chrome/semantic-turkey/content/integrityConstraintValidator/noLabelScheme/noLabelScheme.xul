@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 
-<window id="omittedTopConcept" title="Integrity Constraint Validation - Same label concept"
+<window id="omittedTopConcept" title="Integrity Constraint Validation - No Label Scheme"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	width="750px" height="500px">
