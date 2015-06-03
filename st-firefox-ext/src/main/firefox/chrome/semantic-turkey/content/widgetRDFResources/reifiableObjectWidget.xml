@@ -7,7 +7,6 @@
 				<xul:hbox flex="1" anonid="resourceBox">
 					<xul:box anonid="baseWidgetBox" flex="1"/>
 				</xul:hbox>
-				<!-- <xul:groupbox flex="1" anonid="expandableBox" hidden="true"/> -->
 			</xul:vbox>
 		</content>
 		<implementation>
@@ -48,7 +47,6 @@
 						if (typeof responsePropertiesElement != "undefined"){
 							var predicateObjectsList = art_semanticturkey.Deserializer.createPredicateObjectsList(responsePropertiesElement.children[0]);
 						
-							//var expandableBox = document.getAnonymousElementByAttribute(this, "anonid", "expandableBox");
 							var expandableBox = document.createElement("groupbox");
 							expandableBox.setAttribute("flex", "1");
 							expandableBox.setAttribute("hidden", "true");

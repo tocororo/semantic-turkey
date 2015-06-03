@@ -167,13 +167,31 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
 						String userPromptField = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
 						String rdfType = placeHolderStruct.getRDFType();
-						UserPromptStruct upStruct = new UserPromptStruct(userPromptField, rdfType);
-						//fill the UserPromptStruct independently from its type (literal or uri)
-						upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
-						upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
-						upStruct.setConverter(placeHolderStruct.getConverterList().get(0).getURI());//for now I suppese there is used only one converter
-						upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
-						form.add(upStruct);
+						/* Check for UserPromptStruct that use the same feature path:
+						 * It should return only one entry per FP. If there are multiple entry, 
+						 * one has type literal and one has type uri, prioritize the literal one, 
+						 * so that the UI show a simple field and not one that could be converted 
+						 * (that show the conversion preview) */
+						boolean alreadyInForm = false;
+						for (UserPromptStruct ups : form){
+							if (ups.getUserPromptName().equals(userPromptField)){
+								alreadyInForm = true;
+								if (ups.getRdfType().equals("uri") && rdfType.equals("literal")) {
+									form.remove(ups);
+									alreadyInForm = false;//cause the old UPS has been removed
+								}
+								break;
+							}
+						}
+						if (!alreadyInForm) {//the UPS is not yet added. Add it to the form 
+							UserPromptStruct upStruct = new UserPromptStruct(userPromptField, rdfType);
+							//fill the UserPromptStruct independently from its type (literal or uri)
+							upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
+							upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
+							upStruct.setConverter(placeHolderStruct.getConverterList().get(0).getURI());//for now I suppese there is used only one converter
+							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
+							form.add(upStruct);
+						}
 					}
 				}
 			}

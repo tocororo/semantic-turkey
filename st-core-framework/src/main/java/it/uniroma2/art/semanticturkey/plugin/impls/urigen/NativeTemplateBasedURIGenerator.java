@@ -68,7 +68,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			template = conf.xLabel;
 		} else if (xRole.equals("concept")) {
 			template = conf.concept;
-		} else if(xRole.equals("xDefintion")){
+		} else if(xRole.equals("xDefinition")){
 			template = conf.xDefinition;
 		}
 				
