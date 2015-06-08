@@ -14,14 +14,16 @@ import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedAnyTemplatedURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedAnyURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +61,19 @@ public class CODABasedURIGenerator implements URIGenerator {
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
 		
-		if (config instanceof CODABasedAnyTemplatedURIGeneratorConfiguration) {
-			 converter = CODABasedAnyTemplatedURIGeneratorConfiguration.class.cast(config).converter;
+		if (config instanceof CODABasedAnyURIGeneratorConfiguration) {
+			 converter = CODABasedAnyURIGeneratorConfiguration.class.cast(config).converter;
 		}
 		codaCore.setGlobalContractBinding(CODA_RANDOM_ID_GENERATOR_CONTRACT, converter);
 		try {
+			Properties converterProperties = new Properties();
+			for (String par : config.getConfigurationParameters()) {
+				converterProperties.setProperty(par, config.getParameterValue(par).toString());
+			}
+			
 			ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
 					stServiceContext.getProject().getOntologyManagerImplID()).createModelFactory();
+			codaCore.setConverterProperties(converter, converterProperties);
 			codaCore.initialize(stServiceContext.getProject().getOntModel(), ontFact);
 			ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
 					Arrays.<ConverterArgumentExpression> asList(new ConverterStringLiteralArgument(xRole),
@@ -75,7 +83,7 @@ public class CODABasedURIGenerator implements URIGenerator {
 
 			return codaCore.executeURIConverter(converterMention);
 		} catch (ComponentProvisioningException | ConverterException | UnavailableResourceException
-				| ProjectInconsistentException e) {
+				| ProjectInconsistentException | ConfParameterNotFoundException e) {
 			logger.debug("An exceprtion occuring during the generation of a URI", e);
 			throw new URIGenerationException(e);
 		} finally {

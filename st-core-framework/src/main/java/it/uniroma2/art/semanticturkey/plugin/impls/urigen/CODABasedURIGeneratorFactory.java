@@ -5,7 +5,7 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedAnyTemplatedURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedAnyURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedTemplatedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedURIGeneratorConfiguration;
 
@@ -30,7 +30,7 @@ public class CODABasedURIGeneratorFactory implements PluginFactory<CODABasedURIG
 	
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new CODABasedTemplatedURIGeneratorConfiguration(), new CODABasedAnyTemplatedURIGeneratorConfiguration());
+		return Arrays.<PluginConfiguration>asList(new CODABasedTemplatedURIGeneratorConfiguration(), new CODABasedAnyURIGeneratorConfiguration());
 	}
 
 	@Override

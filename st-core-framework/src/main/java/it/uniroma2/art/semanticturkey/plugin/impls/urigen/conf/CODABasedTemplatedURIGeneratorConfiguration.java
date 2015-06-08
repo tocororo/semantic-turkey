@@ -19,5 +19,12 @@ public class CODABasedTemplatedURIGeneratorConfiguration extends CODABasedURIGen
 	public String concept = "c_${rand()}";
 	
 	@PluginConfigurationParameter(description="Template for SKOS eXtended Labels")
-	public String xLabel = "xl_${lang}_${rand()}";	
+	public String xLabel = "xl_${lang}_${rand()}";
+	
+	@PluginConfigurationParameter(description="Template for SKOS Defintions")
+	public String xDefinition = "xDef_${rand()}";
+
+	@PluginConfigurationParameter(description="Fallback template for any unknown genre of resource")
+	public String fallback = "${xRole}_${rand()}";
+
 }

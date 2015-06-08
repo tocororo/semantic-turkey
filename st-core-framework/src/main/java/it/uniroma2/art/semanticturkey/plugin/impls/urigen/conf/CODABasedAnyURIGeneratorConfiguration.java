@@ -8,11 +8,11 @@ import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODABasedURIGeneratorF
  * compliant with the <code>coda:randIdGen</code>.
  *
  */
-public class CODABasedAnyTemplatedURIGeneratorConfiguration extends CODABasedURIGeneratorConfiguration {
+public class CODABasedAnyURIGeneratorConfiguration extends CODABasedURIGeneratorConfiguration {
 
 	@Override
 	public String getShortName() {
-		return "CODA-based templated URI generator";
+		return "CODA-based any converter URI generator";
 	}
 
 	@PluginConfigurationParameter(description="The class name for the selection of the desired CODA converter")
