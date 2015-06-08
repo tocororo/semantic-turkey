@@ -1003,7 +1003,7 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 				sbj.setAttribute("label", sbjName);
 				var preName = JSON.stringify(stms[stm].pred).replace(/\"/g, "");
 				pre.setAttribute("label", preName);
-				var objName = JSON.stringify(stms[stm].obj).replace(/\"/g, "");
+				var objName = JSON.parse(JSON.stringify(stms[stm].obj));
 				obj.setAttribute("label", objName);
 				ti.appendChild(tr);
 				tr.appendChild(sbj);
