@@ -1,6 +1,7 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/stEvtMgr.jsm");
+Components.utils.import("resource://stmodules/SkosScheme.jsm");
 
 Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
 Components.utils.import("resource://stmodules/STInfo.jsm");
@@ -152,6 +153,7 @@ function disconnectFromProject(projectName) {	//NEW
  */
 function deleteProject(projectName) { // NEW
 	Logger.debug('[SERVICE_Projects_NEW.jsm] deleteProject');
+	SkosScheme.removeSelectedScheme(projectName);//deleting the project, the selectedScheme pref has no reason to exist
 	var consumer = "consumer="+ STInfo.getSystemProjectName(); 
 	var projectName = "projectName=" + projectName;
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());

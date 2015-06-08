@@ -8,6 +8,7 @@ Components.utils.import("resource://stmodules/Deserializer.jsm", art_semantictur
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 
 art_semanticturkey.init = function() {
 	var schemeList = document.getElementById("schemeList");
@@ -20,28 +21,23 @@ art_semanticturkey.init = function() {
 		
 		/*
 		 * Check if the checbox was previously checked (and thus, it is going to be unchecked). In the
-		 * affirmative case, set the skos.selected_scheme property to *, meaning that "projectPropertySet"
+		 * affirmative case, set the skos.selectedScheme preference to *, meaning that "projectPropertySet"
 		 * listener is fired and it unchecks all schemes. Otherwise, if the checkbox was not checked, set
-		 * the skos.selected_scheme property to the name of the concept scheme and again fires the above
+		 * the skos.selectedScheme preference to the name of the concept scheme and again fires the above
 		 * listener that unchecks the other schemes.
 		 */
 		if (schemeList._view.visibleRows2[rowIndex].record.check){
-			art_semanticturkey.STRequests.Projects.setProjectProperty(
-					art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", "*");
+			art_semanticturkey.SkosScheme.setNoSelectedScheme(art_semanticturkey.CurrentProject.getProjectName());
 		} else {
-			art_semanticturkey.STRequests.Projects.setProjectProperty(
-					art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
-					schemeList._view.visibleRows2[rowIndex].id);
+			art_semanticturkey.SkosScheme.setSelectedScheme(
+					art_semanticturkey.CurrentProject.getProjectName(), schemeList._view.visibleRows2[rowIndex].id);
 		}
 	}, false);
 	
 	var predefRoots = schemeList._view.sourceAdapter.fetchRoots;
 	schemeList._view.sourceAdapter.fetchRoots = function() {
-
-		var response = art_semanticturkey.STRequests.Projects.getProjectProperty(
-				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
 		
-		var selSc = art_semanticturkey.Deserializer.createPropertyValue(response);
+		var selSc = art_semanticturkey.SkosScheme.getSelectedScheme(art_semanticturkey.CurrentProject.getProjectName())
 		//var collectionValues = art_semanticturkey.deserializer.createRDFArray(response);
 		var roots = predefRoots();
 		for (var i = 0 ; i < roots.length ; i++) {

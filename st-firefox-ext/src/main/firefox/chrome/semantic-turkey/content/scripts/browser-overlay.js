@@ -34,6 +34,7 @@ Components.utils.import("resource://stservices/SERVICE_Annotation.jsm", art_sema
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey); // TODO why this?
 Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 
 
 
@@ -405,15 +406,8 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 				art_semanticturkey.skosStateManagemenet.stEventArray.deregisterAllListener();
 			}
 
-			//art_semanticturkey.skosStateManagemenet.selectedScheme = art_semanticturkey.STRequests.Projects
-			//		.getProjectProperty("skos.selected_scheme", null).getElementsByTagName("property")[0]
-			//		.getAttribute("value");
-
-			var responseXML  = art_semanticturkey.STRequests.Projects.getProjectProperty(
-					projectInfo.getProjectName(), "skos.selected_scheme");
-
-			art_semanticturkey.skosStateManagemenet.selectedScheme = responseXML.
-					getElementsByTagName("property")[0].getAttribute("value")
+			art_semanticturkey.skosStateManagemenet.selectedScheme = art_semanticturkey.SkosScheme
+					.getSelectedScheme(art_semanticturkey.CurrentProject.getProjectName());
 			
 			art_semanticturkey.skosStateManagemenet.stEventArray = new art_semanticturkey.eventListenerArrayClass();
 			art_semanticturkey.skosStateManagemenet.stEventArray.addEventListenerToArrayAndRegister(
@@ -533,20 +527,14 @@ art_semanticturkey.skosStateManagemenet.resourceRenamed = function(eventId, reso
 	var newName = resourceRenamedObj.getNewName();
 
 	if (oldName == art_semanticturkey.skosStateManagemenet.selectedScheme) {
-		art_semanticturkey.STRequests.Projects.setProjectProperty(
-				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
-				newName, { getName : function() {
-							return "rename";
-						}
-				});
+		art_semanticturkey.SkosScheme.setSelectedScheme(art_semanticturkey.CurrentProject.getProjectName(), newName);
 	}
 };
 art_semanticturkey.skosStateManagemenet.schemeRemoved = function(eventId, skosSchemeRemovedObj) {
 	var name = skosSchemeRemovedObj.getSchemeName();
 
 	if (name == art_semanticturkey.skosStateManagemenet.selectedScheme) {
-		art_semanticturkey.STRequests.Projects.setProjectProperty(
-				art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", "");
+		art_semanticturkey.SkosScheme.removeSelectedScheme(CurrentProject.getProjectName());
 	}
 };
 art_semanticturkey.skosStateManagemenet.projectPropertySet = function(eventId, projectPropertySetObj) {

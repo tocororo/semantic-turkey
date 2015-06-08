@@ -8,6 +8,7 @@ Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey)
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/AnnotationManager.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 
 art_semanticturkey.init = function() {
 	
@@ -23,10 +24,8 @@ art_semanticturkey.init = function() {
 		conceptTree._addStateChangedListener(art_semanticturkey.conceptTreeStateChanged);
 	}, 0);
 	
-	conceptTree.conceptScheme = art_semanticturkey.STRequests.Projects
-			.getProjectProperty(art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme")
-			.getElementsByTagName("property")[0].getAttribute("value");	
-	
+	conceptTree.conceptScheme = art_semanticturkey.SkosScheme.getSelectedScheme(
+			art_semanticturkey.CurrentProject.getProjectName());	
 	
 	conceptTree._view.canDrop = function(index, orientation, dataTransfer) {
 		if (index != -1 && orientation == 0) {

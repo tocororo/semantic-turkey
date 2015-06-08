@@ -3,6 +3,7 @@ var EXPORTED_SYMBOLS = ["CommandBroker", "MenuPopupTrackerAdapter", "ToolbarTrac
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Preferences.jsm");
 Components.utils.import("resource://stmodules/ProjectST.jsm");
+Components.utils.import("resource://stmodules/SkosScheme.jsm");
 
 var CommandBroker = (function(){
 	var broker = {};
@@ -514,9 +515,9 @@ CommandBroker.offerCommand("skos:scheme*edit",
  					var responseXML=STRequests.SKOS.deleteScheme(scheme, (button == 1));                   
   				}
   				
-  				if (Preferences.get("extensions.semturkey.skos.selected_scheme", "").trim() == scheme.trim()) {
-  					Preferences.set("extensions.semturkey.skos.selected_scheme", "");
-  					Logger.debug("Removed selected scheme: " + scheme + "now: \"" + Preferences.get("extensions.semturkey.skos.selected_scheme", "").trim() +"\"");
+  				if (SkosScheme.getSelectedScheme(CurrentProject.getProjectName()).trim() == scheme.trim()) {
+  					SkosScheme.removeSelectedScheme(CurrentProject.getProjectName());
+  					Logger.debug("Removed selected scheme: " + scheme);
   				}
 			}catch (e) {
 				var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);

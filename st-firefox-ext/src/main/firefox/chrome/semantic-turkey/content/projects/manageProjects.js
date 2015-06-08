@@ -7,6 +7,7 @@ Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/OntManager.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/PrefUtils.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("projects-main-window").setAttribute("title",
@@ -170,8 +171,10 @@ art_semanticturkey.getListProjects_RESPONSE = function(responseElement) {
 		node.removeChild(node.lastChild);
 	}
 
+	var projectNameList = []; 
 	for ( var i = 0; i < projects.length; i++) {
 		var projectName = projects[i].textContent;
+		projectNameList.push(projectName);
 		var projectTS = projects[i].getAttribute("ontmgr");
 		var status = projects[i].getAttribute("status");
 		var type = projects[i].getAttribute("type");
@@ -227,6 +230,8 @@ art_semanticturkey.getListProjects_RESPONSE = function(responseElement) {
 
 		node.appendChild(ti);
 	}
+	//remove eventual selectedScheme pref for which the related project doesn't exist no more
+	art_semanticturkey.SkosScheme.cleanDanglingSelectedSchemes(projectNameList);
 };
 
 art_semanticturkey.openProject = function() {

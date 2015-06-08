@@ -11,6 +11,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/AnnotationManager.jsm");
 Components.utils.import("resource://stmodules/Preferences.jsm");
 Components.utils.import("resource://stmodules/ProjectST.jsm");
+Components.utils.import("resource://stmodules/SkosScheme.jsm");
 
 Components.utils.import("resource://gre/modules/Dict.jsm");
 
@@ -84,8 +85,7 @@ annotation.commons.handlers.createNarrowerConcept = function(event) {
 	if (typeof event.skos != "undefined" && typeof event.skos.conceptScheme != "undefined") {
 		conceptScheme = event.skos.conceptScheme;
 	} else {
-		conceptScheme = STRequests.Projects.getProjectProperty(CurrentProject.getProjectName(),
-				"skos.selected_scheme", null).getElementsByTagName("property")[0].getAttribute("value");
+		conceptScheme = SkosScheme.getSelectedScheme(CurrentProject.getProjectName());
 	}
 
 	var language = Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");

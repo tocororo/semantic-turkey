@@ -4,7 +4,7 @@ if (typeof art_semanticturkey == "undefined") {
 
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
-
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/stEvtMgr.jsm", art_semanticturkey);
 
 art_semanticturkey.init = function(event) {
@@ -45,9 +45,8 @@ art_semanticturkey.init = function(event) {
 				var choice = window.confirm("It appears that there is only one concept scheme.\nDo you want to select it?");
 				
 				if (choice == true) {
-					art_semanticturkey.STRequests.Projects.setProjectProperty(
-							art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme", 
-							schemeList._view.visibleRows2[0].id);
+					art_semanticturkey.SkosScheme.setSelectedScheme(
+							art_semanticturkeyCurrentProject.getProjectName(), schemeList._view.visibleRows2[0].id);
 				}
 			}
 		}

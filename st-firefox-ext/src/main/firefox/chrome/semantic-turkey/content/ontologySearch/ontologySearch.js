@@ -23,6 +23,7 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Logger.jsm");
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 
@@ -64,9 +65,8 @@ art_semanticturkey.ontoSearch = function(event, types) {
 			var responseCollection;
 			if (types == "concept"){
 				var inputString = document.getElementById("ontosearch_conc").value;
-				var xmlResp = art_semanticturkey.STRequests.Projects.getProjectProperty(
-					    art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
-				var scheme = xmlResp.getElementsByTagName("property")[0].getAttribute("value");
+				var scheme = art_semanticturkey.SkosScheme.getSelectedScheme(
+						art_semanticturkey.CurrentProject.getProjectName());
 				responseCollection = art_semanticturkey.STRequests.OntoSearch
 					.searchOntology(inputString, types, scheme);
 			} else {
@@ -262,8 +262,7 @@ art_semanticturkey.selectElementProperty = function(myTree, prop) {
 }
 
 art_semanticturkey.selectElementConcept = function(myTree, concUri) {
-	var xmlResp = art_semanticturkey.STRequests.Projects.getProjectProperty(
-		    art_semanticturkey.CurrentProject.getProjectName(), "skos.selected_scheme");
-	var scheme = xmlResp.getElementsByTagName("property")[0].getAttribute("value");
+	var scheme = art_semanticturkey.SkosScheme.getSelectedScheme(
+			art_semanticturkey.CurrentProject.getProjectName());
 	myTree.focusOnConcept(concUri, scheme);
 }
