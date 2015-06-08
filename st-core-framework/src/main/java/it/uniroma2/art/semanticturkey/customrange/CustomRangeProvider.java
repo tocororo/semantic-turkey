@@ -39,6 +39,7 @@ public class CustomRangeProvider {
 		File crFolder = getCustomRangeFolder();
 		File creFolder = getCustomRangeEntryFolder();
 		if (!crFolder.exists() && !creFolder.exists()){
+			crConfig = new CustomRangeConfig(crMap, creMap);
 			initializeCRBasicHierarchy();
 		} else {
 			//initialize CRE list (load files from CRE folder) and store them in the CRE map
@@ -62,9 +63,8 @@ public class CustomRangeProvider {
 					crMap.put(cr.getId(), cr);
 				}
 			}
+			crConfig = new CustomRangeConfig(crMap, creMap);
 		}
-		//initialize the config (that composes a tree prop->CR->CREs)
-		crConfig = new CustomRangeConfig(crMap, creMap);
 	}
 	
 	public CustomRangeConfig getCustomRangeConfig(){
