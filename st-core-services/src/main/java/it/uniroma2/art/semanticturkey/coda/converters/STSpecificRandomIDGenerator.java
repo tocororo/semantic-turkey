@@ -29,7 +29,7 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	 * @see it.uniroma2.art.coda.contracts.RandomIdGenerator#produceURI(it.uniroma2.art.coda.interfaces.CODAContext, java.lang.String, java.util.Map)
 	 */
 	@Override
-	public ARTURIResource produceURI(CODAContext ctx, String xRole, Map<String, String> args) throws ConverterException {
+	public ARTURIResource produceURI(CODAContext ctx, String value, String xRole, Map<String, String> args) throws ConverterException {
 		try {
 			return stServiceContext.getProject().getURIGenerator().generateURI(stServiceContext, xRole, args);
 		} catch (URIGenerationException e) {
