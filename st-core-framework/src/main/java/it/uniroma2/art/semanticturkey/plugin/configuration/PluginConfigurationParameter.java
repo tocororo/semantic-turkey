@@ -27,8 +27,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * fields decorated with this annotation are marked as configuration parameters for initializing a given
- * triple store
+ * fields decorated with this annotation are marked as configuration parameters for given plugin
  * 
  * @author Armando Stellato
  * 

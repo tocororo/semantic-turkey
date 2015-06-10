@@ -29,6 +29,6 @@ public class NativeTemplateBasedURIGeneratorConfiguration extends AbstractPlugin
 	public String xDefinition = "xDef_${rand()}";
 
 	@PluginConfigurationParameter(description="Fallback template for any unknown genre of resource")
-	//public String fallback = "res_${rand()}";
 	public String fallback = "${xRole}_${rand()}";
+
 }

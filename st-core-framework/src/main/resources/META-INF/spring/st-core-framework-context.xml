@@ -19,11 +19,11 @@
 		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
 
 	<!-- Publishes the CODA-based implementation of the extension point URIGenerator -->
-	<bean id="codaBasedURIGeneratorFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODABasedURIGeneratorFactory" />
+	<bean id="codaURIGeneratorFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory" />
 
 	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="codaBasedURIGeneratorFactory">
+		ref="codaURIGeneratorFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator" />

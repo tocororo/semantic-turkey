@@ -1,14 +1,14 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf;
 
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfigurationParameter;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODABasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory;
 
 /**
- * Configuration class for {@link CODABasedURIGeneratorFactory} that supports the use of any CODA converter
+ * Configuration class for {@link CODAURIGeneratorFactory} that supports the use of any CODA converter
  * compliant with the <code>coda:randIdGen</code>.
  *
  */
-public class CODABasedAnyURIGeneratorConfiguration extends CODABasedURIGeneratorConfiguration {
+public class CODAAnyURIGeneratorConfiguration extends CODAURIGeneratorConfiguration {
 
 	@Override
 	public String getShortName() {

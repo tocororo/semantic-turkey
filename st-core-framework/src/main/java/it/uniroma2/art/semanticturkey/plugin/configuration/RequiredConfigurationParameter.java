@@ -27,7 +27,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * this annotation marks a field as required for proper configuration of the triple store
+ * this annotation marks a field as required for proper configuration of a plugin
  * 
  * @author Armando Stellato
  * 

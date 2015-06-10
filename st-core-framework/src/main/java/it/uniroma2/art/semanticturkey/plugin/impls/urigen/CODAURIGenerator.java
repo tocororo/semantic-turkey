@@ -17,8 +17,8 @@ import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedAnyURIGeneratorConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODABasedURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.util.Arrays;
@@ -33,19 +33,19 @@ import org.springframework.beans.factory.ObjectFactory;
  * Implementation of the {@link URIGenerator} extension point that delegates to a CODA converter. 
  * 
  */
-public class CODABasedURIGenerator implements URIGenerator {
+public class CODAURIGenerator implements URIGenerator {
 
 	/**
 	 * Contract URL for random ID generation.
 	 */
 	public static final String CODA_RANDOM_ID_GENERATOR_CONTRACT = "http://art.uniroma2.it/coda/contracts/randIdGen";
 
-	private static final Logger logger = LoggerFactory.getLogger(CODABasedURIGenerator.class);
+	private static final Logger logger = LoggerFactory.getLogger(CODAURIGenerator.class);
 	
-	private CODABasedURIGeneratorConfiguration config;
+	private CODAURIGeneratorConfiguration config;
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
-	public CODABasedURIGenerator(CODABasedURIGeneratorConfiguration config,
+	public CODAURIGenerator(CODAURIGeneratorConfiguration config,
 			ObjectFactory<CODACoreProvider> codaCoreProviderFactory) {
 		this.config = config;
 		this.codaCoreProviderFactory = codaCoreProviderFactory;
@@ -61,8 +61,8 @@ public class CODABasedURIGenerator implements URIGenerator {
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
 		
-		if (config instanceof CODABasedAnyURIGeneratorConfiguration) {
-			 converter = CODABasedAnyURIGeneratorConfiguration.class.cast(config).converter;
+		if (config instanceof CODAAnyURIGeneratorConfiguration) {
+			 converter = CODAAnyURIGeneratorConfiguration.class.cast(config).converter;
 		}
 		codaCore.setGlobalContractBinding(CODA_RANDOM_ID_GENERATOR_CONTRACT, converter);
 		try {
