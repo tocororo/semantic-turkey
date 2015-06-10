@@ -31,12 +31,16 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public abstract class AbstractPluginConfiguration implements PluginConfiguration {
 
 	Class<? extends AbstractPluginConfiguration> thisClass;
 
+	protected Map<String, String> additionalConfigurationParameters = new LinkedHashMap<String, String>();
+	
 	protected AbstractPluginConfiguration() {
 		thisClass = this.getClass();
 	}
@@ -58,6 +62,9 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 			if (field.isAnnotationPresent(PluginConfigurationParameter.class))
 				configurationParameters.add(field.getName());
 		}
+		
+		configurationParameters.addAll(additionalConfigurationParameters.keySet());
+		
 		return configurationParameters;
 	}
 
@@ -73,7 +80,14 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 		} catch (SecurityException e) {
 			throw new ConfParameterNotFoundException(e);
 		} catch (NoSuchFieldException e) {
-			throw new ConfParameterNotFoundException(e);
+			
+			boolean additionalPar = additionalConfigurationParameters.containsKey(id);
+			
+			if (additionalPar) {
+				return additionalConfigurationParameters.get(id);
+			} else {
+				throw new ConfParameterNotFoundException(String.format("Parameter %s not found", id));
+			}
 		} catch (IllegalArgumentException e) {
 			throw new ConfParameterNotFoundException(e);
 		} catch (IllegalAccessException e) {
@@ -101,7 +115,7 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 		} catch (SecurityException e) {
 			throw new BadConfigurationException(e);
 		} catch (NoSuchFieldException e) {
-			throw new BadConfigurationException("there is no model configuration property called: " + id);
+			additionalConfigurationParameters.put(id, value.toString());
 		} catch (IllegalArgumentException e) {
 			throw new BadConfigurationException(e);
 		} catch (IllegalAccessException e) {
@@ -170,7 +184,11 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 		} catch (SecurityException e) {
 			throw new ConfParameterNotFoundException(e);
 		} catch (NoSuchFieldException e) {
-			throw new ConfParameterNotFoundException(e);
+			if (additionalConfigurationParameters.containsKey(parID)) {
+				return null;
+			} else {
+				throw new ConfParameterNotFoundException(e);
+			}
 		}
 	}
 
@@ -191,6 +209,8 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 		} catch (SecurityException e) {
 			throw new ConfParameterNotFoundException(e);
 		} catch (NoSuchFieldException e) {
+			if (additionalConfigurationParameters.containsKey(parID)) return false;
+			
 			throw new ConfParameterNotFoundException(e);
 		}
 	}
@@ -224,6 +244,10 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 		} catch (SecurityException e) {
 			throw new ConfParameterNotFoundException(e);
 		} catch (NoSuchFieldException e) {
+			if (additionalConfigurationParameters.containsKey(id)) {
+				return "";
+			}
+			
 			throw new ConfParameterNotFoundException(e);
 		}
 	}
