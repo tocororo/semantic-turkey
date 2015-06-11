@@ -127,6 +127,7 @@ STHttpMgr = function(groupIdInput, artifactIdInput) {
 				}
 			}
 		}
+		Logger.debug("Request URL: "+aURL); //DEBUG
 		return aURL;
 	}
 

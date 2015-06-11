@@ -43,18 +43,26 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.w3c.dom.Element;
 
 @GenerateSTServiceController
 @Validated
 @Component
+@Controller //just for exportByFlattening service
 public class Refactor extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Refactor.class);
@@ -205,46 +213,6 @@ public class Refactor extends STServiceAdapter {
 	}
 	
 	/**
-	 * Exports the underlying project model after converting the SKOSXL labels in SKOS labels. This service
-	 * should be invoked only from SKOSXL projects. It's supposed that should be some client-side check to
-	 * avoid exceptions.
-	 * @param exportPackage
-	 * @param copyAlsoSKOSXLabels Specifies whether in the exported model the skosxl labels will be 
-	 * preserved or not. 
-	 * @return
-	 * @throws ModelAccessException
-	 * @throws ModelUpdateException
-	 * @throws ProjectIncompatibleException 
-	 * @throws ProjectInconsistentException 
-	 * @throws UnavailableResourceException 
-	 * @throws UnsupportedRDFFormatException 
-	 * @throws IOException 
-	 */
-	@GenerateSTServiceController
-	public Response exportWithSKOSLabels(String exportPackage, boolean copyAlsoSKOSXLabels)
-			throws ModelAccessException, ModelUpdateException, ProjectIncompatibleException, 
-			UnavailableResourceException, ProjectInconsistentException, IOException {
-		OWLModel owlModel = getOWLModel();
-		if (owlModel instanceof SKOSXLModel){//source model must be skosxl since it should contain skosxl labels	
-			SKOSXLModel sourceXLModel = (SKOSXLModel) owlModel;
-			ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-			BaseRDFTripleModel ligthWeigth = ontFact.createLightweightRDFModel();
-			SKOSModel tempTargetModel = new SKOSModelImpl(ligthWeigth);
-			SKOSXL2SKOSConverter.convert(sourceXLModel, tempTargetModel, copyAlsoSKOSXLabels);
-			try {
-				tempTargetModel.writeRDF(new File(exportPackage), RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
-			} catch (UnsupportedRDFFormatException e) {
-				e.printStackTrace();
-			}
-			tempTargetModel.close();
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-			return response;
-		} else {
-			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOSXL model");
-		}
-	}
-	
-	/**
 	 * Reifies flat <code>skos:definition</code>. This service should be invoked only from SKOS or 
 	 * SKOSXL projects. It's supposed that should be some client-side checks to avoid exceptions.
 	 * @param copyAlsoPlainDefinitions Specifies whether in the model the flat notes will be preserved or not. 
@@ -268,52 +236,18 @@ public class Refactor extends STServiceAdapter {
 	}
 	
 	/**
-	 * Exports the underlying project model after flattering the <code>skos:definition</code>. This service 
-	 * should be invoked only from SKOS or SKOSXL projects. It's supposed that should be some client-side
-	 * check to avoid exceptions.
-	 * @param exportPackage
-	 * @param copyAlsoReifiedDefinition Specifies whether in the exported model the reified notes
-	 * will be preserved or not.
-	 * @return
-	 * @throws ModelAccessException
-	 * @throws ModelUpdateException
-	 * @throws ProjectIncompatibleException 
-	 * @throws ProjectInconsistentException 
-	 * @throws UnavailableResourceException 
-	 * @throws UnsupportedRDFFormatException 
-	 * @throws IOException 
-	 */
-	@GenerateSTServiceController
-	public Response exportWithFlatSKOSDefinitions(String exportPackage, @Optional(defaultValue="false") boolean copyAlsoReifiedDefinition) 
-			throws ModelAccessException, ModelUpdateException, ProjectIncompatibleException, 
-			UnavailableResourceException, ProjectInconsistentException, IOException, UnsupportedRDFFormatException {
-		OWLModel owlModel = getOWLModel();
-		if (owlModel instanceof SKOSModel){//source model must be at least skos since it should contain skos definitions
-			SKOSModel sourceModel = (SKOSModel) owlModel;
-			ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-			BaseRDFTripleModel ligthWeigth = ontFact.createLightweightRDFModel();
-			SKOSModel tempTargetModel = new SKOSModelImpl(ligthWeigth);
-			ReifiedSKOSDefinitionsFlattener.convert(sourceModel, tempTargetModel, copyAlsoReifiedDefinition);
-			tempTargetModel.writeRDF(new File(exportPackage), RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
-			tempTargetModel.close();
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-			return response;
-		} else {
-			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOS model");
-		}
-	}
-	
-	/**
 	 * Exports the underlying project model after flattering the <code>skos:definition</code> and
 	 * converting SKOSXL labels to SKOS. This service should be invoked only from SKOS or SKOSXL
 	 * projects. It's supposed that should be some client-side check to avoid exceptions.
 	 * 
-	 * @param exportPackage
-	 * @param copyAlsoSKOSXLabels Specifies whether in the exported model the skosxl labels will be 
-	 * preserved or not. 
-	 * @param copyAlsoReifiedDefinition Specifies whether in the exported model the reified notes 
-	 * will be preserved or not. 
-	 * @return
+	 * @param oRes
+	 * @param ext desired extension
+	 * @param format Determines the serialization format and the extension (if ext is not provided)
+	 * available export format: RDF/XML, RDF/XML-ABBREV, N-TRIPLES, N3, TURTLE, TRIG, TRIX, TRIX-EXT, NQUADS
+	 * @param toSKOS True if skosxl:Label(s) should be converted to SKOS labels
+	 * @param keepSKOSXLabels True if the exported model should preserves the skosxl labels
+	 * @param toFlatDefinitions True if the reified definitions should be flattened 
+	 * @param keepReifiedDefinition True if the exported model should preserves the reified notes 
 	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
 	 * @throws ProjectIncompatibleException
@@ -322,23 +256,76 @@ public class Refactor extends STServiceAdapter {
 	 * @throws IOException
 	 * @throws UnsupportedRDFFormatException
 	 */
-	@GenerateSTServiceController
-	public Response exportWithTransformations(String exportPackage, @Optional(defaultValue="false") boolean copyAlsoSKOSXLabels,
-			@Optional(defaultValue="false") boolean copyAlsoReifiedDefinition) 
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Refactor/exportByFlattening", 
+			method = org.springframework.web.bind.annotation.RequestMethod.GET)
+	public void exportByFlattening(HttpServletResponse oRes,
+			@RequestParam(value="format") String format,
+			@RequestParam(value="ext", required=false) String ext,
+			@RequestParam(value="toSKOS", required=false, defaultValue="true") boolean toSKOS,
+			@RequestParam(value="keepSKOSXLabels", required=false, defaultValue="false") boolean keepSKOSXLabels,
+			@RequestParam(value="toFlatDefinitions", required=false, defaultValue="true") boolean toFlatDefinitions,
+			@RequestParam(value="keepReifiedDefinition", required=false, defaultValue="false") boolean keepReifiedDefinition)
 			throws UnavailableResourceException, ProjectInconsistentException, ProjectIncompatibleException,
 			ModelAccessException, ModelUpdateException, IOException, UnsupportedRDFFormatException {
+		
 		OWLModel owlModel = getOWLModel();
 		if (owlModel instanceof SKOSXLModel){//source model must be skosxl since it should contain skosxl labels
-			SKOSXLModel sourceModel = (SKOSXLModel) owlModel;
+			SKOSXLModel model = (SKOSXLModel) owlModel;
+			File tempServerFile;
+			RDFFormat rdfFormat = RDFFormat.parseFormat(format);
+			if (rdfFormat == null)
+				rdfFormat = RDFFormat.RDFXML;
+			if (ext != null){
+				RDFFormat formatFromExt = RDFFormat.guessRDFFormatFromFile(new File("file." + ext));
+				//check consistency between required format and ext, if they're not compatible infer ext from format
+				if (formatFromExt != rdfFormat)
+					ext = null;
+			}
+			if (ext == null) { //ext not provided or not consistent with the required format
+				if (rdfFormat == RDFFormat.RDFXML || rdfFormat == RDFFormat.RDFXML_ABBREV)
+					ext = "rdf";
+				else if (rdfFormat == RDFFormat.N3)
+					ext = "n3";
+				else if (rdfFormat == RDFFormat.NQUADS)
+					ext = "nq";
+				else if (rdfFormat == RDFFormat.NTRIPLES)
+					ext = "nt";
+				else if (rdfFormat == RDFFormat.TRIG)
+					ext = "trig";
+				else if (rdfFormat == RDFFormat.TRIX)
+					ext = "trix";
+				else if (rdfFormat == RDFFormat.TRIXEXT)
+					ext = "trix-ext";
+				else if (rdfFormat == RDFFormat.TURTLE)
+					ext = "ttl";
+			}
+			tempServerFile = File.createTempFile("save", "."+ext);
+			
+			//convert flattering
 			ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 			BaseRDFTripleModel ligthWeigth = ontFact.createLightweightRDFModel();
+			SKOSXLModel sourceModel = model;
 			SKOSModel tempTargetModel = new SKOSModelImpl(ligthWeigth);
-			SKOSXL2SKOSConverter.convert(sourceModel, tempTargetModel, copyAlsoSKOSXLabels);
-			ReifiedSKOSDefinitionsFlattener.convert(tempTargetModel, tempTargetModel, copyAlsoReifiedDefinition);
-			tempTargetModel.writeRDF(new File(exportPackage), RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
+			if (toSKOS) {
+				SKOSXL2SKOSConverter.convert(sourceModel, tempTargetModel, keepSKOSXLabels);
+				if (toFlatDefinitions)
+					ReifiedSKOSDefinitionsFlattener.convert(tempTargetModel, tempTargetModel, keepReifiedDefinition);
+			} else if (toFlatDefinitions) {
+				ReifiedSKOSDefinitionsFlattener.convert(sourceModel, tempTargetModel, keepReifiedDefinition);
+			}
+			
+			//serialize model on local file
+			tempTargetModel.writeRDF(tempServerFile, rdfFormat, NodeFilters.MAINGRAPH);
 			tempTargetModel.close();
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-			return response;
+			
+			//Return file as attachment in response
+			FileInputStream is = new FileInputStream(tempServerFile);
+			IOUtils.copy(is, oRes.getOutputStream());
+			oRes.setContentType(rdfFormat.getMIMEType());
+			oRes.setContentLength((int) tempServerFile.length());
+			oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
+			oRes.flushBuffer();
+			is.close();
 		} else {
 			throw new ProjectIncompatibleException("Unable to perform the conversion on a non-SKOSXL model");
 		}

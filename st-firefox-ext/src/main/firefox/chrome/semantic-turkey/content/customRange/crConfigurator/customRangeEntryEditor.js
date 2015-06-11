@@ -60,16 +60,34 @@ window.onload = function() {
 	document.getElementById("txtboxCreId").addEventListener("input", art_semanticturkey.updateOkButtonStatus, false);
 	document.getElementById("txtboxCreName").addEventListener("input", art_semanticturkey.updateOkButtonStatus, false);
 	document.getElementById("txtboxCreDescription").addEventListener("input", art_semanticturkey.updateOkButtonStatus, false);
+	document.getElementById("txtboxCreRef").addEventListener("keypress", art_semanticturkey.refTextboxListener, false);
 	document.getElementById("txtboxCreRef").addEventListener("input", art_semanticturkey.updateOkButtonStatus, false);
 	document.getElementById("txtboxShowProp").addEventListener("input", art_semanticturkey.updateOkButtonStatus, false);
-	
+}
+
+/* handles the tab button in Ref textbox (dedicated to pearl code) so that instead of changing focus
+ * it adds "tab spaces" */ 
+art_semanticturkey.refTextboxListener = function(event){
+	if (event.code == "Tab"){
+		var txt = this;
+		var txtContent = txt.value;
+		var start = txt.selectionStart;
+		var end = txt.selectionEnd;
+		// Set the new textbox content
+		var contentBefore = txtContent.slice(0, start);
+		var contentAfter = txtContent.slice(end);
+	    txt.value = contentBefore + "\t" + contentAfter;
+	    // Move the cursor
+	    txt.selectionStart = txt.selectionEnd = start + 1;
+	    event.preventDefault();//prevent the default keypress listener
+	}
 }
 
 art_semanticturkey.updateOkButtonStatus = function (){
-	var idOk = (document.getElementById("txtboxCreId").value != "");
-	var nameOk = (document.getElementById("txtboxCreName").value != "")
-	var descOk = (document.getElementById("txtboxCreDescription").value != "")
-	var refOk = (document.getElementById("txtboxCreRef").value != "")
+	var idOk = (document.getElementById("txtboxCreId").value.trim() != "");
+	var nameOk = (document.getElementById("txtboxCreName").value.trim() != "")
+	var descOk = (document.getElementById("txtboxCreDescription").value.trim() != "")
+	var refOk = (document.getElementById("txtboxCreRef").value.trim() != "")
 	var showPropOk = true;
 	if (document.getElementById("entryTypeMenu").selectedItem.value == "graph")
 		showPropOk = (document.getElementById("txtboxShowProp").value != "");

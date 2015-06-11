@@ -43,8 +43,8 @@ public class InputOutput extends STServiceAdapter {
 	
 	/**
 	 * This method returns into the response content an RDF serialization of the model
-	 *  
 	 * @param oRes
+	 * @param ext
 	 * @param format
 	 * @param allNGs
 	 * @throws IOException
@@ -53,13 +53,42 @@ public class InputOutput extends STServiceAdapter {
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/InputOutput/saveRDF", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
-	public void saveRDF(HttpServletResponse oRes, @RequestParam(value = "format") String format,
+	public void saveRDF(HttpServletResponse oRes,
+			@RequestParam(value="ext", required=false) String ext,
+			@RequestParam(value="format") String format,
 			@RequestParam(value = "allNGs", defaultValue = "false") boolean allNGs) 
 			throws IOException, ModelAccessException, UnsupportedRDFFormatException{
-		File tempServerFile = File.createTempFile("save", "."+format);
-		RDFFormat rdfFormat = RDFFormat.guessRDFFormatFromFile(tempServerFile);
+		
+		File tempServerFile;
+		RDFFormat rdfFormat = RDFFormat.parseFormat(format);
 		if (rdfFormat == null)
 			rdfFormat = RDFFormat.RDFXML;
+		if (ext != null){
+			RDFFormat formatFromExt = RDFFormat.guessRDFFormatFromFile(new File("file." + ext));
+			//check consistency between required format and ext, if they're not compatible infer ext from format
+			if (formatFromExt != rdfFormat)
+				ext = null;
+		}
+		if (ext == null) { //ext not provided or not consistent with the required format
+			if (rdfFormat == RDFFormat.RDFXML || rdfFormat == RDFFormat.RDFXML_ABBREV)
+				ext = "rdf";
+			else if (rdfFormat == RDFFormat.N3)
+				ext = "n3";
+			else if (rdfFormat == RDFFormat.NQUADS)
+				ext = "nq";
+			else if (rdfFormat == RDFFormat.NTRIPLES)
+				ext = "nt";
+			else if (rdfFormat == RDFFormat.TRIG)
+				ext = "trig";
+			else if (rdfFormat == RDFFormat.TRIX)
+				ext = "trix";
+			else if (rdfFormat == RDFFormat.TRIXEXT)
+				ext = "trix-ext";
+			else if (rdfFormat == RDFFormat.TURTLE)
+				ext = "ttl";
+		}
+		tempServerFile = File.createTempFile("save", "."+ext);
+		
 		RDFModel model = getOWLModel();
 		if (allNGs)
 			model.writeRDF(tempServerFile, rdfFormat, getUserNamedGraphs());
