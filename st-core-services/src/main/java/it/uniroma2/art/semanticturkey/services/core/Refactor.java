@@ -45,6 +45,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 
 import javax.servlet.http.HttpServletResponse;
@@ -259,7 +260,7 @@ public class Refactor extends STServiceAdapter {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Refactor/exportByFlattening", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
 	public void exportByFlattening(HttpServletResponse oRes,
-			@RequestParam(value="format") String format,
+			@RequestParam(value="format", required=false) String format,
 			@RequestParam(value="ext", required=false) String ext,
 			@RequestParam(value="toSKOS", required=false, defaultValue="true") boolean toSKOS,
 			@RequestParam(value="keepSKOSXLabels", required=false, defaultValue="false") boolean keepSKOSXLabels,
@@ -271,34 +272,31 @@ public class Refactor extends STServiceAdapter {
 		OWLModel owlModel = getOWLModel();
 		if (owlModel instanceof SKOSXLModel){//source model must be skosxl since it should contain skosxl labels
 			SKOSXLModel model = (SKOSXLModel) owlModel;
+			
 			File tempServerFile;
 			RDFFormat rdfFormat = RDFFormat.parseFormat(format);
-			if (rdfFormat == null)
-				rdfFormat = RDFFormat.RDFXML;
-			if (ext != null){
-				RDFFormat formatFromExt = RDFFormat.guessRDFFormatFromFile(new File("file." + ext));
-				//check consistency between required format and ext, if they're not compatible infer ext from format
-				if (formatFromExt != rdfFormat)
-					ext = null;
+			if (rdfFormat == null){ //format not provided or unparsable
+				if (ext == null){
+					rdfFormat = RDFFormat.RDFXML; //default format
+					ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+				} else { //ext provided -> guess format
+					rdfFormat = RDFFormat.guessRDFFormatFromFile(new File("file." + ext));
+					if (rdfFormat == null) { //the given ext is not valid -> default format
+						rdfFormat = RDFFormat.RDFXML; //default format
+						ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+					}
+				}
+			} else { //valid format provided
+				if (ext == null) {
+					ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+				} else { //check consistency between required format and ext
+					String[] extForFormat = RDFFormat.getFormatExtensions(rdfFormat);
+					if (!Arrays.asList(extForFormat).contains(ext)){//ext isn't compatible with format -> infer ext
+						ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+					}
+				}
 			}
-			if (ext == null) { //ext not provided or not consistent with the required format
-				if (rdfFormat == RDFFormat.RDFXML || rdfFormat == RDFFormat.RDFXML_ABBREV)
-					ext = "rdf";
-				else if (rdfFormat == RDFFormat.N3)
-					ext = "n3";
-				else if (rdfFormat == RDFFormat.NQUADS)
-					ext = "nq";
-				else if (rdfFormat == RDFFormat.NTRIPLES)
-					ext = "nt";
-				else if (rdfFormat == RDFFormat.TRIG)
-					ext = "trig";
-				else if (rdfFormat == RDFFormat.TRIX)
-					ext = "trix";
-				else if (rdfFormat == RDFFormat.TRIXEXT)
-					ext = "trix-ext";
-				else if (rdfFormat == RDFFormat.TURTLE)
-					ext = "ttl";
-			}
+			
 			tempServerFile = File.createTempFile("save", "."+ext);
 			
 			//convert flattering

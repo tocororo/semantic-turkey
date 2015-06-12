@@ -13,6 +13,7 @@
 		<menulist id="formatMenu" flex="1">
 			<menupopup>
 				<menuitem label="RDF/XML" value="rdf" />
+				<menuitem label="RDF/XML-ABBREV" value="rdf" />
 				<menuitem label="N-TRIPLES" value="nt" />
 				<menuitem label="N3" value="n3" />
 				<menuitem label="TURTLE" value="ttl" />

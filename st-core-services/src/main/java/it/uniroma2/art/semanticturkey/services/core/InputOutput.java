@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -55,38 +56,34 @@ public class InputOutput extends STServiceAdapter {
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
 	public void saveRDF(HttpServletResponse oRes,
 			@RequestParam(value="ext", required=false) String ext,
-			@RequestParam(value="format") String format,
+			@RequestParam(value="format", required=false) String format,
 			@RequestParam(value = "allNGs", defaultValue = "false") boolean allNGs) 
 			throws IOException, ModelAccessException, UnsupportedRDFFormatException{
 		
 		File tempServerFile;
 		RDFFormat rdfFormat = RDFFormat.parseFormat(format);
-		if (rdfFormat == null)
-			rdfFormat = RDFFormat.RDFXML;
-		if (ext != null){
-			RDFFormat formatFromExt = RDFFormat.guessRDFFormatFromFile(new File("file." + ext));
-			//check consistency between required format and ext, if they're not compatible infer ext from format
-			if (formatFromExt != rdfFormat)
-				ext = null;
+		if (rdfFormat == null){ //format not provided or unparsable
+			if (ext == null){
+				rdfFormat = RDFFormat.RDFXML; //default format
+				ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+			} else { //ext provided -> guess format
+				rdfFormat = RDFFormat.guessRDFFormatFromFile(new File("file." + ext));
+				if (rdfFormat == null) { //the given ext is not valid -> default format
+					rdfFormat = RDFFormat.RDFXML; //default format
+					ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+				}
+			}
+		} else { //valid format provided
+			if (ext == null) {
+				ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+			} else { //check consistency between required format and ext
+				String[] extForFormat = RDFFormat.getFormatExtensions(rdfFormat);
+				if (!Arrays.asList(extForFormat).contains(ext)){//ext isn't compatible with format -> infer ext
+					ext = RDFFormat.getFormatExtensions(rdfFormat)[0];
+				}
+			}
 		}
-		if (ext == null) { //ext not provided or not consistent with the required format
-			if (rdfFormat == RDFFormat.RDFXML || rdfFormat == RDFFormat.RDFXML_ABBREV)
-				ext = "rdf";
-			else if (rdfFormat == RDFFormat.N3)
-				ext = "n3";
-			else if (rdfFormat == RDFFormat.NQUADS)
-				ext = "nq";
-			else if (rdfFormat == RDFFormat.NTRIPLES)
-				ext = "nt";
-			else if (rdfFormat == RDFFormat.TRIG)
-				ext = "trig";
-			else if (rdfFormat == RDFFormat.TRIX)
-				ext = "trix";
-			else if (rdfFormat == RDFFormat.TRIXEXT)
-				ext = "trix-ext";
-			else if (rdfFormat == RDFFormat.TURTLE)
-				ext = "ttl";
-		}
+			
 		tempServerFile = File.createTempFile("save", "."+ext);
 		
 		RDFModel model = getOWLModel();
@@ -98,7 +95,7 @@ public class InputOutput extends STServiceAdapter {
 		IOUtils.copy(is, oRes.getOutputStream());
 		oRes.setContentType(rdfFormat.getMIMEType());
 		oRes.setContentLength((int) tempServerFile.length());
-		oRes.setHeader("Content-Disposition", "attachment; filename=save." + format);
+		oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
 		oRes.flushBuffer();
 		is.close();
 	}

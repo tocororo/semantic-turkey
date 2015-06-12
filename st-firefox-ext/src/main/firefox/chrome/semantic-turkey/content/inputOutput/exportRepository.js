@@ -7,13 +7,13 @@ Components.utils.import("resource://gre/modules/FileUtils.jsm");
 Components.utils.import("resource://stservices/SERVICE_InputOutput.jsm", art_semanticturkey);
 
 buttonOkListener = function() {
-	var format = document.getElementById("formatMenu").selectedItem.value;
-	var fileType = document.getElementById("formatMenu").selectedItem.label;
+	var ext = document.getElementById("formatMenu").selectedItem.value;
+	var format = document.getElementById("formatMenu").selectedItem.label;
 	var response = art_semanticturkey.STRequests.InputOutput.saveRDF(format);
 	var nsIFilePicker = Components.interfaces.nsIFilePicker;
 	var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
 	fp.init(window, "Export pearl", nsIFilePicker.modeSave);
-	fp.appendFilter(fileType + " Files (*." + format + ")","*." + format);
+	fp.appendFilter(format + " Files (*." + ext + ")","*." + ext);
 	var res = fp.show();
 	if (res == nsIFilePicker.returnOK || res == nsIFilePicker.returnReplace){
 		var pickedFile = fp.file;
