@@ -63,7 +63,7 @@ enrichProperty = function(subject, predicate){
 			return customRangeLaunch(crEntriesXml[0], subject, predicate);
 		}
 	} else if (typeof rangesXml != "undefined"){//if the getRange response has only ranges section
-		return classicRangesLaunch(rangesXml);
+		return classicRangesLaunch(rangesXml, subject, predicate);
 	}
 }
 
