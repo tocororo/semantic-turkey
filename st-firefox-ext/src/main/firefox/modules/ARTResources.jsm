@@ -63,7 +63,7 @@ ARTLiteral = function(label, datatype, lang, isTypedLiteral){
 	};
 	
 	this.toNT = function() {
-		var nt = "\"" + label + "\"";
+		var nt = JSON.stringify(label);
 		
 		if (lang != null && lang.length > 0) {
 			nt += "@" + lang;

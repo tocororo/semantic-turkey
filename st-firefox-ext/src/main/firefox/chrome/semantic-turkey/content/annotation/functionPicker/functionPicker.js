@@ -33,8 +33,8 @@ window.onload = function() {
 	var handlers = window.arguments[0].handlers;
 
 	var bindings = {};
-	bindings["source-text"] = event.selection.toString().quote();
-	bindings["target-resource"] = event.resource.getShow().quote();
+	bindings["source-text"] = JSON.stringify(event.selection.toString());
+	bindings["target-resource"] = JSON.stringify(event.resource.getShow());
 	
 	var headerLabel = document.getElementById("headerLabel");
 	var interpolatedHeader = art_semanticturkey.MessageInterpolator.interpolate(headerLabel.getAttribute("value"), bindings);
