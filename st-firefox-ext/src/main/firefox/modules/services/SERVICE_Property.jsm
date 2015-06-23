@@ -32,6 +32,23 @@ function getPropertyTree(instanceQName, method) {
 	}
 }
 
+function getPropertyList(role, subPropOf, notSubPropOf) {
+	Logger.debug('[SERVICE_Property.jsm] getPropertyList');
+	var params = [];
+	if (typeof role != "undefined"){
+		params.push("role=" + role);
+	}
+	if (typeof subPropOf != "undefined"){
+		params.push("subPropOf=" + subPropOf);
+	}
+	if (typeof notSubPropOf != "undefined"){
+		params.push("notSubPropOf=" + notSubPropOf);
+	}
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(
+			SemTurkeyHTTPLegacy.GET(serviceName, service.getPropertyListRequest, params, contextAsArray));
+}
+
 /**
  * gets the tree of all object properties in the ontology. If specified, it only returns properties applicable to <code>instanceQName</code>
  * 
@@ -438,6 +455,7 @@ service.prototype.removePropertyRange = removePropertyRange;
 service.prototype.getDomain = getDomain;
 service.prototype.getRange = getRange;
 service.prototype.parseDataRange=parseDataRange;
+service.prototype.getPropertyList=getPropertyList;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

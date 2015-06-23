@@ -14,6 +14,10 @@ STRequests.Administration = function(){};
 /**
  * @class
  */
+STRequests.Alignment = function(){};
+/**
+ * @class
+ */
 STRequests.Annotate = function(){};
 /**
  * @class
@@ -124,6 +128,10 @@ STRequests.ResourceView = function(){};
  */
 STRequests.XMLSchema = function(){};
 
+//Alignment service requests
+STRequests.Alignment.serviceName = "Alignment";
+STRequests.Alignment.addAlignmentRequest = "addAlignment";
+
 //systemStart service requests
 STRequests.SystemStart.serviceName = "systemStart";
 STRequests.SystemStart.startRequest = "start";
@@ -177,6 +185,7 @@ STRequests.Refactor.replaceBaseURIRequest = "replaceBaseURI";
 //property service requests
 STRequests.Property.serviceName = "property";
 STRequests.Property.getPropertiesTreeRequest = "getPropertiesTree";
+STRequests.Property.getPropertyListRequest = "getPropertyList";
 STRequests.Property.getObjPropertiesTreeRequest = "getObjPropertiesTree";
 STRequests.Property.getDatatypePropertiesTreeRequest = "getDatatypePropertiesTree";
 STRequests.Property.getAnnotationPropertiesTreeRequest = "getAnnotationPropertiesTree";

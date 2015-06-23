@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://semantic-turkey/content/skos/widget/conceptTree/conceptTree.css" type="text/css"?> 
+
+<window id="selectAlignmentWindow" title="Concept browser"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:st="http://semanticturkey.uniroma2.it/xmlns/widget#"
+	width="500" height="500">
+
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/alignment/browseExternalConcept.js" />
+		
+	<menulist id="projectsMenulist">
+		<menupopup id="projectsMenupopup">
+			<menuitem label="---" />
+		</menupopup>
+	</menulist>
+	
+	<menulist id="schemesMenulist" disabled="true">
+		<menupopup id="schemesMenupopup">
+			<menuitem label="---" />
+		</menupopup>
+	</menulist>
+
+	<st:conceptTree id="conceptTree" flex="1" hideheading="true" hidetoolbar="true" mutable="false"/>
+	
+	
+	<hbox>
+		<button id="okBtn" label="Ok" flex="1" />
+		<button id="cancelBtn" label="Cancel" flex="1" />
+	</hbox>
+</window>
+
+

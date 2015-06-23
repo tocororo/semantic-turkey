@@ -132,3 +132,6 @@ art_semanticturkey.onCancel = function() {
 	window.arguments[0].oncancel = true;
 	window.close();
 };
+
+//set oncancel to true also when the window is closed with the window's close button
+window.addEventListener("close", function() {window.arguments[0].oncancel = true;}, false);

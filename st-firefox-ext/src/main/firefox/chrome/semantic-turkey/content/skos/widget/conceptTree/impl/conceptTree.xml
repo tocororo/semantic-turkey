@@ -34,6 +34,7 @@
 				Components.utils.import("resource://stmodules/Logger.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Commands.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stmodules/Context.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stservices/SERVICE_OntoSearch.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/PrefUtils.jsm", this.art_semanticturkey);
@@ -75,7 +76,15 @@
 								language = bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en");
 							}
 							
-							deserializedResponse=bound.art_semanticturkey.STRequests.SKOS.getTopConcepts(bound.conceptScheme == "*" ? null : bound.conceptScheme, language);
+							if (typeof bound.projectName != "undefined"){
+								bound.art_semanticturkey.Logger.debug("PROJECT NAME " + bound.projectName);
+								var specifiedContext = new bound.art_semanticturkey.Context();
+								specifiedContext.setProject(bound.projectName);
+								var serviceInstance = bound.art_semanticturkey.STRequests.SKOS.getAPI(specifiedContext);
+								deserializedResponse=serviceInstance.getTopConcepts(bound.conceptScheme == "*" ? null : bound.conceptScheme, language);
+							} else {
+								deserializedResponse=bound.art_semanticturkey.STRequests.SKOS.getTopConcepts(bound.conceptScheme == "*" ? null : bound.conceptScheme, language);
+							}
 						}catch (e) {
 							return [];
 						}
@@ -90,8 +99,16 @@
 							if (isHumanReadable) {
 								language = bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en");
 							}
-						
-							deserializedResponse=bound.art_semanticturkey.STRequests.SKOS.getNarrowerConcepts(id, bound.conceptScheme == "*" ? null : bound.conceptScheme, language);
+							
+							if (typeof bound.projectName != "undefined"){
+								bound.art_semanticturkey.Logger.debug("PROJECT NAME " + bound.projectName);
+								var specifiedContext = new bound.art_semanticturkey.Context();
+								specifiedContext.setProject(bound.projectName);
+								var serviceInstance = bound.art_semanticturkey.STRequests.SKOS.getAPI(specifiedContext);
+								deserializedResponse=serviceInstance.getNarrowerConcepts(id, bound.conceptScheme == "*" ? null : bound.conceptScheme, language);
+							} else {
+								deserializedResponse=bound.art_semanticturkey.STRequests.SKOS.getNarrowerConcepts(id, bound.conceptScheme == "*" ? null : bound.conceptScheme, language);
+							}
 						}catch (e) {
 							return [];
 						}

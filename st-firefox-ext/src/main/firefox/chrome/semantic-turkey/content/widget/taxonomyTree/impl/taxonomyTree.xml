@@ -787,12 +787,22 @@
 			<destructor>
 				this.stEventArray2.deregisterAllListener();
 			</destructor>
-				<property name="mutable">
+			<property name="mutable">
 				<getter>
 					return this.getAttribute("mutable") != "false" ? true : false;
 				</getter>
 				<setter>
 					this.setAttribute("mutable", val);
+				</setter>
+			</property>
+			<property name="projectName">
+				<getter>
+					return this._projectName;
+				</getter>
+				<setter>
+					if (typeof this._projectName == "undefined" || this._projectName != val) {
+						this._projectName = val;
+					}
 				</setter>
 			</property>
 		</implementation>
