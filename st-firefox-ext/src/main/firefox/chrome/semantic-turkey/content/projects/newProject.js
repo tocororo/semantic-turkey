@@ -1,16 +1,17 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SystemStart.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_OntManager.jsm", art_semanticturkey);
-Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);		
+Components.utils.import("resource://stservices/SERVICE_Plugins.jsm", art_semanticturkey);
 
 window.onload = function(){
 	
 	document.getElementById("newProject").addEventListener("command", art_semanticturkey.onAccept, true);
 	document.getElementById("cancel").addEventListener("command", art_semanticturkey.cancel, true);
-	document.getElementById("openConf").addEventListener("command", art_semanticturkey.openConfiguration, true);
+	document.getElementById("openTripleStoreConf").addEventListener("command", art_semanticturkey.openTripleStoreConfiguration, true);
 	document.getElementById("projectName").focus();
 	if(window.arguments[0].fromFile == false){
 		document.getElementById("fromFileRow").hidden = true;
@@ -25,6 +26,9 @@ window.onload = function(){
 
 	var responseXML = art_semanticturkey.STRequests.SystemStart.listOntManagers();
 	art_semanticturkey.populateTripleStoreMenulist_RESPONSE(responseXML);
+	
+	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator");
+	window.sizeToContent();
 };
 
 // this function will be erased once we provide full support for SKOS
@@ -72,7 +76,6 @@ art_semanticturkey.populateTripleStoreMenulist_RESPONSE = function(responseEleme
 	}
 };
 
-
 art_semanticturkey.setOntManager = function(){
 	var selectedItem = document.getElementById("tripleStoreMenulist").selectedItem;
 	var repositoryName = selectedItem.getAttribute("id");
@@ -108,10 +111,14 @@ art_semanticturkey.setOntManager_RESPONSE = function(responseElement){
 			document.getElementById("modeMenulist").selectedItem = menuItem;
 	}
 	document.getElementById("modeMenulist").setAttribute("disabled", false);
-	document.getElementById("openConf").setAttribute("disabled", false);
+	document.getElementById("openTripleStoreConf").setAttribute("disabled", false);
 };
 
-art_semanticturkey.openConfiguration = function(){
+/**
+ * listener to "Configure" button of the triple store. Opens a window that allows to edit the 
+ * configuration parameters of the triple store
+ */
+art_semanticturkey.openTripleStoreConfiguration = function(){
 	var selectedItem = document.getElementById("modeMenulist").selectedItem;
 	var repositoryName = selectedItem.getAttribute("id");
 	var parameters = new Object();
@@ -127,8 +134,159 @@ art_semanticturkey.openConfiguration = function(){
 		parameters);
 	
 	return parameters.saved;
-
 };
+
+/**
+ * Build the UI for an extension point configurator. It create a groupbox containing:
+ * - A menulist to choose one of the available plugin for the given extension point
+ * - A menulist to choose one of the available configuration for the chosen plugin
+ * - A button to edit the configuration 
+ */
+art_semanticturkey.buildExtensionPointUI = function(extensionPoint) {
+	var groupbox = document.createElement("groupbox");
+	extPointLocalName = extensionPoint.substring(extensionPoint.lastIndexOf(".")+1);
+	groupbox.extensionPoint = extPointLocalName;
+	var caption = document.createElement("caption");
+	caption.setAttribute("label", extPointLocalName);
+	groupbox.appendChild(caption);
+	//3-columns grid
+	var grid = document.createElement("grid");
+	var columns = document.createElement("columns");
+	var column = document.createElement("column");
+	column.setAttribute("width", "100");
+	columns.appendChild(column);
+	column = document.createElement("column");
+	column.setAttribute("flex", "1");
+	columns.appendChild(column);
+	column = document.createElement("column");
+	column.setAttribute("width", "100");
+	columns.appendChild(column);
+	grid.appendChild(columns);
+	//2 rows
+	var rows = document.createElement("rows");
+	rows.setAttribute("flex", "1");
+	//1st row containing menu listing available plugin for the given extensionPoint
+	var row = document.createElement("row");
+	row.setAttribute("align", "center");
+	var label = document.createElement("label");
+	label.setAttribute("value", "Plugin:");
+	row.appendChild(label);
+	var pluginMenulist = document.createElement("menulist");
+	art_semanticturkey.populateAvailablePluginMenulist(extensionPoint, pluginMenulist);
+	row.appendChild(pluginMenulist);
+	rows.appendChild(row);
+	//2nd row containing menu listing available configuration for the plugin chosed in 1st menu
+	row = document.createElement("row");
+	row.setAttribute("align", "center");
+	var label = document.createElement("label");
+	label.setAttribute("value", "Configuration:");
+	row.appendChild(label);
+	var configurationMenulist = document.createElement("menulist");
+	configurationMenulist.setAttribute("disabled", "true");
+	row.appendChild(configurationMenulist);
+	pluginMenulist.addEventListener("select", function() {
+			art_semanticturkey.populatePluginConfigurationMenulist(
+					pluginMenulist.selectedItem.id, configurationMenulist);
+		}, false);
+	var button = document.createElement("button");
+	button.setAttribute("disabled", "true");
+	button.setAttribute("label", "Configure");
+	button.addEventListener("command", function() {
+			art_semanticturkey.openPluginConfiguration(configurationMenulist.selectedItem);
+		}, true);
+	row.appendChild(button);
+	
+	rows.appendChild(row);
+	grid.appendChild(rows);
+	groupbox.appendChild(grid);
+
+	document.getElementById("extensionPointsBox").appendChild(groupbox);
+}
+
+/**
+ * Given an extension point, gets the available plugin and populates a menulist
+ */
+art_semanticturkey.populateAvailablePluginMenulist = function(extensionPoint, pluginMenulist) {
+	var responseXML = art_semanticturkey.STRequests.Plugins.getAvailablePlugins(extensionPoint);
+	var pluginList = responseXML.getElementsByTagName('plugin');
+	
+	var menupopup = document.createElement("menupopup");
+	var menuitem = document.createElement("menuitem");
+	menuitem.setAttribute("id","---");
+	menuitem.setAttribute("label","---");
+	menupopup.appendChild(menuitem);
+	
+	for (var i=0; i<pluginList.length; i++) {
+		var factoryID = pluginList[i].getAttribute("factoryID");
+		var factoryLocalname = factoryID.substring(factoryID.lastIndexOf(".")+1);
+		
+		var menuitem = document.createElement("menuitem");
+		menuitem.setAttribute("id",factoryID);
+		menuitem.setAttribute("label",factoryLocalname);
+		menupopup.appendChild(menuitem);
+	}
+	pluginMenulist.appendChild(menupopup);
+}
+
+/**
+ *	given a pluginId gets its configurations and populates the configuration menu 
+ */
+art_semanticturkey.populatePluginConfigurationMenulist = function(pluginId, configurationMenulist) {
+	if (pluginId != "---"){
+		var responseXML = art_semanticturkey.STRequests.Plugins.getPluginConfigurations(pluginId);
+		
+		var configList = responseXML.getElementsByTagName("configuration");
+		//reset (removing) the menupopup child of the menulist
+		if (configurationMenulist.firstChild)
+			configurationMenulist.removeChild(configurationMenulist.firstChild);
+		//Then create it again from scratch
+		var menupopup = document.createElement("menupopup");
+		for (var i=0; i<configList.length; i++){
+			var menuItem = document.createElement("menuitem");
+			menuItem.setAttribute("label", configList[i].getAttribute("shortName"));
+			menuItem.shortName = configList[i].getAttribute("shortName");
+			menuItem.editRequired = configList[i].getAttribute("editRequired");
+			menuItem.type = configList[i].getAttribute("type");
+			var parList = configList[i].getElementsByTagName("par");
+			menuItem.defaultParamsXml = parList;
+			menuItem.par = new Array();
+			for(var k=0; k<parList.length; k++){
+				menuItem.par[k] = new Object();
+				menuItem.par[k].description = parList[k].getAttribute("description");
+				menuItem.par[k].name = parList[k].getAttribute("name");
+				menuItem.par[k].required = parList[k].getAttribute("required");
+				menuItem.par[k].value = parList[k].textContent;
+			}
+			menupopup.appendChild(menuItem);
+		}
+		configurationMenulist.appendChild(menupopup);
+		configurationMenulist.selectedIndex = 0;
+		configurationMenulist.setAttribute("disabled", false);
+		configurationMenulist.parentNode.getElementsByTagName("button")[0].setAttribute("disabled", false);
+	}
+}
+
+/**
+ * listener to "Configure" button of a plugin. Opens a window that allows to edit the configuration
+ * parameters of a plugin
+ */
+art_semanticturkey.openPluginConfiguration = function(configurationMenuitem){
+	var parameters = new Object();
+	//menuitem > menupopup > menulist > row > rows > grid > groupbox
+	var extPoint = configurationMenuitem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.
+		getElementsByTagName("caption")[0].getAttribute("label");
+	parameters.extensionPoint = extPoint; 
+	parameters.shortName = configurationMenuitem.shortName;
+	parameters.parArray = configurationMenuitem.par;
+	parameters.defaultParamsXml = configurationMenuitem.defaultParamsXml;
+	parameters.saved = false;
+	window.openDialog("chrome://semantic-turkey/content/projects/pluginConfiguration.xul", "_blank",
+			"chrome,dependent,dialog,modal=yes,resizable,centerscreen", 
+			parameters);
+	configurationMenuitem.par = parameters.parArray;
+	
+	return parameters.saved;
+}
 
 art_semanticturkey.onAccept = function() {
 	art_semanticturkey.DisabledAllButton(true);
@@ -141,9 +299,29 @@ art_semanticturkey.onAccept = function() {
 	//check if this configuration has the attribute editRequired set to true, if so open the configurationOntMgr
 	var selectedItem = document.getElementById("modeMenulist").selectedItem;
 	if(selectedItem.editRequired == "true"){
-		if(art_semanticturkey.openConfiguration() == false){
+		if(art_semanticturkey.openTripleStoreConfiguration() == false){
 			art_semanticturkey.DisabledAllButton(false);
 			return;
+		}
+	}
+	
+	//perform checks on each extension point configuration
+	var extPointGroupboxList = document.getElementById("extensionPointsBox").childNodes;
+	for (var i=0; i<extPointGroupboxList.length; i++){
+		var groupbox = extPointGroupboxList[i];
+		var configurationMenulist = groupbox.getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
+		if (configurationMenulist.getAttribute("disabled") == "true"){
+			art_semanticturkey.DisabledAllButton(false);
+			alert("Please configure extension point " + groupbox.extensionPoint);
+			return;
+		}
+		//check if configuration with "editRequired" true have been configured
+		//still not tested: there are not yet plugin with configuration that require to be configured
+		if (configurationMenulist.selectedItem.editRequired == "true") {
+			if(art_semanticturkey.openPluginConfiguration(configurationMenulist.selectedItem) == false){
+				art_semanticturkey.DisabledAllButton(false);
+				return;
+			}
 		}
 	}
 	
@@ -152,6 +330,22 @@ art_semanticturkey.onAccept = function() {
 	var uri = document.getElementById("uri").value;
 	var tripleStore = document.getElementById("tripleStoreMenulist").selectedItem.getAttribute("id");
 	var ontMgrConfiguration = document.getElementById("modeMenulist").selectedItem.typeOntMgr;
+	//for every extension point get the chosen plugin and configuration type
+	for (var i=0; i<extPointGroupboxList.length; i++){
+		var groupbox = extPointGroupboxList[i];
+		var pluginMenulist = groupbox.getElementsByTagName("row")[0].getElementsByTagName("menulist")[0];
+		var pluginId = pluginMenulist.selectedItem.getAttribute("id");
+		var configurationMenulist = groupbox.getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
+		var configurationType = configurationMenulist.selectedItem.type;
+		var configurationPar = configurationMenulist.selectedItem.par;
+	}
+	//TODO configuration parameters of extension point aren't still handled in project creation services
+//	art_semanticturkey.Logger.debug("pluginId: " + pluginId + ", configurationType: " + configurationType);
+//	for (var i=0; i<configurationPar.length; i++){
+//		art_semanticturkey.Logger.debug("Param: " + configurationPar[i].name + ": " + configurationPar[i].value);
+//	}
+	
+	
 	var srcLocalFile = document.getElementById("srcLocalFile").value;
 	
 	if((projectName == "") || (uri == "")){

@@ -33,15 +33,15 @@
 	<vbox id="repBox" flex="1">
 		<grid flex="1">
 			<columns>
-				<column flex="1" />
+				<column width="100" />
 				<column flex="1" />
 			</columns>
 			<rows flex="1">
-				<row>
+				<row align="center">
 					<label value="Project Name: " />
 					<textbox id="projectName" value="" />
 				</row>
-				<row>
+				<row align="center">
 					<label value="Project Type: " />
 					<menulist id="ontologyTypeMenulist">
 						<menupopup id="ontologyTypeMenupopup">
@@ -50,38 +50,49 @@
 <!-- 					    <menuitem label="SKOS" value="SKOS"/> -->
 <!-- 					    <menuitem label="SKOS-XL" value="SKOS-XL"/> -->
 <!-- 					    <menuitem label="RDF" value="RDF"/>  -->
-<!--					    <menuitem label="RDFS" value="RDFS"/>   -->		      						
+<!--					    <menuitem label="RDFS" value="RDFS"/>   -->
 						</menupopup>
 					</menulist>					
 				</row>
 				
-				<row>
+				<row align="center">
 					<label value="URI: " />
 					<textbox id="uri" value="" />
 				</row>
-				<row>
-					<label value="Triple Store: " />
-					<menulist id="tripleStoreMenulist">
-						<menupopup id="tripleStoreMenupopup">
-						</menupopup>
-					</menulist>
-				</row>
+				
 				<groupbox>
-					<row>
-						<label value="mode: " flex="2"/>
-						<menulist id="modeMenulist" disabled="true" flex="3">
-							<menupopup id="modeMenupopup">
-								<!--<menuitem label="Continuous Editing" id="" selected="true" />
-								<menuitem label="Save2Store" id="saveToStore"/> -->
-							</menupopup>
-						</menulist>
-						<button id="openConf" label="Configuration" flex="1" disabled="true"/>
-					</row>
+					<grid>
+						<columns>
+							<column width="100" />
+							<column flex="1"/>
+							<column width="100" />
+						</columns>
+						<rows flex="1">
+							<row align="center">	
+								<label value="Triple Store: " />
+								<menulist id="tripleStoreMenulist">
+									<menupopup id="tripleStoreMenupopup">
+									</menupopup>
+								</menulist>
+							</row>
+							<row align="center">
+								<label value="Mode: " flex="2"/>
+								<menulist id="modeMenulist" disabled="true">
+									<menupopup id="modeMenupopup"/>
+								</menulist>
+								<button id="openTripleStoreConf" label="Configure" flex="1" disabled="true"/>
+							</row>
+						</rows>
+					</grid>
 				</groupbox>
+				
 				<row id="fromFileRow">
 					<button id="dirBtn" label="Select rdf/owl file"/>
 					<textbox id="srcLocalFile" value="" />
 				</row>
+				
+				<vbox id="extensionPointsBox"/>
+				
 			</rows>
 		</grid>
 	</vbox>

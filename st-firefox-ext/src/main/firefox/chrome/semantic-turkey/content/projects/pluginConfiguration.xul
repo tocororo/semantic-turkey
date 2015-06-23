@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<window id="pluginConfiguration"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="500" height="250">
+
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/projects/pluginConfiguration.js" />
+
+	<groupbox flex="1">
+		<caption align="center">
+			<label id="confLabel"/>
+		</caption>
+		<hbox>
+			<listbox id="parListbox" flex="1">
+				<listhead>
+					<listheader label="Name"/>
+					<listheader label="Value"/>
+				</listhead>
+				<listcols>
+					<listcol width="100"/>
+					<listcol flex="1"/>
+				</listcols>
+			</listbox>
+			<vbox >
+				<button id="addParBtn" label="Add"/>
+				<button id="removeParBtn" label="Remove" disabled="true"/>
+				<button id="restoreParBtn" label="Restore"/>
+			</vbox>
+		</hbox>
+	</groupbox>
+	
+	<label id="requireParLegend" value="(*) Required parameter" hidden="true" />
+	<hbox>
+		<button id="okBtn" label="Ok" flex="1" />
+		<button id="cancelBtn" label="Cancel" flex="1" />
+	</hbox>
+</window>
+
+

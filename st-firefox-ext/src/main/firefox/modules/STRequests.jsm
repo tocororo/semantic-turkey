@@ -100,7 +100,11 @@ STRequests.Synonyms = function(){};
 /**
  * @class
  */
-STRequests.SystemStart = function(){};   
+STRequests.SystemStart = function(){};
+/**
+ * @class
+ */
+STRequests.Plugins = function(){};
 /**
  * @class
  */
@@ -431,6 +435,10 @@ STRequests.Projects.getAccessStatusMapRequest = "getAccessStatusMap";	//NEW
 STRequests.Projects.updateAccessLevelRequest = "updateAccessLevel";	//NEW
 STRequests.Projects.updateLockLevelRequest = "updateLockLevel";	//NEW
 
+//Plugins requests
+STRequests.Plugins.serviceName = "Plugins";
+STRequests.Plugins.getAvailablePluginsRequest = "getAvailablePlugins";
+STRequests.Plugins.getPluginConfigurationsRequest = "getPluginConfigurations";
 
 //ontManager service request
 STRequests.OntManager.serviceName = "ontManager";
