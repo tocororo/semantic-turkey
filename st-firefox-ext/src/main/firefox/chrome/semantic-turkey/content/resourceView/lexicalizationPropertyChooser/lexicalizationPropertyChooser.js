@@ -53,6 +53,8 @@ art_semanticturkey.lexicalizationPropertyChooser.visualizeTree = function() {
 
 	lexicalizationPropertiesContainer
 			.appendChild(lexicalizationPropertiesListBox);
+	
+	window.sizeToContent();
 }
 
 art_semanticturkey.lexicalizationPropertyChooser.acceptHander = function(event) {
