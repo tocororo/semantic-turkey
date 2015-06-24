@@ -74,6 +74,7 @@ art_semanticturkey.restoreConfigurationParameter = function(){
 		parArray[i].value = defaultParamsXml[i].textContent;
 	}
 	art_semanticturkey.populateParameterListbox(parArray);
+	document.getElementById("removeParBtn").setAttribute("disabled", "true");
 }
 
 /**
@@ -130,6 +131,7 @@ art_semanticturkey.removeConfigurationParameter = function(){
 			alert("'" + parName + "' is a required configuration parameter, you cannot delete it.");
 		} else {
 			parListbox.removeItemAt(parListbox.getIndexOfItem(item));
+			document.getElementById("removeParBtn").setAttribute("disabled", "true");
 		}
 	}
 }
