@@ -7,16 +7,22 @@ import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
+import it.uniroma2.art.owlart.query.GraphQuery;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfig;
@@ -59,6 +65,8 @@ import java.util.Map.Entry;
 
 import javax.servlet.ServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -79,6 +87,8 @@ public class CustomRanges extends STServiceAdapter {
 	private CustomRangeProvider crProvider;
 	@Autowired
 	private ServletRequest request;
+	
+	protected static Logger logger = LoggerFactory.getLogger(CustomRanges.class);
 	
 	/**
 	 * This service get as parameters a custom range id and a set of userPrompt key-value pairs
@@ -430,14 +440,63 @@ public class CustomRanges extends STServiceAdapter {
 	 * @param resource
 	 * @return
 	 * @throws ModelUpdateException
+	 * @throws MalformedQueryException 
+	 * @throws ModelAccessException 
+	 * @throws UnsupportedQueryLanguageException 
+	 * @throws QueryEvaluationException 
 	 */
 	@GenerateSTServiceController
-	public Response removeReifiedResource(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource) throws ModelUpdateException{
+	public Response removeReifiedResource(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource)
+			throws ModelUpdateException, UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		
+		logger.debug("deleting reified resource " + resource.getNominalValue());
+		
 		RDFModel model = getOWLModel();
+		//remove resource as object in the triple <s, p, o> for the given subject and predicate
 		model.deleteTriple(subject, predicate, resource, getWorkingGraph());
-		model.deleteTriple(resource, NodeFilters.ANY, NodeFilters.ANY, getWorkingGraph());
+		deleteResourceOnCascade(resource);
+		
 		return response;
+	}
+	
+	/**
+	 * Deletes a resource only if this 
+	 * @param resource
+	 * @param subject
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 * @throws ModelUpdateException 
+	 */
+	private void deleteResourceOnCascade(ARTNode resource) 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException, ModelUpdateException{
+		RDFModel model = getOWLModel();
+		GraphQuery gq = model.createGraphQuery("describe <" + resource + ">");
+		ARTStatementIterator itStats = gq.evaluate(false);
+		Collection<ARTStatement> stats = RDFIterators.getCollectionFromIterator(itStats);
+		//check if resource can be deleted
+		for (ARTStatement s : stats){
+			ARTResource subj = s.getSubject();
+			//avoid deletion of resource if this appears in some triple not as subject
+			if (!subj.equals(resource)){
+				return;
+			}
+		}
+		logger.debug("deleting on cascade " + resource.getNominalValue());
+		//delete resource and its description
+		for (ARTStatement s : stats){
+			logger.debug("Deleting triple:" +
+					"\nS: " + s.getSubject().getNominalValue() +
+					"\nP: " + s.getPredicate().getNominalValue() +
+					"\nO: " + s.getObject().getNominalValue());
+			model.deleteStatement(s, getWorkingGraph());
+			if (s.getObject().isResource() && !s.getObject().equals(resource)) {
+				logger.debug(s.getObject() + " is in turn reifiable.");
+				deleteResourceOnCascade(s.getObject());
+			}
+		}
 	}
 	
 	@GenerateSTServiceController
