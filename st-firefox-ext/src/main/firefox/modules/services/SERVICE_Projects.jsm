@@ -69,7 +69,7 @@ function repairProject(projectName){	//NEW
  * @return
  */
 function newProject(projectName, modelType, baseURI, ontManagerFactoryID, modelConfigurationClass, 
-		modelConfigurationArray) { //NEW
+		modelConfigurationArray, uriGenFactoryID, uriGenConfigurationClass, uriGenConfigurationArray) { //NEW
 	Logger.debug('[SERVICE_Projects.jsm] newProject');
 	
 	var consumer = "consumer="+ STInfo.getSystemProjectName(); 
@@ -86,10 +86,22 @@ function newProject(projectName, modelType, baseURI, ontManagerFactoryID, modelC
 			modelConfiguration +="\n";
 		modelConfiguration += namePar+"="+valuePar;
 	}
+	var uriGenFactoryID = "uriGeneratorFactoryID=" + uriGenFactoryID;
+	var uriGenConfigurationClass = "uriGenConfigurationClass=" + uriGenConfigurationClass;
+	var uriGenConfiguration = "uriGenConfiguration=";
+	for ( var i=0; i < uriGenConfigurationArray.length; ++i){
+		var namePar = uriGenConfigurationArray[i].name;
+		var valuePar = uriGenConfigurationArray[i].value;
+		if(i!=0)
+			uriGenConfiguration +="\n";
+		uriGenConfiguration += namePar+"="+valuePar;
+	}
+	
 	//var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 	return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
-			projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration);
+			projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration,
+			uriGenFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 }
 
 /**

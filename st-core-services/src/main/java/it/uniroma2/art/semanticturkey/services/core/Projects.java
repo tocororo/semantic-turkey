@@ -91,12 +91,13 @@ public class Projects extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration)
+			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
+			String uriGenConfigurationClass, Properties uriGenConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 
 		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();

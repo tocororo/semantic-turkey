@@ -216,6 +216,9 @@ public class ProjectManager {
 	 * @param ontManagerFactoryID
 	 * @param modelConfigurationClass
 	 * @param modelConfiguration
+	 * @param uriGeneratorFactoryID
+	 * @param uriGenConfigurationClassName
+	 * @param uriGenConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -225,12 +228,14 @@ public class ProjectManager {
 	 */
 	public static Project<? extends RDFModel> createProject(String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration)
+			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
+			String uriGenConfigurationClass, Properties uriGenConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		return createProject(ProjectConsumer.SYSTEM, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
+				uriGenConfigurationClass, uriGenConfiguration);
 	}
 
 	/**
@@ -245,6 +250,9 @@ public class ProjectManager {
 	 * @param ontManagerFactoryID
 	 * @param modelConfigurationClass
 	 * @param modelConfiguration
+	 * @param uriGeneratorFactoryID
+	 * @param uriGenConfigurationClassName
+	 * @param uriGenConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -254,12 +262,13 @@ public class ProjectManager {
 	 */
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration)
+			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
+			String uriGenConfigurationClass, Properties uriGenConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		return createProject(consumer, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 	}
 
 	/**
@@ -277,6 +286,9 @@ public class ProjectManager {
 	 * @param ontManagerFactoryID
 	 * @param modelConfigurationClass
 	 * @param modelConfiguration
+	 * @param uriGeneratorFactoryID
+	 * @param uriGenConfigurationClassName
+	 * @param uriGenConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -286,14 +298,16 @@ public class ProjectManager {
 	 */
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace,
-			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration)
+			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration,
+			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 
 		File projectDir = resolveProjectNameToDir(projectName);
 
 		return createProject(consumer, projectName, modelType, projectDir, baseURI, defaultNamespace,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration);
+				ontManagerFactoryID, modelConfigurationClass, modelConfiguration,
+				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 	}
 
 	/**
@@ -318,13 +332,16 @@ public class ProjectManager {
 	 * @param ontManagerFactoryID
 	 * @param modelConfigurationClassName
 	 * @param modelConfiguration
+	 * @param uriGeneratorFactoryID
+	 * @param uriGenConfigurationClassName
+	 * @param uriGenConfiguration
 	 * @return
 	 * @throws ProjectCreationException
 	 */
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
-			// public static <MODELTYPE extends RDFModel> Project<MODELTYPE> createProject(String projectName,
 			Class<? extends RDFModel> modelType, File projectDir, String baseURI, String defaultNamespace,
-			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration)
+			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration,
+			String uriGeneratorFactoryID, String uriGenConfigurationClassName, Properties uriGenConfiguration)
 			throws ProjectCreationException {
 
 		try {
@@ -346,7 +363,8 @@ public class ProjectManager {
 
 			logger.debug("building project directory");
 			prepareProjectFiles(projectName, modelType, projectDir, baseURI, defaultNamespace,
-					ontManagerFactoryID, modelConfigurationClassName, modelConfiguration, projType, consumer);
+					ontManagerFactoryID, modelConfigurationClassName, modelConfiguration,
+					uriGeneratorFactoryID, uriGenConfigurationClassName, uriGenConfiguration, projType, consumer);
 
 			logger.debug("activating project");
 			// return activateProject(projectName);
@@ -370,6 +388,7 @@ public class ProjectManager {
 	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(String projectName,
 			Class<MODELTYPE> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerID, String modelConfigurationClass, Properties modelConfiguration,
+			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
 			ProjectType type, ProjectConsumer consumer) throws DuplicatedResourceException,
 			ProjectCreationException {
 		if (projectDir.exists())
@@ -390,6 +409,8 @@ public class ProjectManager {
 			BufferedWriter out = new BufferedWriter(new FileWriter(info_stp));
 			out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
 			out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
+			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorFactoryID) + "\n");
+			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGenConfigurationClass) + "\n");
 			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
 			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
 			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
@@ -409,10 +430,15 @@ public class ProjectManager {
 			// Model COnfiguration file creation
 			File modelConfigurationFile = new File(projectDir, Project.MODELCONFIG_FILENAME);
 			modelConfigurationFile.createNewFile();
-
-			FileWriter fw = new FileWriter(modelConfigurationFile);
-			modelConfiguration.store(fw, "model configuration, initialized from project initialization");
-			fw.close();
+			try (FileWriter fw = new FileWriter(modelConfigurationFile)){
+				modelConfiguration.store(fw, "model configuration, initialized from project initialization");
+			}
+			
+			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
+			uriGenConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)){
+				uriGenConfiguration.store(fw, "uri generator configuration, initialized from project initialization");
+			}
 
 			logger.debug("all project info have been built");
 
@@ -1587,11 +1613,13 @@ public class ProjectManager {
 
 	public static Project<? extends RDFModel> createProjectAndSetAsCurrent(String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration)
+			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
+			String uriGenConfigurationClass, Properties uriGenConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		Project<? extends RDFModel> project = createProject(projectName, modelType, baseURI,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration);
+				ontManagerFactoryID, modelConfigurationClass, modelConfiguration,
+				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 		setCurrentProject(project);
 		return project;
 	}

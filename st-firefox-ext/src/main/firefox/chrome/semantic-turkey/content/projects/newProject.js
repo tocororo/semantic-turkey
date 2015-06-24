@@ -307,44 +307,50 @@ art_semanticturkey.onAccept = function() {
 	
 	//perform checks on each extension point configuration
 	var extPointGroupboxList = document.getElementById("extensionPointsBox").childNodes;
-	for (var i=0; i<extPointGroupboxList.length; i++){
-		var groupbox = extPointGroupboxList[i];
-		var configurationMenulist = groupbox.getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
-		if (configurationMenulist.getAttribute("disabled") == "true"){
+	//First groupbox (index 0): UriGenerator extension point
+	var uriGenGroupbox = extPointGroupboxList[0];
+	var configurationMenulist = uriGenGroupbox.getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
+	if (configurationMenulist.getAttribute("disabled") == "true"){
+		art_semanticturkey.DisabledAllButton(false);
+		alert("Please configure extension point " + uriGenGroupbox.extensionPoint);
+		return;
+	}
+	//check if configuration with "editRequired" true have been configured
+	//still not tested: there are not yet plugin with configuration that require to be configured
+	if (configurationMenulist.selectedItem.editRequired == "true") {
+		if(art_semanticturkey.openPluginConfiguration(configurationMenulist.selectedItem) == false){
 			art_semanticturkey.DisabledAllButton(false);
-			alert("Please configure extension point " + groupbox.extensionPoint);
 			return;
-		}
-		//check if configuration with "editRequired" true have been configured
-		//still not tested: there are not yet plugin with configuration that require to be configured
-		if (configurationMenulist.selectedItem.editRequired == "true") {
-			if(art_semanticturkey.openPluginConfiguration(configurationMenulist.selectedItem) == false){
-				art_semanticturkey.DisabledAllButton(false);
-				return;
-			}
 		}
 	}
 	
 	var projectName = document.getElementById("projectName").value;
 	var ontologyType = document.getElementById("ontologyTypeMenulist").selectedItem.getAttribute("value");
 	var uri = document.getElementById("uri").value;
+	
+	//ontMgr configuration and parameters
 	var tripleStore = document.getElementById("tripleStoreMenulist").selectedItem.getAttribute("id");
 	var ontMgrConfiguration = document.getElementById("modeMenulist").selectedItem.typeOntMgr;
-	//for every extension point get the chosen plugin and configuration type
-	for (var i=0; i<extPointGroupboxList.length; i++){
-		var groupbox = extPointGroupboxList[i];
-		var pluginMenulist = groupbox.getElementsByTagName("row")[0].getElementsByTagName("menulist")[0];
-		var pluginId = pluginMenulist.selectedItem.getAttribute("id");
-		var configurationMenulist = groupbox.getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
-		var configurationType = configurationMenulist.selectedItem.type;
-		var configurationPar = configurationMenulist.selectedItem.par;
+	var cfgParsArray = new Array();
+	var completecfsArray = document.getElementById("modeMenulist").selectedItem.par;
+	for(var i=0; i<completecfsArray.length; ++i){
+		cfgParsArray[i] = new Object();
+		cfgParsArray[i].name = completecfsArray[i].name;
+		cfgParsArray[i].value = completecfsArray[i].value;
 	}
-	//TODO configuration parameters of extension point aren't still handled in project creation services
-//	art_semanticturkey.Logger.debug("pluginId: " + pluginId + ", configurationType: " + configurationType);
-//	for (var i=0; i<configurationPar.length; i++){
-//		art_semanticturkey.Logger.debug("Param: " + configurationPar[i].name + ": " + configurationPar[i].value);
-//	}
 	
+	//uriGen configuration and parameters
+	var uriGenFactoryID = extPointGroupboxList[0].getElementsByTagName("row")[0]
+			.getElementsByTagName("menulist")[0].selectedItem.getAttribute("id");
+	var uriGenConfigMenulist = extPointGroupboxList[0].getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
+	var uriGenConfiguration = uriGenConfigMenulist.selectedItem.type;
+	var	uriGenParsArray = new Array();
+	var uriGenCfgPars = uriGenConfigMenulist.selectedItem.par;
+	for (var i=0; i<uriGenCfgPars.length; i++){
+		uriGenParsArray[i] = new Object();
+		uriGenParsArray[i].name = uriGenCfgPars[i].name;
+		uriGenParsArray[i].value = uriGenCfgPars[i].value;
+	}
 	
 	var srcLocalFile = document.getElementById("srcLocalFile").value;
 	
@@ -370,14 +376,7 @@ art_semanticturkey.onAccept = function() {
 		art_semanticturkey.DisabledAllButton(false);
 		return;
 	}
-	//prepare the array containing all the parameters for the selected configuration
-	var cfgParsArray = new Array();
-	var completecfsArray = document.getElementById("modeMenulist").selectedItem.par;
-	for(var i=0; i<completecfsArray.length; ++i){
-		cfgParsArray[i] = new Object();
-		cfgParsArray[i].name = completecfsArray[i].name;
-		cfgParsArray[i].value = completecfsArray[i].value;
-	}
+	
 	try{
 		window.arguments[0].parentWindow.art_semanticturkey.closeProject();
 		var responseXML;
@@ -388,7 +387,10 @@ art_semanticturkey.onAccept = function() {
 				uri,
 				tripleStore,
 				ontMgrConfiguration,
-				cfgParsArray);
+				cfgParsArray,
+				uriGenFactoryID,
+				uriGenConfiguration,
+				uriGenParsArray);
 		}
 		else{
 			responseXML = art_semanticturkey.STRequests.Projects.newProjectFromFile(
@@ -398,6 +400,9 @@ art_semanticturkey.onAccept = function() {
 				tripleStore,
 				ontMgrConfiguration,
 				cfgParsArray,
+				uriGenConfiguration,
+				uriGenFactoryID,
+				uriGenParsArray,
 				srcLocalFile);
 		}
 		art_semanticturkey.newProject_RESPONSE(responseXML, projectName, ontologyType);
