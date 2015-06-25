@@ -16,6 +16,12 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -91,11 +97,42 @@ public class Projects extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration)
+			String modelConfigurationClass, Properties modelConfiguration, 
+			@Optional String uriGeneratorFactoryID, @Optional String uriGenConfigurationClass,
+			@Optional Properties uriGenConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
+		
+		if (uriGeneratorFactoryID == null) {
+			uriGeneratorFactoryID = Project.URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
+		}
+		PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(uriGeneratorFactoryID);
+		PluginConfiguration pluginConf = null;
+		if (uriGenConfigurationClass == null) {
+			pluginConf = pluginFactory.createDefaultPluginConfiguration();
+			uriGenConfigurationClass = pluginConf.getClass().getName();
+		} else {
+			try {
+				pluginConf = pluginFactory.createPluginConfiguration(uriGenConfigurationClass);
+			} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
+					| UnloadablePluginConfigurationException e) {
+				throw new ProjectCreationException(e);
+			}
 
+		}
+		if (uriGenConfiguration == null) {
+			if (pluginConf.hasRequiredParameters()){
+				throw new ProjectCreationException("The implicitly assumed configuration class '" +
+						uriGenConfigurationClass + "' requires user configuration");
+			}
+			uriGenConfiguration = new Properties();
+			try {
+				pluginConf.storeParameters(uriGenConfiguration);
+			} catch (BadConfigurationException e) {
+				throw new ProjectCreationException(e);
+			}
+		}
+		
 		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 		

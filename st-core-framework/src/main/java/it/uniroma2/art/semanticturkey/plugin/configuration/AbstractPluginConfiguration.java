@@ -153,19 +153,28 @@ public abstract class AbstractPluginConfiguration implements PluginConfiguration
 	 */
 	public void storeParameters(File propertyFile) throws IOException, BadConfigurationException {
 		Properties props = new java.util.Properties();
-		FileWriter fileWriter = new FileWriter(propertyFile);
+		storeParameters(props);
+		try (FileWriter fileWriter = new FileWriter(propertyFile)){
+			props.store(fileWriter, "list of model configuration properties");
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#storeParameters(java.util.Properties)
+	 */
+	public void storeParameters(Properties props) throws BadConfigurationException {
 		try {
 			Collection<String> pars = getConfigurationParameters();
 			for (String par : pars) {
 				Object value = getParameterValue(par);
 				props.setProperty(par, value.toString());
 			}
-			props.store(fileWriter, "list of model configuration properties");
 		} catch (ConfParameterNotFoundException e) {
 			throw new BadConfigurationException(e);
 		}
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * 

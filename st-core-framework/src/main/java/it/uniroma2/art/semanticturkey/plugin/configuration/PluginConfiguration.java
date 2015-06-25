@@ -94,6 +94,13 @@ public interface PluginConfiguration {
 	public abstract void storeParameters(File propertyFile) throws IOException, BadConfigurationException;
 
 	/**
+	 * stores the parameters of this configuration in a Properties object 
+	 * @param properties
+	 * @throws BadConfigurationException
+	 */
+	public abstract void storeParameters(Properties props) throws BadConfigurationException;
+	
+	/**
 	 * get the expected type of content for the parameter. Can be used by external tools to drive the
 	 * acquisition of that value or to check
 	 * 
