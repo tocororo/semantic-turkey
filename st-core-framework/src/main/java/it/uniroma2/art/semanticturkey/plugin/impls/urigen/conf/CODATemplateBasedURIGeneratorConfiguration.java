@@ -21,7 +21,7 @@ public class CODATemplateBasedURIGeneratorConfiguration extends CODAURIGenerator
 	@PluginConfigurationParameter(description="Template for SKOS eXtended Labels")
 	public String xLabel = "xl_${lang}_${rand()}";
 	
-	@PluginConfigurationParameter(description="Template for SKOS Defintions")
+	@PluginConfigurationParameter(description="Template for SKOS Definitions")
 	public String xDefinition = "xDef_${rand()}";
 
 	@PluginConfigurationParameter(description="Fallback template for any unknown genre of resource")
