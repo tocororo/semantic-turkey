@@ -7,7 +7,10 @@
 			<stylesheet src="taxonomyTree.css" />
 		</resources>
 		<content>
-			<xul:toolbar id="taxonomyToolbar" ano_id="taxonomyToolbar" xbl:inherits="hidden=hidetoolbar"/>
+			<xul:hbox>
+				<xul:toolbar id="taxonomyToolbar" ano_id="taxonomyToolbar" xbl:inherits="hidden=hidetoolbar" flex="1"/>
+				<children />
+			</xul:hbox>
 			<xul:tree flex="1" context="_child" hidecolumnpicker="true" ano_id="taxonomyTree" seltype="single">
 				<xul:treecols ano_id="taxonomyHeading" />
 				<xul:treechildren ano_id="taxonomyChildren" flex="1" />
@@ -739,7 +742,7 @@
 			
 			bound._onStateChanged = function(msg) {
 				state = state.filter(function(e) {
-					return e + "!" != msg && e != msg + "!";
+					return e + "!" != msg && e != msg + "!" && e != msg;
 				});
 				
 

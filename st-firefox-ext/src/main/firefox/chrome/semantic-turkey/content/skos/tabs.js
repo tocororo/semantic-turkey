@@ -46,7 +46,7 @@ art_semanticturkey.init = function(event) {
 				
 				if (choice == true) {
 					art_semanticturkey.SkosScheme.setSelectedScheme(
-							art_semanticturkeyCurrentProject.getProjectName(), schemeList._view.visibleRows2[0].id);
+							art_semanticturkey.CurrentProject.getProjectName(), schemeList._view.visibleRows2[0].id);
 				}
 			}
 		}

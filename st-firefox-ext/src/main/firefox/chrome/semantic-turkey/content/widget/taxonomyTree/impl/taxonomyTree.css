@@ -16,6 +16,6 @@ treechildren::-moz-tree-checkbox(disabled)
 	list-style-image: url('chrome://semantic-turkey/skin/images/checkbox_disabled.png') !important;
 }
 toolbar[ano_id="taxonomyToolbar"] toolbarbutton[disabled="true"] image{
-	filter: url("chrome://mozapps/skin/extensions/extensions.svg#greyscale");
+	filter: grayscale(1);
 	opacity: 0.5;
 }

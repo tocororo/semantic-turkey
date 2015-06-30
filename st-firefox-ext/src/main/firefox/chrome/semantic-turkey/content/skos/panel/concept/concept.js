@@ -14,10 +14,9 @@ art_semanticturkey.init = function() {
 	
 	art_semanticturkey.associateOntologySearchEventsOnGraphicElements("concept");
 	
-	var selectSchemeHint = document.getElementById("selectSchemeHint");
-	selectSchemeHint.addEventListener("click", art_semanticturkey.onSelectSchemeHint, false);
-	
 	var conceptTree = document.getElementById("conceptTree");
+	
+	document.getElementById("noSchemeBtn").addEventListener("command", art_semanticturkey.noSchemeButtonEvent, false);
 
 	// Delay the registration of the listener, after the execution of the binding constructor
 	window.setTimeout(function() {
@@ -103,18 +102,15 @@ art_semanticturkey.init = function() {
 }
 
 art_semanticturkey.conceptTreeStateChanged = function(state) {
-	var stackedMessages = document.getElementById("stackedMessages");
-	var parentNode = stackedMessages.parentNode;
+	var noSchemeBtn = document.getElementById("noSchemeBtn");
 	if (state.indexOf("conceptSchemeSelected") == -1) {
-		parentNode.insertBefore(stackedMessages, null);
-		stackedMessages.style.visibility = "visible";
+		noSchemeBtn.style.visibility = "visible";
 	} else {
-		parentNode.insertBefore(stackedMessages, parentNode.firstChild);
-		stackedMessages.style.visibility = "hidden";
+		noSchemeBtn.style.visibility = "hidden";
 	}
 };
 
-art_semanticturkey.onSelectSchemeHint = function(event) {
+art_semanticturkey.noSchemeButtonEvent = function(event) {
 	var event = new CustomEvent("it.uniroma2.art.skos.intent.select_scheme");
 	window.dispatchEvent(event);
 };

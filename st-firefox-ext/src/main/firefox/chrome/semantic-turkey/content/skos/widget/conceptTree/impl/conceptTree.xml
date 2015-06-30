@@ -407,7 +407,7 @@
 				}
 				this.stEventArray.addEventListenerToArrayAndRegister("skosConceptAddedToScheme", skosConceptAddedToSchemeHandler, null);
 
-				this.ctxMenuTracker = new this.art_semanticturkey.MenuPopupTrackerAdapter("skos:concept*edit", this, ctxMenu);
+				this.ctxMenuTracker = new this.art_semanticturkey.MenuPopupTrackerAdapter("skos:concept*edit", this, ctxMenu, true);
 				this.art_semanticturkey.CommandBroker.registerTracker(this.ctxMenuTracker);
 				
 				this.toolbarTracker = new this.art_semanticturkey.ToolbarTrackerAdapter("skos:concept*edit", this, taxonomyToolbar, true);
@@ -436,7 +436,7 @@
 				this.prefListener.register(true);
 				
 				bound._powerManager = function(state) {
-					if (state.indexOf("project") != -1 && state.indexOf("conceptSchemeSelected") != -1) {
+					if (state.indexOf("project") != -1) {
 						bound._view.powerOn();
 					} else {
 						bound._view.powerOff();
@@ -475,26 +475,26 @@
 					return this._conceptScheme;
 				</getter>
 				<setter>
-					if (typeof this._conceptScheme == "undefined" || this._conceptScheme != val) {
-						this._conceptScheme = val;
-	
-						if (val != "") {
+					<![CDATA[
+						//normalizing all possible ways to represent "no scheme"
+						var val2 = val;
+						if (val == "" || typeof val == "undefined" || val == "*") {
+							val2 = "*";
+						} 
+						if (typeof this._conceptScheme == "undefined" || this._conceptScheme != val2) {
+							this._conceptScheme = val2;
+		
 							if (this._view.isPowered()) {
 								this._view.reload();
 							}
-							
-							if (val == "*") {
-								this._onStateChanged("mutable!");
+							if (val2 == "*") {
+								this._onStateChanged("conceptSchemeSelected!");
 							} else {
-								this._onStateChanged("mutable");
+								this._onStateChanged("conceptSchemeSelected");
 							}
-							
-							this._onStateChanged("conceptSchemeSelected");
-						} else {
-							this._view.powerOff();
-							this._onStateChanged("conceptSchemeSelected!");
+							this._onStateChanged("mutable");
 						}
-					}
+					]]>
 				</setter>
 			</property>
 			<method name="focusOnConcept">

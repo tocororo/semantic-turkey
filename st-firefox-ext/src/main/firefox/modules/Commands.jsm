@@ -301,6 +301,10 @@ CommandBroker.offerCommand("skos:concept*edit",
 				return false;
 			}
 			
+			if (state.indexOf("conceptSchemeSelected") == -1) {
+				return false;
+			}
+			
 			return true;
 		}
 	}
@@ -363,6 +367,10 @@ CommandBroker.offerCommand("skos:concept*edit",
 			}
 			
 			if (state.indexOf("itemSelected") == -1) {
+				return false;
+			}
+			
+			if (state.indexOf("conceptSchemeSelected") == -1) {
 				return false;
 			}
 			
