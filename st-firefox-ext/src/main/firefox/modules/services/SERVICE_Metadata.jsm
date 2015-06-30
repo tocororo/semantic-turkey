@@ -241,6 +241,7 @@ function addFromWeb(baseuri, alturl, format) {
 function addFromWebToMirror(baseuri, mirrorFile, alturl, format) {
 	var baseuri = "baseuri=" + baseuri;
 	var mirrorFile = "mirrorFile=" + mirrorFile;
+	var alturlToSend = null;
 	if(typeof alturl != "undefined" && alturl != null){
 		alturlToSend = "alturl=" + alturl;
 	}
