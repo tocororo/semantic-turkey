@@ -86,22 +86,29 @@ function newProject(projectName, modelType, baseURI, ontManagerFactoryID, modelC
 			modelConfiguration +="\n";
 		modelConfiguration += namePar+"="+valuePar;
 	}
-	var uriGenFactoryID = "uriGeneratorFactoryID=" + uriGenFactoryID;
-	var uriGenConfigurationClass = "uriGenConfigurationClass=" + uriGenConfigurationClass;
-	var uriGenConfiguration = "uriGenConfiguration=";
-	for ( var i=0; i < uriGenConfigurationArray.length; ++i){
-		var namePar = uriGenConfigurationArray[i].name;
-		var valuePar = uriGenConfigurationArray[i].value;
-		if(i!=0)
-			uriGenConfiguration +="\n";
-		uriGenConfiguration += namePar+"="+valuePar;
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+
+	//UriGenerator configuration is optional
+	//if uriGenFactoryID is provided is supposed that uriGenConfigurationClass and uriGenConfigurationArray are provided too
+	if (uriGenFactoryID == null || typeof uriGenFactoryID == "undefined"){
+		return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
+				projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration);
+	} else {
+		var uriGenFactoryID = "uriGeneratorFactoryID=" + uriGenFactoryID;
+		var uriGenConfigurationClass = "uriGenConfigurationClass=" + uriGenConfigurationClass;
+		var uriGenConfiguration = "uriGenConfiguration=";
+		for ( var i=0; i < uriGenConfigurationArray.length; ++i){
+			var namePar = uriGenConfigurationArray[i].name;
+			var valuePar = uriGenConfigurationArray[i].value;
+			if(i!=0)
+				uriGenConfiguration +="\n";
+			uriGenConfiguration += namePar+"="+valuePar;
+		}
+		return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
+				projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration,
+				uriGenFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 	}
 	
-	//var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
-			projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration,
-			uriGenFactoryID, uriGenConfigurationClass, uriGenConfiguration);
 }
 
 /**
