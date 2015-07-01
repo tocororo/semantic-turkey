@@ -272,7 +272,7 @@
 				<body>
 					<![CDATA[
 						if(typeof functionToExecOnDBClick != 'undefined')
-							dblclickMethod = functionToExecOnDBClick;
+							this.dblclickMethod = functionToExecOnDBClick;
 					]]>
 				</body>
 			</method>

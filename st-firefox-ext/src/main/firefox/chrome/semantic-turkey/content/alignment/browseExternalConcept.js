@@ -13,8 +13,8 @@ window.onload = function() {
 	document.getElementById("okBtn").addEventListener("command", art_semanticturkey.accept, false);
 	document.getElementById("cancelBtn").addEventListener("command", art_semanticturkey.cancel, false);
 	
-	document.getElementById("projectsMenulist").addEventListener("select", art_semanticturkey.populateSchemesList, false);
-	document.getElementById("schemesMenulist").addEventListener("select", art_semanticturkey.showConceptTree, false);
+	document.getElementById("projectsMenulist").addEventListener("select", art_semanticturkey.projectMenuListener, false);
+	document.getElementById("schemesMenulist").addEventListener("select", art_semanticturkey.schemeMenuListener, false);
 	
 	art_semanticturkey.populateProjectsList();
 }
@@ -41,7 +41,11 @@ art_semanticturkey.populateProjectsList = function() {
 	}
 }
 
-art_semanticturkey.populateSchemesList = function() {
+/**
+ * Listener to selection change of the project menu. When a project is selected, the scheme menu
+ * is populated with the schemes of the given project
+ */
+art_semanticturkey.projectMenuListener = function() {
 	var schemesMenulist = document.getElementById("schemesMenulist");
 	var schemesMenupopup = document.getElementById("schemesMenupopup");
 	var selectedProject = document.getElementById("projectsMenulist").selectedItem.label;
@@ -76,19 +80,40 @@ art_semanticturkey.populateSchemesList = function() {
 			art_semanticturkey.STRequests.Projects.disconnectFromProject(previousSelectedProject);
 	}
 	previousSelectedProject = selectedProject;
+	document.getElementById("conceptTree")._view.powerOff();
 }
 
-art_semanticturkey.showConceptTree = function() {
+/**
+ * Listener to selection change of the scheme menu. When a scheme is selected, it shows the
+ * concept tree of the given project-scheme pair.
+ */
+art_semanticturkey.schemeMenuListener = function() {
 	var selectedProject = document.getElementById("projectsMenulist").selectedItem.label;
 	var selectedScheme = document.getElementById("schemesMenulist").selectedItem.label;
 	var conceptTree = document.getElementById("conceptTree");
-	conceptTree.projectName = selectedProject;
-	conceptTree.conceptScheme = selectedScheme;
+	if (selectedScheme != "---"){
+		if (conceptTree == null){
+			art_semanticturkey.Logger.debug("concept tree not exists: creating new");
+			conceptTree = document.createElementNS("http://semanticturkey.uniroma2.it/xmlns/widget#", "conceptTree");
+			conceptTree.setAttribute("id", "conceptTree");
+			conceptTree.setAttribute("mutable", "false");
+			conceptTree.setAttribute("hideheading", "true");
+			conceptTree.setAttribute("hidetoolbar", "true");
+			document.getElementById("conceptTreeBox").appendChild(conceptTree);
+			conceptTree.clientTop;// Force a style flush, so that we ensure our binding is attached.
+		}
+		else 
+			art_semanticturkey.Logger.debug("concept tree already exists");
+		conceptTree.projectName = selectedProject;
+		conceptTree.conceptScheme = selectedScheme;
+	} else {
+		conceptTree._view.powerOff();
+	}
 }
 
 art_semanticturkey.accept = function() {
 	var conceptTree = document.getElementById("conceptTree");
-	window.arguments[0].selectedConcept = conceptTree.selectedConcept;
+	window.arguments[0].selectedResource = conceptTree.selectedConcept;
 	window.close();
 }
 
@@ -99,6 +124,6 @@ art_semanticturkey.cancel = function() {
 window.onunload = function (){
 	//disconnect from project selected only if it was not already open before
 	var selectedProject = document.getElementById("projectsMenulist").selectedItem.label;
-	if (openProjects.indexOf(selectedProject) == -1)
+	if (selectedProject != "---" && openProjects.indexOf(selectedProject) == -1)
 		art_semanticturkey.STRequests.Projects.disconnectFromProject(selectedProject);
 }

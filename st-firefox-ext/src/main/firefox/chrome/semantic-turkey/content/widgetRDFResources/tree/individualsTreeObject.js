@@ -14,10 +14,9 @@ art_semanticturkey.individualsTreeObject = function(boxForInstancesInput, create
 	var createContextMenu = createContextMenuInput;
 
 	var dblclickOnInstaneFunction;
-	if(typeof functionForRDFNodeDBLCLickOnInstanceInput != 'undefined')
+	if(typeof functionForRDFNodeDBLCLickOnInstanceInput != 'undefined' &&
+			functionForRDFNodeDBLCLickOnInstanceInput != null)
 		dblclickOnInstaneFunction = functionForRDFNodeDBLCLickOnInstanceInput;
-
-	
 	
 	this.init = function(){
 		boxForInstances.treecolLabel = "Instances";

@@ -2,6 +2,7 @@ if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
 
 Components.utils.import("resource://stmodules/Sanitizer.jsm", art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Cls.jsm", art_semanticturkey);
 
 window.onload = function() {
 	document.getElementById("createIndividual").addEventListener("click",
@@ -18,11 +19,10 @@ window.onload = function() {
 art_semanticturkey.onAccept = function() {
 	var instanceName = document.getElementById("IndividualName").value;
 	var clsName = window.arguments[0].name;
-	var parentWindow = window.arguments[0].parentWindow;
 	try {
-		var responseArray = parentWindow.art_semanticturkey.STRequests.Cls.addIndividual(
+		var responseArray = art_semanticturkey.STRequests.Cls.addIndividual(
 			clsName, instanceName);
-		parentWindow.art_semanticturkey.createInstance_RESPONSE(responseArray);
+		window.arguments[0].created = true;
 		close();
 	}
 	catch (e) {

@@ -19,15 +19,15 @@ art_semanticturkey.classesTreeObject = function(boxForClassesInput, rootClassArr
 	var rootClassArray = rootClassArrayInput;
 	
 	var dblclickOnClassFunction;
-	if(typeof functionForRDFNodeDBLCLickOnClassInput != 'undefined')
+	if(typeof functionForRDFNodeDBLCLickOnClassInput != 'undefined' && 
+			functionForRDFNodeDBLCLickOnClassInput != null)
 		dblclickOnClassFunction = functionForRDFNodeDBLCLickOnClassInput;
 
 	var dblclickOnInstaneFunction;
-	if(typeof functionForRDFNodeDBLCLickOnInstanceInput != 'undefined')
+	if(typeof functionForRDFNodeDBLCLickOnInstanceInput != 'undefined' &&
+			functionForRDFNodeDBLCLickOnInstanceInput != null)
 		dblclickOnInstaneFunction = functionForRDFNodeDBLCLickOnInstanceInput;
 
-	
-	
 	this.init = function(){
 		boxForClasses.treecolLabel = "Classes";
 		boxForClasses.setAttribute("class","tree-classes-rdfnode-widget");

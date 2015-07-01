@@ -268,13 +268,22 @@
 				<parameter name="event" />
 				<body>
 					<![CDATA[
-					
 						var currentWidgetTree = event.target.widgetTree;
 						var classRDFNode = currentWidgetTree.getSelectedRDFNode();
 						try {
-							alert("trying to create an istance for : "+ classRDFNode.getURI());
+							var parameters = new Object();
+							parameters.name = classRDFNode.getURI();
+							parameters.created = false;
+							window.openDialog(
+									"chrome://semantic-turkey/content/class/createIndividual/createIndividual.xul",
+									"_blank", "modal=yes,resizable,centerscreen", parameters);
+
 							
-							//TODO
+							if (parameters.created){
+								//if instance has been created, simulate a click to update the trees
+								//TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+							}
+							
 						}
 						catch (e) {
 							alert(e.name + ": " + e.message);

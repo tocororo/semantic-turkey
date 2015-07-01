@@ -902,38 +902,11 @@ art_semanticturkey.createIndividual = function() {
 	var treecell = treerow.getElementsByTagName('treecell')[0];
 	var parameters = new Object();
 	parameters.name = currentelement.getAttribute("className");
-	parameters.parentWindow = window;
-	window
-			.openDialog(
-					"chrome://semantic-turkey/content/class/createIndividual/createIndividual.xul",
-					"_blank", "modal=yes,resizable,centerscreen", parameters);
-
-};
-/**
- * Create Instance event handler
- */
-art_semanticturkey.createInstance_RESPONSE = function(responseArray) {
-	var tree = document.getElementById("classesTree");
-	var childList = tree.getElementsByTagName("treeitem");
-	var classRes = responseArray["class"];
-	var className = classRes.getURI();
-	var numInst = classRes.numInst;
-	for (var i = 0; i < childList.length; i++) {
-		//art_semanticturkey.checkAndCreateInstance(className, numInst,
-		//		childList[i]);
+	parameters.created = false;
+	window.openDialog(
+				"chrome://semantic-turkey/content/class/createIndividual/createIndividual.xul",
+				"_blank", "modal=yes,resizable,centerscreen", parameters);
+	if (parameters.created){//if instance has been created, simulate a click to update the trees
+		art_semanticturkey.classesTreeClick("");
 	}
-	art_semanticturkey.classesTreeClick("");
 };
-
-/* It seems that this is not used anymore
-art_semanticturkey.checkAndCreateInstance = function(clsName, numInst, node) {
-	var className = node.getAttribute("className");
-	//alert("dentro checkAndCreateInstance e className = "+className+" , clsName = "+clsName); // da cancellare
-	if (className == clsName) {
-		node.getElementsByTagName("treecell")[0].setAttribute("numInst",
-				numInst);
-		var newLabel = className + "(" + numInst + ")";
-		node.getElementsByTagName("treecell")[0]
-				.setAttribute("label", newLabel);
-	}
-};*/

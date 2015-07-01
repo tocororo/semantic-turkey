@@ -135,6 +135,7 @@ STRequests.XMLSchema = function(){};
 //Alignment service requests
 STRequests.Alignment.serviceName = "Alignment";
 STRequests.Alignment.addAlignmentRequest = "addAlignment";
+STRequests.Alignment.getMappingRelationsRequest = "getMappingRelations";
 
 //systemStart service requests
 STRequests.SystemStart.serviceName = "systemStart";

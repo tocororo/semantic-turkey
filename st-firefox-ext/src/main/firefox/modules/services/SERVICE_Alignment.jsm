@@ -3,6 +3,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm");
 Components.utils.import("resource://stmodules/STInfo.jsm");
 Components.utils.import("resource://stmodules/Context.jsm");
+Components.utils.import("resource://stmodules/Deserializer.jsm");
 
 EXPORTED_SYMBOLS = [ "STRequests" ];
 
@@ -19,7 +20,17 @@ function addAlignment(sourceResource, predicate, targetResource) {
 	currentSTHttpMgr.GET(null, serviceName, service.addAlignmentRequest, this.context, p_source, p_predicate, p_target);
 }
 
+function getMappingRelations(includeSKOSProps) {
+	Logger.debug("[SERVICE_Alignment.jsm] getMappingRelations");
+	var params = [];
+	if (typeof includeSKOSProps != "undefined")
+		params.push("includeSKOSProps=" + includeSKOSProps);
+	return Deserializer.createRDFArray(currentSTHttpMgr.GET(
+			null, serviceName, service.getMappingRelationsRequest, this.context, params));
+}
+
 service.prototype.addAlignment = addAlignment;
+service.prototype.getMappingRelations = getMappingRelations;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

@@ -18,17 +18,21 @@
 				<row align="center">	
 					<label value="Value:" />
 					<hbox>
-						<textbox id="conceptTxt" readonly="true" flex="1"/>
+						<textbox id="resourceTxt" readonly="true" flex="1"/>
 						<button id="browseBtn" label="Browse"/>
 					</hbox>
 				</row>
 				<row align="center">
 					<label value="Property:" />
-					<menulist id="propertiesMenulist">
-						<menupopup id="propertiesMenupopup">
-							<menuitem label="---" />
-						</menupopup>
-					</menulist>
+					<hbox>
+						<menulist id="propertiesMenulist" flex="1">
+							<menupopup id="propertiesMenupopup">
+								<menuitem label="---" />
+							</menupopup>
+						</menulist>
+						<checkbox id="alsoSKOSPropCheck" label="Include SKOS" 
+							tooltiptext="Show also SKOS mapping relations" hidden="true"/>
+					</hbox>
 				</row>
 			</rows>
 		</grid>	

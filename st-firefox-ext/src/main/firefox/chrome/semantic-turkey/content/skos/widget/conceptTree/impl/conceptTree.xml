@@ -48,7 +48,6 @@
                 
                 //mozIJSSubScriptLoader.loadSubScript("chrome://semantic-turkey/content/utilities/deserializer.js?timestamp="+((new Date()).getTime()), this);
 				
-				
 				var bound = this;
 				
 				function DataRow(record) {
@@ -75,9 +74,8 @@
 							if (isHumanReadable) {
 								language = bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en");
 							}
-							
 							if (typeof bound.projectName != "undefined"){
-								bound.art_semanticturkey.Logger.debug("PROJECT NAME " + bound.projectName);
+								//create a context for a project different from the current and get the top concepts
 								var specifiedContext = new bound.art_semanticturkey.Context();
 								specifiedContext.setProject(bound.projectName);
 								var serviceInstance = bound.art_semanticturkey.STRequests.SKOS.getAPI(specifiedContext);
@@ -101,7 +99,7 @@
 							}
 							
 							if (typeof bound.projectName != "undefined"){
-								bound.art_semanticturkey.Logger.debug("PROJECT NAME " + bound.projectName);
+								//create a context for a project different from the current and get the narrowers of the top concept
 								var specifiedContext = new bound.art_semanticturkey.Context();
 								specifiedContext.setProject(bound.projectName);
 								var serviceInstance = bound.art_semanticturkey.STRequests.SKOS.getAPI(specifiedContext);
@@ -436,11 +434,15 @@
 				this.prefListener.register(true);
 				
 				bound._powerManager = function(state) {
+					//commented because when browing project different from the current one
+					//it invokes powerOff and the concept tree is closed
+					/* 
 					if (state.indexOf("project") != -1) {
 						bound._view.powerOn();
 					} else {
 						bound._view.powerOff();
 					}
+					*/
 				};
 			]]>
 			</constructor>
@@ -483,16 +485,35 @@
 						} 
 						if (typeof this._conceptScheme == "undefined" || this._conceptScheme != val2) {
 							this._conceptScheme = val2;
-		
-							if (this._view.isPowered()) {
-								this._view.reload();
-							}
+							
 							if (val2 == "*") {
 								this._onStateChanged("conceptSchemeSelected!");
 							} else {
 								this._onStateChanged("conceptSchemeSelected");
 							}
 							this._onStateChanged("mutable");
+		
+							if (this._view.isPowered()) {
+								this._view.reload();
+							} else {
+								this._view.powerOn();
+							}
+						}
+					]]>
+				</setter>
+			</property>
+			<property name="projectName">
+				<getter>
+					return this._projectName;
+				</getter>
+				<setter>
+					<![CDATA[
+						this._projectName = val;
+						
+						if (this._view.isPowered()) {
+							this._view.reload();
+						} else {
+							this._view.powerOn();
 						}
 					]]>
 				</setter>
