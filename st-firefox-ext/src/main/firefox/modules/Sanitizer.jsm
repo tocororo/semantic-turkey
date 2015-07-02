@@ -15,14 +15,36 @@ Sanitizer = {
 	},
 
 	/**
-	 * Sanitize the input text replacing the white space with underscore
+	 * Sanitize the input text replacing the white space with underscore. The optional parameter
+	 * <code>options</code> allows to customize the process. Available options are: <code>collapseSpaces</code>,
+	 * <code>trimText</code>, <code>encodeText</code>.
 	 * @param text
+	 * @param options
 	 * @returns
 	 */
-	sanitize : function(text){
-		return text.replace(new RegExp(sourceChar, 'g'), targetChar);//'g' = global match (find all matches, doesn't stop after 1st match)
-	}
+	sanitize : function(text, options){
+		var wrappedOptions = Object.create(options);
 		
+		var collapseSpaces = wrappedOptions.collapseSpaces || false;
+		var trimText = wrappedOptions.trimText || false;
+		var encodeText = wrappedOptions.encodeText || false;
+
+		if (collapseSpaces) {
+			text = text.replace(/\s+/gm, " ");
+		}
+		
+		if (trimText) {
+			text = text.trim();
+		}
+		
+		var text = text.replace(new RegExp(sourceChar, 'g'), targetChar);//'g' = global match (find all matches, doesn't stop after 1st match)
+		
+		if (encodeText) {
+			text = encodeURIComponent(text);
+		}
+		
+		return text;
+	}
 }
 
 onPasteListener = function(event){

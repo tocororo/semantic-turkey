@@ -12,6 +12,7 @@ Components.utils.import("resource://stmodules/AnnotationManager.jsm");
 Components.utils.import("resource://stmodules/Preferences.jsm");
 Components.utils.import("resource://stmodules/ProjectST.jsm");
 Components.utils.import("resource://stmodules/SkosScheme.jsm");
+Components.utils.import("resource://stmodules/Sanitizer.jsm");
 
 Components.utils.import("resource://gre/modules/Dict.jsm");
 
@@ -53,8 +54,8 @@ annotation.commons.handlers.valueForProperty = function(event, parentWindow) {
 	var parameters = {};
 	parameters.event = event;
 	parameters.subject = event.resource.getURI();
-	parameters.object = event.selection.toString();
-	parameters.lexicalization = event.selection.toString();
+	parameters.object = annotation.commons.conventions.generateResourceNameFromSelection(event.selection);
+	parameters.lexicalization = annotation.commons.conventions.generateLexicalizationFromSelection(event.selection);
 	parameters.functors = {};
 	parameters.parentWindow = parentWindow;
 
@@ -90,8 +91,8 @@ annotation.commons.handlers.createNarrowerConcept = function(event) {
 
 	var language = Preferences.get("extensions.semturkey.annotprops.defaultlang", "en");
 
-	var conceptResource = STRequests.SKOS.createConcept(selection.toString(), resource.getURI(),
-			conceptScheme, selection.toString(), language);
+	var conceptResource = STRequests.SKOS.createConcept(annotation.commons.conventions.generateResourceNameFromSelection(selection), resource.getURI(),
+			conceptScheme, annotation.commons.conventions.generateLexicalizationFromSelection(selection), language);
 
 	var event2 = Object.create(event);
 	event2.resource = conceptResource;
@@ -101,7 +102,8 @@ annotation.commons.handlers.createNarrowerConcept = function(event) {
 // Creates an instance. This common handler depends on the availability
 // of the common function "furtherAnn".
 annotation.commons.handlers.createInstance = function(event, parentWindow) {
-	var response1 = STRequests.Cls.addIndividual(event.resource.getURI(), event.selection.toString());
+	var selection = event.selection;
+	var response1 = STRequests.Cls.addIndividual(event.resource.getURI(), annotation.commons.conventions.generateResourceNameFromSelection(selection));
 	var event2 = Object.create(event);
 	event2.resource = response1.instance;
 
@@ -133,6 +135,14 @@ annotation.commons.handlers.createInstance = function(event, parentWindow) {
  * Other conventional functions are suitably implemented by the framework.
  */
 annotation.commons.conventions = {};
+
+annotation.commons.conventions.generateResourceNameFromSelection = function(selection) {
+	return Sanitizer.sanitize(annotation.commons.conventions.generateLexicalizationFromSelection(selection), {encodeText : true});
+};
+
+annotation.commons.conventions.generateLexicalizationFromSelection = function(selection) {
+	return selection.toString().replace(/\s+/gm, " ").trim();
+};
 
 // Initializes the default color map for the highlights. Each resource is assigned a perceptually unique
 // color, represented in HSV as per CSS specs. TODO: obtain the color from the server.
