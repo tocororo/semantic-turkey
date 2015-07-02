@@ -802,9 +802,13 @@
 				<getter>
 					return this._projectName;
 				</getter>
-				<setter>
-					if (typeof this._projectName == "undefined" || this._projectName != val) {
-						this._projectName = val;
+				<setter>	
+					this._projectName = val;
+					
+					if (this._view.isPowered()) {
+						this._view.reload();
+					} else {
+						this._view.powerOn();
 					}
 				</setter>
 			</property>

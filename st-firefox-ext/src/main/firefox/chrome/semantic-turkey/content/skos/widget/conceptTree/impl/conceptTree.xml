@@ -502,22 +502,6 @@
 					]]>
 				</setter>
 			</property>
-			<property name="projectName">
-				<getter>
-					return this._projectName;
-				</getter>
-				<setter>
-					<![CDATA[
-						this._projectName = val;
-						
-						if (this._view.isPowered()) {
-							this._view.reload();
-						} else {
-							this._view.powerOn();
-						}
-					]]>
-				</setter>
-			</property>
 			<method name="focusOnConcept">
 				<parameter name="concUri"/>
 				<parameter name="schemeName"/>

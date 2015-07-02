@@ -26,10 +26,10 @@ if (!art_semanticturkey.ContexMenu) art_semanticturkey.ContexMenu = {};
 
 Components.utils.import("resource://stmodules/SemturkeyHTTPLegacy.jsm", art_semanticturkey);  // TODO va eliminato
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_Administration.jsm",
-		art_semanticturkey);
-Components.utils.import("resource://stservices/SERVICE_InputOutput.jsm",
-		art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_Administration.jsm",	art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_InputOutput.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/SkosScheme.jsm", art_semanticturkey);
 
 // NScarpato 18/07/07 add Visualization option function this function select the
 // visualization type Normal o debug
@@ -102,6 +102,7 @@ art_semanticturkey.ContexMenu.clearRepository = function clearRepository() {
 		try{
 			var responseXML = art_semanticturkey.STRequests.InputOutput.clearData();
 			art_semanticturkey.clearRepository_RESPONSE(responseXML);
+			art_semanticturkey.SkosScheme.removeSelectedScheme(art_semanticturkey.CurrentProject.getProjectName());
 		}
 		catch (e) {
 			alert(e.name + ": " + e.message);
