@@ -93,17 +93,13 @@ art_semanticturkey.schemeMenuListener = function() {
 	var conceptTree = document.getElementById("conceptTree");
 	if (selectedScheme != "---"){
 		if (conceptTree == null){
-			art_semanticturkey.Logger.debug("concept tree not exists: creating new");
 			conceptTree = document.createElementNS("http://semanticturkey.uniroma2.it/xmlns/widget#", "conceptTree");
 			conceptTree.setAttribute("id", "conceptTree");
 			conceptTree.setAttribute("mutable", "false");
 			conceptTree.setAttribute("hideheading", "true");
 			conceptTree.setAttribute("hidetoolbar", "true");
 			document.getElementById("conceptTreeBox").appendChild(conceptTree);
-			conceptTree.clientTop;// Force a style flush, so that we ensure our binding is attached.
 		}
-		else 
-			art_semanticturkey.Logger.debug("concept tree already exists");
 		conceptTree.projectName = selectedProject;
 		conceptTree.conceptScheme = selectedScheme;
 	} else {

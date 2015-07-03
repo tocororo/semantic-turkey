@@ -43,20 +43,26 @@ art_semanticturkey.browse = function() {
 	art_semanticturkey.updateOkButtonStatus();
 }
 
+/**
+ * disable temporarily the menu, empty it, populate it again and finally enable back
+ */
 art_semanticturkey.populatePropertiesList = function(alsoSKOSProps) {
-	var propertiesMenupopup = document.getElementById("propertiesMenupopup");
-	while (propertiesMenupopup.children.length > 1){
-		propertiesMenupopup.removeChild(propertiesMenupopup.lastChild);
+	var propertiesMenulist = document.getElementById("propertiesMenulist");
+	
+	propertiesMenulist.disabled = true;
+	while (propertiesMenulist.itemCount > 1) {
+		propertiesMenulist.removeItemAt(1);
 	}
+	propertiesMenulist.selectedIndex = 0;
+	
 	var propList = art_semanticturkey.STRequests.Alignment.getMappingRelations(alsoSKOSProps);
 	for (var i=0; i<propList.length; i++){
 		var propShow = propList[i].getShow();
 		var propUri = propList[i].getURI();
-		var menuitem = document.createElement("menuitem");
-		menuitem.setAttribute("label", propShow);
-		menuitem.setAttribute("value", propUri);
-		propertiesMenupopup.appendChild(menuitem);
+		propertiesMenulist.appendItem(propShow, propUri);
 	}
+	
+	propertiesMenulist.disabled = false;
 }
 
 art_semanticturkey.updateOkButtonStatus = function() {

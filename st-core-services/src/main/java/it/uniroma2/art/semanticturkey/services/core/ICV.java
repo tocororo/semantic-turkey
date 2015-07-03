@@ -464,7 +464,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns a list of concepts that have no a main label (rdfs:label, skos:prefLabel or skosxl:prefLabel) in any language
+	 * Returns a list of concepts that have no skos:prefLabel
 	 * @return
 	 * @throws QueryEvaluationException 
 	 * @throws MalformedQueryException 
@@ -472,19 +472,16 @@ public class ICV extends STServiceAdapter {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
-	public Response listConceptsWithNoLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
+	public Response listConceptsWithNoSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "FILTER NOT EXISTS { {\n"
+				+ "FILTER NOT EXISTS {\n"
 				+ "?concept <" + SKOS.PREFLABEL + "> ?prefLabel .\n"
-				+ "} UNION {\n"
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
-				+ "} UNION {\n"
-				+ "?concept <" + RDFS.LABEL + "> ?prefLabel . } } }";
-		logger.info("query [listConceptsWithNoLabel]:\n" + q);
+				+ "} }";
+		logger.info("query [listConceptsWithNoSKOSPrefLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
@@ -497,7 +494,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns a list of conceptScheme that have no a main label (rdfs:label, skos:prefLabel or skosxl:prefLabel) in any language
+	 * Returns a list of concepts that have no skosxl:prefLabel
 	 * @return
 	 * @throws QueryEvaluationException 
 	 * @throws MalformedQueryException 
@@ -505,19 +502,76 @@ public class ICV extends STServiceAdapter {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
-	public Response listConceptSchemesWithNoLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
+	public Response listConceptsWithNoSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
+			ModelAccessException, MalformedQueryException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		String q = "SELECT ?concept WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "FILTER NOT EXISTS {\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
+				+ "} }";
+		logger.info("query [listConceptsWithNoSKOSXLPrefLabel]:\n" + q);
+		OWLModel model = getOWLModel();
+		TupleQuery query = model.createTupleQuery(q);
+		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		while (itTupleBinding.hasNext()){
+			TupleBindings tb = itTupleBinding.next();
+			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
+			XMLHelp.newElement(dataElement, "concept", concept);
+		}
+		return response;
+	}
+	
+	/**
+	 * Returns a list of conceptScheme that have no skos:prefLabel
+	 * @return
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws ModelAccessException 
+	 * @throws UnsupportedQueryLanguageException 
+	 */
+	@GenerateSTServiceController
+	public Response listConceptSchemesWithNoSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?scheme WHERE {\n"
 				+ "?scheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
-				+ "FILTER NOT EXISTS { {\n"
+				+ "FILTER NOT EXISTS {\n"
 				+ "?scheme <" + SKOS.PREFLABEL + "> ?prefLabel .\n"
-				+ "} UNION {\n"
+				+ "} }";
+		logger.info("query [listConceptSchemesWithNoSKOSPrefLabel]:\n" + q);
+		OWLModel model = getOWLModel();
+		TupleQuery query = model.createTupleQuery(q);
+		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		while (itTupleBinding.hasNext()){
+			TupleBindings tb = itTupleBinding.next();
+			String scheme = tb.getBinding("scheme").getBoundValue().getNominalValue();
+			XMLHelp.newElement(dataElement, "scheme", scheme);
+		}
+		return response;
+	}
+	
+	/**
+	 * Returns a list of conceptScheme that have no skosxl:prefLabel
+	 * @return
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws ModelAccessException 
+	 * @throws UnsupportedQueryLanguageException 
+	 */
+	@GenerateSTServiceController
+	public Response listConceptSchemesWithNoSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
+			ModelAccessException, MalformedQueryException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		String q = "SELECT ?scheme WHERE {\n"
+				+ "?scheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
+				+ "FILTER NOT EXISTS {\n"
 				+ "?scheme <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
-				+ "} UNION {\n"
-				+ "?scheme <" + RDFS.LABEL + "> ?prefLabel . } } }";
-		logger.info("query [listConceptSchemesWithNoLabel]:\n" + q);
+				+ "} }";
+		logger.info("query [listConceptSchemesWithNoSKOSXLPrefLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
