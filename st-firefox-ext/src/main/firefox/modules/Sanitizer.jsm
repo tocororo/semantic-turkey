@@ -23,7 +23,7 @@ Sanitizer = {
 	 * @returns
 	 */
 	sanitize : function(text, options){
-		var wrappedOptions = Object.create(options);
+		var wrappedOptions = options || {};
 		
 		var collapseSpaces = wrappedOptions.collapseSpaces || false;
 		var trimText = wrappedOptions.trimText || false;
