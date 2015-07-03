@@ -253,21 +253,21 @@ public class SKOS extends ResourceOld {
 			String skosConceptName = setHttpPar(Par.concept);
 			String lang = setHttpPar(Par.lang);
 			String label = setHttpPar(Par.label);
-			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
+			checkRequestParametersAllNotNull(Par.concept, Par.label);
 			response = removePrefLabel(skosConceptName, label, lang);
 
 		} else if (request.equals(Req.removeAltLabelRequest)) {
 			String skosConceptName = setHttpPar(Par.concept);
 			String lang = setHttpPar(Par.lang);
 			String label = setHttpPar(Par.label);
-			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
+			checkRequestParametersAllNotNull(Par.concept, Par.label);
 			response = removeAltLabel(skosConceptName, label, lang);
 
 		} else if (request.equals(Req.removeHiddenLabelRequest)) {
 			String skosConceptName = setHttpPar(Par.concept);
 			String lang = setHttpPar(Par.lang);
 			String label = setHttpPar(Par.label);
-			checkRequestParametersAllNotNull(Par.concept, Par.lang, Par.label);
+			checkRequestParametersAllNotNull(Par.concept, Par.label);
 			response = removeHiddenLabel(skosConceptName, label, lang);
 
 		} else if (request.equals(Req.removeConceptFromSchemeRequest)) {

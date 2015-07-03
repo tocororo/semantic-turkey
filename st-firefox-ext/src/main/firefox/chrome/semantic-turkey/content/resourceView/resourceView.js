@@ -741,7 +741,7 @@ art_semanticturkey.resourceView.partitions
 						case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
 							// TODO: this is just an hack!!
 							var renderizedLabel = rdfObject.getShow();
-							var re = /(.*)\s\((.*)\)/;
+							var re = /^(.*?)(?:\s\((.*)\))?$/;
 							var m = renderizedLabel.match(re);
 
 							var label = m[1];

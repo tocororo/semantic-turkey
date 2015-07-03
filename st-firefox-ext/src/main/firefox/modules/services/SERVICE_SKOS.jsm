@@ -367,7 +367,7 @@ function removeBroaderConcept(concept, broaderConcept) {
 function removePrefLabel(concept, label, lang) {
 	var concept_p = "concept=" + concept;
 	var label_p = "label=" + label;
-	var lang_p = "lang=" + lang;
+	var lang_p = (typeof lang == "undefined" || lang == null)? "" : "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
 	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removePrefLabelRequest, concept_p, label_p, lang_p,
@@ -387,7 +387,7 @@ function removePrefLabel(concept, label, lang) {
 function removeAltLabel(concept, label, lang) {
 	var concept_p = "concept=" + concept;
 	var label_p = "label=" + label;
-	var lang_p = "lang=" + lang;
+	var lang_p = (typeof lang == "undefined" || lang == null)? "" : "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
 	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeAltLabelRequest, concept_p, label_p, lang_p,
@@ -407,7 +407,7 @@ function removeAltLabel(concept, label, lang) {
 function removeHiddenLabel(concept, label, lang) {
 	var concept_p = "concept=" + concept;
 	var label_p = "label=" + label;
-	var lang_p = "lang=" + lang;
+	var lang_p = (typeof lang == "undefined" || lang == null)? "" : "lang=" + lang;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
 	
 	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeHiddenLabelRequest, concept_p, label_p, lang_p,

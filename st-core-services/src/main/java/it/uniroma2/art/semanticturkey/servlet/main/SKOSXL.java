@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -231,19 +232,19 @@ public class SKOSXL extends SKOS {
 			String skosConceptName = setHttpPar(SKOS.Par.concept);
 			String lang = setHttpPar(SKOS.Par.lang);
 			String label = setHttpPar(SKOS.Par.label);
-			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.lang, SKOS.Par.label);
+			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.label);
 			response = removePrefXLabel(skosConceptName, label, lang);
 		} else if (request.equals(Req.removeAltLabelRequest)) {
 			String skosConceptName = setHttpPar(SKOS.Par.concept);
 			String lang = setHttpPar(SKOS.Par.lang);
 			String label = setHttpPar(SKOS.Par.label);
-			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.lang, SKOS.Par.label);
+			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.label);
 			response = removeAltXLabel(skosConceptName, label, lang);
 		} else if (request.equals(Req.removeHiddenLabelRequest)) {
 			String skosConceptName = setHttpPar(SKOS.Par.concept);
 			String lang = setHttpPar(SKOS.Par.lang);
 			String label = setHttpPar(SKOS.Par.label);
-			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.lang, SKOS.Par.label);
+			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.label);
 			response = removeHiddenXLabel(skosConceptName, label, lang);
 		}
 
@@ -933,7 +934,7 @@ public class SKOSXL extends SKOS {
 	public Collection<STRDFResource> listAltXLabels(SKOSXLModel model, ARTURIResource skosConcept,
 			String lang, ARTResource... graphs) throws ModelAccessException, NonExistingRDFResourceException {
 		ARTResourceIterator altLabels;
-		if (lang.equals("*"))
+		if (Objects.equals(lang, "*"))
 			altLabels = model.listAltXLabels(skosConcept, graphs);
 
 		else
@@ -945,9 +946,8 @@ public class SKOSXL extends SKOS {
 	public Collection<STRDFResource> listHiddenXLabels(SKOSXLModel model, ARTURIResource skosConcept,
 			String lang, ARTResource... graphs) throws ModelAccessException, NonExistingRDFResourceException {
 		ARTResourceIterator altLabels;
-		if (lang.equals("*"))
+		if (Objects.equals(lang, "*"))
 			altLabels = model.listHiddenXLabels(skosConcept, graphs);
-
 		else
 			altLabels = model.listHiddenXLabels(skosConcept, lang, graphs);
 
