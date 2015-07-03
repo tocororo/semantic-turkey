@@ -73,16 +73,28 @@ function listConceptsWithOnlySKOSXLAltLabel() {
 	return currentSTHttpMgr.GET(null, serviceName, service.listConceptsWithOnlySKOSXLAltLabelRequest, this.context);
 }
 
-function listConceptsWithNoLabel() {
-	Logger.debug('[SERVICE_ICV.jsm] listConceptsWithNoLabel');
+function listConceptsWithNoSKOSPrefLabel() {
+	Logger.debug('[SERVICE_ICV.jsm] listConceptsWithNoSKOSPrefLabel');
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	return currentSTHttpMgr.GET(null, serviceName, service.listConceptsWithNoLabelRequest, this.context);
+	return currentSTHttpMgr.GET(null, serviceName, service.listConceptsWithNoSKOSPrefLabelRequest, this.context);
 }
 
-function listConceptSchemesWithNoLabel() {
-	Logger.debug('[SERVICE_ICV.jsm] listConceptSchemesWithNoLabel');	
+function listConceptsWithNoSKOSXLPrefLabel() {
+	Logger.debug('[SERVICE_ICV.jsm] listConceptsWithNoSKOSXLPrefLabel');
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
-	return currentSTHttpMgr.GET(null, serviceName, service.listConceptSchemesWithNoLabelRequest, this.context);
+	return currentSTHttpMgr.GET(null, serviceName, service.listConceptsWithNoSKOSXLPrefLabelRequest, this.context);
+}
+
+function listConceptSchemesWithNoSKOSPrefLabel() {
+	Logger.debug('[SERVICE_ICV.jsm] listConceptSchemesWithNoSKOSPrefLabel');	
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.listConceptSchemesWithNoSKOSPrefLabelRequest, this.context);
+}
+
+function listConceptSchemesWithNoSKOSXLPrefLabel() {
+	Logger.debug('[SERVICE_ICV.jsm] listConceptSchemesWithNoSKOSXLPrefLabel');	
+	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+	return currentSTHttpMgr.GET(null, serviceName, service.listConceptSchemesWithNoSKOSXLPrefLabelRequest, this.context);
 }
 
 function listConceptsWithMultipleSKOSPrefLabel() {
@@ -167,8 +179,10 @@ service.prototype.listConceptsWithSameSKOSPrefLabel = listConceptsWithSameSKOSPr
 service.prototype.listConceptsWithSameSKOSXLPrefLabel = listConceptsWithSameSKOSXLPrefLabel;
 service.prototype.listConceptsWithOnlySKOSAltLabel = listConceptsWithOnlySKOSAltLabel;
 service.prototype.listConceptsWithOnlySKOSXLAltLabel = listConceptsWithOnlySKOSXLAltLabel;
-service.prototype.listConceptsWithNoLabel = listConceptsWithNoLabel;
-service.prototype.listConceptSchemesWithNoLabel = listConceptSchemesWithNoLabel;
+service.prototype.listConceptsWithNoSKOSPrefLabel = listConceptsWithNoSKOSPrefLabel;
+service.prototype.listConceptsWithNoSKOSXLPrefLabel = listConceptsWithNoSKOSXLPrefLabel;
+service.prototype.listConceptSchemesWithNoSKOSPrefLabel = listConceptSchemesWithNoSKOSPrefLabel;
+service.prototype.listConceptSchemesWithNoSKOSXLPrefLabel = listConceptSchemesWithNoSKOSXLPrefLabel;
 service.prototype.listConceptsWithMultipleSKOSPrefLabel = listConceptsWithMultipleSKOSPrefLabel;
 service.prototype.listConceptsWithMultipleSKOSXLPrefLabel = listConceptsWithMultipleSKOSXLPrefLabel;
 service.prototype.listConceptsWithNoLanguageTagSKOSLabel = listConceptsWithNoLanguageTagSKOSLabel;

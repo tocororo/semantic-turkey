@@ -26,7 +26,7 @@
 					<label value="Property:" />
 					<hbox>
 						<menulist id="propertiesMenulist" flex="1">
-							<menupopup id="propertiesMenupopup">
+							<menupopup>
 								<menuitem label="---" />
 							</menupopup>
 						</menulist>

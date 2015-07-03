@@ -16,14 +16,11 @@
 			<listhead flex="1">
 				<listheader label="skos:Concept" />
 				<listheader label="Set label" />
-				<listheader label="Set label" />
 			</listhead>
-			<listcols>
-				<listcol flex="2"/>
-				<listcol flex="1"/>
+			<listcols flex="1">
+				<listcol flex="3"/>
 				<listcol flex="1"/>
 			</listcols>
 		</listbox> 
 
-	
 </window>

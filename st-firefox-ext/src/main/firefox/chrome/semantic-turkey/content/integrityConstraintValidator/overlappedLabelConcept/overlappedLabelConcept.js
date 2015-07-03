@@ -9,52 +9,21 @@ window.onload = function() {
 }
 
 art_semanticturkey.init = function() {
+	var ontoType = window.arguments[0].ontoType;
+	var listbox = document.getElementById("listbox");
+	//empty listbox
+	while (listbox.itemCount > 0){
+		listbox.removeItemAt(0);
+	}
+	
 	try {
-		//for SKOS
-		var xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithOverlappedSKOSLabel();
-		var data = xmlResp.getElementsByTagName("data")[0];
-		var records = data.getElementsByTagName("record");
-		var listbox = document.getElementById("listbox");
-		for (var i=0; i<records.length; i++){
-			var concept = records[i].getAttribute("concept");
-			var label = records[i].getAttribute("label");
-			var lang = records[i].getAttribute("lang");
-			
-			var listitem = document.createElement("listitem");
-			listitem.setAttribute("allowevents", "true");
-			
-			var cell = document.createElement("listcell");
-		    cell.setAttribute("label", concept);
-		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
-		    listitem.appendChild(cell);
-		    
-		    cell = document.createElement("listcell");
-		    cell.setAttribute("label", label);
-		    listitem.appendChild(cell);
-		    
-		    cell = document.createElement("listcell");
-		    cell.setAttribute("label", lang);
-		    listitem.appendChild(cell);
-		    
-		    var button = document.createElement("button");
-		    button.setAttribute("label", "skos:prefLabel");
-		    button.setAttribute("flex", "1");
-		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-		    listitem.appendChild(button);
-		    
-		    button = document.createElement("button");
-		    button.setAttribute("label", "skos:altLabel");
-		    button.setAttribute("flex", "1");
-		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-		    listitem.appendChild(button);
-		    
-		    listbox.appendChild(listitem);
+		var xmlResp;
+		if (ontoType == "SKOS"){
+			xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithOverlappedSKOSLabel();
+		} else if (ontoType == "SKOS-XL") {
+			xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithOverlappedSKOSXLLabel();
 		}
-		//for SKOSXL
-		var xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithOverlappedSKOSXLLabel();
-		var data = xmlResp.getElementsByTagName("data")[0];
-		var records = data.getElementsByTagName("record");
-		var listbox = document.getElementById("listbox");
+		var records = xmlResp.getElementsByTagName("record");
 		for (var i=0; i<records.length; i++){
 			var concept = records[i].getAttribute("concept");
 			var label = records[i].getAttribute("label");
@@ -77,13 +46,21 @@ art_semanticturkey.init = function() {
 		    listitem.appendChild(cell);
 		    
 		    var button = document.createElement("button");
-		    button.setAttribute("label", "skosxl:prefLabel");
+		    if (ontoType == "SKOS"){
+		    	button.setAttribute("label", "skos:prefLabel");
+		    } else if (ontoType == "SKOS-XL"){
+		    	button.setAttribute("label", "skosxl:prefLabel");
+		    }
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
 		    
 		    button = document.createElement("button");
-		    button.setAttribute("label", "skosxl:altLabel");
+		    if (ontoType == "SKOS"){
+		    	button.setAttribute("label", "skos:altLabel");
+		    } else if (ontoType == "SKOS-XL"){
+		    	button.setAttribute("label", "skosxl:altLabel");
+		    }
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
@@ -107,6 +84,7 @@ art_semanticturkey.conceptDblClickListener = function() {
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+	art_semanticturkey.init();
 }
 
 art_semanticturkey.fixButtonClickListener = function() {
@@ -128,5 +106,6 @@ art_semanticturkey.fixButtonClickListener = function() {
 	window.openDialog("chrome://semantic-turkey/content/integrityConstraintValidator/setLabelDialog.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
 			parameters);
+	art_semanticturkey.init();
 }
 

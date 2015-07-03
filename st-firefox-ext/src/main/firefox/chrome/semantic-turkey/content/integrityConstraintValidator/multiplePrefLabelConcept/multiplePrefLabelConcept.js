@@ -10,43 +10,21 @@ window.onload = function() {
 }
 
 art_semanticturkey.init = function(){
+	var ontoType = window.arguments[0].ontoType;
 	var listbox = document.getElementById("listbox");
+	//empty listbox
+	while (listbox.itemCount > 0){
+		listbox.removeItemAt(0);
+	}
+	
 	try {
-		//SKOS
-		var xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithMultipleSKOSPrefLabel();
-		var data = xmlResp.getElementsByTagName("data")[0];
-		var records = data.getElementsByTagName("record");
-		for (var i=0; i<records.length; i++){
-			var concept = records[i].getAttribute("concept");
-			var lang = records[i].getAttribute("lang");
-			var listitem = document.createElement("listitem");
-			listitem.setAttribute("allowevents", "true");
-			
-			var cell = document.createElement("listcell");
-		    cell.setAttribute("label", concept);
-		    cell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
-		    listitem.appendChild(cell);
-		    
-		    cell = document.createElement("listcell");
-		    cell.setAttribute("label", "skos:prefLabel");
-		    listitem.appendChild(cell);
-		    
-		    cell = document.createElement("listcell");
-		    cell.setAttribute("label", lang);
-		    listitem.appendChild(cell);
-		    
-		    var button = document.createElement("button");
-		    button.setAttribute("label", "Edit concept");
-		    button.setAttribute("flex", "1");
-		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-		    listitem.appendChild(button);
-		    
-		    listbox.appendChild(listitem);
+		var xmlResp;
+		if (ontoType == "SKOS") {
+			xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithMultipleSKOSPrefLabel();
+		} else if (ontoType == "SKOS-XL") {
+			xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithMultipleSKOSXLPrefLabel();
 		}
-		//SKOSXL
-		var xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithMultipleSKOSXLPrefLabel();
-		var data = xmlResp.getElementsByTagName("data")[0];
-		var records = data.getElementsByTagName("record");
+		var records = xmlResp.getElementsByTagName("record");
 		for (var i=0; i<records.length; i++){
 			var concept = records[i].getAttribute("concept");
 			var lang = records[i].getAttribute("lang");
@@ -59,7 +37,11 @@ art_semanticturkey.init = function(){
 		    listitem.appendChild(cell);
 		    
 		    cell = document.createElement("listcell");
-		    cell.setAttribute("label", "skosxl:prefLabel");
+		    if (ontoType == "SKOS") {
+		    	cell.setAttribute("label", "skos:prefLabel");
+			} else if (ontoType == "SKOS-XL") {
+				cell.setAttribute("label", "skosxl:prefLabel");
+			}
 		    listitem.appendChild(cell);
 		    
 		    cell = document.createElement("listcell");
@@ -89,6 +71,7 @@ art_semanticturkey.fixButtonClickListener = function() {
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+	art_semanticturkey.init();
 }
 
 /**
@@ -103,4 +86,5 @@ art_semanticturkey.conceptDblClickListener = function() {
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+	art_semanticturkey.init();
 }

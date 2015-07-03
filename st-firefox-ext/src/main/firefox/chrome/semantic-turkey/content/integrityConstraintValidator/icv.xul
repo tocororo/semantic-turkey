@@ -7,123 +7,227 @@
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/integrityConstraintValidator/icv.js" />
+	<script type="application/x-javascript"
+		src="chrome://semantic-turkey/content/event/eventObjects.js" />
 		
-		<vbox flex="1" style="overflow:auto">
-			<grid>
-				<columns>
-					<!-- <column flex="1" /> -->
-					<column flex="2" />
-					<column flex="6" />
-					<column flex="1" />
-				</columns>
-				<rows id="gridRows">
-	
-					<label class="level1Header" value="Integrity Constraint Validation" ontoType="SKOS"/>
+		<vbox id="mainBox" flex="1" style="overflow:auto">
+			
+			<groupbox id="icvGroupbox">
+				<caption class="level1Header" align="center" flex="1">
+					<stack flex="1">
+						<hbox align="center" pack="center">
+							<label value="Integrity Constraint Validation"/>
+						</hbox>
+						<hbox align="center" pack="end" flex="1">
+							<button label="-" tooltiptext="Collapse" oncommand="art_semanticturkey.expandCollapseListener(event.target)" />
+						</hbox>
+					</stack>
+				</caption>
+				
+				<vbox>
+					<!-- Structural checks -->
+					<groupbox id="structureCheckGroupbox">
+						<caption class="level2Header" align="center" flex="1">
+							<stack flex="1">
+								<hbox align="center" pack="center">
+									<label value="Structural checks"/>
+								</hbox>
+								<hbox align="center" pack="end" flex="1">
+									<button label="-" tooltiptext="Collapse" oncommand="art_semanticturkey.expandCollapseListener(event.target)" />
+								</hbox>
+							</stack>
+						</caption>
+						<grid>
+							<columns>
+								<column width="200px"/>
+								<column flex="1" />
+								<column />
+							</columns>
+							<rows>
+								<row align="center" target="danglingConcept/danglingConcept.xul" ontoType="SKOS, SKOS-XL">
+									<label value="Dangling concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have no skos:broader or are not skos:topConceptOf in the skos:ConceptScheme where they belong"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="cyclicConcept/cyclicConcept.xul" ontoType="SKOS, SKOS-XL">
+									<label value="Cyclic hierarchical concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that compose a hierarchical cycle through the skos:narrower and skos:broader properties"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="omittedTopConcept/omittedTopConcept.xul" ontoType="SKOS, SKOS-XL">
+									<label value="Omitted top concept"/>
+									<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no top concept"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="conceptInNoScheme/conceptInNoScheme.xul" ontoType="SKOS, SKOS-XL">
+									<label value="Concepts in no scheme"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that doesn't belong to any scheme"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="topConceptWithBroader/topConceptWithBroader.xul" ontoType="SKOS, SKOS-XL">
+									<label value="TopConcept with broader"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that are skos:topConceptOf some scheme and have some skos:broader concept"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="hierarchicalRedundancyConcept/hierarchicalRedundancyConcept.xul" ontoType="SKOS, SKOS-XL">
+									<label value="Hierarchical redundancy"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have redundant hierarchical relations"/>
+									<button label="Run check" />
+								</row>
+							</rows>
+						</grid>
+					</groupbox>		
 					
-					<!-- SKOS Structural checks -->
-					<label value="SKOS Structural checks" class="level2Header" ontoType="SKOS"/>
-					
-					<row align="center" target="danglingConcept/danglingConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Dangling concepts"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have no skos:broader or are not skos:topConceptOf in the skos:ConceptScheme where they belong"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="cyclicConcept/cyclicConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Cyclic hierarchical concepts"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that compose a hierarchical cycle through the skos:narrower and skos:broader properties"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="omittedTopConcept/omittedTopConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Omitted top concept"/>
-						<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no top concept"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="conceptInNoScheme/conceptInNoScheme.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Concepts in no scheme"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that doesn't belong to any scheme"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="topConceptWithBroader/topConceptWithBroader.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="TopConcept with broader"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that are skos:topConceptOf some scheme and have some skos:broader concept"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="hierarchicalRedundancyConcept/hierarchicalRedundancyConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Hierarchical redundancy"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have redundant hierarchical relations"/>
-						<button label="Run check" />
-					</row>
-					
-					<!-- SKOS Labeling checks -->	
-					<label value="SKOS Labeling checks" class="level2Header" ontoType="SKOS"/>
-					
-					<row align="center" target="noLabelConcept/noLabelConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="No label concept"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have no label"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="noLabelScheme/noLabelScheme.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="No label scheme"/>
-						<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no label"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="onlyAltLabelConcept/onlyAltLabelConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Only altLabel concept"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have an alternative label but not a preferred label in the same language"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="noLangTagLabel/noLangTagLabel.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="No language tag label"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have a label without language tag"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="sameLabelConcept/sameLabelConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Same prefLabel concepts"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have the same preferred label in the same language"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="overlappedLabelConcept/overlappedLabelConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Overlapped label concepts"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have the same value as preferred and alternative label in the same language"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="extraWhitespaceLabel/extraWhitespaceLabel.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Extra whitespace label concepts"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have some extra whitespace in a label"/>
-						<button label="Run check" />
-					</row>
-					<row align="center" target="multiplePrefLabelConcept/multiplePrefLabelConcept.xul" ontoType="SKOS">
-						<!-- <checkbox /> -->
-						<label value="Multiple prefLabel concepts"/>
-						<label style="font-style: italic;" value="skos:Concept(s) that have multiple preferred label in the same language"/>
-						<button label="Run check" />
-					</row>
-					
-					<label value="Sanitization" class="level1Header" ontoType="ANY"/>
-					<row align="center" target="resourceWithSpace/resourceWithSpace.xul" ontoType="ANY">
-						<!-- <checkbox /> -->
-						<label value="Whitespace URI Resources"/>
-						<label style="font-style: italic;" value="URI Resources that have a whitespace in the URI"/>
-						<button label="Run check" />
-					</row>
-					
-					<label value="Refactoring" class="level1Header" ontoType="ANY"/>
-	
-				</rows>
-			</grid>
+					<groupbox id="labelCheckGroupbox">
+						<caption class="level2Header" align="center" pack="center" flex="1">
+							<stack flex="1">
+								<hbox align="center" pack="center">
+									<label value="Labeling checks"/>
+								</hbox>
+								<hbox align="center" pack="end" flex="1">
+									<checkbox id="alsoSKOScheck" label="also SKOS checks"
+										tooltiptext="show also checks for SKOS labels" 
+										oncommand="art_semanticturkey.skosCheckListener(event.target);" 
+										style="font-size: 11px;" hidden="true" />
+									<button label="-" tooltiptext="Collapse" oncommand="art_semanticturkey.expandCollapseListener(event.target)" />
+								</hbox>
+							</stack>
+						</caption>
+						<grid>
+							<columns>
+								<column width="200px"/>
+								<column flex="1" />
+								<column />
+							</columns>
+							<rows>
+								<row align="center" target="noLabelConcept/noLabelConcept.xul" ontoType="SKOS">
+									<label value="No skos:prefLabel concept"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have no skos:prefLabel"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="noLabelConcept/noLabelConcept.xul" ontoType="SKOS-XL">
+									<label value="No skosxl:prefLabel concept"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have no skosxl:prefLabel"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="noLabelScheme/noLabelScheme.xul" ontoType="SKOS">
+									<label value="No skos:prefLabel scheme"/>
+									<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no skos:prefLabel"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="noLabelScheme/noLabelScheme.xul" ontoType="SKOS-XL">
+									<label value="No skosxl:prefLabel scheme"/>
+									<label style="font-style: italic;" value="skos:ConceptScheme(s) that have no skosxl:prefLabel"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="onlyAltLabelConcept/onlyAltLabelConcept.xul" ontoType="SKOS">
+									<label value="Only skos:altLabel concept"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have a skos:altLabel but not a skos:prefLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="onlyAltLabelConcept/onlyAltLabelConcept.xul" ontoType="SKOS-XL">
+									<label value="Only skosxl:altLabel concept"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have a skosxl:prefLabel but not a skosxl:prefLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="noLangTagLabel/noLangTagLabel.xul" ontoType="SKOS">
+									<label value="No language tag label"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have a SKOS label without language tag"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="noLangTagLabel/noLangTagLabel.xul" ontoType="SKOS-XL">
+									<label value="No language tag label"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have a SKOS-XL label without language tag"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="sameLabelConcept/sameLabelConcept.xul" ontoType="SKOS">
+									<label value="Same prefLabel concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have the same skos:prefLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="sameLabelConcept/sameLabelConcept.xul" ontoType="SKOS-XL">
+									<label value="Same prefLabel concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have the same skosxl:prefLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="overlappedLabelConcept/overlappedLabelConcept.xul" ontoType="SKOS">
+									<label value="Overlapped label concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have the same value as skos:prefLabel and skos:altLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="overlappedLabelConcept/overlappedLabelConcept.xul" ontoType="SKOS-XL">
+									<label value="Overlapped label concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have the same value as skosxl:prefLabel and skosxl:altLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="extraWhitespaceLabel/extraWhitespaceLabel.xul" ontoType="SKOS">
+									<label value="Extra whitespace label concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have some extra whitespace in a SKOS label"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="extraWhitespaceLabel/extraWhitespaceLabel.xul" ontoType="SKOS-XL">
+									<label value="Extra whitespace label concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have some extra whitespace in a SKOS-XL label"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="multiplePrefLabelConcept/multiplePrefLabelConcept.xul" ontoType="SKOS">
+									<label value="Multiple prefLabel concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have multiple skos:prefLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+								<row align="center" target="multiplePrefLabelConcept/multiplePrefLabelConcept.xul" ontoType="SKOS-XL">
+									<label value="Multiple prefLabel concepts"/>
+									<label style="font-style: italic;" value="skos:Concept(s) that have multiple skosxl:prefLabel in the same language"/>
+									<button label="Run check" />
+								</row>
+							</rows>
+						</grid>
+					</groupbox>
+				</vbox>
+				
+			</groupbox>
+			
+			<groupbox id="sanitizationGroupbox">
+				<caption class="level1Header" align="center" flex="1">
+					<stack flex="1">
+						<hbox align="center" pack="center">
+							<label value="Sanitization"/>
+						</hbox>
+						<hbox align="center" pack="end" flex="1">
+							<button label="-" tooltiptext="Collapse" oncommand="art_semanticturkey.expandCollapseListener(event.target)" />
+						</hbox>
+					</stack>
+				</caption>
+				
+				<grid>
+					<columns>
+						<column width="200px"/>
+						<column flex="1" />
+						<column />
+					</columns>
+					<rows>
+						<row align="center" target="resourceWithSpace/resourceWithSpace.xul" ontoType="OWL, SKOS, SKOS-XL">
+							<label value="Whitespace URI Resources"/>
+							<label style="font-style: italic;" value="URI Resources that have a whitespace in the URI"/>
+							<button label="Run check" />
+						</row>
+					</rows>
+				</grid>
+			</groupbox>
+			
+			<groupbox id="refactoringGroupbox">
+				<caption class="level1Header" align="center" flex="1">
+					<stack flex="1">
+						<hbox align="center" pack="center">
+							<label value="Refactoring"/>
+						</hbox>
+						<hbox align="center" pack="end" flex="1">
+							<button label="-" tooltiptext="Collapse" oncommand="art_semanticturkey.expandCollapseListener(event.target)" />
+						</hbox>
+					</stack>
+				</caption>
+				<!-- grid or vbox containing grids -->
+			</groupbox>
 			
 		</vbox>
 			

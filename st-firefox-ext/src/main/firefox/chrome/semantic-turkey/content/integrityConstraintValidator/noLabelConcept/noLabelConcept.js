@@ -9,11 +9,21 @@ window.onload = function() {
 }
 
 art_semanticturkey.init = function(){
+	var ontoType = window.arguments[0].ontoType;
 	var listbox = document.getElementById("listbox");
+	//empty listbox
+	while (listbox.itemCount > 0){
+		listbox.removeItemAt(0);
+	}
+
 	try {
-		var xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithNoLabel();
-		var data = xmlResp.getElementsByTagName("data")[0];
-		var concepts = data.getElementsByTagName("concept");
+		var xmlResp;
+		if (ontoType == "SKOS"){
+			xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithNoSKOSPrefLabel();
+		} else if (ontoType == "SKOS-XL") {
+			xmlResp = art_semanticturkey.STRequests.ICV.listConceptsWithNoSKOSXLPrefLabel();
+		}
+		var concepts = xmlResp.getElementsByTagName("concept");
 		for (var i=0; i<concepts.length; i++){
 			var concept = concepts[i].textContent;
 			var listitem = document.createElement("listitem");
@@ -25,13 +35,11 @@ art_semanticturkey.init = function(){
 		    listitem.appendChild(cell);
 		    
 		    var button = document.createElement("button");
-		    button.setAttribute("label", "skos:prefLabel");
-		    button.setAttribute("flex", "1");
-		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
-		    listitem.appendChild(button);
-		    
-		    button = document.createElement("button");
-		    button.setAttribute("label", "skosxl:prefLabel");
+		    if (ontoType == "SKOS"){
+		    	button.setAttribute("label", "skos:prefLabel");
+			} else if (ontoType == "SKOS-XL") {
+				button.setAttribute("label", "skosxl:prefLabel");
+			}
 		    button.setAttribute("flex", "1");
 		    button.addEventListener("command", art_semanticturkey.fixButtonClickListener, false);
 		    listitem.appendChild(button);
@@ -48,23 +56,17 @@ art_semanticturkey.init = function(){
  */
 art_semanticturkey.fixButtonClickListener = function() {
 	var btn = this;
-	btnValue = btn.label;
 	var listitem = btn.parentNode;
-	var concept = listitem.children[0].getAttribute("label");
 	//open dialog to set a label
 	var parameters = new Object();
-	parameters.resource = concept;
+	parameters.resource = listitem.children[0].getAttribute("label");
 	parameters.editLabel = true;
 	parameters.editLang = true;
-	parameters.labelType = btnValue;
+	parameters.labelType = btn.label;
 	window.openDialog("chrome://semantic-turkey/content/integrityConstraintValidator/setLabelDialog.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
 			parameters);
-	//refresh listbox (commented: there's non way to know if user fix the problem from the editor panel (dbl clicking on the concept))
-//	if (parameters.returnedValue != null){
-//		var listbox = document.getElementById("listbox");
-//		listbox.removeItemAt(listbox.getIndexOfItem(listitem));
-//	}
+	art_semanticturkey.init();
 }
 
 /**
@@ -79,4 +81,5 @@ art_semanticturkey.conceptDblClickListener = function() {
 	parameters.parentWindow = window;
 	parameters.isFirstEditor = true;
 	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+	art_semanticturkey.init();
 }
