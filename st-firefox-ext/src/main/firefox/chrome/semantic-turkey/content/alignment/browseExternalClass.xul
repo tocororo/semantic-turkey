@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<?xml-stylesheet href="chrome://semantic-turkey/content/skos/widget/conceptTree/conceptTree.css" type="text/css"?> 
+<?xml-stylesheet href="chrome://semantic-turkey/content/class/widget/classTree/classTree.css" type="text/css"?> 
 
 <window id="selectAlignmentClassWindow" title="Class browser"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -16,8 +16,7 @@
 		</menupopup>
 	</menulist>
 	
-	<st:conceptTree id="classTree" flex="1" hideheading="true" hidetoolbar="true" mutable="false"/>
-	
+	<box id="classTreeBox" flex="1"/>
 	
 	<hbox>
 		<button id="okBtn" label="Ok" flex="1" />

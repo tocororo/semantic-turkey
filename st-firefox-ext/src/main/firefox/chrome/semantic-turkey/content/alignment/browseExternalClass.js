@@ -1,6 +1,6 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
-Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Context.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
@@ -44,14 +44,24 @@ art_semanticturkey.populateProjectsList = function() {
  */
 art_semanticturkey.projectMenuListener = function() {
 	var selectedProject = document.getElementById("projectsMenulist").selectedItem.label;
-	alert("view class tree for project " + selectedProject);
-//	var classTree = document.getElementById("classTree");
-//	conceptTree.projectName = selectedProject;
+	var classTree = document.getElementById("classTree");
+	if (selectedProject != "---"){
+		art_semanticturkey.STRequests.Projects.accessProject(selectedProject);
+		if (classTree == null){
+			classTree = document.createElementNS("http://semanticturkey.uniroma2.it/xmlns/widget#", "classTree");
+			classTree.setAttribute("id", "classTree");
+			classTree.setAttribute("mutable", "false");
+			document.getElementById("classTreeBox").appendChild(classTree);
+		}
+		classTree.projectName = selectedProject;
+	} else {
+		classTree._view.powerOff();
+	}
 }
 
 art_semanticturkey.accept = function() {
-	var conceptTree = document.getElementById("classTree");
-	window.arguments[0].selectedClass = conceptTree.selectedClass;
+	var classTree = document.getElementById("classTree");
+	window.arguments[0].selectedResource = classTree.selectedClass;
 	window.close();
 }
 

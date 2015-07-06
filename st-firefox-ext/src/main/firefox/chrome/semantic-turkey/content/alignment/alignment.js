@@ -1,16 +1,30 @@
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
-Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Context.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Alignment.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SKOS.jsm", art_semanticturkey);
+
+//window arguments
+var sourceResource = window.arguments[0].resource;
+var property = window.arguments[0].property;
 
 var openProjects = []; //contains the project already open when the alignment window is invoked
 var previousSelectedProject; //used to close project when selection change
 
 window.onload = function() {
+	
+	sourceResource = window.arguments[0].resource;
+	if (typeof sourceResource == "undefined" || sourceResource == ""){
+		art_semanticturkey.Alert.alert("No source resource has been passed for the alignment. " +
+				"Please, provide a \"resource\" argument from the calling window");
+		window.close();
+	}
+	property = window.arguments[0].property;
+	
 	document.getElementById("okBtn").addEventListener("command", art_semanticturkey.accept, false);
 	document.getElementById("cancelBtn").addEventListener("command", art_semanticturkey.cancel, false);
 	document.getElementById("browseBtn").addEventListener("command", art_semanticturkey.browse, false);
@@ -62,6 +76,17 @@ art_semanticturkey.populatePropertiesList = function(alsoSKOSProps) {
 		propertiesMenulist.appendItem(propShow, propUri);
 	}
 	
+	//in case a property is provided from the calling window, select it in the property menu
+	if (typeof property != "undefined") {
+		for (var i=0; i<propertiesMenulist.itemCount; i++){
+			var propUri = propertiesMenulist.getItemAtIndex(i).value;
+			if (property == propUri){
+				propertiesMenulist.selectedIndex = i;
+				break;
+			}
+		}
+	}
+	
 	propertiesMenulist.disabled = false;
 }
 
@@ -76,10 +101,12 @@ art_semanticturkey.updateOkButtonStatus = function() {
 }
 
 art_semanticturkey.accept = function() {
-	var sourceResource = window.arguments[0].resource;
 	var alignProp = document.getElementById("propertiesMenulist").selectedItem.value;
 	var targetResource = document.getElementById("resourceTxt").value;
 	art_semanticturkey.STRequests.Alignment.addAlignment(sourceResource, alignProp, targetResource);
+	//return to the calling window the property chosen for the alignment (useful to the resource view
+	//in case the user chooses an alignment property different from the one passed)
+	window.property = alignProp;
 	close();
 }
 
