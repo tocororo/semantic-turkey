@@ -34,6 +34,8 @@ import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
 import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
 import it.uniroma2.art.owlart.models.conf.BadConfigurationException;
@@ -56,8 +58,16 @@ import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGenerator;
+import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.rendering.RenderingOrchestrator;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 import java.io.File;
@@ -86,6 +96,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String INFOFILENAME = "project.info";
 	public static final String MODELCONFIG_FILENAME = "model.config";
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
+	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
+
 	public static final String TIMESTAMP_PROP = "timeStamp";
 	public static final String PROJECT_NAME_PROP = "name";
 	public static final String MODELCONFIG_ID = "modelConfigID";
@@ -99,11 +111,16 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	
 	// Constants concerning project plugins
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
+	
 	public static final String URI_GENERATOR_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".urigen";
 	public static final String URI_GENERATOR_FACTORY_ID_PROP = URI_GENERATOR_PROP_PREFIX + ".factoryID";
-	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = CODAURIGeneratorFactory.class.getName();
-
+	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = NativeTemplateBasedURIGeneratorFactory.class.getName();
 	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX + ".configType";
+
+	public static final String RENDERING_ENGINE_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".rendering";
+	public static final String RENDERING_ENGINE_FACTORY_ID_PROP = RENDERING_ENGINE_PROP_PREFIX + ".factoryID";
+	public static final String RENDERING_ENGINE_FACTORY_ID_DEFAULT_PROP_VALUE = RDFSRenderingEngineFactory.class.getName();
+	public static final String RENDERING_ENGINE_CONFIGURATION_TYPE_PROP = RENDERING_ENGINE_PROP_PREFIX + ".configType";
 
 
 	// this hashset, used by the setProperty(...) method, prevents ST system properties from being
@@ -134,6 +151,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	private ProjectACL acl;
 	private URIGenerator uriGenerator;
+	private RenderingEngine renderingEngine;
 
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -221,6 +239,33 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				throw new ProjectAccessException(e);
 			}
 			
+			// Activation of the rendering engine for this project
+			String renderingEngineFactoryID = getProperty(RENDERING_ENGINE_FACTORY_ID_PROP);
+			String renderingEngineConfigType = getProperty(RENDERING_ENGINE_CONFIGURATION_TYPE_PROP);
+
+			if (renderingEngineFactoryID == null) {
+				renderingEngineFactoryID = determineBestRenderingEngine(getModelType());
+			}
+			
+			try {
+				PluginFactory<?> renderingEngineFactory = PluginManager.getPluginFactory(renderingEngineFactoryID);
+				PluginConfiguration renderingEngineConfig;
+				
+				if (renderingEngineConfigType != null) {
+					renderingEngineConfig = renderingEngineFactory.createPluginConfiguration(renderingEngineConfigType);
+					renderingEngineConfig.loadParameters(new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME));
+				} else {
+					renderingEngineConfig = renderingEngineFactory.createDefaultPluginConfiguration();
+				}
+				
+				logger.debug("instantiating RenderingEngine. PluginFactory.getID() = {} // PluginConfiguration = {}", renderingEngineFactory.getID(), renderingEngineConfig); 
+
+				this.renderingEngine = (RenderingEngine)renderingEngineFactory.createInstance(renderingEngineConfig);
+			} catch (IOException | it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException | ClassNotFoundException | UnsupportedPluginConfigurationException | UnloadablePluginConfigurationException e) {
+				throw new ProjectAccessException(e);
+			}
+
+			
 			logger.debug("activation of project: " + getName() + ": baseuri and OntologyManager ok");
 
 			// activates the ontModel loads the triples (implementation depends on project type)
@@ -270,6 +315,16 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 
 		updateTimeStamp();
+	}
+
+	public static String determineBestRenderingEngine(Class<? extends RDFModel> modelType) {
+		if (modelType == SKOSModel.class) {
+			return SKOSRenderingEngineFactory.class.getName();
+		} else if (modelType == SKOSXLModel.class) {
+			return SKOSXLRenderingEngineFactory.class.getName();
+		} else {
+			return RDFSRenderingEngineFactory.class.getName();
+		}
 	}
 
 	/**
@@ -571,7 +626,11 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public URIGenerator getURIGenerator() {
 		return this.uriGenerator;
 	}
-
+	
+	public RenderingEngine getRenderingEngine() {
+		return this.renderingEngine;
+	}
+	
 	// Auxiliary graphs management
 
 	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";

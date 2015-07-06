@@ -1,10 +1,12 @@
-package it.uniroma2.art.semanticturkey.rendering;
+package it.uniroma2.art.semanticturkey.plugin.impls.rendering;
 
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
 
 import java.util.Set;
 
@@ -15,6 +17,10 @@ import com.google.common.collect.Sets;
  * 
  */
 public class RDFSRenderingEngine extends BaseRenderingEngine implements RenderingEngine {
+
+	public RDFSRenderingEngine(RDFSRenderingEngineConfiguration config) {
+		super(config);
+	}
 
 	@Override
 	public String getGraphPatternForDescribe(ResourcePosition resourcePosition,

@@ -12,10 +12,12 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -56,6 +58,30 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		}
 
 	}
+
+	private AbstractLabelBasedRenderingEngineConfiguration config;
+	private boolean takeAll;
+	private List<String> languages;
+	
+	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config) {
+		this.config = config;
+		this.takeAll = false;
+		this.languages = new ArrayList<String>();
+		
+		for (String langTag : config.languages.split(",")) {
+			langTag = langTag.trim();
+			
+			if (langTag.equals("*")) {
+				this.takeAll = true;
+				languages.clear();
+				break;
+			} else {
+				this.languages.add(langTag);
+			}
+		}
+		
+	}
+
 	@Override
 	public Map<ARTResource, String> render(Project<?> project,
 			ResourcePosition subjectPosition, ARTResource subject,
@@ -89,7 +115,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 					if (labelNode.isLiteral()) {
 						ARTLiteral labelLiteral = labelNode.asLiteral();
 	
-						labelBuilding.put(resourceNode.asResource(), labelLiteral);
+						if (takeAll || languages.contains(labelLiteral.getLanguage())) {
+							labelBuilding.put(resourceNode.asResource(), labelLiteral);
+						}
 					}
 				}
 			}
@@ -117,7 +145,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				continue;
 			}
 
-			labelBuilding.put(res, label);
+			if (takeAll || languages.contains(label.getLanguage())) {
+				labelBuilding.put(res, label);
+			}
 		}
 
 		Map<ARTResource, String> resource2rendering = new HashMap<ARTResource, String>();

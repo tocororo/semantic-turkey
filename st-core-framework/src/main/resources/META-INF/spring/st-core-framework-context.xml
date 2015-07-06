@@ -42,4 +42,39 @@
 		</osgi:service-properties>
 	</osgi:service>
 
+	<!-- Publishes the RDFS-based implementation of the extension point RenderingEngine -->	
+	<bean id="rdfsRenderingEngineFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="rdfsRenderingEngineFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
+		</osgi:service-properties>
+	</osgi:service>
+	
+	<!-- Publishes the SKOS-based implementation of the extension point RenderingEngine -->	
+	<bean id="skosRenderingEngineFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="skosRenderingEngineFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
+		</osgi:service-properties>
+	</osgi:service>
+	
+	<!-- Publishes the SKOSXL-based implementation of the extension point RenderingEngine -->	
+	<bean id="skosxlRenderingEngineFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="skosxlRenderingEngineFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
+		</osgi:service-properties>
+	</osgi:service>
 </beans>

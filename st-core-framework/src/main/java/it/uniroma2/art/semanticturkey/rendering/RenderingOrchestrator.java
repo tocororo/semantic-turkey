@@ -5,14 +5,14 @@ import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.SKOSModel;
-import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 
@@ -73,21 +73,13 @@ public class RenderingOrchestrator implements RenderingEngine {
 		if (subjectPosition instanceof LocalResourcePosition) {
 			Project<?> project = ((LocalResourcePosition) (subjectPosition)).getProject();
 			RDFModel ontModel = project.getOntModel();
-			
-			if (ontModel instanceof SKOSXLModel) {
-				return new SKOSXLRenderingEngine();
-			} else if (ontModel instanceof SKOSModel) {
-				return new SKOSRenderingEngine();
-			} else {
-				return new RDFSRenderingEngine();
-			}
-			
+			return project.getRenderingEngine();
 		} else if ((subjectPosition instanceof RemoteResourcePosition)) {
 			DatasetMetadata meta = ((RemoteResourcePosition) subjectPosition).getDatasetMetadata();
 			// return meta.getRenderingEngine();
-			return new RDFSRenderingEngine();
+			return new RDFSRenderingEngine(new RDFSRenderingEngineConfiguration());
 		} else {
-			return new RDFSRenderingEngine();
+			return new RDFSRenderingEngine(new RDFSRenderingEngineConfiguration());
 		}
 	}
 

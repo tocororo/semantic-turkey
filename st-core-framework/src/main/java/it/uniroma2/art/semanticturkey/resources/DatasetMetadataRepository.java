@@ -25,8 +25,10 @@ package it.uniroma2.art.semanticturkey.resources;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
-import it.uniroma2.art.semanticturkey.rendering.RDFSRenderingEngine;
-import it.uniroma2.art.semanticturkey.rendering.SKOSXLRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,11 +57,11 @@ public class DatasetMetadataRepository {
 		// TODO: remove this initialization block defining some known datasets
 		datasetMetadataRepository.put("http://dbpedia.org/resource/", new DatasetMetadata(
 				"http://dbpedia.org/resource/", null, "http://dbpedia.org/sparql", true,
-				new RDFSRenderingEngine(), RDFS.Res.URI));
+				new RDFSRenderingEngine(new RDFSRenderingEngineConfiguration()), RDFS.Res.URI));
 		datasetMetadataRepository.put("http://aims.fao.org/aos/agrovoc/", new DatasetMetadata(
-				"http://aims.fao.org/aos/agrovoc/", null, "http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc#", true, new SKOSXLRenderingEngine(), SKOSXL.Res.URI));
+				"http://aims.fao.org/aos/agrovoc/", null, "http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc#", true, new SKOSXLRenderingEngine(new SKOSXLRenderingEngineConfiguration()), SKOSXL.Res.URI));
 		datasetMetadataRepository.put("http://lod.nal.usda.gov/nalt/", new DatasetMetadata(
-				"http://lod.nal.usda.gov/nalt/", null, null, true, new RDFSRenderingEngine(), SKOSXL.Res.URI));
+				"http://lod.nal.usda.gov/nalt/", null, null, true, new RDFSRenderingEngine(new RDFSRenderingEngineConfiguration()), SKOSXL.Res.URI));
 
 	}
 
