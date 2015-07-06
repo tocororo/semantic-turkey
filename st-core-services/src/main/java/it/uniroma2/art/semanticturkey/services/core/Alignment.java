@@ -17,15 +17,15 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLArtModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
-import it.uniroma2.art.owlart.models.impl.SKOSModelImpl;
+import it.uniroma2.art.owlart.models.impl.RDFModelImpl;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
-import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
@@ -62,6 +62,15 @@ public class Alignment extends STServiceAdapter {
 		owlMappingRelations.add(OWL.Res.ALLDIFFERENT);
 		owlMappingRelations.add(OWL.Res.EQUIVALENTCLASS);
 		owlMappingRelations.add(OWL.Res.DISJOINTWITH);
+		owlMappingRelations.add(RDFS.Res.SUBCLASSOF);
+		
+	};
+	
+	private static List<ARTURIResource> propertiesMappingRelations;
+	static {
+		propertiesMappingRelations = new ArrayList<>();
+		propertiesMappingRelations.add(OWL.Res.EQUIVALENTPROPERTY);
+		propertiesMappingRelations.add(RDFS.Res.SUBPROPERTYOF);
 	};
 	
 	
@@ -117,40 +126,46 @@ public class Alignment extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@GenerateSTServiceController
-	public Response getMappingRelations(@Optional (defaultValue = "false") boolean includeSKOSProps)
-			throws ModelAccessException, UnavailableResourceException, ProjectInconsistentException, IOException, ModelUpdateException, UnsupportedRDFFormatException{
+	public Response getMappingRelations(ARTURIResource resource, @Optional (defaultValue = "false") boolean allMappingProps)
+			throws ModelAccessException, UnavailableResourceException, ProjectInconsistentException, IOException, ModelUpdateException, UnsupportedRDFFormatException {
 
 		Collection<STRDFURI> result = STRDFNodeFactory.createEmptyURICollection();
 		
 		OWLModel model = getOWLModel();
-		if (model instanceof SKOSModel || model instanceof SKOSXLModel) {
-			for (ARTURIResource prop : skosMappingRelations){
+		
+		if (model.isProperty(resource, NodeFilters.ANY)){
+			for (ARTURIResource prop : propertiesMappingRelations){
 				result.add(STRDFNodeFactory.createSTRDFURI(prop, 
 						ModelUtilities.getPropertyRole(prop, model), true,
 						model.getQName(prop.getURI())));
 			}
-		} else if (model instanceof OWLModel) {
-			for (ARTURIResource prop : owlMappingRelations){
-				result.add(STRDFNodeFactory.createSTRDFURI(prop, 
-						ModelUtilities.getPropertyRole(prop, model), true,
-						model.getQName(prop.getURI())));
-			}
-			if (includeSKOSProps){
-				OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(PluginManager.getOntManagerImpl(
-						getProject().getOntologyManagerImplID()).createModelFactory());
-				mf.setPopulatingW3CVocabularies(true);
-				SKOSModel tempSkosModel = new SKOSModelImpl(mf.createLightweightRDFModel());
-				ArrayList<String> vocabs = new ArrayList<String>();
-				vocabs.add(RDFS.NAMESPACE);
-				vocabs.add(OWL.NAMESPACE);
-				vocabs.add(SKOS.NAMESPACE);
-				vocabs.add(SKOSXL.NAMESPACE);
-				mf.checkVocabularyData(tempSkosModel, vocabs);
-				
+		} else {
+			if (model instanceof SKOSModel || model instanceof SKOSXLModel) {
 				for (ARTURIResource prop : skosMappingRelations){
 					result.add(STRDFNodeFactory.createSTRDFURI(prop, 
-							ModelUtilities.getPropertyRole(prop, tempSkosModel), true,
-							tempSkosModel.getQName(prop.getURI())));
+							ModelUtilities.getPropertyRole(prop, model), true,
+							model.getQName(prop.getURI())));
+				}
+				if (allMappingProps) {
+					for (ARTURIResource prop : owlMappingRelations){
+						result.add(STRDFNodeFactory.createSTRDFURI(prop, 
+								ModelUtilities.getPropertyRole(prop, model), true,
+								model.getQName(prop.getURI())));
+					}
+				}
+			} else if (model instanceof OWLModel) {
+				for (ARTURIResource prop : owlMappingRelations){
+					result.add(STRDFNodeFactory.createSTRDFURI(prop, 
+							ModelUtilities.getPropertyRole(prop, model), true,
+							model.getQName(prop.getURI())));
+				}
+				if (allMappingProps){
+					RDFModel tempModel = getTempModelForVocabularies();
+					for (ARTURIResource prop : skosMappingRelations){
+						result.add(STRDFNodeFactory.createSTRDFURI(prop, 
+								ModelUtilities.getPropertyRole(prop, tempModel), true,
+								tempModel.getQName(prop.getURI())));
+					}
 				}
 			}
 		}
@@ -160,4 +175,18 @@ public class Alignment extends STServiceAdapter {
 		return resp;
 	}
 
+	private RDFModel getTempModelForVocabularies() throws UnavailableResourceException,
+			ProjectInconsistentException, ModelAccessException, IOException, ModelUpdateException,
+			UnsupportedRDFFormatException {
+		OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(PluginManager.getOntManagerImpl(
+				getProject().getOntologyManagerImplID()).createModelFactory());
+		mf.setPopulatingW3CVocabularies(true);
+		RDFModel tempModel = new RDFModelImpl(mf.createLightweightRDFModel());
+		ArrayList<String> vocabs = new ArrayList<String>();
+		vocabs.add(RDFS.NAMESPACE);
+		vocabs.add(OWL.NAMESPACE);
+		vocabs.add(SKOS.NAMESPACE);
+		mf.checkVocabularyData(tempModel, vocabs);
+		return tempModel;
+	}
 }

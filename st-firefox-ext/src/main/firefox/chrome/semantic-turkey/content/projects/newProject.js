@@ -1,6 +1,6 @@
 if (typeof art_semanticturkey == 'undefined') var art_semanticturkey = {};
 
-Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Projects.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SystemStart.jsm", art_semanticturkey);
@@ -28,6 +28,8 @@ window.onload = function(){
 	art_semanticturkey.populateTripleStoreMenulist_RESPONSE(responseXML);
 	
 	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator");
+	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
+
 	window.sizeToContent();
 };
 
@@ -333,9 +335,9 @@ art_semanticturkey.onAccept = function() {
 	
 	//perform checks on extension point configurations
 	var extPointGroupboxList = document.getElementById("extensionPointsBox").childNodes;
+	
 	//First groupbox (index 0): UriGenerator extension point
 	var uriGenGroupbox = extPointGroupboxList[0];
-	
 	//uriGen configuration and parameters
 	var uriGenFactoryID = uriGenGroupbox.getElementsByTagName("row")[0]
 			.getElementsByTagName("menulist")[0].selectedItem.getAttribute("id");
@@ -352,10 +354,9 @@ art_semanticturkey.onAccept = function() {
 			}
 		}
 		//collect configuration of UriGenerator
-		var uriGenConfigMenulist = extPointGroupboxList[0].getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
-		uriGenConfiguration = uriGenConfigMenulist.selectedItem.type;
+		uriGenConfiguration = configurationMenulist.selectedItem.type;
 		uriGenParsArray = new Array();
-		var uriGenCfgPars = uriGenConfigMenulist.selectedItem.par;
+		var uriGenCfgPars = configurationMenulist.selectedItem.par;
 		for (var i=0; i<uriGenCfgPars.length; i++){
 			uriGenParsArray[i] = new Object();
 			uriGenParsArray[i].name = uriGenCfgPars[i].name;
@@ -363,6 +364,36 @@ art_semanticturkey.onAccept = function() {
 		}
 	} else {
 		uriGenFactoryID = null;
+	}
+	
+	//Second groupbox (index 1): RenderingEngine extension point
+	var renderingEngineGroupbox = extPointGroupboxList[1];
+	//RenderingEngine configuration and parameters
+	var renderingEngineFactoryID = renderingEngineGroupbox.getElementsByTagName("row")[0]
+			.getElementsByTagName("menulist")[0].selectedItem.getAttribute("id");
+	var renderingEngineConfiguration = null;
+	var renderingEngineParsArray = null;
+	if (renderingEngineFactoryID != "---"){
+		//check if configuration with "editRequired" true have been configured
+		//still not tested: there are not yet plugin with configuration that require to be configured
+		var configurationMenulist = renderingEngineGroupbox.getElementsByTagName("row")[1].getElementsByTagName("menulist")[0];
+		if (configurationMenulist.selectedItem.editRequired == "true") {
+			if(art_semanticturkey.openPluginConfiguration(configurationMenulist.selectedItem) == false){
+				art_semanticturkey.DisabledAllButton(false);
+				return;
+			}
+		}
+		//collect configuration of RenderingEngine
+		renderingEngineConfiguration = configurationMenulist.selectedItem.type;
+		renderingEngineParsArray = new Array();
+		var renderingEngineCfgPars = configurationMenulist.selectedItem.par;
+		for (var i=0; i<renderingEngineCfgPars.length; i++){
+			renderingEngineParsArray[i] = new Object();
+			renderingEngineParsArray[i].name = renderingEngineCfgPars[i].name;
+			renderingEngineParsArray[i].value = renderingEngineCfgPars[i].value;
+		}
+	} else {
+		renderingEngineFactoryID = null;
 	}
 	
 	var srcLocalFile = document.getElementById("srcLocalFile").value;

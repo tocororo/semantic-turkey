@@ -30,8 +30,7 @@
 								<menuitem label="---" />
 							</menupopup>
 						</menulist>
-						<checkbox id="alsoSKOSPropCheck" label="Include SKOS" 
-							tooltiptext="Show also SKOS mapping relations" hidden="true"/>
+						<checkbox id="allMappingProps" label="Include All props"/>
 					</hbox>
 				</row>
 			</rows>

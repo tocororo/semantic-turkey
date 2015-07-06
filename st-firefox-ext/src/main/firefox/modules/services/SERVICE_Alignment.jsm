@@ -20,11 +20,12 @@ function addAlignment(sourceResource, predicate, targetResource) {
 	currentSTHttpMgr.GET(null, serviceName, service.addAlignmentRequest, this.context, p_source, p_predicate, p_target);
 }
 
-function getMappingRelations(includeSKOSProps) {
+function getMappingRelations(resource, allMappingProps) {
 	Logger.debug("[SERVICE_Alignment.jsm] getMappingRelations");
 	var params = [];
-	if (typeof includeSKOSProps != "undefined")
-		params.push("includeSKOSProps=" + includeSKOSProps);
+	params.push("resource="+resource);
+	if (typeof allMappingProps != "undefined")
+		params.push("allMappingProps=" + allMappingProps);
 	return Deserializer.createRDFArray(currentSTHttpMgr.GET(
 			null, serviceName, service.getMappingRelationsRequest, this.context, params));
 }
