@@ -47,6 +47,7 @@
 				<textbox id="resourceNameBox" flex="1" readonly="true" />
 				<hbox id="resourceButtonsBox">
 					<button id="renameResourceButton" label="Rename..." />
+					<button id="alignResourceButton" label="Align.." />
 				</hbox>
 			</hbox>
 			<vbox id="partitionsBox" flex="1">

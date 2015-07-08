@@ -93,6 +93,12 @@ art_semanticturkey.resourceView.init = function() {
 					art_semanticturkey.resourceView.partitions.internal.dblClickHandler,
 					true);
 
+	var resourceNameBox = document.getElementById("resourceNameBox");
+
+	var renameResourceButton = document.getElementById("alignResourceButton");
+	renameResourceButton.addEventListener("command",
+			art_semanticturkey.resourceView.doAlignResource, false);
+
 	// -------------------------------------------------
 	// Request and rendering of the resource description
 
@@ -147,6 +153,11 @@ art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 
 	var renameResourceButton = document.getElementById("renameResourceButton");
 	renameResourceButton.disabled = !(isResourceEditable && resourceObj
+			.isURIResource());
+	
+	// Handles the resource editability (align button)
+	var alignResourceButton = document.getElementById("alignResourceButton");
+	alignResourceButton.disabled = !(isResourceEditable && resourceObj
 			.isURIResource());
 
 	// --------------------------------
@@ -221,6 +232,29 @@ art_semanticturkey.resourceView.doRenameResource = function(event) {
 		art_semanticturkey.Alert.alert(e);
 	}
 };
+
+art_semanticturkey.resourceView.doAlignResource = function(event) {
+
+	try {
+		var resourceNameBox = document.getElementById("resourceNameBox");
+
+		var parameters = {};
+		parameters.resource = resourceNameBox.stRdfNode.getNominalValue();
+		parameters.resourceType = resourceNameBox.stRdfNode.getRole();
+		
+		var newWindow = window.openDialog("chrome://semantic-turkey/content/alignment/alignment.xul", "dlg",
+				"chrome=yes,dialog,resizable=yes,modal,centerscreen",
+				parameters);
+		
+		if (newWindow.onaccept == true) {
+			art_semanticturkey.resourceView.refreshView();
+		}
+		
+	} catch (e) {
+		art_semanticturkey.Alert.alert(e);
+	}
+};
+
 
 /**
  * Populate the resource view with the web link of the selected resource
