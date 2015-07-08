@@ -60,14 +60,10 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
-import it.uniroma2.art.semanticturkey.rendering.RenderingOrchestrator;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 import java.io.File;
@@ -326,7 +322,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			return RDFSRenderingEngineFactory.class.getName();
 		}
 	}
-
+	
 	/**
 	 * this initializes the {@link #model} field with a newly created {@link OWLModel} for this project
 	 * 

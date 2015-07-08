@@ -69,7 +69,8 @@ function repairProject(projectName){	//NEW
  * @return
  */
 function newProject(projectName, modelType, baseURI, ontManagerFactoryID, modelConfigurationClass, 
-		modelConfigurationArray, uriGenFactoryID, uriGenConfigurationClass, uriGenConfigurationArray) { //NEW
+		modelConfigurationArray, uriGenFactoryID, uriGenConfigurationClass, uriGenConfigurationArray,
+		renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfigurationArray) { //NEW
 	Logger.debug('[SERVICE_Projects.jsm] newProject');
 	
 	var consumer = "consumer="+ STInfo.getSystemProjectName(); 
@@ -88,27 +89,35 @@ function newProject(projectName, modelType, baseURI, ontManagerFactoryID, modelC
 	}
 	var currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 
+	var uriGenFactoryID_p = "";
+	var uriGenConfigurationClass_p = "";
+	var uriGenConfiguration_p = "";
+	
 	//UriGenerator configuration is optional
 	//if uriGenFactoryID is provided is supposed that uriGenConfigurationClass and uriGenConfigurationArray are provided too
-	if (uriGenFactoryID == null || typeof uriGenFactoryID == "undefined"){
-		return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
-				projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration);
-	} else {
-		var uriGenFactoryID = "uriGeneratorFactoryID=" + uriGenFactoryID;
-		var uriGenConfigurationClass = "uriGenConfigurationClass=" + uriGenConfigurationClass;
-		var uriGenConfiguration = "uriGenConfiguration=";
-		for ( var i=0; i < uriGenConfigurationArray.length; ++i){
-			var namePar = uriGenConfigurationArray[i].name;
-			var valuePar = uriGenConfigurationArray[i].value;
-			if(i!=0)
-				uriGenConfiguration +="\n";
-			uriGenConfiguration += namePar+"="+valuePar;
-		}
-		return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
-				projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration,
-				uriGenFactoryID, uriGenConfigurationClass, uriGenConfiguration);
+	if (typeof uriGenFactoryID != "undefined" && uriGenFactoryID != null) {
+		uriGenFactoryID_p = "uriGeneratorFactoryID=" + uriGenFactoryID;
+		uriGenConfigurationClass_p = "uriGenConfigurationClass=" + uriGenConfigurationClass;
+		uriGenConfiguration_p = "uriGenConfiguration=" + uriGenConfigurationArray.map(function(v){return v.name + "=" + v.value;}).join("\n");
 	}
 	
+	var renderingEngineFactoryID_p = "";
+	var renderingEngineConfigurationClass_p = "";
+	var renderingEngineConfiguration_p = "";
+
+	//rendering engine configuration is optional
+	//if renderingEngineFactoryID is provided is supposed that renderingEngineConfigurationClass and renderingEngineConfigurationArray are provided too
+	if (typeof renderingEngineFactoryID != "undefined" && renderingEngineFactoryID != null) {
+		renderingEngineFactoryID_p = "renderingEngineFactoryID=" + renderingEngineFactoryID;
+		renderingEngineConfigurationClass_p = "renderingEngineConfigurationClass=" + renderingEngineConfigurationClass;
+		renderingEngineConfiguration_p = "renderingEngineConfiguration=" + renderingEngineConfigurationArray.map(function(v){return v.name + "=" + v.value;}).join("\n");
+	} 
+	
+
+	return currentSTHttpMgr.GET(null, serviceName, service.createProjectRequest, this.context, consumer, 
+			projectName, modelType, baseURI, ontmanager, ontMgrConfiguration, modelConfiguration,
+			uriGenFactoryID_p, uriGenConfigurationClass_p, uriGenConfiguration_p,
+			renderingEngineFactoryID_p, renderingEngineConfigurationClass_p, renderingEngineConfiguration_p);
 }
 
 /**

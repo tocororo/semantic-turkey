@@ -429,13 +429,14 @@ art_semanticturkey.onAccept = function() {
 			responseXML = art_semanticturkey.STRequests.Projects.newProject(
 					projectName, ontologyType, uri,
 					tripleStore, ontMgrConfiguration, cfgParsArray,
-					uriGenFactoryID, uriGenConfiguration, uriGenParsArray);
+					uriGenFactoryID, uriGenConfiguration, uriGenParsArray, renderingEngineFactoryID,
+					renderingEngineConfiguration, renderingEngineParsArray);
 		} else {
 			responseXML = art_semanticturkey.STRequests.Projects.newProjectFromFile(
 				projectName, ontologyType, uri,
 				tripleStore, ontMgrConfiguration, cfgParsArray,
-				uriGenConfiguration, uriGenFactoryID, uriGenParsArray,
-				srcLocalFile);
+				uriGenConfiguration, uriGenFactoryID, uriGenParsArray, renderingEngineFactoryID,
+				renderingEngineConfiguration, renderingEngineParsArray, srcLocalFile);
 		}
 		art_semanticturkey.newProject_RESPONSE(responseXML, projectName, ontologyType);
 	}

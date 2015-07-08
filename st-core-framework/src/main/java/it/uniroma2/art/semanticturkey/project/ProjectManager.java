@@ -219,6 +219,9 @@ public class ProjectManager {
 	 * @param uriGeneratorFactoryID
 	 * @param uriGenConfigurationClassName
 	 * @param uriGenConfiguration
+	 * @param renderingEngineFactoryID
+	 * @param renderingEngineConfigurationClass
+	 * @param renderingEngineConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -229,13 +232,15 @@ public class ProjectManager {
 	public static Project<? extends RDFModel> createProject(String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration)
+			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
+			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		return createProject(ProjectConsumer.SYSTEM, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
 				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
-				uriGenConfigurationClass, uriGenConfiguration);
+				uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID,
+				renderingEngineConfigurationClass, renderingEngineConfiguration);
 	}
 
 	/**
@@ -253,6 +258,9 @@ public class ProjectManager {
 	 * @param uriGeneratorFactoryID
 	 * @param uriGenConfigurationClassName
 	 * @param uriGenConfiguration
+	 * @param renderingEngineFactoryID
+	 * @param renderingEngineConfigurationClass
+	 * @param renderingEngineConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -263,12 +271,14 @@ public class ProjectManager {
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration)
+			String uriGenConfigurationClass, Properties uriGenConfiguration,
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		return createProject(consumer, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
+				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
 	}
 
 	/**
@@ -289,6 +299,9 @@ public class ProjectManager {
 	 * @param uriGeneratorFactoryID
 	 * @param uriGenConfigurationClassName
 	 * @param uriGenConfiguration
+	 * @param renderingEngineFactoryID
+	 * @param renderingEngineConfigurationClass
+	 * @param renderingEngineConfiguration
 	 * @return
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -299,7 +312,8 @@ public class ProjectManager {
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration,
-			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration)
+			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 
@@ -307,7 +321,8 @@ public class ProjectManager {
 
 		return createProject(consumer, projectName, modelType, projectDir, baseURI, defaultNamespace,
 				ontManagerFactoryID, modelConfigurationClass, modelConfiguration,
-				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
+				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
+				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
 	}
 
 	/**
@@ -335,13 +350,17 @@ public class ProjectManager {
 	 * @param uriGeneratorFactoryID
 	 * @param uriGenConfigurationClassName
 	 * @param uriGenConfiguration
+	 * @param renderingEngineFactoryID
+	 * @param renderingEngineConfigurationClass
+	 * @param renderingEngineConfiguration
 	 * @return
 	 * @throws ProjectCreationException
 	 */
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration,
-			String uriGeneratorFactoryID, String uriGenConfigurationClassName, Properties uriGenConfiguration)
+			String uriGeneratorFactoryID, String uriGenConfigurationClassName, Properties uriGenConfiguration,
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
 			throws ProjectCreationException {
 
 		try {
@@ -364,7 +383,9 @@ public class ProjectManager {
 			logger.debug("building project directory");
 			prepareProjectFiles(projectName, modelType, projectDir, baseURI, defaultNamespace,
 					ontManagerFactoryID, modelConfigurationClassName, modelConfiguration,
-					uriGeneratorFactoryID, uriGenConfigurationClassName, uriGenConfiguration, projType, consumer);
+					uriGeneratorFactoryID, uriGenConfigurationClassName, uriGenConfiguration,
+					renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration,
+					projType, consumer);
 
 			logger.debug("activating project");
 			// return activateProject(projectName);
@@ -389,7 +410,8 @@ public class ProjectManager {
 			Class<MODELTYPE> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerID, String modelConfigurationClass, Properties modelConfiguration,
 			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
-			ProjectType type, ProjectConsumer consumer) throws DuplicatedResourceException,
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass, 
+			Properties renderingEngineConfiguration, ProjectType type, ProjectConsumer consumer) throws DuplicatedResourceException,
 			ProjectCreationException {
 		if (projectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
@@ -411,6 +433,8 @@ public class ProjectManager {
 			out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
 			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorFactoryID) + "\n");
 			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGenConfigurationClass) + "\n");
+			out.write(Project.RENDERING_ENGINE_FACTORY_ID_PROP + "=" + escape(renderingEngineFactoryID) + "\n");
+			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "=" + escape(renderingEngineConfigurationClass) + "\n");
 			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
 			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
 			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
@@ -439,6 +463,13 @@ public class ProjectManager {
 			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)){
 				uriGenConfiguration.store(fw, "uri generator configuration, initialized from project initialization");
 			}
+			
+			File renderingEngineConfigurationFile = new File(projectDir, Project.RENDERING_ENGINE_CONFIG_FILENAME);
+			renderingEngineConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(renderingEngineConfigurationFile)){
+				renderingEngineConfiguration.store(fw, "rendering engine configuration, initialized from project initialization");
+			}
+
 
 			logger.debug("all project info have been built");
 
@@ -1614,12 +1645,13 @@ public class ProjectManager {
 	public static Project<? extends RDFModel> createProjectAndSetAsCurrent(String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration)
+			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
+			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		Project<? extends RDFModel> project = createProject(projectName, modelType, baseURI,
 				ontManagerFactoryID, modelConfigurationClass, modelConfiguration,
-				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
+				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
 		setCurrentProject(project);
 		return project;
 	}

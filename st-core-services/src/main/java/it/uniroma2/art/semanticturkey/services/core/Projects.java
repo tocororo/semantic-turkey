@@ -99,42 +99,81 @@ public class Projects extends STServiceAdapter {
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration, 
 			@Optional String uriGeneratorFactoryID, @Optional String uriGenConfigurationClass,
-			@Optional Properties uriGenConfiguration)
+			@Optional Properties uriGenConfiguration,
+			@Optional String renderingEngineFactoryID, @Optional String renderingEngineConfigurationClass,
+			@Optional Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		
-		if (uriGeneratorFactoryID == null) {
-			uriGeneratorFactoryID = Project.URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
-		}
-		PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(uriGeneratorFactoryID);
-		PluginConfiguration pluginConf = null;
-		if (uriGenConfigurationClass == null) {
-			pluginConf = pluginFactory.createDefaultPluginConfiguration();
-			uriGenConfigurationClass = pluginConf.getClass().getName();
-		} else {
-			try {
-				pluginConf = pluginFactory.createPluginConfiguration(uriGenConfigurationClass);
-			} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
-					| UnloadablePluginConfigurationException e) {
-				throw new ProjectCreationException(e);
+		// Handles the default values for the configuration of URI generators
+		{
+			if (uriGeneratorFactoryID == null) {
+				uriGeneratorFactoryID = Project.URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
 			}
-
-		}
-		if (uriGenConfiguration == null) {
-			if (pluginConf.hasRequiredParameters()){
-				throw new ProjectCreationException("The implicitly assumed configuration class '" +
-						uriGenConfigurationClass + "' requires user configuration");
+			PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(uriGeneratorFactoryID);
+			PluginConfiguration pluginConf = null;
+			if (uriGenConfigurationClass == null) {
+				pluginConf = pluginFactory.createDefaultPluginConfiguration();
+				uriGenConfigurationClass = pluginConf.getClass().getName();
+			} else {
+				try {
+					pluginConf = pluginFactory.createPluginConfiguration(uriGenConfigurationClass);
+				} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
+						| UnloadablePluginConfigurationException e) {
+					throw new ProjectCreationException(e);
+				}
+	
 			}
-			uriGenConfiguration = new Properties();
-			try {
-				pluginConf.storeParameters(uriGenConfiguration);
-			} catch (BadConfigurationException e) {
-				throw new ProjectCreationException(e);
+			if (uriGenConfiguration == null) {
+				if (pluginConf.hasRequiredParameters()){
+					throw new ProjectCreationException("The implicitly assumed configuration class '" +
+							uriGenConfigurationClass + "' requires user configuration");
+				}
+				uriGenConfiguration = new Properties();
+				try {
+					pluginConf.storeParameters(uriGenConfiguration);
+				} catch (BadConfigurationException e) {
+					throw new ProjectCreationException(e);
+				}
+			}
+		}
+	
+		// Handles the default values for the configuration of rendering engines4
+		{
+			if (renderingEngineFactoryID == null) {
+				renderingEngineFactoryID = Project.determineBestRenderingEngine(modelType);
+			}
+			PluginFactory<PluginConfiguration> renderingEngineFactory = PluginManager.getPluginFactory(renderingEngineFactoryID);
+			PluginConfiguration renderingEngineConf = null;
+			if (renderingEngineConfigurationClass == null) {
+				renderingEngineConf = renderingEngineFactory.createDefaultPluginConfiguration();
+				renderingEngineConfigurationClass = renderingEngineConf.getClass().getName();
+			} else {
+				try {
+					renderingEngineConf = renderingEngineFactory.createPluginConfiguration(renderingEngineConfigurationClass);
+				} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
+						| UnloadablePluginConfigurationException e) {
+					throw new ProjectCreationException(e);
+				}
+	
+			}
+			if (renderingEngineConfiguration == null) {
+				if (renderingEngineConf.hasRequiredParameters()){
+					throw new ProjectCreationException("The implicitly assumed configuration class '" +
+							renderingEngineConfigurationClass + "' requires user configuration");
+				}
+				renderingEngineConfiguration = new Properties();
+				try {
+					renderingEngineConf.storeParameters(renderingEngineConfiguration);
+				} catch (BadConfigurationException e) {
+					throw new ProjectCreationException(e);
+				}
 			}
 		}
 		
 		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
+				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
 		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
