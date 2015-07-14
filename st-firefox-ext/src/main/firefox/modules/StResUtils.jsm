@@ -70,6 +70,11 @@ function getImageSrc(rdfRes, operation) {
 					fileName = "prop_imported.png";
 				else
 					fileName = "prop20x20.png";
+			} else if (role == "xLabel") {
+				var lang = rdfRes.lang;
+				if(typeof lang != "undefined" && lang != null && lang != "" ){
+					fileName = "flags/"+lang+".gif";
+				}
 			}
 		} else if(operation == "remove"){
 			if (role == "concept") {

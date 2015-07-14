@@ -78,10 +78,10 @@
 							
 						} else{
 							// no image can be found for this resource
-							//check if it is a literal and if it has a language
+							//check if it is a literal (or xLabel) and if it has a language
 							
-							if(this.rdfResource instanceof art_semanticturkey.ARTLiteral){
-								var lang = this.rdfResource.getLang();
+							if(this.rdfResource instanceof art_semanticturkey.ARTLiteral || this.rdfResource.getRole() == "xLabel"){
+								var lang = this.rdfResource.lang || this.rdfResource.getLang();
 								if(typeof lang != "undefined" && lang != null && lang != "" ){
 									var textboxLang = document.createElement("textbox");
 									textboxLang.setAttribute("value", lang);

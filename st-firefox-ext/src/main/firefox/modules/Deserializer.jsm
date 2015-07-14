@@ -52,7 +52,8 @@ function createURI(response){
 	var numInst = uriElement.getAttribute("numInst");
 	var hasCustomRange = uriElement.getAttribute("hasCustomRange");//indicates if a property has a CustomRange
 	var resourcePosition = uriElement.getAttribute("resourcePosition");//indicates the position of the resource
-
+	var lang = uriElement.getAttribute("lang");//indicates the language of an xLabel
+	
 	var artURIRes = new ARTURIResource(showValue, roleValue, uriValue);
 	artURIRes.explicit = explicitValue; 
 	artURIRes.deleteForbidden = deleteForbiddenValue;
@@ -60,6 +61,7 @@ function createURI(response){
 	artURIRes.numInst = numInst;
 	artURIRes.hasCustomRange = hasCustomRange;
 	artURIRes.resourcePosition = resourcePosition;
+	artURIRes.lang = lang;
 
 	return artURIRes;
 }
@@ -75,13 +77,15 @@ function createBlankNode(response){
 	var roleValue = bnodeElement.getAttribute('role');
 	var explicitValue = bnodeElement.getAttribute('explicit');
 	var resourcePosition = bnodeElement.getAttribute("resourcePosition");//indicates the position of the resource
-	
+	var lang = bnodeElement.getAttribute("lang");//indicates the language of an xLabel
+
 	var bNodeRes = new ARTBNode(id, roleValue, showValue);
 	// bNodeRes.show = showValue;
 	bNodeRes.explicit = explicitValue;
 	
 	bNodeRes.resourcePosition = resourcePosition;
-	
+	bNodeRes.lang = lang;
+
 	return bNodeRes;
 	
 }

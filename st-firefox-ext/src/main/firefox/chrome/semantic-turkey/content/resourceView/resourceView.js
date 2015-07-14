@@ -773,13 +773,8 @@ art_semanticturkey.resourceView.partitions
 						case "http://www.w3.org/2008/05/skos-xl#prefLabel":
 						case "http://www.w3.org/2008/05/skos-xl#altLabel":
 						case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
-							// TODO: this is just an hack!!
-							var renderizedLabel = rdfObject.getShow();
-							var re = /^(.*?)(?:\s\((.*)\))?$/;
-							var m = renderizedLabel.match(re);
-
-							var label = m[1];
-							var lang = m[2];
+							var label = rdfObject.getShow();
+							var lang = rdfObject.lang || null;
 
 							if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#prefLabel") {
 								art_semanticturkey.STRequests.SKOSXL
