@@ -80,7 +80,11 @@ art_semanticturkey.projectMenuListener = function() {
 			art_semanticturkey.STRequests.Projects.disconnectFromProject(previousSelectedProject);
 	}
 	previousSelectedProject = selectedProject;
-	document.getElementById("conceptTree")._view.powerOff();
+	var conceptTree = document.getElementById("conceptTree");
+	if (conceptTree != null) {
+		//first time the menu is changed and the listener called, concept tree is still not initialized
+		conceptTree._view.powerOff();
+	}
 }
 
 /**

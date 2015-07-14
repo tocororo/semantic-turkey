@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<!-- <?xml-stylesheet href="chrome://semantic-turkey/content/class/widget/classTree/classTree.css" type="text/css"?>  -->
+<?xml-stylesheet href="chrome://semantic-turkey/content/property/widget/propertyTree/propertyTree.css" type="text/css"?> 
 
 <window id="selectAlignmentPropWindow" title="Property browser"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"

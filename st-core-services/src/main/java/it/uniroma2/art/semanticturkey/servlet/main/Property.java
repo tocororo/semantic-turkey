@@ -54,6 +54,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
@@ -81,6 +82,7 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import com.google.common.collect.UnmodifiableIterator;
 
 /**
  * This services handles requests regarding property management and assignment of values to properties of
@@ -105,7 +107,9 @@ public class Property extends ResourceOld {
 		final static public String getPropertiesForDomainsRequest = "getPropertiesForDomains";
 		final static public String getRangeClassesTreeRequest = "getRangeClassesTree";
 		final static public String getSuperPropertiesRequest = "getSuperProperties";
+		final static public String getSubPropertiesRequest = "getSubProperties";
 		final static public String getPropertyListRequest = "getPropertyList";
+		final static public String getRootPropertyListRequest = "getRootPropertyList";
 		final static public String parseDataRangeRequest = "parseDataRange";
 		final static public String getDomainRequest = "getDomain";
 		final static public String getRangeRequest = "getRange";
@@ -227,6 +231,12 @@ public class Property extends ResourceOld {
 				String propertyQName = setHttpPar(Par.propertyQNamePar);
 				checkRequestParametersAllNotNull(Par.propertyQNamePar);
 				return getPropertyInfo(propertyQName);
+			} else if (request.equals(Req.getRootPropertyListRequest)) {
+				return getRootPropertyList();
+			} else if (request.equals(Req.getSubPropertiesRequest)) {
+				String propertyQName = setHttpPar(Par.propertyQNamePar);
+				checkRequestParametersAllNotNull(Par.propertyQNamePar);
+				return getSubProperties(propertyQName);
 			} else if (request.equals(Req.getSuperPropertiesRequest)) {
 				String propertyQName = setHttpPar(Par.propertyQNamePar);
 				checkRequestParametersAllNotNull(Par.propertyQNamePar);
@@ -388,7 +398,123 @@ public class Property extends ResourceOld {
 	public Response getSuperProperties(String propQName) {
 		return getSuperTypes(propQName, RDFResourceRolesEnum.property);
 	}
+	
+	public Response getSubProperties(String propQName) {
+		OWLModel ontModel = getOWLModel();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		try {
+			ARTResource[] graphs = getUserNamedGraphs();
+			Collection<STRDFResource> result = STRDFNodeFactory.createEmptyResourceCollection();
+			ARTURIResource prop = retrieveExistingURIResource(ontModel, propQName, graphs);
+			ARTURIResourceIterator itSubProps = ontModel.listSubProperties(prop, false, graphs);
+			while (itSubProps.hasNext()){
+				ARTURIResource subProp = itSubProps.next();
+				STRDFURI stProp = STRDFNodeFactory.createSTRDFURI(subProp,
+						ModelUtilities.getPropertyRole(subProp, ontModel), true,
+						ontModel.getQName(subProp.getURI()));
+				Property.decorateForTreeView(ontModel, stProp, graphs);
+				result.add(stProp);
+			}
+			RDFXMLHelp.addRDFNodes(response, result);
+		} catch (ModelAccessException | NonExistingRDFResourceException e) {
+			logAndSendException(Req.getSubPropertiesRequest, e);
+		}
+		return response;
+	}
+	
+	public Response getRootPropertyList() {
+		OWLModel ontModel = getOWLModel();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		try{
+			Collection<STRDFResource> result = STRDFNodeFactory.createEmptyResourceCollection();
+			
+			ARTResource[] graphs = getUserNamedGraphs();
+			
+			Predicate<ARTResource> exclusionPredicate;
+			if (Config.isAdminStatus())
+				exclusionPredicate = Predicates.alwaysTrue();
+			else
+				exclusionPredicate = NoSystemResourcePredicate.getPredicate(getProject());
+			Predicate<ARTURIResource> rootUserPropsPred = Predicates.and(new RootPropertiesResourcePredicate(
+					ontModel), exclusionPredicate);
+		
+			UnmodifiableIterator<ARTURIResource> rootPropsIterator;
+			//object props
+			rootPropsIterator = Iterators.filter(
+					ontModel.listObjectProperties(true, graphs), rootUserPropsPred);
+			while (rootPropsIterator.hasNext()) {
+				ARTURIResource prop = rootPropsIterator.next();
+				STRDFURI stProp = STRDFNodeFactory.createSTRDFURI(prop,
+						ModelUtilities.getPropertyRole(prop, ontModel), true,
+						ontModel.getQName(prop.getURI()));
+				Property.decorateForTreeView(ontModel, stProp, graphs);
+				result.add(stProp);
+			}
+			//annotation props
+			rootPropsIterator = Iterators.filter(
+					ontModel.listAnnotationProperties(true, graphs), rootUserPropsPred);
+			while (rootPropsIterator.hasNext()) {
+				ARTURIResource prop = rootPropsIterator.next();
+				STRDFURI stProp = STRDFNodeFactory.createSTRDFURI(prop,
+						ModelUtilities.getPropertyRole(prop, ontModel), true,
+						ontModel.getQName(prop.getURI()));
+				Property.decorateForTreeView(ontModel, stProp, graphs);
+				result.add(stProp);
+			}
+			//datatype props
+			rootPropsIterator = Iterators.filter(
+					ontModel.listDatatypeProperties(true, graphs), rootUserPropsPred);
+			while (rootPropsIterator.hasNext()) {
+				ARTURIResource prop = rootPropsIterator.next();
+				STRDFURI stProp = STRDFNodeFactory.createSTRDFURI(prop,
+						ModelUtilities.getPropertyRole(prop, ontModel), true,
+						ontModel.getQName(prop.getURI()));
+				Property.decorateForTreeView(ontModel, stProp, graphs);
+				result.add(stProp);
+			}
+			//ontology props
+			rootPropsIterator = Iterators.filter(
+					ontModel.listOntologyProperties(true, graphs), rootUserPropsPred);
+			while (rootPropsIterator.hasNext()) {
+				ARTURIResource prop = rootPropsIterator.next();
+				STRDFURI stProp = STRDFNodeFactory.createSTRDFURI(prop,
+						ModelUtilities.getPropertyRole(prop, ontModel), true,
+						ontModel.getQName(prop.getURI()));
+				Property.decorateForTreeView(ontModel, stProp, graphs);
+				result.add(stProp);
+			}
+			//PlainRDF props
+			Predicate<ARTURIResource> rdfPropsPredicate = Predicates.and(
+					BaseRDFPropertyPredicate.getPredicate(ontModel), rootUserPropsPred);
+			rootPropsIterator = Iterators.filter(ontModel.listProperties(graphs),
+					rdfPropsPredicate);
+			while (rootPropsIterator.hasNext()) {
+				ARTURIResource prop = rootPropsIterator.next();
+				STRDFURI stProp = STRDFNodeFactory.createSTRDFURI(prop,
+						ModelUtilities.getPropertyRole(prop, ontModel), true,
+						ontModel.getQName(prop.getURI()));
+				Property.decorateForTreeView(ontModel, stProp, graphs);
+				result.add(stProp);
+			}
 
+			RDFXMLHelp.addRDFNodes(response, result);
+		} catch (ModelAccessException | NonExistingRDFResourceException e) {
+			return logAndSendException(Req.getRootPropertyListRequest, e);
+		}
+		return response;
+	}
+	
+	public static void decorateForTreeView(OWLModel model, STRDFResource property, ARTResource[] graphs)
+			throws ModelAccessException, NonExistingRDFResourceException {
+		ARTURIResourceIterator itSubProps = model.listSubProperties((ARTURIResource) property.getARTNode(), false, graphs);		
+		if (itSubProps.hasNext()) {
+			property.setInfo("more", "1");
+		} else {
+			property.setInfo("more", "0");
+		}
+		itSubProps.close();
+	}
+	
 	public Response getDomain(String propQName, String visualize, boolean minimize) {
 		boolean boolVis;
 		if (visualize == null)
@@ -1409,7 +1535,7 @@ public class Property extends ResourceOld {
 
 		return response;
 	}
-
+	
 	private class MyRDFIterator extends RDFIteratorImpl<ARTLiteral> {
 
 		private Iterator<ARTLiteral> resIt;

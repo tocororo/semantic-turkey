@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <bindings xmlns="http://www.mozilla.org/xbl"
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-	<binding id="classTree"
+	<binding id="propertyTree"
 		extends="chrome://semantic-turkey/content/widget/taxonomyTree/impl/taxonomyTree.xml#taxonomyTree">
 		<handlers>
 			<handler event="it.uniroma2.art.semanticturkey.event.widget.tree.dblclick">
@@ -12,8 +12,8 @@
 			
 			var parameters = {
 				sourceElement : null,		// elemento contenente i dati della riga corrente
-				sourceType : "cls",		// tipo di editor: clss, ..., determina le funzioni custom ed il titolo della finestra
-				sourceElementName : this.selectedClass,	// nome dell'elemento corrente (quello usato per identificazione: attualmente il qname)
+				sourceType : "property",		// tipo di editor: clss, ..., determina le funzioni custom ed il titolo della finestra
+				sourceElementName : this.selectedProperty,	// nome dell'elemento corrente (quello usato per identificazione: attualmente il qname)
 				sourceParentElementName : "", // nome dell'elemento genitore
 				isFirstEditor : true,		 // l'editor è stato aperto direttamente dall class/... tree o da un altro editor?
 				deleteForbidden : false, 	 // cancellazione vietata 
@@ -34,8 +34,7 @@
 				Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Commands.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Context.jsm", this.art_semanticturkey);
-				Components.utils.import("resource://stservices/SERVICE_OntoSearch.jsm", this.art_semanticturkey);
-				Components.utils.import("resource://stservices/SERVICE_Cls.jsm", art_semanticturkey);
+				Components.utils.import("resource://stservices/SERVICE_Property.jsm", art_semanticturkey);
 				Components.utils.import("resource://stmodules/PrefUtils.jsm", this.art_semanticturkey);
 				Components.utils.import("resource://stmodules/Preferences.jsm", this.art_semanticturkey);				
 				Components.utils.import("resource://stmodules/ARTResources.jsm", this.art_semanticturkey);
@@ -51,8 +50,8 @@
 				var bound = this;
 				
 				function DataRow(record) {
-					this.__defineGetter__("id", function(){return this.record.class;});
-					this.__defineSetter__("id", function(v){this.record.class = v;});
+					this.__defineGetter__("id", function(){return this.record.property;});
+					this.__defineSetter__("id", function(v){this.record.property = v;});
 					this.record = record;
 					
 					this.isContainer = true;
@@ -67,7 +66,7 @@
 					};
 				}
 				
-				this._view.sourceAdapter.fetchRoots = function() {						
+				this._view.sourceAdapter.fetchRoots = function() {
 						var deserializedResponse = null;
 						try{
 							var language = null;
@@ -75,18 +74,17 @@
 								language = bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en");
 							}
 							if (typeof bound.projectName != "undefined"){
-								//create a context for a project different from the current and get owl:Thing info
+								//create a context for a project different from the current and get the root properties
 								var specifiedContext = new bound.art_semanticturkey.Context();
 								specifiedContext.setProject(bound.projectName);
-								var serviceInstance = bound.art_semanticturkey.STRequests.Cls.getAPI(specifiedContext);
-								deserializedResponse=serviceInstance.getClassesInfoAsRootsForTree(true, "http://www.w3.org/2002/07/owl#Thing");
+								var serviceInstance = bound.art_semanticturkey.STRequests.Property.getAPI(specifiedContext);
+								deserializedResponse=serviceInstance.getRootPropertyList();
 							} else {
-								deserializedResponse=bound.art_semanticturkey.STRequests.Cls.getClassesInfoAsRootsForTree(true, "http://www.w3.org/2002/07/owl#Thing");
+								deserializedResponse=bound.art_semanticturkey.STRequests.Property.getRootPropertyList();
 							}
 						}catch (e) {
 							return [];
 						}
-						
 						return parseResponse(deserializedResponse);
 				};
 					
@@ -99,13 +97,13 @@
 							}
 							
 							if (typeof bound.projectName != "undefined"){
-								//create a context for a project different from the current and get the subclasses of owl:Thing
+								//create a context for a project different from the current and get the root properties
 								var specifiedContext = new bound.art_semanticturkey.Context();
 								specifiedContext.setProject(bound.projectName);
-								var serviceInstance = bound.art_semanticturkey.STRequests.Cls.getAPI(specifiedContext);
-								deserializedResponse=serviceInstance.getSubClasses(id, true, true);
+								var serviceInstance = bound.art_semanticturkey.STRequests.Property.getAPI(specifiedContext);
+								deserializedResponse=serviceInstance.getSubProperties(id);
 							} else {
-								deserializedResponse = bound.art_semanticturkey.STRequests.Cls.getSubClasses(id, true, true);
+								deserializedResponse = bound.art_semanticturkey.STRequests.Property.getSubProperties(id);
 							}
 						}catch (e) {
 							return [];
@@ -119,13 +117,12 @@
 					for (var i = 0; i < collectionValues.length; ++i) {
 						var uriElem = collectionValues[i];
 						
-						var item = new DataRow({class : uriElem.getURI(), 
+						var item = new DataRow({property : uriElem.getURI(), 
                                             more : uriElem.more,
                                             label : uriElem.getShow(),
                                             uri : uriElem.getURI(),
                                             explicit: uriElem.explicit,
                                             role: uriElem.getRole(),
-                                            numInst: uriElem.numInst,	
                                             }); 
                         item.imageUrl = bound.art_semanticturkey.STResUtils.getImageSrcOrNull(uriElem);
 						result.push(item);						
@@ -136,7 +133,7 @@
 				};
 				
 				this._view.provider.getLabel = function(row, col) {
-					if (col.id != "class") {
+					if (col.id != "property") {
 						return this._view.__proto__.getLabel(row, col);
 					}
 					
@@ -147,7 +144,7 @@
 					return row.imageUrl;
 				};
 
-				this.columns = "class";
+				this.columns = "property";
 				
 				this.stEventArray = new this.art_semanticturkey.eventListenerArrayClass();
 				
@@ -176,7 +173,7 @@
 				
 				bound._powerManager = function(state) {
 					//commented because when browing project different from the current one
-					//it invokes powerOff and the class tree is closed
+					//it invokes powerOff and the tree is closed
 					/* 
 					if (state.indexOf("project") != -1) {
 						bound._view.powerOn();
@@ -192,10 +189,9 @@
 				
 				this.prefListener.unregister();
 			</destructor>
-			<property name="selectedClass">
+			<property name="selectedProperty">
 				<getter>
-					var taxonomyTree =
-					document.getAnonymousElementByAttribute(this, "ano_id",	"taxonomyTree");
+					var taxonomyTree = document.getAnonymousElementByAttribute(this, "ano_id",	"taxonomyTree");
 
 					if (taxonomyTree.currentIndex == -1) return null;
 

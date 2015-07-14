@@ -49,6 +49,22 @@ function getPropertyList(role, subPropOf, notSubPropOf) {
 			SemTurkeyHTTPLegacy.GET(serviceName, service.getPropertyListRequest, params, contextAsArray));
 }
 
+function getSubProperties(propertyQName) {
+	Logger.debug('[SERVICE_Property.jsm] getSubProperties');
+	var params = [];
+	params.push("propertyQName=" + propertyQName);
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(
+			SemTurkeyHTTPLegacy.GET(serviceName, service.getSubPropertiesRequest, params, contextAsArray));
+}
+
+function getRootPropertyList() {
+	Logger.debug('[SERVICE_Property.jsm] getRootPropertyList');
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return Deserializer.createRDFArray(
+			SemTurkeyHTTPLegacy.GET(serviceName, service.getRootPropertyListRequest, contextAsArray));
+}
+
 /**
  * gets the tree of all object properties in the ontology. If specified, it only returns properties applicable to <code>instanceQName</code>
  * 
@@ -442,6 +458,8 @@ service.prototype.getObjPropertyTree = getObjPropertyTree;
 service.prototype.getPropertyDescription = getPropertyDescription;
 service.prototype.addProperty = addProperty;
 service.prototype.addSubProperty = addSubProperty;
+service.prototype.getSubProperties = getSubProperties;
+service.prototype.getRootPropertyList = getRootPropertyList;
 service.prototype.getRangeClassesTree = getRangeClassesTree;
 service.prototype.removePropValue = removePropValue;
 service.prototype.createAndAddPropValue = createAndAddPropValue;

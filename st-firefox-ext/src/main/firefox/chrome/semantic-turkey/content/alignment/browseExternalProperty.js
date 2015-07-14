@@ -46,7 +46,7 @@ art_semanticturkey.projectMenuListener = function() {
 	if (selectedProject != "---"){
 		art_semanticturkey.STRequests.Projects.accessProject(selectedProject);
 		if (propTree == null){
-			propTree = document.createElementNS("http://semanticturkey.uniroma2.it/xmlns/widget#", "propTree");
+			propTree = document.createElementNS("http://semanticturkey.uniroma2.it/xmlns/widget#", "propertyTree");
 			propTree.setAttribute("id", "propTree");
 			propTree.setAttribute("mutable", "false");
 			document.getElementById("propTreeBox").appendChild(propTree);
