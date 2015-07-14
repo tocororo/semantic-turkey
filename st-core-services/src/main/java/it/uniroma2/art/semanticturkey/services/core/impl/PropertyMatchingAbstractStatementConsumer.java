@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.impl;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -37,7 +38,7 @@ public class PropertyMatchingAbstractStatementConsumer implements StatementConsu
 			StatementCollector stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, String> xLabel2LiteralForm)
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws ModelAccessException {
 		Set<ARTStatement> relevantStmts = stmtCollector.getStatements(resource,
 				property, NodeFilters.ANY);
@@ -51,6 +52,21 @@ public class PropertyMatchingAbstractStatementConsumer implements StatementConsu
 					.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
 					resource2Rendering.get(stmt.getObject()));
 			stRes.setInfo("graphs", Joiner.on(",").join(graphs));
+			
+			RDFResourceRolesEnum objRole = resource2Role.get(stmt.getObject());
+			
+			if (objRole == RDFResourceRolesEnum.xLabel) {
+				ARTLiteral lit = xLabel2LiteralForm.get(stmt.getObject());
+				
+				if (lit != null) {
+					stRes.setRendering(lit.getLabel());
+					
+					if (lit.getLanguage() != null) {
+						stRes.setInfo("lang", lit.getLanguage());
+					}
+				}
+			}
+			
 			objects.add(stRes);
 		}
 

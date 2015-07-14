@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.impl;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
@@ -11,7 +12,6 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
-import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.base.Joiner;
@@ -43,7 +42,7 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 			StatementCollector stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, String> xLabel2LiteralForm)
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws ModelAccessException {
 
 		RDFModel ontModel = project.getOntModel();
@@ -104,11 +103,20 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 
 				STRDFResource stRes = (STRDFResource) stNode;
 
+				stRes.setRendering(resource2Rendering.get(obj));
+
 				if (RDFResourceRolesEnum.xLabel == role) {
-					stRes.setRendering(xLabel2LiteralForm.get(obj));
-				} else {
-					stRes.setRendering(resource2Rendering.get(obj));
+					ARTLiteral lit = xLabel2LiteralForm.get(obj);
+					
+					if (lit != null) {
+						stRes.setRendering(lit.getLabel());
+						
+						if (lit.getLanguage() != null) {
+							stRes.setInfo("lang", lit.getLanguage());
+						}
+					}
 				}
+				
 				stRes.setRole(role);
 			}
 

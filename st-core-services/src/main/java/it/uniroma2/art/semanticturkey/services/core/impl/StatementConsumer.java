@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.impl;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -16,6 +17,6 @@ public interface StatementConsumer {
 			StatementCollector stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, String> xLabel2LiteralForm)
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws ModelAccessException;
 }

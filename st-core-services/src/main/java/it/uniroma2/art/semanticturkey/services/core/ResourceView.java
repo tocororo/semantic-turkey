@@ -36,7 +36,6 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.LinkedDataResolver;
 import it.uniroma2.art.owlart.models.ModelFactory;
-import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
@@ -104,7 +103,6 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 
 import com.google.common.collect.Iterators;
-import com.google.common.util.concurrent.CycleDetectingLockFactory.PotentialDeadlockException;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -189,7 +187,7 @@ public class ResourceView extends STServiceAdapter {
 				project, resourcePosition, resource, stmtCollector.getStatements(), resourcesToBeRendered,
 				bindings, "role_");
 
-		Map<ARTResource, String> xLabel2LiteralForm = collectXLabels(bindings);
+		Map<ARTResource, ARTLiteral> xLabel2LiteralForm = collectXLabels(bindings);
 
 		// ********************************************
 		// Step X: Update subject with role & rendering
@@ -231,8 +229,8 @@ public class ResourceView extends STServiceAdapter {
 
 	}
 
-	private Map<ARTResource, String> collectXLabels(Collection<TupleBindings> bindings) {
-		Map<ARTResource, String> result = new HashMap<ARTResource, String>();
+	private Map<ARTResource, ARTLiteral> collectXLabels(Collection<TupleBindings> bindings) {
+		Map<ARTResource, ARTLiteral> result = new HashMap<ARTResource, ARTLiteral>();
 		for (TupleBindings b : bindings) {
 			if (b.hasBinding("xlabel_literalForm")) {
 				ARTNode object = b.getBoundValue("object");
@@ -242,12 +240,7 @@ public class ResourceView extends STServiceAdapter {
 					ARTResource xLabel = object.asResource();
 					ARTLiteral literalFormAsLiteral = literalForm.asLiteral();
 
-					String render = literalFormAsLiteral.getLabel();
-					if (literalFormAsLiteral.getLanguage() != null) {
-						render = render + " (" + literalFormAsLiteral.getLanguage() + ")";
-					}
-
-					result.put(xLabel, render);
+					result.put(xLabel, literalFormAsLiteral);
 				}
 			}
 		}
@@ -258,7 +251,7 @@ public class ResourceView extends STServiceAdapter {
 	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource, ResourcePosition resourcePosition,
 			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
-			Map<ARTResource, String> resource2Rendering, Map<ARTResource, String> xLabel2LiteralForm)
+			Map<ARTResource, String> resource2Rendering, Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws DOMException, ModelAccessException {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();

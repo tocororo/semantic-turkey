@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.impl;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
@@ -42,7 +43,7 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 			StatementCollector stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, String> xLabel2LiteralForm)
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws ModelAccessException {
 
 		RDFModel ontModel = project.getOntModel();
@@ -81,8 +82,22 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 					graphs.contains(NodeFilters.MAINGRAPH), false);
 
 			if (stNode.isResource()) {
-				((STRDFResource) stNode).setRendering(resource2Rendering.get(obj));
-				((STRDFResource) stNode).setRole(resource2Role.get(obj));
+				((STRDFResource) stNode).setRendering(resource2Rendering.get(obj));					
+
+				RDFResourceRolesEnum nodeRole = resource2Role.get(obj);
+				((STRDFResource) stNode).setRole(nodeRole);
+
+				if (nodeRole == RDFResourceRolesEnum.xLabel) {
+					ARTLiteral lit = xLabel2LiteralForm.get(obj);
+
+					if (lit != null) {
+						((STRDFResource) stNode).setRendering(lit.getLabel());					
+
+						if (lit.getLanguage() != null) {
+							((STRDFResource) stNode).setInfo("lang", lit.getLanguage());
+						}
+					}
+				}
 			}
 
 			stNode.setInfo("graphs", Joiner.on(",").join(graphs));
