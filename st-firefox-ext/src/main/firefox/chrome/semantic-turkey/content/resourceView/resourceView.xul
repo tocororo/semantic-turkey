@@ -42,7 +42,10 @@
 	<scrollbox style="overflow:auto" flex="1">
 		<vbox id="resourceViewBox" flex="1">
 			<hbox align="center">
-				<image id="resourceRoleIcon" style="max-height:20px; max-width:20px" />
+				<deck selectedIndex="0" id="resourceDecorationDeck">
+					<vbox><spacer flex="1" /><image id="resourceRoleIcon" style="max-width: 20px; max-height: 20px" /><spacer flex="1" /></vbox>
+					<textbox id="resourceLangBox" style="height:20px;width:18px;margin:0px;padding:0px" readonly="true"/>
+				</deck>
 				<label value="Name:" control="resourceNameBox" />
 				<textbox id="resourceNameBox" flex="1" readonly="true" />
 				<hbox id="resourceButtonsBox">

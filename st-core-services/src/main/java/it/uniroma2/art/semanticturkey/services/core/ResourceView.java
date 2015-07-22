@@ -166,7 +166,7 @@ public class ResourceView extends STServiceAdapter {
 		String gp_role = roleRecognitionOrchestrator.getGraphPatternForDescribe(resourcePosition, resource,
 				"role_");
 
-		String gp_literalForm = "optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?xlabel_literalForm}";
+		String gp_literalForm = "optional {?resource a <http://www.w3.org/2008/05/skos-xl#Label> . ?resource <http://www.w3.org/2008/05/skos-xl#literalForm> ?resource_xlabel_literalForm . } optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?object_xlabel_literalForm}";
 
 		String gp = String.format(
 				"{{?resource ?predicate ?object . %1$s} {%2$s union %3$s}}",gp_literalForm,gp_rendering, gp_role);
@@ -203,6 +203,20 @@ public class ResourceView extends STServiceAdapter {
 		} else {
 			subjectRole = RDFResourceRolesEnum.undetermined;
 		}
+		
+		if (subjectRole == RDFResourceRolesEnum.xLabel) {
+			ARTLiteral lit = xLabel2LiteralForm.get(resource);
+			
+			if (lit != null) {
+				stSubjectResource.setRendering(lit.getLabel());
+				
+				String lang = lit.getLanguage();
+				
+				if (lang != null) {
+					stSubjectResource.setInfo("lang", lang);
+				}
+			}
+		}
 
 		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource, resourcePosition, subjectRole,
 				stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
@@ -230,18 +244,32 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	private Map<ARTResource, ARTLiteral> collectXLabels(Collection<TupleBindings> bindings) {
+		
+		String [] subjectVariables = {"resource", "object"};
+		
+		String [] xlabelVariables = new String[subjectVariables.length];
+		
+		for (int i = 0 ; i < subjectVariables.length ; i++) {
+			xlabelVariables[i] = subjectVariables[i] + "_xlabel_literalForm";
+		}
+		
 		Map<ARTResource, ARTLiteral> result = new HashMap<ARTResource, ARTLiteral>();
 		for (TupleBindings b : bindings) {
-			if (b.hasBinding("xlabel_literalForm")) {
-				ARTNode object = b.getBoundValue("object");
-				ARTNode literalForm = b.getBoundValue("xlabel_literalForm");
+			for (int i = 0 ; i < subjectVariables.length ; i++) {
+				String subjVar = subjectVariables[i];
+				String xLabelVar = xlabelVariables[i];
+				
+				if (b.hasBinding(xLabelVar)) {
+					ARTNode subject = b.getBoundValue(subjVar);
+					ARTNode literalForm = b.getBoundValue(xLabelVar);
 
-				if (object.isResource() && literalForm.isLiteral()) {
-					ARTResource xLabel = object.asResource();
-					ARTLiteral literalFormAsLiteral = literalForm.asLiteral();
+					if (subject.isResource() && literalForm.isLiteral()) {
+						ARTResource xLabel = subject.asResource();
+						ARTLiteral literalFormAsLiteral = literalForm.asLiteral();
 
-					result.put(xLabel, literalFormAsLiteral);
-				}
+						result.put(xLabel, literalFormAsLiteral);
+					}
+				}				
 			}
 		}
 

@@ -144,8 +144,17 @@ art_semanticturkey.resourceView.getResourceView_RESPONSE = function(response) {
 
 	// Handles the resource role icon
 	var resourceRoleIconElement = document.getElementById("resourceRoleIcon");
-	resourceRoleIconElement.setAttribute("src", art_semanticturkey.STResUtils
-			.getImageSrc(resourceObj));
+	var roleIcon = art_semanticturkey.STResUtils.getImageSrcOrNull(resourceObj);
+	resourceRoleIconElement.setAttribute("src", roleIcon);
+	
+	var resourceDecorationDeck = document.getElementById("resourceDecorationDeck");
+	resourceDecorationDeck.selectedIndex = 0;
+	
+	if (roleIcon == null && typeof resourceObj.lang != "undefined" && resourceObj.lang != null) {
+		var resourceLangBox = document.getElementById("resourceLangBox");
+		resourceLangBox.setAttribute("value", resourceObj.lang);
+		resourceDecorationDeck.selectedIndex = 1;
+	}
 
 	// Handles the resource editability (rename button)
 	var isResourceEditable = art_semanticturkey.resourceView
