@@ -1,17 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
-
+import it.uniroma2.art.owlart.alignment.AlignmentModel;
+import it.uniroma2.art.owlart.alignment.AlignmentModelFactory;
+import it.uniroma2.art.owlart.alignment.Cell;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
+import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -28,20 +24,49 @@ import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 @GenerateSTServiceController
 @Validated
 @Component
+@Controller //needed for saveAlignment method
 public class Alignment extends STServiceAdapter {
+	
+	@Autowired
+	private STServiceHTTPContext stServiceContext;
 	
 	private static List<ARTURIResource> skosMappingRelations;
 	static {
@@ -73,6 +98,8 @@ public class Alignment extends STServiceAdapter {
 		propertiesMappingRelations.add(RDFS.Res.SUBPROPERTYOF);
 	};
 	
+	//map that contain <id, context> pairs to handle multiple sessions
+	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
 	
 	/**
 	 * Adds the given alignment triple only if predicate is a valid alignment property
@@ -188,5 +215,225 @@ public class Alignment extends STServiceAdapter {
 		vocabs.add(SKOS.NAMESPACE);
 		mf.checkVocabularyData(tempModel, vocabs);
 		return tempModel;
+	}
+	
+	/**
+	 * Loads an alignment file (that is compliant with AlignmentAPI format) and if one of the 
+	 * two aligned ontologies has the same baseURI of the current model, then return a response
+	 * with its content.
+	 * @param inputFile
+	 * @return
+	 * @throws IOException
+	 * @throws ModelAccessException
+	 * @throws ModelUpdateException
+	 * @throws UnsupportedRDFFormatException
+	 * @throws UnavailableResourceException
+	 * @throws ProjectInconsistentException
+	 * @throws ParserConfigurationException
+	 * @throws SAXException
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response loadAlignment(MultipartFile inputFile) throws IOException, ModelAccessException,
+			ModelUpdateException, UnsupportedRDFFormatException, UnavailableResourceException,
+			ProjectInconsistentException, ParserConfigurationException, SAXException {
+		
+		//create a temp file (in karaf data/temp folder) to copy the received file 
+		File inputServerFile = File.createTempFile("alignment", inputFile.getOriginalFilename());
+		inputFile.transferTo(inputServerFile);
+		
+		//creating temporary model for loading alignment
+		OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(PluginManager.getOntManagerImpl(
+				getProject().getOntologyManagerImplID()).createModelFactory());
+		AlignmentModel alignModel = AlignmentModelFactory.createAlignmentModel(mf.createLightweightRDFModel());		
+		alignModel.addRDF(inputServerFile, null, RDFFormat.RDFXML_ABBREV, NodeFilters.MAINGRAPH);
+		
+		String token = stServiceContext.getSessionToken();
+		modelsMap.put(token, alignModel);
+		
+		//check that one of the two aligned ontologies matches the current project ontology
+		if (!getOWLModel().getBaseURI().equals(alignModel.getOnto1())){
+			if (getOWLModel().getBaseURI().equals(alignModel.getOnto2())){
+				alignModel.reverse();
+			} else {
+				return createReplyFAIL("Failed to open and validate the given alignment file. "
+						+ "None of the two aligned ontologies matches the current project ontology");
+			}
+		}
+		
+		Collection<Cell> cellList = alignModel.listCells();
+		
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element alignmentElem = XMLHelp.newElement(dataElem, "Alignment");
+		
+		Element onto1Elem = XMLHelp.newElement(alignmentElem, "onto1");
+		Element onto2Elem = XMLHelp.newElement(alignmentElem, "onto2");
+		XMLHelp.newElement(onto1Elem, "Ontology", alignModel.getOnto1());
+		XMLHelp.newElement(onto2Elem, "Ontology", alignModel.getOnto2());
+		
+		for (Cell c : cellList) {
+			Element mapElem = XMLHelp.newElement(alignmentElem, "map");
+			Element cellElem = XMLHelp.newElement(mapElem, "Cell");
+			XMLHelp.newElement(cellElem, "entity1", c.getEntity1().getNominalValue());
+			XMLHelp.newElement(cellElem, "entity2", c.getEntity2().getNominalValue());
+			XMLHelp.newElement(cellElem, "measure", c.getMeasure()+"");
+			XMLHelp.newElement(cellElem, "relation", c.getRelation());
+		}
+		
+		return response;
+	}
+	
+	@GenerateSTServiceController
+	public Response validateAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) throws ModelUpdateException, ModelAccessException {
+		OWLModel model = getOWLModel();
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
+		System.out.println("Add triple:\nS: " + entity1 + "\nP: " + predicate.getNominalValue() + "\nO: " + entity2);
+//		model.addTriple(entity1, predicate, entity2, getWorkingGraph()); //TODO remove
+		alignModel.deleteCell(entity1, entity2);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	@GenerateSTServiceController
+	public Response validateAllAlignment() throws ModelAccessException, ModelUpdateException{
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element collElem = XMLHelp.newElement(dataElem, "collection");
+		collElem.setAttribute("type", "validate");
+		
+		OWLModel model = getOWLModel();
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		Collection<Cell> cellList = alignModel.listCells();
+		for (Cell cell : cellList) {
+			ARTURIResource entity1 = cell.getEntity1();
+			ARTURIResource entity2 = cell.getEntity2();
+			String relation = cell.getRelation();
+			ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
+			System.out.println("Add triple:\nS: " + entity1 + "\nP: " + predicate.getNominalValue() + "\nO: " + entity2);
+//			model.addTriple(entity1, predicate, entity2, getWorkingGraph()); //TODO remove
+			alignModel.deleteCell(entity1, entity2);
+			
+			//report the validations in the response
+			Element alignElem = XMLHelp.newElement(collElem, "alignment");
+		    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
+		    XMLHelp.newElement(alignElem, "relation", predicate.getURI());
+		    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+		}
+		return response;
+	}
+	
+	@GenerateSTServiceController
+	public Response validateAllAbove(float treshold) throws ModelAccessException, ModelUpdateException{
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element collElem = XMLHelp.newElement(dataElem, "collection");
+		collElem.setAttribute("type", "validate");
+		
+		OWLModel model = getOWLModel();
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		Collection<Cell> cellList = alignModel.listCells();
+		for (Cell cell : cellList) {
+			float measure = cell.getMeasure();
+			if (measure >= treshold) {
+				ARTURIResource entity1 = cell.getEntity1();
+				ARTURIResource entity2 = cell.getEntity2();
+				String relation = cell.getRelation();
+				ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
+				System.out.println("Add triple:\nS: " + entity1 + "\nP: " + predicate.getNominalValue() + "\nO: " + entity2);
+//				model.addTriple(entity1, predicate, entity2, getWorkingGraph()); //TODO remove
+				alignModel.deleteCell(entity1, entity2);
+				
+				//report the validations in the response
+				Element alignElem = XMLHelp.newElement(collElem, "alignment");
+			    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
+			    XMLHelp.newElement(alignElem, "relation", predicate.getURI());
+			    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+			}
+		}
+		return response;
+	}
+	
+	@GenerateSTServiceController
+	public Response rejectAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) throws ModelUpdateException, ModelAccessException {
+		System.out.println("Rejecting triple:\nS: " + entity1 + "\nP: " + relation + "\nO: " + entity2);
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		alignModel.deleteCell(entity1, entity2);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	@GenerateSTServiceController
+	public Response rejectAllAlignment() throws ModelAccessException, ModelUpdateException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element collElem = XMLHelp.newElement(dataElem, "collection");
+		collElem.setAttribute("type", "reject");
+		
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		Collection<Cell> cellList = alignModel.listCells();
+		for (Cell cell : cellList) {
+			ARTURIResource entity1 = cell.getEntity1();
+			ARTURIResource entity2 = cell.getEntity2();
+			System.out.println("Rejecting alignment between " + entity1 + " and " + entity2);
+			alignModel.deleteCell(entity1, entity2);
+			
+			//report the rejected triples in the response
+			Element alignElem = XMLHelp.newElement(collElem, "alignment");
+		    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
+		    XMLHelp.newElement(alignElem, "relation", cell.getRelation());
+		    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+		}
+		return response;
+	}
+	
+	@GenerateSTServiceController
+	public Response rejectAllUnder(float treshold) throws ModelAccessException, ModelUpdateException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element collElem = XMLHelp.newElement(dataElem, "collection");
+		collElem.setAttribute("type", "reject");
+		
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		Collection<Cell> cellList = alignModel.listCells();
+		for (Cell cell : cellList) {
+			float measure = cell.getMeasure();
+			if (measure <= treshold) {
+				ARTURIResource entity1 = cell.getEntity1();
+				ARTURIResource entity2 = cell.getEntity2();
+				System.out.println("Rejecting alignment between " + entity1 + " and " + entity2);
+				alignModel.deleteCell(entity1, entity2);
+				
+				//report the rejected triples in the response
+				Element alignElem = XMLHelp.newElement(collElem, "alignment");
+			    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
+			    XMLHelp.newElement(alignElem, "relation", cell.getRelation());
+			    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+			}
+		}
+		return response;
+	}
+	
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Alignment/saveAlignment", 
+			method = org.springframework.web.bind.annotation.RequestMethod.GET)
+	public void saveAlignment(HttpServletResponse oRes) throws IOException, ModelAccessException, UnsupportedRDFFormatException, ModelUpdateException {
+		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
+		File tempServerFile = File.createTempFile("alignment", ".rdf");
+		alignmentModel.serialize(tempServerFile);
+		FileInputStream is = new FileInputStream(tempServerFile);
+		IOUtils.copy(is, oRes.getOutputStream());
+		oRes.setContentType(RDFFormat.RDFXML_ABBREV.getMIMEType());
+		oRes.setContentLength((int) tempServerFile.length());
+		oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
+		oRes.flushBuffer();
+		is.close();
+	}
+	
+	
+	@GenerateSTServiceController
+	public Response closeSession() throws ModelUpdateException {
+		String token = stServiceContext.getSessionToken();
+		modelsMap.get(token).close();
+		modelsMap.remove(token);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		return response;
 	}
 }

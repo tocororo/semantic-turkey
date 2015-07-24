@@ -113,6 +113,14 @@
 				tooltiptext="Annotated Page" collapsed="true" />
 			<toolbarbutton id="showBookmarksButton"
 				tooltiptext="Show Page Topics" hidden="true" />
+				
+			<toolbarbutton id="MenuToolBarButton"
+				image="chrome://semantic-turkey/skin/images/menu.png"
+				tooltiptext="Menu" type="menu" hidden="true" >
+				<menupopup>
+			      <menuitem id="alignmentValidationMenuitem" label="Alignment Validation"/>
+			    </menupopup>
+			</toolbarbutton>
 		</toolbar>
 	</toolbox>
 

@@ -28,6 +28,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	private static final String HTTP_PARAM_PROJECT = HTTP_PARAM_PREFIX + "project";
 	private static final String HTTP_PARAM_WGRAPH = HTTP_PARAM_PREFIX + "wgraph";
 	private static final String HTTP_PARAM_RGRAPHS = HTTP_PARAM_PREFIX + "rgraphs";
+	private static final String HTTP_PARAM_TOKEN = HTTP_PARAM_PREFIX + "token";
 
 	private static final String HTTP_ARG_DEFAULT_GRAPH = "DEFAULT";
 	private static final String HTTP_ARG_ANY_GRAPH = "ANY";
@@ -154,5 +155,16 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	public STRequest getRequest() {
 		return new STHTTPRequest(request);
 	}
+
+	@Override
+	public String getSessionToken() {
+		String token = request.getParameter(HTTP_PARAM_TOKEN);
+		if (token == null) {
+			throw new InvalidContextException("The token has not been passed through the request");
+		}
+		return token;
+	}
+	
+	
 
 }

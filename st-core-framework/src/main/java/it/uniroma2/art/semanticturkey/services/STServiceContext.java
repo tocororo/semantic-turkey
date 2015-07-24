@@ -10,4 +10,5 @@ public interface STServiceContext {
 	ARTResource[] getRGraphs();
 	String getExtensionPathComponent();
 	STRequest getRequest();
+	String getSessionToken();
 }

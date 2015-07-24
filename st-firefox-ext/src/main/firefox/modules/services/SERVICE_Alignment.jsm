@@ -12,6 +12,8 @@ var serviceName = service.serviceName;
 
 const currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 
+//======= Alignment creation (in Res. view) services ===========
+
 function addAlignment(sourceResource, predicate, targetResource) {
 	Logger.debug('[SERVICE_Alignment.jsm] addAlignment');
 	p_source = "sourceResource=" + sourceResource;
@@ -30,8 +32,95 @@ function getMappingRelations(resource, allMappingProps) {
 			null, serviceName, service.getMappingRelationsRequest, this.context, params));
 }
 
+//======= Alignment Validation services ===========
+
+function loadAlignment(file) {
+	Logger.debug("[SERVICE_Alignment.jsm] loadAlignment " + this.context);
+	var formData = Components.classes["@mozilla.org/files/formdata;1"]
+		.createInstance(Components.interfaces.nsIDOMFormData);
+	formData.append("inputFile", file);
+	return currentSTHttpMgr.POST(null, serviceName, service.loadAlignmentRequest, this.context, formData);
+}
+
+function validateAlignment(entity1, entity2, relation) {
+	Logger.debug("[SERVICE_Alignment.jsm] validateAlignment");
+	var params = [];
+	params.push("entity1=" + entity1);
+	params.push("entity2=" + entity2);
+	params.push("relation=" + relation);
+	return currentSTHttpMgr.GET(null, serviceName, service.validateAlignmentRequest, this.context, params);
+}
+
+function validateAllAlignment() {
+	Logger.debug("[SERVICE_Alignment.jsm] validateAllAlignment");
+	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAlignmentRequest, this.context);
+}
+
+function validateAllAbove(treshold) {
+	Logger.debug("[SERVICE_Alignment.jsm] validateAllAbove");
+	var p_treshold = "treshold=" + treshold;
+	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAboveRequest, this.context, p_treshold);
+}
+
+function rejectAlignment(entity1, entity2, relation) {
+	Logger.debug("[SERVICE_Alignment.jsm] rejectAlignment");
+	var params = [];
+	params.push("entity1=" + entity1);
+	params.push("entity2=" + entity2);
+	params.push("relation=" + relation);
+	return currentSTHttpMgr.GET(null, serviceName, service.rejectAlignmentRequest, this.context, params);
+}
+
+function rejectAllAlignment() {
+	Logger.debug("[SERVICE_Alignment.jsm] rejectAllAlignment");
+	return currentSTHttpMgr.GET(null, serviceName, service.rejectAllAlignmentRequest, this.context);
+}
+
+function rejectAllUnder(treshold) {
+	Logger.debug("[SERVICE_Alignment.jsm] rejectAllUnder");
+	var p_treshold = "treshold=" + treshold;
+	return currentSTHttpMgr.GET(null, serviceName, service.rejectAllUnderRequest, this.context, p_treshold);
+}
+
+function saveAlignment() {
+	Logger.debug("[SERVICE_Alignment.jsm] saveAlignment");
+	//here doesn't use the GET method, because it needs the raw responseText 
+	var url = currentSTHttpMgr.getRequestUrl(serviceName, service.saveAlignmentRequest, this.context);
+	Logger.debug("GET " + url);
+	var httpReq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
+	httpReq.open("GET", url, false);
+	httpReq.send(null);
+	
+	if (httpReq.status != 200) {
+		throw new HTTPError(httpReq.status, httpReq.statusText);
+	}
+	
+	return httpReq.responseText;
+}
+
+function closeSession(){
+	Logger.debug("[SERVICE_Alignment.jsm] closeSession");
+	currentSTHttpMgr.GET(null, serviceName, service.closeSessionRequest, this.context);
+}
+
+
+service.prototype.getAPI = function(specifiedContext){
+	var newObj = new service();
+	newObj.context = specifiedContext;
+	return newObj;
+}
+
 service.prototype.addAlignment = addAlignment;
 service.prototype.getMappingRelations = getMappingRelations;
+service.prototype.loadAlignment = loadAlignment;
+service.prototype.validateAlignment = validateAlignment;
+service.prototype.validateAllAlignment = validateAllAlignment;
+service.prototype.validateAllAbove = validateAllAbove;
+service.prototype.rejectAlignment = rejectAlignment;
+service.prototype.rejectAllAlignment = rejectAllAlignment;
+service.prototype.rejectAllUnder = rejectAllUnder;
+service.prototype.saveAlignment = saveAlignment;
+service.prototype.closeSession = closeSession;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;

@@ -136,6 +136,15 @@ STRequests.XMLSchema = function(){};
 STRequests.Alignment.serviceName = "Alignment";
 STRequests.Alignment.addAlignmentRequest = "addAlignment";
 STRequests.Alignment.getMappingRelationsRequest = "getMappingRelations";
+STRequests.Alignment.loadAlignmentRequest = "loadAlignment";
+STRequests.Alignment.validateAlignmentRequest = "validateAlignment";
+STRequests.Alignment.validateAllAlignmentRequest = "validateAllAlignment";
+STRequests.Alignment.validateAllAboveRequest = "validateAllAbove";
+STRequests.Alignment.rejectAlignmentRequest = "rejectAlignment";
+STRequests.Alignment.rejectAllAlignmentRequest = "rejectAllAlignment";
+STRequests.Alignment.rejectAllUnderRequest = "rejectAllUnder";
+STRequests.Alignment.saveAlignmentRequest = "saveAlignment";
+STRequests.Alignment.closeSessionRequest = "closeSession";
 
 //systemStart service requests
 STRequests.SystemStart.serviceName = "systemStart";

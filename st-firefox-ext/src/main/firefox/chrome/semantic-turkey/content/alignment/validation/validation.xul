@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="style.css" type="text/css"?>
+
+<!-- chrome://semantic-turkey/content/alignment/validation/validation.xul -->
+
+<window id="alignmentValidationWindow" title="Alignmet Validation"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	xmlns:html="http://www.w3.org/1999/xhtml">
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/alignment/validation/validation.js" />
+	
+	<hbox>
+		<textbox id="filePathTxt" readonly="true" flex="1" />
+		<button label="Select" id="selectBtn" />
+		<button label="Load" id="loadBtn" disabled="true"/>
+	</hbox>
+	
+	<groupbox>
+		<caption label="Alignment information" />
+		<grid>
+			<columns>
+				<column/>
+				<column flex="1"/>
+			</columns>
+			<rows>
+				<row align="center">
+					<label value="Current ontology baseURI:" />
+					<textbox id="onto1txt"/>
+				</row>
+				<row align="center">
+					<label value="Other ontology baseURI:" />
+					<textbox id="onto2txt"/>
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+	
+	<listbox id="alignmentList" flex="1">
+		<listhead>
+			<listheader label="Current onotlogy entity"/>
+			<listheader label="Other onotlogy entity"/>
+			<listheader label="Relation"/>
+			<listheader label="Action"/>
+		</listhead>
+		<listcols>
+			<listcol flex="5"/>
+			<listcol flex="5"/>
+			<listcol width="100px"/>
+			<listcol flex="1"/>
+		</listcols>
+	</listbox>
+	
+	<hbox align="center">
+		<label value="Quick action:" />
+		<menulist id="quickActionMenu" disabled="true">
+			<menupopup>
+				<menuitem label="---"/>
+				<menuitem label="Validate all"/>
+				<menuitem label="Reject all"/>
+				<menuitem label="Validate all above the treshold..."/>
+				<menuitem label="Reject all under the treshold..."/>
+			</menupopup>
+		</menulist>
+		<textbox id="tresholdTxt" disabled="true" width="100px" type="number" decimalplaces="2" increment="0.01" max="1"/>
+		<button id="quickActionBtn" label="Do quick action" disabled="true" />
+		<separator flex="1" />
+		<button id="saveAlignmentBtn" label="Save as..." disabled="true"
+			tootltiptext="Save the state of the alignment so it can be validated later"/>
+	</hbox>
+	
+</window>

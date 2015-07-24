@@ -28,6 +28,14 @@ function getContextValuesForHTTPGetAsArray(){
 		contexAsArray[pos++] = HTTP_PARAM_PREFIX + "project=" + project;
 	}
 	
+	var token = this.getToken();
+	if(typeof token == 'undefined' || token == ""){
+		token = Context.getToken();
+	}
+	if(typeof token != 'undefined' && token != ""){
+		contexAsArray[pos++] = HTTP_PARAM_PREFIX + "token=" + token;
+	}
+	
 	var wGraph = this.getWGpragh();
 	if(typeof wGraph == 'undefined' || wGraph == ""){
 		wGraph = Context.getWGpragh();
@@ -96,6 +104,11 @@ function copy(inputContext){
 		this.setProject(project);
 	}
 	
+	var token = inputContext.getToken();
+	if(typeof token != 'undefined' && token != "") {
+		this.setToken(token);
+	}
+	
 	var wGraph = inputContext.getWGpragh();
 	if(typeof wGraph != 'undefined' && wGraph != "") {
 		this.setWGraph(wGraph);
@@ -125,6 +138,11 @@ function clone(){
 	var project = this.getProject();
 	if(typeof project != 'undefined' && project != "") {
 		clonedContext.setProject(project);
+	}
+	
+	var token = this.getToken();
+	if(typeof token != 'undefined' && token != "") {
+		clonedContext.setToken(token);
 	}
 	
 	var wGraph = this.getWGpragh();
@@ -169,6 +187,14 @@ function setProject(projectName){
 	this.project = projectName;
 }
 
+function getToken(){
+	return this.token;
+}
+
+function setToken(token){
+	this.token = token;
+}
+
 function getWGpragh(){
 	return this.wGraph;
 }
@@ -208,6 +234,8 @@ Context.prototype.getValue = getValue;
 Context.prototype.clearValues = clearValues;
 Context.prototype.getProject = getProject;
 Context.prototype.setProject = setProject;
+Context.prototype.getToken = getToken;
+Context.prototype.setToken = setToken;
 Context.prototype.getWGpragh = getWGpragh;
 Context.prototype.setWGraph = setWGraph;
 Context.prototype.getRGraphs = getRGraphs;
@@ -216,6 +244,7 @@ Context.prototype.setRGraphs = setRGraphs;
 //the data inside the context
 Context.prototype.valuesArray = new Array();
 Context.prototype.project; //used to just remember that there is this variable
+Context.prototype.token;
 Context.prototype.wGraph;  //used to just remember that there is this variable
 Context.prototype.rGraphs = new Array();  
 
