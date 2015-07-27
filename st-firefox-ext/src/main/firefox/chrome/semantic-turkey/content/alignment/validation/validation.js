@@ -5,6 +5,7 @@ Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Context.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Alignment.jsm", art_semanticturkey);
 
 var sessionToken;
@@ -92,10 +93,16 @@ art_semanticturkey.loadAlignment = function() {
 			
 			var listcell = document.createElement("listcell");
 			listcell.setAttribute("label", entity1);
+			listcell.addEventListener("dblclick", function() {
+				art_semanticturkey.ResourceViewLauncher.openResourceView(entity1);
+			}, false);
 			listitem.appendChild(listcell);
 			
 			listcell = document.createElement("listcell");
 			listcell.setAttribute("label", entity2);
+			listcell.addEventListener("dblclick", function() {
+				art_semanticturkey.ResourceViewLauncher.openResourceView(entity2);
+			}, false);
 			listitem.appendChild(listcell);
 			
 			listitem.appendChild(art_semanticturkey.createMeter(relation, measure));

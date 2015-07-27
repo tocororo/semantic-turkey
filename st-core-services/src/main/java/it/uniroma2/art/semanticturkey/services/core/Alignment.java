@@ -30,8 +30,8 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -66,7 +66,7 @@ import org.xml.sax.SAXException;
 public class Alignment extends STServiceAdapter {
 	
 	@Autowired
-	private STServiceHTTPContext stServiceContext;
+	private STServiceContext stServiceContext;
 	
 	private static List<ARTURIResource> skosMappingRelations;
 	static {
