@@ -1,0 +1,79 @@
+.tree-widget-rdfnode {
+    -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/tree/widgetTree.xml#tree-widget');
+}
+.tree-classes-rdfnode-widget {
+    -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/tree/widgetClassesTree.xml#tree-classes-widget');
+}
+
+.tree-individuals-rdfnode-widget {
+    -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/tree/widgetIndividualsTree.xml#tree-individuals-widget');
+}
+
+.tree-properties-rdfnode-widget {
+    -moz-binding: url('chrome://semantic-turkey/content/widgetRDFResources/tree/widgetPropertiesTree.xml#tree-properties-widget');
+}
+
+
+tree {
+  -moz-user-focus: normal !important;
+  -moz-user-select: text;
+}
+/*treecol::-moz-tree-image { list-style-image: url("chrome://semantic-turkey/skin/images/class.png"); }*/
+
+/* display folder icons in front of the treecell text */
+/*treechildren::-moz-tree-image { list-style-image: url("chrome://semantic-turkey/skin/images/class.png"); }*/
+
+treechildren::-moz-tree-image(role-ontology) { list-style-image: url("chrome://semantic-turkey/skin/images/ontology.png"); } 
+treechildren::-moz-tree-image(role-ontology-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/ontology.png"); } 
+/*treechildren::-moz-tree-image(role-ontology-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/ontology_noexpl.png"); }*/  /* image is missing*/
+treechildren::-moz-tree-image(role-ontology-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/ontology.png"); }  /* image is missing*/
+
+
+treechildren::-moz-tree-image(role-cls) { list-style-image: url("chrome://semantic-turkey/skin/images/class.png"); }
+treechildren::-moz-tree-image(role-cls-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/class.png"); }	
+treechildren::-moz-tree-image(role-cls-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/class_imported.png"); }
+
+treechildren::-moz-tree-image(role-individual) { list-style-image: url("chrome://semantic-turkey/skin/images/individual.png"); }
+treechildren::-moz-tree-image(role-individual-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/individual.png"); } 
+treechildren::-moz-tree-image(role-individual-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/individual_noexpl.png"); } 
+
+treechildren::-moz-tree-image(role-instance-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/individual_noexpl.png"); } 
+
+
+/*TODO check the name of the role for the properties*/
+treechildren::-moz-tree-image(role-Property) { list-style-image: url("chrome://semantic-turkey/skin/images/prop.png"); } 
+treechildren::-moz-tree-image(role-ObjectProperty) { list-style-image: url("chrome://semantic-turkey/skin/images/propObject.png"); }
+treechildren::-moz-tree-image(role-DatatypeProperty) { list-style-image: url("chrome://semantic-turkey/skin/images/propDatatype.png"); }
+treechildren::-moz-tree-image(role-AnnotationProperty) { list-style-image: url("chrome://semantic-turkey/skin/images/propAnnotation.png"); }
+treechildren::-moz-tree-image(role-OntologyProperty) { list-style-image: url("chrome://semantic-turkey/skin/images/propOntology.png"); }
+treechildren::-moz-tree-image(role-Property-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/prop.png"); } 
+treechildren::-moz-tree-image(role-ObjectProperty-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/propObject.png"); }
+treechildren::-moz-tree-image(role-DatatypeProperty-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/propDatatype.png"); }
+treechildren::-moz-tree-image(role-AnnotationProperty-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/propAnnotation.png"); }
+treechildren::-moz-tree-image(role-OntologyProperty-explicit) { list-style-image: url("chrome://semantic-turkey/skin/images/propOntology.png"); }
+treechildren::-moz-tree-image(role-Property-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/prop_imported.png"); } 
+treechildren::-moz-tree-image(role-ObjectProperty-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/propObject_imported.png"); }
+treechildren::-moz-tree-image(role-DatatypeProperty-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/propDatatype_imported.png"); }
+treechildren::-moz-tree-image(role-AnnotationProperty-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/propAnnotation_imported.png"); }
+treechildren::-moz-tree-image(role-OntologyProperty-noexpl) { list-style-image: url("chrome://semantic-turkey/skin/images/propOntology_imported.png"); }
+
+/*treechildren::-moz-tree-cell {
+	border-bottom: 1px solid #FF0000; 
+  	background-color: #dddddd; 
+}*/
+
+treechildren::-moz-tree-cell-text {
+	color: #000000;  font-size: 11px; font-weight: bold;
+}
+
+treechildren::-moz-tree-cell-text(base) {
+	color: #000000;  font-size: 11px; font-weight: bold;
+}
+
+treechildren::-moz-tree-cell-text(basetrue) {
+	color: #000000;  font-size: 11px; font-weight: bold;
+}
+
+label.base {
+	 color: black; font-size: 11px; font-weight: bold;
+}
