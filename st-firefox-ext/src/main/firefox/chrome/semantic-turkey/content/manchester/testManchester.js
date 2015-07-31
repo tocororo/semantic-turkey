@@ -30,8 +30,10 @@ window.onload = function(){
 	var newExpressionTextBox = document.getElementById("newExpression");
 	
 	
-	document.getElementById("addNewExpressionButton").addEventListener("click",
-			art_semanticturkey.checkAndAddNewExpressiononAccept, true);
+	document.getElementById("addNewSubClassExpressionButton").addEventListener("click",
+			art_semanticturkey.checkAndAddNewSubClassExpressiononAccept, true);
+	document.getElementById("addNewEquivalentExpressionButton").addEventListener("click",
+			art_semanticturkey.checkAndAddNewEquivalentExpressiononAccept, true);
 	document.getElementById("newExpressionTextBox").addEventListener("command",
 			art_semanticturkey.checkAndAddNewExpressiononAccept, true);
 	
@@ -136,24 +138,153 @@ art_semanticturkey.dblclickOnTree = function(event){
 }
 
 art_semanticturkey.dblclickOnTreeToEditShowManchesterExpressions = function(event){
-	var treeitem = event.detail.ti;
+	//var treeitem = event.detail.ti;
 	var rdfNode = event.detail.rdfNode;
 	
-	var labelShowExpressions = document.getElementById("labelShowExpressions");
-	labelShowExpressions.value = "show existing Manchester Expressions for "+rdfNode.getShow();
-	
-	var labelShowExpressions = document.getElementById("labelAddExpressions");
-	labelShowExpressions.value = "Add a new Manchester Expression for "+rdfNode.getShow();
+	art_semanticturkey.refreshRestriction(rdfNode);
 	
 	
 }
 
+art_semanticturkey.refreshRestriction = function(rdfNode){
+	var labelShowExpressions = document.getElementById("labelShowExpressions");
+	labelShowExpressions.value = "show existing Manchester Expressions for "+rdfNode.getShow();
+	labelShowExpressions.selClass = rdfNode.getURI();
+	
+	
+	var labelShowExpressions = document.getElementById("labelAddExpressions");
+	labelShowExpressions.value = "Add a new Manchester Expression for "+rdfNode.getShow();
+	labelShowExpressions.selClass = rdfNode.getURI();
+	labelShowExpressions.rdfNode = rdfNode;
+	
+	var vboxForExpr = document.getElementById("vboxForExpressions");
+	//remove all the info about the previous Class
+	art_semanticturkey.removeAllChildOfElement(vboxForExpr)
+	
+	//get all the possible expressions associated to this class
+	var response = art_semanticturkey.STRequests.Manchester.getAllDLExpression(rdfNode.getURI());
+	var collectionElem = response.getElementsByTagName("collection")[0];
+	//get all the equivalent class
+	var eqClassElements = collectionElem.getElementsByTagName("equivalentClass");
+	if(eqClassElements.length>0){
+		var labelEqui = document.createElement("label");
+		labelEqui.setAttribute("value", "Equivalent to:");
+		vboxForExpr.appendChild(labelEqui);
+	}
+	for(var i=0; i<eqClassElements.length; ++i){
+		var eqClassElem = eqClassElements[i];
+		var expr = eqClassElem.getAttribute("expression");
+		var tempHbox = document.createElement("hbox");
+		var removeButton = document.createElement("button");
+		removeButton.setAttribute("label", "remove restriction");
+		removeButton.classUri = rdfNode.getURI();
+		removeButton.expr = expr;
+		removeButton.exprType = "http://www.w3.org/2002/07/owl#equivalentClass";
+		removeButton.bnode = "_:"+eqClassElem.getAttribute("bnode");
+		removeButton.rdfNode = rdfNode;
+		removeButton.addEventListener("click", 
+				art_semanticturkey.removeExpression, true);
+		tempHbox.appendChild(removeButton);
+		var showExprTextbox = document.createElement("textbox");
+		showExprTextbox.setAttribute("value", expr);
+		showExprTextbox.setAttribute("readonly", "true");
+		showExprTextbox.setAttribute("flex", "1");
+		tempHbox.appendChild(showExprTextbox);
+		
+		vboxForExpr.appendChild(tempHbox);
+	}
+	
+	//get all the subClass
+	var subClassElements = collectionElem.getElementsByTagName("subClass");
+	if(subClassElements.length>0){
+		var labelEqui = document.createElement("label");
+		labelEqui.setAttribute("value", "SubClass of:");
+		vboxForExpr.appendChild(labelEqui);
+	}
+	for(var i=0; i<subClassElements.length; ++i){
+		var subClassElem = subClassElements[i];
+		var expr = subClassElem.getAttribute("expression");
+		var tempHbox = document.createElement("hbox");
+		var removeButton = document.createElement("button");
+		removeButton.setAttribute("label", "remove restriction");
+		removeButton.classUri = rdfNode.getURI();
+		removeButton.expr = expr;
+		removeButton.exprType = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
+		removeButton.bnode = "_:"+subClassElem.getAttribute("bnode");
+		removeButton.rdfNode = rdfNode;
+		removeButton.addEventListener("click", 
+				art_semanticturkey.removeExpression, true);
+		tempHbox.appendChild(removeButton);
+		var showExprTextbox = document.createElement("textbox");
+		showExprTextbox.setAttribute("value", expr);
+		showExprTextbox.setAttribute("readonly", "true");
+		showExprTextbox.setAttribute("flex", "1");
+		tempHbox.appendChild(showExprTextbox);
+		
+		vboxForExpr.appendChild(tempHbox);
+	}
+}
 
-art_semanticturkey.checkAndAddNewExpressiononAccept = function(event){
+
+art_semanticturkey.removeAllChildOfElement = function(elem){
+	while(elem.childElementCount>0){
+		elem.removeChild(elem.firstChild);
+	}
+}
+
+art_semanticturkey.removeExpression = function(event){
+	var button = event.currentTarget;
+	var response = art_semanticturkey.STRequests.Manchester.removeExpression(button.classUri, button.exprType, 
+			button.bnode);
+	if(response.isOk()){
+		art_semanticturkey.refreshRestriction(button.rdfNode);
+	}
+	
+}
+
+art_semanticturkey.checkAndAddNewSubClassExpressiononAccept = function(event){
+	art_semanticturkey.checkAndAddNewExpressiononAccept(false);
+}
+
+art_semanticturkey.checkAndAddNewEquivalentExpressiononAccept = function(event){
+	art_semanticturkey.checkAndAddNewExpressiononAccept(true);
+}
+
+art_semanticturkey.checkAndAddNewExpressiononAccept = function(isEquivalent){
+	
+	classUri = document.getElementById("labelAddExpressions").selClass;
+	
+	if(typeof classUri == 'undefined'){
+		alert("plese select a class from the class tree by performing a double click on the desired class");
+		return;
+	}
+	
 	//first check the expression
 	expr = document.getElementById("newExpressionTextBox").value;
-	alert("checking expression: "+expr);
-	art_semanticturkey.STRequests.Manchester.checkExpression(expr);
-	
+	var response = art_semanticturkey.STRequests.Manchester.checkExpression(expr);
+	if(response.isFail()){
+		var text = response.getElementsByTagName("reply")[0].textContent;
+		alert(text);
+		//since the expression contains at least one syntactic error, stop here
+		return;
+	}
 	//then add the expression
+	try{
+		if(isEquivalent){
+			var exprType ="http://www.w3.org/2002/07/owl#equivalentClass";
+			response = art_semanticturkey.STRequests.Manchester.createRestriction(classUri, exprType, expr);
+		} else{
+			var exprType ="http://www.w3.org/2000/01/rdf-schema#subClassOf";
+			response = art_semanticturkey.STRequests.Manchester.createRestriction(classUri, exprType, expr);
+		}
+		
+		
+		if(response.isOk()){
+			art_semanticturkey.refreshRestriction(document.getElementById("labelAddExpressions").rdfNode);
+		}
+	}
+	catch(err) {
+	    alert("there was a problem when dealing with expression: "+expr);
+	}
+	
 }

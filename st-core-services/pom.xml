@@ -189,6 +189,10 @@
 							org.antlr.runtime.*,
 							*;resolution:=optional
 						</Import-Package>
+						<_exportcontents>
+							org.antlr.runtime,
+							org.antlr.runtime.tree
+						</_exportcontents>
 						<!-- <Bundle-ClassPath>.</Bundle-ClassPath> -->
 						<DynamicImport-Package>*</DynamicImport-Package>
 						<Embed-Dependency>*;artifactId=antlr-runtime</Embed-Dependency>

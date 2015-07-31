@@ -47,6 +47,7 @@
 		<spacer  flex="1"/>
 		
 		<hbox id="hboxForShowManchester" flex="5">
+		<vbox id="vboxForExpressions" flex="1"/>
 		</hbox>
 		
 		<hbox id="hboxForTree3" flex="1"/>
@@ -57,7 +58,8 @@
 		
 		<hbox id="hboxForClassesAndInstanes2" >
 			<textbox id="newExpressionTextBox" flex="1"/>
-			<button id="addNewExpressionButton" label="check and add expression"/>
+			<button id="addNewSubClassExpressionButton" label="check and add expression as SubClass"/>
+			<button id="addNewEquivalentExpressionButton" label="check and add expression as EquivalentClass"/>
 		</hbox>
 		
 	</vbox>

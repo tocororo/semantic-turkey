@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.antlr.runtime.RecognitionException;
@@ -9,12 +8,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
+import it.uniroma2.art.owlart.exceptions.ManchesterParserException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTBNode;
 import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -22,9 +21,7 @@ import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterClassInterface;
 import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterParser;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterSyntaxException;
@@ -32,8 +29,8 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -48,7 +45,8 @@ public class ManchesterHandler  extends STServiceAdapter {
 	
 	
 	@GenerateSTServiceController
-	public Response getAllDLExpression(ARTURIResource classUri) throws ModelAccessException{
+	public Response getAllDLExpression(ARTURIResource classUri, 
+			@Optional (defaultValue = "true") boolean usePrefixes) throws ModelAccessException{
 		
 		OWLModel model = getOWLModel();
 		
@@ -74,13 +72,13 @@ public class ManchesterHandler  extends STServiceAdapter {
 		//now take all the bnode in both lists and get the associted manchester expression
 		Element collElem = XMLHelp.newElement(dataElement, "collection");
 		for(ARTBNode artNode : equivalentClassList){
-			String manchExpr = getSingleManchExpression(artNode, model, null);
+			String manchExpr = getSingleManchExpression(artNode, model, null, usePrefixes);
 			Element equivalentClassElem = XMLHelp.newElement(collElem, "equivalentClass");
 			equivalentClassElem.setAttribute("bnode", artNode.getNominalValue());
 			equivalentClassElem.setAttribute("expression", manchExpr);
 		}
 		for(ARTBNode artNode : subClassList){
-			String manchExpr = getSingleManchExpression(artNode, model, null);
+			String manchExpr = getSingleManchExpression(artNode, model, null, usePrefixes);
 			Element equivalentClassElem = XMLHelp.newElement(collElem, "subClass");
 			equivalentClassElem.setAttribute("bnode", artNode.getNominalValue());
 			equivalentClassElem.setAttribute("expression", manchExpr);
@@ -90,7 +88,8 @@ public class ManchesterHandler  extends STServiceAdapter {
 	}
 	
 	@GenerateSTServiceController
-	public Response getExpression(ARTBNode artNode) throws ModelAccessException{
+	public Response getExpression(ARTBNode artNode, 
+			@Optional (defaultValue = "true") boolean usePrefixes) throws ModelAccessException{
 		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -98,7 +97,7 @@ public class ManchesterHandler  extends STServiceAdapter {
 		OWLModel model = getOWLModel();
 		List<ARTStatement> tripleList = new ArrayList<ARTStatement>();
 		
-		String manchExpr = getSingleManchExpression(artNode, model, tripleList);
+		String manchExpr = getSingleManchExpression(artNode, model, tripleList, usePrefixes);
 		
 		Element manchExprElem = XMLHelp.newElement(dataElement, "MachesterExpression");
 		manchExprElem.setAttribute("value", manchExpr);
@@ -107,11 +106,12 @@ public class ManchesterHandler  extends STServiceAdapter {
 		
 	}
 	
-	private String getSingleManchExpression(ARTBNode artNode, OWLModel model, List<ARTStatement> tripleList) 
+	private String getSingleManchExpression(ARTBNode artNode, OWLModel model, List<ARTStatement> tripleList,
+			boolean usePrefixes) 
 			throws ModelAccessException{
 		ManchesterClassInterface manchClassFromBNode = model.getManchClassFromBNode(artNode, model, 
 				NodeFilters.MAINGRAPH, tripleList);
-		String manchExpr = manchClassFromBNode.getManchExpr(true);
+		String manchExpr = manchClassFromBNode.getManchExpr(usePrefixes);
 		return manchExpr;
 	}
 	
@@ -147,7 +147,7 @@ public class ManchesterHandler  extends STServiceAdapter {
 	public Response checkExpression(String manchExpr){
 		try {
 			ManchesterParser.parse(manchExpr, getOWLModel());
-		} catch (RecognitionException | ModelAccessException e) {
+		} catch (RecognitionException | ModelAccessException | ManchesterParserException e ) {
 			return createReplyFAIL("the expression : "+manchExpr+" is not valid");
 			
 		}
@@ -164,8 +164,8 @@ public class ManchesterHandler  extends STServiceAdapter {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();			
 		
-		if(exprType != RDFS.Res.SUBCLASSOF && exprType != OWL.Res.EQUIVALENTCLASS){
-			throw new ManchesterSyntaxException("the exprType should be either "+
+		if(!exprType.equals(RDFS.Res.SUBCLASSOF) && !exprType.equals(OWL.Res.EQUIVALENTCLASS)){
+			throw new ManchesterSyntaxException("the exprType is "+exprType.getURI()+" should be either "+
 					RDFS.Res.SUBCLASSOF.getNominalValue()+" or "+OWL.Res.EQUIVALENTCLASS.getURI());
 		}
 		
@@ -197,7 +197,10 @@ public class ManchesterHandler  extends STServiceAdapter {
 		} catch (RecognitionException | ModelAccessException e) {
 			throw new ManchesterSyntaxException("Syntax problem with the expression : "+manchExpr);
 		} catch (ModelUpdateException e) {
-			throw new ModelUpdateException(e);
+			throw new ManchesterSyntaxException("ModelUpdateException : "+manchExpr);
+			//throw new ModelUpdateException(e);
+		} catch (ManchesterParserException e) {
+			throw new ManchesterSyntaxException("Syntax problem with the expression : "+manchExpr);
 		}
 		return response;
 		

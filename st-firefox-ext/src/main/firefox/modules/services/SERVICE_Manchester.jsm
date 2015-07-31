@@ -13,24 +13,37 @@ var serviceName = service.serviceName;
 const currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 
 
-function getAllDLExpression(classUri){
+function getAllDLExpression(classUri, usePrefixes){
 	Logger.debug('[SERVICE_Manchester.jsm] getAllDLExpression');
-	var p_classUri = "classUri="+classUri; 
-	return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpression, this.context, p_classUri);
+	var p_classUri = "classUri="+classUri;
+	if (typeof usePrefixes != "undefined") {
+		var p_usePrefixes = "usePrefixes="+usePrefixes;
+		return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpressionRequest, this.context, 
+				p_classUri, p_usePrefixes);
+	} else{
+		return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpressionRequest, this.context, 
+				p_classUri);
+	}
 }
 
-function getExpression(artNode){
+function getExpression(artNode, usePrefixes){
 	Logger.debug('[SERVICE_Manchester.jsm] getExpression');
-	var p_artNode = "artNode="+artNode; 
-	return currentSTHttpMgr.GET(null, serviceName, service.getExpression, this.context, p_artNode);
+	var p_artNode = "artNode="+artNode;
+	if (typeof usePrefixes != "undefined") {
+		var p_usePrefixes = "usePrefixes="+usePrefixes;
+		return currentSTHttpMgr.GET(null, serviceName, service.getExpressionRequest, this.context, p_artNode,
+				p_usePrefixes);
+	} else{
+		return currentSTHttpMgr.GET(null, serviceName, service.getExpressionRequest, this.context, p_artNode);
+	}
 }
 
-function removeExpression(classUri){
+function removeExpression(classUri,exprType, artNode){
 	Logger.debug('[SERVICE_Manchester.jsm] removeExpression');
 	var p_classUri = "classUri="+classUri; 
 	var p_exprType = "exprType="+exprType; 
 	var p_artNode = "artNode="+artNode; 
-	return currentSTHttpMgr.GET(null, serviceName, service.removeExpression, this.context, p_classUri,
+	return currentSTHttpMgr.GET(null, serviceName, service.removeExpressionRequest, this.context, p_classUri,
 			p_exprType, p_artNode);
 }
 
@@ -40,13 +53,13 @@ function checkExpression(manchExpr){
 	return currentSTHttpMgr.GET(null, serviceName, service.checkExpressionRequest, this.context, p_manchExpr);
 }
 
-function createRestriction(classUri){
+function createRestriction(classUri, exprType, manchExpr){
 	Logger.debug('[SERVICE_Manchester.jsm] createRestriction');
 	var p_classUri = "classUri="+classUri; 
 	var p_exprType = "exprType="+exprType; 
 	var p_manchExpr = "manchExpr="+manchExpr; 
-	return currentSTHttpMgr.GET(null, serviceName, service.createRestriction, this.context, p_classUri,
-			p_exprType, manchExpr);
+	return currentSTHttpMgr.GET(null, serviceName, service.createRestrictionRequest, this.context, p_classUri,
+			p_exprType, p_manchExpr);
 }
 
 
