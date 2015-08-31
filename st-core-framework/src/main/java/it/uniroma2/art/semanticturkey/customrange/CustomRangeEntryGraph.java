@@ -4,6 +4,7 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
 import it.uniroma2.art.coda.pearl.model.GraphStruct;
 import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
@@ -98,11 +99,13 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * annotation or other attribute in CRE xml)
 	 * @return
 	 * @throws PRParserException 
+	 * @throws RDFModelNotSetException 
 	 */
-	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) throws PRParserException{
+	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) 
+			throws PRParserException, RDFModelNotSetException{
 		Collection<String> predicates = new ArrayList<String>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds){
@@ -149,10 +152,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 
 	@Override
-	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException {
+	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
 		Collection<UserPromptStruct> form = new ArrayList<UserPromptStruct>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds){
@@ -242,7 +245,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 			codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen",
 					"http://art.uniroma2.it/coda/converters/templateBasedRandIdGen");
-			codaCore.setProjectionRulesModel(pearlStream);
+			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()){
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -252,7 +255,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException | 
 				UnsupportedQueryLanguageException | ModelAccessException | MalformedQueryException | 
-				QueryEvaluationException | DependencyException | UIMAException e) {
+				QueryEvaluationException | DependencyException | UIMAException | RDFModelNotSetException e) {
 			throw new CODAException(e);
 		}
 		return triples;
@@ -265,12 +268,14 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @return
 	 * @throws ResourceInitializationException
 	 * @throws PRParserException
+	 * @throws RDFModelNotSetException 
 	 */
-	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore) throws ResourceInitializationException, PRParserException{
+	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore) 
+			throws ResourceInitializationException, PRParserException, RDFModelNotSetException{
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		//init the projection rules model with the pearl
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds){

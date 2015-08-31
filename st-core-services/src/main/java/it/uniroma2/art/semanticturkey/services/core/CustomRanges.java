@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -196,11 +197,12 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws FileNotFoundException
 	 * @throws PRParserException
 	 * @throws ModelAccessException 
+	 * @throws RDFModelNotSetException 
 	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController
 	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
-			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException {
+			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException, RDFModelNotSetException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
@@ -307,9 +309,11 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws ModelAccessException
+	 * @throws RDFModelNotSetException 
 	 */
 	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore) 
-			throws UnavailableResourceException, ProjectInconsistentException, PRParserException, ModelAccessException{
+			throws UnavailableResourceException, ProjectInconsistentException, PRParserException, 
+			ModelAccessException, RDFModelNotSetException{
 		RDFModel rdfModel = getOWLModel();
 		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
 		if (crEntries.isEmpty()){
@@ -398,7 +402,7 @@ public class CustomRanges extends STServiceAdapter {
 		private int nTotalPredsMatched = 0;
 		
 		public CREMatchingStruct(CustomRangeEntryGraph creGraph, ARTResource reifRes, RDFModel model, CODACore codaCore)
-				throws PRParserException, ModelAccessException{
+				throws PRParserException, ModelAccessException, RDFModelNotSetException{
 			this.cre = creGraph;
 			Collection<String> mandatoryPreds = creGraph.getGraphPredicates(codaCore, true, true);
 			nMandatoryPreds = mandatoryPreds.size();

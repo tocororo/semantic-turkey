@@ -29,6 +29,7 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
@@ -1596,7 +1597,7 @@ public class ResourceOld extends ServiceAdapter {
 				} else {
 					formElem.setAttribute("exception", "No userPrompt/ features found");
 				}
-			} catch (PRParserException | UnavailableResourceException | ProjectInconsistentException ex){
+			} catch (PRParserException | UnavailableResourceException | ProjectInconsistentException | RDFModelNotSetException ex){
 				formElem.setAttribute("exception", ex.toString());
 				ex.printStackTrace();
 			}
