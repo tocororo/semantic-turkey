@@ -132,6 +132,11 @@ STRequests.ResourceView = function(){};
  */
 STRequests.XMLSchema = function(){};
 
+/**
+ * @class
+ */
+STRequests.Manchester = function(){};
+
 //Alignment service requests
 STRequests.Alignment.serviceName = "Alignment";
 STRequests.Alignment.addAlignmentRequest = "addAlignment";
@@ -486,3 +491,11 @@ STRequests.XMLSchema.formatTimeRequest = "formatTime";
 STRequests.XMLSchema.formatDurationRequest = "formatDuration";
 STRequests.XMLSchema.formatCurrentLocalDateTimeRequest = "formatCurrentLocalDateTime";
 STRequests.XMLSchema.formatCurrentUTCDateTimeRequest = "formatCurrentUTCDateTime";
+
+//Manchester syntax service request
+STRequests.Manchester.serviceName = "ManchesterHandler";
+STRequests.Manchester.getAllDLExpressionRequest = "getAllDLExpression";
+STRequests.Manchester.getExpressionRequest = "getExpression";
+STRequests.Manchester.removeExpressionRequest = "removeExpression";
+STRequests.Manchester.checkExpressionRequest = "checkExpression";
+STRequests.Manchester.createRestrictionRequest = "createRestriction";
