@@ -57,6 +57,7 @@ import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
@@ -298,7 +299,7 @@ public class ResourceView extends STServiceAdapter {
 
 	// TODO: implement a converter for ResourcePosition
 	@GenerateSTServiceController
-	public Response getLexicalizationProperties(@Optional ARTResource resource, @Optional ResourcePosition resourcePosition) throws ModelAccessException {
+	public Response getLexicalizationProperties(@Optional ARTResource resource, @Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException {
 		if (resourcePosition == null) {
 			resourcePosition = resource != null ? resourceLocator.locateResource(getProject(), resource) : ResourceLocator.UNKNOWN_RESOURCE_POSITION;
 		}
