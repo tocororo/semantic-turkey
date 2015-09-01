@@ -38,13 +38,14 @@ public class DatasetMetadata {
 	private boolean dereferenceable;
 	private RenderingEngine renderingEngine;
 	private ARTURIResource lexicalModel;
+	private String title;
 	
 
-	public DatasetMetadata(String baseURI, String voidDocument, String sparqlEndpoint,
-			boolean dereferenceable, RenderingEngine renderingEngine, ARTURIResource lexicalModel) {
-		this.baseURI = baseURI;
-		this.voidDocument = voidDocument;
-		this.sparqlEndpoint = sparqlEndpoint;
+	public DatasetMetadata(String baseURI, String title, String voidDocument, String sparqlEndpoint, boolean dereferenceable, RenderingEngine renderingEngine, ARTURIResource lexicalModel) {
+		this.baseURI = normalizeStringValue(baseURI);
+		this.title = normalizeStringValue(title);
+		this.voidDocument = normalizeStringValue(voidDocument);
+		this.sparqlEndpoint = normalizeStringValue(sparqlEndpoint);
 		this.dereferenceable = dereferenceable;
 		this.renderingEngine = renderingEngine;
 		this.lexicalModel = lexicalModel;
@@ -54,16 +55,8 @@ public class DatasetMetadata {
 		return sparqlEndpoint;
 	}
 
-	public void setSparqlEndpoint(String sparqlEndpoint) {
-		this.sparqlEndpoint = sparqlEndpoint;
-	}
-
 	public boolean isDereferenceable() {
 		return dereferenceable;
-	}
-
-	public void setDereferenceable(boolean dereferenceable) {
-		this.dereferenceable = dereferenceable;
 	}
 
 	public String getBaseURI() {
@@ -78,5 +71,17 @@ public class DatasetMetadata {
 	public String toString() {
 		return Objects.toStringHelper(this).add("baseURI", this.baseURI).toString(); 
 	}
+
+	public String getTitle() {
+		return title;
+	}
 	
+	private static String normalizeStringValue(String val) {
+		if (val == null) {
+			return null;
+		} else {
+			String trimmedVal = val.trim();
+			return Objects.equal(trimmedVal, "") ? null : trimmedVal;
+		}
+	}
 }

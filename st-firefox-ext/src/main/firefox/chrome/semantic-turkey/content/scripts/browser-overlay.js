@@ -90,6 +90,11 @@ art_semanticturkey.openAlignmentValidation = function() {
 	art_semanticturkey.openUrl("chrome://semantic-turkey/content/alignment/validation/validation.xul");
 };
 
+art_semanticturkey.openMetadataRegistry = function() {
+	window.openDialog("chrome://semantic-turkey/content/metadataRegistry/metadataRegistryDialog.xul",
+			"_blank", "modal=yes,resizable,centerscreen");
+};
+
 art_semanticturkey.semnavigation = function() {
 	var isHumanReadable = art_semanticturkey.Preferences
 			.get("extensions.semturkey.skos.humanReadable", false);
@@ -191,6 +196,8 @@ art_semanticturkey.associateEventsOnBrowserGraphicElements = function() {
 			art_semanticturkey.toggleSidebar3, true);
 	document.getElementById("SPARQL").addEventListener("command", art_semanticturkey.SPARQL, true);
 	document.getElementById("customRange").addEventListener("command", art_semanticturkey.openCustomRange, true);
+	document.getElementById("metadataRegistry").addEventListener("command", art_semanticturkey.openMetadataRegistry, true);
+
 	/*
 	 * document.getElementById("sidebar_openSageSidebar").addEventListener("command",art_semanticturkey.toggleSidebar1,true);
 	 * document.getElementById("sidebar_openSageSidebar2").addEventListener("command",art_semanticturkey.toggleSidebar2,true);
@@ -388,6 +395,7 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 		document.getElementById("key_openSTImportsSidebar").disabled = false;
 		document.getElementById("SPARQL").disabled = false;
 		document.getElementById("customRange").disabled = false;
+		document.getElementById("metadataRegistry").disabled = false;
 		document.getElementById("key_openSTSKOSSidebar").disabled = false;
 		document.getElementById("visualization").disabled = false;
 		document.getElementById("visualization2").disabled = false;
@@ -468,6 +476,8 @@ art_semanticturkey.changeProjectObj = function(eventId, projectInfo) {
 			art_semanticturkey.skosStateManagemenet.stEventArray.deregisterAllListener();
 			art_semanticturkey.skosStateManagemenet.stEventArray = undefined;
 		}
+		
+		document.getElementById("metadataRegistry").disabled = true;
 	} else if (eventId == "projectChangedName") {
 		var projectName = projectInfo.projectName;
 		var broadcasterList = document.getElementById("mainBroadcasterSet").getElementsByTagName(

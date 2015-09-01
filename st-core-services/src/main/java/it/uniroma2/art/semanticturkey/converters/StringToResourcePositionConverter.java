@@ -18,6 +18,11 @@ public class StringToResourcePositionConverter implements Converter<String, Reso
 	public static final String REMOTE_PREFIX = "remote:";
 	public static final String UNKNOWN_PREFIX = "unknown:";
 
+	private DatasetMetadataRepository datasetMetadataRepository;
+	
+	public StringToResourcePositionConverter(DatasetMetadataRepository datasetMetadataRepository) {
+		this.datasetMetadataRepository = datasetMetadataRepository;
+	}
 	
 	@Override
 	public ResourcePosition convert(String resourcePositionString) {
@@ -31,7 +36,7 @@ public class StringToResourcePositionConverter implements Converter<String, Reso
 			return new LocalResourcePosition(project);
 		} else if (resourcePositionString.startsWith(REMOTE_PREFIX)) {
 			String datasetId = resourcePositionString.substring(REMOTE_PREFIX.length());
-			DatasetMetadata meta = DatasetMetadataRepository.getInstance().findDatasetForResource(VocabUtilities.nodeFactory.createURIResource(datasetId));
+			DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(VocabUtilities.nodeFactory.createURIResource(datasetId));
 			
 			if (meta == null) {
 				throw new IllegalArgumentException(String.format("The dataset mentioned in a remote resource position is not known: %s", datasetId));

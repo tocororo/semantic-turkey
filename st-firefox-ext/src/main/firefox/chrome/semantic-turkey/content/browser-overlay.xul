@@ -119,6 +119,7 @@
 				tooltiptext="Menu" type="menu" hidden="true" >
 				<menupopup>
 			      <menuitem id="alignmentValidationMenuitem" label="Alignment Validation"/>
+			      <menuitem id="metadataRegistry" label="Metadata Registry" disabled="true" />					
 			    </menupopup>
 			</toolbarbutton>
 		</toolbar>

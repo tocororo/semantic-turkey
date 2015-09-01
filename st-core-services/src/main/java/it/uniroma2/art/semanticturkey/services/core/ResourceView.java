@@ -115,6 +115,9 @@ import com.google.common.collect.Iterators;
 public class ResourceView extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
+
+	@Autowired
+	private ResourceLocator resourceLocator;
 	
 	@Autowired
 	private StatementConsumerProvider statementConsumerProvider ;
@@ -127,7 +130,7 @@ public class ResourceView extends STServiceAdapter {
 		Project<? extends RDFModel> project = getProject();
 
 		if (resourcePosition == null) {
-			resourcePosition = ResourceLocator.locateResource(project, resource);
+			resourcePosition = resourceLocator.locateResource(project, resource);
 		}
 		
 		StatementCollector stmtCollector = new StatementCollector();
@@ -297,7 +300,7 @@ public class ResourceView extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response getLexicalizationProperties(@Optional ARTResource resource, @Optional ResourcePosition resourcePosition) throws ModelAccessException {
 		if (resourcePosition == null) {
-			resourcePosition = resource != null ? ResourceLocator.locateResource(getProject(), resource) : ResourceLocator.UNKNOWN_RESOURCE_POSITION;
+			resourcePosition = resource != null ? resourceLocator.locateResource(getProject(), resource) : ResourceLocator.UNKNOWN_RESOURCE_POSITION;
 		}
 			
 		Collection<STRDFURI> lexicalizationProperties = STRDFNodeFactory.createEmptyURICollection();

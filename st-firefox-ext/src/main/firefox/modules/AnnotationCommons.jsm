@@ -14,7 +14,11 @@ Components.utils.import("resource://stmodules/ProjectST.jsm");
 Components.utils.import("resource://stmodules/SkosScheme.jsm");
 Components.utils.import("resource://stmodules/Sanitizer.jsm");
 
-Components.utils.import("resource://gre/modules/Dict.jsm");
+// If modern ES6 Map is unavailable, use old Dict.jsm module (removed in FF40)
+if (typeof Map == "undefined") {
+	Components.utils.import("resource://gre/modules/Dict.jsm");
+	var Map = Dict;
+}
 
 if (typeof annotation == "undefined") {
 	var annotation = {};
@@ -150,14 +154,14 @@ annotation.commons.conventions.initializeColorMap = function(annotations /* not 
 	var colorsEnabled = Preferences.get("extensions.semturkey.annotation.colorsEnabled", true);
 	
 	if (colorsEnabled) {
-		var colorMap = new Dict();
+		var colorMap = new Map();
 		
 		return {
 			getColor : function (resource) {
 				if (colorMap.has(resource)) {
 					return colorMap.get(resource);
 				} else {
-					var n = colorMap.count;
+					var n = colorMap.size || colorMap.count; // ES6 Map vs Dict.jsm
 					var hue = 0;
 					var delta = 180;
 					while (n != 0) {

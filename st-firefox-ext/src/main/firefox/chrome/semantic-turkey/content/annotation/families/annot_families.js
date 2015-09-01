@@ -1,3 +1,6 @@
+if (typeof art_semanticturkey == 'undefined')
+	var art_semanticturkey = {};
+
 Components.utils.import("resource://stmodules/StartST.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Annotation.jsm", art_semanticturkey);

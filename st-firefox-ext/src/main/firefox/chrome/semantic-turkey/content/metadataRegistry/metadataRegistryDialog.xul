@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://semantic-turkey/content/metadataRegistry/metadataRegistryDialog.css" type="text/css"?>
+
+<window id="metadataRegistryDialog" title="Metadata Registry"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	width="800px"
+	height="400px">
+	<script type="application/x-javascript" src="chrome://semantic-turkey/content/metadataRegistry/metadataRegistryDialog.js" />
+	
+	<vbox flex="1">
+	
+		<groupbox flex="1">
+			<caption label="Datasets" />
+			<hbox flex="1">
+				<listbox id="datasetList" flex="1" />
+				<vbox pack="center">
+					<button id="addDatasetMetadataButton" label="Add" tooltiptext="Add metadata about a dataset" />
+					<button id="editDatasetMetadataButton" label="Edit" tooltiptext="Edit the metadata about the currently selected dataset" disabled="true" />
+					<button id="deleteDatasetMetadataButton" label="Delete" tooltiptext="Delete the metadata about the currently selected dataset" disabled="true" />
+				</vbox>
+			</hbox>
+		</groupbox>
+					
+		<hbox align="right">
+			<button id="closeButton" label="Close" />
+		</hbox>
+	</vbox>
+	
+</window>

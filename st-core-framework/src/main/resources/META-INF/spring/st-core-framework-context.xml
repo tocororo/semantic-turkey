@@ -77,4 +77,21 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
+	
+	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->	
+	<bean id="datasetMetadataRepository"
+		class="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository"
+		ref="datasetMetadataRepository">
+	</osgi:service>
+	
+		<!-- Publishes the ResourceLocator as an OSGi service -->	
+	<bean id="resourceLocator"
+		class="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"
+		ref="resourceLocator">
+	</osgi:service>
+	
 </beans>

@@ -60,7 +60,13 @@ STRequests.InputOutput = function(){};
 /**
  * @class
  */
-STRequests.Metadata = function(){};      
+STRequests.Metadata = function(){};
+
+/**
+ * @class
+ */
+STRequests.MetadataRegistry = function(){};      
+
 /**
  * @class
  */
@@ -302,6 +308,14 @@ STRequests.Metadata.downloadFromWebRequest = "downloadFromWeb";
 STRequests.Metadata.getFromLocalFileRequest = "getFromLocalFile";
 STRequests.Metadata.mirrorOntologyRequest = "mirrorOntology";
 STRequests.Metadata.getNamedGraphsRequest = "getNamedGraphs";
+
+//metadata registry service request
+STRequests.MetadataRegistry.serviceName = "MetadataRegistry";
+STRequests.MetadataRegistry.addDatasetMetadataRequest = "addDatasetMetadata";
+STRequests.MetadataRegistry.deleteDatasetMetadataRequest = "deleteDatasetMetadata";
+STRequests.MetadataRegistry.editDatasetMetadataRequest = "editDatasetMetadata";
+STRequests.MetadataRegistry.getDatasetMetadataRequest = "getDatasetMetadata";
+STRequests.MetadataRegistry.listDatasetsRequest = "listDatasets";
 
 //administartion service request
 STRequests.Administration.serviceName = "administration";

@@ -12,6 +12,11 @@
 	<mvc:annotation-driven conversion-service="conversionService" />
 	<mvc:resources mapping="/WEB-INF/pages/**" location="/WEB-INF/pages/" />
 
+	<!-- Retrieves the DatasetMetadataRepository -->	
+	<osgi:reference id="datasetMetadataRepository" interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository"/>
+
+	<!-- Retrieves the ResourceLocator -->	
+	<osgi:reference id="resourceLocator" interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"/>
 
 	<bean id="conversionService"
 		class="org.springframework.context.support.ConversionServiceFactoryBean">
@@ -37,7 +42,9 @@
 				<bean id="StringToARTURIResourceConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToARTURIResourceConverter" />
 				<bean id="StringToResourcePositionConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter" />
+					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
+					<constructor-arg ref="datasetMetadataRepository" />
+				</bean>
 					
 			</list>
 		</property>
