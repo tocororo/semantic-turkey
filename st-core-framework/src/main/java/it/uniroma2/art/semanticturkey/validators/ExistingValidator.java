@@ -32,9 +32,6 @@ public class ExistingValidator implements
 		int projectIndex = annotation.projectIndex();
 		Project<?> project = serviceContext.getProject(projectIndex);
 		
-		
-		System.out.println("service context = " + serviceContext + " projectIndex = " + projectIndex + " project = " + project);
-		
 		ARTResource test;
 		try {
 			if (value.isBlank()) {

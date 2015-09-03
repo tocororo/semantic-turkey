@@ -14,6 +14,8 @@ Components.utils.import("resource://stservices/SERVICE_SKOS.jsm",
 		art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_SKOSXL.jsm",
 		art_semanticturkey);
+Components.utils.import("resource://stservices/SERVICE_CustomRanges.jsm",
+		art_semanticturkey);
 
 Components.utils.import("resource://stmodules/Deserializer.jsm",
 		art_semanticturkey);
@@ -867,10 +869,17 @@ art_semanticturkey.resourceView.partitions
 					},
 					"onRemove" : function(rdfSubject, rdfPredicate, rdfObject) {
 						if (rdfObject.explicit == "true") {
-							art_semanticturkey.STRequests.Resource
-									.removePropertyValue(rdfSubject.toNT(),
-											rdfPredicate.toNT(), rdfObject
-													.toNT());
+							if (rdfPredicate.hasCustomRange == "true") {
+								art_semanticturkey.STRequests.CustomRanges.removeReifiedResource(
+										rdfSubject.getNominalValue(), 
+										rdfPredicate.getNominalValue(),
+										rdfObject.getNominalValue());
+							} else {
+								art_semanticturkey.STRequests.Resource
+								.removePropertyValue(rdfSubject.toNT(),
+										rdfPredicate.toNT(), rdfObject
+												.toNT());
+							}
 							art_semanticturkey.evtMgr
 									.fireEvent(
 											"refreshEditor",
