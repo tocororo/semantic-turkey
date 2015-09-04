@@ -182,6 +182,12 @@ createDatetimeInput = function(formEntryXml){
 	mainBox.appendChild(textbox);
 	var datepicker = document.createElement("datepicker");
 	var timepicker = document.createElement("timepicker");
+	datepicker.addEventListener("command", function(){
+		textbox.setAttribute("value", getDatetime(datepicker, timepicker));
+	}, false);
+	timepicker.addEventListener("command", function(){
+		textbox.setAttribute("value", getDatetime(datepicker, timepicker));
+	}, false);
 	mainBox.appendChild(datepicker);
 	mainBox.appendChild(timepicker);
 	row.appendChild(mainBox);
