@@ -24,6 +24,9 @@
 				<exclude>RELEASE-NOTES</exclude>
 				<exclude>karaf-manual*.html</exclude>
 				<exclude>karaf-manual*.pdf</exclude>
+				<exclude>system/org/apache/karaf/assemblies/features/enterprise/${karaf.version}/*.xml</exclude> <!-- to remove the duplication of a file -->
+				<exclude>system/org/apache/karaf/assemblies/features/standard/${karaf.version}/*.xml</exclude> <!-- to remove the duplication of a file -->
+				<exclude>system/org/apache/karaf/deployer/org.apache.karaf.deployer.spring/${karaf.version}/*.jar</exclude> <!-- to remove the duplication of a file -->
 			</excludes>
 		</fileSet>
 
