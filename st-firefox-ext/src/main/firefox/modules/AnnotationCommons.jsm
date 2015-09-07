@@ -161,7 +161,7 @@ annotation.commons.conventions.initializeColorMap = function(annotations /* not 
 				if (colorMap.has(resource)) {
 					return colorMap.get(resource);
 				} else {
-					var n = colorMap.size || colorMap.count; // ES6 Map vs Dict.jsm
+					var n = typeof colorMap.size != "undefined" ? colorMap.size : colorMap.count; // ES6 Map vs Dict.jsm
 					var hue = 0;
 					var delta = 180;
 					while (n != 0) {
