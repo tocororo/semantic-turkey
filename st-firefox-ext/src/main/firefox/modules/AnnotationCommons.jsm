@@ -13,6 +13,7 @@ Components.utils.import("resource://stmodules/Preferences.jsm");
 Components.utils.import("resource://stmodules/ProjectST.jsm");
 Components.utils.import("resource://stmodules/SkosScheme.jsm");
 Components.utils.import("resource://stmodules/Sanitizer.jsm");
+Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm");
 
 // If modern ES6 Map is unavailable, use old Dict.jsm module (removed in FF40)
 if (typeof Map == "undefined") {
@@ -400,47 +401,11 @@ annotation.commons.conventions.decorateContent = function(document, annotations)
  */
 
 annotation.commons.conventions.viewAnnotation = function(annotationId, window) {
-	var parameters = {
-		sourceElement : null, // elemento contenente i dati della riga
-		// corrente
-		sourceType : "individual", // tipo di editor: clss, ..., determina le
-		// funzioni custom ed il titolo della
-		// finestra
-		sourceElementName : annotationId, // nome dell'elemento corrente
-		// (quello usato per
-		// identificazione: attualmente il
-		// qname)
-		sourceParentElementName : "", // nome dell'elemento genitore
-		isFirstEditor : false, // l'editor è stato aperto direttamente dall
-		// class/... tree o da un altro editor?
-		deleteForbidden : false, // cancellazione vietata
-		parentWindow : window, // finestra da cui viene aperto l'editor
-	// skos : {selectedScheme : this.conceptScheme}
-	};
-	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul", "_blank",
-			"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+	ResourceViewLauncher.openResourceView(annotationId);
 };
 
 annotation.commons.conventions.viewResource = function(resourceId, window) {
-	var resourceRole = STRequests.Resource.getRole(resourceId);
-	var parameters = {
-		sourceElement : null, // elemento contenente i dati della riga
-		// corrente
-		sourceType : resourceRole, // tipo di editor: clss, ..., determina le
-		// funzioni custom ed il titolo della
-		// finestra
-		sourceElementName : resourceId, // nome dell'elemento corrente (quello
-		// usato per identificazione:
-		// attualmente il qname)
-		sourceParentElementName : "", // nome dell'elemento genitore
-		isFirstEditor : false, // l'editor è stato aperto direttamente dall
-		// class/... tree o da un altro editor?
-		deleteForbidden : false, // cancellazione vietata
-		parentWindow : window, // finestra da cui viene aperto l'editor
-	// skos : {selectedScheme : this.conceptScheme}
-	};
-	window.openDialog("chrome://semantic-turkey/content/editors/editorPanel.xul", "_blank",
-			"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+	ResourceViewLauncher.openResourceView(resourceId);
 };
 
 annotation.commons.registerCommonHandlers = function(family) {
