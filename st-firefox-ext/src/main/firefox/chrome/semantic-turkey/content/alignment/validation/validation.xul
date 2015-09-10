@@ -57,11 +57,11 @@
 				<menuitem label="---"/>
 				<menuitem label="Validate all"/>
 				<menuitem label="Reject all"/>
-				<menuitem label="Validate all above the treshold..."/>
-				<menuitem label="Reject all under the treshold..."/>
+				<menuitem label="Validate all above the threshold..."/>
+				<menuitem label="Reject all under the threshold..."/>
 			</menupopup>
 		</menulist>
-		<textbox id="tresholdTxt" disabled="true" width="100px" type="number" decimalplaces="2" increment="0.01" max="1"/>
+		<textbox id="thresholdTxt" disabled="true" width="100px" type="number" decimalplaces="2" increment="0.01" max="1"/>
 		<button id="quickActionBtn" label="Do quick action" disabled="true" />
 		<separator flex="1" />
 		<button id="saveAlignmentBtn" label="Save as..." disabled="true"

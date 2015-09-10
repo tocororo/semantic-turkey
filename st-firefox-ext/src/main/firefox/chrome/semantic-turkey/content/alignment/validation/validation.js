@@ -124,8 +124,8 @@ art_semanticturkey.loadAlignment = function() {
 		
 		document.getElementById("quickActionMenu").setAttribute("disabled", "false");
 		document.getElementById("saveAlignmentBtn").setAttribute("disabled", "false");
-		document.getElementById("tresholdTxt").setAttribute("disabled", "true");
-		document.getElementById("tresholdTxt").setAttribute("value", "0.0");
+		document.getElementById("thresholdTxt").setAttribute("disabled", "true");
+		document.getElementById("thresholdTxt").setAttribute("value", "0.0");
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
 	}
@@ -196,14 +196,14 @@ art_semanticturkey.quickActionMenuListener = function() {
 	var selectedAction = menulist.selectedItem.label;
 	if (selectedAction != "---") {
 		document.getElementById("quickActionBtn").setAttribute("disabled", "false");
-		if (selectedAction.indexOf("treshold") > -1) {
-			document.getElementById("tresholdTxt").disabled = false;
+		if (selectedAction.indexOf("threshold") > -1) {
+			document.getElementById("thresholdTxt").disabled = false;
 		} else {
-			document.getElementById("tresholdTxt").disabled = true;
+			document.getElementById("thresholdTxt").disabled = true;
 		}
 	} else {
 		document.getElementById("quickActionBtn").setAttribute("disabled", "true");
-		document.getElementById("tresholdTxt").disabled = true;
+		document.getElementById("thresholdTxt").disabled = true;
 	}
 }
 
@@ -224,18 +224,18 @@ art_semanticturkey.quickActionButtonListener = function() {
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
 		}
-	} else if (action == "Validate all above the treshold...") {
+	} else if (action == "Validate all above the threshold...") {
 		try {
-			var treshold = document.getElementById("tresholdTxt").value;
-			var xmlResp = serviceInstance.validateAllAbove(treshold);
+			var threshold = document.getElementById("thresholdTxt").value;
+			var xmlResp = serviceInstance.validateAllAbove(threshold);
 			report = art_semanticturkey.parseQuickActionResponse(xmlResp);
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
 		}
-	} else if (action == "Reject all under the treshold...") {
+	} else if (action == "Reject all under the threshold...") {
 		try {
-			var treshold = document.getElementById("tresholdTxt").value;
-			var xmlResp = serviceInstance.rejectAllUnder(treshold);
+			var threshold = document.getElementById("thresholdTxt").value;
+			var xmlResp = serviceInstance.rejectAllUnder(threshold);
 			report = art_semanticturkey.parseQuickActionResponse(xmlResp);
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
@@ -256,7 +256,7 @@ art_semanticturkey.quickActionButtonListener = function() {
 		document.getElementById("quickActionMenu").disabled = true;
 		document.getElementById("saveAlignmentBtn").disabled = true;
 	}
-	document.getElementById("tresholdTxt").disabled = true;
+	document.getElementById("thresholdTxt").disabled = true;
 	document.getElementById("quickActionBtn").disabled = true;
 }
 

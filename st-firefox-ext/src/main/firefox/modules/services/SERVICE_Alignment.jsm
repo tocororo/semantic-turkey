@@ -56,10 +56,10 @@ function validateAllAlignment() {
 	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAlignmentRequest, this.context);
 }
 
-function validateAllAbove(treshold) {
+function validateAllAbove(threshold) {
 	Logger.debug("[SERVICE_Alignment.jsm] validateAllAbove");
-	var p_treshold = "treshold=" + treshold;
-	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAboveRequest, this.context, p_treshold);
+	var p_threshold = "threshold=" + threshold;
+	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAboveRequest, this.context, p_threshold);
 }
 
 function rejectAlignment(entity1, entity2, relation) {
@@ -76,10 +76,10 @@ function rejectAllAlignment() {
 	return currentSTHttpMgr.GET(null, serviceName, service.rejectAllAlignmentRequest, this.context);
 }
 
-function rejectAllUnder(treshold) {
+function rejectAllUnder(threshold) {
 	Logger.debug("[SERVICE_Alignment.jsm] rejectAllUnder");
-	var p_treshold = "treshold=" + treshold;
-	return currentSTHttpMgr.GET(null, serviceName, service.rejectAllUnderRequest, this.context, p_treshold);
+	var p_threshold = "threshold=" + threshold;
+	return currentSTHttpMgr.GET(null, serviceName, service.rejectAllUnderRequest, this.context, p_threshold);
 }
 
 function saveAlignment() {

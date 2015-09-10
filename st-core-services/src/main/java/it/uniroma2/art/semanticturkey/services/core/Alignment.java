@@ -101,6 +101,8 @@ public class Alignment extends STServiceAdapter {
 	//map that contain <id, context> pairs to handle multiple sessions
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
 	
+	// SERVICES FOR ALIGNMENT IN RESOURCE VIEW
+	
 	/**
 	 * Adds the given alignment triple only if predicate is a valid alignment property
 	 * @param sourceResource
@@ -143,7 +145,12 @@ public class Alignment extends STServiceAdapter {
 	}
 	
 	/**
-	 * Based on the model type, returns the available alignment properties
+	 * Returns the available alignment properties depending on the type resource to align (property,
+	 * or concept, or class,...).
+	 * 
+	 * @param resource resource to align
+	 * @param allMappingProps if false returns just the mapping properties available for the current
+	 * model type; if true returns all the mapping properties independently from the model type
 	 * @return
 	 * @throws ModelAccessException
 	 * @throws ProjectInconsistentException 
@@ -202,6 +209,9 @@ public class Alignment extends STServiceAdapter {
 		return resp;
 	}
 
+	/* 
+	 * Set up a temporary model to load all vocabularies
+	 */
 	private RDFModel getTempModelForVocabularies() throws UnavailableResourceException,
 			ProjectInconsistentException, ModelAccessException, IOException, ModelUpdateException,
 			UnsupportedRDFFormatException {
@@ -216,6 +226,8 @@ public class Alignment extends STServiceAdapter {
 		mf.checkVocabularyData(tempModel, vocabs);
 		return tempModel;
 	}
+	
+	// SERVICES FOR ALIGNMENT VALIDATION
 	
 	/**
 	 * Loads an alignment file (that is compliant with AlignmentAPI format) and if one of the 
@@ -283,8 +295,20 @@ public class Alignment extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Validates the alignment adding the statement to the model
+	 * TODO: is correct? or we should mark the alignment as validate in some way? 
+	 * @param entity1
+	 * @param entity2
+	 * @param relation
+	 * @return
+	 * @throws ModelUpdateException
+	 * @throws ModelAccessException
+	 * @throws AlignmentException 
+	 */
 	@GenerateSTServiceController
-	public Response validateAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) throws ModelUpdateException, ModelAccessException {
+	public Response validateAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) 
+			throws ModelUpdateException, ModelAccessException {
 		OWLModel model = getOWLModel();
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
@@ -294,8 +318,15 @@ public class Alignment extends STServiceAdapter {
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
+	/**
+	 * Validates all the alignment adding the statements to the model
+	 * TODO: same problem of validateAlignment service
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws ModelUpdateException
+	 */
 	@GenerateSTServiceController
-	public Response validateAllAlignment() throws ModelAccessException, ModelUpdateException{
+	public Response validateAllAlignment() throws ModelAccessException, ModelUpdateException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
 		Element collElem = XMLHelp.newElement(dataElem, "collection");
@@ -322,8 +353,17 @@ public class Alignment extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Validates all the alignment with measure above the given threshold adding the statements to 
+	 * the model
+	 * TODO: same problem of validateAlignment service
+	 * @param threshold
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws ModelUpdateException
+	 */
 	@GenerateSTServiceController
-	public Response validateAllAbove(float treshold) throws ModelAccessException, ModelUpdateException{
+	public Response validateAllAbove(float threshold) throws ModelAccessException, ModelUpdateException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
 		Element collElem = XMLHelp.newElement(dataElem, "collection");
@@ -334,7 +374,7 @@ public class Alignment extends STServiceAdapter {
 		Collection<Cell> cellList = alignModel.listCells();
 		for (Cell cell : cellList) {
 			float measure = cell.getMeasure();
-			if (measure >= treshold) {
+			if (measure >= threshold) {
 				ARTURIResource entity1 = cell.getEntity1();
 				ARTURIResource entity2 = cell.getEntity2();
 				String relation = cell.getRelation();
@@ -353,6 +393,16 @@ public class Alignment extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Rejects the alignment
+	 * TODO: is correct? or we should mark the alignment as rejected in some way? 
+	 * @param entity1
+	 * @param entity2
+	 * @param relation
+	 * @return
+	 * @throws ModelUpdateException
+	 * @throws ModelAccessException
+	 */
 	@GenerateSTServiceController
 	public Response rejectAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) throws ModelUpdateException, ModelAccessException {
 		System.out.println("Rejecting triple:\nS: " + entity1 + "\nP: " + relation + "\nO: " + entity2);
@@ -361,6 +411,13 @@ public class Alignment extends STServiceAdapter {
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
+	/**
+	 * Rejects all the alignments
+	 * TODO same problem of rejectAlignment service
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws ModelUpdateException
+	 */
 	@GenerateSTServiceController
 	public Response rejectAllAlignment() throws ModelAccessException, ModelUpdateException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -385,8 +442,16 @@ public class Alignment extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Rejects all the alignments under the given threshold
+	 * TODO same problem of rejectAlignment service
+	 * @param threshold
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws ModelUpdateException
+	 */
 	@GenerateSTServiceController
-	public Response rejectAllUnder(float treshold) throws ModelAccessException, ModelUpdateException {
+	public Response rejectAllUnder(float threshold) throws ModelAccessException, ModelUpdateException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
 		Element collElem = XMLHelp.newElement(dataElem, "collection");
@@ -396,7 +461,7 @@ public class Alignment extends STServiceAdapter {
 		Collection<Cell> cellList = alignModel.listCells();
 		for (Cell cell : cellList) {
 			float measure = cell.getMeasure();
-			if (measure <= treshold) {
+			if (measure <= threshold) {
 				ARTURIResource entity1 = cell.getEntity1();
 				ARTURIResource entity2 = cell.getEntity2();
 				System.out.println("Rejecting alignment between " + entity1 + " and " + entity2);
@@ -412,6 +477,14 @@ public class Alignment extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Save the alignment with the performed changes and export as rdf file
+	 * @param oRes
+	 * @throws IOException
+	 * @throws ModelAccessException
+	 * @throws UnsupportedRDFFormatException
+	 * @throws ModelUpdateException
+	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Alignment/saveAlignment", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
 	public void saveAlignment(HttpServletResponse oRes) throws IOException, ModelAccessException, UnsupportedRDFFormatException, ModelUpdateException {
@@ -427,7 +500,11 @@ public class Alignment extends STServiceAdapter {
 		is.close();
 	}
 	
-	
+	/**
+	 * Remove the saved alignment from the session
+	 * @return
+	 * @throws ModelUpdateException
+	 */
 	@GenerateSTServiceController
 	public Response closeSession() throws ModelUpdateException {
 		String token = stServiceContext.getSessionToken();
