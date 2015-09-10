@@ -13,17 +13,17 @@ import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.ModelFactory;
+import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.Update;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
-import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfig;
@@ -56,7 +56,6 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -75,6 +74,7 @@ import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 
 @GenerateSTServiceController
@@ -130,10 +130,8 @@ public class CustomRanges extends STServiceAdapter {
 //			System.out.println("userPrompt: " + e.getKey() + " = " + e.getValue());
 //		}
 		try {
-			ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 			RDFModel rdfModel = getOWLModel();
-			CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-			codaCore.initialize(rdfModel, ontFact);
+			CODACore codaCore = getInitializedCodaCore(rdfModel);
 			CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(crEntryId);
 			if (crEntry.isTypeGraph()){
 				CustomRangeEntryGraph creGraph = crEntry.asCustomRangeEntryGraph();
@@ -198,19 +196,21 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws PRParserException
 	 * @throws ModelAccessException 
 	 * @throws RDFModelNotSetException 
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController
 	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
-			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException, RDFModelNotSetException {
+			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException, 
+			RDFModelNotSetException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
 		
-		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 		RDFModel rdfModel = getOWLModel();
-		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-		codaCore.initialize(rdfModel, ontFact);
+		CODACore codaCore = getInitializedCodaCore(rdfModel);
 		try {
 			//try to identify the CRE which has generated the reified resource
 			CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
@@ -281,177 +281,26 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns the CustomRangeEntryGraph that probably generated the reified resource.
-	 * If for the given property there is no CRE available returns null,
-	 * if there's just one CRE then return it, otherwise if there are multiple CRE returns the one 
-	 * which its PEARL fits better the given reified resource description. 
-	 * This choice in the last case is made through the following algorithm:
-	 * <ul>
-	 *  <li>Collect the perfect match candidates, namely the CREs which all the mandatory predicates
-	 * are valued in the resource</li>
-	 *  <li>If there is only one perfect candidate return that</li>
-	 *  <li>If there are multiple perfect candidates, return the one with more predicates</li>
-	 *   <ul>
-	 *    <li>If also in this case the candidates have the same number of matched mandatory predicates,
-	 *    return the one that has more total matched predicate (if multiple candidates returns the first)</li>
-	 *   </ul>
-	 *  <li>If there is no perfect candidate, return the one with more mandatory matched predicates</li>
-	 *   <ul>
-	 *    <li>If there is only one "best fit" candidate, return that</li>
-	 *    <li>If there are multiple best fit candidates, return the one with more total matched
-	 *    predicate (if multiple candidates, returns the first)</li>
-	 *   </ul>
-	 * </ul>
-	 * @param resource
-	 * @param predicate
-	 * @return
-	 * @throws UnavailableResourceException
-	 * @throws ProjectInconsistentException
-	 * @throws PRParserException
-	 * @throws ModelAccessException
-	 * @throws RDFModelNotSetException 
-	 */
-	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore) 
-			throws UnavailableResourceException, ProjectInconsistentException, PRParserException, 
-			ModelAccessException, RDFModelNotSetException{
-		RDFModel rdfModel = getOWLModel();
-		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
-		if (crEntries.isEmpty()){
-			return null;
-		} else if (crEntries.size() == 1){
-			return crEntries.iterator().next();
-		} else { //crEntries.size() > 1
-			Collection<CREMatchingStruct> creMatchStructs = new ArrayList<CREMatchingStruct>();
-			for (CustomRangeEntryGraph cre : crEntries){
-				creMatchStructs.add(new CREMatchingStruct(cre, resource, rdfModel, codaCore));
-			}
-			//look for perfect match with only mandatory predicates
-			Collection<CREMatchingStruct> perfectCandidates = new ArrayList<CREMatchingStruct>();
-			for (CREMatchingStruct cremStruct : creMatchStructs){
-				if (cremStruct.isPerfectMandatoryMatch())
-					perfectCandidates.add(cremStruct);
-			}
-			if (perfectCandidates.size() == 1){//if there's only one perfect CRE candidate return it
-				return perfectCandidates.iterator().next().getCustomRangeEntryGraph();
-			} else if (perfectCandidates.size() > 1){//multiple perfect candidates
-				//return the one with more mandatory preds
-				Collection<CREMatchingStruct> biggerPerfectCandidates = new ArrayList<CREMatchingStruct>();
-				int maxMandatoryPreds = 0;
-				for (CREMatchingStruct cremStruct : perfectCandidates){
-					if (cremStruct.getMandatoryPreds() == maxMandatoryPreds){
-						biggerPerfectCandidates.add(cremStruct);
-					} else if (cremStruct.getMandatoryPreds() > maxMandatoryPreds){
-						maxMandatoryPreds = cremStruct.getMandatoryPreds();
-						biggerPerfectCandidates.clear();
-						biggerPerfectCandidates.add(cremStruct);
-					}
-				}
-				if (biggerPerfectCandidates.size() == 1){
-					return biggerPerfectCandidates.iterator().next().getCustomRangeEntryGraph();
-				} else { //if there are more perfect match candidate with the same number of mandatory preds
-					//return the one with more total preds match
-					CREMatchingStruct bestCandidate = null;
-					int maxPredsMatch = 0;
-					for (CREMatchingStruct cremStruct : biggerPerfectCandidates){
-						if (cremStruct.getTotalPredsMatched() > maxPredsMatch){
-							maxPredsMatch = cremStruct.getTotalPredsMatched();
-							bestCandidate = cremStruct;
-						}
-					}
-					return bestCandidate.getCustomRangeEntryGraph();
-				}
-			} else {//perfectCandidate empty => no CRE with perfect match
-				//return the CRE with more matched mandatory preds
-				Collection<CREMatchingStruct> bestFitCandidates = new ArrayList<CREMatchingStruct>();
-				int maxMandatoryPreds = 0;
-				for (CREMatchingStruct cremStruct : creMatchStructs){
-					if (cremStruct.getMandatoryPredsMatched() == maxMandatoryPreds)
-						bestFitCandidates.add(cremStruct);
-					else if (cremStruct.getMandatoryPredsMatched() > maxMandatoryPreds){
-						bestFitCandidates.clear();
-						bestFitCandidates.add(cremStruct);
-					}
-				}
-				if (bestFitCandidates.size() == 1){
-					return bestFitCandidates.iterator().next().getCustomRangeEntryGraph();
-				} else { //if there are more candidate with the same number of mandatory preds matched
-					//return the one with more total preds match
-					CREMatchingStruct bestCandidate = null;
-					int maxPredsMatch = 0;
-					for (CREMatchingStruct cremStruct : bestFitCandidates){
-						if (cremStruct.getTotalPredsMatched() > maxPredsMatch){
-							maxPredsMatch = cremStruct.getTotalPredsMatched();
-							bestCandidate = cremStruct;
-						}
-					}
-					return bestCandidate.getCustomRangeEntryGraph();
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Private class useful to facilitate the research of a "better fit" CustomRangeEntryGraph
-	 * in getCREGraphSeed
-	 */
-	private class CREMatchingStruct {
-		private CustomRangeEntryGraph cre;
-		private boolean perfectMandatoryMatch;
-		private int nMandatoryPreds = 0;
-		private int nMandatoryPredsMatched = 0;
-		private int nTotalPredsMatched = 0;
-		
-		public CREMatchingStruct(CustomRangeEntryGraph creGraph, ARTResource reifRes, RDFModel model, CODACore codaCore)
-				throws PRParserException, ModelAccessException, RDFModelNotSetException{
-			this.cre = creGraph;
-			Collection<String> mandatoryPreds = creGraph.getGraphPredicates(codaCore, true, true);
-			nMandatoryPreds = mandatoryPreds.size();
-			for (String pred : mandatoryPreds){
-				ARTNodeIterator itValues = model.listValuesOfSubjPredPair(reifRes, model.createURIResource(pred), false, getWorkingGraph());
-				if (itValues.hasNext())
-					nMandatoryPredsMatched++;
-			}
-			perfectMandatoryMatch = (mandatoryPreds.size() == nMandatoryPredsMatched);
-			Collection<String> allPreds = creGraph.getGraphPredicates(codaCore, false, true);
-			for (String pred : allPreds){
-				ARTNodeIterator itValues = model.listValuesOfSubjPredPair(reifRes, model.createURIResource(pred), false, getWorkingGraph());
-				if (itValues.hasNext())
-					nTotalPredsMatched++;
-			}
-		}
-		
-		public CustomRangeEntryGraph getCustomRangeEntryGraph(){
-			return this.cre;
-		}
-		public boolean isPerfectMandatoryMatch(){
-			return perfectMandatoryMatch;
-		}
-		public int getMandatoryPreds(){
-			return nMandatoryPreds;
-		}
-		public int getMandatoryPredsMatched(){
-			return nMandatoryPredsMatched;
-		}
-		public int getTotalPredsMatched(){
-			return nTotalPredsMatched;
-		}
-	}
-	
-	/**
-	 * Removes a reified resource and all the triples where it appears as subject 
+	 * Removes a reified resource according to the CustomRangeEntryGraph that generated it
 	 * @param subject
 	 * @param predicate
 	 * @param resource
 	 * @return
 	 * @throws ModelUpdateException
-	 * @throws MalformedQueryException 
-	 * @throws ModelAccessException 
-	 * @throws UnsupportedQueryLanguageException 
-	 * @throws QueryEvaluationException 
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 * @throws UnavailableResourceException
+	 * @throws ProjectInconsistentException
+	 * @throws PRParserException
+	 * @throws RDFModelNotSetException
 	 */
 	@GenerateSTServiceController
 	public Response removeReifiedResource(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource)
-			throws ModelUpdateException, UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException{
+			throws ModelUpdateException, UnsupportedQueryLanguageException, ModelAccessException,
+			MalformedQueryException, QueryEvaluationException, UnavailableResourceException, 
+			ProjectInconsistentException, PRParserException, RDFModelNotSetException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		
 		logger.debug("deleting reified resource " + resource.getNominalValue());
@@ -459,47 +308,77 @@ public class CustomRanges extends STServiceAdapter {
 		RDFModel model = getOWLModel();
 		//remove resource as object in the triple <s, p, o> for the given subject and predicate
 		model.deleteTriple(subject, predicate, resource, getWorkingGraph());
-		deleteResourceOnCascade(resource);
-		
+
+		CODACore codaCore = getInitializedCodaCore(model);
+		CustomRangeEntryGraph cre = getCREGraphSeed(resource, predicate, codaCore);
+		if (cre == null) { //
+			/* If property hasn't a CRE simply delete all triples where resource occurs.
+			 * note: this case should never be verified cause this service should be called only 
+			 * when the predicate has a CustomRangeEntry */
+			model.deleteTriple(NodeFilters.ANY, NodeFilters.ANY, resource, getWorkingGraph());
+			model.deleteTriple(resource, NodeFilters.ANY, NodeFilters.ANY, getWorkingGraph());
+		} else { //otherwise remove with a SPARQL delete the graph defined by the CRE graph
+			System.out.println(cre.getId()+"\n\n");
+			StringBuilder queryBuilder = new StringBuilder();
+			queryBuilder.append("delete { ");
+			queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));
+			queryBuilder.append(" } where { ");
+			queryBuilder.append("bind(<" + resource.getURI() + "> as " + cre.getEntryPointPlaceholder(codaCore) + ") ");
+			queryBuilder.append(cre.getGraphSectionAsString(codaCore, true));
+			queryBuilder.append(" }");
+			Update update = model.createUpdateQuery(queryBuilder.toString());
+			update.evaluate(false);
+		}
 		return response;
 	}
 	
 	/**
-	 * Deletes a resource only if this 
+	 * Returns the CustomRangeEntryGraph that probably generated the reified resource.
+	 * If for the given property there is no CRE available returns null,
+	 * if there's just one CRE then return it, otherwise if there are multiple CRE returns the one 
+	 * which its PEARL fits better the given reified resource description. 
 	 * @param resource
-	 * @param subject
+	 * @param predicate
+	 * @param codaCore
+	 * @return
+	 * @throws PRParserException
+	 * @throws RDFModelNotSetException
 	 * @throws UnsupportedQueryLanguageException
 	 * @throws ModelAccessException
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
-	 * @throws ModelUpdateException 
 	 */
-	private void deleteResourceOnCascade(ARTNode resource) 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException, ModelUpdateException{
-		RDFModel model = getOWLModel();
-		GraphQuery gq = model.createGraphQuery("describe <" + resource + ">");
-		ARTStatementIterator itStats = gq.evaluate(false);
-		Collection<ARTStatement> stats = RDFIterators.getCollectionFromIterator(itStats);
-		//check if resource can be deleted
-		for (ARTStatement s : stats){
-			ARTResource subj = s.getSubject();
-			//avoid deletion of resource if this appears in some triple not as subject
-			if (!subj.equals(resource)){
-				return;
+	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore)
+			throws PRParserException, RDFModelNotSetException, UnsupportedQueryLanguageException, 
+			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
+		if (crEntries.isEmpty()){
+			return null;
+		} else if (crEntries.size() == 1){
+			return crEntries.iterator().next();
+		} else { //crEntries.size() > 1
+			//return the CRE whose graph section matches more triples in the model
+			OWLModel model = getOWLModel();
+			int maxStats = 0;
+			CustomRangeEntryGraph bestCre = null;
+			for (CustomRangeEntryGraph cre : crEntries) {
+				//creating the construct query
+				StringBuilder queryBuilder = new StringBuilder();
+				queryBuilder.append("construct { ");
+				queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));
+				queryBuilder.append(" } where { ");
+				queryBuilder.append("bind(<" + resource.getNominalValue() + "> as " + cre.getEntryPointPlaceholder(codaCore) + ") ");
+				queryBuilder.append(cre.getGraphSectionAsString(codaCore, true));
+				queryBuilder.append(" }");
+				String query = queryBuilder.toString();
+				GraphQuery gq = model.createGraphQuery(query);
+				int nStats = Iterators.size(gq.evaluate(false));
+				if (nStats > maxStats) {
+					maxStats = nStats;
+					bestCre = cre;
+				}
 			}
-		}
-		logger.debug("deleting on cascade " + resource.getNominalValue());
-		//delete resource and its description
-		for (ARTStatement s : stats){
-			logger.debug("Deleting triple:" +
-					"\nS: " + s.getSubject().getNominalValue() +
-					"\nP: " + s.getPredicate().getNominalValue() +
-					"\nO: " + s.getObject().getNominalValue());
-			model.deleteStatement(s, getWorkingGraph());
-			if (s.getObject().isResource() && !s.getObject().equals(resource)) {
-				logger.debug(s.getObject() + " is in turn reifiable.");
-				deleteResourceOnCascade(s.getObject());
-			}
+			return bestCre;
 		}
 	}
 	
@@ -507,9 +386,7 @@ public class CustomRanges extends STServiceAdapter {
 	public Response executeURIConverter(String converter, @Optional String value) throws ComponentProvisioningException, 
 			ConverterException, UnavailableResourceException, ProjectInconsistentException {
 		String result = "";
-		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-		codaCore.initialize(getOWLModel(), ontFact);
+		CODACore codaCore = getInitializedCodaCore(getOWLModel());
 		if (value != null){
 			result = codaCore.executeURIConverter(converter, value).getNominalValue();
 		} else {
@@ -526,9 +403,7 @@ public class CustomRanges extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response executeLiteralConverter(String converter, String value, @Optional String datatype, @Optional String lang) 
 			throws ComponentProvisioningException, ConverterException, UnavailableResourceException, ProjectInconsistentException {
-		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-		codaCore.initialize(getOWLModel(), ontFact);
+		CODACore codaCore = getInitializedCodaCore(getOWLModel());
 		if (datatype != null && datatype.equals(""))
 			datatype = null;
 		if (lang != null && lang.equals(""))
@@ -848,6 +723,14 @@ public class CustomRanges extends STServiceAdapter {
 		crConfig.removeConfigEntryFromProperty(property.getURI());
 		crConfig.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
+		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
+				getProject().getOntologyManagerImplID()).createModelFactory();
+		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
+		codaCore.initialize(rdfModel, ontFact);
+		return codaCore;
 	}
 
 }

@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -200,7 +201,69 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			}
 		}
 		return form;
-	} 
+	}
+	
+	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
+		String entryPoint = "";
+		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
+		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
+		if (prRulesIt.hasNext()){
+			ProjectionRule projRule = prRulesIt.next();
+			Iterator<GraphElement> graphListIt = projRule.getGraphList().iterator();
+			if (graphListIt.hasNext()) {
+				entryPoint = graphListIt.next().asGraphStruct().getSubject().getValueAsString();
+			}
+		}
+		return entryPoint;
+	}
+	
+	/**
+	 * Returns the serialization of the graph section of the PEARL in the current CustomRangeEntry.
+	 * @param codaCore
+	 * @param optional specify if the <code>OPTIONAL {}</code> has to be serialized. Note that
+	 * if is set to false, it doesn't mean that the content of the OPTIONAL is omitted, but only
+	 * that the keyword <code>OPTIONAL</code> and the curly braces <code>{}</code> are omitted. 
+	 * @return
+	 * @throws PRParserException
+	 * @throws RDFModelNotSetException
+	 */
+	public String getGraphSectionAsString(CODACore codaCore, boolean optional) 
+			throws PRParserException, RDFModelNotSetException {
+		StringBuilder sb = new StringBuilder();
+		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
+		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
+		if (prRulesIt.hasNext()){
+			ProjectionRule projRule = prRulesIt.next();
+			serializeGraphList(projRule.getGraphList(), sb, optional);
+		}
+		return sb.toString();
+	}
+	
+	/*
+	 * Serializes (recursively) a GraphElement collection
+	 */
+	private void serializeGraphList(Collection<GraphElement> graphList, StringBuilder sb, boolean opt) {
+		for (GraphElement graphElem : graphList) {
+			if (!graphElem.isOptionalGraphStruct()) {
+				GraphStruct gs = graphElem.asGraphStruct();
+				sb.append(gs.getSubject().getValueAsString() + " " + 
+						gs.getPredicate().getValueAsString() + " " + 
+						gs.getObject().getValueAsString() + " . ");
+			} else { //Optional
+				if (opt)
+					sb.append("OPTIONAL { ");
+				OptionalGraphStruct optGS = graphElem.asOptionalGraphStruct();
+				//call serializeGraphList recursively
+				serializeGraphList(optGS.getOptionalTriples(), sb, opt);
+				if (opt)
+					sb.append("} ");
+			}
+		}
+	}
 
 	/**
 	 * Fills a CAS with the value specified in the given userPromptMap, then executes CODA with the 
