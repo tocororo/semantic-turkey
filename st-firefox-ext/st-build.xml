@@ -39,6 +39,7 @@
 	<!-- === Package The Distribution XPI ================================================= -->
 
 	<target name="xpi_client" depends="dist" description="Create the XPI extension">
+		<zip zipfile="../target/${stname}-${project.version}-${builddate}.xpi" basedir="../${dist.client}" includes="**" />
 		<zip zipfile="../target/${stname}-${stpom.version}-${builddate}_b${buildversion}.xpi" basedir="../${dist.client}" includes="**" />
 	</target>
 	

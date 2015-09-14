@@ -213,7 +213,7 @@
 							<goal>single</goal>
 						</goals>
 						<configuration>
-							<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
+							<finalName>${project.parent.artifactId}-${project.parent.version}-${maven.build.timestamp}</finalName>
 							<outputDirectory>
 								${project.parent.basedir}/target/st-karaf
 							</outputDirectory>
