@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.data.access;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -25,6 +26,38 @@ public class ResourceLocator {
 
 	public static final UnknownResourcePosition UNKNOWN_RESOURCE_POSITION = new UnknownResourcePosition();
 
+	/**
+	 * Locate a resource. The locator implements the following algorithm:
+	 * <ol>
+	 * <li>
+	 * if <code>resource</code> is a bnode ({@link ARTNode#isBlank()} returns <code>true</code>), then assumes
+	 * it belongs to the provided project</li>
+	 * <li>
+	 * otherwise; <code>resource</code> is a uri, the do the following
+	 * <ol>
+	 * <li>
+	 * if the namespace of <code>resource</code> is equal to the default namespace of <code>project</code> or
+	 * <code>resource</code> is defined in any graph of <code>project</code>, then assumes that
+	 * <code>resource</code> belongs to <code>project</code></li>
+	 * <li>
+	 * for each open project <code>p</code>, if the namespace of <code>resource</code> is equal to the default
+	 * namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs to <code>p</code></li>
+	 * <li>
+	 * attempt to locate <code>resource</code> in a remote dataset (see
+	 * {@link DatasetMetadataRepository#findDatasetForResource(ARTURIResource)}</li>
+	 * <li>
+	 * otherwise; states that the position is unknown</li>
+	 * </ol>
+	 * </li> </ol>
+	 * 
+	 * @param project
+	 *            the current project
+	 * @param resource
+	 *            the resource to be located
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws ProjectAccessException
+	 */
 	public ResourcePosition locateResource(Project<?> project, ARTResource resource)
 			throws ModelAccessException, ProjectAccessException {
 

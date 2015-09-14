@@ -6,6 +6,9 @@ import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -62,15 +65,15 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	private AbstractLabelBasedRenderingEngineConfiguration config;
 	private boolean takeAll;
 	private List<String> languages;
-	
+
 	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config) {
 		this.config = config;
 		this.takeAll = false;
 		this.languages = new ArrayList<String>();
-		
+
 		for (String langTag : config.languages.split(",")) {
 			langTag = langTag.trim();
-			
+
 			if (langTag.equals("*")) {
 				this.takeAll = true;
 				languages.clear();
@@ -79,53 +82,46 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				this.languages.add(langTag);
 			}
 		}
-		
+
 	}
 
 	@Override
-	public Map<ARTResource, String> render(Project<?> project,
-			ResourcePosition subjectPosition, ARTResource subject,
-			Collection<ARTStatement> statements,
-			Collection<ARTResource> resources,
-			Collection<TupleBindings> bindings, String varPrefix)
-			throws ModelAccessException, DataAccessException {
-
-		Set<ARTURIResource> uriresourceToBeRendered = new HashSet<ARTURIResource>();
-
-		for (ARTResource r : resources) {
-			if (r.isURIResource()) {
-				uriresourceToBeRendered.add(r.asURIResource());
-			}
-		}
-
+	public Map<ARTResource, String> render(Project<?> project, ResourcePosition subjectPosition,
+			ARTResource subject, OWLModel statements, Collection<ARTResource> resources,
+			Collection<TupleBindings> bindings, String varPrefix) throws ModelAccessException,
+			DataAccessException {
 
 		Multimap<ARTResource, ARTLiteral> labelBuilding = HashMultimap.create();
 
-		///////////////////////////////
-		//// Process subject statements
-		
+		// /////////////////////////////
+		// // Process subject statements
+
 		Set<ARTURIResource> plainURIs = getPlainURIs();
-		
+
 		if (!plainURIs.isEmpty()) {
-			for (ARTStatement stmt : statements) {
-				if (resources.contains(stmt.getSubject()) && plainURIs.contains(stmt.getPredicate())) {
-					ARTNode resourceNode = stmt.getSubject();
-					ARTNode labelNode = stmt.getObject();
-	
-					if (labelNode.isLiteral()) {
-						ARTLiteral labelLiteral = labelNode.asLiteral();
-	
-						if (takeAll || languages.contains(labelLiteral.getLanguage())) {
-							labelBuilding.put(resourceNode.asResource(), labelLiteral);
+			try (ARTStatementIterator it = statements.listStatements(NodeFilters.ANY, NodeFilters.ANY,
+					NodeFilters.ANY, false, NodeFilters.ANY)) {
+				while (it.streamOpen()) {
+					ARTStatement stmt = it.getNext();
+					if (resources.contains(stmt.getSubject()) && plainURIs.contains(stmt.getPredicate())) {
+						ARTNode resourceNode = stmt.getSubject();
+						ARTNode labelNode = stmt.getObject();
+
+						if (labelNode.isLiteral()) {
+							ARTLiteral labelLiteral = labelNode.asLiteral();
+
+							if (takeAll || languages.contains(labelLiteral.getLanguage())) {
+								labelBuilding.put(resourceNode.asResource(), labelLiteral);
+							}
 						}
 					}
 				}
 			}
 		}
-		
-		///////////////////////////
-		//// Process tuple bindings
-		
+
+		// /////////////////////////
+		// // Process tuple bindings
+
 		String objectLabelVar = varPrefix + "_object_label";
 		String subjectLabelVar = varPrefix + "_subject_label";
 
@@ -175,6 +171,6 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 		return resource2rendering;
 	}
-	
+
 	protected abstract Set<ARTURIResource> getPlainURIs();
 }

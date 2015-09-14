@@ -1,10 +1,11 @@
 package it.uniroma2.art.semanticturkey.data.role;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenComponents_Predicate;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDF;
@@ -19,8 +20,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.collect.Collections2;
 
 public class RoleRecognitionOrchestrator {
 
@@ -41,7 +40,7 @@ public class RoleRecognitionOrchestrator {
 	}
 
 	public Map<ARTResource, RDFResourceRolesEnum> computeRoleOf(Project<?> project,
-			ResourcePosition subjectPosition, ARTResource subject, Collection<ARTStatement> statements,
+			ResourcePosition subjectPosition, ARTResource subject, OWLModel statements,
 			Collection<ARTResource> resources, Collection<TupleBindings> bindings, String varPrefix)
 			throws ModelAccessException, DataAccessException {
 
@@ -55,11 +54,11 @@ public class RoleRecognitionOrchestrator {
 
 		// ///////////////////////////
 		// Process subject statements
-		for (ARTStatement stmt : Collections2.filter(statements, StatementWithAnyOfGivenComponents_Predicate
-				.getFilter(NodeFilters.ANY, RDF.Res.TYPE, NodeFilters.ANY))) {
-
-			processTypeAssignment(stmt.getSubject(), stmt.getObject().asResource(), result);
-			
+		try (ARTStatementIterator stmtIt = statements.listStatements(NodeFilters.ANY, RDF.Res.TYPE, NodeFilters.ANY, true)) {
+			while (stmtIt.streamOpen()) {
+				ARTStatement stmt = stmtIt.getNext();
+				processTypeAssignment(stmt.getSubject(), stmt.getObject().asResource(), result);
+			}
 		}
 
 		// ///////////////////////

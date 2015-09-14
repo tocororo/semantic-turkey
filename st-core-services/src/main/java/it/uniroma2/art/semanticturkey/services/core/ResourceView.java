@@ -24,6 +24,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
@@ -36,11 +37,14 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.LinkedDataResolver;
 import it.uniroma2.art.owlart.models.ModelFactory;
+import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.TripleQueryModelHTTPConnection;
+import it.uniroma2.art.owlart.models.impl.OWLModelImpl;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
+import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.QueryLanguage;
 import it.uniroma2.art.owlart.query.TupleBindings;
@@ -52,6 +56,7 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
@@ -115,16 +120,20 @@ import com.google.common.collect.Iterators;
 @Component
 public class ResourceView extends STServiceAdapter {
 
+	public static final ARTURIResource INFERENCE_GRAPH = VocabUtilities.nodeFactory
+			.createURIResource("http://semanticturkey/inference-graph");
+
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
 
 	@Autowired
 	private ResourceLocator resourceLocator;
-	
+
 	@Autowired
-	private StatementConsumerProvider statementConsumerProvider ;
+	private StatementConsumerProvider statementConsumerProvider;
 
 	@GenerateSTServiceController
-	public Response getResourceView(ARTResource resource, @Optional ResourcePosition resourcePosition) throws Exception {
+	public Response getResourceView(ARTResource resource, @Optional ResourcePosition resourcePosition)
+			throws Exception {
 		// ARTResource[] userNamedGraphs = getUserNamedGraphs();
 		ARTResource workingGraph = getWorkingGraph();
 
@@ -133,21 +142,19 @@ public class ResourceView extends STServiceAdapter {
 		if (resourcePosition == null) {
 			resourcePosition = resourceLocator.locateResource(project, resource);
 		}
-		
-		StatementCollector stmtCollector = new StatementCollector();
+
+		OWLModel stmtCollector = createEmptyOWLModel();
 
 		retrieveStatements(resource, resourcePosition, stmtCollector);
 
-		logger.debug("Requested view for resource {} whose position is {}", resource,
-				resourcePosition);
+		logger.debug("Requested view for resource {} whose position is {}", resource, resourcePosition);
 
 		// ************************************
 		// Step X : Prepare subject ST resource
 
 		// A resource is editable iff it is a locally defined resource
 		boolean subjectResourceEditable = (resourcePosition instanceof LocalResourcePosition)
-				&& stmtCollector.hasStatement(resource, NodeFilters.ANY, NodeFilters.ANY,
-						workingGraph);
+				&& stmtCollector.isLocallyDefined(resource, workingGraph);
 
 		STRDFResource stSubjectResource = STRDFNodeFactory.createSTRDFResource(resource,
 				RDFResourceRolesEnum.undetermined, subjectResourceEditable, null);
@@ -157,8 +164,8 @@ public class ResourceView extends STServiceAdapter {
 		// Step X: Renderize resources & compute role
 
 		Collection<ARTResource> resourcesToBeRendered = RDFIterators.getCollectionFromIterator(RDFIterators
-				.filterResources(RDFIterators.listObjects(RDFIterators
-						.createARTStatementIterator(stmtCollector.getStatements().iterator()))));
+				.filterResources(RDFIterators.listObjects(stmtCollector.listStatements(NodeFilters.ANY,
+						NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.ANY))));
 		resourcesToBeRendered.add(resource);
 
 		RenderingEngine renderingOrchestrator = RenderingOrchestrator.getInstance();
@@ -172,24 +179,22 @@ public class ResourceView extends STServiceAdapter {
 
 		String gp_literalForm = "optional {?resource a <http://www.w3.org/2008/05/skos-xl#Label> . ?resource <http://www.w3.org/2008/05/skos-xl#literalForm> ?resource_xlabel_literalForm . } optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?object_xlabel_literalForm}";
 
-		String gp = String.format(
-				"{{?resource ?predicate ?object . %1$s} {%2$s union %3$s}}",gp_literalForm,gp_rendering, gp_role);
+		String gp = String.format("{{?resource ?predicate ?object . %1$s} {%2$s union %3$s}}",
+				gp_literalForm, gp_rendering, gp_role);
 
 		logger.debug("graph pattern for resource {} is {}", resource, gp);
 
 		Collection<TupleBindings> bindings = matchGraphPattern(resourcePosition, resource, gp);
 
 		Map<ARTResource, String> resource2Rendering = renderingOrchestrator.render(project, resourcePosition,
-				resource, stmtCollector.getStatements(), resourcesToBeRendered, bindings, "rendering_");
+				resource, stmtCollector, resourcesToBeRendered, bindings, "rendering_");
 
 		logger.debug("graph pattern: {}", gp);
 		logger.debug("resources to be rendered: {}", resourcesToBeRendered);
 		logger.debug("resource2Rendering: {}", resource2Rendering);
-		
-		
+
 		Map<ARTResource, RDFResourceRolesEnum> resource2Role = roleRecognitionOrchestrator.computeRoleOf(
-				project, resourcePosition, resource, stmtCollector.getStatements(), resourcesToBeRendered,
-				bindings, "role_");
+				project, resourcePosition, resource, stmtCollector, resourcesToBeRendered, bindings, "role_");
 
 		Map<ARTResource, ARTLiteral> xLabel2LiteralForm = collectXLabels(bindings);
 
@@ -207,24 +212,24 @@ public class ResourceView extends STServiceAdapter {
 		} else {
 			subjectRole = RDFResourceRolesEnum.undetermined;
 		}
-		
+
 		if (subjectRole == RDFResourceRolesEnum.xLabel) {
 			ARTLiteral lit = xLabel2LiteralForm.get(resource);
-			
+
 			if (lit != null) {
 				stSubjectResource.setRendering(lit.getLabel());
-				
+
 				String lang = lit.getLanguage();
-				
+
 				if (lang != null) {
 					stSubjectResource.setInfo("lang", lang);
 				}
 			}
 		}
 
-		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource, resourcePosition, subjectRole,
-				stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
-
+		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource,
+				resourcePosition, subjectRole, stmtCollector, resource2Role, resource2Rendering,
+				xLabel2LiteralForm);
 
 		// ****************************************
 		// Step X : Produces the OLD-style response
@@ -247,22 +252,143 @@ public class ResourceView extends STServiceAdapter {
 
 	}
 
+	/**
+	 * Retrieves the statements about <code>resource</code> and places them inside <code>stmtCollector</code>.
+	 * <p>
+	 * The retrieval mechanism depends on the <code>position</code> of the resource, which may be either an
+	 * open local project or a remote dataset (with or without a SPARQL endpoint).
+	 * </p>
+	 * <p>
+	 * In case of local projects the statements will be differentiated between different graphs and inferred
+	 * statements will be properly identified, while in all other cases they are simply put in one graph. The
+	 * inferred statements as well as all statements in case of remote datasets are put in the graph
+	 * {@link #INFERENCE_GRAPH}.
+	 * </p>
+	 * 
+	 * @param resource
+	 * @param position
+	 * @param stmtCollector
+	 * @throws ModelAccessException
+	 * @throws ModelCreationException
+	 * @throws UnavailableResourceException
+	 * @throws ProjectInconsistentException
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 * @throws MalformedURLException
+	 * @throws IOException
+	 * @throws ModelUpdateException
+	 */
+	private void retrieveStatements(ARTResource resource, ResourcePosition position, RDFModel stmtCollector)
+			throws ModelAccessException, ModelCreationException, UnavailableResourceException,
+			ProjectInconsistentException, UnsupportedQueryLanguageException, MalformedQueryException,
+			QueryEvaluationException, MalformedURLException, IOException, ModelUpdateException {
+		if (position instanceof LocalResourcePosition) {
+			logger.debug("Retrieving statements for resource {} locally", resource);
+			RDFModel model = ((LocalResourcePosition) position).getProject().getOntModel();
+			ARTStatementIterator it = model.listStatements(resource, NodeFilters.ANY, NodeFilters.ANY, false,
+					NodeFilters.ANY);
+			try {
+				while (it.streamOpen()) {
+					ARTStatement stmt = it.getNext();
+					stmtCollector.addStatement(stmt);
+				}
+			} finally {
+				it.close();
+			}
+
+			GraphQuery describeQuery = model.createGraphQuery("describe " + RDFNodeSerializer.toNT(resource));
+			it = describeQuery.evaluate(true);
+			try {
+				while (it.streamOpen()) {
+					ARTStatement stmt = it.getNext();
+					if (!stmtCollector.hasStatement(stmt, false, NodeFilters.ANY)) {
+						stmtCollector.addTriple(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
+								INFERENCE_GRAPH);
+					}
+				}
+			} finally {
+				it.close();
+			}
+
+		} else if (position instanceof RemoteResourcePosition) {
+			DatasetMetadata meta = ((RemoteResourcePosition) position).getDatasetMetadata();
+
+			String sparqlEndpoint = meta.getSparqlEndpoint();
+
+			if (sparqlEndpoint != null) {
+				logger.debug("Retrieving statements for resource {} via SPARQL", resource);
+
+				TripleQueryModelHTTPConnection conn = getCurrentModelFactory().loadTripleQueryHTTPConnection(
+						sparqlEndpoint);
+
+				GraphQuery describeQuery = conn.createGraphQuery(QueryLanguage.SPARQL, "describe "
+						+ RDFNodeSerializer.toNT(resource), null);
+				try {
+					ARTStatementIterator it = describeQuery.evaluate(true);
+					try {
+						while (it.streamOpen()) {
+							ARTStatement stmt = it.getNext();
+							if (!stmtCollector.hasStatement(stmt, false, NodeFilters.ANY)) {
+								stmtCollector.addTriple(stmt.getSubject(), stmt.getPredicate(),
+										stmt.getObject(), INFERENCE_GRAPH);
+							}
+						}
+					} finally {
+						it.close();
+					}
+				} finally {
+					conn.disconnect();
+				}
+			} else if (meta.isDereferenceable()) {
+				logger.debug("Retrieving statements for resource {} via dereferencing", resource);
+
+				LinkedDataResolver resolver = getCurrentModelFactory().loadLinkedDataResolver();
+
+				if (resource.isURIResource()) {
+					Collection<ARTStatement> retrievedStatements = resolver.lookup(resource.asURIResource());
+
+					for (ARTStatement stmt : retrievedStatements) {
+						stmtCollector.addTriple(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
+								INFERENCE_GRAPH);
+					}
+
+				}
+
+			}
+		} else {
+			logger.debug("Retrieving statements for resource {} via dereferencing", resource);
+			LinkedDataResolver resolver = getCurrentModelFactory().loadLinkedDataResolver();
+
+			if (resource.isURIResource()) {
+				Collection<ARTStatement> retrievedStatements = resolver.lookup(resource.asURIResource());
+
+				for (ARTStatement stmt : retrievedStatements) {
+					stmtCollector.addTriple(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
+							INFERENCE_GRAPH);
+				}
+
+			}
+
+		}
+	}
+
 	private Map<ARTResource, ARTLiteral> collectXLabels(Collection<TupleBindings> bindings) {
-		
-		String [] subjectVariables = {"resource", "object"};
-		
-		String [] xlabelVariables = new String[subjectVariables.length];
-		
-		for (int i = 0 ; i < subjectVariables.length ; i++) {
+
+		String[] subjectVariables = { "resource", "object" };
+
+		String[] xlabelVariables = new String[subjectVariables.length];
+
+		for (int i = 0; i < subjectVariables.length; i++) {
 			xlabelVariables[i] = subjectVariables[i] + "_xlabel_literalForm";
 		}
-		
+
 		Map<ARTResource, ARTLiteral> result = new HashMap<ARTResource, ARTLiteral>();
 		for (TupleBindings b : bindings) {
-			for (int i = 0 ; i < subjectVariables.length ; i++) {
+			for (int i = 0; i < subjectVariables.length; i++) {
 				String subjVar = subjectVariables[i];
 				String xLabelVar = xlabelVariables[i];
-				
+
 				if (b.hasBinding(xLabelVar)) {
 					ARTNode subject = b.getBoundValue(subjVar);
 					ARTNode literalForm = b.getBoundValue(xLabelVar);
@@ -273,57 +399,67 @@ public class ResourceView extends STServiceAdapter {
 
 						result.put(xLabel, literalFormAsLiteral);
 					}
-				}				
+				}
 			}
 		}
 
 		return result;
 	}
 
-	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource, ResourcePosition resourcePosition,
-			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
+	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource,
+			ResourcePosition resourcePosition, RDFResourceRolesEnum resourceRole, OWLModel stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering, Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws DOMException, ModelAccessException {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
-		
-		for (StatementConsumer stmtConsumer : statementConsumerProvider.getTemplateForResourceRole(resourceRole)) {
-			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(getProject(), resource, resourcePosition, resourceRole, stmtCollector, resource2Role, resource2Rendering, xLabel2LiteralForm);
-		
+
+		StatementCollector newCollector = new StatementCollector();
+
+		try (ARTStatementIterator it = stmtCollector.listStatements(NodeFilters.ANY, NodeFilters.ANY,
+				NodeFilters.ANY, false, NodeFilters.ANY)) {
+			while (it.streamOpen()) {
+				ARTStatement stmt = it.getNext();
+				newCollector.addStatement(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
+						stmt.getNamedGraph());
+			}
+		}
+
+		for (StatementConsumer stmtConsumer : statementConsumerProvider
+				.getTemplateForResourceRole(resourceRole)) {
+			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(
+					getProject(), resource, resourcePosition, resourceRole, newCollector, resource2Role,
+					resource2Rendering, xLabel2LiteralForm);
+
 			result.putAll(newResults);
 		}
-		
+
 		return result;
 	}
 
-	// TODO: implement a converter for ResourcePosition
 	@GenerateSTServiceController
-	public Response getLexicalizationProperties(@Optional ARTResource resource, @Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException {
+	public Response getLexicalizationProperties(@Optional ARTResource resource,
+			@Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException {
 		if (resourcePosition == null) {
-			resourcePosition = resource != null ? resourceLocator.locateResource(getProject(), resource) : ResourceLocator.UNKNOWN_RESOURCE_POSITION;
+			resourcePosition = resource != null ? resourceLocator.locateResource(getProject(), resource)
+					: ResourceLocator.UNKNOWN_RESOURCE_POSITION;
 		}
-			
+
 		Collection<STRDFURI> lexicalizationProperties = STRDFNodeFactory.createEmptyURICollection();
 		for (ARTURIResource pred : getLexicalizationPropertiesHelper(resource, resourcePosition)) {
-			STRDFURI stPred = STRDFNodeFactory
-					.createSTRDFURI(
-							pred,
-							pred.getNamespace().equals(
-											SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
-											: RDFResourceRolesEnum.annotationProperty,
-							true,
-							getOWLModel().getQName(pred.getURI()));
+			STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(pred,
+					pred.getNamespace().equals(SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
+							: RDFResourceRolesEnum.annotationProperty, true,
+					getOWLModel().getQName(pred.getURI()));
 			lexicalizationProperties.add(stPred);
 		}
 
-		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		RDFXMLHelp.addRDFNodes(response.getDataElement(), lexicalizationProperties);
-		
+
 		return response;
 	}
-	
+
 	// TODO place this method into a better place
 	public static void minimizeDomainRanges(List<STRDFNode> typeList) {
 		// @author starred
@@ -359,10 +495,11 @@ public class ResourceView extends STServiceAdapter {
 
 		}
 	}
-	
+
 	// TODO place this method into a better place
-	public static List<ARTURIResource> getLexicalizationPropertiesHelper(ARTResource resource, ResourcePosition resourcePosition) throws ModelAccessException {
-		
+	public static List<ARTURIResource> getLexicalizationPropertiesHelper(ARTResource resource,
+			ResourcePosition resourcePosition) throws ModelAccessException {
+
 		if (resourcePosition instanceof LocalResourcePosition) {
 			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
 			RDFModel ontModel = hostingProject.getOntModel();
@@ -374,14 +511,15 @@ public class ResourceView extends STServiceAdapter {
 				return Arrays.asList(RDFS.Res.LABEL);
 			}
 		}
-		
-		return Arrays.asList(RDFS.Res.LABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL, SKOS.Res.HIDDENLABEL);
+
+		return Arrays.asList(RDFS.Res.LABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL,
+				SKOSXL.Res.HIDDENLABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL, SKOS.Res.HIDDENLABEL);
 	}
 
-	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition, ARTResource resource, String gp)
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
-			QueryEvaluationException, UnavailableResourceException, ProjectInconsistentException,
-			ModelCreationException {
+	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition,
+			ARTResource resource, String gp) throws UnsupportedQueryLanguageException, ModelAccessException,
+			MalformedQueryException, QueryEvaluationException, UnavailableResourceException,
+			ProjectInconsistentException, ModelCreationException {
 
 		if (resourcePosition instanceof LocalResourcePosition) {
 			logger.debug("Matching pattern against local project: {}",
@@ -426,99 +564,28 @@ public class ResourceView extends STServiceAdapter {
 		return Collections.emptyList();
 	}
 
-	private void retrieveStatements(ARTResource resource, ResourcePosition position,
-			StatementCollector collector) throws ModelAccessException, ModelCreationException,
-			UnavailableResourceException, ProjectInconsistentException, UnsupportedQueryLanguageException,
-			MalformedQueryException, QueryEvaluationException, MalformedURLException, IOException {
-		if (position instanceof LocalResourcePosition) {
-			logger.debug("Retrieving statements for resource {} locally", resource);
-			RDFModel model = ((LocalResourcePosition)position).getProject().getOntModel();
-			ARTStatementIterator it = model.listStatements(resource, NodeFilters.ANY, NodeFilters.ANY, false,
-					NodeFilters.ANY);
-			try {
-				while (it.streamOpen()) {
-					ARTStatement stmt = it.getNext();
-					collector.addStatement(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
-							stmt.getNamedGraph());
-				}
-			} finally {
-				it.close();
-			}
-
-			it = model.listStatements(resource, NodeFilters.ANY, NodeFilters.ANY, true, NodeFilters.ANY);
-			try {
-				while (it.streamOpen()) {
-					ARTStatement stmt = it.getNext();
-					collector.addInferredStatement(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
-				}
-			} finally {
-				it.close();
-			}
-
-		} else if (position instanceof RemoteResourcePosition) {
-			DatasetMetadata meta = ((RemoteResourcePosition) position).getDatasetMetadata();
-
-			String sparqlEndpoint = meta.getSparqlEndpoint();
-
-			if (sparqlEndpoint != null) {
-				logger.debug("Retrieving statements for resource {} via SPARQL", resource);
-
-				TripleQueryModelHTTPConnection queryModel = getCurrentModelFactory()
-						.loadTripleQueryHTTPConnection(sparqlEndpoint);
-
-				StringBuilder sb = new StringBuilder();
-				sb.append("select ?pred ?obj {");
-				sb.append("   ").append(RDFNodeSerializer.toNT(resource)).append(" ?pred ?obj . \n");
-				sb.append("}");
-
-				TupleBindingsIterator it = queryModel.createTupleQuery(QueryLanguage.SPARQL, sb.toString(),
-						null).evaluate(true);
-				try {
-					while (it.streamOpen()) {
-						TupleBindings tupleBindings = it.getNext();
-
-						collector.addInferredStatement(resource, tupleBindings.getBinding("pred")
-								.getBoundValue().asURIResource(), tupleBindings.getBinding("obj")
-								.getBoundValue());
-					}
-				} finally {
-					it.close();
-				}
-			} else if (meta.isDereferenceable()) {
-				logger.debug("Retrieving statements for resource {} via dereferencing", resource);
-
-				LinkedDataResolver resolver = getCurrentModelFactory().loadLinkedDataResolver();
-
-				if (resource.isURIResource()) {
-					Collection<ARTStatement> retrievedStatements = resolver.lookup(resource.asURIResource());
-
-					for (ARTStatement stmt : retrievedStatements) {
-						collector.addInferredStatement(stmt.getSubject(), stmt.getPredicate(),
-								stmt.getObject());
-					}
-
-				}
-
-			}
-		} else {
-			logger.debug("Retrieving statements for resource {} via dereferencing", resource);
-			LinkedDataResolver resolver = getCurrentModelFactory().loadLinkedDataResolver();
-
-			if (resource.isURIResource()) {
-				Collection<ARTStatement> retrievedStatements = resolver.lookup(resource.asURIResource());
-
-				for (ARTStatement stmt : retrievedStatements) {
-					collector.addInferredStatement(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
-				}
-
-			}
-
-		}
-	}
-
+	/**
+	 * Returns the {@link ModelFactory} used by the active project (see {@link #getProject()}).
+	 * 
+	 * @return
+	 * @throws UnavailableResourceException
+	 * @throws ProjectInconsistentException
+	 */
 	private ModelFactory<?> getCurrentModelFactory() throws UnavailableResourceException,
 			ProjectInconsistentException {
 		return PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 	}
-	
+
+	/**
+	 * Returns an empty {@link OWLModel} created in a lightweight manner by the current model factory (see
+	 * {@link #getCurrentModelFactory()}).
+	 * 
+	 * @return
+	 * @throws ProjectInconsistentException
+	 * @throws UnavailableResourceException
+	 */
+	private OWLModel createEmptyOWLModel() throws UnavailableResourceException, ProjectInconsistentException {
+		return new OWLModelImpl(getCurrentModelFactory().createLightweightRDFModel());
+	}
+
 }
