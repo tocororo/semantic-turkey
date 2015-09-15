@@ -164,7 +164,7 @@ public class ResourceView extends STServiceAdapter {
 		// Step X: Renderize resources & compute role
 
 		Collection<ARTResource> resourcesToBeRendered = RDFIterators.getCollectionFromIterator(RDFIterators
-				.filterResources(RDFIterators.listObjects(stmtCollector.listStatements(NodeFilters.ANY,
+				.filterResources(RDFIterators.listObjects(stmtCollector.listStatements(resource,
 						NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.ANY))));
 		resourcesToBeRendered.add(resource);
 
@@ -297,7 +297,14 @@ public class ResourceView extends STServiceAdapter {
 				it.close();
 			}
 
-			GraphQuery describeQuery = model.createGraphQuery("describe " + RDFNodeSerializer.toNT(resource));
+			GraphQuery describeQuery;
+			
+			if (resource.isURIResource()) {
+				describeQuery = model.createGraphQuery("describe " + RDFNodeSerializer.toNT(resource));
+			} else {
+				describeQuery = model.createGraphQuery("describe ?resource where {bind(?resource2 as ?resource)}");
+				describeQuery.setBinding("resource2", resource);
+			}
 			it = describeQuery.evaluate(true);
 			try {
 				while (it.streamOpen()) {
@@ -322,8 +329,8 @@ public class ResourceView extends STServiceAdapter {
 				TripleQueryModelHTTPConnection conn = getCurrentModelFactory().loadTripleQueryHTTPConnection(
 						sparqlEndpoint);
 
-				GraphQuery describeQuery = conn.createGraphQuery(QueryLanguage.SPARQL, "describe "
-						+ RDFNodeSerializer.toNT(resource), null);
+				GraphQuery describeQuery = conn.createGraphQuery(QueryLanguage.SPARQL, "describe ?resource", null);
+				describeQuery.setBinding("resource", resource);
 				try {
 					ARTStatementIterator it = describeQuery.evaluate(true);
 					try {

@@ -1,10 +1,11 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterClassInterface;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.query.TupleBindings;
@@ -31,7 +32,8 @@ import java.util.Set;
  * rendering orchestrator:
  * <ul>
  * <li>
- * computes a default rendering equal to {@link ARTNode#getNominalValue()}</li>
+ * computes a default rendering: i) URIs are rendered as they are, unless it is possible to compress them as
+ * qualified names, ii) bnodes are rendered as _:bnodeId</li>
  * <li>
  * wraps the {@link RenderingEngine} associated with the {@link ResourcePosition} of the subject</li>
  * <li>
@@ -66,25 +68,40 @@ public class RenderingOrchestrator implements RenderingEngine {
 		Set<ARTResource> delegatedResources = new HashSet<ARTResource>();
 
 		for (ARTResource res : resources) {
+			boolean toBeRendered = true;
 
 			if (res.isBlank()
-					&& (statements.hasType(res, OWL.Res.CLASS, false, NodeFilters.ANY) || statements.hasType(res,
-							RDFS.Res.CLASS, false, NodeFilters.ANY))) {
+					&& (statements.hasType(res, OWL.Res.CLASS, false, NodeFilters.ANY) || statements.hasType(
+							res, RDFS.Res.CLASS, false, NodeFilters.ANY))) {
 
 				// Renders OWL class expressions using the Manchester syntax. Following common modeling
 				// patterns,
 				// it assumes that class expressions are represented as bnodes. Leveraging this assumption the
 				// serialization can be completely based on the statements describing the subject resource
 				// (which are expanded through the closure of bnodes)
-				resource2rendering.put(res,
-						statements.getManchClassFromBNode(res.asBNode(), statements, NodeFilters.ANY, null)
-								.getManchExpr(true));
-			} else {
+
+				ManchesterClassInterface anonCls = statements.getManchClassFromBNode(res.asBNode(),
+						statements, NodeFilters.ANY, null);
+
+				if (anonCls != null) {
+					resource2rendering.put(res, anonCls.getManchExpr(true));
+					toBeRendered = false;
+				}
+			}
+
+			// this check is necessary, because there might be bnodes of type Class that we are unable to
+			// express in Manchester syntax
+			if (toBeRendered) {
+
 				// Otherwise (uri or bnode that is not a class expressions)
 
-				// 1. computes the default rendering as ARTNode#getNominalValue()
-				resource2rendering.put(res, res.getNominalValue());
+				// 1. computes the default rendering.
 
+				if (res.isBlank()) { // 1a. bnode as _:bnodeid
+					resource2rendering.put(res, RDFNodeSerializer.toNT(res));
+				} else { // 2a. uri as qname
+					resource2rendering.put(res, project.getOntModel().getQName(res.getNominalValue()));
+				}
 				// 2. delegates URIs to the wrapped rendering engine. The default value is useful, if the
 				// delegate does not render everything
 				if (res.isURIResource()) {
