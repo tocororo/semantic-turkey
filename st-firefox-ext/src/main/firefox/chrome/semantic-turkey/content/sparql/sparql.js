@@ -813,7 +813,7 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 									.getElementsByTagName("typed-literal")[0].textContent;
 							// type = "typed-literal";
 						} else if (bindings[h].getElementsByTagName("bnode").length > 0) {
-							lblValue = bindings[h]
+							lblValue = "_:" + bindings[h]
 									.getElementsByTagName("bnode")[0].textContent;
 							// type = "bnode";
 						}
@@ -947,7 +947,7 @@ art_semanticturkey.resolveQuery_RESPONSE = function(response, diffTime) {
 						} else if (element.type == "typed-literal") {
 							lblValue = element.value;
 						} else if (element.type == "bnode") {
-							lblValue = element.value;
+							lblValue = "_:" + element.value;
 						}
 	
 						var tc = document.createElement("treecell");
@@ -1055,14 +1055,14 @@ art_semanticturkey.SPARQLResourcedblClick = function(event) {
 			.getElementsByTagName("treecell")[col.value.element.ordinal];	// The ordinal property has been assigned with
 	                                                                        // the column position within the heading
 	var sourceType = treecell.getAttribute("type");
-
-	// manca controllo se tuple o graph
-	if (sourceType == "uri" || sourceType == "bnode") {
-		var parameters = {};
-		parameters.sourceType = "individual";
-		parameters.sourceElement = treecell;
-		parameters.sourceElementName = treecell.getAttribute("label");
-		parameters.isFirstEditor = true;
-		art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+	var cellLabel = treecell.getAttribute("label");
+	
+	/*
+	 * - In a tuple query "sourceType" indicates the type of RDF term represented in a cell.
+	 * - In a graph query, "sourceType" is an empty string, but the cell label allows us to confidently
+	 *   differentiate between URIs an bnodes, on the one side, and literals, on the other side 
+	 */
+	if (sourceType == "uri" || sourceType == "bnode" || (!sourceType && cellLabel[0] != "\"" &&  cellLabel[0] != "'")) {
+		art_semanticturkey.ResourceViewLauncher.openResourceView(cellLabel);
 	}
 };
