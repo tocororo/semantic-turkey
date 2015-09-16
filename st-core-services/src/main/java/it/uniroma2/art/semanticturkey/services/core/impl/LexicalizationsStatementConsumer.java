@@ -13,6 +13,7 @@ import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
@@ -131,7 +132,7 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 		while (keyIt.hasNext()) {
 			ARTURIResource key = keyIt.next();
 			
-			if (relevantLexPreds.contains(key)) continue;
+			if (!(resourcePosition instanceof UnknownResourcePosition) && relevantLexPreds.contains(key)) continue;
 			
 			if (!resultPredicateObjectValues.containsKey(key)){
 				keyIt.remove();
