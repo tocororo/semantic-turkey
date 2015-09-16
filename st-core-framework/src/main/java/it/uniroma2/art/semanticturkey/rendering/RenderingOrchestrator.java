@@ -84,7 +84,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 						statements, NodeFilters.ANY, null);
 
 				if (anonCls != null) {
-					resource2rendering.put(res, anonCls.getManchExpr(true));
+					resource2rendering.put(res, anonCls.getManchExpr(project.getOntModel(), true));
 					toBeRendered = false;
 				}
 			}
