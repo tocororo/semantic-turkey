@@ -70,7 +70,9 @@ function createDanglingConceptListbox(danglingConceptList) {
 		var conceptCell = document.createElement("listcell");
 		conceptCell.setAttribute("idxRow", i);
 	    conceptCell.setAttribute("label", concept);
-	    conceptCell.addEventListener("dblclick", art_semanticturkey.conceptDblClickListener, false);
+	    conceptCell.addEventListener("dblclick", function(){
+	    	art_semanticturkey.ResourceViewLauncher.openResourceView(concept);
+	    }, false);
 	    row.appendChild(conceptCell);
 	    //add menuList (second column)
 		var menuList = document.createElement("menulist");
@@ -96,20 +98,6 @@ function createDanglingConceptListbox(danglingConceptList) {
 		//add row to listbox
 		listbox.appendChild(row);
 	}
-}
-
-/**
- * Listener to the concept, when double clicked it opens the editor panel
- */
-art_semanticturkey.conceptDblClickListener = function() {
-	var concept = this.getAttribute("label");//this in an actionListener represents the target of the listener
-	var parameters = new Object();
-	parameters.sourceType = "concept";
-	parameters.sourceElement = concept;
-	parameters.sourceElementName = concept;
-	parameters.parentWindow = window;
-	parameters.isFirstEditor = true;
-	art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
 }
 
 /**

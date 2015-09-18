@@ -9,7 +9,8 @@
 	xmlns:html="http://www.w3.org/1999/xhtml">
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/alignment/validation/validation.js" />
 	
-	<hbox>
+	<hbox align="center">
+		<label value="Alignment file:" />
 		<textbox id="filePathTxt" readonly="true" flex="1" />
 		<button label="Select" id="selectBtn" />
 		<button label="Load" id="loadBtn" disabled="true"/>
@@ -24,11 +25,11 @@
 			</columns>
 			<rows>
 				<row align="center">
-					<label value="Current ontology baseURI:" />
+					<label value="Source ontology baseURI:" />
 					<textbox id="onto1txt"/>
 				</row>
 				<row align="center">
-					<label value="Other ontology baseURI:" />
+					<label value="Target ontology baseURI:" />
 					<textbox id="onto2txt"/>
 				</row>
 			</rows>
@@ -37,16 +38,20 @@
 	
 	<listbox id="alignmentList" flex="1">
 		<listhead>
-			<listheader label="Current onotlogy entity"/>
-			<listheader label="Other onotlogy entity"/>
+			<listheader label="Source onotlogy entity"/>
+			<listheader label="Target onotlogy entity"/>
 			<listheader label="Relation"/>
+			<listheader label="Mapping Property"/>
 			<listheader label="Action"/>
+			<listheader label="Status"/>
 		</listhead>
 		<listcols>
-			<listcol flex="5"/>
-			<listcol flex="5"/>
-			<listcol width="100px"/>
-			<listcol flex="1"/>
+			<listcol flex="1"/>	<!-- entity1 -->
+			<listcol flex="1"/>	<!-- entity2 -->
+			<listcol width="100px"/> <!-- relation -->
+			<listcol />	<!-- mapping property -->
+			<listcol />	<!-- action -->
+			<listcol width="50px" style="margin-right: 16px;"/> <!-- status (margin to avoid scrollbar overlapping column content)-->
 		</listcols>
 	</listbox>
 	
@@ -55,17 +60,19 @@
 		<menulist id="quickActionMenu" disabled="true">
 			<menupopup>
 				<menuitem label="---"/>
-				<menuitem label="Validate all"/>
-				<menuitem label="Reject all"/>
-				<menuitem label="Validate all above the threshold..."/>
-				<menuitem label="Reject all under the threshold..."/>
+				<menuitem id="acceptAll" label="Accept all"/>
+				<menuitem id="rejectAll" label="Reject all"/>
+				<menuitem id="acceptAboveThreshold" label="Accept all above the threshold..."/>
+				<menuitem id="rejectUnderThreshold" label="Reject all under the threshold..."/>
 			</menupopup>
 		</menulist>
 		<textbox id="thresholdTxt" disabled="true" width="100px" type="number" decimalplaces="2" increment="0.01" max="1"/>
-		<button id="quickActionBtn" label="Do quick action" disabled="true" />
+		<button id="quickActionBtn" label="Perform quick action" disabled="true" />
 		<separator flex="1" />
+		<button id="addToOntologyBtn" label="Add to model" disabled="true"
+			tooltiptext="Add all the accepted alignment to the model"/>
 		<button id="saveAlignmentBtn" label="Save as..." disabled="true"
-			tootltiptext="Save the state of the alignment so it can be validated later"/>
+			tooltiptext="Save the state of the alignment"/>
 	</hbox>
 	
 </window>

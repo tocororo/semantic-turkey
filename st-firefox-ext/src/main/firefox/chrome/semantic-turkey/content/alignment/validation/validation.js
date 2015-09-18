@@ -83,45 +83,81 @@ art_semanticturkey.loadAlignment = function() {
 		var mappingCellsXml = alignmentXml.getElementsByTagName("map");
 		for (var i=0; i<mappingCellsXml.length; i++){
 			var cellXml = mappingCellsXml[i].getElementsByTagName("Cell")[0];
-			var entity1 = cellXml.getElementsByTagName("entity1")[0].textContent;
-			var entity2 = cellXml.getElementsByTagName("entity2")[0].textContent;
-			var measure = cellXml.getElementsByTagName("measure")[0].textContent;
-			var relation = cellXml.getElementsByTagName("relation")[0].textContent;
 			
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
 			
+			//entity1
+			var entity1 = cellXml.getElementsByTagName("entity1")[0].textContent;
 			var listcell = document.createElement("listcell");
 			listcell.setAttribute("label", entity1);
+			listcell.setAttribute("tooltiptext", entity1);
 			listcell.addEventListener("dblclick", function() {
 				art_semanticturkey.ResourceViewLauncher.openResourceView(entity1);
 			}, false);
 			listitem.appendChild(listcell);
 			
+			//entity2
+			var entity2 = cellXml.getElementsByTagName("entity2")[0].textContent;
 			listcell = document.createElement("listcell");
+			listcell.setAttribute("tooltiptext", entity2);
 			listcell.setAttribute("label", entity2);
-			listcell.addEventListener("dblclick", function() {
-				art_semanticturkey.ResourceViewLauncher.openResourceView(entity2);
-			}, false);
 			listitem.appendChild(listcell);
 			
+			//relation (with meter based on measure)
+			var relation = cellXml.getElementsByTagName("relation")[0].textContent;
+			var measure = cellXml.getElementsByTagName("measure")[0].textContent;
 			listitem.appendChild(art_semanticturkey.createMeter(relation, measure));
 			
+			//mapping property
+			var mp = cellXml.getElementsByTagName("mappingProperty")[0];
+			listcell = document.createElement("listcell");
+			if (mp != undefined) {
+				var mappingProperty = mp.textContent; //not used but it could be useful in the future to add it as attribute
+				var mappingPropertyQName = mp.getAttribute("show");
+				listcell.setAttribute("label", mappingPropertyQName);
+			}
+			listitem.appendChild(listcell);
+			
+			//Actions
 			listcell = document.createElement("listcell");
 			var buttonBox = document.createElement("hbox");
 			var button = document.createElement("button");
-			button.setAttribute("label", "Validate");
-			button.addEventListener("command", art_semanticturkey.validateButtonListener, false);
+			button.setAttribute("label", "Accept");
+//			button.addEventListener("command", art_semanticturkey.acceptButtonListener, false);
+			button.addEventListener("command", art_semanticturkey.actionButtonListener, false);
 			buttonBox.appendChild(button);
 			button = document.createElement("button");
 			button.setAttribute("label", "Reject");
-			button.addEventListener("command", art_semanticturkey.rejectButtonListener, false);
+//			button.addEventListener("command", art_semanticturkey.rejectButtonListener, false);
+			button.addEventListener("command", art_semanticturkey.actionButtonListener, false);
 			buttonBox.appendChild(button);
 			listitem.appendChild(buttonBox);
 			
+			//Status
+			listcell = document.createElement("listcell");
+			listcell.setAttribute("flex", "1");
+			listcell.setAttribute("pack", "end");
+			var statusImg = document.createElement("image");
+			
+			var s = cellXml.getElementsByTagName("status")[0];
+			if (s != undefined) {
+				var status = s.textContent;
+				statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
+				//since comment is shown as tooltip of status, check its existence only when status is defined
+				var comment = cellXml.getElementsByTagName("comment")[0];
+				if (comment != undefined) {
+					statusImg.setAttribute("tooltiptext", comment.textContent);
+				} else {
+					statusImg.setAttribute("tooltiptext", status);
+				}
+			}
+			listcell.appendChild(statusImg);
+			listitem.appendChild(listcell);
+			
+			//finally add the build item to the listbox
 			listbox.appendChild(listitem);
 		}
-		
 		document.getElementById("quickActionMenu").setAttribute("disabled", "false");
 		document.getElementById("saveAlignmentBtn").setAttribute("disabled", "false");
 		document.getElementById("thresholdTxt").setAttribute("disabled", "true");
@@ -161,31 +197,46 @@ art_semanticturkey.createMeter = function(relation, measure) {
 	return stack;
 }
 
-art_semanticturkey.validateButtonListener = function() {
+art_semanticturkey.actionButtonListener = function() {
+	var button = this;
 	//button > hbox > listitem
-	var currentItem = this.parentNode.parentNode;
+	var currentItem = button.parentNode.parentNode;
 	var entity1 = currentItem.children[0].getAttribute("label");
 	var entity2 = currentItem.children[1].getAttribute("label");
 	var relation = currentItem.children[2].getAttribute("relation");
-	Logger.debug("validating " + entity1 + " " + relation + " " + entity2);
+	Logger.debug(button.label + " to " + entity1 + " " + relation + " " + entity2);
 	try {
-		serviceInstance.validateAlignment(entity1, entity2, relation);
-		currentItem.remove();
-	} catch (e) {
-		art_semanticturkey.Alert.alert(e);
-	}
-}
-
-art_semanticturkey.rejectButtonListener = function() {
-	//button > hbox > listitem
-	var currentItem = this.parentNode.parentNode;
-	var entity1 = currentItem.children[0].getAttribute("label");
-	var entity2 = currentItem.children[1].getAttribute("label");
-	var relation = currentItem.children[2].getAttribute("relation");
-	Logger.debug("rejecting " + entity1 + " " + relation + " " + entity2);
-	try {
-		serviceInstance.rejectAlignment(entity1, entity2, relation);
-		currentItem.remove();
+		var xmlResp;
+		if (button.label == "Accept") {
+			xmlResp = serviceInstance.acceptAlignment(entity1, entity2, relation);
+		} else {
+			xmlResp = serviceInstance.rejectAlignment(entity1, entity2, relation);
+		} 
+		//update mapping property
+		var mp = xmlResp.getElementsByTagName("mappingProperty")[0];
+		if (mp != undefined) {
+			var mappingProperty = mp.textContent;
+			var mappingPropertyQName = mp.getAttribute("show");
+			currentItem.children[3].setAttribute("label", mappingPropertyQName);
+		} else {
+			currentItem.children[3].setAttribute("label", "");
+		}
+		//update status
+		var statusImg = currentItem.children[5].children[0]; //6th listcell (status) has only 1 child: <image> 
+		var status = xmlResp.getElementsByTagName("status")[0].textContent;
+		statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
+		statusImg.removeAttribute("tooltiptext");
+		var commentElem = xmlResp.getElementsByTagName("comment")[0];
+		if (commentElem != undefined) {
+			var comment = commentElem.textContent;
+			statusImg.setAttribute("tooltiptext", comment);
+			if (status = "error") {
+				art_semanticturkey.Alert.alert("Has not been possible to validate the given alignment:"
+						+ entity1 + " " + relation + " " + entity2, comment);
+			}
+		} else {
+			statusImg.setAttribute("tooltiptext", status);
+		}
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
 	}
@@ -209,45 +260,37 @@ art_semanticturkey.quickActionMenuListener = function() {
 
 art_semanticturkey.quickActionButtonListener = function() {
 	var report = null;
-	var action = document.getElementById("quickActionMenu").selectedItem.label;
-	if (action == "Validate all"){
+	var actionId = document.getElementById("quickActionMenu").selectedItem.id;
+	if (actionId == "acceptAll"){
 		try {
-			var xmlResp = serviceInstance.validateAllAlignment();
-			report = art_semanticturkey.parseQuickActionResponse(xmlResp);
+			var xmlResp = serviceInstance.acceptAllAlignment();
+			art_semanticturkey.updateUIAfterQuickAction(xmlResp);
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
 		}
-	} else if (action == "Reject all") {
+	} else if (actionId == "rejectAll") {
 		try {
 			var xmlResp = serviceInstance.rejectAllAlignment();
-			report = art_semanticturkey.parseQuickActionResponse(xmlResp);
+			art_semanticturkey.updateUIAfterQuickAction(xmlResp);
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
 		}
-	} else if (action == "Validate all above the threshold...") {
+	} else if (actionId == "acceptAboveThreshold") {
 		try {
 			var threshold = document.getElementById("thresholdTxt").value;
-			var xmlResp = serviceInstance.validateAllAbove(threshold);
-			report = art_semanticturkey.parseQuickActionResponse(xmlResp);
+			var xmlResp = serviceInstance.acceptAllAbove(threshold);
+			art_semanticturkey.updateUIAfterQuickAction(xmlResp);
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
 		}
-	} else if (action == "Reject all under the threshold...") {
+	} else if (actionId == "rejectUnderThreshold") {
 		try {
 			var threshold = document.getElementById("thresholdTxt").value;
 			var xmlResp = serviceInstance.rejectAllUnder(threshold);
-			report = art_semanticturkey.parseQuickActionResponse(xmlResp);
+			art_semanticturkey.updateUIAfterQuickAction(xmlResp);
 		} catch (e) {
 			art_semanticturkey.Alert.alert(e);
 		}
-	}
-	
-	//open report dialog if changes have been performed
-	if (report != null) {
-		var params = {};
-		params = report;
-		window.openDialog("chrome://semantic-turkey/content/alignment/validation/report.xul", "_blank", 
-				"chrome,dependent,dialog,modal=yes,resizable,centerscreen", params);
 	}
 	
 	//reset quick action commands
@@ -260,47 +303,95 @@ art_semanticturkey.quickActionButtonListener = function() {
 	document.getElementById("quickActionBtn").disabled = true;
 }
 
-/**
- * Parses the response of a quick action, removes the validated/rejected items from the alignment
- * listbox and creates a report of the changes
- */
-art_semanticturkey.parseQuickActionResponse = function(xmlResp) {
-	var report = {}; //report of the alignments processed (validated/rejected)
-	
-	var actionType = xmlResp.getElementsByTagName("collection")[0].getAttribute("type");
-	report.action = actionType;
-	
-	var alignReport = new Array();
-	
-	var alignmentList = document.getElementById("alignmentList");
-	var alignmentXmlColl = xmlResp.getElementsByTagName("alignment");
-	for (var i=0; i<alignmentXmlColl.length; i++) {
-		var align = alignmentXmlColl[i];
-		var entity1 = align.getElementsByTagName("entity1")[0].textContent;
-		var entity2 = align.getElementsByTagName("entity2")[0].textContent;
-		var relation = align.getElementsByTagName("relation")[0].textContent;
-		//prepare the report
-		var alignElement = {};
-		alignElement.entity1 = entity1;
-		alignElement.entity2 = entity2;
-		alignElement.relation = relation;
-		alignReport.push(alignElement);
-		//remove the item from listbox
-		var count = alignmentList.itemCount;
-		for (var j=0; j<count; j++){
-			var item = alignmentList.getItemAtIndex(j);
-			var e1 = item.children[0].getAttribute("label");
-			var e2 = item.children[1].getAttribute("label");
-			if (e1 == entity1 && e2 == entity2){
-				item.remove();
-				j--;
+art_semanticturkey.updateUIAfterQuickAction = function(xmlResp) {
+	var cellXmlColl = xmlResp.getElementsByTagName("cell");
+	for (var i=0; i < cellXmlColl.length; i++) {
+		var cellXml = cellXmlColl[i];
+		var entity1 = cellXml.getElementsByTagName("entity1")[0].textContent;
+		var entity2 = cellXml.getElementsByTagName("entity2")[0].textContent;
+		var relation = cellXml.getElementsByTagName("relation")[0].textContent;
+		
+		//look for the listitem with entity1 and entity2
+		var listItem = null;
+		var alignmentList = document.getElementById("alignmentList");
+		for (var j=0; j < alignmentList.itemCount; j++) {
+			var li = alignmentList.getItemAtIndex(j);
+			if (li.children[0].getAttribute("label") == entity1 && li.children[1].getAttribute("label") == entity2) {
+				listItem = li;
 				break;
 			}
 		}
+		if (listItem != null) {
+			//update mapping property
+			var mp = cellXml.getElementsByTagName("mappingProperty")[0];
+			if (mp != undefined) {
+				var mappingProperty = mp.textContent;
+				var mappingPropertyQName = mp.getAttribute("show");
+				listItem.children[3].setAttribute("label", mappingPropertyQName);
+			} else {
+				listItem.children[3].setAttribute("label", "");
+			}
+			//update status
+			var statusImg = listItem.children[5].children[0]; //6th listcell (status) has only 1 child: <image> 
+			var status = cellXml.getElementsByTagName("status")[0].textContent;
+			statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
+			statusImg.removeAttribute("tooltiptext");
+			var commentElem = cellXml.getElementsByTagName("comment")[0];
+			if (commentElem != undefined) {
+				var comment = commentElem.textContent;
+				statusImg.setAttribute("tooltiptext", comment);
+				if (status = "error") {
+					//TODO collect to do report
+				}
+			} else {
+				statusImg.setAttribute("tooltiptext", status);
+			}
+		}
 	}
-	report.alignReport = alignReport;
-	return report;
 }
+
+/**
+ * Parses the response of a quick action, removes the accepted/rejected items from the alignment
+ * listbox and creates a report of the changes
+ */
+//TODO: wait for deleting it. This method could be reused for report of the adding of the accepted alignment to model
+//art_semanticturkey.parseQuickActionResponse = function(xmlResp) {
+//	var report = {}; //report of the alignments processed (acceptd/rejected)
+//	
+//	var actionType = xmlResp.getElementsByTagName("collection")[0].getAttribute("type");
+//	report.action = actionType;
+//	
+//	var alignReport = new Array();
+//	
+//	var alignmentList = document.getElementById("alignmentList");
+//	var alignmentXmlColl = xmlResp.getElementsByTagName("alignment");
+//	for (var i=0; i<alignmentXmlColl.length; i++) {
+//		var align = alignmentXmlColl[i];
+//		var entity1 = align.getElementsByTagName("entity1")[0].textContent;
+//		var entity2 = align.getElementsByTagName("entity2")[0].textContent;
+//		var relation = align.getElementsByTagName("relation")[0].textContent;
+//		//prepare the report
+//		var alignElement = {};
+//		alignElement.entity1 = entity1;
+//		alignElement.entity2 = entity2;
+//		alignElement.relation = relation;
+//		alignReport.push(alignElement);
+//		//remove the item from listbox
+//		var count = alignmentList.itemCount;
+//		for (var j=0; j<count; j++){
+//			var item = alignmentList.getItemAtIndex(j);
+//			var e1 = item.children[0].getAttribute("label");
+//			var e2 = item.children[1].getAttribute("label");
+//			if (e1 == entity1 && e2 == entity2){
+//				item.remove();
+//				j--;
+//				break;
+//			}
+//		}
+//	}
+//	report.alignReport = alignReport;
+//	return report;
+//}
 
 var relationSymbolMap = [];
 relationSymbolMap.push({relation: "=", symbol: "\u2261", description: "equivalent"});
@@ -353,6 +444,16 @@ art_semanticturkey.saveAlignment = function() {
 		}
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
+	}
+}
+
+art_semanticturkey.getImageSrcForStatus = function(status) {
+	if (status == "accepted") {
+		return "chrome://semantic-turkey/skin/images/accept_24x24.png";
+	} else if (status == "rejected") {
+		return "chrome://semantic-turkey/skin/images/reject_24x24.png";
+	} else if (status == "error") {
+		return "chrome://semantic-turkey/skin/images/error_24x24.png";
 	}
 }
 

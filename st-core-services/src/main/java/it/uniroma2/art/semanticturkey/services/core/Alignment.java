@@ -1,11 +1,33 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Element;
+
 import it.uniroma2.art.owlart.alignment.AlignmentModel;
 import it.uniroma2.art.owlart.alignment.AlignmentModelFactory;
 import it.uniroma2.art.owlart.alignment.Cell;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.model.ARTResource;
@@ -18,6 +40,7 @@ import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.impl.RDFModelImpl;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
@@ -36,28 +59,6 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 
 @GenerateSTServiceController
 @Validated
@@ -241,13 +242,15 @@ public class Alignment extends STServiceAdapter {
 	 * @throws UnsupportedRDFFormatException
 	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
-	 * @throws ParserConfigurationException
-	 * @throws SAXException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response loadAlignment(MultipartFile inputFile) throws IOException, ModelAccessException,
-			ModelUpdateException, UnsupportedRDFFormatException, UnavailableResourceException,
-			ProjectInconsistentException, ParserConfigurationException, SAXException {
+	public Response loadAlignment(MultipartFile inputFile) 
+			throws IOException, ModelAccessException, ModelUpdateException, UnsupportedRDFFormatException, 
+			UnavailableResourceException, ProjectInconsistentException, UnsupportedQueryLanguageException, 
+			MalformedQueryException, QueryEvaluationException {
 		
 		//create a temp file (in karaf data/temp folder) to copy the received file 
 		File inputServerFile = File.createTempFile("alignment", inputFile.getOriginalFilename());
@@ -262,9 +265,10 @@ public class Alignment extends STServiceAdapter {
 		String token = stServiceContext.getSessionToken();
 		modelsMap.put(token, alignModel);
 		
+		OWLModel model = getOWLModel();
 		//check that one of the two aligned ontologies matches the current project ontology
-		if (!getOWLModel().getBaseURI().equals(alignModel.getOnto1())){
-			if (getOWLModel().getBaseURI().equals(alignModel.getOnto2())){
+		if (!model.getBaseURI().equals(alignModel.getOnto1())){
+			if (model.getBaseURI().equals(alignModel.getOnto2())){
 				alignModel.reverse();
 			} else {
 				return createReplyFAIL("Failed to open and validate the given alignment file. "
@@ -290,86 +294,90 @@ public class Alignment extends STServiceAdapter {
 			XMLHelp.newElement(cellElem, "entity2", c.getEntity2().getNominalValue());
 			XMLHelp.newElement(cellElem, "measure", c.getMeasure()+"");
 			XMLHelp.newElement(cellElem, "relation", c.getRelation());
+			if (c.getMappingProperty() != null) {
+				Element mpElem = XMLHelp.newElement(cellElem, "mappingProperty");
+				mpElem.setTextContent(c.getMappingProperty().getURI());
+				mpElem.setAttribute("show", model.getQName(c.getMappingProperty().getURI()));
+			}
+			if (c.getStatus() != null) {
+				XMLHelp.newElement(cellElem, "status", c.getStatus().name());
+			}
+			if (c.getComment() != null) {
+				XMLHelp.newElement(cellElem, "comment", c.getComment());
+			}
 		}
 		
 		return response;
 	}
 	
 	/**
-	 * Validates the alignment adding the statement to the model
-	 * TODO: is correct? or we should mark the alignment as validate in some way? 
+	 * Accepts the alignment updating the alignment model
 	 * @param entity1
 	 * @param entity2
 	 * @param relation
 	 * @return
 	 * @throws ModelUpdateException
 	 * @throws ModelAccessException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 * @throws AlignmentException 
 	 */
 	@GenerateSTServiceController
-	public Response validateAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) 
-			throws ModelUpdateException, ModelAccessException {
-		OWLModel model = getOWLModel();
+	public Response acceptAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) 
+			throws ModelAccessException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
-		System.out.println("Add triple:\nS: " + entity1 + "\nP: " + predicate.getNominalValue() + "\nO: " + entity2);
-//		model.addTriple(entity1, predicate, entity2, getWorkingGraph()); //TODO remove
-		alignModel.deleteCell(entity1, entity2);
-		return createReplyResponse(RepliesStatus.ok);
+		alignModel.acceptAlignment(entity1, entity2, relation, getOWLModel());
+		Cell c = alignModel.getCell(entity1, entity2);
+		Element dataElem = response.getDataElement();
+		fillCellXMLResponse(c, dataElem);
+		return response;
 	}
 	
 	/**
-	 * Validates all the alignment adding the statements to the model
-	 * TODO: same problem of validateAlignment service
+	 * Accepts all the alignment updating the alignment model
+	 * 
 	 * @return
 	 * @throws ModelAccessException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
-	public Response validateAllAlignment() throws ModelAccessException, ModelUpdateException {
+	public Response acceptAllAlignment() throws ModelAccessException, UnsupportedQueryLanguageException, 
+			MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-		Element collElem = XMLHelp.newElement(dataElem, "collection");
-		collElem.setAttribute("type", "validate");
 		
-		OWLModel model = getOWLModel();
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		Collection<Cell> cellList = alignModel.listCells();
-		for (Cell cell : cellList) {
-			ARTURIResource entity1 = cell.getEntity1();
-			ARTURIResource entity2 = cell.getEntity2();
-			String relation = cell.getRelation();
-			ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
-			System.out.println("Add triple:\nS: " + entity1 + "\nP: " + predicate.getNominalValue() + "\nO: " + entity2);
-//			model.addTriple(entity1, predicate, entity2, getWorkingGraph()); //TODO remove
-			alignModel.deleteCell(entity1, entity2);
-			
-			//report the validations in the response
-			Element alignElem = XMLHelp.newElement(collElem, "alignment");
-		    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
-		    XMLHelp.newElement(alignElem, "relation", predicate.getURI());
-		    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+		alignModel.acceptAllAlignment(getOWLModel());
+		
+		Collection<Cell> cells = alignModel.listCells();
+		for (Cell c : cells) {
+			fillCellXMLResponse(c, dataElem);
 		}
 		return response;
 	}
 	
 	/**
-	 * Validates all the alignment with measure above the given threshold adding the statements to 
-	 * the model
-	 * TODO: same problem of validateAlignment service
+	 * Accepts all the alignment with measure above the given threshold updating the alignment model.
+	 * The response contains the description of all the cells affected by the accept
+	 * 
 	 * @param threshold
 	 * @return
 	 * @throws ModelAccessException
-	 * @throws ModelUpdateException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
-	public Response validateAllAbove(float threshold) throws ModelAccessException, ModelUpdateException{
+	public Response acceptAllAbove(float threshold) throws ModelAccessException, 
+			UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-		Element collElem = XMLHelp.newElement(dataElem, "collection");
-		collElem.setAttribute("type", "validate");
 		
-		OWLModel model = getOWLModel();
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		Collection<Cell> cellList = alignModel.listCells();
 		for (Cell cell : cellList) {
@@ -378,16 +386,9 @@ public class Alignment extends STServiceAdapter {
 				ARTURIResource entity1 = cell.getEntity1();
 				ARTURIResource entity2 = cell.getEntity2();
 				String relation = cell.getRelation();
-				ARTURIResource predicate = alignModel.convertRelation(entity1, relation, model);
-				System.out.println("Add triple:\nS: " + entity1 + "\nP: " + predicate.getNominalValue() + "\nO: " + entity2);
-//				model.addTriple(entity1, predicate, entity2, getWorkingGraph()); //TODO remove
-				alignModel.deleteCell(entity1, entity2);
-				
-				//report the validations in the response
-				Element alignElem = XMLHelp.newElement(collElem, "alignment");
-			    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
-			    XMLHelp.newElement(alignElem, "relation", predicate.getURI());
-			    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+				alignModel.acceptAlignment(entity1, entity2, relation, getOWLModel());
+				Cell updatedCell = alignModel.getCell(entity1, entity2);
+				fillCellXMLResponse(updatedCell, dataElem);
 			}
 		}
 		return response;
@@ -395,83 +396,82 @@ public class Alignment extends STServiceAdapter {
 	
 	/**
 	 * Rejects the alignment
-	 * TODO: is correct? or we should mark the alignment as rejected in some way? 
+	 *  
 	 * @param entity1
 	 * @param entity2
 	 * @param relation
 	 * @return
 	 * @throws ModelUpdateException
 	 * @throws ModelAccessException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
-	public Response rejectAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) throws ModelUpdateException, ModelAccessException {
-		System.out.println("Rejecting triple:\nS: " + entity1 + "\nP: " + relation + "\nO: " + entity2);
+	public Response rejectAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) 
+			throws ModelAccessException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.deleteCell(entity1, entity2);
-		return createReplyResponse(RepliesStatus.ok);
+		alignModel.rejectAlignment(entity1, entity2);
+		Cell c = alignModel.getCell(entity1, entity2);
+		Element dataElem = response.getDataElement();
+		fillCellXMLResponse(c, dataElem);
+		return response;
 	}
 	
 	/**
 	 * Rejects all the alignments
-	 * TODO same problem of rejectAlignment service
+	 * 
 	 * @return
 	 * @throws ModelAccessException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
-	public Response rejectAllAlignment() throws ModelAccessException, ModelUpdateException {
+	public Response rejectAllAlignment() throws ModelAccessException, UnsupportedQueryLanguageException, 
+			MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-		Element collElem = XMLHelp.newElement(dataElem, "collection");
-		collElem.setAttribute("type", "reject");
 		
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		Collection<Cell> cellList = alignModel.listCells();
-		for (Cell cell : cellList) {
-			ARTURIResource entity1 = cell.getEntity1();
-			ARTURIResource entity2 = cell.getEntity2();
-			System.out.println("Rejecting alignment between " + entity1 + " and " + entity2);
-			alignModel.deleteCell(entity1, entity2);
-			
-			//report the rejected triples in the response
-			Element alignElem = XMLHelp.newElement(collElem, "alignment");
-		    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
-		    XMLHelp.newElement(alignElem, "relation", cell.getRelation());
-		    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+		alignModel.rejectAllAlignment();
+		
+		Collection<Cell> cells = alignModel.listCells();
+		for (Cell c : cells) {
+			fillCellXMLResponse(c, dataElem);
 		}
 		return response;
 	}
 	
 	/**
 	 * Rejects all the alignments under the given threshold
-	 * TODO same problem of rejectAlignment service
+	 * 
 	 * @param threshold
 	 * @return
 	 * @throws ModelAccessException
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws UnsupportedQueryLanguageException 
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
-	public Response rejectAllUnder(float threshold) throws ModelAccessException, ModelUpdateException {
+	public Response rejectAllUnder(float threshold) throws ModelAccessException, 
+			UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-		Element collElem = XMLHelp.newElement(dataElem, "collection");
-		collElem.setAttribute("type", "reject");
 		
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		Collection<Cell> cellList = alignModel.listCells();
 		for (Cell cell : cellList) {
 			float measure = cell.getMeasure();
-			if (measure <= threshold) {
+			if (measure < threshold) {
 				ARTURIResource entity1 = cell.getEntity1();
 				ARTURIResource entity2 = cell.getEntity2();
-				System.out.println("Rejecting alignment between " + entity1 + " and " + entity2);
-				alignModel.deleteCell(entity1, entity2);
-				
-				//report the rejected triples in the response
-				Element alignElem = XMLHelp.newElement(collElem, "alignment");
-			    XMLHelp.newElement(alignElem, "entity1", entity1.getURI());
-			    XMLHelp.newElement(alignElem, "relation", cell.getRelation());
-			    XMLHelp.newElement(alignElem, "entity2", entity2.getURI());
+				alignModel.rejectAlignment(entity1, entity2);
+				Cell updatedCell = alignModel.getCell(entity1, entity2);
+				fillCellXMLResponse(updatedCell, dataElem);
 			}
 		}
 		return response;
@@ -498,6 +498,25 @@ public class Alignment extends STServiceAdapter {
 		oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
 		oRes.flushBuffer();
 		is.close();
+	}
+	
+	private void fillCellXMLResponse(Cell c, Element parentElement) throws ModelAccessException {
+		Element cellElem = XMLHelp.newElement(parentElement, "cell");
+		XMLHelp.newElement(cellElem, "entity1", c.getEntity1().getNominalValue());
+		XMLHelp.newElement(cellElem, "entity2", c.getEntity2().getNominalValue());
+		XMLHelp.newElement(cellElem, "measure", c.getMeasure()+"");
+		XMLHelp.newElement(cellElem, "relation", c.getRelation());
+		if (c.getMappingProperty() != null) {
+			Element mpElem = XMLHelp.newElement(cellElem, "mappingProperty");
+			mpElem.setTextContent(c.getMappingProperty().getURI());
+			mpElem.setAttribute("show", getOWLModel().getQName(c.getMappingProperty().getURI()));
+		}
+		if (c.getStatus() != null) {
+			XMLHelp.newElement(cellElem, "status", c.getStatus().name());
+		}
+		if (c.getComment() != null) {
+			XMLHelp.newElement(cellElem, "comment", c.getComment());
+		}
 	}
 	
 	/**

@@ -42,24 +42,24 @@ function loadAlignment(file) {
 	return currentSTHttpMgr.POST(null, serviceName, service.loadAlignmentRequest, this.context, formData);
 }
 
-function validateAlignment(entity1, entity2, relation) {
-	Logger.debug("[SERVICE_Alignment.jsm] validateAlignment");
+function acceptAlignment(entity1, entity2, relation) {
+	Logger.debug("[SERVICE_Alignment.jsm] acceptAlignment");
 	var params = [];
 	params.push("entity1=" + entity1);
 	params.push("entity2=" + entity2);
 	params.push("relation=" + relation);
-	return currentSTHttpMgr.GET(null, serviceName, service.validateAlignmentRequest, this.context, params);
+	return currentSTHttpMgr.GET(null, serviceName, service.acceptAlignmentRequest, this.context, params);
 }
 
-function validateAllAlignment() {
-	Logger.debug("[SERVICE_Alignment.jsm] validateAllAlignment");
-	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAlignmentRequest, this.context);
+function acceptAllAlignment() {
+	Logger.debug("[SERVICE_Alignment.jsm] acceptAllAlignment");
+	return currentSTHttpMgr.GET(null, serviceName, service.acceptAllAlignmentRequest, this.context);
 }
 
-function validateAllAbove(threshold) {
-	Logger.debug("[SERVICE_Alignment.jsm] validateAllAbove");
+function acceptAllAbove(threshold) {
+	Logger.debug("[SERVICE_Alignment.jsm] acceptAllAbove");
 	var p_threshold = "threshold=" + threshold;
-	return currentSTHttpMgr.GET(null, serviceName, service.validateAllAboveRequest, this.context, p_threshold);
+	return currentSTHttpMgr.GET(null, serviceName, service.acceptAllAboveRequest, this.context, p_threshold);
 }
 
 function rejectAlignment(entity1, entity2, relation) {
@@ -113,9 +113,9 @@ service.prototype.getAPI = function(specifiedContext){
 service.prototype.addAlignment = addAlignment;
 service.prototype.getMappingRelations = getMappingRelations;
 service.prototype.loadAlignment = loadAlignment;
-service.prototype.validateAlignment = validateAlignment;
-service.prototype.validateAllAlignment = validateAllAlignment;
-service.prototype.validateAllAbove = validateAllAbove;
+service.prototype.acceptAlignment = acceptAlignment;
+service.prototype.acceptAllAlignment = acceptAllAlignment;
+service.prototype.acceptAllAbove = acceptAllAbove;
 service.prototype.rejectAlignment = rejectAlignment;
 service.prototype.rejectAllAlignment = rejectAllAlignment;
 service.prototype.rejectAllUnder = rejectAllUnder;
