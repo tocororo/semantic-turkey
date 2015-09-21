@@ -18,6 +18,14 @@
 	<!-- Retrieves the ResourceLocator -->	
 	<osgi:reference id="resourceLocator" interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"/>
 
+	<!-- Imports the custom range provider from the service registry -->
+	<osgi:reference id="customRangeProvider"
+		interface="it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider" />
+
+	<!-- Imports the CODA-core provider from the service registry -->
+	<osgi:reference id="CODACoreProvider"
+		interface="it.uniroma2.art.semanticturkey.customrange.CODACoreProvider" />
+
 	<bean id="conversionService"
 		class="org.springframework.context.support.ConversionServiceFactoryBean">
 		<property name="converters">
@@ -56,7 +64,9 @@
 	<osgi:list id="thirdPartyServices" cardinality="0..N"
 		interface="it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface" />
 
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey" />
+	<context:component-scan base-package="it.uniroma2.art.semanticturkey">
+		<context:exclude-filter type="regex" expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*"/>
+	</context:component-scan>
 
 	<!--A ValidatorFactory whose products (Validators) support dependency injection 
 		on constraint validators, through the use of SpringConstraintValidatorFactory 
