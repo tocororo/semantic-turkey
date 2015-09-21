@@ -30,7 +30,8 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the native template-based implementation of the extension point URIGenerator -->	
+	<!-- Publishes the native template-based implementation of the extension 
+		point URIGenerator -->
 	<bean id="nativeTemplateBasedURIGeneratorFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory" />
 
@@ -42,7 +43,7 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the RDFS-based implementation of the extension point RenderingEngine -->	
+	<!-- Publishes the RDFS-based implementation of the extension point RenderingEngine -->
 	<bean id="rdfsRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory" />
 
@@ -53,8 +54,8 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
-	
-	<!-- Publishes the SKOS-based implementation of the extension point RenderingEngine -->	
+
+	<!-- Publishes the SKOS-based implementation of the extension point RenderingEngine -->
 	<bean id="skosRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory" />
 
@@ -65,8 +66,8 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
-	
-	<!-- Publishes the SKOSXL-based implementation of the extension point RenderingEngine -->	
+
+	<!-- Publishes the SKOSXL-based implementation of the extension point RenderingEngine -->
 	<bean id="skosxlRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory" />
 
@@ -77,21 +78,36 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
-	
-	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->	
+
+	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->
 	<bean id="datasetMetadataRepository"
 		class="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository"
 		ref="datasetMetadataRepository">
 	</osgi:service>
-	
-		<!-- Publishes the ResourceLocator as an OSGi service -->	
+
+	<!-- Publishes the ResourceLocator as an OSGi service -->
 	<bean id="resourceLocator"
 		class="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"
 		ref="resourceLocator">
 	</osgi:service>
+
+	<!-- Publishes CustomRangeProvider as an OSGi service (bean instance generated 
+		based on annotations) -->
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider"
+		ref="customRangeProvider">
+	</osgi:service>
 	
+	<!-- Publishes CODACoreProvider as an OSGi service (bean instance generated 
+		based on annotations) -->
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.customrange.CODACoreProvider"
+		ref="CODACoreProvider">
+	</osgi:service>
 </beans>

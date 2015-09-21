@@ -12,6 +12,10 @@ public class CODACoreProvider {
 	
 	private CODACore codaCore;
 	
+	protected CODACoreProvider() {
+		// This constructor is only required for the generation of a CGLIB proxy
+	}
+	
 	@Autowired
 	public CODACoreProvider(CODAOSGiFactory codaFactory, BundleContext context){
 		this.codaCore = codaFactory.getInstance(context);
