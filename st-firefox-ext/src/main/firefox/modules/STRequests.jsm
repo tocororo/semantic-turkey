@@ -154,7 +154,11 @@ STRequests.Alignment.acceptAllAboveRequest = "acceptAllAbove";
 STRequests.Alignment.rejectAlignmentRequest = "rejectAlignment";
 STRequests.Alignment.rejectAllAlignmentRequest = "rejectAllAlignment";
 STRequests.Alignment.rejectAllUnderRequest = "rejectAllUnder";
-STRequests.Alignment.saveAlignmentRequest = "saveAlignment";
+STRequests.Alignment.changeRelationRequest = "changeRelation";
+STRequests.Alignment.changeMappingPropertyRequest = "changeMappingProperty";
+STRequests.Alignment.applyValidationRequest = "applyValidation";
+STRequests.Alignment.listSuggestedPropertiesRequest = "listSuggestedProperties";
+STRequests.Alignment.exportAlignmentRequest = "exportAlignment";
 STRequests.Alignment.closeSessionRequest = "closeSession";
 
 //systemStart service requests

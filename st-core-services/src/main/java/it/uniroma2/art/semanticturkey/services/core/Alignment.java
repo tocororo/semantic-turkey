@@ -23,6 +23,8 @@ import org.w3c.dom.Element;
 import it.uniroma2.art.owlart.alignment.AlignmentModel;
 import it.uniroma2.art.owlart.alignment.AlignmentModelFactory;
 import it.uniroma2.art.owlart.alignment.Cell;
+import it.uniroma2.art.owlart.alignment.AlignmentModel.Status;
+import it.uniroma2.art.owlart.exceptions.InvalidAlignmentRelationException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
@@ -478,6 +480,85 @@ public class Alignment extends STServiceAdapter {
 	}
 	
 	/**
+	 * Change the relation of an alignment
+	 * @param entity1
+	 * @param entity2
+	 * @param relation
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response changeRelation(ARTURIResource entity1, ARTURIResource entity2, String relation)
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		alignModel.setRelation(entity1, entity2, relation, 1.0f);
+		Cell updatedCell = alignModel.getCell(entity1, entity2);
+		fillCellXMLResponse(updatedCell, dataElem);
+		return response;
+	}
+	
+	/**
+	 * Change the mapping property of an alignment
+	 * @param entity1
+	 * @param entity2
+	 * @param relation
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response changeMappingProperty(ARTURIResource entity1, ARTURIResource entity2, ARTURIResource mappingProperty)
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		alignModel.changeMappingProperty(entity1, entity2, mappingProperty);
+		Cell updatedCell = alignModel.getCell(entity1, entity2);
+		fillCellXMLResponse(updatedCell, dataElem);
+		return response;
+	}
+	
+	/**
+	 * Adds the accepted alignment cell to the ontology model and delete the rejected ones (if 
+	 * previously added to the ontology)
+	 * @param entity1
+	 * @param entity2
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 * @throws ModelUpdateException
+	 */
+	@GenerateSTServiceController
+	public Response applyValidation() throws UnsupportedQueryLanguageException, ModelAccessException, 
+			MalformedQueryException, QueryEvaluationException, ModelUpdateException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element collElem = XMLHelp.newElement(dataElem, "collection");
+		
+		OWLModel model = getOWLModel();
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		
+		Collection<Cell> acceptedCells = alignModel.listCellsByStatus(Status.accepted);
+		for (Cell cell : acceptedCells) {
+			model.addTriple(cell.getEntity1(), cell.getMappingProperty(), cell.getEntity2(), getWorkingGraph());
+			Element cellElem = XMLHelp.newElement(collElem, "cell");
+			cellElem.setAttribute("entity1", cell.getEntity1().getURI());
+			cellElem.setAttribute("entity2", cell.getEntity2().getURI());
+			cellElem.setAttribute("property", cell.getMappingProperty().getURI());
+		}
+		return response;
+	}
+	
+	/**
 	 * Save the alignment with the performed changes and export as rdf file
 	 * @param oRes
 	 * @throws IOException
@@ -485,9 +566,9 @@ public class Alignment extends STServiceAdapter {
 	 * @throws UnsupportedRDFFormatException
 	 * @throws ModelUpdateException
 	 */
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Alignment/saveAlignment", 
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Alignment/exportAlignment", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
-	public void saveAlignment(HttpServletResponse oRes) throws IOException, ModelAccessException, UnsupportedRDFFormatException, ModelUpdateException {
+	public void exportAlignment(HttpServletResponse oRes) throws IOException, ModelAccessException, UnsupportedRDFFormatException, ModelUpdateException {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		File tempServerFile = File.createTempFile("alignment", ".rdf");
 		alignmentModel.serialize(tempServerFile);
@@ -498,6 +579,23 @@ public class Alignment extends STServiceAdapter {
 		oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
 		oRes.flushBuffer();
 		is.close();
+	}
+	
+	@GenerateSTServiceController
+	public Response listSuggestedProperties(ARTURIResource entity, String relation) 
+			throws ModelAccessException, InvalidAlignmentRelationException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element collElem = XMLHelp.newElement(dataElem, "collection");
+		OWLModel ontoModel = getOWLModel();
+		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
+		List<ARTURIResource> props = alignmentModel.suggestPropertiesForRelation(entity, relation, ontoModel);
+		for (ARTURIResource p : props) {
+			Element mpElem = XMLHelp.newElement(collElem, "mappingProperty");
+			mpElem.setTextContent(p.getURI());
+			mpElem.setAttribute("show", ontoModel.getQName(p.getURI()));
+		}
+		return response;
 	}
 	
 	private void fillCellXMLResponse(Cell c, Element parentElement) throws ModelAccessException {
@@ -527,7 +625,8 @@ public class Alignment extends STServiceAdapter {
 	@GenerateSTServiceController
 	public Response closeSession() throws ModelUpdateException {
 		String token = stServiceContext.getSessionToken();
-		modelsMap.get(token).close();
+		AlignmentModel align = modelsMap.get(token);
+		align.close();
 		modelsMap.remove(token);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		return response;

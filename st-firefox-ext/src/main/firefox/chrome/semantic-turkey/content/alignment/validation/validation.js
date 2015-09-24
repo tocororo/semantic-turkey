@@ -11,6 +11,10 @@ Components.utils.import("resource://stservices/SERVICE_Alignment.jsm", art_seman
 var sessionToken;
 var serviceInstance;
 
+var relationMeterShow = "relation"; //tells if the meter in "Relation" column should show the relation as 
+						//Description Logic Symbol ("dlSymbol"), Alignment format relation ("relation") or text ("text")
+var confidenceOnMeter = false; //tells if the meter should show the confidence
+
 window.onload = function() {
 	sessionToken = art_semanticturkey.generateSessionRandomToken();
 	var specifiedContext = new art_semanticturkey.Context();
@@ -19,9 +23,11 @@ window.onload = function() {
 	
 	document.getElementById("selectBtn").addEventListener("command", art_semanticturkey.selectAlignment, false);
 	document.getElementById("loadBtn").addEventListener("command", art_semanticturkey.loadAlignment, false);
-	document.getElementById("quickActionMenu").addEventListener("command", art_semanticturkey.quickActionMenuListener);
-	document.getElementById("quickActionBtn").addEventListener("command", art_semanticturkey.quickActionButtonListener);
-	document.getElementById("saveAlignmentBtn").addEventListener("command", art_semanticturkey.saveAlignment);
+	document.getElementById("quickActionMenu").addEventListener("command", art_semanticturkey.quickActionMenuListener, false);
+	document.getElementById("quickActionBtn").addEventListener("command", art_semanticturkey.quickActionButtonListener, false);
+	document.getElementById("exportAlignmentBtn").addEventListener("command", art_semanticturkey.exportAlignment, false);
+	document.getElementById("applyValidationBtn").addEventListener("command", art_semanticturkey.applyValidation, false);
+	document.getElementById("editRelationMeterBtn").addEventListener("command", art_semanticturkey.editRelationMeter, false);
 }
 
 window.onunload = function() {
@@ -96,6 +102,7 @@ art_semanticturkey.loadAlignment = function() {
 				art_semanticturkey.ResourceViewLauncher.openResourceView(entity1);
 			}, false);
 			listitem.appendChild(listcell);
+			listitem.setAttribute("entity1", entity1); //set as attribute so it can be get directly from item
 			
 			//entity2
 			var entity2 = cellXml.getElementsByTagName("entity2")[0].textContent;
@@ -103,33 +110,37 @@ art_semanticturkey.loadAlignment = function() {
 			listcell.setAttribute("tooltiptext", entity2);
 			listcell.setAttribute("label", entity2);
 			listitem.appendChild(listcell);
+			listitem.setAttribute("entity2", entity2); //set as attribute so it can be get directly from item
 			
 			//relation (with meter based on measure)
 			var relation = cellXml.getElementsByTagName("relation")[0].textContent;
 			var measure = cellXml.getElementsByTagName("measure")[0].textContent;
-			listitem.appendChild(art_semanticturkey.createMeter(relation, measure));
+			var relationStack = art_semanticturkey.createRelationStack(relation, measure);
+			listitem.appendChild(relationStack);
+			listitem.setAttribute("relation", relation); //set as attribute so it can be get directly from item
+			listitem.setAttribute("measure", measure); //set as attribute so it can be get directly from item
 			
 			//mapping property
-			var mp = cellXml.getElementsByTagName("mappingProperty")[0];
-			listcell = document.createElement("listcell");
-			if (mp != undefined) {
-				var mappingProperty = mp.textContent; //not used but it could be useful in the future to add it as attribute
-				var mappingPropertyQName = mp.getAttribute("show");
-				listcell.setAttribute("label", mappingPropertyQName);
+			var mpXml = cellXml.getElementsByTagName("mappingProperty")[0];
+			var mappingProp = null;
+			var mappingPropQName = null;
+			if (mpXml != undefined) {
+				var mappingProp = mpXml.textContent;
+				var mappingPropQName = mpXml.getAttribute("show");
+				listitem.setAttribute("mappingProperty", mappingPropQName);
 			}
-			listitem.appendChild(listcell);
+			var mapPropStack = art_semanticturkey.createMappingPropertyStack(mappingProp, mappingPropQName);
+			listitem.appendChild(mapPropStack);
 			
 			//Actions
 			listcell = document.createElement("listcell");
 			var buttonBox = document.createElement("hbox");
 			var button = document.createElement("button");
 			button.setAttribute("label", "Accept");
-//			button.addEventListener("command", art_semanticturkey.acceptButtonListener, false);
 			button.addEventListener("command", art_semanticturkey.actionButtonListener, false);
 			buttonBox.appendChild(button);
 			button = document.createElement("button");
 			button.setAttribute("label", "Reject");
-//			button.addEventListener("command", art_semanticturkey.rejectButtonListener, false);
 			button.addEventListener("command", art_semanticturkey.actionButtonListener, false);
 			buttonBox.appendChild(button);
 			listitem.appendChild(buttonBox);
@@ -143,6 +154,7 @@ art_semanticturkey.loadAlignment = function() {
 			var s = cellXml.getElementsByTagName("status")[0];
 			if (s != undefined) {
 				var status = s.textContent;
+				listcell.setAttribute("status", status);
 				statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
 				//since comment is shown as tooltip of status, check its existence only when status is defined
 				var comment = cellXml.getElementsByTagName("comment")[0];
@@ -158,9 +170,10 @@ art_semanticturkey.loadAlignment = function() {
 			//finally add the build item to the listbox
 			listbox.appendChild(listitem);
 		}
-		document.getElementById("quickActionMenu").setAttribute("disabled", "false");
-		document.getElementById("saveAlignmentBtn").setAttribute("disabled", "false");
-		document.getElementById("thresholdTxt").setAttribute("disabled", "true");
+		document.getElementById("quickActionMenu").disabled = false;
+		document.getElementById("exportAlignmentBtn").disabled = false;
+		document.getElementById("applyValidationBtn").disabled = false;
+		document.getElementById("thresholdTxt").hidden = true;
 		document.getElementById("thresholdTxt").setAttribute("value", "0.0");
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
@@ -168,43 +181,258 @@ art_semanticturkey.loadAlignment = function() {
 	
 }
 
-art_semanticturkey.createMeter = function(relation, measure) {
+/**
+ * Creates a stack  within:
+ * - "backgroundBox" a light green box (representing the background of the meter)
+ * 		- "meterBox" a green box inside backgroundBox that represent the filler of the meter
+ * - "relationBox" a box overlapping "backgroundBox"
+ * 		- "label" a label in relationBox showing the relation
+ * - "editBox" a box overlapping all the previous boxes
+ * 		- "editButton" to edit the relation
+ */
+art_semanticturkey.createRelationStack = function(relation, measure) {
 	var stack = document.createElement("stack");
-	var outBox = document.createElement("box");
-	outBox.setAttribute("style", "background-color: #BEF781; outline: 1px solid black;");
-	var inBox = document.createElement("box");
-	inBox.setAttribute("style", "background-color: #01DF01;");
-	inBox.setAttribute("width", measure*100 + "px");
-	outBox.appendChild(inBox);
+	stack.setAttribute("class", "meterStack");//useful to update UI after changes (check editRelationMeter method)
+	stack.setAttribute("tooltiptext", "Relation: " + art_semanticturkey.getCurrentShowForRelation(relation)
+			+ "\nConfidence: " + measure);
 	
-	var relationBox = document.createElement("hbox");
+	var backgroundBox = document.createElement("box");
+	backgroundBox.setAttribute("style", "background-color: #BEF781; outline: 1px solid black;");
+	var meterBox = document.createElement("box");
+	meterBox.setAttribute("class", "meterFiller");
+	meterBox.setAttribute("style", "background-color: #01DF01;");
+	meterBox.setAttribute("width", measure*100 + "px");
+	backgroundBox.appendChild(meterBox);
+	stack.appendChild(backgroundBox);
+	
+	var relationBox = document.createElement("vbox");
 	relationBox.setAttribute("pack", "center");
 	relationBox.setAttribute("align", "center");
 	var label = document.createElement("label");
-	label.setAttribute("style", "color: black; font-weight: bold;");
-	label.setAttribute("value", art_semanticturkey.convertRelationToSymbol(relation));
-	
+	label.setAttribute("style", "max-width: 100px; color: black; font-weight: bold; text-overflow: ellipsis;");
+	label.setAttribute("value", art_semanticturkey.getLabelForMeter(relation, measure));
+	label.setAttribute("class", "meterLabel");//useful to update UI after changes (check editRelationMeter method)
 	relationBox.appendChild(label);
-	
-	stack.appendChild(outBox);
 	stack.appendChild(relationBox);
 	
-	stack.setAttribute("tooltiptext", "Relation: " + art_semanticturkey.convertRelationToSymbol(relation)
-			+ " (" + art_semanticturkey.getRelationDescription(relation) + ")\nConfidence: " + measure);
-	stack.setAttribute("relation", relation);
-	stack.setAttribute("measure", measure);
+	var editBox = document.createElement("hbox");
+	editBox.setAttribute("align", "start");
+	editBox.setAttribute("pack", "end");
+	editBox.setAttribute("hidden", "true");
+	var editBtn = document.createElement("toolbarbutton");
+	editBtn.setAttribute("type", "menu");
+	editBtn.setAttribute("image", "chrome://semantic-turkey/skin/images/edit_10x10.gif");
+	var menu = art_semanticturkey.createEditRelationMenu(relation);
+	editBtn.appendChild(menu);
+	editBox.appendChild(editBtn);
+	stack.appendChild(editBox);
+	
+	stack.addEventListener("mouseover", function() {editBox.setAttribute("hidden", "false");}, false);
+	stack.addEventListener("mouseleave", function() {editBox.setAttribute("hidden", "true");}, false);
 	
 	return stack;
 }
 
+/**
+ * Creates a menu to allows to change the relation of an alignment
+ */
+art_semanticturkey.createEditRelationMenu = function(currentRelation) {
+	var menu = document.createElement("menupopup");
+	var relList = art_semanticturkey.getRelationList();
+	for (var i=0; i<relList.length; i++) {
+		var menuitem = document.createElement("menuitem");
+		menuitem.setAttribute("type", "radio");
+		menuitem.setAttribute("label", relList[i]);
+		menuitem.setAttribute("relation", relList[i]); //maintain the relation (could be different from the label e.g. ">" != "subsumes (1.0)")
+		menuitem.setAttribute("class", "editRelationMenuitem");//useful to update UI after changes (check editRelationMeter method)
+		if (relList[i] == art_semanticturkey.getCurrentShowForRelation(currentRelation)){
+			menuitem.setAttribute("checked", "true");
+		}
+		//when an item is clicked, update the label of the meter and apply the changes to the align model
+		menuitem.addEventListener("command", art_semanticturkey.changeRelationListener, false);
+		menu.appendChild(menuitem);
+	}
+	return menu;
+}
+
+/**
+ * Creates a stack  within:
+ * - "propBox" a box containing the property
+ * 		- "propLabel" a label in propBox showing the property
+ * - "editBox" a box overlapping all the previous boxes 
+ * 		- "editButton" to edit the relation
+ */
+art_semanticturkey.createMappingPropertyStack = function(mappingProp, mappingPropQName) {
+	var stack = document.createElement("stack");
+	stack.setAttribute("class", "mapPropStack");
+	
+	var propBox = document.createElement("hbox");
+	propBox.setAttribute("pack", "center");
+	propBox.setAttribute("align", "center");
+	var propLabel = document.createElement("label");
+	propLabel.setAttribute("class", "mapPropLabel");//useful to update UI after changes
+	if (mappingPropQName != null && mappingProp != null) {
+		propLabel.setAttribute("value", mappingPropQName);
+		stack.setAttribute("tooltiptext", mappingProp);
+	}
+	propBox.appendChild(propLabel);
+	stack.appendChild(propBox);
+	
+	//prepare the edit button (and append an empty menupopup, it will be populated once the button is clicked)
+	var editBox = document.createElement("hbox");
+	editBox.setAttribute("align", "start");
+	editBox.setAttribute("pack", "end");
+	editBox.setAttribute("class", "mapPropEditorBox");
+	if (mappingPropQName == null && mappingProp == null) {
+		editBox.setAttribute("hidden", "true");
+	}
+	var editBtn = document.createElement("toolbarbutton");
+	editBtn.setAttribute("type", "menu");
+	editBtn.setAttribute("image", "chrome://semantic-turkey/skin/images/edit_10x10.gif");
+	editBtn.setAttribute("hidden", "true");
+	//"mousedown" rather than "click" so it populate earlier the menu
+	editBtn.addEventListener("mousedown", art_semanticturkey.editMappingPropertyBtnListener, false);
+	var menu = document.createElement("menupopup");
+	editBtn.appendChild(menu);
+	editBox.appendChild(editBtn);
+	stack.appendChild(editBox);
+	
+	stack.addEventListener("mouseover", function() {editBtn.setAttribute("hidden", "false");}, false);
+	stack.addEventListener("mouseleave", function() {editBtn.setAttribute("hidden", "true");}, false);
+	
+	return stack;
+}
+
+/**
+ * Listener to edit button of the mapping property.
+ * Populates the menu to allows to change the mapping property of an alignment.
+ */
+art_semanticturkey.editMappingPropertyBtnListener = function() {
+	var button = this;
+	var menu = button.children[0];
+	//empty menu
+	while (menu.hasChildNodes()) {
+		menu.removeChild(menu.lastChild);
+	}
+	var listitem = art_semanticturkey.getRelatedListitem(button);
+	var entity1 = listitem.getAttribute("entity1");
+	var relation = listitem.getAttribute("relation");
+	var xmlResp = serviceInstance.listSuggestedProperties(entity1, relation);
+	var mpColl = xmlResp.getElementsByTagName("mappingProperty");
+	var currentMapProp = listitem.getAttribute("mappingProperty");
+	for (var i=0; i<mpColl.length; i++) {
+		var mappingProperty = mpColl[i].textContent;
+		var mappingPropertyQName = mpColl[i].getAttribute("show");
+		var menuitem = document.createElement("menuitem");
+		menuitem.setAttribute("type", "radio");
+		menuitem.setAttribute("label", mappingPropertyQName);
+		menuitem.setAttribute("value", mappingProperty);
+		menuitem.addEventListener("command", art_semanticturkey.changePropertyListener, false);
+		if (currentMapProp == mappingPropertyQName) {
+			Logger.debug("checking " + mappingPropertyQName);
+			menuitem.setAttribute("checked", "true"); //TODO it doesn't work, why?
+		}
+		menu.appendChild(menuitem);
+		
+	}
+}
+
+/**
+ * Method called when the user change the relation of an alignment through the menu.
+ * Update the alignment model and the UI. 
+ */
+art_semanticturkey.changeRelationListener = function() {
+	var menuitem = this;
+	var listitem = art_semanticturkey.getRelatedListitem(menuitem);
+	var oldRelation = listitem.getAttribute("relation");
+	var newRelation = menuitem.getAttribute("relation");
+	var oldMeasure = listitem.getAttribute("measure");
+	var newMeasure = "1.0";
+	try{
+		if (newRelation != oldRelation) { //if user has really changed relation apply changes
+			if (oldMeasure != newMeasure) { //if old measure was != 1.0 warn that new measure will be 1.0
+				var message = "Attention: changing the relation will set automatically the measure " +
+					"of the alignment to 1.0. Do you want to continue?";
+				if (!window.confirm(message)){
+					//if user doesn't confirm cancel its choice and restore old relation
+					var menupopup = menuitem.parentNode;
+					var menuitems = menupopup.children;
+					for (var i=0; i<menuitems.length; i++) {
+						if (menuitems[i].getAttribute("label") == oldRelation) {
+							menuitems[i].setAttribute("checked", "true");
+						} else if (menuitems[i].getAttribute("label") == newRelation) {
+							menuitems[i].setAttribute("checked", "false");
+						}
+					}
+					return;
+				}
+			}
+			//update attributes and UI (label , tooltip and filler of meter)
+			listitem.setAttribute("measure", newMeasure);
+			listitem.setAttribute("relation", newRelation);
+			listitem.removeAttribute("status");
+			listitem.removeAttribute("mappingProperty");
+			var meterLabel = listitem.getElementsByClassName("meterLabel")[0];
+			meterLabel.setAttribute("value", art_semanticturkey.getLabelForMeter(newRelation, newMeasure));
+			var meterStack = listitem.getElementsByClassName("meterStack")[0];
+			meterStack.setAttribute("tooltiptext", 
+					"Relation: " + art_semanticturkey.getCurrentShowForRelation(newRelation) + "\nConfidence: " + newMeasure);
+			var meterFiller = listitem.getElementsByClassName("meterFiller")[0];
+			meterFiller.setAttribute("width", "100px");
+			var mapPropLabel = listitem.getElementsByClassName("mapPropLabel")[0];
+			mapPropLabel.setAttribute("value", "");
+			var mapPropStack = listitem.getElementsByClassName("mapPropStack")[0];
+			meterStack.removeAttribute("tooltiptext");
+			var mapPropEditorBox = listitem.getElementsByClassName("mapPropEditorBox")[0];
+			mapPropEditorBox.setAttribute("hidden", "true");
+			var statusImage = listitem.getElementsByTagName("image")[0];
+			statusImage.removeAttribute("src");
+			statusImage.removeAttribute("tooltiptext");
+			//apply change to alignment model
+			var entity1 = listitem.getAttribute("entity1");
+			var entity2 = listitem.getAttribute("entity2");
+			serviceInstance.changeRelation(entity1, entity2, newRelation);
+		}
+	} catch (e) {
+		art_semanticturkey.Alert.alert(e);
+	}
+}
+
+/**
+ * Method called when the user change the mappingProperty of an alignment through the menu.
+ * Update the label of the mappingProperty cell and apply the changes to the align model
+ */
+art_semanticturkey.changePropertyListener = function() {
+	var menuitem = this;
+	var listitem = art_semanticturkey.getRelatedListitem(menuitem);
+	var oldMapPropQName = listitem.getAttribute("mappingProperty");
+	var newMapPropQName = menuitem.getAttribute("label");
+	if (oldMapPropQName != newMapPropQName) {
+		try {
+			var entity1 = listitem.getAttribute("entity1");
+			var entity2 = listitem.getAttribute("entity2");
+			var mappingProperty = menuitem.getAttribute("value");
+			serviceInstance.changeMappingProperty(entity1, entity2, mappingProperty);
+			listitem.setAttribute("mappingProperty", newMapPropQName);
+			var mapPropStack = listitem.getElementsByClassName("mapPropStack")[0];
+			mapPropStack.setAttribute("tooltiptext", mappingProperty);
+			var mapPropLabel = listitem.getElementsByClassName("mapPropLabel")[0];
+			mapPropLabel.setAttribute("value", newMapPropQName);
+		} catch(e) {
+			art_semanticturkey.Alert.alert(e);
+		}
+	}
+}
+
+/**
+ * Listener of accept/reject buttons.
+ */
 art_semanticturkey.actionButtonListener = function() {
 	var button = this;
-	//button > hbox > listitem
-	var currentItem = button.parentNode.parentNode;
-	var entity1 = currentItem.children[0].getAttribute("label");
-	var entity2 = currentItem.children[1].getAttribute("label");
-	var relation = currentItem.children[2].getAttribute("relation");
-	Logger.debug(button.label + " to " + entity1 + " " + relation + " " + entity2);
+	var currentItem = art_semanticturkey.getRelatedListitem(button);
+	var entity1 = currentItem.getAttribute("entity1");
+	var entity2 = currentItem.getAttribute("entity2");
+	var relation = currentItem.getAttribute("relation");
 	try {
 		var xmlResp;
 		if (button.label == "Accept") {
@@ -212,52 +440,81 @@ art_semanticturkey.actionButtonListener = function() {
 		} else {
 			xmlResp = serviceInstance.rejectAlignment(entity1, entity2, relation);
 		} 
-		//update mapping property
-		var mp = xmlResp.getElementsByTagName("mappingProperty")[0];
-		if (mp != undefined) {
-			var mappingProperty = mp.textContent;
-			var mappingPropertyQName = mp.getAttribute("show");
-			currentItem.children[3].setAttribute("label", mappingPropertyQName);
-		} else {
-			currentItem.children[3].setAttribute("label", "");
-		}
-		//update status
-		var statusImg = currentItem.children[5].children[0]; //6th listcell (status) has only 1 child: <image> 
-		var status = xmlResp.getElementsByTagName("status")[0].textContent;
-		statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
-		statusImg.removeAttribute("tooltiptext");
-		var commentElem = xmlResp.getElementsByTagName("comment")[0];
-		if (commentElem != undefined) {
-			var comment = commentElem.textContent;
-			statusImg.setAttribute("tooltiptext", comment);
-			if (status = "error") {
-				art_semanticturkey.Alert.alert("Has not been possible to validate the given alignment:"
-						+ entity1 + " " + relation + " " + entity2, comment);
-			}
-		} else {
-			statusImg.setAttribute("tooltiptext", status);
-		}
+		art_semanticturkey.updateListItemAfterAction(currentItem, xmlResp.getElementsByTagName("cell")[0], false);
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
 	}
 }
 
+/**
+ * Update listitem after accept/reject action: update mapping property and status
+ * Item is the listitem to update;
+ * cellXml is a portion of xml response containing the cell info;
+ * mutlipleAction is a boolean telling if the update is following a single or multiple accept/reject
+ */
+art_semanticturkey.updateListItemAfterAction = function(item, cellXml, multipleAction) {
+	//update mapping property
+	var mp = cellXml.getElementsByTagName("mappingProperty")[0];
+	var mapPropStack = item.getElementsByClassName("mapPropStack")[0];
+	var mapPropLabel = item.getElementsByClassName("mapPropLabel")[0];
+	var mapPropEditorBox = item.getElementsByClassName("mapPropEditorBox")[0];
+	if (mp != undefined) {
+		var mappingProperty = mp.textContent;
+		var mappingPropertyQName = mp.getAttribute("show");
+		mapPropLabel.setAttribute("value", mappingPropertyQName);
+		mapPropStack.setAttribute("tooltiptext", mappingProperty);
+		mapPropEditorBox.setAttribute("hidden", "false");
+		item.setAttribute("mappingProperty", mappingPropertyQName);
+	} else {
+		mapPropLabel.setAttribute("value", "");
+		mapPropStack.removeAttribute("tooltiptext");
+		mapPropEditorBox.setAttribute("hidden", "true");
+		item.removeAttribute("mappingProperty");
+	}
+	//update status
+	var status = cellXml.getElementsByTagName("status")[0].textContent;
+	item.setAttribute("status", status);
+	var statusImg = item.children[5].children[0];//listitem > listcell > image
+	statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
+	statusImg.removeAttribute("tooltiptext");
+	var commentElem = cellXml.getElementsByTagName("comment")[0];
+	if (commentElem != undefined) {
+		var comment = commentElem.textContent;
+		statusImg.setAttribute("tooltiptext", comment);
+		if (status = "error" && !multipleAction) {
+			var entity1 = item.getAttribute("entity1");
+			var entity2 = item.getAttribute("entity2");
+			var relation = item.getAttribute("relation");
+			art_semanticturkey.Alert.alert("Has not been possible to validate the given alignment: "
+					+ entity1 + " " + relation + " " + entity2, comment);
+		}
+	} else {
+		statusImg.setAttribute("tooltiptext", status);
+	}
+}
+
+/**
+ * Listener of changing on quick action menu (accept all (above), reject all (under))
+ */
 art_semanticturkey.quickActionMenuListener = function() {
 	var menulist = this;
 	var selectedAction = menulist.selectedItem.label;
 	if (selectedAction != "---") {
 		document.getElementById("quickActionBtn").setAttribute("disabled", "false");
 		if (selectedAction.indexOf("threshold") > -1) {
-			document.getElementById("thresholdTxt").disabled = false;
+			document.getElementById("thresholdTxt").hidden = false;
 		} else {
-			document.getElementById("thresholdTxt").disabled = true;
+			document.getElementById("thresholdTxt").hidden = true;
 		}
 	} else {
 		document.getElementById("quickActionBtn").setAttribute("disabled", "true");
-		document.getElementById("thresholdTxt").disabled = true;
+		document.getElementById("thresholdTxt").hidden = true;
 	}
 }
 
+/**
+ * Listener of perform quick action button.
+ */
 art_semanticturkey.quickActionButtonListener = function() {
 	var report = null;
 	var actionId = document.getElementById("quickActionMenu").selectedItem.id;
@@ -297,12 +554,16 @@ art_semanticturkey.quickActionButtonListener = function() {
 	document.getElementById("quickActionMenu").selectedIndex = 0;
 	if (document.getElementById("alignmentList").itemCount == 0) {
 		document.getElementById("quickActionMenu").disabled = true;
-		document.getElementById("saveAlignmentBtn").disabled = true;
+		document.getElementById("exportAlignmentBtn").disabled = true;
+		document.getElementById("applyValidationBtn").disabled = true;
 	}
-	document.getElementById("thresholdTxt").disabled = true;
+	document.getElementById("thresholdTxt").hidden = true;
 	document.getElementById("quickActionBtn").disabled = true;
 }
 
+/**
+ * Parse the response of a quick action (accept/rejectAll accept/rejectAllAbove/Under)
+ */
 art_semanticturkey.updateUIAfterQuickAction = function(xmlResp) {
 	var cellXmlColl = xmlResp.getElementsByTagName("cell");
 	for (var i=0; i < cellXmlColl.length; i++) {
@@ -316,118 +577,80 @@ art_semanticturkey.updateUIAfterQuickAction = function(xmlResp) {
 		var alignmentList = document.getElementById("alignmentList");
 		for (var j=0; j < alignmentList.itemCount; j++) {
 			var li = alignmentList.getItemAtIndex(j);
-			if (li.children[0].getAttribute("label") == entity1 && li.children[1].getAttribute("label") == entity2) {
+			if (li.getAttribute("entity1") == entity1 && li.getAttribute("entity2") == entity2) {
 				listItem = li;
 				break;
 			}
 		}
 		if (listItem != null) {
-			//update mapping property
-			var mp = cellXml.getElementsByTagName("mappingProperty")[0];
-			if (mp != undefined) {
-				var mappingProperty = mp.textContent;
-				var mappingPropertyQName = mp.getAttribute("show");
-				listItem.children[3].setAttribute("label", mappingPropertyQName);
-			} else {
-				listItem.children[3].setAttribute("label", "");
-			}
-			//update status
-			var statusImg = listItem.children[5].children[0]; //6th listcell (status) has only 1 child: <image> 
-			var status = cellXml.getElementsByTagName("status")[0].textContent;
-			statusImg.setAttribute("src", art_semanticturkey.getImageSrcForStatus(status));
-			statusImg.removeAttribute("tooltiptext");
-			var commentElem = cellXml.getElementsByTagName("comment")[0];
-			if (commentElem != undefined) {
-				var comment = commentElem.textContent;
-				statusImg.setAttribute("tooltiptext", comment);
-				if (status = "error") {
-					//TODO collect to do report
-				}
-			} else {
-				statusImg.setAttribute("tooltiptext", status);
-			}
+			art_semanticturkey.updateListItemAfterAction(listItem, cellXml, true);
 		}
 	}
 }
 
 /**
- * Parses the response of a quick action, removes the accepted/rejected items from the alignment
- * listbox and creates a report of the changes
+ * Adds the accepted alignments to the ontology model.
  */
-//TODO: wait for deleting it. This method could be reused for report of the adding of the accepted alignment to model
-//art_semanticturkey.parseQuickActionResponse = function(xmlResp) {
-//	var report = {}; //report of the alignments processed (acceptd/rejected)
-//	
-//	var actionType = xmlResp.getElementsByTagName("collection")[0].getAttribute("type");
-//	report.action = actionType;
-//	
-//	var alignReport = new Array();
-//	
-//	var alignmentList = document.getElementById("alignmentList");
-//	var alignmentXmlColl = xmlResp.getElementsByTagName("alignment");
-//	for (var i=0; i<alignmentXmlColl.length; i++) {
-//		var align = alignmentXmlColl[i];
-//		var entity1 = align.getElementsByTagName("entity1")[0].textContent;
-//		var entity2 = align.getElementsByTagName("entity2")[0].textContent;
-//		var relation = align.getElementsByTagName("relation")[0].textContent;
-//		//prepare the report
-//		var alignElement = {};
-//		alignElement.entity1 = entity1;
-//		alignElement.entity2 = entity2;
-//		alignElement.relation = relation;
-//		alignReport.push(alignElement);
-//		//remove the item from listbox
-//		var count = alignmentList.itemCount;
-//		for (var j=0; j<count; j++){
-//			var item = alignmentList.getItemAtIndex(j);
-//			var e1 = item.children[0].getAttribute("label");
-//			var e2 = item.children[1].getAttribute("label");
-//			if (e1 == entity1 && e2 == entity2){
-//				item.remove();
-//				j--;
-//				break;
-//			}
-//		}
-//	}
-//	report.alignReport = alignReport;
-//	return report;
-//}
-
-var relationSymbolMap = [];
-relationSymbolMap.push({relation: "=", symbol: "\u2261", description: "equivalent"});
-relationSymbolMap.push({relation: ">", symbol: "\u2292", description: "subsumes"});
-relationSymbolMap.push({relation: "<", symbol: "\u2291", description: "is subsumed"});
-relationSymbolMap.push({relation: "%", symbol: "\u22a5", description: "incompatible"});
-relationSymbolMap.push({relation: "HasInstance", symbol: "\u2192", description: "has instance"});
-relationSymbolMap.push({relation: "InstanceOf", symbol: "\u2190", description: "instance of"});
-
-art_semanticturkey.convertRelationToSymbol = function(relation) {
-	for (var i=0; i<relationSymbolMap.length; i++){
-		if (relationSymbolMap[i].relation == relation) {
-			return relationSymbolMap[i].symbol;
+art_semanticturkey.applyValidation = function() {
+	var alignmentList = document.getElementById("alignmentList");
+	var accepted = false; //Tells if there is some alignment accepted
+	//check if there is some accepted alignment
+	for (var i=0; i<alignmentList.itemCount; i++) {
+		var listitem = alignmentList.getItemAtIndex(i);
+		var status = listitem.getAttribute("status");
+		if (status == "accepted") { //TODO: decide if consider rejected alignment too
+			accepted = true;
+			break;
 		}
+	}
+	if (accepted) {
+		var message = "This operation will add to the ontology the triples related to the " +
+			"accepted alignment. Are you sure to continue?";
+		if (window.confirm(message)) {
+			try {
+				var xmlResp = serviceInstance.applyValidation();
+				art_semanticturkey.parseApplyValidationResponse(xmlResp);
+			} catch (e) {
+				art_semanticturkey.Alert.alert(e)
+			}
+		}
+	} else {
+		art_semanticturkey.Alert.alert("There aren't alignment accepted. " +
+				"Please, accept at least one alignment, then retry.");
 	}
 }
 
-art_semanticturkey.convertSymbolToRelation = function(symbol) {
-	for (var i=0; i<relationSymbolMap.length; i++){
-		if (relationSymbolMap[i].symbol == symbol) {
-			return relationSymbolMap[i].relation;
-		}
+/**
+ * Parses the response of the apply validation and show a report window
+ */
+art_semanticturkey.parseApplyValidationResponse = function(xmlResp) {
+	var alignReport = new Array(); //report of the alignments processed (acceptd/rejected)
+	
+	var listCellXml = xmlResp.getElementsByTagName("cell");
+	for (var i=0; i<listCellXml.length; i++) {
+		var cell = listCellXml[i];
+		var entity1 = cell.getAttribute("entity1");
+		var entity2 = cell.getAttribute("entity2");
+		var property = cell.getAttribute("property");
+		
+		var alignCell = {};
+		alignCell.entity1 = entity1;
+		alignCell.entity2 = entity2;
+		alignCell.property = property;
+		alignReport.push(alignCell);
 	}
+	var params = {};
+	params.alignReport = alignReport;
+	window.openDialog("chrome://semantic-turkey/content/alignment/validation/report.xul", 
+			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", params);
 }
 
-art_semanticturkey.getRelationDescription = function(relation) {
-	for (var i=0; i<relationSymbolMap.length; i++){
-		if (relationSymbolMap[i].relation == relation) {
-			return relationSymbolMap[i].description;
-		}
-	}
-}
-
-art_semanticturkey.saveAlignment = function() {
+/**
+ * exports the alignment model in a file
+ */
+art_semanticturkey.exportAlignment = function() {
 	try {
-		var response = serviceInstance.saveAlignment();
+		var response = serviceInstance.exportAlignment();
 		
 		var nsIFilePicker = Components.interfaces.nsIFilePicker;
 		var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
@@ -445,6 +668,88 @@ art_semanticturkey.saveAlignment = function() {
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
 	}
+}
+
+/**
+ * opens a dialog that allows to edit the relation meter label
+ */
+art_semanticturkey.editRelationMeter = function() {
+	var params = {
+		rel: relationMeterShow,
+		conf: confidenceOnMeter,
+		changed: false
+	}
+	window.openDialog("chrome://semantic-turkey/content/alignment/validation/editRelationMeter.xul", 
+			"_blank", "chrome,dependent,dialog,modal=yes,centerscreen", params);
+	//if there have been changes update some elements of the UI
+	if (params.changed) {
+		relationMeterShow = params.rel;
+		confidenceOnMeter = params.conf;
+		//updates the menuitems of the edit relation menu
+		var editRelItems = document.getElementsByClassName("editRelationMenuitem");
+		for (var i=0; i<editRelItems.length; i++){
+			var relation = editRelItems[i].getAttribute("relation");
+			editRelItems[i].setAttribute("label", art_semanticturkey.getCurrentShowForRelation(relation));
+		}
+		//updates the label of the meters
+		var labels = document.getElementsByClassName("meterLabel");
+		for (var i=0; i<labels.length; i++){
+			var relation = art_semanticturkey.getRelatedListitem(labels[i]).getAttribute("relation");
+			var measure = art_semanticturkey.getRelatedListitem(labels[i]).getAttribute("measure");
+			labels[i].setAttribute("value", art_semanticturkey.getLabelForMeter(relation, measure));
+		}
+		//updates the tooltip of the meters
+		var stacks = document.getElementsByClassName("meterStack");
+		for (var i=0; i<stacks.length; i++){
+			var relation = art_semanticturkey.getRelatedListitem(stacks[i]).getAttribute("relation");
+			var measure = art_semanticturkey.getRelatedListitem(stacks[i]).getAttribute("measure");
+			stacks[i].setAttribute("tooltiptext", "Relation: " + art_semanticturkey.getCurrentShowForRelation(relation)
+					+ "\nConfidence: " + measure);
+		}
+	}
+}
+
+//UTILS
+
+art_semanticturkey.getRelatedListitem = function(element) {
+	var listitem = element;
+	do {
+		listitem = listitem.parentNode;
+	}
+	while (listitem.tagName != "listitem");
+	return listitem;
+}
+
+var relationSymbolMap = [];
+relationSymbolMap.push({relation: "=", dlSymbol: "\u2261", text: "equivalent"});
+relationSymbolMap.push({relation: ">", dlSymbol: "\u2292", text: "subsumes"});
+relationSymbolMap.push({relation: "<", dlSymbol: "\u2291", text: "is subsumed"});
+relationSymbolMap.push({relation: "%", dlSymbol: "\u22a5", text: "incompatible"});
+relationSymbolMap.push({relation: "HasInstance", dlSymbol: "\u2192", text: "has instance"});
+relationSymbolMap.push({relation: "InstanceOf", dlSymbol: "\u2190", text: "instance of"});
+
+art_semanticturkey.getRelationList = function() {
+	var list = new Array();
+	for (var i=0; i<relationSymbolMap.length; i++){
+		list.push(relationSymbolMap[i].relation);
+	}
+	return list;
+}
+
+art_semanticturkey.getCurrentShowForRelation = function(relation) {
+	for (var i=0; i<relationSymbolMap.length; i++){
+		if (relationSymbolMap[i].relation == relation) {
+			return relationSymbolMap[i][relationMeterShow];
+		}
+	}
+}
+
+art_semanticturkey.getLabelForMeter = function(relation, measure) {
+	var label = art_semanticturkey.getCurrentShowForRelation(relation);
+	if (confidenceOnMeter) {
+		label = label + " (" + measure + ")";  
+	}
+	return label;
 }
 
 art_semanticturkey.getImageSrcForStatus = function(status) {

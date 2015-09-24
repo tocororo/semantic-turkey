@@ -82,10 +82,41 @@ function rejectAllUnder(threshold) {
 	return currentSTHttpMgr.GET(null, serviceName, service.rejectAllUnderRequest, this.context, p_threshold);
 }
 
-function saveAlignment() {
-	Logger.debug("[SERVICE_Alignment.jsm] saveAlignment");
+function changeRelation(entity1, entity2, relation) {
+	Logger.debug("[SERVICE_Alignment.jsm] changeRelation");
+	var params = [];
+	params.push("entity1=" + entity1);
+	params.push("entity2=" + entity2);
+	params.push("relation=" + relation);
+	return currentSTHttpMgr.GET(null, serviceName, service.changeRelationRequest, this.context, params);
+}
+
+function changeMappingProperty(entity1, entity2, mappingProperty) {
+	Logger.debug("[SERVICE_Alignment.jsm] changeMappingProperty");
+	var params = [];
+	params.push("entity1=" + entity1);
+	params.push("entity2=" + entity2);
+	params.push("mappingProperty=" + mappingProperty);
+	return currentSTHttpMgr.GET(null, serviceName, service.changeMappingPropertyRequest, this.context, params);
+}
+
+function applyValidation() {
+	Logger.debug('[SERVICE_Alignment.jsm] applyValidation');
+	return currentSTHttpMgr.GET(null, serviceName, service.applyValidationRequest, this.context);
+}
+
+function listSuggestedProperties(entity, relation) {
+	Logger.debug('[SERVICE_Alignment.jsm] listSuggestedProperties');
+	var params = [];
+	params.push("entity=" + entity);
+	params.push("relation=" + relation);
+	return currentSTHttpMgr.GET(null, serviceName, service.listSuggestedPropertiesRequest, this.context, params);
+}
+
+function exportAlignment() {
+	Logger.debug("[SERVICE_Alignment.jsm] exportAlignment");
 	//here doesn't use the GET method, because it needs the raw responseText 
-	var url = currentSTHttpMgr.getRequestUrl(serviceName, service.saveAlignmentRequest, this.context);
+	var url = currentSTHttpMgr.getRequestUrl(serviceName, service.exportAlignmentRequest, this.context);
 	Logger.debug("GET " + url);
 	var httpReq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
 	httpReq.open("GET", url, false);
@@ -119,7 +150,11 @@ service.prototype.acceptAllAbove = acceptAllAbove;
 service.prototype.rejectAlignment = rejectAlignment;
 service.prototype.rejectAllAlignment = rejectAllAlignment;
 service.prototype.rejectAllUnder = rejectAllUnder;
-service.prototype.saveAlignment = saveAlignment;
+service.prototype.changeRelation = changeRelation;
+service.prototype.changeMappingProperty = changeMappingProperty;
+service.prototype.applyValidation = applyValidation;
+service.prototype.listSuggestedProperties = listSuggestedProperties;
+service.prototype.exportAlignment = exportAlignment;
 service.prototype.closeSession = closeSession;
 service.prototype.context = new Context();  // set the default context
 service.constructor = service;

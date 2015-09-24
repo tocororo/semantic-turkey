@@ -40,7 +40,13 @@
 		<listhead>
 			<listheader label="Source onotlogy entity"/>
 			<listheader label="Target onotlogy entity"/>
-			<listheader label="Relation"/>
+			<listheader>
+				<label value="Relation" />
+				<spacer flex="1"/>
+				<toolbarbutton id="editRelationMeterBtn" 
+					image="chrome://semantic-turkey/skin/images/edit_10x10.gif" 
+					tooltiptext="Edit relation meter" />
+			</listheader>
 			<listheader label="Mapping Property"/>
 			<listheader label="Action"/>
 			<listheader label="Status"/>
@@ -51,7 +57,7 @@
 			<listcol width="100px"/> <!-- relation -->
 			<listcol />	<!-- mapping property -->
 			<listcol />	<!-- action -->
-			<listcol width="50px" style="margin-right: 16px;"/> <!-- status (margin to avoid scrollbar overlapping column content)-->
+			<listcol width="45px" style="margin-right: 16px;"/> <!-- status (margin to avoid scrollbar overlapping column content)-->
 		</listcols>
 	</listbox>
 	
@@ -66,13 +72,13 @@
 				<menuitem id="rejectUnderThreshold" label="Reject all under the threshold..."/>
 			</menupopup>
 		</menulist>
-		<textbox id="thresholdTxt" disabled="true" width="100px" type="number" decimalplaces="2" increment="0.01" max="1"/>
+		<textbox id="thresholdTxt" hidden="true" width="50px" type="number" decimalplaces="2" increment="0.01" max="1"/>
 		<button id="quickActionBtn" label="Perform quick action" disabled="true" />
 		<separator flex="1" />
-		<button id="addToOntologyBtn" label="Add to model" disabled="true"
-			tooltiptext="Add all the accepted alignment to the model"/>
-		<button id="saveAlignmentBtn" label="Save as..." disabled="true"
-			tooltiptext="Save the state of the alignment"/>
+		<button id="applyValidationBtn" label="Apply to ontology" disabled="true"
+			tooltiptext="Apply the accepted and rejected alignments to the ontology model"/>
+		<button id="exportAlignmentBtn" label="Export as..." disabled="true"
+			tooltiptext="Save and export the alignment"/>
 	</hbox>
 	
 </window>
