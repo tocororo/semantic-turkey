@@ -3,6 +3,7 @@ if (typeof art_semanticturkey == 'undefined')
 
 Components.utils.import("resource://stmodules/Logger.jsm");
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Context.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
@@ -14,6 +15,8 @@ var serviceInstance;
 var relationMeterShow = "relation"; //tells if the meter in "Relation" column should show the relation as 
 						//Description Logic Symbol ("dlSymbol"), Alignment format relation ("relation") or text ("text")
 var confidenceOnMeter = false; //tells if the meter should show the confidence
+var currentPage = 0;
+var alignmentPerPage;
 
 window.onload = function() {
 	sessionToken = art_semanticturkey.generateSessionRandomToken();
@@ -21,8 +24,12 @@ window.onload = function() {
 	specifiedContext.setToken(sessionToken);
 	serviceInstance = art_semanticturkey.STRequests.Alignment.getAPI(specifiedContext);
 	
+	alignmentPerPage = art_semanticturkey.Preferences.get("extensions.semturkey.alignmentValidation.maxAlignmentShown", 0);
+	
 	document.getElementById("selectBtn").addEventListener("command", art_semanticturkey.selectAlignment, false);
 	document.getElementById("loadBtn").addEventListener("command", art_semanticturkey.loadAlignment, false);
+	document.getElementById("nextPageBtn").addEventListener("command", art_semanticturkey.pageController, false);
+	document.getElementById("previousPageBtn").addEventListener("command", art_semanticturkey.pageController, false);
 	document.getElementById("quickActionMenu").addEventListener("command", art_semanticturkey.quickActionMenuListener, false);
 	document.getElementById("quickActionBtn").addEventListener("command", art_semanticturkey.quickActionButtonListener, false);
 	document.getElementById("exportAlignmentBtn").addEventListener("command", art_semanticturkey.exportAlignment, false);
@@ -32,16 +39,6 @@ window.onload = function() {
 
 window.onunload = function() {
 	serviceInstance.closeSession();
-}
-
-art_semanticturkey.generateSessionRandomToken = function(){
-	var result = '';
-	var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	for (var i=0; i<16; i++) {
-		var idx = Math.round(Math.random()*(chars.length-1));
-		result = result + chars[idx];
-	}
-	return result;
 }
 
 art_semanticturkey.selectAlignment = function() {
@@ -59,12 +56,6 @@ art_semanticturkey.selectAlignment = function() {
 }
 
 art_semanticturkey.loadAlignment = function() {
-	
-	var listbox = document.getElementById("alignmentList");
-	//empty listbox
-	while (listbox.itemCount > 0){
-		listbox.removeItemAt(0);
-	}
 	
 	var filePath = document.getElementById("filePathTxt").value;
 	var file = new File(filePath);
@@ -86,9 +77,43 @@ art_semanticturkey.loadAlignment = function() {
 		var onto2 = alignmentXml.getElementsByTagName("onto2")[0].getElementsByTagName("Ontology")[0].textContent;
 		document.getElementById("onto2txt").setAttribute("value", onto2);
 		
-		var mappingCellsXml = alignmentXml.getElementsByTagName("map");
-		for (var i=0; i<mappingCellsXml.length; i++){
-			var cellXml = mappingCellsXml[i].getElementsByTagName("Cell")[0];
+		art_semanticturkey.populateAlignmentList(currentPage);
+		
+		document.getElementById("quickActionMenu").disabled = false;
+		document.getElementById("exportAlignmentBtn").disabled = false;
+		document.getElementById("applyValidationBtn").disabled = false;
+		document.getElementById("thresholdTxt").hidden = true;
+		document.getElementById("thresholdTxt").setAttribute("value", "0.0");
+	} catch (e) {
+		art_semanticturkey.Alert.alert(e);
+	}
+}
+
+art_semanticturkey.populateAlignmentList = function(page) {
+	var listbox = document.getElementById("alignmentList");
+	//empty listbox
+	while (listbox.itemCount > 0){
+		listbox.removeItemAt(0);
+	}
+	
+	try {
+		var xmlResp = serviceInstance.listCells(page, alignmentPerPage);
+		
+		//handle page controls
+		var mapXml = xmlResp.getElementsByTagName("map")[0];
+		var page = mapXml.getAttribute("page");
+		var totPage = mapXml.getAttribute("totPage");
+		if (totPage != 1) {
+			document.getElementById("pageCtrlBox").setAttribute("hidden", "false");
+			document.getElementById("pageLabel").setAttribute("value", "Page " + page + "/" + totPage);
+			document.getElementById("previousPageBtn").setAttribute("disabled", (page == "1"));
+			document.getElementById("nextPageBtn").setAttribute("disabled", (page == totPage));
+		}
+		
+		//populate list
+		var cellListXml = xmlResp.getElementsByTagName("cell");
+		for (var i=0; i<cellListXml.length; i++){
+			var cellXml = cellListXml[i];
 			
 			var listitem = document.createElement("listitem");
 			listitem.setAttribute("allowevents", "true");
@@ -170,15 +195,9 @@ art_semanticturkey.loadAlignment = function() {
 			//finally add the build item to the listbox
 			listbox.appendChild(listitem);
 		}
-		document.getElementById("quickActionMenu").disabled = false;
-		document.getElementById("exportAlignmentBtn").disabled = false;
-		document.getElementById("applyValidationBtn").disabled = false;
-		document.getElementById("thresholdTxt").hidden = true;
-		document.getElementById("thresholdTxt").setAttribute("value", "0.0");
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
 	}
-	
 }
 
 /**
@@ -221,7 +240,6 @@ art_semanticturkey.createRelationStack = function(relation, measure) {
 	editBox.setAttribute("hidden", "true");
 	var editBtn = document.createElement("toolbarbutton");
 	editBtn.setAttribute("type", "menu");
-	editBtn.setAttribute("image", "chrome://semantic-turkey/skin/images/edit_10x10.gif");
 	var menu = art_semanticturkey.createEditRelationMenu(relation);
 	editBtn.appendChild(menu);
 	editBox.appendChild(editBtn);
@@ -288,7 +306,6 @@ art_semanticturkey.createMappingPropertyStack = function(mappingProp, mappingPro
 	}
 	var editBtn = document.createElement("toolbarbutton");
 	editBtn.setAttribute("type", "menu");
-	editBtn.setAttribute("image", "chrome://semantic-turkey/skin/images/edit_10x10.gif");
 	editBtn.setAttribute("hidden", "true");
 	//"mousedown" rather than "click" so it populate earlier the menu
 	editBtn.addEventListener("mousedown", art_semanticturkey.editMappingPropertyBtnListener, false);
@@ -709,7 +726,29 @@ art_semanticturkey.editRelationMeter = function() {
 	}
 }
 
+/**
+ * Handles the button to change alignment page
+ */
+art_semanticturkey.pageController = function() {
+	if (this.id == "nextPageBtn") {
+		currentPage++;
+	} else { //id == "previousPageBtn"
+		currentPage--;
+	}
+	art_semanticturkey.populateAlignmentList(currentPage);
+}
+
 //UTILS
+
+art_semanticturkey.generateSessionRandomToken = function(){
+	var result = '';
+	var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	for (var i=0; i<16; i++) {
+		var idx = Math.round(Math.random()*(chars.length-1));
+		result = result + chars[idx];
+	}
+	return result;
+}
 
 art_semanticturkey.getRelatedListitem = function(element) {
 	var listitem = element;

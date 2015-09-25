@@ -148,6 +148,7 @@ STRequests.Alignment.serviceName = "Alignment";
 STRequests.Alignment.addAlignmentRequest = "addAlignment";
 STRequests.Alignment.getMappingRelationsRequest = "getMappingRelations";
 STRequests.Alignment.loadAlignmentRequest = "loadAlignment";
+STRequests.Alignment.listCellsRequest = "listCells";
 STRequests.Alignment.acceptAlignmentRequest = "acceptAlignment";
 STRequests.Alignment.acceptAllAlignmentRequest = "acceptAllAlignment";
 STRequests.Alignment.acceptAllAboveRequest = "acceptAllAbove";

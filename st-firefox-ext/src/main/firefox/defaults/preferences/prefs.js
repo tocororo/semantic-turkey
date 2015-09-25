@@ -18,6 +18,6 @@ pref("extensions.semturkey.annotation.checkAnnotation", true);
 pref("extensions.semturkey.annotation.colorsEnabled", true);
 pref("extensions.semturkey.useEditor", "window");//other options: "tab", "window"
 pref("extensions.semturkey.multiClientMode", false);
-
+pref("extensions.semturkey.alignmentValidation.maxAlignmentShown", 50);
 
 

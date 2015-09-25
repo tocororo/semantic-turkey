@@ -277,38 +277,68 @@ public class Alignment extends STServiceAdapter {
 						+ "None of the two aligned ontologies matches the current project ontology");
 			}
 		}
-		
-		Collection<Cell> cellList = alignModel.listCells();
-		
+
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
 		Element alignmentElem = XMLHelp.newElement(dataElem, "Alignment");
-		
 		Element onto1Elem = XMLHelp.newElement(alignmentElem, "onto1");
 		Element onto2Elem = XMLHelp.newElement(alignmentElem, "onto2");
 		XMLHelp.newElement(onto1Elem, "Ontology", alignModel.getOnto1());
 		XMLHelp.newElement(onto2Elem, "Ontology", alignModel.getOnto2());
-		
-		for (Cell c : cellList) {
-			Element mapElem = XMLHelp.newElement(alignmentElem, "map");
-			Element cellElem = XMLHelp.newElement(mapElem, "Cell");
-			XMLHelp.newElement(cellElem, "entity1", c.getEntity1().getNominalValue());
-			XMLHelp.newElement(cellElem, "entity2", c.getEntity2().getNominalValue());
-			XMLHelp.newElement(cellElem, "measure", c.getMeasure()+"");
-			XMLHelp.newElement(cellElem, "relation", c.getRelation());
-			if (c.getMappingProperty() != null) {
-				Element mpElem = XMLHelp.newElement(cellElem, "mappingProperty");
-				mpElem.setTextContent(c.getMappingProperty().getURI());
-				mpElem.setAttribute("show", model.getQName(c.getMappingProperty().getURI()));
+
+		return response;
+	}
+	
+	/**
+	 * Returns the cells of the alignment file. Handles the scalability returning a portion of cells
+	 * if <code>pageIdx</code> and <code>range</code> are provided as parameters 
+	 * @param pageIdx index of the page in case 
+	 * @param range alignment per page to show. If 0, returns all the alignments.
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response listCells(@Optional (defaultValue = "0") int pageIdx, @Optional (defaultValue = "0") int range) 
+			throws ModelAccessException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElem = response.getDataElement();
+		Element mapElem = XMLHelp.newElement(dataElem, "map");
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		List<Cell> cells = alignModel.listCells();
+		//if range = 0 => return all cells
+		if (range == 0) {
+			mapElem.setAttribute("page", "1");
+			mapElem.setAttribute("totPage", "1");
+			for (Cell c : cells) {
+				fillCellXMLResponse(c, mapElem);
 			}
-			if (c.getStatus() != null) {
-				XMLHelp.newElement(cellElem, "status", c.getStatus().name());
-			}
-			if (c.getComment() != null) {
-				XMLHelp.newElement(cellElem, "comment", c.getComment());
+		} else {
+			int size = cells.size();
+			int begin = pageIdx * range;
+			int end = begin + range;
+			
+			//if index of first cell > size of cell list (index out of bound) => return empty list of cells
+			if (begin > size) {
+				mapElem.setAttribute("page", "1");
+				mapElem.setAttribute("totPage", "1");
+			} else {
+				int maxPage = size / range;
+				if (size % range > 0) {
+					maxPage++;
+				}
+				mapElem.setAttribute("page", pageIdx+1+"");
+				mapElem.setAttribute("totPage", maxPage+"");
+				if (end > size) {
+					end = size;
+				}
+				for (int i=begin; i<end; i++){
+					fillCellXMLResponse(cells.get(i), mapElem);
+				}
 			}
 		}
-		
 		return response;
 	}
 	
@@ -356,7 +386,7 @@ public class Alignment extends STServiceAdapter {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		alignModel.acceptAllAlignment(getOWLModel());
 		
-		Collection<Cell> cells = alignModel.listCells();
+		List<Cell> cells = alignModel.listCells();
 		for (Cell c : cells) {
 			fillCellXMLResponse(c, dataElem);
 		}
@@ -381,7 +411,7 @@ public class Alignment extends STServiceAdapter {
 		Element dataElem = response.getDataElement();
 		
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		Collection<Cell> cellList = alignModel.listCells();
+		List<Cell> cellList = alignModel.listCells();
 		for (Cell cell : cellList) {
 			float measure = cell.getMeasure();
 			if (measure >= threshold) {
@@ -440,7 +470,7 @@ public class Alignment extends STServiceAdapter {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		alignModel.rejectAllAlignment();
 		
-		Collection<Cell> cells = alignModel.listCells();
+		List<Cell> cells = alignModel.listCells();
 		for (Cell c : cells) {
 			fillCellXMLResponse(c, dataElem);
 		}
@@ -465,7 +495,7 @@ public class Alignment extends STServiceAdapter {
 		Element dataElem = response.getDataElement();
 		
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		Collection<Cell> cellList = alignModel.listCells();
+		List<Cell> cellList = alignModel.listCells();
 		for (Cell cell : cellList) {
 			float measure = cell.getMeasure();
 			if (measure < threshold) {
@@ -547,7 +577,7 @@ public class Alignment extends STServiceAdapter {
 		OWLModel model = getOWLModel();
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		
-		Collection<Cell> acceptedCells = alignModel.listCellsByStatus(Status.accepted);
+		List<Cell> acceptedCells = alignModel.listCellsByStatus(Status.accepted);
 		for (Cell cell : acceptedCells) {
 			model.addTriple(cell.getEntity1(), cell.getMappingProperty(), cell.getEntity2(), getWorkingGraph());
 			Element cellElem = XMLHelp.newElement(collElem, "cell");

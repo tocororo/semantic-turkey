@@ -42,6 +42,14 @@ function loadAlignment(file) {
 	return currentSTHttpMgr.POST(null, serviceName, service.loadAlignmentRequest, this.context, formData);
 }
 
+function listCells(pageIdx, range) {
+	Logger.debug("[SERVICE_Alignment.jsm] listCells");
+	var params = [];
+	params.push("pageIdx=" + pageIdx);
+	params.push("range=" + range);
+	return currentSTHttpMgr.GET(null, serviceName, service.listCellsRequest, this.context, params);
+}
+
 function acceptAlignment(entity1, entity2, relation) {
 	Logger.debug("[SERVICE_Alignment.jsm] acceptAlignment");
 	var params = [];
@@ -144,6 +152,7 @@ service.prototype.getAPI = function(specifiedContext){
 service.prototype.addAlignment = addAlignment;
 service.prototype.getMappingRelations = getMappingRelations;
 service.prototype.loadAlignment = loadAlignment;
+service.prototype.listCells = listCells;
 service.prototype.acceptAlignment = acceptAlignment;
 service.prototype.acceptAllAlignment = acceptAllAlignment;
 service.prototype.acceptAllAbove = acceptAllAbove;
