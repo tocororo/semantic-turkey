@@ -8,15 +8,17 @@
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/alignment/validation/report.js" />
 		
-	<label value="The following triples have been added to the ontology model" />
+	<label value="The following changes have been performed to the ontology model" />
 	
 	<listbox id="reportList" flex="1" rows="10">
 		<listhead>
 			<listheader label="Source entity"/>
 			<listheader label="Mapping property"/>
 			<listheader label="Target entity"/>
+			<listheader label="Action performed"/>
 		</listhead>
 		<listcols>
+			<listcol flex="1"/>
 			<listcol flex="1"/>
 			<listcol flex="1"/>
 			<listcol flex="1"/>

@@ -18,6 +18,9 @@ pref("extensions.semturkey.annotation.checkAnnotation", true);
 pref("extensions.semturkey.annotation.colorsEnabled", true);
 pref("extensions.semturkey.useEditor", "window");//other options: "tab", "window"
 pref("extensions.semturkey.multiClientMode", false);
-pref("extensions.semturkey.alignmentValidation.maxAlignmentShown", 50);
+pref("extensions.semturkey.alignmentValidation.maxAlignmentPerPage", 50);
+pref("extensions.semturkey.alignmentValidation.rejectedAction", "skip");
+pref("extensions.semturkey.alignmentValidation.relationMeterLabel", "relation");
+pref("extensions.semturkey.alignmentValidation.relationMeterShowMeasure", false);
 
 

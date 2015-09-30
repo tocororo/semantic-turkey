@@ -108,9 +108,10 @@ function changeMappingProperty(entity1, entity2, mappingProperty) {
 	return currentSTHttpMgr.GET(null, serviceName, service.changeMappingPropertyRequest, this.context, params);
 }
 
-function applyValidation() {
+function applyValidation(deleteRejected) {
 	Logger.debug('[SERVICE_Alignment.jsm] applyValidation');
-	return currentSTHttpMgr.GET(null, serviceName, service.applyValidationRequest, this.context);
+	p_deleteRejected = "deleteRejected=" + deleteRejected;
+	return currentSTHttpMgr.GET(null, serviceName, service.applyValidationRequest, this.context, p_deleteRejected);
 }
 
 function listSuggestedProperties(entity, relation) {

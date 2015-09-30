@@ -536,7 +536,7 @@ public class Alignment extends STServiceAdapter {
 	 * Change the mapping property of an alignment
 	 * @param entity1
 	 * @param entity2
-	 * @param relation
+	 * @param mappingProperty
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
 	 * @throws ModelAccessException
@@ -558,8 +558,7 @@ public class Alignment extends STServiceAdapter {
 	/**
 	 * Adds the accepted alignment cell to the ontology model and delete the rejected ones (if 
 	 * previously added to the ontology)
-	 * @param entity1
-	 * @param entity2
+	 * @param deleteRejected tells if remove the triples related to rejected alignments
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
 	 * @throws ModelAccessException
@@ -568,7 +567,7 @@ public class Alignment extends STServiceAdapter {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
-	public Response applyValidation() throws UnsupportedQueryLanguageException, ModelAccessException, 
+	public Response applyValidation(@Optional (defaultValue = "false") boolean deleteRejected) throws UnsupportedQueryLanguageException, ModelAccessException, 
 			MalformedQueryException, QueryEvaluationException, ModelUpdateException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
@@ -584,6 +583,28 @@ public class Alignment extends STServiceAdapter {
 			cellElem.setAttribute("entity1", cell.getEntity1().getURI());
 			cellElem.setAttribute("entity2", cell.getEntity2().getURI());
 			cellElem.setAttribute("property", cell.getMappingProperty().getURI());
+			cellElem.setAttribute("action", "Added");
+		}
+		
+		if (deleteRejected) {
+			List<Cell> rejectedCells = alignModel.listCellsByStatus(Status.rejected);
+			for (Cell cell : rejectedCells) {
+				try {
+					ARTURIResource entity1 = cell.getEntity1();
+					ARTURIResource entity2 = cell.getEntity2();
+					List<ARTURIResource> props = alignModel.suggestPropertiesForRelation(entity1, cell.getRelation(), model);
+					for (ARTURIResource p : props) {
+						if (model.hasTriple(entity1, p, entity2, false, getWorkingGraph())){
+							model.deleteTriple(entity1, p, entity2, getWorkingGraph());
+							Element cellElem = XMLHelp.newElement(collElem, "cell");
+							cellElem.setAttribute("entity1", cell.getEntity1().getURI());
+							cellElem.setAttribute("entity2", cell.getEntity2().getURI());
+							cellElem.setAttribute("property", p.getURI());
+							cellElem.setAttribute("action", "Deleted");
+						}
+					}
+				} catch (InvalidAlignmentRelationException e) {} //in case of invalid relation, simply do nothing
+			}
 		}
 		return response;
 	}
@@ -611,6 +632,14 @@ public class Alignment extends STServiceAdapter {
 		is.close();
 	}
 	
+	/**
+	 * Return a list of mapping properties suggested for the given entity and the alignment relation
+	 * @param entity
+	 * @param relation
+	 * @return
+	 * @throws ModelAccessException
+	 * @throws InvalidAlignmentRelationException
+	 */
 	@GenerateSTServiceController
 	public Response listSuggestedProperties(ARTURIResource entity, String relation) 
 			throws ModelAccessException, InvalidAlignmentRelationException {

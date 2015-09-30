@@ -9,14 +9,18 @@ Components.utils.import("resource://stmodules/STHttpMgrFactory.jsm", art_semanti
 Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
 Components.utils.import("resource://stservices/SERVICE_Alignment.jsm", art_semanticturkey);
 
+const relationMeterLabelPrefsEntry = "extensions.semturkey.alignmentValidation.relationMeterLabel";
+const relationMeterShowMeasurePrefsEntry = "extensions.semturkey.alignmentValidation.relationMeterShowMeasure";
+const maxAlignmentPerPagePrefsEntry = "extensions.semturkey.alignmentValidation.maxAlignmentPerPage";
+const rejectedActionPrefsEntry = "extensions.semturkey.alignmentValidation.rejectedAction";
+
 var sessionToken;
 var serviceInstance;
 
-var relationMeterShow = "relation"; //tells if the meter in "Relation" column should show the relation as 
+var relationMeterLabel; //tells if the meter in "Relation" column should show the relation as 
 						//Description Logic Symbol ("dlSymbol"), Alignment format relation ("relation") or text ("text")
-var confidenceOnMeter = false; //tells if the meter should show the confidence
+var relationMeterShowMeasure; //tells if the meter should show the confidence
 var currentPage = 0;
-var alignmentPerPage;
 
 window.onload = function() {
 	sessionToken = art_semanticturkey.generateSessionRandomToken();
@@ -24,7 +28,8 @@ window.onload = function() {
 	specifiedContext.setToken(sessionToken);
 	serviceInstance = art_semanticturkey.STRequests.Alignment.getAPI(specifiedContext);
 	
-	alignmentPerPage = art_semanticturkey.Preferences.get("extensions.semturkey.alignmentValidation.maxAlignmentShown", 0);
+	relationMeterLabel = art_semanticturkey.Preferences.get(relationMeterLabelPrefsEntry, "relation");
+	relationMeterShowMeasure = art_semanticturkey.Preferences.get(relationMeterShowMeasurePrefsEntry, false);
 	
 	document.getElementById("selectBtn").addEventListener("command", art_semanticturkey.selectAlignment, false);
 	document.getElementById("loadBtn").addEventListener("command", art_semanticturkey.loadAlignment, false);
@@ -35,6 +40,7 @@ window.onload = function() {
 	document.getElementById("exportAlignmentBtn").addEventListener("command", art_semanticturkey.exportAlignment, false);
 	document.getElementById("applyValidationBtn").addEventListener("command", art_semanticturkey.applyValidation, false);
 	document.getElementById("editRelationMeterBtn").addEventListener("command", art_semanticturkey.editRelationMeter, false);
+	document.getElementById("optionBtn").addEventListener("command", art_semanticturkey.openOptions, false);
 }
 
 window.onunload = function() {
@@ -97,6 +103,7 @@ art_semanticturkey.populateAlignmentList = function(page) {
 	}
 	
 	try {
+		var alignmentPerPage = art_semanticturkey.Preferences.get(maxAlignmentPerPagePrefsEntry, 0);
 		var xmlResp = serviceInstance.listCells(page, alignmentPerPage);
 		
 		//handle page controls
@@ -368,7 +375,7 @@ art_semanticturkey.changeRelationListener = function() {
 	try{
 		if (newRelation != oldRelation) { //if user has really changed relation apply changes
 			if (oldMeasure != newMeasure) { //if old measure was != 1.0 warn that new measure will be 1.0
-				var message = "Attention: changing the relation will set automatically the measure " +
+				var message = "Manually changing the relation will set automatically the measure " +
 					"of the alignment to 1.0. Do you want to continue?";
 				if (!window.confirm(message)){
 					//if user doesn't confirm cancel its choice and restore old relation
@@ -609,31 +616,36 @@ art_semanticturkey.updateUIAfterQuickAction = function(xmlResp) {
  * Adds the accepted alignments to the ontology model.
  */
 art_semanticturkey.applyValidation = function() {
-	var alignmentList = document.getElementById("alignmentList");
-	var accepted = false; //Tells if there is some alignment accepted
-	//check if there is some accepted alignment
-	for (var i=0; i<alignmentList.itemCount; i++) {
-		var listitem = alignmentList.getItemAtIndex(i);
-		var status = listitem.getAttribute("status");
-		if (status == "accepted") { //TODO: decide if consider rejected alignment too
-			accepted = true;
-			break;
-		}
+	var deleteRejected;
+	var confirmed;
+	var message = "This operation will add to the ontology the triples of the accepted alignments"
+	
+	var rejectedActionPref = art_semanticturkey.Preferences.get(rejectedActionPrefsEntry, "skip");
+	if (rejectedActionPref == "skip") {
+		var message = message + ". Are you sure to continue?";
+		confirmed = window.confirm(message);
+		deleteRejected = false;
+	} else if (rejectedActionPref == "delete") {
+		var message = message + "and delete the triples of the ones rejected. Are you sure to continue?";
+		confirmed = window.confirm(message);
+		deleteRejected = true;
+	} else if (rejectedActionPref == "ask") {
+		var message = message + ". Are you sure to continue?";
+		var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+			.getService(Components.interfaces.nsIPromptService);
+		var check = {value: false};
+		confirmed = prompts.confirmCheck(null, "Validate alignment", message, 
+				"Delete triples of rejected alignments", check);
+		deleteRejected = check.value;
 	}
-	if (accepted) {
-		var message = "This operation will add to the ontology the triples related to the " +
-			"accepted alignment. Are you sure to continue?";
-		if (window.confirm(message)) {
-			try {
-				var xmlResp = serviceInstance.applyValidation();
-				art_semanticturkey.parseApplyValidationResponse(xmlResp);
-			} catch (e) {
-				art_semanticturkey.Alert.alert(e)
-			}
+	
+	if (confirmed) {
+		try {
+			var xmlResp = serviceInstance.applyValidation(deleteRejected);
+			art_semanticturkey.parseApplyValidationResponse(xmlResp);
+		} catch (e) {
+			art_semanticturkey.Alert.alert(e)
 		}
-	} else {
-		art_semanticturkey.Alert.alert("There aren't alignment accepted. " +
-				"Please, accept at least one alignment, then retry.");
 	}
 }
 
@@ -649,11 +661,13 @@ art_semanticturkey.parseApplyValidationResponse = function(xmlResp) {
 		var entity1 = cell.getAttribute("entity1");
 		var entity2 = cell.getAttribute("entity2");
 		var property = cell.getAttribute("property");
+		var action = cell.getAttribute("action");
 		
 		var alignCell = {};
 		alignCell.entity1 = entity1;
 		alignCell.entity2 = entity2;
 		alignCell.property = property;
+		alignCell.action = action;
 		alignReport.push(alignCell);
 	}
 	var params = {};
@@ -692,16 +706,14 @@ art_semanticturkey.exportAlignment = function() {
  */
 art_semanticturkey.editRelationMeter = function() {
 	var params = {
-		rel: relationMeterShow,
-		conf: confidenceOnMeter,
 		changed: false
 	}
 	window.openDialog("chrome://semantic-turkey/content/alignment/validation/editRelationMeter.xul", 
 			"_blank", "chrome,dependent,dialog,modal=yes,centerscreen", params);
 	//if there have been changes update some elements of the UI
 	if (params.changed) {
-		relationMeterShow = params.rel;
-		confidenceOnMeter = params.conf;
+		relationMeterLabel = art_semanticturkey.Preferences.get(relationMeterLabelPrefsEntry, "relation");
+		relationMeterShowMeasure = art_semanticturkey.Preferences.get(relationMeterShowMeasurePrefsEntry, false);
 		//updates the menuitems of the edit relation menu
 		var editRelItems = document.getElementsByClassName("editRelationMenuitem");
 		for (var i=0; i<editRelItems.length; i++){
@@ -736,6 +748,17 @@ art_semanticturkey.pageController = function() {
 		currentPage--;
 	}
 	art_semanticturkey.populateAlignmentList(currentPage);
+}
+
+art_semanticturkey.openOptions = function() {
+	/* according to prefwindow documentation:
+	 * - "You can pass the id of a particular pane as the fourth argument to openDialog to open 
+	 *   a specific pane by default";
+	 * - "Prefer the classical window.openDialog() with the following window features: 
+	 * 	 'chrome,titlebar,toolbar,centerscreen,dialog=yes'" */
+	var focusPanelId = "alignmentValidationPanel";
+	window.openDialog("chrome://semantic-turkey/content/options.xul", 
+			"_blank", "chrome,titlebar,toolbar,centerscreen,dialog=yes", focusPanelId);
 }
 
 //UTILS
@@ -778,14 +801,14 @@ art_semanticturkey.getRelationList = function() {
 art_semanticturkey.getCurrentShowForRelation = function(relation) {
 	for (var i=0; i<relationSymbolMap.length; i++){
 		if (relationSymbolMap[i].relation == relation) {
-			return relationSymbolMap[i][relationMeterShow];
+			return relationSymbolMap[i][relationMeterLabel];
 		}
 	}
 }
 
 art_semanticturkey.getLabelForMeter = function(relation, measure) {
 	var label = art_semanticturkey.getCurrentShowForRelation(relation);
-	if (confidenceOnMeter) {
+	if (relationMeterShowMeasure) {
 		label = label + " (" + measure + ")";  
 	}
 	return label;

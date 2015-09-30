@@ -28,6 +28,11 @@ window.onload = function() {
 		listCell.setAttribute("tooltiptext", alignReport[i].entity2);
 		listItem.appendChild(listCell);
 		
+		listCell = document.createElement("listcell");
+		listCell.setAttribute("label", alignReport[i].action);
+		listCell.setAttribute("tooltiptext", alignReport[i].action);
+		listItem.appendChild(listCell);
+		
 		listItem.appendChild(listCell);
 		
 		reportList.appendChild(listItem);

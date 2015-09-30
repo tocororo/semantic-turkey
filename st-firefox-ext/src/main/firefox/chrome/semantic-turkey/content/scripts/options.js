@@ -19,14 +19,15 @@
  * http://semanticturkey.uniroma2.it
  * 
  */
-const
-langsPrefsEntry = "extensions.semturkey.annotprops.langs";
-const
-defaultLangPrefsEntry = "extensions.semturkey.annotprops.defaultlang";
-const
-annPrefsEntry = "extensions.semturkey.extpt.annotateList";
-const
-defaultAnnPrefsEntry = "extensions.semturkey.extpt.annotate";
+const langsPrefsEntry = "extensions.semturkey.annotprops.langs";
+const defaultLangPrefsEntry = "extensions.semturkey.annotprops.defaultlang";
+const annPrefsEntry = "extensions.semturkey.extpt.annotateList";
+const defaultAnnPrefsEntry = "extensions.semturkey.extpt.annotate";
+//Alignment validation pref entries
+const maxAlignmentPerPagePrefsEntry = "extensions.semturkey.alignmentValidation.maxAlignmentPerPage";
+const rejectedActionPrefsEntry = "extensions.semturkey.alignmentValidation.rejectedAction";
+const relationMeterLabelPrefsEntry = "extensions.semturkey.alignmentValidation.relationMeterLabel";
+const relationMeterShowMeasurePrefsEntry = "extensions.semturkey.alignmentValidation.relationMeterShowMeasure";
 
 if (typeof art_semanticturkey == 'undefined')
 	var art_semanticturkey = {};
@@ -81,21 +82,34 @@ art_semanticturkey.init = function() {
 	document.getElementById("changeDefaultAnnotationFamily").addEventListener("command",
 			art_semanticturkey.changeDefaultAnnotationFamily);
 
-	document.getElementById("acceptButton").addEventListener("command", function() {
-		document.documentElement.acceptDialog();
-	}, false);
-	document.getElementById("cancelButton").addEventListener("command", function() {
-		document.documentElement.cancelDialog();
-	}, false);
-	
 	//Editor type tab
 	var useEditorPref = art_semanticturkey.Preferences.get("extensions.semturkey.useEditor");
 	var activeEditorTxt = document.getElementById("activeEditorTxt");
 	activeEditorTxt.value = useEditorPref;
 	document.getElementById("changeEditorTypeBtn").addEventListener("command", art_semanticturkey.changeActiveEditor, false);
-
-	document.addEventListener("dialogaccept", art_semanticturkey.onAccept, false);
-	document.addEventListener("dialogcancel", art_semanticturkey.onCancel, false);
+	
+	//Alignment validation tab
+	var maxAlignmentShownPref = art_semanticturkey.Preferences.get(maxAlignmentPerPagePrefsEntry, 0);
+	document.getElementById("maxAlignmentTxt").value = maxAlignmentShownPref;
+	var rejectedActionPref = art_semanticturkey.Preferences.get(rejectedActionPrefsEntry, "skip");
+	var rejectedActionMenu = document.getElementById("rejectedActionMenu");
+	for (var i=0; i<rejectedActionMenu.itemCount; i++) {
+		if (rejectedActionMenu.getItemAtIndex(i).value == rejectedActionPref){
+			rejectedActionMenu.selectedIndex = i;
+			break;
+		}
+	}
+	var relationMeterLabelPref = art_semanticturkey.Preferences.get(relationMeterLabelPrefsEntry, "relation");
+	var showRelationRadio = document.getElementById("relationLabelRadiogroup");
+	for (var i=0; i<showRelationRadio.itemCount; i++) {
+		if (showRelationRadio.getItemAtIndex(i).value == relationMeterLabelPref){
+			showRelationRadio.selectedIndex = i;
+			break;
+		}
+	}
+	var relationMeterShowMeasurePref = art_semanticturkey.Preferences.get(relationMeterShowMeasurePrefsEntry, false);
+	document.getElementById("showMeasureCheck").setAttribute("checked", relationMeterShowMeasurePref);
+	
 };
 
 art_semanticturkey.onAccept = function(event) {
@@ -113,6 +127,18 @@ art_semanticturkey.onAccept = function(event) {
 
 	art_semanticturkey.Preferences.set(defaultLangPrefsEntry, defaultLanguage);
 	art_semanticturkey.Preferences.set(langsPrefsEntry, langList);
+	
+	//apply alignment validation change
+	art_semanticturkey.Preferences.set(maxAlignmentPerPagePrefsEntry, 
+			parseInt(document.getElementById("maxAlignmentTxt").value));
+	art_semanticturkey.Preferences.set(rejectedActionPrefsEntry, 
+			document.getElementById("rejectedActionMenu").selectedItem.value);
+	art_semanticturkey.Preferences.set(relationMeterLabelPrefsEntry, 
+			document.getElementById("relationLabelRadiogroup").selectedItem.value);
+	art_semanticturkey.Preferences.set(relationMeterShowMeasurePrefsEntry, 
+			document.getElementById("showMeasureCheck").getAttribute("checked") == "true");
+	
+	
 };
 
 art_semanticturkey.onCancel = function(event) {

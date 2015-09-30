@@ -37,7 +37,11 @@
 	</groupbox>
 	
 	<groupbox flex="1">
-		<caption label="Alignment validation"/>
+		<caption align="center">
+			<label value="Alignment validation"/>
+			<toolbarbutton id="optionBtn" image="chrome://semantic-turkey/skin/images/gear_16x16.png" 
+				tooltiptext="Options" />
+		</caption>
 		
 		<hbox id="pageCtrlBox" hidden="true" align="center">
 			<label id="pageLabel" value="Page 1 of 5"/>
