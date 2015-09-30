@@ -129,11 +129,10 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 		
 		Iterator<ARTURIResource> keyIt = art2STRDFPredicates.keySet().iterator();
 		
+		// Removes predicates with no associated lexicalization
 		while (keyIt.hasNext()) {
 			ARTURIResource key = keyIt.next();
-			
-			if (!(resourcePosition instanceof UnknownResourcePosition) && relevantLexPreds.contains(key)) continue;
-			
+						
 			if (!resultPredicateObjectValues.containsKey(key)){
 				keyIt.remove();
 			}
