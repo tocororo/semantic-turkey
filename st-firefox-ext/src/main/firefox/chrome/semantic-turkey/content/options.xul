@@ -3,7 +3,9 @@
 <prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" 
             title="Semantic Turkey Options"
             width="600" height="300"
-            buttons=",">
+            buttons="accept, cancel"
+            ondialogaccept="return art_semanticturkey.onAccept();"
+  			ondialogcancel="return art_semanticturkey.onCancel();">
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/scripts/options.js"/>
     <prefpane id="annotationFamilyPane" label="Annotation Family">
     	<deck id="familyDeck">
@@ -46,7 +48,34 @@
 			<listitem label="tab"/>
 		</listbox>
 	</prefpane>
-	<hbox pack="end" flex="1">
-		<button id="acceptButton" label="Ok" /> <button id="cancelButton" label="Cancel" /> 
-	</hbox>
+	<prefpane id="alignmentValidationPanel" label="Alignment Validation">
+		<hbox align="center">
+			<label value="Rejected alignment action:"
+				tooltiptext="Specifies what to do with the rejected alignment when applyng the validation to the ontology"/>
+			<menulist id="rejectedActionMenu">
+				<menupopup>
+					<menuitem id="deleteItem" value="delete" label="Always delete (Remove, if present, the triple defined by the alignment)"/>
+					<menuitem id="skipItem" value="skip" label="Always skip (Do not perform any action on the ontology)"/>
+					<menuitem id="askItem" value="ask" label="Always ask (Always ask for the action to perform)"/>
+				</menupopup>
+			</menulist>
+		</hbox>
+		<groupbox>
+			<caption label="Relation meter aspect"/>
+			<groupbox>
+				<caption label="Show relation as:" />
+				<radiogroup id="relationLabelRadiogroup">
+				  <radio id="relationRadio" value="relation" label="Alignment format relation (=, &lt;, &gt;, %,...)"/>
+				  <radio id="dlSymbolRadio" value="dlSymbol" label="Description Logic symbol (&#8801;, &#8849;, &#8850;, &#8869;,...)"/>
+				  <radio id="textRadio" value="text" label="Text (equivalent, is subsumed, subsumes, incompatible,...)"/>
+				</radiogroup>
+			</groupbox>
+			<checkbox id="showMeasureCheck" label="Show confidence on meter" />
+		</groupbox>
+		<hbox align="center">
+			<label value="Maximum number of alignments shown"/>
+			<textbox id="maxAlignmentTxt" type="number" width="50px;"/>
+		</hbox>
+	</prefpane>
+	
 </prefwindow>

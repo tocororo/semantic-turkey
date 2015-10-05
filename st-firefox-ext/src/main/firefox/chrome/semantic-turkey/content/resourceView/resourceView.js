@@ -775,7 +775,7 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("properties"
 	},
 	"onRemove" : function(rdfSubject, rdfPredicate, rdfObject) {
 		if (rdfObject.explicit == "true") {
-			if (rdfPredicate.hasCustomRange == "true") {
+			if (rdfPredicate.hasCustomRange == "true" && rdfObject.isResource()) {
 				art_semanticturkey.STRequests.CustomRanges.removeReifiedResource(
 						rdfSubject.getNominalValue(), rdfPredicate.getNominalValue(), rdfObject
 								.getNominalValue());
