@@ -10,58 +10,64 @@ EXPORTED_SYMBOLS = [ "STRequests" ];
 var service = STRequests.Manchester;
 var serviceName = service.serviceName;
 
-const currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
+const
+currentSTHttpMgr = STHttpMgrFactory.getInstance(STInfo.getGroupId(), STInfo.getArtifactId());
 
-
-function getAllDLExpression(classUri, usePrefixes){
+function getAllDLExpression(classUri, usePrefixes, useUppercaseSyntax) {
 	Logger.debug('[SERVICE_Manchester.jsm] getAllDLExpression');
-	var p_classUri = "classUri="+classUri;
+	var p_classUri = "classUri=" + classUri;
+	var p_useUppercaseSyntax = (typeof useUppercaseSyntax == "undefined") ? "" : "useUppercaseSyntax="
+			+ useUppercaseSyntax;
+	
 	if (typeof usePrefixes != "undefined") {
-		var p_usePrefixes = "usePrefixes="+usePrefixes;
-		return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpressionRequest, this.context, 
-				p_classUri, p_usePrefixes);
-	} else{
-		return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpressionRequest, this.context, 
-				p_classUri);
+		var p_usePrefixes = "usePrefixes=" + usePrefixes;
+		return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpressionRequest, this.context,
+				p_classUri, p_usePrefixes, p_useUppercaseSyntax);
+	} else {
+		return currentSTHttpMgr.GET(null, serviceName, service.getAllDLExpressionRequest, this.context,
+				p_classUri, p_useUppercaseSyntax);
 	}
 }
 
-function getExpression(artNode, usePrefixes){
+function getExpression(artNode, usePrefixes, useUppercaseSyntax) {
 	Logger.debug('[SERVICE_Manchester.jsm] getExpression');
-	var p_artNode = "artNode="+artNode;
+	var p_artNode = "artNode=" + artNode;
+	var p_useUppercaseSyntax = (typeof useUppercaseSyntax == "undefined") ? "" : "useUppercaseSyntax="
+		+ useUppercaseSyntax;
+	
 	if (typeof usePrefixes != "undefined") {
-		var p_usePrefixes = "usePrefixes="+usePrefixes;
+		var p_usePrefixes = "usePrefixes=" + usePrefixes;
 		return currentSTHttpMgr.GET(null, serviceName, service.getExpressionRequest, this.context, p_artNode,
-				p_usePrefixes);
-	} else{
-		return currentSTHttpMgr.GET(null, serviceName, service.getExpressionRequest, this.context, p_artNode);
+				p_usePrefixes, p_useUppercaseSyntax);
+	} else {
+		return currentSTHttpMgr.GET(null, serviceName, service.getExpressionRequest, this.context, p_artNode,
+				p_useUppercaseSyntax);
 	}
 }
 
-function removeExpression(classUri,exprType, artNode){
+function removeExpression(classUri, exprType, artNode) {
 	Logger.debug('[SERVICE_Manchester.jsm] removeExpression');
-	var p_classUri = "classUri="+classUri; 
-	var p_exprType = "exprType="+exprType; 
-	var p_artNode = "artNode="+artNode; 
+	var p_classUri = "classUri=" + classUri;
+	var p_exprType = "exprType=" + exprType;
+	var p_artNode = "artNode=" + artNode;
 	return currentSTHttpMgr.GET(null, serviceName, service.removeExpressionRequest, this.context, p_classUri,
 			p_exprType, p_artNode);
 }
 
-function checkExpression(manchExpr){
+function checkExpression(manchExpr) {
 	Logger.debug('[SERVICE_Manchester.jsm] checkExpression');
-	var p_manchExpr = "manchExpr="+manchExpr; 
+	var p_manchExpr = "manchExpr=" + manchExpr;
 	return currentSTHttpMgr.GET(null, serviceName, service.checkExpressionRequest, this.context, p_manchExpr);
 }
 
-function createRestriction(classUri, exprType, manchExpr){
+function createRestriction(classUri, exprType, manchExpr) {
 	Logger.debug('[SERVICE_Manchester.jsm] createRestriction');
-	var p_classUri = "classUri="+classUri; 
-	var p_exprType = "exprType="+exprType; 
-	var p_manchExpr = "manchExpr="+manchExpr; 
-	return currentSTHttpMgr.GET(null, serviceName, service.createRestrictionRequest, this.context, p_classUri,
-			p_exprType, p_manchExpr);
+	var p_classUri = "classUri=" + classUri;
+	var p_exprType = "exprType=" + exprType;
+	var p_manchExpr = "manchExpr=" + manchExpr;
+	return currentSTHttpMgr.GET(null, serviceName, service.createRestrictionRequest, this.context,
+			p_classUri, p_exprType, p_manchExpr);
 }
-
 
 service.prototype.getAllDLExpression = getAllDLExpression;
 service.prototype.getExpression = getExpression;
@@ -69,8 +75,6 @@ service.prototype.removeExpression = removeExpression;
 service.prototype.checkExpression = checkExpression;
 service.prototype.createRestriction = createRestriction;
 
-service.prototype.context = new Context();  // set the default context
+service.prototype.context = new Context(); // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;
-
-

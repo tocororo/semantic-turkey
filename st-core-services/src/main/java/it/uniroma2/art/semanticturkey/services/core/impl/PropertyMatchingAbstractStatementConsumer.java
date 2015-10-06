@@ -77,7 +77,7 @@ public class PropertyMatchingAbstractStatementConsumer implements StatementConsu
 
 		
 		
-		// Remove the typing statements from the resource view
+		// Remove the matched statements from the resource view
 		relevantStmts.clear();
 
 		return result;

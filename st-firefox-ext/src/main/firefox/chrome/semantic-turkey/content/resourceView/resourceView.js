@@ -316,6 +316,8 @@ art_semanticturkey.resourceView.copyWebLink = function(event) {
 	gClipboardHelper.copyString(url);
 };
 
+window.addEventListener("load", art_semanticturkey.resourceView.init, true);
+
 art_semanticturkey.resourceView.partitions = {};
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler = function(partitionName, pojo) {
@@ -362,19 +364,11 @@ art_semanticturkey.resourceView.partitions.internal.wrapPojoHandler = function(p
 art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = function(subjectResource,
 		responsePartition, partitionsBox) {
 
+	var outerThis = this;
+
 	var partitionName = responsePartition.tagName;
 
 	var editable = art_semanticturkey.resourceView.isEditable(subjectResource);
-
-	var addSupported = false;
-	var multipleAddOptions = false;
-
-	if (typeof this["onAdd"] != "undefined") {
-		addSupported = true;
-		multipleAddOptions = this["onAdd"] instanceof Array;
-	}
-
-	var removeSupported = (typeof this["onRemove"] != "undefined");
 
 	// Handles the partition header
 	var partitionGroupBox = document.createElement("groupbox");
@@ -387,41 +381,79 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 	var partitionButton = null;
 	var operations = [];
 
-	if (addSupported) {
-		partitionButton = document.createElement("toolbarbutton");
-		partitionButton.setAttribute("tooltiptext", this.addTooltiptext);
-		partitionButton.setAttribute("disabled", "" + (!editable));
-		partitionButton.setAttribute("image", this.addIcon);
-		partitionCaption.appendChild(partitionButton);
-		partitionButton.setAttribute("st-partitionName", partitionName);
-		operations.push("add");
+	var addSupported = false;
+	var removeSupported = false;
 
-		if (multipleAddOptions) {
-			partitionButton.setAttribute("type", "menu");
+	var interestingHandlerSection = null;
 
-			var menupop = document.createElement("menupopup");
-
-			for (var i = 0; i < this["onAdd"].length; i++) {
-				var menuitem = document.createElement("menuitem");
-				menuitem.setAttribute("label", (this["onAdd"][i]).label || "");
-
-				menuitem.addEventListener("command", art_semanticturkey.resourceView.partitions.internal
-						.wrapFunctionWithErrorManagement(this["onAdd"][i].action.bind(this, subjectResource,
-								undefined, undefined)), false);
-				menupop.appendChild(menuitem);
-			}
-
-			partitionButton.appendChild(menupop);
-		} else {
-			partitionButton.addEventListener("command", art_semanticturkey.resourceView.partitions.internal
-					.wrapFunctionWithErrorManagement(this["onAdd"].bind(this, subjectResource, undefined,
-							undefined)), false);
+	if (typeof this.expectedContentType != "undefined") {
+		if (this.expectedContentType == "predicateObjectsList") {
+			interestingHandlerSection = "predicate";
+		} else if (this.expectedContentType == "objectList") {
+			interestingHandlerSection = "objects";
 		}
+	}
+
+	if (interestingHandlerSection != null) {
+		if (typeof this[interestingHandlerSection] != "undefined"
+				&& typeof this[interestingHandlerSection].add != "undefined") {
+			addSupported = true;
+			removeSupported = true; // TODO: not truly accurate
+			partitionButton = document.createElement("toolbarbutton");
+			if (this[interestingHandlerSection].add.label) {
+				partitionButton.setAttribute("tooltiptext", this[interestingHandlerSection].add.label);
+			}
+			partitionButton.setAttribute("disabled", "" + (!editable));
+			partitionButton.setAttribute("image", this.addIcon);
+			partitionButton.setAttribute("st-partitionName", partitionName);
+
+			if (typeof this[interestingHandlerSection].add.action == "function") {
+				partitionButton
+						.addEventListener(
+								"command",
+								art_semanticturkey.resourceView.partitions.internal
+										.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
+												.createAddHandlerFromAction(outerThis,
+														this[interestingHandlerSection].add.action,
+														subjectResource)), false);
+			} else if (this[interestingHandlerSection].add.actions instanceof Array) {
+				partitionButton.setAttribute("type", "menu");
+
+				var menupop = document.createElement("menupopup");
+
+				for (var i = 0; i < this[interestingHandlerSection].add.actions.length; i++) {
+					var anAction = this[interestingHandlerSection].add.actions[i];
+					var menuitem = document.createElement("menuitem");
+					menuitem.setAttribute("label", anAction.label || "");
+
+					menuitem
+							.addEventListener(
+									"command",
+									art_semanticturkey.resourceView.partitions.internal
+											.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
+													.createAddHandlerFromAction(outerThis, anAction.action,
+															subjectResource)), false);
+					menupop.appendChild(menuitem);
+				}
+
+				partitionButton.appendChild(menupop);
+
+			}
+		}
+	}
+
+	if (addSupported) {
+		operations.push("add");
 	}
 
 	if (removeSupported) {
 		operations.push("remove");
 	}
+
+	if (partitionButton != null) {
+		partitionCaption.appendChild(partitionButton);
+	}
+
 	partitionGroupBox.appendChild(partitionCaption);
 
 	// Handles the partition content
@@ -504,6 +536,109 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 	partitionsBox.appendChild(partitionGroupBox);
 };
 
+art_semanticturkey.resourceView.partitions.internal.createAddHandlerFromAction = function(handler,
+		partitionAction, subjectResource) {
+	return function() {
+		var rv = partitionAction.call(handler, subjectResource);
+
+		if (typeof rv != "object")
+			return;
+
+		art_semanticturkey.resourceView.partitions.internal.handlePredicateProcessingAlternatives(handler,
+				subjectResource, rv);
+	}
+};
+
+art_semanticturkey.resourceView.partitions.internal.handlePredicateProcessingAlternatives = function(handler,
+		rdfSubject, rdfPredicate) {
+	var actions = art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty(handler,
+			rdfPredicate);
+
+	if (actions.length == 0) {
+		throw new Error("No handler for the event");
+	}
+
+	var anAction = null;
+
+	if (actions.length > 1) {
+		var selectList = actions.map(function(val) {
+			return val.label || ""
+		});
+
+		var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+				.getService(Components.interfaces.nsIPromptService);
+
+		var param = {};
+		var isOk = promptService.select(window, "Select a handler", "", selectList.length, selectList, param);
+
+		if (isOk) {
+			anAction = actions[param.value];
+		}
+	} else {
+		anAction = actions[0];
+	}
+
+	if (anAction != null) {
+		anAction.action.call(handler, rdfSubject, rdfPredicate);
+	}
+}
+
+art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty = function(handler, property) {
+
+	if (typeof handler["predicateObjects"] == "undefined")
+		return [];
+
+	var container = undefined;
+
+	if (typeof handler["predicateObjects"][property.getNominalValue()] != "undefined") {
+		container = handler["predicateObjects"][property.getNominalValue()];
+	} else if (typeof handler["predicateObjects"]["*"] != "undefined") {
+		container = handler["predicateObjects"]["*"];
+	}
+
+	if (typeof container != "undefined") {
+		if (typeof container.add == "undefined")
+			return [];
+
+		if (container.add.actions instanceof Array) {
+			return container.add.actions;
+		}
+
+		if (typeof container.add.action == "function") {
+			return [ container.add ];
+		}
+	}
+
+	return [];
+};
+
+art_semanticturkey.resourceView.partitions.internal.getRemoveActionForProperty = function(handler, property) {
+	if (typeof handler["predicateObjects"] == "undefined")
+		return function() {
+		};
+
+	var container = undefined;
+
+	if (typeof handler["predicateObjects"][property.getNominalValue()] != "undefined") {
+		container = handler["predicateObjects"][property.getNominalValue()];
+	} else if (typeof handler["predicateObjects"]["*"] != "undefined") {
+		container = handler["predicateObjects"]["*"];
+	}
+
+	if (typeof container != "undefined") {
+		if (typeof container.remove == "undefined")
+			return function() {
+			};
+
+		if (typeof container.remove.action == "function") {
+			return container.remove.action;
+		}
+	}
+
+	return function() {
+	};
+};
+
 art_semanticturkey.resourceView.partitions.internal.wrapFunctionWithErrorManagement = function(aFun) {
 	return function() {
 		try {
@@ -548,15 +683,12 @@ art_semanticturkey.resourceView.partitions.internal.predicateObjectsEventHandler
 
 	try {
 		if (button == "add") {
-			if (typeof handler["onAdd"] != "function") {
-				throw new Error("Cannot find a determined function to invoke");
-			}
-			handler["onAdd"](rdfSubject, rdfPredicate, rdfObject);
+			art_semanticturkey.resourceView.partitions.internal.handlePredicateProcessingAlternatives(
+					handler, rdfSubject, rdfPredicate);
 		} else if (button == "remove") {
-			if (typeof handler["onRemove"] != "function") {
-				throw new Error("Cannot find a determined function to invoke");
-			}
-			handler["onRemove"](rdfSubject, rdfPredicate, rdfObject);
+			var fun = art_semanticturkey.resourceView.partitions.internal.getRemoveActionForProperty(handler,
+					rdfPredicate);
+			fun.call(handler, rdfSubject, rdfPredicate, rdfObject);
 		}
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
@@ -573,16 +705,13 @@ art_semanticturkey.resourceView.partitions.internal.objectListEventHandler = fun
 	var rdfSubject = document.getElementById("resourceNameBox").stRdfNode;
 
 	try {
-		if (button == "add") {
-			if (typeof handler["onAdd"] != "function") {
+		if (button == "remove") {
+			if (typeof handler["objects"] != "undefined" && typeof handler["objects"].remove != "undefined"
+					&& typeof handler["objects"].remove.action == "function") {
+				handler["objects"].remove.action(rdfSubject, rdfObject);
+			} else {
 				throw new Error("Cannot find a determined function to invoke");
 			}
-			handler["onAdd"](rdfSubject);
-		} else if (button == "remove") {
-			if (typeof handler["onRemove"] != "function") {
-				throw new Error("Cannot find a determined function to invoke");
-			}
-			handler["onRemove"](rdfSubject, rdfObject);
 		}
 	} catch (e) {
 		art_semanticturkey.Alert.alert(e);
@@ -593,200 +722,231 @@ art_semanticturkey.resourceView.partitions.internal.getButtonType = function(but
 	return button.getAttribute("label");
 };
 
-art_semanticturkey.resourceView.partitions.registerPartitionHandler("lexicalizations", {
-	"partitionLabel" : "Lexicalizations",
-	"expectedContentType" : "predicateObjectsList",
-	"addTooltiptext" : "Add a lexicalization",
-	// "addTooltiptext|http://www.w3.org/2000/01/rdf-schema#label"
-	// : "Add an RDFS label",
-	// "addTooltiptext|http://www.w3.org/2004/02/skos/core#prefLabel"
-	// : "Add a SKOS preferred label",
-	// "addTooltiptext|http://www.w3.org/2004/02/skos/core#altLabel"
-	// : "Add a SKOS alternative label",
-	// "addTooltiptext|http://www.w3.org/2004/02/skos/core#hiddenLabel"
-	// : "Add a SKOS hidden label",
-	// "addTooltiptext|http://www.w3.org/2008/05/skos-xl#prefLabel"
-	// : "Add a SKOS-XL preferred label",
-	// "addTooltiptext|http://www.w3.org/2008/05/skos-xl#altLabel"
-	// : "Add a SKOS-XL alternative label",
-	// "addTooltiptext|http://www.w3.org/2008/05/skos-xl#hiddenLabel"
-	// : "Add a SKOS-XL hidden label",
+art_semanticturkey.resourceView.partitions
+		.registerPartitionHandler(
+				"lexicalizations",
+				{
+					"partitionLabel" : "Lexicalizations",
+					"expectedContentType" : "predicateObjectsList",
+					"predicate" : {
+						"add" : {
+							"label" : "Add a lexicalization",
+							"action" : function(rdfSubject) {
+								var parameters = {};
+								parameters.resource = rdfSubject.getNominalValue();
+								parameters.out = {};
 
-	"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) {
-		if (typeof rdfPredicate == "undefined") {
+								window.openDialog(
+										"lexicalizationPropertyChooser/lexicalizationPropertyChooser.xul",
+										"dlg", "chrome=yes,dialog,resizable=yes,modal,centerscreen",
+										parameters);
 
-			var parameters = {};
-			parameters.resource = rdfSubject.getNominalValue();
-			parameters.out = {};
+								if (typeof parameters.out.chosenProperty == "undefined") {
+									return;
+								}
 
-			window.openDialog("lexicalizationPropertyChooser/lexicalizationPropertyChooser.xul", "dlg",
-					"chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+								return parameters.out.chosenProperty;
+							}
+						}
+					},
+					"predicateObjects" : {
+						"*" : {
+							"add" : {
+								"actions" : [ {
+									"action" : function(rdfSubject, rdfPredicate) {
+										var predURI = rdfPredicate.getURI();
 
-			if (typeof parameters.out.chosenProperty == "undefined") {
-				return;
-			}
+										const
+										supportedProps = [ "http://www.w3.org/2000/01/rdf-schema#label",
+												"http://www.w3.org/2004/02/skos/core#prefLabel",
+												"http://www.w3.org/2004/02/skos/core#altLabel",
+												"http://www.w3.org/2004/02/skos/core#hiddenLabel",
+												"http://www.w3.org/2008/05/skos-xl#prefLabel",
+												"http://www.w3.org/2008/05/skos-xl#altLabel",
+												"http://www.w3.org/2008/05/skos-xl#hiddenLabel" ];
 
-			rdfPredicate = parameters.out.chosenProperty;
-		}
+										var parameters = {};
 
-		var predURI = rdfPredicate.getURI();
+										parameters.winTitle = "Add " + rdfPredicate.getShow()
+												+ " Lexicalization";
+										parameters.action = function(label, lang) {
 
-		const
-		supportedProps = [ "http://www.w3.org/2000/01/rdf-schema#label",
-				"http://www.w3.org/2004/02/skos/core#prefLabel",
-				"http://www.w3.org/2004/02/skos/core#altLabel",
-				"http://www.w3.org/2004/02/skos/core#hiddenLabel",
-				"http://www.w3.org/2008/05/skos-xl#prefLabel", "http://www.w3.org/2008/05/skos-xl#altLabel",
-				"http://www.w3.org/2008/05/skos-xl#hiddenLabel" ];
+											try {
+												switch (predURI) {
+												case "http://www.w3.org/2004/02/skos/core#prefLabel":
+													art_semanticturkey.STRequests.SKOS.setPrefLabel(
+															rdfSubject.getURI(), label, lang);
+													break;
+												case "http://www.w3.org/2004/02/skos/core#altLabel":
+													art_semanticturkey.STRequests.SKOS.addAltLabel(rdfSubject
+															.getURI(), label, lang);
+													break;
+												case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
+													art_semanticturkey.STRequests.SKOS.addHiddenLabel(
+															rdfSubject.getURI(), label, lang);
+													break;
 
-		var parameters = {};
+												case "http://www.w3.org/2008/05/skos-xl#prefLabel":
+													art_semanticturkey.STRequests.SKOSXL.setPrefLabel(
+															rdfSubject.getURI(), label, lang, "bnode");
+													break;
+												case "http://www.w3.org/2008/05/skos-xl#altLabel":
+													art_semanticturkey.STRequests.SKOSXL.addAltLabel(
+															rdfSubject.getURI(), label, lang, "bnode");
+													break;
+												case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
+													art_semanticturkey.STRequests.SKOSXL.addHiddenLabel(
+															rdfSubject.getURI(), label, lang, "bnode");
+													break;
+												case "http://www.w3.org/2000/01/rdf-schema#label":
+													art_semanticturkey.STRequests.Property
+															.createAndAddPropValue(rdfSubject.getURI(),
+																	predURI, label, null, "plainLiteral",
+																	lang);
+													break;
+												}
 
-		parameters.winTitle = "Add " + rdfPredicate.getShow() + " Lexicalization";
-		parameters.action = function(label, lang) {
+												art_semanticturkey.resourceView.refreshView();
+											} catch (e) {
+												art_semanticturkey.Alert.alert(e);
+											}
+										};
+										parameters.oncancel = false;
 
-			try {
-				switch (predURI) {
-				case "http://www.w3.org/2004/02/skos/core#prefLabel":
-					art_semanticturkey.STRequests.SKOS.setPrefLabel(rdfSubject.getURI(), label, lang);
-					break;
-				case "http://www.w3.org/2004/02/skos/core#altLabel":
-					art_semanticturkey.STRequests.SKOS.addAltLabel(rdfSubject.getURI(), label, lang);
-					break;
-				case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
-					art_semanticturkey.STRequests.SKOS.addHiddenLabel(rdfSubject.getURI(), label, lang);
-					break;
+										if (typeof window.arguments != "undefined"
+												&& typeof window.arguments[0] != "undefined") {
+											parameters.skos = window.arguments[0].skos;
+										}
 
-				case "http://www.w3.org/2008/05/skos-xl#prefLabel":
-					art_semanticturkey.STRequests.SKOSXL.setPrefLabel(rdfSubject.getURI(), label, lang,
-							"bnode");
-					break;
-				case "http://www.w3.org/2008/05/skos-xl#altLabel":
-					art_semanticturkey.STRequests.SKOSXL.addAltLabel(rdfSubject.getURI(), label, lang,
-							"bnode");
-					break;
-				case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
-					art_semanticturkey.STRequests.SKOSXL.addHiddenLabel(rdfSubject.getURI(), label, lang,
-							"bnode");
-					break;
-				case "http://www.w3.org/2000/01/rdf-schema#label":
-					art_semanticturkey.STRequests.Property.createAndAddPropValue(rdfSubject.getURI(),
-							predURI, label, null, "plainLiteral", lang);
-					break;
-				}
+										if (supportedProps.indexOf(predURI) != -1) {
+											window
+													.openDialog(
+															"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
+															"_blank", "modal=yes,resizable,centerscreen",
+															parameters);
+										} else {
+											alert("Unsupported predicate type");
+										}
+									}
+								} ]
+							},
+							"remove" : {
+								action : function(rdfSubject, rdfPredicate, rdfObject) {
+									switch (rdfPredicate.getNominalValue()) {
+									case "http://www.w3.org/2004/02/skos/core#prefLabel":
+										art_semanticturkey.STRequests.SKOS.removePrefLabel(rdfSubject
+												.getURI(), rdfObject.getLabel(), rdfObject.getLang());
+										break;
+									case "http://www.w3.org/2004/02/skos/core#altLabel":
+										art_semanticturkey.STRequests.SKOS.removeAltLabel(
+												rdfSubject.getURI(), rdfObject.getLabel(), rdfObject
+														.getLang());
+										break;
+									case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
+										art_semanticturkey.STRequests.SKOS.removeHiddenLabel(rdfSubject
+												.getURI(), rdfObject.getLabel(), rdfObject.getLang());
+										break;
 
-				art_semanticturkey.resourceView.refreshView();
-			} catch (e) {
-				art_semanticturkey.Alert.alert(e);
-			}
-		};
-		parameters.oncancel = false;
+									case "http://www.w3.org/2008/05/skos-xl#prefLabel":
+									case "http://www.w3.org/2008/05/skos-xl#altLabel":
+									case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
+										var label = rdfObject.getShow();
+										var lang = rdfObject.lang || null;
 
-		if (typeof window.arguments != "undefined" && typeof window.arguments[0] != "undefined") {
-			parameters.skos = window.arguments[0].skos;
-		}
+										if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#prefLabel") {
+											art_semanticturkey.STRequests.SKOSXL.removePrefLabel(rdfSubject
+													.getURI(), label, lang);
+										} else if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#altLabel") {
+											art_semanticturkey.STRequests.SKOSXL.removeAltLabel(rdfSubject
+													.getURI(), label, lang);
+										} else {
+											art_semanticturkey.STRequests.SKOSXL.removeHiddenLabel(rdfSubject
+													.getURI(), label, lang);
+										}
 
-		if (supportedProps.indexOf(predURI) != -1) {
-			window.openDialog(
-					"chrome://semantic-turkey/content/enrichProperty/enrichPlainLiteralRangedProperty.xul",
-					"_blank", "modal=yes,resizable,centerscreen", parameters);
-		} else {
-			alert("Unsupported predicate type");
-		}
-	},
-	"onRemove" : function(rdfSubject, rdfPredicate, rdfObject) {
-		switch (rdfPredicate.getNominalValue()) {
-		case "http://www.w3.org/2004/02/skos/core#prefLabel":
-			art_semanticturkey.STRequests.SKOS.removePrefLabel(rdfSubject.getURI(), rdfObject.getLabel(),
-					rdfObject.getLang());
-			break;
-		case "http://www.w3.org/2004/02/skos/core#altLabel":
-			art_semanticturkey.STRequests.SKOS.removeAltLabel(rdfSubject.getURI(), rdfObject.getLabel(),
-					rdfObject.getLang());
-			break;
-		case "http://www.w3.org/2004/02/skos/core#hiddenLabel":
-			art_semanticturkey.STRequests.SKOS.removeHiddenLabel(rdfSubject.getURI(), rdfObject.getLabel(),
-					rdfObject.getLang());
-			break;
+										break;
+									case "http://www.w3.org/2000/01/rdf-schema#label":
+										art_semanticturkey.STRequests.Property.removePropValue(rdfSubject
+												.getNominalValue(), rdfPredicate.getNominalValue(), rdfObject
+												.getLabel(), null, "plainLiteral", rdfObject.getLang());
+										break;
+									}
 
-		case "http://www.w3.org/2008/05/skos-xl#prefLabel":
-		case "http://www.w3.org/2008/05/skos-xl#altLabel":
-		case "http://www.w3.org/2008/05/skos-xl#hiddenLabel":
-			var label = rdfObject.getShow();
-			var lang = rdfObject.lang || null;
-
-			if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#prefLabel") {
-				art_semanticturkey.STRequests.SKOSXL.removePrefLabel(rdfSubject.getURI(), label, lang);
-			} else if (rdfPredicate.getNominalValue() == "http://www.w3.org/2008/05/skos-xl#altLabel") {
-				art_semanticturkey.STRequests.SKOSXL.removeAltLabel(rdfSubject.getURI(), label, lang);
-			} else {
-				art_semanticturkey.STRequests.SKOSXL.removeHiddenLabel(rdfSubject.getURI(), label, lang);
-			}
-
-			break;
-		case "http://www.w3.org/2000/01/rdf-schema#label":
-			art_semanticturkey.STRequests.Property.removePropValue(rdfSubject.getNominalValue(), rdfPredicate
-					.getNominalValue(), rdfObject.getLabel(), null, "plainLiteral", rdfObject.getLang());
-			break;
-		}
-
-		art_semanticturkey.resourceView.refreshView();
-	}
-});
-
-window.addEventListener("load", art_semanticturkey.resourceView.init, true);
+									art_semanticturkey.resourceView.refreshView();
+								}
+							}
+						}
+					}
+				});
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("properties", {
 	"partitionLabel" : "Properties",
 	"expectedContentType" : "predicateObjectsList",
-	"addTooltiptext" : "Add a property value",
-	"onAdd" : function(rdfSubject, rdfPredicate, rdfObject) {
-		// Based on sources by NScarpato
-		var predicateName;
+	"predicate" : {
+		"add" : {
+			"label" : "Add a property value",
+			"action" : function(rdfSubject) {
+				// Based on sources by NScarpato
+				var parameters = new Object();
+				var selectedProp = "";
+				var selectedPropType = "";
+				parameters.selectedProp = selectedProp;
+				parameters.selectedPropType = selectedPropType;
+				parameters.oncancel = false;
+				parameters.source = "AddNewProperty";
+				parameters.type = "All";
+				parameters.forResource = rdfSubject.getNominalValue();
 
-		if (typeof rdfPredicate == "undefined") {
-			var parameters = new Object();
-			var selectedProp = "";
-			var selectedPropType = "";
-			parameters.selectedProp = selectedProp;
-			parameters.selectedPropType = selectedPropType;
-			parameters.oncancel = false;
-			parameters.source = "AddNewProperty";
-			parameters.type = "All";
-			parameters.forResource = rdfSubject.getNominalValue();
+				window.openDialog("chrome://semantic-turkey/content/editors/property/propertyTree.xul",
+						"_blank", "modal=yes,resizable,centerscreen", parameters);
+				var propType = parameters.selectedPropType;
+				if (parameters.oncancel != false) {
+					return;
+				}
 
-			window.openDialog("chrome://semantic-turkey/content/editors/property/propertyTree.xul", "_blank",
-					"modal=yes,resizable,centerscreen", parameters);
-			var propType = parameters.selectedPropType;
-			if (parameters.oncancel != false) {
-				return;
+				predicateName = parameters.selectedProp;
+
+				var rv = {};
+				rv.getNominalValue = function() {
+					return predicateName;
+				};
+				return rv;
 			}
-
-			predicateName = parameters.selectedProp;
-		} else {
-			predicateName = rdfPredicate.getNominalValue();
 		}
-
-		var changesDone = enrichProperty(rdfSubject.getNominalValue(), predicateName);
-		if (changesDone) {
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		}
-
 	},
-	"onRemove" : function(rdfSubject, rdfPredicate, rdfObject) {
-		if (rdfObject.explicit == "true") {
-			if (rdfPredicate.hasCustomRange == "true" && rdfObject.isResource()) {
-				art_semanticturkey.STRequests.CustomRanges.removeReifiedResource(
-						rdfSubject.getNominalValue(), rdfPredicate.getNominalValue(), rdfObject
+	"predicateObjects" : {
+		"*" : {
+			"add" : {
+				"actions" : [ {
+					"action" : function(rdfSubject, rdfPredicate) {
+						var changesDone = enrichProperty(rdfSubject.getNominalValue(), rdfPredicate
 								.getNominalValue());
-			} else {
-				art_semanticturkey.STRequests.Resource.removePropertyValue(rdfSubject.toNT(), rdfPredicate
-						.toNT(), rdfObject.toNT());
+						if (changesDone) {
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						}
+					}
+				} ]
+			},
+			"remove" : {
+				"action" : function(rdfSubject, rdfPredicate, rdfObject) {
+					if (rdfObject.explicit == "true") {
+						if (rdfPredicate.hasCustomRange == "true" && rdfObject.isResource()) {
+							art_semanticturkey.STRequests.CustomRanges.removeReifiedResource(rdfSubject
+									.getNominalValue(), rdfPredicate.getNominalValue(), rdfObject
+									.getNominalValue());
+						} else {
+							art_semanticturkey.STRequests.Resource.removePropertyValue(rdfSubject.toNT(),
+									rdfPredicate.toNT(), rdfObject.toNT());
+						}
+						art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+								(new art_semanticturkey.genericEventClass()));
+					} else {
+						art_semanticturkey.Alert
+								.alert("You cannot remove this type, it's a system resource!");
+					}
+				}
 			}
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
 		}
 	}
 });
@@ -796,349 +956,432 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("types", {
 	"expectedContentType" : "objectList",
 	"addTooltiptext" : "Add a type",
 	"addIcon|fromRole" : "cls",
-	"onAdd" : function(rdfSubject) { // Based on sources by NScarpato
-		var parameters = {};
-		parameters.source = "editorIndividual";
-		parameters.selectedClass = "";
-		// parameters.parentWindow =
-		// window.arguments[0].parentWindow;
-		parameters.parentWindow = window;
+	"objects" : {
+		"add" : {
+			"label" : "Add a type",
+			"action" : function(rdfSubject) { // Based on sources by NScarpato
+				var parameters = {};
+				parameters.source = "editorIndividual";
+				parameters.selectedClass = "";
+				// parameters.parentWindow =
+				// window.arguments[0].parentWindow;
+				parameters.parentWindow = window;
 
-		window.openDialog("chrome://semantic-turkey/content/editors/class/classTree.xul", "_blank",
-				"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+				window.openDialog("chrome://semantic-turkey/content/editors/class/classTree.xul", "_blank",
+						"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
 
-		if (parameters.selectedClass != "") {
-			var responseArray;
+				if (parameters.selectedClass != "") {
+					var responseArray;
 
-			if (rdfSubject.getRole() == "individual") {
-				responseArray = art_semanticturkey.STRequests.Individual.addType(
-						rdfSubject.getNominalValue(), parameters.selectedClass);
-			} else {
-				responseArray = art_semanticturkey.STRequests.Cls.addType(rdfSubject.getNominalValue(),
-						parameters.selectedClass);
+					if (rdfSubject.getRole() == "individual") {
+						responseArray = art_semanticturkey.STRequests.Individual.addType(rdfSubject
+								.getNominalValue(), parameters.selectedClass);
+					} else {
+						responseArray = art_semanticturkey.STRequests.Cls.addType(rdfSubject
+								.getNominalValue(), parameters.selectedClass);
+					}
+					art_semanticturkey.evtMgr.fireEvent("addedType", (new art_semanticturkey.typeAddedClass(
+							responseArray["instance"], responseArray["type"], true, rdfSubject.getRole())));
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				}
+
 			}
-			art_semanticturkey.evtMgr.fireEvent("addedType", (new art_semanticturkey.typeAddedClass(
-					responseArray["instance"], responseArray["type"], true, rdfSubject.getRole())));
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		}
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) { // Based on
+				// sources
+				// by
+				// NScarpato
+				var responseArray;
 
-	},
-	"onRemove" : function(rdfSubject, rdfObject) { // Based on
-		// sources
-		// by
-		// NScarpato
-		var responseArray;
+				if (rdfObject.explicit == "true") {
+					if (rdfSubject.getRole() == "individual") {
+						responseArray = art_semanticturkey.STRequests.Individual.removeType(rdfSubject
+								.getNominalValue(), rdfObject.getNominalValue());
+					} else {
+						responseArray = art_semanticturkey.STRequests.Cls.removeType(rdfSubject
+								.getNominalValue(), rdfObject.getNominalValue());
+					}
+					art_semanticturkey.evtMgr.fireEvent("removedType",
+							(new art_semanticturkey.typeRemovedClass(responseArray["instance"],
+									responseArray["type"])));
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
+				}
 
-		if (rdfObject.explicit == "true") {
-			if (rdfSubject.getRole() == "individual") {
-				responseArray = art_semanticturkey.STRequests.Individual.removeType(rdfSubject
-						.getNominalValue(), rdfObject.getNominalValue());
-			} else {
-				responseArray = art_semanticturkey.STRequests.Cls.removeType(rdfSubject.getNominalValue(),
-						rdfObject.getNominalValue());
 			}
-			art_semanticturkey.evtMgr.fireEvent("removedType", (new art_semanticturkey.typeRemovedClass(
-					responseArray["instance"], responseArray["type"])));
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
 		}
-
 	}
 });
 
 art_semanticturkey.resourceView.partitions
 		.registerPartitionHandler(
-				"supertypes",
-				{
-					"partitionLabel" : "Supertypes",
-					"expectedContentType" : "objectList",
-					"addTooltiptext" : "Add a super-type",
-					"addIcon|fromRole" : "cls",
-					"onAdd" : [
-							{
-								label : "Add existing class",
-								action : function(rdfSubject) { // Based on sources by
-									// NScarpato
-									var parameters = {};
-									parameters.source = "editorClass";
-									parameters.selectedClass = "";
-									// parameters.parentWindow =
-									// window.arguments[0].parentWindow;
-									parameters.parentWindow = window;
+				"classaxioms",
+				(function() {
+					var existingClassTemplate = function(innerFunction) {
+						return {
+							label : "Add existing class",
+							action : function(rdfSubject, rdfPredicate) { // Based on sources by
+								// NScarpato
+								var parameters = {};
+								parameters.source = "editorClass";
+								parameters.selectedClass = "";
+								// parameters.parentWindow =
+								// window.arguments[0].parentWindow;
+								parameters.parentWindow = window;
 
-									window.openDialog(
-											"chrome://semantic-turkey/content/editors/class/classTree.xul",
-											"_blank",
-											"chrome,dependent,dialog,modal=yes,resizable,centerscreen",
-											parameters);
+								window.openDialog(
+										"chrome://semantic-turkey/content/editors/class/classTree.xul",
+										"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
+										parameters);
 
-									if (parameters.selectedClass != "") {
-										var responseArray = art_semanticturkey.STRequests.Cls.addSuperCls(
-												rdfSubject.getNominalValue(), parameters.selectedClass);
-										var classRes = responseArray["class"];
-										var superClassRes = responseArray["superClass"];
-										art_semanticturkey.evtMgr.fireEvent("subClsOfAddedClass",
-												(new art_semanticturkey.subClsOfAddedClass(classRes,
-														superClassRes)));
-										art_semanticturkey.evtMgr.fireEvent("refreshEditor",
-												(new art_semanticturkey.genericEventClass()));
+								if (parameters.selectedClass != "") {
+									if (typeof innerFunction == "undefined") {
+										art_semanticturkey.STRequests.Property.addExistingPropValue(
+												rdfSubject.getNominalValue(), rdfPredicate.getNominalValue(),
+												parameters.selectedClass, "uri");
+									} else {
+										innerFunction(rdfSubject, rdfPredicate, parameters.selectedClass);
 									}
+
+									art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+											(new art_semanticturkey.genericEventClass()));
 								}
-							},
-							{
-								label : "Create and add class expression",
-								action : function(rdfSubject) {
-									var parameters = {
-										expression : ""
-									};
-									window
-											.openDialog(
-													"chrome://semantic-turkey/content/editors/classExpression/classExpressionEditor.xul",
-													"dlg",
-													"chrome=yes,dialog,resizable=yes,modal,centerscreen",
-													parameters);
-									
-									if (!!parameters.expression) {
-										art_semanticturkey.STRequests.Manchester.createRestriction(rdfSubject
-												.getNominalValue(),
-												"http://www.w3.org/2000/01/rdf-schema#subClassOf",
-												parameters.expression);
-										art_semanticturkey.evtMgr.fireEvent("refreshEditor",
-												(new art_semanticturkey.genericEventClass()));
-									}
-								}
-							} ],
-					"onRemove" : function(rdfSubject, rdfObject) { // Based on
-						// sources
-						// by
-						// NScarpato
-						if (rdfObject.explicit == "true") {
-							if (rdfObject.isBNode()) {
-								art_semanticturkey.STRequests.Manchester.removeExpression(rdfSubject
-										.getNominalValue(),
-										"http://www.w3.org/2000/01/rdf-schema#subClassOf", rdfObject.toNT());
-							} else {
-								var responseArray = art_semanticturkey.STRequests.Cls.removeSuperCls(
-										rdfSubject.getNominalValue(), rdfObject.getNominalValue());
-								// art_semanticturkey.refreshPanel();
-								var classRes = responseArray["class"];
-								var superClassRes = responseArray["superClass"];
-								art_semanticturkey.evtMgr
-										.fireEvent("subClsOfRemovedClass",
-												(new art_semanticturkey.subClsOfRemovedClass(classRes,
-														superClassRes)));
 							}
-							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
-									(new art_semanticturkey.genericEventClass()));
-						} else {
-							art_semanticturkey.Alert
-									.alert("You cannot remove this type, it's a system resource!");
-						}
+						};
+					};
 
+					var classExpressionTemplate = function(innerFunction) {
+						return {
+							label : "Create and add class expression",
+							action : function(rdfSubject, rdfPredicate) {
+								var parameters = {
+									expression : ""
+								};
+								window
+										.openDialog(
+												"chrome://semantic-turkey/content/editors/classExpression/classExpressionEditor.xul",
+												"dlg", "chrome=yes,dialog,resizable=yes,modal,centerscreen",
+												parameters);
+
+								if (!!parameters.expression) {
+									if (typeof innerFunction == "undefined") {
+
+										art_semanticturkey.STRequests.Manchester.createRestriction(rdfSubject
+												.getNominalValue(), rdfPredicate.getNominalValue(),
+												parameters.expression);
+									} else {
+										innerFunction(rdfSubject, rdfPredicate, parameters.expression);
+									}
+									art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+											(new art_semanticturkey.genericEventClass()));
+								}
+							}
+						};
+					};
+
+					var clsRemoveTemplate = function(innerFunction) {
+						return {
+							"action" : function(rdfSubject, rdfPredicate, rdfObject) { // Based on
+								// sources by NScarpato
+								if (rdfObject.explicit == "true") {
+									if (rdfObject.isBNode()) {
+										art_semanticturkey.STRequests.Manchester.removeExpression(rdfSubject
+												.getNominalValue(), rdfPredicate.getNominalValue(), rdfObject
+												.toNT());
+									} else {
+										if (typeof innerFunction == "undefined") {
+											art_semanticturkey.STRequests.Property.removePropValue(rdfSubject
+													.getNominalValue(), rdfPredicate.getNominalValue(),
+													rdfObject.getNominalValue(), null, rdfObject
+															.isURIResource() ? "uri" : "bnode");
+										} else {
+											innerFunction(rdfSubject, rdfPredicate, rdfObject);
+										}
+									}
+									art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+											(new art_semanticturkey.genericEventClass()));
+								} else {
+									art_semanticturkey.Alert
+											.alert("You cannot remove this type, it's a system resource!");
+								}
+
+							}
+						};
 					}
-				});
+					return {
+						"partitionLabel" : "Class axioms",
+						"expectedContentType" : "predicateObjectsList",
+						"addIcon|fromRole" : "cls",
+						"predicate" : {
+							"add" : {
+								"label" : "Add a class axiom",
+								"actions" : [
+										{
+											"label" : "Equivalent class",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2002/07/owl#equivalentClass",
+														"property",
+														"http://www.w3.org/2002/07/owl#equivalentClass");
+											}
+										},
+										{
+											"label" : "Subclass of",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2000/01/rdf-schema#subClassOf",
+														"property",
+														"http://www.w3.org/2000/01/rdf-schema#subClassOf");
+											}
+										},
+										{
+											"label" : "Disjoint with",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2002/07/owl#disjointWith",
+														"property",
+														"http://www.w3.org/2002/07/owl#disjointWith");
+											}
+										},
+										{
+											"label" : "Complement of",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2002/07/owl#complementOf",
+														"property",
+														"http://www.w3.org/2002/07/owl#complementOf");
+											}
+										},
+										{
+											"label" : "Intersection of",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2002/07/owl#intersectionOf",
+														"property",
+														"http://www.w3.org/2002/07/owl#intersectionOf");
+											}
+										},
+										{
+											"label" : "One of",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2002/07/owl#oneOf", "property",
+														"http://www.w3.org/2002/07/owl#oneOf");
+											}
+										},
+										{
+											"label" : "Union of",
+											"action" : function() {
+												return new art_semanticturkey.ARTURIResource(
+														"http://www.w3.org/2002/07/owl#unionOf", "property",
+														"http://www.w3.org/2002/07/owl#unionOf");
+											}
+										} ]
+							}
+						},
+						"predicateObjects" : {
+							"http://www.w3.org/2002/07/owl#equivalentClass" : {
+								"add" : {
+									"actions" : [ existingClassTemplate(), classExpressionTemplate() ]
+								},
+								"remove" : clsRemoveTemplate()
+							},
+							"http://www.w3.org/2000/01/rdf-schema#subClassOf" : {
+								"add" : {
+									"actions" : [
+											existingClassTemplate(function(rdfSubject, rdfPredicate, classUri) {
+												var responseArray = art_semanticturkey.STRequests.Cls
+														.addSuperCls(rdfSubject.getNominalValue(), classUri);
+												var classRes = responseArray["class"];
+												var superClassRes = responseArray["superClass"];
+												art_semanticturkey.evtMgr.fireEvent("subClsOfAddedClass",
+														(new art_semanticturkey.subClsOfAddedClass(classRes,
+																superClassRes)));
+											}),
+											classExpressionTemplate() ]
+								},
+								"remove" : clsRemoveTemplate(function(rdfSubject, rdfPredicate, rdfObject) {
+									var responseArray = art_semanticturkey.STRequests.Cls.removeSuperCls(
+											rdfSubject.getNominalValue(), rdfObject.getNominalValue());
+									// art_semanticturkey.refreshPanel();
+									var classRes = responseArray["class"];
+									var superClassRes = responseArray["superClass"];
+									art_semanticturkey.evtMgr.fireEvent("subClsOfRemovedClass",
+											(new art_semanticturkey.subClsOfRemovedClass(classRes,
+													superClassRes)));
+								})
+							},
+							"http://www.w3.org/2002/07/owl#disjointWith" : {
+								"add" : {
+									"actions" : [ existingClassTemplate(), classExpressionTemplate() ]
+								},
+								"remove" : clsRemoveTemplate()
+							},
+							"http://www.w3.org/2002/07/owl#complementOf" : {
+								"add" : {
+									"actions" : [ existingClassTemplate(), classExpressionTemplate() ]
+								},
+								"remove" : clsRemoveTemplate()
+							}
+						}
+					}
+				})());
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("superproperties", {
 	"partitionLabel" : "Superproperties",
 	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add a super-property",
-	"addIcon|fromRole" : "cls",
-	"onAdd" : function(rdfSubject) { // Based on sources by
-		// NScarpato
-		var parameters = {};
-		parameters.selectedProp = "";
-		parameters.selectedPropType = "";
-		parameters.type = rdfSubject.getRole();
-		window.openDialog("chrome://semantic-turkey/content/editors/property/propertyTree.xul", "_blank",
-				"modal=yes,resizable,centerscreen", parameters);
-		if (parameters.selectedProp != "") {
-			art_semanticturkey.STRequests.Property.addSuperProperty(rdfSubject.getNominalValue(),
-					parameters.selectedProp);
-		}
-		art_semanticturkey.evtMgr.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-	},
-	"onRemove" : function(rdfSubject, rdfObject) { // Based on
-		// sources
-		// by
-		// NScarpato
-		if (rdfObject.explicit == "true") {
-			art_semanticturkey.STRequests.Property.removeSuperProperty(rdfSubject.getNominalValue(),
-					rdfObject.getNominalValue());
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
-		}
+	"addIcon|fromRole" : "property",
+	"objects" : {
+		"add" : {
+			"label" : "Add a super-property",
+			"action" : function(rdfSubject) { // Based on sources by
+				// NScarpato
+				var parameters = {};
+				parameters.selectedProp = "";
+				parameters.selectedPropType = "";
+				parameters.type = rdfSubject.getRole();
+				window.openDialog("chrome://semantic-turkey/content/editors/property/propertyTree.xul",
+						"_blank", "modal=yes,resizable,centerscreen", parameters);
+				if (parameters.selectedProp != "") {
+					art_semanticturkey.STRequests.Property.addSuperProperty(rdfSubject.getNominalValue(),
+							parameters.selectedProp);
+				}
+				art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+						(new art_semanticturkey.genericEventClass()));
+			}
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) { // Based on
+				// sources
+				// by
+				// NScarpato
+				if (rdfObject.explicit == "true") {
+					art_semanticturkey.STRequests.Property.removeSuperProperty(rdfSubject.getNominalValue(),
+							rdfObject.getNominalValue());
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
+				}
 
+			}
+		}
 	}
 });
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("domains", {
 	"partitionLabel" : "Domains",
 	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add a domain",
 	"addIcon|fromRole" : "cls",
-	"onAdd" : function(rdfSubject) { // Based on sources by
-		// NScarpato
+	"objects" : {
+		"add" : {
+			"label" : "Add a domain",
+			"action" : function(rdfSubject) { // Based on sources by
+				// NScarpato
 
-		var domainName = "";
-		var parameters = {};
-		parameters.source = "domain";
-		parameters.domainName = "";
-		// parameters.parentWindow =
-		// window.arguments[0].parentWindow;
-		parameters.parentWindow = window;
+				var domainName = "";
+				var parameters = {};
+				parameters.source = "domain";
+				parameters.domainName = "";
+				// parameters.parentWindow =
+				// window.arguments[0].parentWindow;
+				parameters.parentWindow = window;
 
-		window.openDialog("chrome://semantic-turkey/content/editors/class/classTree.xul", "_blank",
-				"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
-		var domainName = parameters.domainName;
-		if (domainName != "none domain selected") {
-			art_semanticturkey.STRequests.Property
-					.addPropertyDomain(rdfSubject.getNominalValue(), domainName);
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		}
-	},
-	"onRemove" : function(rdfSubject, rdfObject) { // Based on
-		// sources
-		// by
-		// NScarpato
-		if (rdfObject.explicit == "true") {
-			art_semanticturkey.STRequests.Property.removePropertyDomain(rdfSubject.getNominalValue(),
-					rdfObject.getNominalValue());
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
-		}
-	}
-});
-
-art_semanticturkey.resourceView.partitions.registerPartitionHandler("ranges", {
-	"partitionLabel" : "Ranges",
-	"addTooltiptext" : "Add a range",
-	"expectedContentType" : "objectList",
-	"addIcon|fromRole" : "cls",
-	"onAdd" : function(rdfSubject) { // Based on sources by
-		// NScarpato
-
-		var parameters = {};
-		parameters.source = "range";
-		parameters.rangeName = "";
-
-		if (rdfSubject.getRole().toLowerCase().indexOf("objectproperty") != -1) {
-			// parameters.parentWindow =
-			// window.arguments[0].parentWindow;
-			parameters.parentWindow = window;
-			window.openDialog("chrome://semantic-turkey/content/editors/class/classTree.xul", "_blank",
-					"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
-			if (parameters.rangeName != "") {
-				art_semanticturkey.STRequests.Property.addPropertyRange(rdfSubject.getNominalValue(),
-						parameters.rangeName);
-				art_semanticturkey.evtMgr.fireEvent("refreshEditor",
-						(new art_semanticturkey.genericEventClass()));
+				window.openDialog("chrome://semantic-turkey/content/editors/class/classTree.xul", "_blank",
+						"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+				var domainName = parameters.domainName;
+				if (domainName != "none domain selected") {
+					art_semanticturkey.STRequests.Property.addPropertyDomain(rdfSubject.getNominalValue(),
+							domainName);
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				}
 			}
-
-		} else {
-			window.openDialog("chrome://semantic-turkey/content/editors/property/rangeList.xul", "_blank",
-					"modal=yes,resizable,centerscreen", parameters);
-			if (parameters.rangeName != "") {
-				art_semanticturkey.STRequests.Property.addPropertyRange(rdfSubject.getNominalValue(),
-						parameters.rangeName);
-				art_semanticturkey.evtMgr.fireEvent("refreshEditor",
-						(new art_semanticturkey.genericEventClass()));
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) { // Based on
+				// sources
+				// by
+				// NScarpato
+				if (rdfObject.explicit == "true") {
+					art_semanticturkey.STRequests.Property.removePropertyDomain(rdfSubject.getNominalValue(),
+							rdfObject.getNominalValue());
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
+				}
 			}
 		}
-	},
-	"onRemove" : function(rdfSubject, rdfObject) { // Based on
-		// sources
-		// by
-		// NScarpato
-		if (rdfObject.explicit == "true") {
-
-			art_semanticturkey.STRequests.Property.removePropertyRange(rdfSubject.getNominalValue(),
-					rdfObject.getNominalValue());
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
-		}
 	}
 });
 
-art_semanticturkey.resourceView.partitions.registerPartitionHandler("broaders", {
-	"partitionLabel" : "Broaders",
-	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add a broader concept",
-	"addIcon|fromRole" : "concept",
-	"onAdd" : function(rdfSubject) {
-		var parameters = {};
-		parameters.conceptScheme = "*"; // TODO which concept
-		// scheme?
-		// parameters.parentWindow =
-		// window.arguments[0].parentWindow;
-		parameters.parentWindow = window;
-		window.openDialog("chrome://semantic-turkey/content/skos/editors/concept/conceptTree.xul", "_blank",
-				"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
+art_semanticturkey.resourceView.partitions.registerPartitionHandler("ranges",
+		{
+			"partitionLabel" : "Ranges",
+			"addTooltiptext" : "Add a range",
+			"expectedContentType" : "objectList",
+			"addIcon|fromRole" : "cls",
+			"objects" : {
+				"add" : {
+					"label" : "Add a range",
+					"action" : function(rdfSubject) { // Based on sources by
+						// NScarpato
 
-		if (typeof parameters.out == "undefined" || typeof parameters.out.selectedConcept == "undefined")
-			return;
+						var parameters = {};
+						parameters.source = "range";
+						parameters.rangeName = "";
 
-		art_semanticturkey.STRequests.SKOS.addBroaderConcept(rdfSubject.getNominalValue(),
-				parameters.out.selectedConcept);
-		art_semanticturkey.evtMgr.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-	},
-	"onRemove" : function(rdfSubject, rdfObject) {
-		if (rdfObject.explicit == "true") {
+						if (rdfSubject.getRole().toLowerCase().indexOf("objectproperty") != -1) {
+							// parameters.parentWindow =
+							// window.arguments[0].parentWindow;
+							parameters.parentWindow = window;
+							window.openDialog("chrome://semantic-turkey/content/editors/class/classTree.xul",
+									"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen",
+									parameters);
+							if (parameters.rangeName != "") {
+								art_semanticturkey.STRequests.Property.addPropertyRange(rdfSubject
+										.getNominalValue(), parameters.rangeName);
+								art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+										(new art_semanticturkey.genericEventClass()));
+							}
 
-			art_semanticturkey.STRequests.SKOS.removeBroaderConcept(rdfSubject.getNominalValue(), rdfObject
-					.getNominalValue());
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
-		}
-	}
-});
+						} else {
+							window.openDialog(
+									"chrome://semantic-turkey/content/editors/property/rangeList.xul",
+									"_blank", "modal=yes,resizable,centerscreen", parameters);
+							if (parameters.rangeName != "") {
+								art_semanticturkey.STRequests.Property.addPropertyRange(rdfSubject
+										.getNominalValue(), parameters.rangeName);
+								art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+										(new art_semanticturkey.genericEventClass()));
+							}
+						}
+					}
+				},
+				"remove" : {
+					"action" : function(rdfSubject, rdfObject) { // Based on
+						// sources
+						// by
+						// NScarpato
+						if (rdfObject.explicit == "true") {
 
-art_semanticturkey.resourceView.partitions.registerPartitionHandler("topconcepts", {
-	"partitionLabel" : "Top Concepts",
-	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add a top concept",
-	"addIcon|fromRole" : "concept",
-	"onAdd" : function(rdfSubject) {
-		var parameters = {};
-		parameters.conceptScheme = "*"; // TODO which concept
-		// scheme?
-		// parameters.parentWindow =
-		// window.arguments[0].parentWindow;
-		parameters.parentWindow = window;
-		window.openDialog("chrome://semantic-turkey/content/skos/editors/concept/conceptTree.xul", "_blank",
-				"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
-
-		if (typeof parameters.out == "undefined" || typeof parameters.out.selectedConcept == "undefined")
-			return;
-
-		art_semanticturkey.STRequests.SKOS.addTopConcept(rdfSubject.getNominalValue(),
-				parameters.out.selectedConcept);
-
-		art_semanticturkey.evtMgr.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-	},
-	"onRemove" : function(rdfSubject, rdfObject) {
-		if (rdfObject.explicit == "true") {
-
-			art_semanticturkey.STRequests.SKOS.removeTopConcept(rdfSubject.getNominalValue(), rdfObject
-					.getNominalValue());
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
-		}
-	}
-});
+							art_semanticturkey.STRequests.Property.removePropertyRange(rdfSubject
+									.getNominalValue(), rdfObject.getNominalValue());
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						} else {
+							art_semanticturkey.Alert
+									.alert("You cannot remove this type, it's a system resource!");
+						}
+					}
+				}
+			}
+		});
 
 art_semanticturkey.resourceView.partitions
 		.registerPartitionHandler(
@@ -1216,131 +1459,199 @@ art_semanticturkey.resourceView.partitions
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("inverseof", {
 	"partitionLabel" : "Inverse of",
 	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add new property",
 	"addIcon|fromRole" : "individual",
-	"onAdd" : function(rdfSubject) { // Based on sources by
-		// NScarpato
-		var sourceElementName = rdfSubject.getNominalValue();
+	"objects" : {
+		"add" : {
+			"label" : "Add new property",
+			"action" : function(rdfSubject) { // Based on sources by
+				// NScarpato
+				var sourceElementName = rdfSubject.getNominalValue();
 
-		var responseXML = art_semanticturkey.STRequests.Property.getRange("owl:inverseOf", "false");
-		var ranges = responseXML.getElementsByTagName("ranges")[0];
-		var type = (ranges.getAttribute("rngType"));
+				var responseXML = art_semanticturkey.STRequests.Property.getRange("owl:inverseOf", "false");
+				var ranges = responseXML.getElementsByTagName("ranges")[0];
+				var type = (ranges.getAttribute("rngType"));
 
-		var parameters = new Object();
-		parameters.selectedProp = "";
-		parameters.selectedPropType = "";
-		parameters.oncancel = false;
-		parameters.type = type;
-		window.openDialog("chrome://semantic-turkey/content/editors/property/propertyTree.xul", "_blank",
-				"modal=yes,resizable,centerscreen", parameters);
+				var parameters = new Object();
+				parameters.selectedProp = "";
+				parameters.selectedPropType = "";
+				parameters.oncancel = false;
+				parameters.type = type;
+				window.openDialog("chrome://semantic-turkey/content/editors/property/propertyTree.xul",
+						"_blank", "modal=yes,resizable,centerscreen", parameters);
 
-		if (parameters.oncancel == false) {
-			art_semanticturkey.STRequests.Property.addExistingPropValue(sourceElementName, "owl:inverseOf",
-					parameters.selectedProp, type);
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
+				if (parameters.oncancel == false) {
+					art_semanticturkey.STRequests.Property.addExistingPropValue(sourceElementName,
+							"owl:inverseOf", parameters.selectedProp, type);
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				}
+
+			}
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) { // Based on
+				// sources
+				// by
+				// NScarpato
+				if (rdfObject.explicit == "true") {
+
+					art_semanticturkey.STRequests.Property.removePropValue(rdfSubject.getNominalValue(),
+							"owl:inverseOf", rdfObject.getNominalValue(), null,
+							rdfObject.isURIResource() ? "uri" : "bnode");
+
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
+				}
+
+			}
 		}
-
-	},
-	"onRemove" : function(rdfSubject, rdfObject) { // Based on
-		// sources
-		// by
-		// NScarpato
-		if (rdfObject.explicit == "true") {
-
-			art_semanticturkey.STRequests.Property.removePropValue(rdfSubject.getNominalValue(),
-					"owl:inverseOf", rdfObject.getNominalValue(), null, rdfObject.isURIResource() ? "uri"
-							: "bnode");
-
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
-		}
-
 	}
+
 });
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("topconceptof", {
 	"partitionLabel" : "Top concept of",
 	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add to concept scheme as top concept",
 	"addIcon|fromRole" : "conceptScheme",
-	"onAdd" : function(rdfSubject) {
-		var parameters = {};
+	"objects" : {
+		"add" : {
+			"label" : "Add to concept scheme as top concept",
+			"action" : function(rdfSubject) {
+				var parameters = {};
 
-		window.openDialog("chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul", "dlg",
-				"chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+				window.openDialog("chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul",
+						"dlg", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
 
-		if (typeof parameters.out == "undefined") {
-			return;
+				if (typeof parameters.out == "undefined") {
+					return;
+				}
+
+				var language = null;
+
+				if (art_semanticturkey.Preferences.get("extensions.semturkey.skos.humanReadable", false)) {
+					language = art_semanticturkey.Preferences.get(
+							"extensions.semturkey.annotprops.defaultlang", "en");
+				}
+
+				art_semanticturkey.STRequests.SKOS.addTopConcept(parameters.out.selectedScheme, rdfSubject
+						.getNominalValue(), language);
+
+				art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+						(new art_semanticturkey.genericEventClass()));
+			}
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) {
+				if (rdfObject.explicit == "true") {
+
+					art_semanticturkey.STRequests.SKOS.removeTopConcept(rdfObject.getNominalValue(),
+							rdfSubject.getNominalValue());
+
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert
+							.alert("You cannot remove this concept scheme, it's a system resource!");
+				}
+
+			}
+
 		}
-
-		var language = null;
-
-		if (art_semanticturkey.Preferences.get("extensions.semturkey.skos.humanReadable", false)) {
-			language = art_semanticturkey.Preferences
-					.get("extensions.semturkey.annotprops.defaultlang", "en");
-		}
-
-		art_semanticturkey.STRequests.SKOS.addTopConcept(parameters.out.selectedScheme, rdfSubject
-				.getNominalValue(), language);
-
-		art_semanticturkey.evtMgr.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-	},
-	"onRemove" : function(rdfSubject, rdfObject) {
-		if (rdfObject.explicit == "true") {
-
-			art_semanticturkey.STRequests.SKOS.removeTopConcept(rdfObject.getNominalValue(), rdfSubject
-					.getNominalValue());
-
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this concept scheme, it's a system resource!");
-		}
-
 	}
 });
 
 art_semanticturkey.resourceView.partitions.registerPartitionHandler("schemes", {
 	"partitionLabel" : "Schemes",
 	"expectedContentType" : "objectList",
-	"addTooltiptext" : "Add to a concept scheme",
 	"addIcon|fromRole" : "conceptScheme",
-	"onAdd" : function(rdfSubject) {
-		var parameters = {};
+	"objects" : {
+		"add" : {
+			"label" : "Add to a concept scheme",
+			"action" : function(rdfSubject) {
+				var parameters = {};
 
-		window.openDialog("chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul", "dlg",
-				"chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+				window.openDialog("chrome://semantic-turkey/content/skos/editors/scheme/schemeList.xul",
+						"dlg", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
 
-		if (typeof parameters.out == "undefined") {
-			return;
+				if (typeof parameters.out == "undefined") {
+					return;
+				}
+
+				var language = null;
+
+				if (art_semanticturkey.Preferences.get("extensions.semturkey.skos.humanReadable", false)) {
+					language = art_semanticturkey.Preferences.get(
+							"extensions.semturkey.annotprops.defaultlang", "en");
+				}
+
+				art_semanticturkey.STRequests.SKOS.addConceptToScheme(rdfSubject.getNominalValue(),
+						parameters.out.selectedScheme, language);
+
+				art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+						(new art_semanticturkey.genericEventClass()));
+			}
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) {
+				if (rdfObject.explicit == "true") {
+
+					art_semanticturkey.STRequests.SKOS.removeConceptFromScheme(rdfSubject.getNominalValue(),
+							rdfObject.getNominalValue());
+
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert
+							.alert("You cannot remove this concept scheme, it's a system resource!");
+				}
+
+			}
 		}
+	}
+});
 
-		var language = null;
+art_semanticturkey.resourceView.partitions.registerPartitionHandler("broaders", {
+	"partitionLabel" : "Broaders",
+	"expectedContentType" : "objectList",
+	"addTooltiptext" : "Add a broader concept",
+	"addIcon|fromRole" : "concept",
+	"objects" : {
+		"add" : {
+			"label" : "Add a broader concept",
+			"action" : function(rdfSubject) {
+				var parameters = {};
+				parameters.conceptScheme = "*"; // TODO which concept
+				// scheme?
+				// parameters.parentWindow =
+				// window.arguments[0].parentWindow;
+				parameters.parentWindow = window;
+				window.openDialog("chrome://semantic-turkey/content/skos/editors/concept/conceptTree.xul",
+						"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
 
-		if (art_semanticturkey.Preferences.get("extensions.semturkey.skos.humanReadable", false)) {
-			language = art_semanticturkey.Preferences
-					.get("extensions.semturkey.annotprops.defaultlang", "en");
+				if (typeof parameters.out == "undefined"
+						|| typeof parameters.out.selectedConcept == "undefined")
+					return;
+
+				art_semanticturkey.STRequests.SKOS.addBroaderConcept(rdfSubject.getNominalValue(),
+						parameters.out.selectedConcept);
+				art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+						(new art_semanticturkey.genericEventClass()));
+			}
+		},
+		"remove" : {
+			"action" : function(rdfSubject, rdfObject) {
+				if (rdfObject.explicit == "true") {
+
+					art_semanticturkey.STRequests.SKOS.removeBroaderConcept(rdfSubject.getNominalValue(),
+							rdfObject.getNominalValue());
+					art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+							(new art_semanticturkey.genericEventClass()));
+				} else {
+					art_semanticturkey.Alert.alert("You cannot remove this type, it's a system resource!");
+				}
+			}
 		}
-
-		art_semanticturkey.STRequests.SKOS.addConceptToScheme(rdfSubject.getNominalValue(),
-				parameters.out.selectedScheme, language);
-
-		art_semanticturkey.evtMgr.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-	},
-	"onRemove" : function(rdfSubject, rdfObject) {
-		if (rdfObject.explicit == "true") {
-
-			art_semanticturkey.STRequests.SKOS.removeConceptFromScheme(rdfSubject.getNominalValue(),
-					rdfObject.getNominalValue());
-
-			art_semanticturkey.evtMgr
-					.fireEvent("refreshEditor", (new art_semanticturkey.genericEventClass()));
-		} else {
-			art_semanticturkey.Alert.alert("You cannot remove this concept scheme, it's a system resource!");
-		}
-
 	}
 });
