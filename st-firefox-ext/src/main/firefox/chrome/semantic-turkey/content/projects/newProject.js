@@ -27,8 +27,11 @@ window.onload = function(){
 	var responseXML = art_semanticturkey.STRequests.SystemStart.listOntManagers();
 	art_semanticturkey.populateTripleStoreMenulist_RESPONSE(responseXML);
 	
-	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator");
-	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
+	//optional settings panel
+	document.getElementById("expandOptSetBtn").addEventListener("command", art_semanticturkey.expandOptionalSettingsListener, false);
+	//in the future this informations (extPoint IDs and optional/mandatory) should be provided by the server and not hardcoded
+	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator", false);
+	art_semanticturkey.buildExtensionPointUI("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine", false);
 
 	window.sizeToContent();
 };
@@ -147,12 +150,38 @@ art_semanticturkey.openTripleStoreConfiguration = function(){
 };
 
 /**
- * Build the UI for an extension point configurator. It create a groupbox containing:
+ * Expands/Collapses the box containing the configuration panel of the optional settings
+ */
+art_semanticturkey.expandOptionalSettingsListener = function() {
+	var optionalSettingsBox = document.getElementById("optionalSettingsBox");
+	if (optionalSettingsBox.getAttribute("hidden") == "true") {
+		optionalSettingsBox.setAttribute("hidden", "false");
+		this.setAttribute("label", "▽");
+		this.setAttribute("tooltiptext", "Collapse");
+	} else {
+		optionalSettingsBox.setAttribute("hidden", "true");
+		this.setAttribute("label", "▷");
+		this.setAttribute("tooltiptext", "Expand");
+	}
+}
+
+/**
+ * Build the UI for an extension point configurator. It creates a groupbox containing:
  * - A menulist to choose one of the available plugin for the given extension point
  * - A menulist to choose one of the available configuration for the chosen plugin
  * - A button to edit the configuration 
  */
-art_semanticturkey.buildExtensionPointUI = function(extensionPoint) {
+art_semanticturkey.buildExtensionPointUI = function(extensionPoint, mandatory) {
+	var settingContainer;
+	if (!mandatory) {
+		//if the extPoint is optional set visible the expandable panel
+		var optionalSettingsGroupbox = document.getElementById("optionalSettingsGroupbox");
+		optionalSettingsGroupbox.setAttribute("hidden", false);
+		settingContainer = document.getElementById("optionalSettingsBox");
+	} else {
+		settingContainer = document.getElementById("mandatorySettingsBox");
+	}
+	
 	var groupbox = document.createElement("groupbox");
 	extPointLocalName = extensionPoint.substring(extensionPoint.lastIndexOf(".")+1);
 	groupbox.extensionPoint = extPointLocalName;
@@ -185,7 +214,7 @@ art_semanticturkey.buildExtensionPointUI = function(extensionPoint) {
 	art_semanticturkey.populateAvailablePluginMenulist(extensionPoint, pluginMenulist);
 	row.appendChild(pluginMenulist);
 	rows.appendChild(row);
-	//2nd row containing menu listing available configuration for the plugin chosed in 1st menu
+	//2nd row containing menu listing available configuration for the plugin chosen in 1st menu
 	row = document.createElement("row");
 	row.setAttribute("align", "center");
 	var label = document.createElement("label");
@@ -211,7 +240,7 @@ art_semanticturkey.buildExtensionPointUI = function(extensionPoint) {
 	grid.appendChild(rows);
 	groupbox.appendChild(grid);
 
-	document.getElementById("extensionPointsBox").appendChild(groupbox);
+	settingContainer.appendChild(groupbox);
 }
 
 /**
@@ -285,7 +314,7 @@ art_semanticturkey.populatePluginConfigurationMenulist = function(pluginId, conf
  */
 art_semanticturkey.openPluginConfiguration = function(configurationMenuitem){
 	var parameters = new Object();
-	//menuitem > menupopup > menulist > row > rows > grid > groupbox
+	//menuitem > menupopup > menulist > row > rows > grid > groupbox > caption
 	var extPoint = configurationMenuitem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.
 		getElementsByTagName("caption")[0].getAttribute("label");
 	parameters.extensionPoint = extPoint; 
@@ -333,8 +362,15 @@ art_semanticturkey.onAccept = function() {
 		cfgParsArray[i].value = completecfsArray[i].value;
 	}
 	
-	//perform checks on extension point configurations
-	var extPointGroupboxList = document.getElementById("extensionPointsBox").childNodes;
+	//perform checks on extension point configurations and collect settings
+	/* NOTE: currently this operations must be performed with predetermined order because the newProject
+	 * method get precise parameters so they must be distinguished.
+	 * We should generalize the request and then this operations will be generalized too.
+	 * Note also that this operations are (at the moment) performed only for optional settings, in
+	 * case in the future will be added mandatory extention points, they must be performed for
+	 * them too (contained in mandatorySettingsBox)
+	 */
+	var extPointGroupboxList = document.getElementById("optionalSettingsBox").childNodes;
 	
 	//First groupbox (index 0): UriGenerator extension point
 	var uriGenGroupbox = extPointGroupboxList[0];
@@ -429,14 +465,15 @@ art_semanticturkey.onAccept = function() {
 			responseXML = art_semanticturkey.STRequests.Projects.newProject(
 					projectName, ontologyType, uri,
 					tripleStore, ontMgrConfiguration, cfgParsArray,
-					uriGenFactoryID, uriGenConfiguration, uriGenParsArray, renderingEngineFactoryID,
-					renderingEngineConfiguration, renderingEngineParsArray);
+					uriGenFactoryID, uriGenConfiguration, uriGenParsArray, 
+					renderingEngineFactoryID, renderingEngineConfiguration, renderingEngineParsArray);
 		} else {
 			responseXML = art_semanticturkey.STRequests.Projects.newProjectFromFile(
 				projectName, ontologyType, uri,
 				tripleStore, ontMgrConfiguration, cfgParsArray,
-				uriGenConfiguration, uriGenFactoryID, uriGenParsArray, renderingEngineFactoryID,
-				renderingEngineConfiguration, renderingEngineParsArray, srcLocalFile);
+				uriGenConfiguration, uriGenFactoryID, uriGenParsArray, 
+				renderingEngineFactoryID, renderingEngineConfiguration, renderingEngineParsArray, 
+				srcLocalFile);
 		}
 		art_semanticturkey.newProject_RESPONSE(responseXML, projectName, ontologyType);
 	}

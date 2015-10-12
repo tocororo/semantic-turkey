@@ -318,7 +318,6 @@ public class CustomRanges extends STServiceAdapter {
 			model.deleteTriple(NodeFilters.ANY, NodeFilters.ANY, resource, getWorkingGraph());
 			model.deleteTriple(resource, NodeFilters.ANY, NodeFilters.ANY, getWorkingGraph());
 		} else { //otherwise remove with a SPARQL delete the graph defined by the CRE graph
-			System.out.println(cre.getId()+"\n\n");
 			StringBuilder queryBuilder = new StringBuilder();
 			queryBuilder.append("delete { ");
 			queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));

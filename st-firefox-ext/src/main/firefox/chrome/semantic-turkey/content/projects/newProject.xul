@@ -20,7 +20,7 @@
 
 <window id="newProjectWindow" title="New Project"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	width="500" height="300">
+	width="500" height="400">
 
 	<script type="application/x-javascript"
 		src="chrome://semantic-turkey/content/projects/newProject.js" />
@@ -30,7 +30,7 @@
 		src="chrome://semantic-turkey/content/utilities/utilities.js" />
 
 
-	<vbox id="repBox" flex="1">
+	<vbox id="repBox" flex="1" style="overflow: auto">
 		<grid flex="1">
 			<columns>
 				<column width="100" />
@@ -86,16 +86,29 @@
 					</grid>
 				</groupbox>
 				
+				<vbox id="mandatorySettingsBox">
+					<!-- This vbox will contain groupbox elements to configure mandatory ext points -->
+				</vbox>
+				
+				<groupbox id="optionalSettingsGroupbox" hidden="true">
+					<caption align="center">
+						<label value="Optional settings"/>
+						<toolbarbutton id="expandOptSetBtn" label="▷" tooltiptext="Expand"/>
+					</caption>
+					<vbox id="optionalSettingsBox" hidden="true">
+						<!-- This vbox will contain groupbox elements to configure optional ext points -->
+					</vbox>
+				</groupbox>
+				
 				<row id="fromFileRow">
 					<button id="dirBtn" label="Select rdf/owl file"/>
 					<textbox id="srcLocalFile" value="" />
 				</row>
 				
-				<vbox id="extensionPointsBox"/>
-				
 			</rows>
 		</grid>
 	</vbox>
+
 	<vbox id="buttonBox" flex="0">
 		<grid flex="1">
 			<columns>

@@ -100,7 +100,7 @@
 			</hbox>
 		</hbox>-->
 	</groupbox>
-	<hbox>
+	<hbox align="center">
 		<!--<button id="restartFirefox" label="Restart Firefox" 
 					tooltiptext="Restart Firefox"/>-->
 		<label value="new Project: "/>
