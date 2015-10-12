@@ -407,25 +407,35 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 			partitionButton.setAttribute("image", this.addIcon);
 			partitionButton.setAttribute("st-partitionName", partitionName);
 
+			var partitionActions = [];
+			
 			if (typeof this[interestingHandlerSection].add.action == "function") {
-				partitionButton
-						.addEventListener(
-								"command",
-								art_semanticturkey.resourceView.partitions.internal
-										.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
-												.createAddHandlerFromAction(outerThis,
-														this[interestingHandlerSection].add.action,
-														subjectResource)), false);
-				partitionButton.setAttribute("disabled",
-						typeof this[interestingHandlerSection].add.enabled != "undefined" ? ""
-								+ !this[interestingHandlerSection].add.enabled(subjectResource) : "false");
-			} else if (this[interestingHandlerSection].add.actions instanceof Array) {
-				partitionButton.setAttribute("type", "menu");
+				partitionActions.push(this[interestingHandlerSection].add);
+			} else if(this[interestingHandlerSection].add.actions instanceof Array) {
+				partitionActions = partitionActions.concat(this[interestingHandlerSection].add.actions);
+			}
+			
+			var enabledFilter = art_semanticturkey.resourceView.partitions.internal.createEnabledActionFilter(subjectResource);
 
+			partitionActions = partitionActions.filter(enabledFilter);
+
+			if (partitionActions.length == 0) {
+				partitionButton.setAttribute("disabled", "true");
+			} else if (partitionActions.length == 1) {
+				partitionButton
+				.addEventListener(
+						"command",
+						art_semanticturkey.resourceView.partitions.internal
+								.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
+										.createAddHandlerFromAction(outerThis,
+												partitionActions[0].action,
+												subjectResource)), false);				
+			} else {
+				partitionButton.setAttribute("type", "menu");
 				var menupop = document.createElement("menupopup");
 
-				for (var i = 0; i < this[interestingHandlerSection].add.actions.length; i++) {
-					var anAction = this[interestingHandlerSection].add.actions[i];
+				for (var i = 0; i < partitionActions.length; i++) {
+					var anAction = partitionActions[i];
 					var menuitem = document.createElement("menuitem");
 					menuitem.setAttribute("label", anAction.label || "");
 
@@ -436,14 +446,10 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 											.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
 													.createAddHandlerFromAction(outerThis, anAction.action,
 															subjectResource)), false);
-					menuitem.setAttribute("disabled", typeof anAction.enabled != "undefined" ? ""
-							+ !anAction.enabled(subjectResource) : "false");
-
 					menupop.appendChild(menuitem);
 				}
 
-				partitionButton.appendChild(menupop);
-
+				partitionButton.appendChild(menupop);				
 			}
 		}
 	}
@@ -558,7 +564,7 @@ art_semanticturkey.resourceView.partitions.internal.createAddHandlerFromAction =
 art_semanticturkey.resourceView.partitions.internal.handlePredicateProcessingAlternatives = function(handler,
 		rdfSubject, rdfPredicate) {
 	var actions = art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty(handler,
-			rdfPredicate);
+			rdfSubject, rdfPredicate);
 
 	if (actions.length == 0) {
 		throw new Error("No handler for the event");
@@ -589,10 +595,12 @@ art_semanticturkey.resourceView.partitions.internal.handlePredicateProcessingAlt
 	}
 }
 
-art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty = function(handler, property) {
-
+art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty = function(handler, rdfSubject,
+		property) {
 	if (typeof handler["predicateObjects"] == "undefined")
 		return [];
+	
+	var enabledFilter = art_semanticturkey.resourceView.partitions.internal.createEnabledActionFilter(rdfSubject);
 
 	var container = undefined;
 
@@ -607,11 +615,11 @@ art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty = f
 			return [];
 
 		if (container.add.actions instanceof Array) {
-			return container.add.actions;
+			return container.add.actions.filter(enabledFilter);
 		}
 
 		if (typeof container.add.action == "function") {
-			return [ container.add ];
+			return [ container.add ].filter(enabledFilter);
 		}
 	}
 
@@ -726,6 +734,14 @@ art_semanticturkey.resourceView.partitions.internal.objectListEventHandler = fun
 
 art_semanticturkey.resourceView.partitions.internal.getButtonType = function(button) {
 	return button.getAttribute("label");
+};
+
+art_semanticturkey.resourceView.partitions.internal.createEnabledActionFilter = function(rdfSubject) {
+	return (function(anAction) {
+		if (typeof anAction.enabled == "undefined") return true;
+	
+		return anAction.enabled(rdfSubject);
+	});
 };
 
 art_semanticturkey.resourceView.partitions.internal.existingClassTemplate = function(innerFunction) {
