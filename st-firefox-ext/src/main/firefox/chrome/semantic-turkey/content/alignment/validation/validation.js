@@ -115,6 +115,8 @@ art_semanticturkey.populateAlignmentList = function(page) {
 			document.getElementById("pageLabel").setAttribute("value", "Page " + page + "/" + totPage);
 			document.getElementById("previousPageBtn").setAttribute("disabled", (page == "1"));
 			document.getElementById("nextPageBtn").setAttribute("disabled", (page == totPage));
+		} else {
+			document.getElementById("pageCtrlBox").setAttribute("hidden", "true");
 		}
 		
 		//populate list
@@ -705,15 +707,45 @@ art_semanticturkey.exportAlignment = function() {
  * opens a dialog that allows to edit the relation meter label
  */
 art_semanticturkey.editRelationMeter = function() {
-	var params = {
-		changed: false
-	}
 	window.openDialog("chrome://semantic-turkey/content/alignment/validation/editRelationMeter.xul", 
-			"_blank", "chrome,dependent,dialog,modal=yes,centerscreen", params);
+			"_blank", "chrome,dependent,dialog,modal=yes,centerscreen");
 	//if there have been changes update some elements of the UI
-	if (params.changed) {
-		relationMeterLabel = art_semanticturkey.Preferences.get(relationMeterLabelPrefsEntry, "relation");
-		relationMeterShowMeasure = art_semanticturkey.Preferences.get(relationMeterShowMeasurePrefsEntry, false);
+	art_semanticturkey.updateRelationMeters();
+}
+
+/**
+ * Opens the option dialog of the alignment validation
+ */
+art_semanticturkey.openOptions = function() {
+	var alignPerPage = art_semanticturkey.Preferences.get(maxAlignmentPerPagePrefsEntry, 0);
+	/* according to prefwindow documentation:
+	 * - "You can pass the id of a particular pane as the fourth argument to openDialog to open 
+	 *   a specific pane by default";
+	 * - "Prefer the classical window.openDialog() with the following window features: 
+	 * 	 'chrome,titlebar,toolbar,centerscreen,dialog=yes'" 
+	 * modal=yes added to make updateRelationMeters called only once the dialog is closed */
+	var focusPanelId = "alignmentValidationPanel";
+	window.openDialog("chrome://semantic-turkey/content/options.xul", 
+			"_blank", "chrome,titlebar,toolbar,centerscreen,dialog=yes,modal=yes", focusPanelId);
+	//update meters
+	art_semanticturkey.updateRelationMeters();
+	//if changed alignment per page property, update the listbox
+	var newAlignPerPage = art_semanticturkey.Preferences.get(maxAlignmentPerPagePrefsEntry, 0);
+	if ((newAlignPerPage != alignPerPage) && document.getElementById("alignmentList").itemCount > 0) {
+		currentPage = 0;
+		art_semanticturkey.populateAlignmentList(currentPage);
+	}
+}
+
+/**
+ * Check if the options about relation meter are changed, in case update the meters
+ */
+art_semanticturkey.updateRelationMeters = function() {
+	var newRelMtrLbl = art_semanticturkey.Preferences.get(relationMeterLabelPrefsEntry, "relation");
+	var newRelMtrShowMeas = art_semanticturkey.Preferences.get(relationMeterShowMeasurePrefsEntry, false);
+	if (newRelMtrLbl != relationMeterLabel || newRelMtrShowMeas != relationMeterShowMeasure) {
+		relationMeterLabel = newRelMtrLbl;
+		relationMeterShowMeasure = newRelMtrShowMeas;
 		//updates the menuitems of the edit relation menu
 		var editRelItems = document.getElementsByClassName("editRelationMenuitem");
 		for (var i=0; i<editRelItems.length; i++){
@@ -748,17 +780,6 @@ art_semanticturkey.pageController = function() {
 		currentPage--;
 	}
 	art_semanticturkey.populateAlignmentList(currentPage);
-}
-
-art_semanticturkey.openOptions = function() {
-	/* according to prefwindow documentation:
-	 * - "You can pass the id of a particular pane as the fourth argument to openDialog to open 
-	 *   a specific pane by default";
-	 * - "Prefer the classical window.openDialog() with the following window features: 
-	 * 	 'chrome,titlebar,toolbar,centerscreen,dialog=yes'" */
-	var focusPanelId = "alignmentValidationPanel";
-	window.openDialog("chrome://semantic-turkey/content/options.xul", 
-			"_blank", "chrome,titlebar,toolbar,centerscreen,dialog=yes", focusPanelId);
 }
 
 //UTILS

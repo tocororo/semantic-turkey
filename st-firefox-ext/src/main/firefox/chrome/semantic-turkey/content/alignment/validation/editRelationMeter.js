@@ -28,13 +28,7 @@ window.onload = function() {
 doOk = function() {
 	var newRel = document.getElementById("radiogroup").selectedItem.id;
 	var newConf = document.getElementById("confCheck").getAttribute("checked");
-	if (newRel != rel || newConf != showMeas) {
-		
-		art_semanticturkey.Preferences.set(relationMeterLabelPrefsEntry, newRel);
-		console.log(newConf == "true");
-		art_semanticturkey.Preferences.set(relationMeterShowMeasurePrefsEntry, newConf == "true");
-		
-		window.arguments[0].changed = true;
-	}
+	art_semanticturkey.Preferences.set(relationMeterLabelPrefsEntry, newRel);
+	art_semanticturkey.Preferences.set(relationMeterShowMeasurePrefsEntry, newConf == "true");
 	close();
 }
