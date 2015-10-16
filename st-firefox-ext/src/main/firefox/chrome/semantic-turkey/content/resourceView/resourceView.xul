@@ -58,4 +58,7 @@
 			</vbox>
 		</vbox>
 	</scrollbox>
+	<hbox>
+		<spacer flex="1"/><button id="closeButton" label="Close" />
+	</hbox>
 </window>

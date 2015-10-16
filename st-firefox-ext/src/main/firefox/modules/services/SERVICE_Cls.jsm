@@ -1,10 +1,9 @@
 Components.utils.import("resource://stmodules/STRequests.jsm");
 Components.utils.import("resource://stmodules/Logger.jsm");
-Components.utils.import("resource://stmodules/Deserializer.jsm");	
+Components.utils.import("resource://stmodules/Deserializer.jsm");
 Components.utils.import("resource://stmodules/ARTResources.jsm");
 
 Components.utils.import("resource://stmodules/Context.jsm");
-
 
 EXPORTED_SYMBOLS = [ "SemTurkeyHTTPLegacy", "STRequests" ];
 
@@ -14,8 +13,8 @@ var serviceName = service.serviceName;
 var deleteService = STRequests.Delete;
 var deleteServiceName = deleteService.serviceName;
 
-//var refactorService = STRequests.Refactor;
-//var refactorServiceName = STRequests.Refactor.serviceName;
+// var refactorService = STRequests.Refactor;
+// var refactorServiceName = STRequests.Refactor.serviceName;
 
 var graphService = STRequests.Graph;
 var graphServiceName = STRequests.Graph.serviceName;
@@ -31,13 +30,14 @@ var graphServiceName = STRequests.Graph.serviceName;
  * @return
  */
 function getClassesInfoAsRootsForTree(instNum, clsqnames) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassTree '+instNum+" "+clsqnames);
+	Logger.debug('[SERVICE_Cls.jsm] getClassTree ' + instNum + " " + clsqnames);
 	var instNum = "instNum=" + instNum; // instNum should be true or false
 	var clsesqnames = "clsesqnames=" + clsqnames;
-	for ( var i = 2; i < arguments.length; i++)
+	for (var i = 2; i < arguments.length; i++)
 		clsesqnames += "|_|" + arguments[i];
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getClassesInfoAsRootsForTreeRequest, clsesqnames, instNum, contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName,
+			service.getClassesInfoAsRootsForTreeRequest, clsesqnames, instNum, contextAsArray));
 }
 
 /**
@@ -49,7 +49,7 @@ function getClassesInfoAsRootsForTree(instNum, clsqnames) {
  * @return
  */
 function getClassTree(clsName) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassTree '+clsName);
+	Logger.debug('[SERVICE_Cls.jsm] getClassTree ' + clsName);
 	if (typeof clsName != "undefined") {
 		var className = "clsName=" + clsName;
 		var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
@@ -74,12 +74,13 @@ function getClassTree(clsName) {
  * @return
  */
 function getSubClasses(clsName, tree, instNum) {
-	Logger.debug('[SERVICE_Cls.jsm] getSubClasses '+clsName+" "+tree+" "+instNum);
+	Logger.debug('[SERVICE_Cls.jsm] getSubClasses ' + clsName + " " + tree + " " + instNum);
 	var className = "clsName=" + clsName;
 	var tree = "tree=" + tree;
 	var instNum = "instNum=" + instNum;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSubClassesRequest, className, tree, instNum, contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSubClassesRequest,
+			className, tree, instNum, contextAsArray));
 }
 
 /**
@@ -89,11 +90,12 @@ function getSubClasses(clsName, tree, instNum) {
  * @return
  */
 function getClassDescription(clsName, method) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassTree '+clsName+" "+method);
+	Logger.debug('[SERVICE_Cls.jsm] getClassTree ' + clsName + " " + method);
 	var className = "clsName=" + clsName;
 	var method = "method=" + method;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.getClassDescriptionRequest, className, method, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.getClassDescriptionRequest, className, method,
+			contextAsArray);
 }
 
 /**
@@ -104,16 +106,18 @@ function getClassDescription(clsName, method) {
  * @return
  */
 function getClassAndInstancesInfo(clsName, hasSubClasses) {
-	Logger.debug('[SERVICE_Cls.jsm] getClassAndInstancesInfo ' + clsName+" "+hasSubClasses);
+	Logger.debug('[SERVICE_Cls.jsm] getClassAndInstancesInfo ' + clsName + " " + hasSubClasses);
 	var clsName = "clsName=" + clsName;
 	var resArray = new Array();
-	
+
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	if(typeof hasSubClasses != "undefined"){
-		var hasSubClasses = "hasSubClasses="+hasSubClasses;
-		var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName,hasSubClasses, contextAsArray)
+	if (typeof hasSubClasses != "undefined") {
+		var hasSubClasses = "hasSubClasses=" + hasSubClasses;
+		var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName,
+				hasSubClasses, contextAsArray)
 	}
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.getClassAndInstancesInfoRequest, clsName,
+			contextAsArray);
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["instances"] = Deserializer.createRDFArray(reply.getElementsByTagName("Instances")[0]);
 	return resArray;
@@ -130,7 +134,8 @@ function removeClass(name) {
 	var myName = "name=" + name;
 	var myType = "type=Class";
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createURI(SemTurkeyHTTPLegacy.GET(deleteServiceName, deleteService.removeClassRequest, myName, myType, contextAsArray));
+	return Deserializer.createURI(SemTurkeyHTTPLegacy.GET(deleteServiceName,
+			deleteService.removeClassRequest, myName, myType, contextAsArray));
 }
 
 /**
@@ -139,14 +144,14 @@ function removeClass(name) {
  * @member STRequests.Refactor
  * @return
  */
-//Use the function rename in SERVICE_Refactor.jsm
-/*function renameResource(newResourceName, oldResourceName) {
-	/*Logger.debug('[SERVICE_Cls.jsm] renameResource ' + newResourceName+" "+oldResourceName);
-	var myNewName = "newName=" + newResourceName;
-	var myOldName = "oldName=" + oldResourceName;
-	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(refactorServiceName, refactorService.renameRequest, myNewName, myOldName, contextAsArray);
-}*/
+// Use the function rename in SERVICE_Refactor.jsm
+/*
+ * function renameResource(newResourceName, oldResourceName) { /*Logger.debug('[SERVICE_Cls.jsm]
+ * renameResource ' + newResourceName+" "+oldResourceName); var myNewName = "newName=" + newResourceName; var
+ * myOldName = "oldName=" + oldResourceName; var contextAsArray =
+ * this.context.getContextValuesForHTTPGetAsArray(); return SemTurkeyHTTPLegacy.GET(refactorServiceName,
+ * refactorService.renameRequest, myNewName, myOldName, contextAsArray); }
+ */
 
 /**
  * as for <code>addSubClass</code>, but <code>superClassName</code> is set to <code>owl:Thing</code>
@@ -157,11 +162,12 @@ function removeClass(name) {
  */
 function addClass(newClassName) {
 	Logger.debug('[SERVICE_Cls.jsm] addClass ' + newClassName);
-	//return addSubClass(newClassName, "owl:Thing");
+	// return addSubClass(newClassName, "owl:Thing");
 	var superClassName = "superClassName=" + "owl:Thing";
 	var newClassName = "newClassName=" + newClassName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply =  SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName, newClassName, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName,
+			newClassName, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -177,11 +183,12 @@ function addClass(newClassName) {
  * @return
  */
 function addIndividual(clsName, instanceName) {
-	Logger.debug('[SERVICE_Cls.jsm] addIndividual ' + clsName+" "+instanceName);
+	Logger.debug('[SERVICE_Cls.jsm] addIndividual ' + clsName + " " + instanceName);
 	var clsName = "clsName=" + clsName;
 	var instanceName = "instanceName=" + instanceName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createInstanceRequest, clsName, instanceName, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createInstanceRequest, clsName, instanceName,
+			contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -198,11 +205,12 @@ function addIndividual(clsName, instanceName) {
  * @return
  */
 function addSubClass(newClassName, superClassName) {
-	Logger.debug('[SERVICE_Cls.jsm] addSubClass ' + newClassName+" "+superClassName);
+	Logger.debug('[SERVICE_Cls.jsm] addSubClass ' + newClassName + " " + superClassName);
 	var superClassName = "superClassName=" + superClassName;
 	var newClassName = "newClassName=" + newClassName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply =  SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName, newClassName, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.createClassRequest, superClassName,
+			newClassName, contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -232,7 +240,88 @@ function graph() {
 function partialGraph(className) {
 	var className = "className=" + className;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(graphServiceName, graphService.partialGraphRequest, className, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(graphServiceName, graphService.partialGraphRequest, className,
+			contextAsArray);
+}
+
+/**
+ * States the class <code>clsName</code> is <code>owl:intersectionOf</code> the classes the descriptions
+ * of which are provided by <code>clsDescriptions</code>.
+ * 
+ * @member STRequests.Cls
+ * @param clsName
+ * @param clsDescriptions
+ * @return
+ */
+function addIntersectionOf(clsName, clsDescriptions) {
+	Logger.debug('[SERVICE_Cls.jsm] addIntersectionOf ' + clsName + ' ' + clsDescriptions.toSource());
+
+	var clsName_p = "clsName=" + clsName;
+	var clsDescriptions_p = "clsDescriptions=" + clsDescriptions.join("|_|");
+
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addIntersectionOfRequest, clsName_p,
+			clsDescriptions_p, contextAsArray);
+}
+
+/**
+ * Removes the axiom asserting that the class <code>clsName</code> is the intersection of the collection of
+ * classes identified by <code>collectionNode</code>
+ * 
+ * @member STRequests.Cls
+ * @param clsName
+ * @param collectionNode
+ * @return
+ */
+function removeIntersectionOf(clsName, collectionNode) {
+	Logger.debug('[SERVICE_Cls.jsm] removeIntersectionOf ' + clsName + ' ' + collectionNode);
+
+	var clsName_p = "clsName=" + clsName;
+	var collectionNode_p = "collectionNode=" + collectionNode;
+
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeIntersectionOfRequest, clsName_p,
+			collectionNode_p, contextAsArray);
+}
+
+/**
+ * States the class <code>clsName</code> is <code>owl:unionOf</code> the classes the descriptions of which
+ * are provided by <code>clsDescriptions</code>.
+ * 
+ * @member STRequests.Cls
+ * @param clsName
+ * @param clsDescriptions
+ * @return
+ */
+function addUnionOf(clsName, clsDescriptions) {
+	Logger.debug('[SERVICE_Cls.jsm] addUnionOf ' + clsName + ' ' + clsDescriptions.toSource());
+
+	var clsName_p = "clsName=" + clsName;
+	var clsDescriptions_p = "clsDescriptions=" + clsDescriptions.join("|_|");
+
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addUnionOfRequest, clsName_p, clsDescriptions_p,
+			contextAsArray);
+}
+
+/**
+ * Removes the axiom asserting that the class <code>clsName</code> is the union of the collection of
+ * classes identified by <code>collectionNode</code>
+ * 
+ * @member STRequests.Cls
+ * @param clsName
+ * @param collectionNode
+ * @return
+ */
+function removeUnionOf(clsName, collectionNode) {
+	Logger.debug('[SERVICE_Cls.jsm] removeUnionOf ' + clsName + ' ' + collectionNode);
+
+	var clsName_p = "clsName=" + clsName;
+	var collectionNode_p = "collectionNode=" + collectionNode;
+
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeUnionOfRequest, clsName_p,
+			collectionNode_p, contextAsArray);
 }
 
 /**
@@ -244,11 +333,12 @@ function partialGraph(className) {
  * @return
  */
 function addType(clsqname, typeqname) {
-	Logger.debug('[SERVICE_Cls.jsm] addType ' + clsqname+" "+typeqname);
+	Logger.debug('[SERVICE_Cls.jsm] addType ' + clsqname + " " + typeqname);
 	var clsqname = "clsqname=" + clsqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTypeRequest, clsqname, typeqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addTypeRequest, clsqname, typeqname,
+			contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -264,11 +354,12 @@ function addType(clsqname, typeqname) {
  * @return
  */
 function removeType(clsqname, typeqname) {
-	Logger.debug('[SERVICE_Cls.jsm] removeType ' + clsqname+" "+typeqname);
+	Logger.debug('[SERVICE_Cls.jsm] removeType ' + clsqname + " " + typeqname);
 	var clsqname = "clsqname=" + clsqname;
 	var typeqname = "typeqname=" + typeqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeTypeRequest, clsqname, typeqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeTypeRequest, clsqname, typeqname,
+			contextAsArray);
 	var resArray = new Array();
 	resArray["type"] = Deserializer.createURI(reply.getElementsByTagName("Type")[0]);
 	resArray["instance"] = Deserializer.createURI(reply.getElementsByTagName("Instance")[0]);
@@ -285,11 +376,12 @@ function removeType(clsqname, typeqname) {
  * @return
  */
 function addSuperCls(clsqname, superclsqname) {
-	Logger.debug('[SERVICE_Cls.jsm] addSuperCls ' + clsqname+" "+superclsqname);
+	Logger.debug('[SERVICE_Cls.jsm] addSuperCls ' + clsqname + " " + superclsqname);
 	var clsqname = "clsqname=" + clsqname;
 	var superclsqname = "superclsqname=" + superclsqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addSuperClsRequest, clsqname, superclsqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.addSuperClsRequest, clsqname, superclsqname,
+			contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -306,11 +398,12 @@ function addSuperCls(clsqname, superclsqname) {
  * @return
  */
 function removeSuperCls(clsqname, superclsqname) {
-	Logger.debug('[SERVICE_Cls.jsm] removeSuperCls ' + clsqname+" "+superclsqname);
+	Logger.debug('[SERVICE_Cls.jsm] removeSuperCls ' + clsqname + " " + superclsqname);
 	var clsqname = "clsqname=" + clsqname;
 	var superclsqname = "superclsqname=" + superclsqname;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeSuperClsRequest, clsqname, superclsqname, contextAsArray);
+	var reply = SemTurkeyHTTPLegacy.GET(serviceName, service.removeSuperClsRequest, clsqname, superclsqname,
+			contextAsArray);
 	var resArray = new Array();
 	resArray["class"] = Deserializer.createURI(reply.getElementsByTagName("Class")[0]);
 	resArray["superClass"] = Deserializer.createURI(reply.getElementsByTagName("SuperClass")[0]);
@@ -328,20 +421,19 @@ function getSuperClasses(clsName) {
 	Logger.debug('[SERVICE_Cls.jsm] getSuperClasses ' + clsName);
 	var clsName = "clsName=" + clsName;
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSuperClassesRequest, clsName, contextAsArray));
+	return Deserializer.createRDFArray(SemTurkeyHTTPLegacy.GET(serviceName, service.getSuperClassesRequest,
+			clsName, contextAsArray));
 }
 
-
 // Add a specific context
-/*service.prototype.getAPI = function(specificContext){
-	var newObj = new STRequests.Cls();
-	newObj.context = specificContext;
-	return newObj;
-}*/
+/*
+ * service.prototype.getAPI = function(specificContext){ var newObj = new STRequests.Cls(); newObj.context =
+ * specificContext; return newObj; }
+ */
 
 // Class SERVICE INITIALIZATION
-//this return an implementation for Project with a specified context
-service.prototype.getAPI = function(specifiedContext){
+// this return an implementation for Project with a specified context
+service.prototype.getAPI = function(specifiedContext) {
 	var newObj = new service();
 	newObj.context = specifiedContext;
 	return newObj;
@@ -349,6 +441,10 @@ service.prototype.getAPI = function(specifiedContext){
 service.prototype.getClassesInfoAsRootsForTree = getClassesInfoAsRootsForTree;
 service.prototype.getClassTree = getClassTree;
 service.prototype.addType = addType;
+service.prototype.addIntersectionOf = addIntersectionOf;
+service.prototype.removeIntersectionOf = removeIntersectionOf;
+service.prototype.addUnionOf = addUnionOf;
+service.prototype.removeUnionOf = removeUnionOf;
 service.prototype.removeType = removeType;
 service.prototype.addSuperCls = addSuperCls;
 service.prototype.removeSuperCls = removeSuperCls;
@@ -360,38 +456,34 @@ service.prototype.getSubClasses = getSubClasses;
 // Instance SERVICE INITIALIZATION
 service.prototype.getClassAndInstancesInfo = getClassAndInstancesInfo;
 service.prototype.addIndividual = addIndividual;
-service.prototype.context = new Context();  // set the default context
+service.prototype.context = new Context(); // set the default context
 service.constructor = service;
 service.__proto__ = service.prototype;
 
-/*refactorService.prototype.getAPI = function(specifiedContext){
-	var newObj = new refactorService();
-	newObj.context = specifiedContext;
-	return newObj;
-}
-refactorService.prototype.renameResource = renameResource;
-refactorService.prototype.context = new Context();  // set the default context
-refactorService.constructor = refactorService;
-refactorService.__proto__ = refactorService.prototype;
-*/
+/*
+ * refactorService.prototype.getAPI = function(specifiedContext){ var newObj = new refactorService();
+ * newObj.context = specifiedContext; return newObj; } refactorService.prototype.renameResource =
+ * renameResource; refactorService.prototype.context = new Context(); // set the default context
+ * refactorService.constructor = refactorService; refactorService.__proto__ = refactorService.prototype;
+ */
 
-graphService.prototype.getAPI = function(specifiedContext){
+graphService.prototype.getAPI = function(specifiedContext) {
 	var newObj = new refactorService();
 	newObj.context = specifiedContext;
 	return newObj;
 }
 graphService.prototype.graph = graph;
 graphService.prototype.partialGraph = partialGraph;
-graphService.prototype.context = new Context();  // set the default context
+graphService.prototype.context = new Context(); // set the default context
 graphService.constructor = graphService;
 graphService.__proto__ = graphService.prototype;
 
-deleteService.prototype.getAPI = function(specifiedContext){
+deleteService.prototype.getAPI = function(specifiedContext) {
 	var newObj = new refactorService();
 	newObj.context = specifiedContext;
 	return newObj;
 }
 deleteService.prototype.removeClass = removeClass;
-deleteService.prototype.context = new Context();  // set the default context
+deleteService.prototype.context = new Context(); // set the default context
 deleteService.constructor = deleteService;
 deleteService.__proto__ = deleteService.prototype;

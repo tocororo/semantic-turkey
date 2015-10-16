@@ -50,13 +50,22 @@
                 
 				var bound = this;
 				
-				function DataRow(record) {
+				function DataRow(uriElem) {
+					this.record = {class : uriElem.getURI(), 
+                                   more : uriElem.more,
+                                   label : uriElem.getShow(),
+                                   uri : uriElem.getURI(),
+                                   explicit: uriElem.explicit,
+                                   role: uriElem.getRole(),
+                                   numInst: uriElem.numInst,	
+                                   };
+                    this.uriElem = uriElem;
+                                    
 					this.__defineGetter__("id", function(){return this.record.class;});
 					this.__defineSetter__("id", function(v){this.record.class = v;});
-					this.record = record;
 					
 					this.isContainer = true;
-					this.isContainerEmpty = record.more != "1";
+					this.isContainerEmpty = this.record.more != "1";
 					
 					this.level = 0;
 					this.isContainerOpen = false;
@@ -119,14 +128,7 @@
 					for (var i = 0; i < collectionValues.length; ++i) {
 						var uriElem = collectionValues[i];
 						
-						var item = new DataRow({class : uriElem.getURI(), 
-                                            more : uriElem.more,
-                                            label : uriElem.getShow(),
-                                            uri : uriElem.getURI(),
-                                            explicit: uriElem.explicit,
-                                            role: uriElem.getRole(),
-                                            numInst: uriElem.numInst,	
-                                            }); 
+						var item = new DataRow(uriElem); 
                         item.imageUrl = bound.art_semanticturkey.STResUtils.getImageSrcOrNull(uriElem);
 						result.push(item);						
 					}
@@ -202,6 +204,16 @@
 					var row = this._view.getRow(taxonomyTree.currentIndex);
 
 					return row.id;
+				</getter>
+			</property>
+			<property name="selectedClassResource">
+				<getter>
+					var taxonomyTree =
+					document.getAnonymousElementByAttribute(this, "ano_id",	"taxonomyTree");
+
+					if (taxonomyTree.currentIndex == -1) return null;
+
+					return this._view.getRow(taxonomyTree.currentIndex).uriElem;
 				</getter>
 			</property>
 		</implementation>

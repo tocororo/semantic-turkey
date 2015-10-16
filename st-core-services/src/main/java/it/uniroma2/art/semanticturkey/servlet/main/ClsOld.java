@@ -28,10 +28,15 @@ import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.filter.NoLanguageResourcePredicate;
 import it.uniroma2.art.owlart.filter.RootClassesResourcePredicate;
 import it.uniroma2.art.owlart.filter.URIResourcePredicate;
+import it.uniroma2.art.owlart.io.RDFNodeSerializer;
+import it.uniroma2.art.owlart.model.ARTBNode;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterClassInterface;
+import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterParser;
 import it.uniroma2.art.owlart.models.DirectReasoning;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -43,6 +48,7 @@ import it.uniroma2.art.owlart.navigation.RDFIterator;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.OWL;
+import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
@@ -60,8 +66,10 @@ import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,10 +111,14 @@ public class ClsOld extends ResourceOld {
 	// ADD REQUESTS
 	public static final String addTypeRequest = "addType";
 	public static final String addSuperClsRequest = "addSuperCls";
+	public static final String addIntersectionOfRequest = "addIntersectionOf";
+	public static final String addUnionOfRequest = "addUnionOf";
 
 	// REMOVE REQUESTS
 	public static final String removeTypeRequest = "removeType";
 	public static final String removeSuperClsRequest = "removeSuperCls";
+	public static final String removeIntersectionOfRequest = "removeIntersectionOf";
+	public static final String removeUnionOfRequest = "removeUnionOf";
 
 	// PARS
 	static final public String clsQNameField = "clsName";
@@ -122,6 +134,8 @@ public class ClsOld extends ResourceOld {
 	static final public String directInstPar = "direct";
 	static final public String hasSubClassesPar = "hasSubClasses";
 	static final public String labelQueryPar = "labelQuery";
+	static final public String clsDescriptionsPar = "clsDescriptions";
+	static final public String collectionNodePar = "collectionNode";
 
 	// final private String subTree = "subTree";
 
@@ -149,7 +163,7 @@ public class ClsOld extends ResourceOld {
 		logger.debug("request to cls");
 
 		Response response = null;
-//		Individual individual = new Individual("individual");
+		// Individual individual = new Individual("individual");
 
 		// all new fashoned requests are put inside these grace brackets
 
@@ -202,7 +216,39 @@ public class ClsOld extends ResourceOld {
 			response = individual.addType(clsQName, typeQName);
 		} else if (request.equals(removeTypeRequest))
 			response = individual.removeType(setHttpPar("clsqname"), _oReq.getParameter("typeqname"));
-		else if (request.equals(addSuperClsRequest))
+		else if (request.equals(addIntersectionOfRequest)) {
+			String clsName = setHttpPar(clsQNameField);
+			String clsDescriptions = setHttpPar(clsDescriptionsPar);
+			checkRequestParametersAllNotNull(clsQNameField, clsDescriptionsPar);
+
+			String[] clsDescriptionArray = clsDescriptions.split("\\|_\\|");
+
+			response = addCollectionBasedClassAxiom(clsName, OWL.Res.INTERSECTIONOF, clsDescriptionArray);
+		} else if (request.equals(removeIntersectionOfRequest)) {
+			String clsName = setHttpPar(clsQNameField);
+			String collectionNode = setHttpPar(collectionNodePar);
+
+			checkRequestParametersAllNotNull(clsQNameField, collectionNodePar);
+
+			response = removeCollectionBasedClassAxiom(clsName, OWL.Res.INTERSECTIONOF, collectionNode);
+
+		} else if (request.equals(addUnionOfRequest)) {
+			String clsName = setHttpPar(clsQNameField);
+			String clsDescriptions = setHttpPar(clsDescriptionsPar);
+			checkRequestParametersAllNotNull(clsQNameField, clsDescriptionsPar);
+
+			String[] clsDescriptionArray = clsDescriptions.split("\\|_\\|");
+
+			response = addCollectionBasedClassAxiom(clsName, OWL.Res.UNIONOF, clsDescriptionArray);
+		} else if (request.equals(removeUnionOfRequest)) {
+			String clsName = setHttpPar(clsQNameField);
+			String collectionNode = setHttpPar(collectionNodePar);
+
+			checkRequestParametersAllNotNull(clsQNameField, collectionNodePar);
+
+			response = removeCollectionBasedClassAxiom(clsName, OWL.Res.UNIONOF, collectionNode);
+
+		} else if (request.equals(addSuperClsRequest))
 			response = addSuperClass(setHttpPar("clsqname"), setHttpPar("superclsqname"));
 		else if (request.equals(removeSuperClsRequest))
 			response = removeSuperClass(setHttpPar("clsqname"), _oReq.getParameter("superclsqname"));
@@ -216,6 +262,103 @@ public class ClsOld extends ResourceOld {
 
 		this.fireServletEvent();
 		return response;
+	}
+
+	/**
+	 * Adds an axiom identified by the property <code>axiomType</code> to the description of the class
+	 * identified by <code>clsName</code> using the supplied array of Manchester expressions to generate the
+	 * property values.
+	 * 
+	 * @param clsName
+	 * @param axiomType
+	 * @param clsDescriptionArray
+	 * @return
+	 */
+	public Response addCollectionBasedClassAxiom(String clsName, ARTURIResource axiomType,
+			String[] clsDescriptionArray) {
+		try {
+			OWLModel owlModel = getOWLModel();
+
+			ARTResource cls = retrieveExistingResource(owlModel, clsName, userGraphs);
+
+			List<ARTResource> intesectedItems = new ArrayList<ARTResource>();
+
+			List<ARTStatement> stmts = new ArrayList<ARTStatement>();
+
+			for (String aClsDescr : clsDescriptionArray) {
+				ManchesterClassInterface expObj = ManchesterParser.parse(aClsDescr, owlModel);
+
+				ARTNode descriptionRootNode = owlModel.parseManchesterExpr(expObj, stmts);
+
+				if (descriptionRootNode == null) {
+					return createReplyFAIL("Cannot parse class description: " + aClsDescr);
+				}
+				intesectedItems.add(descriptionRootNode.asResource());
+			}
+
+			// if everything has gone well, then add the actual triples
+
+			for (ARTStatement aStat : stmts) {
+				owlModel.addStatement(aStat, getWorkingGraph());
+			}
+			owlModel.instantiatePropertyWithCollecton(cls, axiomType, intesectedItems, getWorkingGraph());
+
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (Exception e) {
+			return logAndSendException(e);
+		}
+	}
+
+	/**
+	 * Removes an axiom identified by the property <code>axiomType</code> based on the collection identified
+	 * by <code>collectionNode</code> from the description of the class identified by <code>clsName</code>.
+	 * 
+	 * @param clsName
+	 * @param axiomType
+	 * @param collectionNode
+	 * @return
+	 */
+	public Response removeCollectionBasedClassAxiom(String clsName, ARTURIResource axiomType,
+			String collectionNode) {
+		try {
+			OWLModel owlModel = getOWLModel();
+
+			ARTResource cls = retrieveExistingResource(owlModel, clsName, userGraphs);
+			ARTResource collection = retrieveExistingResource(owlModel, collectionNode, userGraphs);
+
+			Collection<ARTNode> collectionItems = owlModel.getItems(collection, true, userGraphs);
+
+			List<ARTStatement> stmts = new ArrayList<ARTStatement>();
+
+			for (ARTNode anItem : collectionItems) {
+				if (!anItem.isResource()) {
+					return createReplyFAIL("Not an RDF resource: " + RDFNodeSerializer.toNT(anItem));
+				}
+
+				if (anItem.isURIResource())
+					continue;
+
+				ARTBNode aBnode = anItem.asBNode();
+				ManchesterClassInterface mci = owlModel.getManchClassFromBNode(aBnode, owlModel,
+						getWorkingGraph(), stmts);
+
+				if (mci == null) {
+					return createReplyFAIL("Not the root of an anonymous class: "
+							+ RDFNodeSerializer.toNT(aBnode));
+				}
+			}
+
+			for (ARTStatement aStmt : stmts) {
+				owlModel.deleteStatement(aStmt, aStmt.getNamedGraph());
+			}
+
+			owlModel.emptyCollection(collection, null, getWorkingGraph());
+			owlModel.deleteTriple(cls, OWL.Res.INTERSECTIONOF, RDF.Res.NIL, getWorkingGraph());
+
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
 	}
 
 	/**
@@ -270,7 +413,7 @@ public class ClsOld extends ResourceOld {
 			RDFIterator<? extends ARTResource> subClassesIterator;
 
 			STOntologyManager<?> ontManager = getProject().getOntologyManager();
-			
+
 			// creating subclasses iterator
 			// URI filter and other complex operations for tree show
 			if (forTree)
@@ -453,8 +596,8 @@ public class ClsOld extends ResourceOld {
 					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 			setRendering(ontModel, stClass, null, null, graphs);
-			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);			
-			
+			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
+
 			if (hasSubClassesRequest) {
 				STOntologyManager<?> ontManager = getProject().getOntologyManager();
 				ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
@@ -774,9 +917,9 @@ public class ClsOld extends ResourceOld {
 						ModelUtilities.getResourceRole(cls, ontModel),
 						servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 				setRendering(ontModel, stClass, null, null, graphs);
-				
+
 				STOntologyManager<?> ontManager = getProject().getOntologyManager();
-				
+
 				ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
 				if (instNumBool)
 					ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
@@ -969,9 +1112,9 @@ public class ClsOld extends ResourceOld {
 					ModelUtilities.getResourceRole(classRes, ontModel),
 					servletUtilities.checkWritable(ontModel, classRes, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
-			
+
 			STOntologyManager<?> ontManager = getProject().getOntologyManager();
-			
+
 			ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
 			setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);

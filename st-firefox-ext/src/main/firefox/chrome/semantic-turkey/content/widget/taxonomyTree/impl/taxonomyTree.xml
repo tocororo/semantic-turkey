@@ -637,7 +637,7 @@
 						}
 					} else {	
 						if (selectionRemoved) {
-							function l(event) {
+							var l = function(event) {
 								bound._onStateChanged("itemSelected");
 								bound.removeEventListener("popuphidden", l, true);
 							}

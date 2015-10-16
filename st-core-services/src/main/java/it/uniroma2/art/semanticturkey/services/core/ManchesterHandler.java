@@ -115,7 +115,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	}
 
 	@GenerateSTServiceController
-	public Response removeExpression(ARTURIResource classUri, String exprType, ARTNode artNode)
+	public Response removeExpression(ARTURIResource classUri, ARTURIResource exprType, ARTNode artNode)
 			throws ModelAccessException, ModelUpdateException {
 
 		OWLModel model = getOWLModel();
@@ -132,12 +132,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		for (ARTStatement artStatement : tripleList) {
 			model.deleteStatement(artStatement, NodeFilters.MAINGRAPH);
 		}
-		// remove the triple linking the bnode to the mainClass
-		if (exprType.contains("subClass")) {
-			model.deleteTriple(classUri, RDFS.Res.SUBCLASSOF, artNode.asBNode(), NodeFilters.MAINGRAPH);
-		} else { // equivalent class
-			model.deleteTriple(classUri, OWL.Res.EQUIVALENTCLASS, artNode.asBNode(), NodeFilters.MAINGRAPH);
-		}
+		model.deleteTriple(classUri, exprType, artNode.asBNode(), NodeFilters.MAINGRAPH);
 
 		return resp;
 	}

@@ -169,11 +169,15 @@ STRequests.SystemStart.listTripleStoresRequest = "listTripleStores";
 
 //cls service requests
 STRequests.Cls.serviceName = "cls";
+STRequests.Cls.addIntersectionOfRequest = "addIntersectionOf";
+STRequests.Cls.addUnionOfRequest = "addUnionOf";
 STRequests.Cls.addTypeRequest = "addType";
 STRequests.Cls.removeTypeRequest = "removeType";
 STRequests.Cls.removeTypeRequest = "removeType";
 STRequests.Cls.addSuperClsRequest = "addSuperCls";
 STRequests.Cls.removeSuperClsRequest = "removeSuperCls";
+STRequests.Cls.removeIntersectionOfRequest = "removeIntersectionOf";
+STRequests.Cls.removeUnionOfRequest = "removeUnionOf";
 STRequests.Cls.getClassTreeRequest = "getClassTree";
 STRequests.Cls.getClassDescriptionRequest = "getClsDescription";
 STRequests.Cls.getClassAndInstancesInfoRequest = "getClassAndInstancesInfo";

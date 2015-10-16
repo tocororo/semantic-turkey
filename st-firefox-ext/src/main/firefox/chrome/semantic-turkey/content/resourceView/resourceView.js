@@ -45,6 +45,8 @@ art_semanticturkey.resourceView.init = function() {
 	// --------------------------
 	// Initializes basic behavior
 
+	document.getElementById("closeButton").addEventListener("command", function(){window.close();}, false);
+	
 	var resourceNameBox = document.getElementById("resourceNameBox");
 
 	var renameResourceButton = document.getElementById("renameResourceButton");
@@ -408,14 +410,15 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 			partitionButton.setAttribute("st-partitionName", partitionName);
 
 			var partitionActions = [];
-			
+
 			if (typeof this[interestingHandlerSection].add.action == "function") {
 				partitionActions.push(this[interestingHandlerSection].add);
-			} else if(this[interestingHandlerSection].add.actions instanceof Array) {
+			} else if (this[interestingHandlerSection].add.actions instanceof Array) {
 				partitionActions = partitionActions.concat(this[interestingHandlerSection].add.actions);
 			}
-			
-			var enabledFilter = art_semanticturkey.resourceView.partitions.internal.createEnabledActionFilter(subjectResource);
+
+			var enabledFilter = art_semanticturkey.resourceView.partitions.internal
+					.createEnabledActionFilter(subjectResource);
 
 			partitionActions = partitionActions.filter(enabledFilter);
 
@@ -423,13 +426,12 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 				partitionButton.setAttribute("disabled", "true");
 			} else if (partitionActions.length == 1) {
 				partitionButton
-				.addEventListener(
-						"command",
-						art_semanticturkey.resourceView.partitions.internal
-								.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
-										.createAddHandlerFromAction(outerThis,
-												partitionActions[0].action,
-												subjectResource)), false);				
+						.addEventListener(
+								"command",
+								art_semanticturkey.resourceView.partitions.internal
+										.wrapFunctionWithErrorManagement(art_semanticturkey.resourceView.partitions.internal
+												.createAddHandlerFromAction(outerThis,
+														partitionActions[0].action, subjectResource)), false);
 			} else {
 				partitionButton.setAttribute("type", "menu");
 				var menupop = document.createElement("menupopup");
@@ -449,7 +451,7 @@ art_semanticturkey.resourceView.partitions.internal.defaultPartitionRender = fun
 					menupop.appendChild(menuitem);
 				}
 
-				partitionButton.appendChild(menupop);				
+				partitionButton.appendChild(menupop);
 			}
 		}
 	}
@@ -599,8 +601,9 @@ art_semanticturkey.resourceView.partitions.internal.getAddActionsForProperty = f
 		property) {
 	if (typeof handler["predicateObjects"] == "undefined")
 		return [];
-	
-	var enabledFilter = art_semanticturkey.resourceView.partitions.internal.createEnabledActionFilter(rdfSubject);
+
+	var enabledFilter = art_semanticturkey.resourceView.partitions.internal
+			.createEnabledActionFilter(rdfSubject);
 
 	var container = undefined;
 
@@ -738,8 +741,9 @@ art_semanticturkey.resourceView.partitions.internal.getButtonType = function(but
 
 art_semanticturkey.resourceView.partitions.internal.createEnabledActionFilter = function(rdfSubject) {
 	return (function(anAction) {
-		if (typeof anAction.enabled == "undefined") return true;
-	
+		if (typeof anAction.enabled == "undefined")
+			return true;
+
 		return anAction.enabled(rdfSubject);
 	});
 };
@@ -1239,6 +1243,82 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("classaxioms
 							art_semanticturkey.resourceView.partitions.internal.classExpressionTemplate() ]
 				},
 				"remove" : art_semanticturkey.resourceView.partitions.internal.clsRemoveTemplate()
+			},
+			"http://www.w3.org/2002/07/owl#intersectionOf" : {
+				"add" : {
+					"action" : function(rdfSubject, rdfPredicate) {
+						var parameters = {
+							list : "",
+							clsDescriptions : null
+						};
+						window.openDialog("chrome://semantic-turkey/content/editors/classList/classListEditor.xul",
+								"_blank", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+
+						if (parameters.clsDescriptions != null) {
+							var response = art_semanticturkey.STRequests.Cls.addIntersectionOf(rdfSubject
+									.getNominalValue(), parameters.clsDescriptions);
+							if (response.isFail()) {
+								throw Error(response.getMsg());
+							}
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						}
+					}
+				},
+				"remove" : {
+					"action" : function(rdfSubject, rdfPredicate, rdfObject) {
+						if (rdfObject.explicit == "true") {
+							var response = art_semanticturkey.STRequests.Cls.removeIntersectionOf(rdfSubject
+									.getNominalValue(), rdfObject.getNominalValue());
+							if (response.isFail()) {
+								throw Error(response.getMsg());
+							}
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						} else {
+							art_semanticturkey.Alert
+									.alert("You cannot remove this collection, it's a system resource!");
+						}
+					}
+				}
+			},
+			"http://www.w3.org/2002/07/owl#unionOf" : {
+				"add" : {
+					"action" : function(rdfSubject, rdfPredicate) {
+						var parameters = {
+							list : "",
+							clsDescriptions : null
+						};
+						window.openDialog("chrome://semantic-turkey/content/editors/classList/classListEditor.xul",
+								"_blank", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+
+						if (parameters.clsDescriptions != null) {
+							var response = art_semanticturkey.STRequests.Cls.addUnionOf(rdfSubject
+									.getNominalValue(), parameters.clsDescriptions);
+							if (response.isFail()) {
+								throw Error(response.getMsg());
+							}
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						}
+					}
+				},
+				"remove" : {
+					"action" : function(rdfSubject, rdfPredicate, rdfObject) {
+						if (rdfObject.explicit == "true") {
+							var response = art_semanticturkey.STRequests.Cls.removeUnionOf(rdfSubject
+									.getNominalValue(), rdfObject.getNominalValue());
+							if (response.isFail()) {
+								throw Error(response.getMsg());
+							}
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						} else {
+							art_semanticturkey.Alert
+									.alert("You cannot remove this collection, it's a system resource!");
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1334,7 +1414,7 @@ art_semanticturkey.resourceView.partitions
 											window
 													.openDialog(
 															"chrome://semantic-turkey/content/editors/classExpression/classExpressionEditor.xul",
-															"dlg",
+															"_blank",
 															"chrome=yes,dialog,resizable=yes,modal,centerscreen",
 															parameters);
 
