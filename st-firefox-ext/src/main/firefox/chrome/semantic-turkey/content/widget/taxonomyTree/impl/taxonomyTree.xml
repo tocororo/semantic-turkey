@@ -589,6 +589,13 @@
 						bound.dispatchEvent(customEvent);
 			},true);
 			
+			this.addEventListener("select",function(event){
+						var customEvent = document.createEvent("CustomEvent");
+						customEvent.initCustomEvent("it.uniroma2.art.semanticturkey.event.widget.tree.select", true, true, {});
+						bound.dispatchEvent(customEvent);
+			},true);
+
+			
 			var eventsHandler = new function() {
 				this.contextmenu = function(event) {
 					var targetName = event.target.tagName;

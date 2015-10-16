@@ -1,0 +1,218 @@
+<?xml version="1.0"?>
+<bindings xmlns="http://www.mozilla.org/xbl"
+	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	<binding id="instanceList"
+		extends="chrome://semantic-turkey/content/widget/taxonomyTree/impl/taxonomyTree.xml#taxonomyTree">
+		<handlers>
+			<handler event="it.uniroma2.art.semanticturkey.event.widget.tree.dblclick">
+			<![CDATA[
+			if (event.detail.rowIndex == -1) return;
+			
+			if (!this.mutable) return;
+			
+			var parameters = {
+				sourceElement : null,		// elemento contenente i dati della riga corrente
+				sourceType : "individual",		// tipo di editor: clss, ..., determina le funzioni custom ed il titolo della finestra
+				sourceElementName : this.selectedInstance,	// nome dell'elemento corrente (quello usato per identificazione: attualmente il qname)
+				sourceParentElementName : "", // nome dell'elemento genitore
+				isFirstEditor : true,		 // l'editor è stato aperto direttamente dall class/... tree o da un altro editor?
+				deleteForbidden : false, 	 // cancellazione vietata 
+				parentWindow : window,		 // finestra da cui viene aperto l'editor
+			};
+			art_semanticturkey.ResourceViewLauncher.openResourceView(parameters);
+			]]>
+			</handler>
+		</handlers>
+		<implementation>
+			<constructor>
+			<![CDATA[
+				if (typeof this.art_semanticturkey == "undefined") {
+					this.art_semanticturkey= {};
+				}
+
+				Components.utils.import("resource://stmodules/Logger.jsm");
+				Components.utils.import("resource://stmodules/stEvtMgr.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stmodules/Commands.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stmodules/Context.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stservices/SERVICE_OntoSearch.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stservices/SERVICE_Cls.jsm", art_semanticturkey);
+				Components.utils.import("resource://stmodules/PrefUtils.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stmodules/Preferences.jsm", this.art_semanticturkey);				
+				Components.utils.import("resource://stmodules/ARTResources.jsm", this.art_semanticturkey);
+				Components.utils.import("resource://stmodules/ResourceViewLauncher.jsm", art_semanticturkey);
+				Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);		
+				
+				var mozIJSSubScriptLoader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
+				                                      .getService(Components.interfaces.mozIJSSubScriptLoader);
+                mozIJSSubScriptLoader.loadSubScript("chrome://semantic-turkey/content/event/eventObjects.js", this);
+                
+                //mozIJSSubScriptLoader.loadSubScript("chrome://semantic-turkey/content/utilities/deserializer.js?timestamp="+((new Date()).getTime()), this);
+                
+				var bound = this;
+				
+				function DataRow(resElem) {
+					this.record = {instance : resElem.getURI(), 
+                                   label : resElem.getShow(),
+                                   uri : resElem.getURI(),
+                                   explicit: resElem.explicit,
+                                   role: resElem.getRole()
+                                   };
+                    this.resElem = resElem;
+                                    
+					this.__defineGetter__("id", function(){return this.record.instance;});
+					this.__defineSetter__("id", function(v){this.record.instance = v;});
+					
+					this.isContainer = false;
+					this.isContainerEmpty = true;
+					
+					this.level = 0;
+					this.isContainerOpen = false;
+					this.cache = {};
+					
+					this.matches = function(id) {
+						return this.id == id || this.record.uri == id;
+					};
+				}
+				
+				this._view.sourceAdapter.fetchRoots = function() {						
+						var response = null;
+						try{
+							var language = null;
+							if (isHumanReadable) {
+								language = bound.art_semanticturkey.Preferences.get("extensions.semturkey.annotprops.defaultlang" ,"en");
+							}
+							
+							if (typeof bound.className == "undefined" || bound.className == "" || bound.className == null) return [];
+							
+							if (typeof bound.projectName != "undefined"){
+								//create a context for a project different from the current and get owl:Thing info
+								var specifiedContext = new bound.art_semanticturkey.Context();
+								specifiedContext.setProject(bound.projectName);
+								var serviceInstance = bound.art_semanticturkey.STRequests.Cls.getAPI(specifiedContext);
+								response=serviceInstance.getClassAndInstancesInfo(bound.className);
+							} else {
+								response=bound.art_semanticturkey.STRequests.Cls.getClassAndInstancesInfo(bound.className);
+							}
+						}catch (e) {
+							return [];
+						}
+						
+						return parseResponse(response.instances);
+				};
+					
+				this._view.sourceAdapter.fetchChildren = function(id){
+					return [];
+				};
+					
+				var parseResponse = function(collectionValues) {
+					var result = [];
+					
+					for (var i = 0; i < collectionValues.length; ++i) {
+						var resElem = collectionValues[i];
+						
+						var item = new DataRow(resElem); 
+                        item.imageUrl = bound.art_semanticturkey.STResUtils.getImageSrcOrNull(resElem);
+						result.push(item);						
+					}
+					
+					
+					return result;
+				};
+				
+				this._view.provider.getLabel = function(row, col) {
+					if (col.id != "instance") {
+						bound._view.__proto__.getLabel(row, col);
+					}
+					
+					return row.record["label"].trim();
+				};
+						
+				this._view.provider.getImageURL = function(row, col) {
+					return row.imageUrl;
+				};
+
+				this.columns = "instance";
+				
+				this.stEventArray = new this.art_semanticturkey.eventListenerArrayClass();
+				
+				
+				this.projectType = "^.*$";
+				
+				var isHumanReadable	= false;
+				
+				var setHumanReadable = function(flag) {
+					isHumanReadable = flag;
+					
+					bound._view.reload();
+				};
+				
+				this.prefListener = new this.art_semanticturkey.PrefListener("extensions.semturkey.", function(branch, name){
+					if (name == "skos.humanReadable") {
+						var isReadable = branch.getBoolPref(name);
+						
+						setHumanReadable(isReadable);
+						//bound._view.reload();						
+					} else if (name == "annotprops.defaultlang") {
+						bound._view.reload();
+					}
+				});
+				this.prefListener.register(true);
+				
+				bound._powerManager = function(state) {
+					//commented because when browing project different from the current one
+					//it invokes powerOff and the class tree is closed
+					/* 
+					if (state.indexOf("project") != -1) {
+						bound._view.powerOn();
+					} else {
+						bound._view.powerOff();
+					}
+					*/
+				};
+			]]>
+			</constructor>
+			<destructor>
+				this.stEventArray.deregisterAllListener();
+				
+				this.prefListener.unregister();
+			</destructor>
+			<property name="className">
+				<getter>
+				<![CDATA[
+					return this.getAttribute("className");
+				]]>
+				</getter>
+				<setter>
+				<![CDATA[
+				if (val != this.className) {
+					 this.setAttribute("className", val);
+					 this._view.reload();
+				}	
+				]]>				 
+				</setter>
+			</property>
+			
+			<property name="selectedInstance">
+				<getter>
+					var taxonomyTree = document.getAnonymousElementByAttribute(this, "ano_id",	"taxonomyTree");
+
+					if (taxonomyTree.currentIndex == -1) return null;
+
+					var row = this._view.getRow(taxonomyTree.currentIndex);
+
+					return row.id;
+				</getter>
+			</property>
+			<property name="selectedInstanceResource">
+				<getter>
+					var taxonomyTree =
+					document.getAnonymousElementByAttribute(this, "ano_id",	"taxonomyTree");
+
+					if (taxonomyTree.currentIndex == -1) return null;
+
+					return this._view.getRow(taxonomyTree.currentIndex).resElem;
+				</getter>
+			</property>
+		</implementation>
+	</binding>
+</bindings>

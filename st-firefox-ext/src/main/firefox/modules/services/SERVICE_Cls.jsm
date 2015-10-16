@@ -305,8 +305,49 @@ function addUnionOf(clsName, clsDescriptions) {
 }
 
 /**
- * Removes the axiom asserting that the class <code>clsName</code> is the union of the collection of
- * classes identified by <code>collectionNode</code>
+ * Enumerates (via <code>owl:oneOf</code>) all and only members of the class <code>clsName</code>, which
+ * are provided by the parameter <code>individuals</code>
+ * 
+ * @member STRequests.Cls
+ * @param clsName
+ * @param individuals
+ * @return
+ */
+function addOneOf(clsName, individuals) {
+	Logger.debug('[SERVICE_Cls.jsm] addOneOf ' + clsName + ' ' + individuals.toSource());
+
+	var clsName_p = "clsName=" + clsName;
+	var individuals_p = "individuals=" + individuals.join("|_|");
+
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.addOneOfRequest, clsName_p, individuals_p,
+			contextAsArray);
+}
+
+/**
+ * Removes the enumeration <code>collectionNode</code> from the description of the class
+ * <code>clsName</code>
+ * 
+ * @member STRequests.Cls
+ * @param clsName
+ * @param individuals
+ * @return
+ */
+function removeOneOf(clsName, collectionNode) {
+	Logger.debug('[SERVICE_Cls.jsm] removeOneOf ' + clsName + ' ' + collectionNode);
+
+	var clsName_p = "clsName=" + clsName;
+	var collectionNode_p = "collectionNode=" + collectionNode;
+
+	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeOneOfRequest, clsName_p, collectionNode_p,
+			contextAsArray);
+}
+
+
+/**
+ * Removes the axiom asserting that the class <code>clsName</code> is the union of the collection of classes
+ * identified by <code>collectionNode</code>
  * 
  * @member STRequests.Cls
  * @param clsName
@@ -320,8 +361,8 @@ function removeUnionOf(clsName, collectionNode) {
 	var collectionNode_p = "collectionNode=" + collectionNode;
 
 	var contextAsArray = this.context.getContextValuesForHTTPGetAsArray();
-	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeUnionOfRequest, clsName_p,
-			collectionNode_p, contextAsArray);
+	return SemTurkeyHTTPLegacy.GET(serviceName, service.removeUnionOfRequest, clsName_p, collectionNode_p,
+			contextAsArray);
 }
 
 /**
@@ -440,11 +481,13 @@ service.prototype.getAPI = function(specifiedContext) {
 }
 service.prototype.getClassesInfoAsRootsForTree = getClassesInfoAsRootsForTree;
 service.prototype.getClassTree = getClassTree;
+service.prototype.addOneOf = addOneOf;
 service.prototype.addType = addType;
 service.prototype.addIntersectionOf = addIntersectionOf;
 service.prototype.removeIntersectionOf = removeIntersectionOf;
 service.prototype.addUnionOf = addUnionOf;
 service.prototype.removeUnionOf = removeUnionOf;
+service.prototype.removeOneOf = removeOneOf;
 service.prototype.removeType = removeType;
 service.prototype.addSuperCls = addSuperCls;
 service.prototype.removeSuperCls = removeSuperCls;

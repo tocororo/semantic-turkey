@@ -109,12 +109,14 @@ public class ClsOld extends ResourceOld {
 	public static final String createClassRequest = "createClass";
 
 	// ADD REQUESTS
+	public static final String addOneOfRequest = "addOneOf";
 	public static final String addTypeRequest = "addType";
 	public static final String addSuperClsRequest = "addSuperCls";
 	public static final String addIntersectionOfRequest = "addIntersectionOf";
 	public static final String addUnionOfRequest = "addUnionOf";
 
 	// REMOVE REQUESTS
+	public static final String removeOneOfRequest = "removeOneOf";
 	public static final String removeTypeRequest = "removeType";
 	public static final String removeSuperClsRequest = "removeSuperCls";
 	public static final String removeIntersectionOfRequest = "removeIntersectionOf";
@@ -125,6 +127,7 @@ public class ClsOld extends ResourceOld {
 	static final public String instanceNamePar = "instanceName";
 	static final public String superClassNamePar = "superClassName";
 	static final public String newClassNamePar = "newClassName";
+	static final public String individualsPar = "individuals";
 
 	static final public String clsQNamePar = "clsqname";
 	static final public String clsesQNamesPar = "clsesqnames";
@@ -204,6 +207,20 @@ public class ClsOld extends ResourceOld {
 			String method = setHttpPar("method");
 			checkRequestParametersAllNotNull(clsQNameField, "method");
 			response = getClassDescription(classQNameEncoded, method);
+		} else if (request.equals(addOneOfRequest)) {
+			String clsName = setHttpPar(clsQNameField);
+			String individuals = setHttpPar(individualsPar);
+			checkRequestParametersAllNotNull(clsQNameField, individualsPar);
+
+			String[] individualsArray = individuals.split("\\|_\\|");
+
+			response = addOneOf(clsName, individualsArray);
+		} else if (request.equals(removeOneOfRequest)) {
+			String clsName = setHttpPar(clsQNameField);
+			String collectionNode = setHttpPar(collectionNodePar);
+			checkRequestParametersAllNotNull(clsQNameField, collectionNodePar);
+
+			response = removeOneOf(clsName, collectionNode);
 		} else if (request.equals(createInstanceRequest)) {
 			String clsQName = setHttpPar(clsQNameField);
 			String instanceQName = setHttpPar(instanceNamePar);
@@ -262,6 +279,55 @@ public class ClsOld extends ResourceOld {
 
 		this.fireServletEvent();
 		return response;
+	}
+
+	/**
+	 * Enumerates (via <code>owl:oneOf</code>) all and only members of the class <code>clsName</code>, which
+	 * are provided by the parameter <code>individuals</code>
+	 * 
+	 * @param clsName
+	 * @param individuals
+	 * @return
+	 */
+	public Response addOneOf(String clsName, String[] individuals) {
+		try {
+			OWLModel owlModel = getOWLModel();
+			ARTResource cls = retrieveExistingResource(owlModel, clsName, userGraphs);
+
+			Collection<ARTURIResource> items = new ArrayList<ARTURIResource>(individuals.length);
+			for (String anIndividual : individuals) {
+				items.add(retrieveExistingURIResource(owlModel, anIndividual, userGraphs));
+			}
+
+			owlModel.instantiatePropertyWithCollecton(cls, OWL.Res.ONEOF, items, getWorkingGraph());
+
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (NonExistingRDFResourceException | ModelAccessException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
+	}
+
+	/**
+	 * Removes the enumeration <code>collectionNode</code> from the description of the class
+	 * <code>clsName</code>
+	 * 
+	 * @param clsName
+	 * @param collectionNode
+	 * @return
+	 */
+	public Response removeOneOf(String clsName, String collectionNode) {
+		try {
+			OWLModel owlModel = getOWLModel();
+			ARTResource cls = retrieveExistingURIResource(owlModel, clsName, getUserNamedGraphs());
+			ARTResource collection = retrieveExistingResource(owlModel, collectionNode, getUserNamedGraphs());
+
+			owlModel.emptyCollection(collection, null, getWorkingGraph());
+			owlModel.deleteTriple(cls, OWL.Res.ONEOF, RDF.Res.NIL, getWorkingGraph());
+
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
 	}
 
 	/**

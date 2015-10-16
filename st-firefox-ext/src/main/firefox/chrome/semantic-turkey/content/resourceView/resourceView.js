@@ -45,8 +45,10 @@ art_semanticturkey.resourceView.init = function() {
 	// --------------------------
 	// Initializes basic behavior
 
-	document.getElementById("closeButton").addEventListener("command", function(){window.close();}, false);
-	
+	document.getElementById("closeButton").addEventListener("command", function() {
+		window.close();
+	}, false);
+
 	var resourceNameBox = document.getElementById("resourceNameBox");
 
 	var renameResourceButton = document.getElementById("renameResourceButton");
@@ -1251,7 +1253,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("classaxioms
 							list : "",
 							clsDescriptions : null
 						};
-						window.openDialog("chrome://semantic-turkey/content/editors/classList/classListEditor.xul",
+						window.openDialog(
+								"chrome://semantic-turkey/content/editors/classList/classListEditor.xul",
 								"_blank", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
 
 						if (parameters.clsDescriptions != null) {
@@ -1282,6 +1285,47 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("classaxioms
 					}
 				}
 			},
+			"http://www.w3.org/2002/07/owl#oneOf" : {
+				"add" : {
+					"action" : function(rdfSubject, rdfPredicate) {
+						var parameters = {};
+						parameters.individuals = null;
+						
+						window.openDialog(
+								"chrome://semantic-turkey/content/editors/individualList/individualListEditor.xul",
+								"_blank", "modal=yes,resizable,centerscreen", parameters);
+
+						if (parameters.individuals == null)
+							return;
+						
+						if (parameters.individuals.length > 0) {
+							var response = art_semanticturkey.STRequests.Cls.addOneOf(rdfSubject
+									.getNominalValue(), parameters.individuals);
+							if (response.isFail()) {
+								throw Error(response.getMsg());
+							}
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						}
+					}
+				},
+				"remove" : {
+					"action" : function(rdfSubject, rdfPredicate, rdfObject) {
+						if (rdfObject.explicit == "true") {
+							var response = art_semanticturkey.STRequests.Cls.removeOneOf(rdfSubject
+									.getNominalValue(), rdfObject.getNominalValue());
+							if (response.isFail()) {
+								throw Error(response.getMsg());
+							}
+							art_semanticturkey.evtMgr.fireEvent("refreshEditor",
+									(new art_semanticturkey.genericEventClass()));
+						} else {
+							art_semanticturkey.Alert
+									.alert("You cannot remove this collection, it's a system resource!");
+						}
+					}
+				}
+			},
 			"http://www.w3.org/2002/07/owl#unionOf" : {
 				"add" : {
 					"action" : function(rdfSubject, rdfPredicate) {
@@ -1289,7 +1333,8 @@ art_semanticturkey.resourceView.partitions.registerPartitionHandler("classaxioms
 							list : "",
 							clsDescriptions : null
 						};
-						window.openDialog("chrome://semantic-turkey/content/editors/classList/classListEditor.xul",
+						window.openDialog(
+								"chrome://semantic-turkey/content/editors/classList/classListEditor.xul",
 								"_blank", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
 
 						if (parameters.clsDescriptions != null) {
