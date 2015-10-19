@@ -2,14 +2,18 @@ package it.uniroma2.art.semanticturkey.rendering;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
+import it.uniroma2.art.owlart.model.ARTBNode;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterClassInterface;
 import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.PrefixMapping;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.vocabulary.OWL;
+import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -26,6 +30,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.base.Objects;
 
 /**
  * The rendering orchestrator is the entry-point for clients willing to render a bunch of resources. The
@@ -70,21 +76,27 @@ public class RenderingOrchestrator implements RenderingEngine {
 		for (ARTResource res : resources) {
 			boolean toBeRendered = true;
 
-			if (res.isBlank()
-					&& (statements.hasType(res, OWL.Res.CLASS, false, NodeFilters.ANY) || statements.hasType(
-							res, RDFS.Res.CLASS, false, NodeFilters.ANY))) {
+			if (res.isBlank()) {
+				if (statements.hasType(res, OWL.Res.CLASS, false, NodeFilters.ANY)
+						|| statements.hasType(res, RDFS.Res.CLASS, false, NodeFilters.ANY)) {
 
-				// Renders OWL class expressions using the Manchester syntax. Following common modeling
-				// patterns,
-				// it assumes that class expressions are represented as bnodes. Leveraging this assumption the
-				// serialization can be completely based on the statements describing the subject resource
-				// (which are expanded through the closure of bnodes)
+					// Renders OWL class expressions using the Manchester syntax. Following common modeling
+					// patterns,
+					// it assumes that class expressions are represented as bnodes. Leveraging this assumption
+					// the
+					// serialization can be completely based on the statements describing the subject resource
+					// (which are expanded through the closure of bnodes)
 
-				ManchesterClassInterface anonCls = statements.getManchClassFromBNode(res.asBNode(),
-						statements, NodeFilters.ANY, null);
+					ManchesterClassInterface anonCls = statements.getManchClassFromBNode(res.asBNode(),
+							statements, NodeFilters.ANY, null);
 
-				if (anonCls != null) {
-					resource2rendering.put(res, anonCls.getManchExpr(project.getOntModel(), true, false));
+					if (anonCls != null) {
+						resource2rendering.put(res, anonCls.getManchExpr(project.getOntModel(), true, false));
+						toBeRendered = false;
+					}
+				} else if (statements.hasType(res, RDF.Res.LIST, false, NodeFilters.ANY)
+						|| Objects.equal(res, RDF.Res.NIL)) {
+					resource2rendering.put(res, renderCollection(res, project, statements));
 					toBeRendered = false;
 				}
 			}
@@ -121,6 +133,54 @@ public class RenderingOrchestrator implements RenderingEngine {
 		}
 
 		return resource2rendering;
+	}
+
+	private String renderCollection(ARTResource res, Project<?> project, OWLModel statements)
+			throws ModelAccessException {
+		PrefixMapping prefixMapping = project.getOntModel();
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("[");
+
+		for (ARTNode anItem : statements.getItems(res, false, NodeFilters.ANY)) {
+			if (sb.length() != 1) {
+				sb.append(" ");
+			}
+
+			if (anItem.isURIResource()) {
+				String uriSpec = anItem.getNominalValue();
+				String qname = prefixMapping.getQName(anItem.getNominalValue());
+
+				if (!qname.equals(uriSpec)) {
+					sb.append(qname);
+					continue;
+				}
+			} else if (anItem.isBlank()) {
+				ARTBNode aBnode = anItem.asBNode();
+
+				if (statements.hasType(aBnode, RDFS.Res.CLASS, false, NodeFilters.ANY)
+						|| statements.hasType(aBnode, OWL.Res.CLASS, false, NodeFilters.ANY)) {
+					ManchesterClassInterface anonCls = statements.getManchClassFromBNode(aBnode, statements,
+							NodeFilters.ANY, null);
+
+					if (anonCls != null) {
+						sb.append(anonCls.getManchExpr(prefixMapping, true, false));
+						continue;
+					}
+
+				} else if (statements.hasType(aBnode, RDF.Res.LIST, false, NodeFilters.ANY)
+						|| Objects.equal(aBnode, RDF.Res.NIL)) {
+					sb.append(renderCollection(aBnode, project, statements));
+				}
+			}
+
+			sb.append(RDFNodeSerializer.toNT(anItem));
+		}
+
+		sb.append("]");
+
+		return sb.toString();
 	}
 
 	/**
