@@ -145,7 +145,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 
 		for (ARTNode anItem : statements.getItems(res, false, NodeFilters.ANY)) {
 			if (sb.length() != 1) {
-				sb.append(" ");
+				sb.append(", ");
 			}
 
 			if (anItem.isURIResource()) {
