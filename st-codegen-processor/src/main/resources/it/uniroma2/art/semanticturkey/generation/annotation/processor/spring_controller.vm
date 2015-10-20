@@ -9,6 +9,8 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -74,16 +76,20 @@ public class ${generatedClassSimpleName}
 #end
 
     @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = $tools.getRequestMethodAsSource($method), produces = "application/xml;charset=UTF-8")
-	public @ResponseBody String  ${method.simpleName}Published(${arguments}) $throwsDeclaration
+	public HttpEntity<String>  ${method.simpleName}Published(${arguments}) $throwsDeclaration
 	{
+		String body;
 #if($tools.isVoidMethod($method))
-			${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
-			fun.${method.simpleName}(${subarg});		
-			return ServletUtilities.getService().createReplyResponse($tools.toStringLiteral($path.toString()), RepliesStatus.ok).getResponseContent();
+		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		fun.${method.simpleName}(${subarg});		
+		body = ServletUtilities.getService().createReplyResponse($tools.toStringLiteral($path.toString()), RepliesStatus.ok).getResponseContent();
 #else
-			${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
-			return fun.${method.simpleName}(${subarg}).getResponseContent();		
+		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		body = fun.${method.simpleName}(${subarg}).getResponseContent();
 #end
+		HttpHeaders responseHeaders = new HttpHeaders();
+   		responseHeaders.set("Access-Control-Allow-Origin", "*");
+   		return new HttpEntity<String>(body, responseHeaders);	
     }
 #end
 }

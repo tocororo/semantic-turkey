@@ -104,7 +104,7 @@ art_semanticturkey.projectOpened = function(newProjectName, type){
 //These two function sends the events of project
 art_semanticturkey.projectClosed = function(oldProjectName){
 	var projectInfo = new art_semanticturkey.projectClosedClass(oldProjectName);
-	Context.removeValue("project"); 
+	Context.clearProject();
 	art_semanticturkey.evtMgr.fireEvent("projectClosed", projectInfo);
 };
 

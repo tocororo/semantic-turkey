@@ -187,6 +187,10 @@ function setProject(projectName){
 	this.project = projectName;
 }
 
+function clearProject() {
+	this.project = "";
+}
+
 function getToken(){
 	return this.token;
 }
@@ -234,6 +238,7 @@ Context.prototype.getValue = getValue;
 Context.prototype.clearValues = clearValues;
 Context.prototype.getProject = getProject;
 Context.prototype.setProject = setProject;
+Context.prototype.clearProject = clearProject;
 Context.prototype.getToken = getToken;
 Context.prototype.setToken = setToken;
 Context.prototype.getWGpragh = getWGpragh;
