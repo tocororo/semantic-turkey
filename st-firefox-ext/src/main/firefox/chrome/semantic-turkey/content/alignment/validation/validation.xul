@@ -4,7 +4,7 @@
 
 <!-- chrome://semantic-turkey/content/alignment/validation/validation.xul -->
 
-<window id="alignmentValidationWindow" title="Alignmet Validation"
+<window id="alignmentValidationWindow" title="Alignment Validation"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	xmlns:html="http://www.w3.org/1999/xhtml">
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/alignment/validation/validation.js" />
