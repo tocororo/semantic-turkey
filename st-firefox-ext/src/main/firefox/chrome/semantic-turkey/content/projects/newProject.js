@@ -375,8 +375,12 @@ art_semanticturkey.onAccept = function() {
 	//First groupbox (index 0): UriGenerator extension point
 	var uriGenGroupbox = extPointGroupboxList[0];
 	//uriGen configuration and parameters
-	var uriGenFactoryID = uriGenGroupbox.getElementsByTagName("row")[0]
-			.getElementsByTagName("menulist")[0].selectedItem.getAttribute("id");
+	var uriGenFactoryMenu = uriGenGroupbox.getElementsByTagName("row")[0].getElementsByTagName("menulist")[0];
+	var uriGenFactoryID = "---";
+	//if optionalSettingsBox is never expanded, the selectedItem of the menu is not initialized, so perform the check
+	if (uriGenFactoryMenu.selectedItem != undefined) {
+		uriGenFactoryID = uriGenFactoryMenu.selectedItem.getAttribute("id");
+	}
 	var uriGenConfiguration = null;
 	var uriGenParsArray = null;
 	if (uriGenFactoryID != "---"){
@@ -405,8 +409,12 @@ art_semanticturkey.onAccept = function() {
 	//Second groupbox (index 1): RenderingEngine extension point
 	var renderingEngineGroupbox = extPointGroupboxList[1];
 	//RenderingEngine configuration and parameters
-	var renderingEngineFactoryID = renderingEngineGroupbox.getElementsByTagName("row")[0]
-			.getElementsByTagName("menulist")[0].selectedItem.getAttribute("id");
+	var renderingEngineFactoryMenu = renderingEngineGroupbox.getElementsByTagName("row")[0].getElementsByTagName("menulist")[0];
+	var renderingEngineFactoryID = "---";
+	//if optionalSettingsBox is never expanded, the selectedItem of the menu is not initialized, so perform the check
+	if (renderingEngineFactoryMenu.selectedItem != undefined) {
+		renderingEngineFactoryID = uriGenFactoryMenu.selectedItem.getAttribute("id");
+	}
 	var renderingEngineConfiguration = null;
 	var renderingEngineParsArray = null;
 	if (renderingEngineFactoryID != "---"){
