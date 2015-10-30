@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="individualListEditor.css" type="text/css"?>
-
+<?xml-stylesheet href="chrome://semantic-turkey/content/class/widget/classTree/classTree.css" type="text/css"?>
+<?xml-stylesheet href="chrome://semantic-turkey/content/class/widget/instanceList/instanceList.css" type="text/css"?>
 <!-- /* * The contents of this file are subject to the Mozilla Public License 
 	* Version 1.1 (the "License"); you may not use this file except in compliance 
 	* with the License. You may obtain a copy of the License at * http://www.mozilla.org/MPL/ 
@@ -15,27 +16,34 @@
 	at the University of Roma Tor Vergata (ART) * Current information about SemanticTurkey 
 	can be obtained at * http://semanticturkey.uniroma2.it * */ -->
 
-<!-- 
-	chrome://semantic-turkey/content/editors/individualList/individualListEditor.xul
--->	
+<!-- chrome://semantic-turkey/content/editors/individualList/individualListEditor.xul -->
 <dialog title="Individual List Editor" id="individualListEditor"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	buttons="accept,cancel"
-	buttonlabelaccept="OK"
-	buttondisabledaccept="true"
-	buttonlabelcancel="Cancel"
+	xmlns:st="http://semanticturkey.uniroma2.it/xmlns/widget#" width="700px"
+	height="300px" buttons="accept,cancel" buttonlabelaccept="OK"
+	buttondisabledaccept="true" buttonlabelcancel="Cancel"
 	buttondisabledcancel="false">
 	<script type="application/x-javascript" src="individualListEditor.js" />
-	
-	<hbox>
-		<listbox id="individualListBox" flex="1">
-		</listbox>
-		<vbox pack="center">
-			<button id="addIndividualButton" label="Add..." />
-			<button id="removeIndividualButton" label="Remove" />
-			<button id="moveUpButton" label="&#9650;" />
-			<button id="moveDownButton" label="&#9660;" />
+
+	<hbox flex="1">
+		<st:classTree id="classTree" mutable="false" flex="1" />
+		<st:instanceList id="classInstanceList" mutable="false" flex="1" />
+		<vbox pack="center" flex="0">
+			<button id="addIndividualButton" label="Add &#9654;" disabled="true" />
+			<button id="removeIndividualButton" label="&#9664; Remove" disabled="true" />
+		</vbox>
+		<tree flex="1" id="individualList" hidecolumnpicker="true"
+			seltype="single">
+			<treecols>
+				<treecol label="Individual List" primary="true" ordinal="1"
+					flex="1" />
+			</treecols>
+			<treechildren flex="1" />
+		</tree>
+		<vbox pack="center" flex="0">
+			<button id="moveUpButton" label="&#9650;" disabled="true" />
+			<button id="moveDownButton" label="&#9660;" disabled="true"  />
 		</vbox>
 	</hbox>
 </dialog>

@@ -4,8 +4,24 @@ if (typeof art_semanticturkey.individualListEditor == "undefined")
 	art_semanticturkey.individualListEditor = {};
 
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 art_semanticturkey.individualListEditor.init = function() {
+
+	document.getElementById("classTree").addEventListener(
+			"it.uniroma2.art.semanticturkey.event.widget.tree.select",
+			art_semanticturkey.individualListEditor.classSelectionHandler, false);
+
+	var currentProject = art_semanticturkey.CurrentProject.getProjectName();
+	document.getElementById("classTree").projectName = currentProject;
+	document.getElementById("classInstanceList").projectName = currentProject;
+
+	document.getElementById("classInstanceList").addEventListener(
+			"it.uniroma2.art.semanticturkey.event.widget.tree.select",
+			art_semanticturkey.individualListEditor.classInstanceSelectionHandler);
+
+	document.getElementById("individualList").addEventListener("select",
+			art_semanticturkey.individualListEditor.individualSelectionHandler);
 
 	document.getElementById("addIndividualButton").addEventListener("command",
 			art_semanticturkey.individualListEditor.addIndividualHandler, true);
@@ -20,53 +36,111 @@ art_semanticturkey.individualListEditor.init = function() {
 			true);
 };
 
-art_semanticturkey.individualListEditor.addIndividualHandler = function(event) {
-	var parameters = {
-		individualResource : null
-	};
-	window.openDialog("chrome://semantic-turkey/content/editors/individual/individualPicker.xul", "_blank",
-			"chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
+art_semanticturkey.individualListEditor.classSelectionHandler = function(event) {
+	var selectedClassResource = event.target.selectedClassResource;
 
-	if (!!parameters.individualResource) {
-		document.getElementById("individualListBox").appendItem(parameters.individualResource.getShow(),
-				parameters.individualResource.getNominalValue());
-		document.documentElement.setAttribute("buttondisabledaccept", "false");
+	if (selectedClassResource) {
+		document.getElementById("classInstanceList").className = selectedClassResource.getNominalValue();
+	} else {
+		document.getElementById("classInstanceList").className = "";
 	}
 };
 
-art_semanticturkey.individualListEditor.removeIndividualHandler = function(event) {
-	var individualListBox = document.getElementById("individualListBox");
+art_semanticturkey.individualListEditor.classInstanceSelectionHandler = function(event) {
+	var isDisabled = (event.target.selectedInstance == null);
+	document.getElementById("addIndividualButton").disabled = isDisabled;
+	document.getElementById("removeIndividualButton").disabled = isDisabled;
+};
 
-	var ci = individualListBox.currentIndex;
+art_semanticturkey.individualListEditor.classInstanceSelectionHandler = function(event) {
+	var isDisabled = (event.target.selectedInstance == null);
+	document.getElementById("addIndividualButton").disabled = isDisabled;
+};
+
+art_semanticturkey.individualListEditor.individualSelectionHandler = function(event) {
+	var isDisabled = (event.target.currentIndex == -1);
+	document.getElementById("removeIndividualButton").disabled = isDisabled;
+
+	if (isDisabled) {
+		document.getElementById("moveUpButton").setAttribute("disabled", "true");
+		document.getElementById("moveDownButton").setAttribute("disabled", "true");
+	} else {
+		document.getElementById("moveUpButton").setAttribute("disabled",
+				event.target.currentIndex == 0 ? "true" : "false");
+		document.getElementById("moveDownButton").setAttribute("disabled",
+				event.target.currentIndex == event.target.view.rowCount - 1 ? "true" : "false");
+	}
+};
+
+art_semanticturkey.individualListEditor.addIndividualHandler = function(event) {
+	var selectedInstance = document.getElementById("classInstanceList").selectedInstanceResource;
+	var individualList = document.getElementById("individualList");
+
+	var treeItem = document.createElement("treeitem");
+	var treeRow = document.createElement("treerow");
+	var treeCell = document.createElement("treecell");
+
+	treeCell.setAttribute("label", selectedInstance.getShow());
+	treeCell.setAttribute("value", selectedInstance.getNominalValue());
+
+	treeRow.appendChild(treeCell);
+	treeItem.appendChild(treeRow);
+
+	individualList.getElementsByTagName("treechildren")[0].appendChild(treeItem);
+
+	individualList.boxObject.ensureRowIsVisible(individualList.view.rowCount - 1);
+	individualList.view.selection.select(individualList.view.rowCount - 1);
+
+	document.documentElement.setAttribute("buttondisabledaccept", "false");
+};
+
+art_semanticturkey.individualListEditor.removeIndividualHandler = function(event) {
+	var individualList = document.getElementById("individualList");
+
+	var ci = individualList.currentIndex;
 
 	if (ci != -1) {
-		individualListBox.removeItemAt(ci);
+		var item = individualList.view.getItemAtIndex(ci);
 
-		if (individualListBox.getRowCount() == 0) {
-			document.documentElement.setAttribute("buttondisabledaccept", "true");
+		item.parentElement.removeChild(item);
+
+		var newCurrent = ci < individualList.view.rowCount ? ci : individualList.view.rowCount - 1;
+
+		if (newCurrent == -1) {
+			individualList.view.selection.clearSelection();
+		} else {
+			individualList.boxObject.ensureRowIsVisible(newCurrent);
+			individualList.view.selection.select(newCurrent);
 		}
+		
+		document.documentElement.setAttribute("buttondisabledaccept", individualList.view.rowCount == 0 ? "true"
+				: "false");
 	}
 }
 art_semanticturkey.individualListEditor.dialogAcceptHandlder = function(event) {
 
 	var individuals = [];
 
-	var individualListBox = document.getElementById("individualListBox");
+	var individualList = document.getElementById("individualList");
 
-	for (var i = 0; i < individualListBox.itemCount; i++) {
-		individuals.push(individualListBox.getItemAtIndex(i).getAttribute("value"));
+	for (var i = 0; i < individualList.view.rowCount; i++) {
+		individuals.push(individualList.view.getItemAtIndex(i).getElementsByTagName("treecell")[0]
+				.getAttribute("value"));
 	}
 
 	window.arguments[0].individuals = individuals;
 };
 
 art_semanticturkey.individualListEditor.moveUpHandler = function(event) {
-	var individualListBox = document.getElementById("individualListBox");
+	var individualList = document.getElementById("individualList");
 
-	var selectedItem = individualListBox.selectedItem;
+	var currentIndex = individualList.currentIndex;
 
-	if (selectedItem == null)
+	if (currentIndex == -1) {
 		return;
+	}
+
+	var selectedItem = individualList.view.getItemAtIndex(currentIndex);
 
 	var previous = selectedItem.previousSibling;
 
@@ -75,16 +149,20 @@ art_semanticturkey.individualListEditor.moveUpHandler = function(event) {
 
 	selectedItem.parentElement.insertBefore(selectedItem, previous);
 
-	individualListBox.selectItem(selectedItem);
+	individualList.boxObject.ensureRowIsVisible(currentIndex - 1);
+	individualList.view.selection.select(currentIndex - 1);
 };
 
 art_semanticturkey.individualListEditor.moveDownHandler = function(event) {
-	var individualListBox = document.getElementById("individualListBox");
+	var individualList = document.getElementById("individualList");
 
-	var selectedItem = individualListBox.selectedItem;
+	var currentIndex = individualList.currentIndex;
 
-	if (selectedItem == null)
+	if (currentIndex == -1) {
 		return;
+	}
+
+	var selectedItem = individualList.view.getItemAtIndex(currentIndex);
 
 	var next = selectedItem.nextSibling;
 
@@ -93,7 +171,8 @@ art_semanticturkey.individualListEditor.moveDownHandler = function(event) {
 
 	selectedItem.parentElement.insertBefore(selectedItem, next.nextSibling);
 
-	individualListBox.selectItem(selectedItem);
+	individualList.boxObject.ensureRowIsVisible(currentIndex + 1);
+	individualList.view.selection.select(currentIndex + 1);
 };
 
 window.addEventListener("load", art_semanticturkey.individualListEditor.init, false);

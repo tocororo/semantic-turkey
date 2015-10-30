@@ -5,8 +5,19 @@ if (typeof art_semanticturkey.classListEditor == "undefined")
 
 Components.utils.import("resource://stservices/SERVICE_Manchester.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/ProjectST.jsm", art_semanticturkey);
 
 art_semanticturkey.classListEditor.init = function() {
+
+	var currentProject = art_semanticturkey.CurrentProject.getProjectName();
+	document.getElementById("classTree").projectName = currentProject;
+
+	document.getElementById("classTree").addEventListener(
+			"it.uniroma2.art.semanticturkey.event.widget.tree.select",
+			art_semanticturkey.classListEditor.classSelectionHandler, false);
+
+	document.getElementById("classList").addEventListener("select",
+			art_semanticturkey.classListEditor.classListSelectionHandler, false);
 
 	document.getElementById("addNamedClassButton").addEventListener("command",
 			art_semanticturkey.classListEditor.addNamedClassHandler, true);
@@ -22,6 +33,50 @@ art_semanticturkey.classListEditor.init = function() {
 	document.addEventListener("dialogaccept", art_semanticturkey.classListEditor.dialogAcceptHandlder, true);
 };
 
+art_semanticturkey.classListEditor.classSelectionHandler = function(event) {
+	var selectedClassResource = event.target.selectedClassResource;
+
+	document.getElementById("addNamedClassButton").setAttribute("disabled", !selectedClassResource + "");
+};
+
+art_semanticturkey.classListEditor.classListSelectionHandler = function(event) {
+	var currentIndex = event.target.currentIndex;
+
+	var isDisabled = currentIndex == -1;
+
+	if (isDisabled) {
+		document.getElementById("moveUpButton").setAttribute("disabled", "true");
+		document.getElementById("moveDownButton").setAttribute("disabled", "true");
+	} else {
+		document.getElementById("moveUpButton").setAttribute("disabled",
+				event.target.currentIndex == 0 ? "true" : "false");
+		document.getElementById("moveDownButton").setAttribute("disabled",
+				event.target.currentIndex == event.target.view.rowCount - 1 ? "true" : "false");
+	}
+
+	document.getElementById("removeClassButton").setAttribute("disabled", isDisabled ? "true" : "false");
+};
+
+art_semanticturkey.classListEditor.addClassListItem = function(label, value) {
+	var treeItem = document.createElement("treeitem");
+	var treeRow = document.createElement("treerow");
+	var treeCell = document.createElement("treecell");
+
+	treeCell.setAttribute("label", label);
+	treeCell.setAttribute("value", value);
+
+	treeRow.appendChild(treeCell);
+	treeItem.appendChild(treeRow);
+
+	var classList = document.getElementById("classList");
+	classList.getElementsByTagName("treechildren")[0].appendChild(treeItem);
+
+	classList.boxObject.ensureRowIsVisible(classList.view.rowCount - 1);
+	classList.view.selection.select(classList.view.rowCount - 1);
+
+	document.documentElement.setAttribute("buttondisabledaccept", "false");
+};
+
 art_semanticturkey.classListEditor.addAnonymousClassHandler = function(event) {
 	var parameters = {
 		expression : ""
@@ -30,88 +85,104 @@ art_semanticturkey.classListEditor.addAnonymousClassHandler = function(event) {
 			"_blank", "chrome=yes,dialog,resizable=yes,modal,centerscreen", parameters);
 
 	if (!!parameters.expression) {
-		document.getElementById("classListBox").appendItem(parameters.expression, parameters.expression);
-		document.documentElement.setAttribute("buttondisabledaccept", "false");
+		art_semanticturkey.classListEditor.addClassListItem(parameters.expression, parameters.expression);
 	}
 };
 
 art_semanticturkey.classListEditor.addNamedClassHandler = function(event) {
-	var parameters = {};
-	parameters.source = "editorIndividual";
-	parameters.selectedClass = "";
-	parameters.selectedClassResource = null;
+	var selectedClass = document.getElementById("classTree").selectedClassResource;
 
-	// parameters.parentWindow =
-	// window.arguments[0].parentWindow;
-	parameters.parentWindow = window;
+	if (selectedClass == null)
+		return;
 
-	window.openDialog("chrome://semantic-turkey/content/editors/class/newClassTree.xul", "_blank",
-			"chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
-
-	if (parameters.selectedClassResource != null) {
-		var classListBox = document.getElementById("classListBox");
-		classListBox.appendItem(parameters.selectedClassResource.getShow(), parameters.selectedClassResource
-				.toNT());
-		document.documentElement.setAttribute("buttondisabledaccept", "false");
-	}
+	art_semanticturkey.classListEditor.addClassListItem(selectedClass.getShow(), selectedClass.toNT());
 };
 
 art_semanticturkey.classListEditor.removeClassHandler = function(event) {
-	var classListBox = document.getElementById("classListBox");
+	var classList = document.getElementById("classList");
 
-	var ci = classListBox.currentIndex;
+	var ci = classList.currentIndex;
 
 	if (ci != -1) {
-		classListBox.removeItemAt(ci);
+		var item = classList.view.getItemAtIndex(ci);
 
-		if (classListBox.getRowCount() == 0) {
-			document.documentElement.setAttribute("buttondisabledaccept", "true");
+		item.parentElement.removeChild(item);
+
+		var newCurrent = ci < classList.view.rowCount ? ci : classList.view.rowCount - 1;
+
+		if (newCurrent == -1) {
+			classList.view.selection.clearSelection();
+		} else {
+			classList.boxObject.ensureRowIsVisible(newCurrent);
+			classList.view.selection.select(newCurrent);
 		}
+
+		document.documentElement.setAttribute("buttondisabledaccept", classList.view.rowCount == 0 ? "true"
+				: "false");
 	}
 }
 art_semanticturkey.classListEditor.dialogAcceptHandlder = function(event) {
 
 	var clsDescriptions = [];
 
-	var classListBox = document.getElementById("classListBox");
+	var classListBox = document.getElementById("classList");
 
-	for (var i = 0; i < classListBox.itemCount; i++) {
-		clsDescriptions.push(classListBox.getItemAtIndex(i).getAttribute("value"));
+	for (var i = 0; i < classListBox.view.rowCount; i++) {
+		clsDescriptions.push(classListBox.view.getItemAtIndex(i).getElementsByTagName("treecell")[0]
+				.getAttribute("value"));
 	}
 
 	window.arguments[0].clsDescriptions = clsDescriptions;
 };
 
 art_semanticturkey.classListEditor.moveUpHandler = function(event) {
-	var classListBox = document.getElementById("classListBox");
+	var classList = document.getElementById("classList");
 
-	var selectedItem = classListBox.selectedItem;
-	
-	if (selectedItem == null) return;
-	
+	var currentIndex = classList.currentIndex;
+
+	if (currentIndex == -1) {
+		return;
+	}
+
+	var selectedItem = classList.view.getItemAtIndex(currentIndex);
+
+	if (selectedItem == null)
+		return;
+
 	var previous = selectedItem.previousSibling;
-	
-	if (previous == null) return;
-	
+
+	if (previous == null)
+		return;
+
 	selectedItem.parentElement.insertBefore(selectedItem, previous);
-	
-	classListBox.selectItem(selectedItem);
+
+	classList.boxObject.ensureRowIsVisible(currentIndex - 1);
+	classList.view.selection.select(currentIndex - 1);
 };
 
 art_semanticturkey.classListEditor.moveDownHandler = function(event) {
-	var classListBox = document.getElementById("classListBox");
+	var classList = document.getElementById("classList");
 
-	var selectedItem = classListBox.selectedItem;
-	
-	if (selectedItem == null) return;
-	
+	var currentIndex = classList.currentIndex;
+
+	if (currentIndex == -1) {
+		return;
+	}
+
+	var selectedItem = classList.view.getItemAtIndex(currentIndex);
+
+	if (selectedItem == null)
+		return;
+
 	var next = selectedItem.nextSibling;
-	
-	if (next == null) return;
-	
+
+	if (next == null)
+		return;
+
 	selectedItem.parentElement.insertBefore(selectedItem, next.nextSibling);
-	
-	classListBox.selectItem(selectedItem);
+
+	classList.boxObject.ensureRowIsVisible(currentIndex + 1);
+	classList.view.selection.select(currentIndex + 1);
 };
 
 window.addEventListener("load", art_semanticturkey.classListEditor.init, false);
