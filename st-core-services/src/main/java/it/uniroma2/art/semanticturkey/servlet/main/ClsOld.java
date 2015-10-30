@@ -48,7 +48,6 @@ import it.uniroma2.art.owlart.navigation.RDFIterator;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
@@ -321,8 +320,15 @@ public class ClsOld extends ResourceOld {
 			ARTResource cls = retrieveExistingURIResource(owlModel, clsName, getUserNamedGraphs());
 			ARTResource collection = retrieveExistingResource(owlModel, collectionNode, getUserNamedGraphs());
 
-			owlModel.emptyCollection(collection, null, getWorkingGraph());
-			owlModel.deleteTriple(cls, OWL.Res.ONEOF, RDF.Res.NIL, getWorkingGraph());
+			if (!owlModel.hasTriple(cls, OWL.Res.ONEOF, collection, false, getUserNamedGraphs())) {
+				return logAndSendException("Class " + RDFNodeSerializer.toNT(cls)
+						+ " has not been defined as having the following extension: "
+						+ owlModel.getItems(collection, false, getUserNamedGraphs()));
+			}
+
+			// This operation also removes the triple relating the class to the collection, as well as any
+			// other triple the object of which is the collection
+			owlModel.deleteCollection(collection, null, getWorkingGraph());
 
 			return createReplyResponse(RepliesStatus.ok);
 		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
@@ -414,12 +420,19 @@ public class ClsOld extends ResourceOld {
 				}
 			}
 
+			if (!owlModel.hasTriple(cls, axiomType, collection, false, getUserNamedGraphs())) {
+				return logAndSendException("Class " + RDFNodeSerializer.toNT(cls)
+						+ " has not been defined as the " + owlModel.getQName(axiomType.getURI())
+						+ " of the provided collection of classes: " + collectionItems);
+			}
+
+			// This operation also removes the triple relating the class to the collection, as well as any
+			// other triple the object of which is the collection
+			owlModel.deleteCollection(collection, null, getWorkingGraph());
+
 			for (ARTStatement aStmt : stmts) {
 				owlModel.deleteStatement(aStmt, aStmt.getNamedGraph());
 			}
-
-			owlModel.emptyCollection(collection, null, getWorkingGraph());
-			owlModel.deleteTriple(cls, OWL.Res.INTERSECTIONOF, RDF.Res.NIL, getWorkingGraph());
 
 			return createReplyResponse(RepliesStatus.ok);
 		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
