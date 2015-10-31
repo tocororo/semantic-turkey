@@ -77,8 +77,9 @@ public class RenderingOrchestrator implements RenderingEngine {
 			boolean toBeRendered = true;
 
 			if (res.isBlank()) {
-				if (statements.hasType(res, OWL.Res.CLASS, false, NodeFilters.ANY)
-						|| statements.hasType(res, RDFS.Res.CLASS, false, NodeFilters.ANY)) {
+				if ((statements.hasType(res, OWL.Res.CLASS, false, NodeFilters.ANY) || statements.hasType(
+						res, RDFS.Res.CLASS, false, NodeFilters.ANY))
+						&& !statements.hasType(res, OWL.Res.DATARANGE, false, NodeFilters.ANY)) {
 
 					// Renders OWL class expressions using the Manchester syntax. Following common modeling
 					// patterns,
@@ -159,8 +160,9 @@ public class RenderingOrchestrator implements RenderingEngine {
 			} else if (anItem.isBlank()) {
 				ARTBNode aBnode = anItem.asBNode();
 
-				if (statements.hasType(aBnode, RDFS.Res.CLASS, false, NodeFilters.ANY)
-						|| statements.hasType(aBnode, OWL.Res.CLASS, false, NodeFilters.ANY)) {
+				if ((statements.hasType(aBnode, RDFS.Res.CLASS, false, NodeFilters.ANY) || statements
+						.hasType(aBnode, OWL.Res.CLASS, false, NodeFilters.ANY))
+						&& !statements.hasType(res, OWL.Res.DATARANGE, false, NodeFilters.ANY)) {
 					ManchesterClassInterface anonCls = statements.getManchClassFromBNode(aBnode, statements,
 							NodeFilters.ANY, null);
 
