@@ -77,8 +77,8 @@ public class PropertyMatchingAbstractStatementConsumer implements StatementConsu
 
 		
 		
-		// Remove the matched statements from the resource view
-		relevantStmts.clear();
+		// Mark the matched statements as processed
+		stmtCollector.markAllStatementsAsProcessed(relevantStmts);
 
 		return result;
 	}

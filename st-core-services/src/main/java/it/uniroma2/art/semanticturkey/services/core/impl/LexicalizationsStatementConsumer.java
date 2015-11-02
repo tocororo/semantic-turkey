@@ -13,7 +13,6 @@ import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
@@ -124,7 +123,9 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 			stNode.setInfo("graphs", Joiner.on(",").join(graphs));
 
 			resultPredicateObjectValues.put(pred, stNode);
-			stmtIt.remove();
+			
+			// Mark statement as processed
+			stmtCollector.markStatementAsProcessed(stmt);
 		}
 		
 		Iterator<ARTURIResource> keyIt = art2STRDFPredicates.keySet().iterator();

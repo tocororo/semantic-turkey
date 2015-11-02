@@ -54,11 +54,8 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory.createPredicateObjectsList(
 				art2STRDFPredicates, resultPredicateObjectValues);
 
-		for (ARTStatement stmt : stmtCollector.getStatements()) {
+		for (ARTStatement stmt : stmtCollector.getStatements(resource, NodeFilters.ANY, NodeFilters.ANY, true)) {
 			Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
-
-			if (!stmt.getSubject().equals(resource))
-				continue;
 
 			ARTURIResource pred = stmt.getPredicate();
 

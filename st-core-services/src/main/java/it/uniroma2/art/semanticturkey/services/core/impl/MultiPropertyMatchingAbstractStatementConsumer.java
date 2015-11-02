@@ -93,8 +93,8 @@ public class MultiPropertyMatchingAbstractStatementConsumer implements Statement
 				resultPredicateObjectValues.put(property, stNode);
 			}
 
-			// Remove the matched statements from the resource view
-			relevantStmts.clear();
+			// Mark all matched statements as processed
+			stmtCollector.markAllStatementsAsProcessed(relevantStmts);
 		}
 
 		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory.createPredicateObjectsList(

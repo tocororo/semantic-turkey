@@ -54,7 +54,8 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY);
 			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY));
 			symmetricExplicit = graphs.contains(NodeFilters.MAINGRAPH);
-			stmts.clear();
+			// Mark statements as processed
+			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
 		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY, NodeFilters.ANY)) {
@@ -62,7 +63,8 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY);
 			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY));
 			functionalExplicit = graphs.contains(NodeFilters.MAINGRAPH);
-			stmts.clear();
+			// Mark statements as processed
+			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
 		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY, NodeFilters.ANY)) {
@@ -70,7 +72,8 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY);
 			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY));
 			inverseFunctionalExplicit = graphs.contains(NodeFilters.MAINGRAPH);
-			stmts.clear();
+			// Mark statements as processed
+			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
 		
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY, NodeFilters.ANY)) {
@@ -78,7 +81,8 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY);
 			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY));
 			transitiveExplicit = graphs.contains(NodeFilters.MAINGRAPH);
-			stmts.clear();
+			// Mark statements as processed
+			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
 
 		Set<ARTStatement> inverseOfStmts = stmtCollector.getStatements(resource, OWL.Res.INVERSEOF,
@@ -100,9 +104,9 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 				functionalExplicit, inverseFunctional, inverseFunctionalExplicit, transitive,
 				transitiveExplicit, inverseOf));
 
-		// Remove the inverse of statements from the resource view
-		inverseOfStmts.clear();
-		
+		// Mark inverse of statements as processed
+		stmtCollector.markAllStatementsAsProcessed(inverseOfStmts);
+
 		return result;
 	}
 
