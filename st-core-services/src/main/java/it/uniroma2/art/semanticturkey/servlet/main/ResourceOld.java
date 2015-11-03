@@ -822,7 +822,7 @@ public class ResourceOld extends ServiceAdapter {
 			"\nWHERE {";
 			
 			//get all the plainRDFProperty
-			query += "\n ?plainRDFProp <"+RDF.TYPE+"> <"+RDF.PROPERTY+"> .";
+			//query += "\n ?plainRDFProp <"+RDF.TYPE+"> <"+RDF.PROPERTY+"> .";
 			//exclude all the property which are ObjectProperty,, DatatypeProperty, AnnoatationProperty or OntologyProperty
 			query += "\nFILTER NOT EXISTS{?plainRDFProp <"+RDF.TYPE+"> <"+OWL.OBJECTPROPERTY+"> }"+
 					"\nFILTER NOT EXISTS{?plainRDFProp <"+RDF.TYPE+"> <"+OWL.DATATYPEPROPERTY+"> }"+
