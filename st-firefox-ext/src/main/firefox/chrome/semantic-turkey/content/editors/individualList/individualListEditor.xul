@@ -27,8 +27,8 @@
 	<script type="application/x-javascript" src="individualListEditor.js" />
 
 	<hbox flex="1">
-		<st:classTree id="classTree" mutable="false" flex="1" />
-		<st:instanceList id="classInstanceList" mutable="false" flex="1" />
+		<st:classTree id="classTree" mutable="false" hidetoolbar="true" flex="1" />
+		<st:instanceList id="classInstanceList" mutable="false" hidetoolbar="true" flex="1" />
 		<vbox pack="center" flex="0">
 			<button id="addIndividualButton" label="Add &#9654;" disabled="true" />
 			<button id="removeIndividualButton" label="&#9664; Remove" disabled="true" />

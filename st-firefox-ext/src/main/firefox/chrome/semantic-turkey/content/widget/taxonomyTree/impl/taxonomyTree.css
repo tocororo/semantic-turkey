@@ -19,9 +19,3 @@ toolbar[ano_id="taxonomyToolbar"] toolbarbutton[disabled="true"] image{
 	filter: grayscale(1);
 	opacity: 0.5;
 }
-toolbar[ano_id="taxonomyToolbar"]:empty {
-	display: none;
-}
-toolbar[ano_id="taxonomyToolbar"][hidden="true"] {
-	display: none;
-}
