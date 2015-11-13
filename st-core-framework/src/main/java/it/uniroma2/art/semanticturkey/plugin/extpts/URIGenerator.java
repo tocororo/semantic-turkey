@@ -38,6 +38,10 @@ public interface URIGenerator {
 	 * </ul>
 	 * </li>
 	 * <li><code>xDefinition</code></li> (for reified <code>skos:definition</code>s)
+	 * <ul>
+	 * <li><code>annotatedResource</code>: the resource being annotated</li>
+	 * </ul>
+	 * </li>
 	 * </ul>
 	 *
 	 * The parameters requested by additional <code>xRole</code>s are defined elsewhere by the party defining
