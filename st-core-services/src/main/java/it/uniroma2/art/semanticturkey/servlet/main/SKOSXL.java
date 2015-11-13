@@ -7,34 +7,29 @@ import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +73,7 @@ public class SKOSXL extends SKOS {
 		public static final String changeLabelInfoRequest = "changeLabelInfo";
 		public static final String prefToAltLabelRequest = "prefToAltLabel";
 		public static final String altToPrefLabelRequest = "altToPrefLabel";
-		
+
 		// CREATE REQUESTS
 		public static final String createConceptRequest = "createConcept";
 		public static final String createSchemeRequest = "createScheme";
@@ -170,8 +165,8 @@ public class SKOSXL extends SKOS {
 			String prefLabel = setHttpPar(SKOS.Par.prefLabel);
 			String prefLabelLanguage = setHttpPar(SKOS.Par.prefLabelLang);
 			String language = setHttpPar(SKOS.Par.lang);
-			//checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.scheme);
-			//the concept can be null, in this case the URI of the concept in automatically generated
+			// checkRequestParametersAllNotNull(SKOS.Par.concept, SKOS.Par.scheme);
+			// the concept can be null, in this case the URI of the concept in automatically generated
 			checkRequestParametersAllNotNull(SKOS.Par.scheme);
 			response = createConcept(conceptName, broaderConceptName, schemeName, prefLabel,
 					prefLabelLanguage, language);
@@ -225,7 +220,7 @@ public class SKOSXL extends SKOS {
 			String xlabelURI = setHttpPar(SKOSXL.Par.xlabelURI);
 			checkRequestParametersAllNotNull(SKOS.Par.concept, SKOSXL.Par.xlabelURI);
 			response = altToPrefLabel(conceptName, xlabelURI);
-		} 
+		}
 
 		// REMOVE
 		else if (request.equals(Req.removePrefLabelRequest)) {
@@ -324,7 +319,8 @@ public class SKOSXL extends SKOS {
 							model.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.ALTLABEL), tmp,
 							getWorkingGraph());
 					// TODO this should be a full delete of a resource (following also BNodes).
-					// ModelUtilities#deepDeleteIndividual would be ok, but we need a simpler one with: no delTree
+					// ModelUtilities#deepDeleteIndividual would be ok, but we need a simpler one with: no
+					// delTree
 					// but which automatically follows recursive elimination of bnodes
 					model.deleteTriple(tmp, NodeFilters.ANY, NodeFilters.ANY, getWorkingGraph());
 				}
@@ -340,7 +336,6 @@ public class SKOSXL extends SKOS {
 		return response;
 	}
 
-	
 	/**
 	 * this service removes an hidden label for a given language
 	 * 
@@ -357,16 +352,18 @@ public class SKOSXL extends SKOS {
 		try {
 			ARTURIResource skosConcept = model.createURIResource(model.expandQName(skosConceptName));
 
-			Collection<STRDFResource> hiddenLabels = listHiddenXLabels(model, skosConcept, lang, getWorkingGraph());
+			Collection<STRDFResource> hiddenLabels = listHiddenXLabels(model, skosConcept, lang,
+					getWorkingGraph());
 
 			for (STRDFResource strdfRes : hiddenLabels) {
 				if (strdfRes.getRendering().compareTo(label) == 0) {
 					ARTResource tmp = strdfRes.getARTNode().asResource();
 					model.deleteTriple(skosConcept,
-							model.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.HIDDENLABEL), tmp,
-							getWorkingGraph());
+							model.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.HIDDENLABEL),
+							tmp, getWorkingGraph());
 					// TODO this should be a full delete of a resource (following also BNodes).
-					// ModelUtilities#deepDeleteIndividual would be ok, but we need a simpler one with: no delTree
+					// ModelUtilities#deepDeleteIndividual would be ok, but we need a simpler one with: no
+					// delTree
 					// but which automatically follows recursive elimination of bnodes
 					model.deleteTriple(tmp, NodeFilters.ANY, NodeFilters.ANY, getWorkingGraph());
 				}
@@ -381,7 +378,7 @@ public class SKOSXL extends SKOS {
 		}
 		return response;
 	}
-	
+
 	// SERVICE METHODS
 
 	/**
@@ -527,16 +524,16 @@ public class SKOSXL extends SKOS {
 			SKOSXLModel skosxlModel = getSKOSXLModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 
-			//there are two possibilities:
+			// there are two possibilities:
 			// - the uri is passed, so that URI should be used to create the concept
 			// - the uri is null, so it should be created using the specified method
 			ARTURIResource newConcept = null;
-			if(conceptName == null){	
-				newConcept = generateURI("concept", Collections.<String,String>emptyMap());
-			} else{
+			if (conceptName == null) {
+				newConcept = generateConceptURI(prefLabel, prefLabelLang);
+			} else {
 				newConcept = createNewURIResource(skosxlModel, conceptName, graphs);
 			}
-			//ARTURIResource newConcept = createNewResource(skosxlModel, conceptName, graphs);
+			// ARTURIResource newConcept = createNewResource(skosxlModel, conceptName, graphs);
 
 			ARTURIResource superConcept;
 			if (superConceptName != null)
@@ -549,23 +546,21 @@ public class SKOSXL extends SKOS {
 			logger.debug("adding concept to graph: " + wrkGraph);
 			skosxlModel.addConceptToScheme(newConcept.getURI(), superConcept, conceptScheme, wrkGraph);
 
-			//ARTURIResource prefXLabel = skosxlModel.addXLabel(createURIForXLabel(skosxlModel), prefLabel,
-			//		prefLabelLang, getWorkingGraph());
-			
+			// ARTURIResource prefXLabel = skosxlModel.addXLabel(createURIForXLabel(skosxlModel), prefLabel,
+			// prefLabelLang, getWorkingGraph());
+
 			ARTURIResource prefXLabel = null;
-			
+
 			if (prefLabel != null && prefLabelLang != null) {
-				ARTURIResource prefXLabelURI = generateXLabelURI(skosxlModel, 
-						prefLabelLang, graphs);
-				prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel,
-						prefLabelLang, getWorkingGraph());
-				
-				skosxlModel.setPrefXLabel(newConcept, prefXLabel, getWorkingGraph());				
+				ARTURIResource prefXLabelURI = generateXLabelURI(prefLabelLang, newConcept, prefLabel,
+						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
+				prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel, prefLabelLang,
+						getWorkingGraph());
+				skosxlModel.setPrefXLabel(newConcept, prefXLabel, getWorkingGraph());
 			}
 
-
 			RDFXMLHelp.addRDFNode(response, createSTConcept(skosxlModel, newConcept, true, language));
-			
+
 			if (prefXLabel != null) {
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabel, true));
 			}
@@ -576,12 +571,6 @@ public class SKOSXL extends SKOS {
 		} catch (NonExistingRDFResourceException e) {
 			return logAndSendException(e);
 		} catch (DuplicatedResourceException e) {
-			return logAndSendException(e);
-		} catch (IOException e) {
-			return logAndSendException(e);
-		} catch (InvalidProjectNameException e) {
-			return logAndSendException(e);
-		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
 		} catch (MalformedURIException e) {
 			return logAndSendException(e);
@@ -606,8 +595,9 @@ public class SKOSXL extends SKOS {
 
 			// add skos:preferredLabel
 			if (prefLabel != null && prefLabelLang != null) {
-				ARTURIResource prefXLabel = skosxlModel.addXLabel(createURIForXLabel(skosxlModel), prefLabel,
-						prefLabelLang, getWorkingGraph());
+				ARTURIResource prefXLabel = generateXLabelURI(prefLabelLang, newScheme, prefLabel,
+						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
+				skosxlModel.addXLabel(prefXLabel.getURI(), prefLabel, prefLabelLang, getWorkingGraph());
 				skosxlModel.setPrefXLabel(newScheme, prefXLabel, getWorkingGraph());
 
 				// addPrefLabel(skosModel, newScheme, prefLabel, lang);
@@ -624,6 +614,8 @@ public class SKOSXL extends SKOS {
 		} catch (NonExistingRDFResourceException e) {
 			return logAndSendException(e);
 		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
 			return logAndSendException(e);
 		}
 		return response;
@@ -663,11 +655,11 @@ public class SKOSXL extends SKOS {
 						oldxlabel, graph);
 			}
 
-			if (mode == XLabelCreationMode.bnode){
+			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.setPrefXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResource prefXLabelURI = generateXLabelURI(skosxlmodel, 
-						lang, getUserNamedGraphs());
+				ARTURIResource prefXLabelURI = generateXLabelURI(lang, skosConcept, label,
+						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
 				ARTURIResource prefXLabel = skosxlmodel.addXLabel(prefXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				skosxlmodel.setPrefXLabel(skosConcept, prefXLabel, getWorkingGraph());
@@ -679,12 +671,6 @@ public class SKOSXL extends SKOS {
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
-			return logAndSendException(e);
-		} catch (IOException e) {
-			return logAndSendException(e);
-		} catch (InvalidProjectNameException e) {
-			return logAndSendException(e);
-		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
 		} catch (URIGenerationException e) {
 			return logAndSendException(e);
@@ -714,9 +700,9 @@ public class SKOSXL extends SKOS {
 					getUserNamedGraphs());
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.addAltXLabel(skosConcept, label, lang, getWorkingGraph());
-			}else {
-				ARTURIResource altXLabelURI = generateXLabelURI(skosxlmodel, 
-						lang, getUserNamedGraphs());
+			} else {
+				ARTURIResource altXLabelURI = generateXLabelURI(lang, skosConcept, label,
+						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.ALTLABEL);
 				ARTURIResource altXLabel = skosxlmodel.addXLabel(altXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				skosxlmodel.addAltXLabel(skosConcept, altXLabel, getWorkingGraph());
@@ -728,12 +714,6 @@ public class SKOSXL extends SKOS {
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
-			return logAndSendException(e);
-		} catch (IOException e) {
-			return logAndSendException(e);
-		} catch (InvalidProjectNameException e) {
-			return logAndSendException(e);
-		} catch (ProjectInexistentException e) {
 			return logAndSendException(e);
 		} catch (URIGenerationException e) {
 			return logAndSendException(e);
@@ -764,8 +744,8 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.addHiddenXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResource hiddenXLabelURI = generateXLabelURI(skosxlmodel, lang,
-						getUserNamedGraphs());
+				ARTURIResource hiddenXLabelURI = generateXLabelURI(lang, skosConcept, label,
+						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.HIDDENLABEL);
 				ARTURIResource hiddenXLabel = skosxlmodel.addXLabel(hiddenXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
 				skosxlmodel.addHiddenXLabel(skosConcept, hiddenXLabel, getWorkingGraph());
@@ -778,18 +758,12 @@ public class SKOSXL extends SKOS {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
 			return logAndSendException(e);
-		} catch (IOException e) {
-			return logAndSendException(e);
-		} catch (InvalidProjectNameException e) {
-			return logAndSendException(e);
-		} catch (ProjectInexistentException e) {
-			return logAndSendException(e);
 		} catch (URIGenerationException e) {
 			return logAndSendException(e);
 		}
 		return response;
 	}
-	
+
 	public Response changeLabelInfo(String xlabelURI, String label, String lang) {
 		SKOSXLModel skosxlModel = getSKOSXLModel();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -798,7 +772,7 @@ public class SKOSXL extends SKOS {
 
 		try {
 			ARTLiteral xlabelLiteral = skosxlModel.createLiteral(label, lang);
-			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel, 
+			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel,
 					skosxlModel.expandQName(xlabelURI));
 			ARTResource graph = getWorkingGraph();
 			// get the old value
@@ -819,7 +793,7 @@ public class SKOSXL extends SKOS {
 							xlabelLiteral, graph);
 				}
 
-			} else { //there was no value associated to the xlabel (which is strange)
+			} else { // there was no value associated to the xlabel (which is strange)
 				skosxlModel.addTriple(xLabel, it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.LITERALFORM,
 						xlabelLiteral, graph);
 			}
@@ -836,7 +810,7 @@ public class SKOSXL extends SKOS {
 		}
 		return response;
 	}
-	
+
 	public Response prefToAtlLabel(String conceptURI, String xlabelURI) {
 		SKOSXLModel skosxlModel = getSKOSXLModel();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -844,14 +818,14 @@ public class SKOSXL extends SKOS {
 		Element xlabelElem = XMLHelp.newElement(dataElement, SKOSXL.Par.xlabelURI);
 		try {
 			ARTURIResource skosConcept = skosxlModel.createURIResource(skosxlModel.expandQName(conceptURI));
-			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel, 
+			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel,
 					skosxlModel.expandQName(xlabelURI));
 			ARTResource graph = getWorkingGraph();
 			skosxlModel.deleteTriple(skosConcept,
-					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.PREFLABEL), xLabel,
-					graph);
+					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.PREFLABEL),
+					xLabel, graph);
 			skosxlModel.addTriple(skosConcept,
-					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.ALTLABEL), xLabel, 
+					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.ALTLABEL), xLabel,
 					graph);
 
 			xlabelElem.setAttribute("xlabelURI", xlabelURI);
@@ -875,7 +849,7 @@ public class SKOSXL extends SKOS {
 		Element xlabelElem = XMLHelp.newElement(dataElement, SKOSXL.Par.xlabelURI);
 		try {
 			ARTURIResource skosConcept = skosxlModel.createURIResource(skosxlModel.expandQName(conceptURI));
-			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel, 
+			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel,
 					skosxlModel.expandQName(xlabelURI));
 			ARTResource graph = getWorkingGraph();
 
@@ -894,11 +868,11 @@ public class SKOSXL extends SKOS {
 			}
 
 			skosxlModel.deleteTriple(skosConcept,
-					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.ALTLABEL), xLabel, 
+					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.ALTLABEL), xLabel,
 					graph);
 			skosxlModel.addTriple(skosConcept,
-					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.PREFLABEL), xLabel,
-					graph);
+					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.PREFLABEL),
+					xLabel, graph);
 
 			xlabelElem.setAttribute("xlabelURI", xlabelURI);
 			xlabelElem.setAttribute("xlabconceptURIelURI", conceptURI);
@@ -985,23 +959,85 @@ public class SKOSXL extends SKOS {
 		return res;
 	}
 
-	private String createURIForXLabel(RDFModel model) {
-		return model.getDefaultNamespace() + "xl-" + UUID.randomUUID().toString();
-	}
-
-	
 	public SKOSXLModel getSKOSXLModel() {
-		return (SKOSXLModel)getOntModel();
+		return (SKOSXLModel) getOntModel();
 	}
 
-	
-	protected ARTURIResource generateXLabelURI(SKOSXLModel skosxlModel, String lang,
-			ARTResource[] graphs) 
-			throws ModelAccessException, IOException, InvalidProjectNameException, ProjectInexistentException, URIGenerationException {
-		
+	/**
+	 * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. This method
+	 * delegates to {@link #generateConceptURI(String, String)}.
+	 * 
+	 * @param lexicalForm
+	 *            the textual content of the label
+	 * @param lexicalizedResource
+	 *            the resource to which the label will be attached to
+	 * @param type
+	 *            the property used for attaching the label
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateXLabelURI(ARTLiteral lexicalForm, ARTURIResource lexicalizedResource,
+			ARTURIResource type) throws URIGenerationException {
+		String lexicalFormLanguage = null;
+		String lexicalFormLabel = null;
+
+		if (lexicalForm != null) {
+			lexicalFormLanguage = lexicalForm.getLanguage();
+			lexicalFormLabel = lexicalForm.getLabel();
+		}
+
+		return generateXLabelURI(lexicalFormLanguage, lexicalizedResource, lexicalFormLabel, type);
+	}
+
+	/**
+	 * Generates a new URI for a SKOSXL Label. The actual generation of the URI is delegated to
+	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
+	 * {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided with the following:
+	 * <ul>
+	 * <li><code>xLabel</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>lang</code>, <code>lexicalizedResource</code>
+	 * (nominal value), <code>lexicalForm</code> and <code>type</code> (nominal value) (each, if not
+	 * <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * All arguments should be not <code>null</code> (expect <code>lang</code> that may be <code>null</code>),
+	 * but in the end is the specific implementation of the extension point that would complain about the
+	 * absence of one of these theoretically mandatory parameters.
+	 * 
+	 * @param lang
+	 *            the language tag associated with this <code>skosxl:Label</code>
+	 * @param lexicalizedResource
+	 *            the resource to which the label will be attached to
+	 * @param lexicalForm
+	 *            the lexical form of this <code>skosxl:Label</code> without its language tag
+	 * @param type
+	 *            the property used for attaching the label
+	 * 
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateXLabelURI(String lang, ARTResource lexicalizedResource, String lexicalForm,
+			ARTURIResource type) throws URIGenerationException {
+
 		Map<String, String> valueMapping = new HashMap<String, String>();
-		valueMapping.put("lang", lang);
+
+		if (lang != null) {
+			valueMapping.put("lang", lang);
+		}
+
+		if (lexicalizedResource != null) {
+			valueMapping.put("lexicalizedResource", lexicalizedResource.getNominalValue());
+		}
+
+		if (lexicalForm != null) {
+			valueMapping.put("lexicalForm", lexicalForm);
+		}
+
+		if (type != null) {
+			valueMapping.put("type", type.getNominalValue());
+		}
+
 		return generateURI("xLabel", valueMapping);
 	}
-	
+
 }

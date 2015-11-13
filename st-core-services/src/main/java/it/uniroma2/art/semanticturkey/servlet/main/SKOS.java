@@ -50,6 +50,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -58,8 +59,9 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -290,7 +292,7 @@ public class SKOS extends ResourceOld {
 			String scheme = setHttpPar(Par.scheme);
 			String language = setHttpPar(Par.lang);
 			checkRequestParametersAllNotNull(Par.concept, Par.scheme);
-			response = addConceptToScheme(concept, scheme,language);
+			response = addConceptToScheme(concept, scheme, language);
 		} else if (request.equals(Req.setPrefLabelRequest)) {
 			String skosConceptName = setHttpPar(Par.concept);
 			String lang = setHttpPar(Par.lang);
@@ -391,21 +393,22 @@ public class SKOS extends ResourceOld {
 		SKOSModel skosModel = getSKOSModel();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
-			ARTURIResource resource = retrieveExistingURIResource(skosModel, resourceName, getUserNamedGraphs());
-			
+			ARTURIResource resource = retrieveExistingURIResource(skosModel, resourceName,
+					getUserNamedGraphs());
+
 			String show;
 			if (language == null) {
 				show = skosModel.getQName(resourceName);
 			} else {
 				ARTLiteral showLiteral = skosModel.getPrefLabel(resource, language, true);
-				
+
 				if (showLiteral != null) {
 					show = showLiteral.getLabel();
 				} else {
 					show = skosModel.getQName(resourceName);
 				}
 			}
-			
+
 			Element showElement = XMLHelp.newElement(response.getDataElement(), "show");
 			showElement.setAttribute("value", show);
 		} catch (ModelAccessException e) {
@@ -426,8 +429,8 @@ public class SKOS extends ResourceOld {
 			skosModel.setTopConcept(concept, scheme, true, getWorkingGraph());
 
 			STRDFResource stTopConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
-			decorateForTreeView(skosModel,stTopConcept, scheme, true, graphs);
-			RDFXMLHelp.addRDFNode(response,stTopConcept);
+			decorateForTreeView(skosModel, stTopConcept, scheme, true, graphs);
+			RDFXMLHelp.addRDFNode(response, stTopConcept);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
@@ -459,14 +462,13 @@ public class SKOS extends ResourceOld {
 	}
 
 	/**
-	 * given a subtree rooted on the selected concept, all of its children are
-	 * assigned to scheme <code>targetScheme</code>
+	 * given a subtree rooted on the selected concept, all of its children are assigned to scheme
+	 * <code>targetScheme</code>
 	 * 
 	 * @param conceptName
 	 * @param sourceSchemeName
-	 *            if <code>!=null</code>, then the narrowers of the selected
-	 *            concept to be assigned to <code>targetScheme</code> are
-	 *            filtered from the <code>sourceScheme</code>
+	 *            if <code>!=null</code>, then the narrowers of the selected concept to be assigned to
+	 *            <code>targetScheme</code> are filtered from the <code>sourceScheme</code>
 	 * @param targetSchemeName
 	 * @return
 	 */
@@ -498,9 +500,8 @@ public class SKOS extends ResourceOld {
 	}
 
 	/**
-	 * implementation of this method filters the narrower nodes which only
-	 * belong to the selected <code>sourceScheme</code> before assigning them
-	 * tothe <code>targetScheme</code>
+	 * implementation of this method filters the narrower nodes which only belong to the selected
+	 * <code>sourceScheme</code> before assigning them tothe <code>targetScheme</code>
 	 * 
 	 * @param skosModel
 	 * @param concept
@@ -526,8 +527,8 @@ public class SKOS extends ResourceOld {
 	}
 
 	/**
-	 * implementation of this method assign all narrower concepts of
-	 * <code>concept</code> to the specified <code>scheme</code>
+	 * implementation of this method assign all narrower concepts of <code>concept</code> to the specified
+	 * <code>scheme</code>
 	 * 
 	 * @param skosModel
 	 * @param concept
@@ -578,8 +579,7 @@ public class SKOS extends ResourceOld {
 		try {
 			ARTURIResource skosScheme = null;
 			if (schemaUri != null) {
-				skosScheme = retrieveExistingURIResource(skosModel, schemaUri,
-						getUserNamedGraphs());
+				skosScheme = retrieveExistingURIResource(skosModel, schemaUri, getUserNamedGraphs());
 				it = skosModel.listTopConceptsInScheme(skosScheme, true, getUserNamedGraphs());
 			} else {
 				// TODO move to OWLART?
@@ -616,9 +616,8 @@ public class SKOS extends ResourceOld {
 
 	// TODO maybe it is the case to move it to OWLART...
 	/**
-	 * this method ignores the topConceptOf predicate and calculates the roots
-	 * much the same way the service for classes does (only, it's relying on the
-	 * skos:broader predicate instead of rdfs:subClassOf
+	 * this method ignores the topConceptOf predicate and calculates the roots much the same way the service
+	 * for classes does (only, it's relying on the skos:broader predicate instead of rdfs:subClassOf
 	 * 
 	 * @param defaultLanguage
 	 * @return
@@ -710,7 +709,7 @@ public class SKOS extends ResourceOld {
 
 			// add a new concept scheme...
 			skosModel.addSKOSConceptScheme(newScheme, getWorkingGraph());
-			
+
 			// add skos:preferredLabel
 			if (prefLabel != null && lang != null) {
 				addPrefLabel(skosModel, newScheme, prefLabel, lang);
@@ -761,8 +760,7 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response addConceptToScheme(String conceptQName, String schemeQName,
-			String defaultLanguage) {
+	public Response addConceptToScheme(String conceptQName, String schemeQName, String defaultLanguage) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 
 		try {
@@ -776,42 +774,37 @@ public class SKOS extends ResourceOld {
 			String querySpec = "select distinct ?c where {\n"
 					+ "  ?concept <http://www.w3.org/2004/02/skos/core#broader>|^<http://www.w3.org/2004/02/skos/core#narrower> ?c .\n"
 					+ "  ?c <http://www.w3.org/2004/02/skos/core#inScheme>|<http://www.w3.org/2004/02/skos/core#topConceptOf>|^<http://www.w3.org/2004/02/skos/core#hasTopConcept> ?scheme. \n"
-					+ "  FILTER(IsIRI(?c))\n"
-					+ "}";
-			
+					+ "  FILTER(IsIRI(?c))\n" + "}";
 
 			Collection<STRDFResource> insertionPoints = STRDFNodeFactory.createEmptyResourceCollection();
-			
+
 			try {
 				TupleQuery query = skosModel.createTupleQuery(querySpec);
 				query.setBinding("concept", concept);
 				query.setBinding("scheme", scheme);
-	
+
 				try (TupleBindingsIterator it = query.evaluate(true)) {
 					while (it.streamOpen()) {
 						ARTResource affectedConcept = it.getNext().getBoundValue("c").asResource();
-						insertionPoints.add(STRDFNodeFactory.createSTRDFResource(affectedConcept, RDFResourceRolesEnum.concept, true, null));
+						insertionPoints.add(STRDFNodeFactory.createSTRDFResource(affectedConcept,
+								RDFResourceRolesEnum.concept, true, null));
 					}
 				}
 			} catch (QueryEvaluationException | UnsupportedQueryLanguageException | MalformedQueryException e) {
 				return logAndSendException(e);
 			}
-			
-			Element treeChangeElement = XMLHelp.newElement(
-					response.getDataElement(), "treeChange");
-			Element schemeElement = XMLHelp.newElement(treeChangeElement,
-					"scheme");
+
+			Element treeChangeElement = XMLHelp.newElement(response.getDataElement(), "treeChange");
+			Element schemeElement = XMLHelp.newElement(treeChangeElement, "scheme");
 			RDFXMLHelp.addRDFNode(schemeElement, scheme);
 
-			Element addedConceptElement = XMLHelp.newElement(
-					treeChangeElement, "addedConcept");
+			Element addedConceptElement = XMLHelp.newElement(treeChangeElement, "addedConcept");
 
 			STRDFResource stAddedConcept = createSTConcept(skosModel, concept, true, defaultLanguage);
-			decorateForTreeView(skosModel,stAddedConcept, scheme, true, graphs);
+			decorateForTreeView(skosModel, stAddedConcept, scheme, true, graphs);
 			RDFXMLHelp.addRDFNode(addedConceptElement, stAddedConcept);
-			
-			Element insertionPointsElement = XMLHelp.newElement(
-					treeChangeElement, "insertionPoints");
+
+			Element insertionPointsElement = XMLHelp.newElement(treeChangeElement, "insertionPoints");
 			RDFXMLHelp.addRDFNodes(insertionPointsElement, insertionPoints);
 
 		} catch (ModelAccessException e) {
@@ -823,7 +816,6 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-
 
 	public Response removeConceptFromScheme(String conceptQName, String schemeQName) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -857,15 +849,14 @@ public class SKOS extends ResourceOld {
 			ARTResource wrkGraph = getWorkingGraph();
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
-			
-			
+
 			ARTURIResource newConcept = null;
-			if(conceptName == null){		
-				newConcept = generateURI("concept", Collections.<String, String>emptyMap());
-			} else{
+			if (conceptName == null) {
+				newConcept = generateConceptURI(prefLabel, prefLabelLang);
+			} else {
 				newConcept = createNewURIResource(skosModel, conceptName, graphs);
 			}
-			//ARTURIResource newConcept = createNewResource(skosModel, conceptName, graphs);
+			// ARTURIResource newConcept = createNewResource(skosModel, conceptName, graphs);
 
 			ARTURIResource superConcept;
 			if (superConceptName != null)
@@ -877,7 +868,7 @@ public class SKOS extends ResourceOld {
 
 			logger.debug("adding concept to graph: " + wrkGraph);
 			skosModel.addConceptToScheme(newConcept.getURI(), superConcept, conceptScheme, wrkGraph);
-			
+
 			if (prefLabel != null && prefLabelLang != null) {
 				addPrefLabel(skosModel, newConcept, prefLabel, prefLabelLang);
 			}
@@ -897,21 +888,19 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		} catch (URIGenerationException e) {
 			return logAndSendException(e);
-		} 
+		}
 		return response;
 	}
 
 	/**
-	 * get the narrower concepts of a given concept. To be used for building
-	 * skos trees in UI applications.
+	 * get the narrower concepts of a given concept. To be used for building skos trees in UI applications.
 	 * 
 	 * @param conceptName
 	 * @param schemeName
-	 *            if !=null, filters the narrower concepts only among those who
-	 *            belong to the given scheme
+	 *            if !=null, filters the narrower concepts only among those who belong to the given scheme
 	 * @param TreeView
-	 *            if true, then information about the availability of narrower
-	 *            concepts of <concept> is produced
+	 *            if true, then information about the availability of narrower concepts of <concept> is
+	 *            produced
 	 * @param defaultLanguage
 	 * @return
 	 */
@@ -927,8 +916,7 @@ public class SKOS extends ResourceOld {
 			Iterator<ARTURIResource> it;
 			ARTURIResource scheme = null;
 			if (schemeName != null) {
-				scheme = retrieveExistingURIResource(skosModel, schemeName,
-						getUserNamedGraphs());
+				scheme = retrieveExistingURIResource(skosModel, schemeName, getUserNamedGraphs());
 				it = Iterators.filter(unfilteredIt,
 						ConceptsInSchemePredicate.getFilter(skosModel, scheme, getUserNamedGraphs()));
 			} else {
@@ -1016,9 +1004,8 @@ public class SKOS extends ResourceOld {
 	}
 
 	/**
-	 * this is mostly to be used for debugging; use
-	 * {@link #getNarrowerConcepts(String, boolean, String)} for building a tree
-	 * dynamically, with each request following each tree-branch expansion
+	 * this is mostly to be used for debugging; use {@link #getNarrowerConcepts(String, boolean, String)} for
+	 * building a tree dynamically, with each request following each tree-branch expansion
 	 * 
 	 * @param skosSchemeName
 	 * @return
@@ -1101,7 +1088,7 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-	
+
 	/**
 	 * this service adds an hidden label for a given language
 	 * 
@@ -1129,7 +1116,6 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-
 	/**
 	 * this service removes the preferred label for a given language
 	 * 
@@ -1156,7 +1142,7 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-	
+
 	/**
 	 * this service removes an hidden label for a given language
 	 * 
@@ -1183,7 +1169,6 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-
 
 	/**
 	 * this service removes an alternative label for a given language
@@ -1315,9 +1300,8 @@ public class SKOS extends ResourceOld {
 	 * @param role
 	 * @param explicit
 	 * @param defaultLanguage
-	 *            if != null, the label for that language is retrieved, if
-	 *            ==null, the qname is added on the <code>show</code> property
-	 *            of the node
+	 *            if != null, the label for that language is retrieved, if ==null, the qname is added on the
+	 *            <code>show</code> property of the node
 	 * @return
 	 * @throws ModelAccessException
 	 * @throws NonExistingRDFResourceException
@@ -1387,32 +1371,30 @@ public class SKOS extends ResourceOld {
 				defaultLanguage);
 	}
 
-	public static void decorateForTreeView(SKOSModel model, STRDFResource concept, ARTURIResource scheme, 
-			boolean inference, ARTResource[] graphs)
-			throws ModelAccessException, NonExistingRDFResourceException {
-		ARTURIResourceIterator unfilteredIt = model.listNarrowerConcepts((ARTURIResource) concept.getARTNode(), 
-				false, inference, graphs);
-		
-		if(scheme!=null){
+	public static void decorateForTreeView(SKOSModel model, STRDFResource concept, ARTURIResource scheme,
+			boolean inference, ARTResource[] graphs) throws ModelAccessException,
+			NonExistingRDFResourceException {
+		ARTURIResourceIterator unfilteredIt = model.listNarrowerConcepts(
+				(ARTURIResource) concept.getARTNode(), false, inference, graphs);
+
+		if (scheme != null) {
 			Iterator<ARTURIResource> it = Iterators.filter(unfilteredIt,
 					ConceptsInSchemePredicate.getFilter(model, scheme, graphs));
-			if(it.hasNext()){
+			if (it.hasNext()) {
 				concept.setInfo("more", "1");
 			} else {
 				concept.setInfo("more", "0");
 			}
-		} else{
+		} else {
 			if (unfilteredIt.streamOpen()) {
 				concept.setInfo("more", "1");
 
 			} else
 				concept.setInfo("more", "0");
 		}
-		
+
 		unfilteredIt.close();
-		
-		
-		
+
 	}
 
 	private void addPrefLabel(SKOSModel skosModel, ARTURIResource res, String prefLabel, String lang)
@@ -1435,9 +1417,59 @@ public class SKOS extends ResourceOld {
 					+ " has not been specified");
 		}
 	}
-	
+
 	public SKOSModel getSKOSModel() {
 		return (SKOSModel) getOntModel();
+	}
+
+	/**
+	 * Generates a new URI for a SKOS concept, optionally given one of its labels (usually the preferred one).
+	 * This method delegates to {@link #generateConceptURI(String, String)}.
+	 * 
+	 * @param label
+	 *            the concept label
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateConceptURI(ARTLiteral label) throws URIGenerationException {
+		if (label != null) {
+			return generateConceptURI(label.getLabel(), label.getLanguage());
+		} else {
+			return generateConceptURI(null, null);
+		}
+	}
+
+	/**
+	 * Generates a new URI for a SKOS concept, optionally given one of its labels (usually the preferred one)
+	 * broken down into its lexical form and language tag. The actual generation of the URI is delegated to
+	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
+	 * {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided with the following:
+	 * <ul>
+	 * <li><code>concept</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>label</code> and <code>lang</code> (each, if not
+	 * <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * @param label
+	 *            the concept label without its language tag
+	 * @param lang
+	 *            the language tag associated with the concept label
+	 * 
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateConceptURI(String label, String lang) throws URIGenerationException {
+		Map<String, String> valueMapping = new HashMap<String, String>();
+
+		if (label != null) {
+			valueMapping.put("label", label);
+		}
+
+		if (lang != null) {
+			valueMapping.put("lang", lang);
+		}
+
+		return generateURI("concept", valueMapping);
 	}
 
 }
