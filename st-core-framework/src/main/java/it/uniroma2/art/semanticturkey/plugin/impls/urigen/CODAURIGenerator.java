@@ -3,11 +3,12 @@ package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
-import it.uniroma2.art.coda.pearl.model.ConverterMapLiteralArgument;
+import it.uniroma2.art.coda.pearl.model.ConverterMapArgument;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
-import it.uniroma2.art.coda.pearl.model.ConverterStringLiteralArgument;
+import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
@@ -57,7 +58,7 @@ public class CODAURIGenerator implements URIGenerator {
 	 */
 	@Override
 	public ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
-			Map<String, String> args) throws URIGenerationException {
+			Map<String, ARTNode> args) throws URIGenerationException {
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
 		
@@ -76,8 +77,8 @@ public class CODAURIGenerator implements URIGenerator {
 			codaCore.setConverterProperties(converter, converterProperties);
 			codaCore.initialize(stServiceContext.getProject().getOntModel(), ontFact);
 			ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
-					Arrays.<ConverterArgumentExpression> asList(new ConverterStringLiteralArgument(xRole),
-							new ConverterMapLiteralArgument(args)));
+					Arrays.<ConverterArgumentExpression> asList(new ConverterRDFLiteralArgument(xRole),
+							ConverterMapArgument.fromNodesMap(args)));
 
 			logger.debug("Going to execute a CODA converter");
 

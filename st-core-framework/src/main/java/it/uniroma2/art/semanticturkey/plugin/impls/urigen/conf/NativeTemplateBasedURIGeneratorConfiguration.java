@@ -23,7 +23,7 @@ public class NativeTemplateBasedURIGeneratorConfiguration extends AbstractPlugin
 	public String concept = "c_${rand()}";
 	
 	@PluginConfigurationParameter(description="Template for SKOS eXtended Labels")
-	public String xLabel = "xl_${lang}_${rand()}";
+	public String xLabel = "xl_${lexicalForm.language}_${rand()}";
 	
 	@PluginConfigurationParameter(description="Template for SKOS Definitions")
 	public String xDefinition = "xDef_${rand()}";

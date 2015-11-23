@@ -29,6 +29,7 @@ package it.uniroma2.art.semanticturkey.plugin.extpts;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -431,7 +432,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	protected ARTURIResource generateURI(String xRole, Map<String, String> valueMapping)
+	protected ARTURIResource generateURI(String xRole, Map<String, ARTNode> valueMapping)
 			throws URIGenerationException {
 		try {
 			return getProject().getURIGenerator().generateURI(serviceContext, xRole, valueMapping);

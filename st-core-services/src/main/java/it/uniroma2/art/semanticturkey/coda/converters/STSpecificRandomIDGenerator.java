@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import it.uniroma2.art.coda.contracts.RandomIdGenerator;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
@@ -33,7 +34,7 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	 * , java.lang.String, java.util.Map)
 	 */
 	@Override
-	public ARTURIResource produceURI(CODAContext ctx, String value, String xRole, Map<String, String> args)
+	public ARTURIResource produceURI(CODAContext ctx, String value, String xRole, Map<String, ARTNode> args)
 			throws ConverterException {
 		try {
 			return stServiceContext.getProject().getURIGenerator().generateURI(stServiceContext, xRole, args);
@@ -53,7 +54,7 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	public ARTURIResource produceURI(CODAContext ctx, String value, String xRole) throws ConverterException {
 		try {
 			return stServiceContext.getProject().getURIGenerator()
-					.generateURI(stServiceContext, xRole, Collections.<String, String> emptyMap());
+					.generateURI(stServiceContext, xRole, Collections.<String, ARTNode> emptyMap());
 		} catch (URIGenerationException e) {
 			throw new ConverterException(e);
 		}
@@ -70,7 +71,7 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	public ARTURIResource produceURI(CODAContext ctx, String value) throws ConverterException {
 		try {
 			return stServiceContext.getProject().getURIGenerator()
-					.generateURI(stServiceContext, "undetermined", Collections.<String, String> emptyMap());
+					.generateURI(stServiceContext, "undetermined", Collections.<String, ARTNode> emptyMap());
 		} catch (URIGenerationException e) {
 			throw new ConverterException(e);
 		}

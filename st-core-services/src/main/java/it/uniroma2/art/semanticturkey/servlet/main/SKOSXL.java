@@ -4,6 +4,7 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.velocity.runtime.parser.TokenMgrError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -524,12 +526,14 @@ public class SKOSXL extends SKOS {
 			SKOSXLModel skosxlModel = getSKOSXLModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 
+			ARTURIResource conceptScheme = retrieveExistingURIResource(skosxlModel, schemeName, graphs);
+
 			// there are two possibilities:
 			// - the uri is passed, so that URI should be used to create the concept
 			// - the uri is null, so it should be created using the specified method
 			ARTURIResource newConcept = null;
 			if (conceptName == null) {
-				newConcept = generateConceptURI(prefLabel, prefLabelLang);
+				newConcept = generateConceptURI(prefLabel, prefLabelLang, conceptScheme);
 			} else {
 				newConcept = createNewURIResource(skosxlModel, conceptName, graphs);
 			}
@@ -541,8 +545,6 @@ public class SKOSXL extends SKOS {
 			else
 				superConcept = NodeFilters.NONE;
 
-			ARTURIResource conceptScheme = retrieveExistingURIResource(skosxlModel, schemeName, graphs);
-
 			logger.debug("adding concept to graph: " + wrkGraph);
 			skosxlModel.addConceptToScheme(newConcept.getURI(), superConcept, conceptScheme, wrkGraph);
 
@@ -552,7 +554,7 @@ public class SKOSXL extends SKOS {
 			ARTURIResource prefXLabel = null;
 
 			if (prefLabel != null && prefLabelLang != null) {
-				ARTURIResource prefXLabelURI = generateXLabelURI(prefLabelLang, newConcept, prefLabel,
+				ARTURIResource prefXLabelURI = generateXLabelURI(prefLabelLang, prefLabel, newConcept,
 						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
 				prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel, prefLabelLang,
 						getWorkingGraph());
@@ -595,7 +597,7 @@ public class SKOSXL extends SKOS {
 
 			// add skos:preferredLabel
 			if (prefLabel != null && prefLabelLang != null) {
-				ARTURIResource prefXLabel = generateXLabelURI(prefLabelLang, newScheme, prefLabel,
+				ARTURIResource prefXLabel = generateXLabelURI(prefLabelLang, prefLabel, newScheme,
 						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
 				skosxlModel.addXLabel(prefXLabel.getURI(), prefLabel, prefLabelLang, getWorkingGraph());
 				skosxlModel.setPrefXLabel(newScheme, prefXLabel, getWorkingGraph());
@@ -658,7 +660,7 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.setPrefXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResource prefXLabelURI = generateXLabelURI(lang, skosConcept, label,
+				ARTURIResource prefXLabelURI = generateXLabelURI(lang, label, skosConcept,
 						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
 				ARTURIResource prefXLabel = skosxlmodel.addXLabel(prefXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
@@ -701,7 +703,7 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.addAltXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResource altXLabelURI = generateXLabelURI(lang, skosConcept, label,
+				ARTURIResource altXLabelURI = generateXLabelURI(lang, label, skosConcept,
 						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.ALTLABEL);
 				ARTURIResource altXLabel = skosxlmodel.addXLabel(altXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
@@ -744,7 +746,7 @@ public class SKOSXL extends SKOS {
 			if (mode == XLabelCreationMode.bnode) {
 				skosxlmodel.addHiddenXLabel(skosConcept, label, lang, getWorkingGraph());
 			} else {
-				ARTURIResource hiddenXLabelURI = generateXLabelURI(lang, skosConcept, label,
+				ARTURIResource hiddenXLabelURI = generateXLabelURI(lang, label, skosConcept,
 						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.HIDDENLABEL);
 				ARTURIResource hiddenXLabel = skosxlmodel.addXLabel(hiddenXLabelURI.getURI(), label, lang,
 						getWorkingGraph());
@@ -964,8 +966,19 @@ public class SKOSXL extends SKOS {
 	}
 
 	/**
-	 * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. This method
-	 * delegates to {@link #generateConceptURI(String, String)}.
+	 * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. The actual
+	 * generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the
+	 * current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will
+	 * be provided with the following:
+	 * <ul>
+	 * <li><code>xLabel</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>lexicalForm</code>,
+	 * <code>lexicalizedResource</code> and <code>type</code> (each, if not <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * All arguments should be not <code>null</code>, but in the end is the specific implementation of the
+	 * extension point that would complain about the absence of one of these theoretically mandatory
+	 * parameters.
 	 * 
 	 * @param lexicalForm
 	 *            the textual content of the label
@@ -978,66 +991,126 @@ public class SKOSXL extends SKOS {
 	 */
 	public ARTURIResource generateXLabelURI(ARTLiteral lexicalForm, ARTURIResource lexicalizedResource,
 			ARTURIResource type) throws URIGenerationException {
-		String lexicalFormLanguage = null;
-		String lexicalFormLabel = null;
+		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
 
 		if (lexicalForm != null) {
-			lexicalFormLanguage = lexicalForm.getLanguage();
-			lexicalFormLabel = lexicalForm.getLabel();
+			args.put(URIGenerator.Parameters.lexicalForm, lexicalForm);
 		}
 
-		return generateXLabelURI(lexicalFormLanguage, lexicalizedResource, lexicalFormLabel, type);
+		if (lexicalizedResource != null) {
+			args.put(URIGenerator.Parameters.lexicalizedResource, lexicalizedResource);
+		}
+
+		if (type != null) {
+			args.put(URIGenerator.Parameters.type, type);
+		}
+
+		return generateURI(URIGenerator.Roles.xLabel, args);
 	}
 
 	/**
-	 * Generates a new URI for a SKOSXL Label. The actual generation of the URI is delegated to
-	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
-	 * {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided with the following:
-	 * <ul>
-	 * <li><code>xLabel</code> as the <code>xRole</code></li>
-	 * <li>a map of additional parameters consisting of <code>lang</code>, <code>lexicalizedResource</code>
-	 * (nominal value), <code>lexicalForm</code> and <code>type</code> (nominal value) (each, if not
-	 * <code>null</code>)</li>
-	 * </ul>
-	 * 
-	 * All arguments should be not <code>null</code> (expect <code>lang</code> that may be <code>null</code>),
-	 * but in the end is the specific implementation of the extension point that would complain about the
-	 * absence of one of these theoretically mandatory parameters.
+	 * Generates a new URI for a SKOSXL Label. This method delegates {@link TokenMgrError}
+	 * {@link #generateXLabelURI(ARTLiteral, ARTURIResource, ARTURIResource)}.
 	 * 
 	 * @param lang
-	 *            the language tag associated with this <code>skosxl:Label</code>
-	 * @param lexicalizedResource
-	 *            the resource to which the label will be attached to
+	 *            the language tag associated with this <code>skosxl:Label</code> (may be <code>null</code>)
 	 * @param lexicalForm
 	 *            the lexical form of this <code>skosxl:Label</code> without its language tag
+	 * @param lexicalizedResource
+	 *            the resource to which the label will be attached to
 	 * @param type
 	 *            the property used for attaching the label
 	 * 
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public ARTURIResource generateXLabelURI(String lang, ARTResource lexicalizedResource, String lexicalForm,
-			ARTURIResource type) throws URIGenerationException {
+	public ARTURIResource generateXLabelURI(String lang, String lexicalForm,
+			ARTURIResource lexicalizedResource, ARTURIResource type) throws URIGenerationException {
 
-		Map<String, String> valueMapping = new HashMap<String, String>();
-
-		if (lang != null) {
-			valueMapping.put("lang", lang);
-		}
-
-		if (lexicalizedResource != null) {
-			valueMapping.put("lexicalizedResource", lexicalizedResource.getNominalValue());
-		}
+		ARTLiteral lexicalFormObj = null;
 
 		if (lexicalForm != null) {
-			valueMapping.put("lexicalForm", lexicalForm);
+			if (lang != null) {
+				lexicalFormObj = getOntModel().createLiteral(lexicalForm, lang);
+			} else {
+				lexicalFormObj = getOntModel().createLiteral(lexicalForm);
+			}
 		}
-
-		if (type != null) {
-			valueMapping.put("type", type.getNominalValue());
-		}
-
-		return generateURI("xLabel", valueMapping);
+		return generateXLabelURI(lexicalFormObj, lexicalizedResource, type);
 	}
 
+	/**
+	 * Generates a new URI for a reified SKOS note, based on the provided mandatory parameters. This method
+	 * delegates to {@link #generateXNoteURI(String, String, ARTResource, ARTURIResource). The actual
+	 * generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the
+	 * current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will
+	 * be provided with the following:
+	 * <ul>
+	 * <li><code>xNote</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>value</code>, <code>annotatedResource</code> and
+	 * <code>type</code> (each, if not <code>null</code> )</li>
+	 * </ul>
+	 * 
+	 * All arguments should be not <code>null</code>, but in the end is the specific implementation of the
+	 * extension point that would complain about the absence of one of these theoretically mandatory
+	 * parameters.
+	 * 
+	 * @param value
+	 *            the content of the note
+	 * @param annotatedResource
+	 *            the resource being annotated
+	 * @param type
+	 *            the property used for attaching the note
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateXNoteURI(ARTLiteral value, ARTURIResource annotatedResource,
+			ARTURIResource type) throws URIGenerationException {
+		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
+		
+		if (value != null) {
+			args.put(URIGenerator.Parameters.value, value);
+		}
+		
+		if (annotatedResource != null) {
+			args.put(URIGenerator.Parameters.annotatedResource, annotatedResource);
+		}
+		
+		if (type != null) {
+			args.put(URIGenerator.Parameters.type, type);
+		}
+		return generateURI(URIGenerator.Roles.xNote, args);
+	}
+
+	/**
+	 * Generates a new URI for a reified SKOS note. This method delegates to
+	 * {@link #generateXNoteURI(ARTLiteral, ARTURIResource, ARTURIResource)}.
+	 * 
+	 * @param lang
+	 *            the language tag associated with this reified note (can be <code>null</code>)
+	 * @param value
+	 *            the content of the note
+	 * @param annotatedResource
+	 *            the resource being annotated
+	 * @param type
+	 *            the property used for attaching the label
+	 * 
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateXNoteURI(String lang, String value, ARTURIResource annotatedResource,
+			ARTURIResource type) throws URIGenerationException {
+
+		ARTLiteral valueObj = null;
+
+		if (value != null) {
+			if (lang != null) {
+				valueObj = getOntModel().createLiteral(value, lang);
+			} else {
+				valueObj = getOntModel().createLiteral(value);
+			}
+		}
+
+		return generateXNoteURI(valueObj, annotatedResource, type);
+	}
 }

@@ -29,6 +29,7 @@ import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
 import it.uniroma2.art.owlart.filter.RootConceptsPredicate;
 import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -850,9 +851,11 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 
+			ARTURIResource conceptScheme = retrieveExistingURIResource(skosModel, schemeName, graphs);
+
 			ARTURIResource newConcept = null;
 			if (conceptName == null) {
-				newConcept = generateConceptURI(prefLabel, prefLabelLang);
+				newConcept = generateConceptURI(prefLabel, prefLabelLang, conceptScheme);
 			} else {
 				newConcept = createNewURIResource(skosModel, conceptName, graphs);
 			}
@@ -863,8 +866,6 @@ public class SKOS extends ResourceOld {
 				superConcept = retrieveExistingURIResource(skosModel, superConceptName, graphs);
 			else
 				superConcept = NodeFilters.NONE;
-
-			ARTURIResource conceptScheme = retrieveExistingURIResource(skosModel, schemeName, graphs);
 
 			logger.debug("adding concept to graph: " + wrkGraph);
 			skosModel.addConceptToScheme(newConcept.getURI(), superConcept, conceptScheme, wrkGraph);
@@ -1423,53 +1424,116 @@ public class SKOS extends ResourceOld {
 	}
 
 	/**
-	 * Generates a new URI for a SKOS concept, optionally given one of its labels (usually the preferred one).
-	 * This method delegates to {@link #generateConceptURI(String, String)}.
-	 * 
-	 * @param label
-	 *            the concept label
-	 * @return
-	 * @throws URIGenerationException
-	 */
-	public ARTURIResource generateConceptURI(ARTLiteral label) throws URIGenerationException {
-		if (label != null) {
-			return generateConceptURI(label.getLabel(), label.getLanguage());
-		} else {
-			return generateConceptURI(null, null);
-		}
-	}
-
-	/**
-	 * Generates a new URI for a SKOS concept, optionally given one of its labels (usually the preferred one)
-	 * broken down into its lexical form and language tag. The actual generation of the URI is delegated to
-	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
-	 * {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided with the following:
+	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
+	 * scheme. The actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in
+	 * turn invokes the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI
+	 * generator</i> will be provided with the following:
 	 * <ul>
 	 * <li><code>concept</code> as the <code>xRole</code></li>
-	 * <li>a map of additional parameters consisting of <code>label</code> and <code>lang</code> (each, if not
-	 * <code>null</code>)</li>
+	 * <li>a map of additional parameters consisting of <code>label</code> and <code>scheme</code> (each, if
+	 * not <code>null</code>)</li>
 	 * </ul>
 	 * 
 	 * @param label
-	 *            the concept label without its language tag
+	 *            the preferred label accompanying the concept (can be <code>null</code>)
+	 * @param scheme
+	 *            the scheme to which the concept is being attached at the moment of its creation (can be
+	 *            <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateConceptURI(ARTLiteral label, ARTURIResource scheme)
+			throws URIGenerationException {
+		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
+
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+
+		if (scheme != null) {
+			args.put(URIGenerator.Parameters.scheme, scheme);
+		}
+
+		return generateURI(URIGenerator.Roles.concept, args);
+	}
+
+	/**
+	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
+	 * scheme. This method delegates to {@link #generateConceptURI(ARTLiteral, ARTURIResource)}
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept (can be <code>null</code>)
 	 * @param lang
-	 *            the language tag associated with the concept label
+	 *            the language of the label defined hereby (can be <code>null</code>)
+	 * @param scheme
+	 *            the <i>local name</i> of the scheme to which the concept is being attached at the moment of
+	 *            its creation (can be <code>null</code>)
 	 * 
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public ARTURIResource generateConceptURI(String label, String lang) throws URIGenerationException {
-		Map<String, String> valueMapping = new HashMap<String, String>();
+	public ARTURIResource generateConceptURI(String label, String lang, ARTURIResource scheme)
+			throws URIGenerationException {
 
+		ARTLiteral labelObj = null;
 		if (label != null) {
-			valueMapping.put("label", label);
+			if (lang != null) {
+				labelObj = getOntModel().createLiteral(label, lang);
+			} else {
+				labelObj = getOntModel().createLiteral(label);
+			}
 		}
 
-		if (lang != null) {
-			valueMapping.put("lang", lang);
-		}
-
-		return generateURI("concept", valueMapping);
+		return generateConceptURI(labelObj, scheme);
 	}
 
+	/**
+	 * Generates a new URI for a SKOS concept scheme, optionally given its accompanying preferred label. This
+	 * method delegates to {@link #generateConceptSchemeURI(ARTLiteral)}.
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept scheme (can be <code>null</code>)
+	 * @param lang
+	 *            the language of the label defined hereby (can be <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateConceptSchemeURI(String label, String lang) throws URIGenerationException {
+		ARTLiteral labelObj = null;
+
+		if (label != null) {
+			if (lang != null) {
+				labelObj = getOntModel().createLiteral(label, lang);
+			} else {
+				labelObj = getOntModel().createLiteral(label);
+			}
+		}
+
+		return generateConceptSchemeURI(labelObj);
+	}
+
+	/**
+	 * Generates a new URI for a SKOS concept scheme, optionally given its accompanying preferred label. The
+	 * actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes
+	 * the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i>
+	 * will be provided with the following:
+	 * <ul>
+	 * <li><code>conceptScheme</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>label</code> (if not <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept scheme (can be <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateConceptSchemeURI(ARTLiteral label) throws URIGenerationException {
+		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
+
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+
+		return generateURI(URIGenerator.Roles.conceptScheme, args);
+	}
 }

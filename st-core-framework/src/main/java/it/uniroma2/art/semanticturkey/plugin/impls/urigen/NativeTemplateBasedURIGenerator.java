@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -13,8 +14,15 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.google.common.base.Objects;
+import com.google.common.net.UrlEscapers;
 
 
 /**
@@ -27,10 +35,10 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 		DATETIMEMS, UUID, TRUNCUUID4, TRUNCUUID8, TRUNCUUID12;
 	}
 
-	private static final String VALUE_REGEX = "[a-zA-Z0-9-_]*"; // regex for
-																// admitted
-																// value of
-																// placeholder
+//	private static final String VALUE_REGEX = "[a-zA-Z0-9-_]*"; // regex for
+//																// admitted
+//																// value of
+//																// placeholder
 	private static final String RAND_REGEX = "rand\\((" + RandCode.DATETIMEMS
 			+ "|" + RandCode.UUID + "|" + RandCode.TRUNCUUID4 + "|"
 			+ RandCode.TRUNCUUID8 + "|" + RandCode.TRUNCUUID12 + ")?\\)";
@@ -40,14 +48,16 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 	 * truncuuid12). Before and after this part, eventually there could be some
 	 * placeholders (${...}) or alphanumeric characters and _ character
 	 */
-	private static final String TEMPLATE_REGEX = "([A-Za-z0-9_]*(\\$\\{[A-Za-z0-9]+\\})*[A-Za-z0-9_]*)*"
-			+ "\\$\\{"
-			+ RAND_REGEX
-			+ "\\}"
-			+ "([A-Za-z0-9_]*(\\$\\{[A-Za-z0-9]+\\})*[A-Za-z0-9_]*)*";
+//	private static final String TEMPLATE_REGEX = "([A-Za-z0-9_]*(\\$\\{[A-Za-z0-9]+\\})*[A-Za-z0-9_]*)*"
+//			+ "\\$\\{"
+//			+ RAND_REGEX
+//			+ "\\}"
+//			+ "([A-Za-z0-9_]*(\\$\\{[A-Za-z0-9]+\\})*[A-Za-z0-9_]*)*";
 
 	private static final String XROLE = "xRole";
 	
+	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("([a-zA-Z]+)(?:\\.(([a-zA-Z]+)))?");
+
 	private NativeTemplateBasedURIGeneratorConfiguration conf;
 
 	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorConfiguration conf) {
@@ -60,7 +70,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 	 */
 	@Override
 	public ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
-			Map<String, String> args) throws URIGenerationException {
+			Map<String, ARTNode> args) throws URIGenerationException {
 		
 		String template = conf.fallback;
 		
@@ -72,11 +82,11 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			template = conf.xDefinition;
 		}
 				
-		// validate template
-		if (!template.matches(TEMPLATE_REGEX)) {
-			throw new IllegalArgumentException("The template \"" + template
-					+ "\" is not valid");
-		}
+//		// validate template
+//		if (!template.matches(TEMPLATE_REGEX)) {
+//			throw new IllegalArgumentException("The template \"" + template
+//					+ "\" is not valid");
+//		}
 
 		ARTURIResource uriRes = null;
 
@@ -99,17 +109,17 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 							value = xRole;
 						}
 						else {
-							value = args.get(ph);
+							value = getPlaceholderValue(ph, args);
 						}
 						if (value == null)
 							throw new IllegalArgumentException(
 									"The placeholder \""
 											+ ph
 											+ "\" is not present into the valueMapping");
-						if (!value.matches(VALUE_REGEX))
-							throw new IllegalArgumentException("The value \""
-									+ value + "\" for the placeholder \"" + ph
-									+ "\" is not valid");
+//						if (!value.matches(VALUE_REGEX))
+//							throw new IllegalArgumentException("The value \""
+//									+ value + "\" for the placeholder \"" + ph
+//									+ "\" is not valid");
 					}
 					localName = localName + value; // compose the result
 					// remove the parsed part
@@ -173,5 +183,74 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			randomValue = UUID.randomUUID().toString().substring(0, 8);
 		}
 		return randomValue;
+	}
+	
+	private String getPlaceholderValue(String ph, Map<String, ARTNode> args) {
+		Matcher matcher = PLACEHOLDER_PATTERN.matcher(ph);
+		if (!matcher.matches())
+			return null;
+
+		String firstLevel = matcher.group(1);
+		String secondLevel = matcher.group(2);
+
+		ARTNode firstLevelObj = args.get(firstLevel);
+		
+		if (firstLevelObj == null)
+			return null;
+
+		if (secondLevel == null)
+			return object2string(firstLevelObj);
+
+		try {
+			Method[] methods = firstLevelObj.getClass().getMethods();
+			
+			String nameWithHas = "get" + Character.toUpperCase(secondLevel.charAt(0)) + secondLevel.substring(1);
+			
+			Method methodWithLiteralName = null;
+			Method methodWithHasName = null;
+
+			for (Method m : methods) {
+				if (m.getParameterTypes().length != 0) continue;
+				
+				String methodName = m.getName();
+				if (Objects.equal(methodName, secondLevel)) {
+					methodWithLiteralName = m;
+					break;
+				} else if (Objects.equal(methodName, nameWithHas)) {
+					methodWithHasName = m;
+				}
+			}
+			
+			Method m = methodWithLiteralName != null ? methodWithLiteralName : methodWithHasName;
+			
+			if (m == null) return null;
+			
+			Object secondLevelObject = m.invoke(firstLevelObj);
+
+			return object2string(secondLevelObject);
+		} catch (SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException e) {
+			return null;
+		}
+	}
+
+	private String object2string(Object obj) {
+		String rawString = null;
+		if (obj instanceof ARTNode) {
+			ARTNode artNode = (ARTNode)obj;
+			if (artNode.isURIResource()) {
+				rawString = artNode.asURIResource().getLocalName();
+			} else if (artNode.isLiteral()) {
+				rawString = artNode.asLiteral().getLabel();
+			} else {
+				rawString =  artNode.getNominalValue();
+			}
+		} else if (obj != null) {
+			rawString = obj.toString();
+		} else {
+			return null;
+		}
+		
+		return UrlEscapers.urlPathSegmentEscaper().escape(rawString.trim().replaceAll("\\s+", "_"));
 	}
 }
