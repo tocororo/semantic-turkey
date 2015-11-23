@@ -23,6 +23,8 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
  */
 public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 
+	public static final String IMPL_URI = "http://semanticturkey.uniroma2.it/coda/converters/randIdGen";
+
 	@Autowired
 	private STServiceContext stServiceContext;
 

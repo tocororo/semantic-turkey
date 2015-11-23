@@ -306,8 +306,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			//run coda with the given pearl and the cas just created.
 //			System.out.println("pearl:\t" + getRef());
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen",
-					"http://art.uniroma2.it/coda/converters/templateBasedRandIdGen");
+			codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen", "http://semanticturkey.uniroma2.it/coda/converters/randIdGen");
 			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()){

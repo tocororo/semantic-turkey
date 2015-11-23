@@ -3,20 +3,24 @@
 	xmlns:osgi="http://www.springframework.org/schema/osgi" xmlns:mvc="http://www.springframework.org/schema/mvc"
 	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd 
 	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
   	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
     http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
-    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+    http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-3.1.xsd">
 
 	<mvc:annotation-driven conversion-service="conversionService" />
 	<mvc:resources mapping="/WEB-INF/pages/**" location="/WEB-INF/pages/" />
 
-	<!-- Retrieves the DatasetMetadataRepository -->	
-	<osgi:reference id="datasetMetadataRepository" interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository"/>
+	<!-- Retrieves the DatasetMetadataRepository -->
+	<osgi:reference id="datasetMetadataRepository"
+		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
 
-	<!-- Retrieves the ResourceLocator -->	
-	<osgi:reference id="resourceLocator" interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"/>
+	<!-- Retrieves the ResourceLocator -->
+	<osgi:reference id="resourceLocator"
+		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
 
 	<!-- Imports the custom range provider from the service registry -->
 	<osgi:reference id="customRangeProvider"
@@ -37,8 +41,8 @@
 				<bean id="StringToACLLockLevelConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToACLLockLevelConverter" />
 				<bean id="StringToProjectConsumerConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />															
-										
+					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />
+
 				<bean id="StringToARTBNodeConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToARTBNodeConverter" />
 				<bean id="StringToARTLiteralConverter"
@@ -53,7 +57,7 @@
 					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
 					<constructor-arg ref="datasetMetadataRepository" />
 				</bean>
-					
+
 			</list>
 		</property>
 	</bean>
@@ -65,7 +69,8 @@
 		interface="it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface" />
 
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey">
-		<context:exclude-filter type="regex" expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*"/>
+		<context:exclude-filter type="regex"
+			expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*" />
 	</context:component-scan>
 
 	<!--A ValidatorFactory whose products (Validators) support dependency injection 
@@ -101,7 +106,8 @@
 	<bean
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
-		<!-- Use explicitly the ValidatorFactory enabling dependency injection on constraint validators -->
+		<!-- Use explicitly the ValidatorFactory enabling dependency injection 
+			on constraint validators -->
 		<property name="validatorFactory" ref="validatorFactory"></property>
 	</bean>
 
@@ -118,24 +124,31 @@
 	<bean
 		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext">
 	</bean>
-	
+
 	<!-- This enables Spring multipart handling by adding a multipart resolver -->
 	<bean id="multipartResolver"
 		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
 	</bean>
-	
-	<!-- Retrieves coda osgi factory -->	
-	<osgi:reference id="codaOSGiFactory" interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory"/>
+
+	<!-- Retrieves coda osgi factory -->
+	<osgi:reference id="codaOSGiFactory"
+		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
 
 	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
-	
+
 	<!-- Publishes the CODA converter that wraps the extension point URIGenerator -->
-	<bean class="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator" id="stSpecificRandomIDGenerator" />
-	
-	<osgi:service ref="stSpecificRandomIDGenerator" interface="it.uniroma2.art.coda.contracts.RandomIdGenerator">
+	<bean
+		class="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator"
+		id="stSpecificRandomIDGenerator" />
+
+	<osgi:service ref="stSpecificRandomIDGenerator"
+		interface="it.uniroma2.art.coda.contracts.RandomIdGenerator">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.coda.contract" value="http://art.uniroma2.it/coda/contracts/randIdGen" />
-			<entry key="it.uniroma2.art.coda.converter" value="http://art.uniroma2.it/coda/converters/stSpecificRandomIDGenerator" />
+			<entry key="it.uniroma2.art.coda.converter">
+				<util:constant
+					static-field="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator.IMPL_URI" />
+			</entry>
 		</osgi:service-properties>
 	</osgi:service>
 </beans>
