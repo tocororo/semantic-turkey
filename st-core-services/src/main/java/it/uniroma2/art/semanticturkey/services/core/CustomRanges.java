@@ -1,9 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import it.uniroma2.art.coda.contracts.ContractConstants;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -72,6 +76,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
@@ -216,9 +222,12 @@ public class CustomRanges extends STServiceAdapter {
 			CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
 			if (creGraph != null){
 				//set the show for the reified resource
-				String showProp = rdfModel.expandQName(creGraph.getShowProperty());
+				String showProp = creGraph.getShowProperty();
 				String show;
-				if (showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
+				if (showProp != null) {
+					showProp = rdfModel.expandQName(creGraph.getShowProperty());
+				}
+				if (showProp == null || showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
 					show = resource.getNominalValue();
 				} else { //if the showProperty is specified, look for its value
 					ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
@@ -532,6 +541,76 @@ public class CustomRanges extends STServiceAdapter {
 	}
 	
 	/**
+	 * Returns a serialization representing the form of the CurtomRangeEntry with the given id
+	 * @param id
+	 * @return
+	 * @throws UnavailableResourceException
+	 * @throws ProjectInconsistentException
+	 * @throws PRParserException
+	 * @throws RDFModelNotSetException
+	 */
+	@GenerateSTServiceController
+	public Response getCustomRangeEntryForm(String id) throws UnavailableResourceException,
+			ProjectInconsistentException, PRParserException, RDFModelNotSetException {
+		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
+		if (crEntry != null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElem = response.getDataElement();
+			Element formElem = XMLHelp.newElement(dataElem, "form");
+			
+			CODACore codaCore = getInitializedCodaCore(getOWLModel());
+			Collection<UserPromptStruct> form = crEntry.getForm(codaCore);
+			if (!form.isEmpty()){
+				for (UserPromptStruct formEntry : form){
+					Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
+					formEntryElem.setAttribute("placeholderId", formEntry.getPlaceholderId());
+					formEntryElem.setAttribute("userPrompt", formEntry.getUserPromptName());
+					formEntryElem.setAttribute("type", formEntry.getRdfType());
+					formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
+					if (formEntry.hasConverter()) {
+						ConverterMention converter = formEntry.getConverter();
+						Element converterElem = XMLHelp.newElement(formEntryElem, "converter");
+						converterElem.setAttribute("uri", converter.getURI());
+						//for special case langString, specify the converter argument too
+						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
+							for (ConverterArgumentExpression convArg : converter.getAdditionalArguments()) {
+								if (convArg instanceof ConverterPlaceholderArgument) {
+									String phLangId = ((ConverterPlaceholderArgument) convArg).getPlaceholderId();
+									/* the language placeholder (arguments of langString converter)
+									 * is already added to the xml as formEntry element since in
+									 * PEARL it must be defined before it's used as argument,
+									 * so remove the element from formEntry and add it as argument 
+									 * of converter xml element */
+									NodeList fe = formElem.getElementsByTagName("formEntry");
+									for (int i=0; i<fe.getLength(); i++) {
+										Node feItem = fe.item(i);
+										if (feItem.getAttributes().getNamedItem("placeholderId").getNodeValue().equals(phLangId)) {
+											Element convArgElem = XMLHelp.newElement(converterElem, "arg");
+											convArgElem.setAttribute("userPrompt", feItem.getAttributes().getNamedItem("userPrompt").getNodeValue());
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+					if (formEntry.isLiteral()){
+						if (formEntry.hasDatatype())
+							formEntryElem.setAttribute("datatype", formEntry.getLiteralDatatype());
+						if (formEntry.hasLanguage())
+							formEntryElem.setAttribute("lang", formEntry.getLiteralLang());
+					}
+				}
+			} else {
+				formElem.setAttribute("exception", "No userPrompt/ features found");
+			}
+			return response;
+		} else {
+			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");
+		}
+	}
+	
+	/**
 	 * Returns the serialization of all the CustomRangeEntry available for the given property
 	 * @param property
 	 * @return
@@ -575,6 +654,8 @@ public class CustomRanges extends STServiceAdapter {
 			throw new CustomRangeInitializationException("Impossible to create a CustomRangeEntry with "
 					+ "ID '" + id + "'. A CustomRangeEntry with the same ID already exists");
 		}
+		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
+		ref = ref.replace("\r", "");
 		CustomRangeEntry cre = null;
 		if (type.equalsIgnoreCase(CustomRangeEntry.Types.node.toString())){
 			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.node, id, name, description, ref);
@@ -621,14 +702,14 @@ public class CustomRanges extends STServiceAdapter {
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
 	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp){
-		//avoid proliferate of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
+		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
 		ref = ref.replace("\r", "");
 		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(id);
 		if (cre != null){
 			cre.setName(name);
 			cre.setDescription(description);
 			cre.setRef(ref);
-			if (showProp != null && !showProp.equals("")){
+			if (showProp != null){
 				cre.asCustomRangeEntryGraph().setShowProperty(showProp);
 			}
 			cre.saveXML();

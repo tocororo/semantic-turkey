@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.customrange;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,23 +34,21 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 		/* the ref in case of node CRE contains a rdfType (uri or literal), followed by an optional
 		 * datatype (in case of literal) and an optional converter. */
 		if (ref.startsWith("uri")){
-			UserPromptStruct upStruct = new UserPromptStruct("value", "uri");
+			UserPromptStruct upStruct = new UserPromptStruct("value", "value", "uri");
+			String converter = "http://art.uniroma2.it/coda/contracts/default";
 			if (ref.contains("(") && ref.contains(")")){
-				String converter = ref.substring(ref.indexOf("(")+1, ref.indexOf(")"));
-				upStruct.setConverter(converter);
-			} else {//if no converter is specified
-				upStruct.setConverter("http://art.uniroma2.it/coda/contracts/default");
+				converter = ref.substring(ref.indexOf("(")+1, ref.indexOf(")"));
 			}
+			upStruct.setConverter(new ConverterMention(converter));
 			form.add(upStruct);
 		} else if (ref.startsWith("literal")){
-			UserPromptStruct upStruct = new UserPromptStruct("value", "literal");
+			UserPromptStruct upStruct = new UserPromptStruct("value", "value", "literal");
+			String converter = "http://art.uniroma2.it/coda/contracts/default";
 			if (ref.contains("(") && ref.endsWith(")")){
-				String converter = ref.substring(ref.lastIndexOf("(")+1, ref.indexOf(")"));
-				upStruct.setConverter(converter);
+				converter = ref.substring(ref.lastIndexOf("(")+1, ref.indexOf(")"));
 				ref = ref.substring(0, ref.lastIndexOf("("));//remove the converter from the end of the ref
-			} else {//if no converter is specified
-				upStruct.setConverter("http://art.uniroma2.it/coda/contracts/default");
 			}
+			upStruct.setConverter(new ConverterMention(converter));
 			if (ref.contains("^^")){
 				String datatype = ref.substring(ref.indexOf("^^")+2);
 				upStruct.setLiteralDatatype(datatype);

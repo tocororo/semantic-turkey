@@ -5,6 +5,7 @@
 	buttons="accept,cancel"
 	ondialogaccept="return btnOkListener();"
 	ondialogcancel="return;"
+	buttondisabledaccept="true"
 	width="300px"
 	height="200px">
 	<script type="application/x-javascript" src="chrome://semantic-turkey/content/customRange/rangeSelectDialog.js" />

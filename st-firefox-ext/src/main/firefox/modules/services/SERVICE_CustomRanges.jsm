@@ -115,6 +115,12 @@ function getCustomRangeEntry(id) {
 	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeEntryRequest, this.context, p_id);
 }
 
+function getCustomRangeEntryForm(id) {
+	Logger.debug('[SERVICE_CustomRanges.jsm] getCustomRangeEntryForm');
+	p_id = "id=" + id;
+	return currentSTHttpMgr.GET(null, serviceName, service.getCustomRangeEntryFormRequest, this.context, p_id);
+}
+
 function getCustomRangeEntries(property) {
 	Logger.debug('[SERVICE_CustomRanges.jsm] getCustomRangeEntries');
 	p_prop = "property=" + property;
@@ -188,6 +194,7 @@ service.prototype.getAllCustomRanges = getAllCustomRanges;
 service.prototype.createCustomRange = createCustomRange;
 service.prototype.deleteCustomRange = deleteCustomRange;
 service.prototype.getCustomRangeEntry = getCustomRangeEntry;
+service.prototype.getCustomRangeEntryForm = getCustomRangeEntryForm;
 service.prototype.getCustomRangeEntries = getCustomRangeEntries;
 service.prototype.getAllCustomRangeEntries = getAllCustomRangeEntries;
 service.prototype.createCustomRangeEntry = createCustomRangeEntry;

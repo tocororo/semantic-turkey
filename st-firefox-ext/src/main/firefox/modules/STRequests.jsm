@@ -203,6 +203,7 @@ STRequests.CustomRanges.getAllCustomRangesRequest = "getAllCustomRanges";
 STRequests.CustomRanges.createCustomRangeRequest = "createCustomRange";
 STRequests.CustomRanges.deleteCustomRangeRequest = "deleteCustomRange";
 STRequests.CustomRanges.getCustomRangeEntryRequest = "getCustomRangeEntry";
+STRequests.CustomRanges.getCustomRangeEntryFormRequest = "getCustomRangeEntryForm";
 STRequests.CustomRanges.getCustomRangeEntriesRequest = "getCustomRangeEntries";
 STRequests.CustomRanges.getAllCustomRangeEntriesRequest = "getAllCustomRangeEntries";
 STRequests.CustomRanges.createCustomRangeEntryRequest = "createCustomRangeEntry";

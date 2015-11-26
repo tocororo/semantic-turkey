@@ -27,6 +27,7 @@ enrichProperty = function(subject, predicate){
 		window.openDialog("chrome://semantic-turkey/content/customRange/rangeSelectDialog.xul",
 				"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
 		//in case the dialog returned a value
+		//(selectedRange is the "rngType" attr for classic range or the id of a custom range)
 		if (parameters.selectedRange != null){
 			//check if the selected range is the classic range
 			if (rangesXml.getAttribute("rngType") == parameters.selectedRange){
@@ -34,8 +35,8 @@ enrichProperty = function(subject, predicate){
 			} else { //or look in the custom ranges
 				var crEntriesXml = customRangeXml.getElementsByTagName("crEntry");
 				for (var i=0; i<crEntriesXml.length; i++){
-					if (crEntriesXml[i].getAttribute("name") == parameters.selectedRange){
-						return customRangeLaunch(crEntriesXml[i], subject, predicate);
+					if (crEntriesXml[i].getAttribute("id") == parameters.selectedRange){
+						return customRangeLaunch(parameters.selectedRange, subject, predicate);
 					}
 				}
 			}
@@ -67,12 +68,12 @@ enrichProperty = function(subject, predicate){
 	}
 }
 
-customRangeLaunch = function(crEntryXml, subject, predicate){
+customRangeLaunch = function(crEntryId, subject, predicate){
 	var parameters = {};
-	parameters.crEntryXml = crEntryXml;
+	parameters.crEntryId = crEntryId;
 	parameters.subject = subject;
 	parameters.predicate = predicate;
-	parameters.completed = false;
+	parameters.completed = false;//boolean that specifies if the enrichment process has been completed
 	window.openDialog("chrome://semantic-turkey/content/customRange/customForm.xul",
 			"_blank", "chrome,dependent,dialog,modal=yes,resizable,centerscreen", parameters);
 	return parameters.completed;
@@ -85,7 +86,7 @@ classicRangesLaunch = function(rangesXml, subject, predicate){
 	parameters.winTitle = "Add Property Value";
 	parameters.action = "createAndAddPropValue";
 	parameters.parentWindow = window;
-	parameters.completed = false;
+	parameters.completed = false;//boolean that specifies if the enrichment process has been completed
 	
 	if (rangesXml.getAttribute("rngType").indexOf("resource") != -1) {
 		window.openDialog(

@@ -1,12 +1,15 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+
 public class UserPromptStruct {
 	
+	private String placeholderId;
 	private String userPromptName; //name of the feature userPrompt/example
 	private String rdfType; //uri or literal
 	private String literalDatatype;
 	private String literalLang;
-	private String converter; //in the future this could be a list of string since a placeholder could be defined through multiple waterfall converters
+	private ConverterMention converter; //in the future this could be a list of string since a placeholder could be defined through multiple waterfall converters
 	private boolean mandatory;
 	
 	/**
@@ -14,10 +17,19 @@ public class UserPromptStruct {
 	 * @param userPromptName name of the feature <code>userPrompt/example</code>
 	 * @param rdfType Should be <code>uri</code> or <code>literal</code>
 	 */
-	public UserPromptStruct(String userPromptName, String rdfType){
+	public UserPromptStruct(String placeholderId, String userPromptName, String rdfType){
+		this.placeholderId = placeholderId;
 		this.userPromptName = userPromptName;
 		this.rdfType = rdfType;
 		this.mandatory = true;
+	}
+	
+	public String getPlaceholderId() {
+		return placeholderId;
+	}
+
+	public void setPlaceholderId(String placeholderId) {
+		this.placeholderId = placeholderId;
 	}
 	
 	public String getUserPromptName() {
@@ -56,11 +68,11 @@ public class UserPromptStruct {
 		this.literalLang = literalLang;
 	}
 	
-	public String getConverter(){
+	public ConverterMention getConverter(){
 		return converter;
 	}
 	
-	public void setConverter(String converter) {
+	public void setConverter(ConverterMention converter) {
 		this.converter = converter;
 	}
 	

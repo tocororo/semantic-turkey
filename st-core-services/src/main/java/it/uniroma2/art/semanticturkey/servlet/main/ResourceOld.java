@@ -27,83 +27,6 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.PRParserException;
-import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.filter.NoLanguageResourcePredicate;
-import it.uniroma2.art.owlart.filter.NoSubclassPredicate;
-import it.uniroma2.art.owlart.filter.NoSubpropertyPredicate;
-import it.uniroma2.art.owlart.filter.NoTypePredicate;
-import it.uniroma2.art.owlart.filter.ResourceOfATypePredicate;
-import it.uniroma2.art.owlart.filter.RootPropertiesResourcePredicate;
-import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenPredicates_Predicate;
-import it.uniroma2.art.owlart.filter.StatementWithDatatypePropertyPredicate_Predicate;
-import it.uniroma2.art.owlart.filter.SubPropertyOf_Predicate;
-import it.uniroma2.art.owlart.model.ARTLiteral;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.DirectReasoning;
-import it.uniroma2.art.owlart.models.ModelFactory;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.SKOSModel;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
-import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
-import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
-import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
-import it.uniroma2.art.owlart.navigation.RDFIterator;
-import it.uniroma2.art.owlart.query.GraphQuery;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.owlart.query.TupleBindings;
-import it.uniroma2.art.owlart.query.TupleBindingsIterator;
-import it.uniroma2.art.owlart.query.TupleQuery;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
-import it.uniroma2.art.owlart.utilities.RDFIterators;
-import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDF;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
-import it.uniroma2.art.owlart.vocabulary.XmlSchema;
-import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
-import it.uniroma2.art.semanticturkey.customrange.CustomRange;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
-import it.uniroma2.art.semanticturkey.customrange.UserPromptStruct;
-import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
-import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
-import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.filter.NoSystemResourcePredicate;
-import it.uniroma2.art.semanticturkey.filter.StatementWithAProperty_Predicate;
-import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
-import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.main.filters.StatementWithSubPropertyPredicate_Predicate;
-import it.uniroma2.art.semanticturkey.utilities.PropertyShowOrderComparator;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -126,6 +49,74 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
+
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.filter.NoLanguageResourcePredicate;
+import it.uniroma2.art.owlart.filter.NoSubclassPredicate;
+import it.uniroma2.art.owlart.filter.NoSubpropertyPredicate;
+import it.uniroma2.art.owlart.filter.NoTypePredicate;
+import it.uniroma2.art.owlart.filter.ResourceOfATypePredicate;
+import it.uniroma2.art.owlart.filter.RootPropertiesResourcePredicate;
+import it.uniroma2.art.owlart.filter.StatementWithAnyOfGivenPredicates_Predicate;
+import it.uniroma2.art.owlart.filter.StatementWithDatatypePropertyPredicate_Predicate;
+import it.uniroma2.art.owlart.filter.SubPropertyOf_Predicate;
+import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
+import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.models.DirectReasoning;
+import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
+import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
+import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
+import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
+import it.uniroma2.art.owlart.navigation.RDFIterator;
+import it.uniroma2.art.owlart.query.GraphQuery;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.TupleBindings;
+import it.uniroma2.art.owlart.query.TupleBindingsIterator;
+import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.owlart.utilities.RDFIterators;
+import it.uniroma2.art.owlart.vocabulary.OWL;
+import it.uniroma2.art.owlart.vocabulary.RDF;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.owlart.vocabulary.RDFS;
+import it.uniroma2.art.owlart.vocabulary.XmlSchema;
+import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
+import it.uniroma2.art.semanticturkey.customrange.CustomRange;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.filter.NoSystemResourcePredicate;
+import it.uniroma2.art.semanticturkey.filter.StatementWithAProperty_Predicate;
+import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
+import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
+import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
+import it.uniroma2.art.semanticturkey.resources.Config;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.main.filters.StatementWithSubPropertyPredicate_Predicate;
+import it.uniroma2.art.semanticturkey.utilities.PropertyShowOrderComparator;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
 @Component
 public class ResourceOld extends ServiceAdapter {
@@ -1569,38 +1560,6 @@ public class ResourceOld extends ServiceAdapter {
 			crEntryElem.setAttribute("type", crEntry.getType());
 			Element descElem = XMLHelp.newElement(crEntryElem, "description");
 			descElem.setTextContent(crEntry.getDescription());
-			Element refElem = XMLHelp.newElement(crEntryElem, "ref");
-			refElem.setTextContent(crEntry.getRef());
-			
-			//inject form map
-			Element formElem = XMLHelp.newElement(crEntryElem, "form");
-			try{
-				ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
-				CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-				codaCore.initialize(getOWLModel(), ontFact);
-				Collection<UserPromptStruct> form = crEntry.getForm(codaCore);
-				if (!form.isEmpty()){
-					for (UserPromptStruct formEntry : form){
-						Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
-						formEntryElem.setAttribute("userPrompt", formEntry.getUserPromptName());
-						formEntryElem.setAttribute("type", formEntry.getRdfType());
-						formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
-						if (formEntry.hasConverter())
-							formEntryElem.setAttribute("converter", formEntry.getConverter());
-						if (formEntry.isLiteral()){
-							if (formEntry.hasDatatype())
-								formEntryElem.setAttribute("datatype", formEntry.getLiteralDatatype());
-							if (formEntry.hasLanguage())
-								formEntryElem.setAttribute("lang", formEntry.getLiteralLang());
-						}
-					}
-				} else {
-					formElem.setAttribute("exception", "No userPrompt/ features found");
-				}
-			} catch (PRParserException | UnavailableResourceException | ProjectInconsistentException | RDFModelNotSetException ex){
-				formElem.setAttribute("exception", ex.toString());
-				ex.printStackTrace();
-			}
 		}
 	}
 	

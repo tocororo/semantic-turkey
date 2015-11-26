@@ -7,6 +7,10 @@ var rangesListbox;
 
 window.onload = function() {
 	rangesListbox = document.getElementById("rangesListbox");
+	rangesListbox.addEventListener("select", function() {
+		document.getElementById("crEntrySelectionDialog").setAttribute("buttondisabledaccept", "false");
+	}, false);
+	
 	initUI();
 }
 
@@ -18,7 +22,8 @@ initUI = function(){
 		var listitem = document.createElement("listitem");
 		var crEntryName = crEntriesXml[i].getAttribute("name");
 		listitem.setAttribute("label", crEntryName);
-		listitem.setAttribute("value", crEntryName);
+		var crEntryId = crEntriesXml[i].getAttribute("id");
+		listitem.setAttribute("value", crEntryId);
 		var description = crEntriesXml[i].getElementsByTagName("description")[0].textContent;
 		listitem.setAttribute("tooltiptext", description);
 		rangesListbox.appendChild(listitem);

@@ -1,27 +1,5 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.ConverterException;
-import it.uniroma2.art.coda.exception.DependencyException;
-import it.uniroma2.art.coda.exception.PRParserException;
-import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.coda.pearl.model.GraphElement;
-import it.uniroma2.art.coda.pearl.model.GraphStruct;
-import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
-import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
-import it.uniroma2.art.coda.pearl.model.ProjectionRule;
-import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
-import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.ARTTriple;
-import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -61,6 +39,28 @@ import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ConverterException;
+import it.uniroma2.art.coda.exception.DependencyException;
+import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
+import it.uniroma2.art.coda.pearl.model.ProjectionRule;
+import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
+import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.coda.structures.SuggOntologyCoda;
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 public class CustomRangeEntryGraph extends CustomRangeEntry {
 	
@@ -169,6 +169,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 				if (placeHolderStruct.hasFeaturePath()){
 					String featurePath = placeHolderStruct.getFeaturePath();
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
+						String placeholderId = placeHolderStruct.getName();
 						String userPromptField = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
 						String rdfType = placeHolderStruct.getRDFType();
 						/* Check for UserPromptStruct that use the same feature path:
@@ -188,11 +189,11 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 							}
 						}
 						if (!alreadyInForm) {//the UPS is not yet added. Add it to the form 
-							UserPromptStruct upStruct = new UserPromptStruct(userPromptField, rdfType);
+							UserPromptStruct upStruct = new UserPromptStruct(placeholderId, userPromptField, rdfType);
 							//fill the UserPromptStruct independently from its type (literal or uri)
 							upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
 							upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
-							upStruct.setConverter(placeHolderStruct.getConverterList().get(0).getURI());//for now I suppese there is used only one converter
+							upStruct.setConverter(placeHolderStruct.getConverterList().get(0));//for now I suppese there is used only one converter
 							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
 							form.add(upStruct);
 						}
@@ -306,7 +307,6 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			//run coda with the given pearl and the cas just created.
 //			System.out.println("pearl:\t" + getRef());
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen", "http://semanticturkey.uniroma2.it/coda/converters/randIdGen");
 			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()){

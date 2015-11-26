@@ -89,8 +89,6 @@ art_semanticturkey.updateOkButtonStatus = function (){
 	var descOk = (document.getElementById("txtboxCreDescription").value.trim() != "")
 	var refOk = (document.getElementById("txtboxCreRef").value.trim() != "")
 	var showPropOk = true;
-	if (document.getElementById("entryTypeMenu").selectedItem.value == "graph")
-		showPropOk = (document.getElementById("txtboxShowProp").value != "");
 	if (idOk && nameOk && descOk && refOk && showPropOk)
 		document.getElementById("creEditor").setAttribute("buttondisabledaccept", "false");
 	else
@@ -107,6 +105,7 @@ buttonOkListener = function() {
 			var completeCreId = document.getElementById("crePrefix").value + creId;
 			if (window.arguments[0].alreadyExistingCre.indexOf(completeCreId) != -1) {
 				alert("A CustomRangeEntry with the ID '" + completeCreId + "' already exists. Please, change the ID and retry.");
+				return false; //prevent closing dialog
 			} else {
 				try{
 					//create the new CRE
