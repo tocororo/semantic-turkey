@@ -20,7 +20,7 @@ public class CODACoreProvider {
 	public CODACoreProvider(CODAOSGiFactory codaFactory, BundleContext context){
 		this.codaCore = codaFactory.getInstance(context);
 		this.codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen",
-				"http://art.uniroma2.it/coda/converters/templateBasedRandIdGen");
+				"http://semanticturkey.uniroma2.it/coda/converters/randIdGen");
 	}
 
 	public CODACore getCODACore(){
