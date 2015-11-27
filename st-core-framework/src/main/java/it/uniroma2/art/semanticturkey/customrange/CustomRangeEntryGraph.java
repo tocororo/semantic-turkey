@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
@@ -40,11 +42,14 @@ import org.w3c.dom.CDATASection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import it.uniroma2.art.coda.contracts.ContractConstants;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
 import it.uniroma2.art.coda.pearl.model.GraphStruct;
 import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
@@ -154,7 +159,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 
 	@Override
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
-		Collection<UserPromptStruct> form = new ArrayList<UserPromptStruct>();
+		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
@@ -170,38 +175,57 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 					String featurePath = placeHolderStruct.getFeaturePath();
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
 						String placeholderId = placeHolderStruct.getName();
-						String userPromptField = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
 						String rdfType = placeHolderStruct.getRDFType();
-						/* Check for UserPromptStruct that use the same feature path:
-						 * It should return only one entry per FP. If there are multiple entry, 
-						 * one has type literal and one has type uri, prioritize the literal one, 
-						 * so that the UI show a simple field and not one that could be converted 
-						 * (that show the conversion preview) */
+						ConverterMention converter = placeHolderStruct.getConverterList().get(0);
+						String converterArgPh = null;
+						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
+							//there's no control of the proper use of coda:langString, is take for granted that it is used properly (coda:langString[$lang])
+							//otherwise it can throw an unchecked exception
+							converterArgPh = ((ConverterPlaceholderArgument) converter.getAdditionalArguments().get(0)).getPlaceholderId();
+						}
+						String literalLang = placeHolderStruct.getLiteralLang();
+						String literalDatatype = placeHolderStruct.getLiteralDatatype();
+						String userPromptField = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
+						/* Create a new UserPromptStruct only when for a new placeholder one of the
+						 * following condition is true:
+						 * - The feature seed of the placeholder is not in any of the UserPromptStruct already created
+						 * - The coda:langSting converter (if used) depends from a language placeholder never used in the UPS already created
+						 * - The type is literal and language is never used in the UPS already created
+						 * To perform these checks create a String id for every UPS based on the above values
+						 */
+						String ID_SEPARATOR = "$";
+						String upsId = userPromptField + ID_SEPARATOR + converterArgPh + ID_SEPARATOR + literalLang;
 						boolean alreadyInForm = false;
-						for (UserPromptStruct ups : form){
-							if (ups.getUserPromptName().equals(userPromptField)){
+						for (Entry<String, UserPromptStruct> formMapEntry : formMap.entrySet()){
+							if (formMapEntry.getKey().equals(upsId)){
 								alreadyInForm = true;
-								if (ups.getRdfType().equals("uri") && rdfType.equals("literal")) {
-									form.remove(ups);
-									alreadyInForm = false;//cause the old UPS has been removed
+								//update the mandatory attribute with the OR between the mandatory of the current phStruct and the one of UPS already in form
+								UserPromptStruct upsAlreadyIn = formMapEntry.getValue();
+								upsAlreadyIn.setMandatory(upsAlreadyIn.isMandatory() || placeHolderStruct.isMandatoryInGraphSection());
+								//if the already in form is uri and the new one is literal, prioritize the literal one, so remove the uri ups
+								if (upsAlreadyIn.getRdfType().equals("uri") && rdfType.equals("literal")) {
+									formMap.remove(upsId);
+									alreadyInForm = false;//cause the old UPS has been removed, so it allows to add the new one
 								}
 								break;
 							}
 						}
-						if (!alreadyInForm) {//the UPS is not yet added. Add it to the form 
+						if (!alreadyInForm) {
 							UserPromptStruct upStruct = new UserPromptStruct(placeholderId, userPromptField, rdfType);
 							//fill the UserPromptStruct independently from its type (literal or uri)
-							upStruct.setLiteralDatatype(placeHolderStruct.getLiteralDatatype());
-							upStruct.setLiteralLang(placeHolderStruct.getLiteralLang());
-							upStruct.setConverter(placeHolderStruct.getConverterList().get(0));//for now I suppese there is used only one converter
+							upStruct.setLiteralDatatype(literalDatatype);
+							upStruct.setLiteralLang(literalLang);
+							upStruct.setConverter(converter.getURI());//for now I suppese there is used only one converter
+							upStruct.setConverterArg(converterArgPh);
 							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
-							form.add(upStruct);
+							formMap.put(upsId, upStruct);
 						}
+						
 					}
 				}
 			}
 		}
-		return form;
+		return formMap.values();
 	}
 	
 	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, RDFModelNotSetException {

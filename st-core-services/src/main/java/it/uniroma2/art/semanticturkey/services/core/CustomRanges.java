@@ -1,13 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.coda.contracts.ContractConstants;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
-import it.uniroma2.art.coda.pearl.model.ConverterMention;
-import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -568,28 +564,24 @@ public class CustomRanges extends STServiceAdapter {
 					formEntryElem.setAttribute("type", formEntry.getRdfType());
 					formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
 					if (formEntry.hasConverter()) {
-						ConverterMention converter = formEntry.getConverter();
+						String converter = formEntry.getConverter();
 						Element converterElem = XMLHelp.newElement(formEntryElem, "converter");
-						converterElem.setAttribute("uri", converter.getURI());
+						converterElem.setAttribute("uri", converter);
 						//for special case langString, specify the converter argument too
-						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
-							for (ConverterArgumentExpression convArg : converter.getAdditionalArguments()) {
-								if (convArg instanceof ConverterPlaceholderArgument) {
-									String phLangId = ((ConverterPlaceholderArgument) convArg).getPlaceholderId();
-									/* the language placeholder (arguments of langString converter)
-									 * is already added to the xml as formEntry element since in
-									 * PEARL it must be defined before it's used as argument,
-									 * so remove the element from formEntry and add it as argument 
-									 * of converter xml element */
-									NodeList fe = formElem.getElementsByTagName("formEntry");
-									for (int i=0; i<fe.getLength(); i++) {
-										Node feItem = fe.item(i);
-										if (feItem.getAttributes().getNamedItem("placeholderId").getNodeValue().equals(phLangId)) {
-											Element convArgElem = XMLHelp.newElement(converterElem, "arg");
-											convArgElem.setAttribute("userPrompt", feItem.getAttributes().getNamedItem("userPrompt").getNodeValue());
-											break;
-										}
-									}
+						if (formEntry.getConverterArg() != null) {
+							String phLangId = formEntry.getConverterArg();
+							/* the language placeholder (arguments of langString converter)
+							 * is already added to the xml as formEntry element since in
+							 * PEARL it must be defined before it's used as argument,
+							 * so remove the element from formEntry and add it as argument 
+							 * of converter xml element */
+							NodeList fe = formElem.getElementsByTagName("formEntry");
+							for (int i=0; i<fe.getLength(); i++) {
+								Node feItem = fe.item(i);
+								if (feItem.getAttributes().getNamedItem("placeholderId").getNodeValue().equals(phLangId)) {
+									Element convArgElem = XMLHelp.newElement(converterElem, "arg");
+									convArgElem.setAttribute("userPrompt", feItem.getAttributes().getNamedItem("userPrompt").getNodeValue());
+									break;
 								}
 							}
 						}

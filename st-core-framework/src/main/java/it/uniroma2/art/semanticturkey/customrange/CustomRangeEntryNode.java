@@ -39,7 +39,7 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 			if (ref.contains("(") && ref.contains(")")){
 				converter = ref.substring(ref.indexOf("(")+1, ref.indexOf(")"));
 			}
-			upStruct.setConverter(new ConverterMention(converter));
+			upStruct.setConverter(converter);
 			form.add(upStruct);
 		} else if (ref.startsWith("literal")){
 			UserPromptStruct upStruct = new UserPromptStruct("value", "value", "literal");
@@ -48,7 +48,7 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 				converter = ref.substring(ref.lastIndexOf("(")+1, ref.indexOf(")"));
 				ref = ref.substring(0, ref.lastIndexOf("("));//remove the converter from the end of the ref
 			}
-			upStruct.setConverter(new ConverterMention(converter));
+			upStruct.setConverter(converter);
 			if (ref.contains("^^")){
 				String datatype = ref.substring(ref.indexOf("^^")+2);
 				upStruct.setLiteralDatatype(datatype);

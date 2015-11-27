@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.coda.pearl.model.ConverterMention;
-
 public class UserPromptStruct {
 	
 	private String placeholderId;
@@ -9,7 +7,8 @@ public class UserPromptStruct {
 	private String rdfType; //uri or literal
 	private String literalDatatype;
 	private String literalLang;
-	private ConverterMention converter; //in the future this could be a list of string since a placeholder could be defined through multiple waterfall converters
+	private String converter; //in the future this could be a list since a placeholder could be defined through multiple waterfall converters
+	private String converterArg;
 	private boolean mandatory;
 	
 	/**
@@ -68,12 +67,20 @@ public class UserPromptStruct {
 		this.literalLang = literalLang;
 	}
 	
-	public ConverterMention getConverter(){
+	public String getConverter(){
 		return converter;
 	}
 	
-	public void setConverter(ConverterMention converter) {
+	public void setConverter(String converter) {
 		this.converter = converter;
+	}
+	
+	public String getConverterArg(){
+		return converterArg;
+	}
+	
+	public void setConverterArg(String arg) {
+		this.converterArg = arg;
 	}
 	
 	public boolean isMandatory(){

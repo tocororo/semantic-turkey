@@ -47,6 +47,16 @@ var eventHandler = {
 						}
 					}
 				}
+			} else if (eventId == "textboxInputChanged") {
+				var textboxes = document.getElementsByTagName("textbox");
+				for (i=0; i<textboxes.length; i++) {
+					var textbox = textboxes[i];
+					if (textbox.getAttribute("userPrompt") == eventObject.userPrompt) {
+						if (textbox.value != eventObject.value) {
+							textbox.value = eventObject.value;
+						}
+					}
+				}
 			}
 		}
 }
@@ -95,10 +105,12 @@ window.onload = function() {
 	window.sizeToContent();
 	
 	art_semanticturkey.evtMgr.registerForEvent("languageMenuChanged", eventHandler);
+	art_semanticturkey.evtMgr.registerForEvent("textboxInputChanged", eventHandler);
 }
 
 window.onunload = function() {
 	art_semanticturkey.evtMgr.deregisterForEvent("languageMenuChanged", eventHandler);
+	art_semanticturkey.evtMgr.deregisterForEvent("textboxInputChanged", eventHandler);
 }
 
 /**
@@ -165,6 +177,7 @@ createGenericLiteralInput = function(formEntryXml){
 	textbox.setAttribute("userPrompt", formEntryXml.getAttribute("userPrompt"));
 	textbox.setAttribute("flex", "1");
 	textbox.setAttribute("height", "25");
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	//eventual datatype
 	var datatype = formEntryXml.getAttribute("datatype");
@@ -207,7 +220,6 @@ createGenericLiteralInput = function(formEntryXml){
 			
 			//when change language fire event to change eventual menulist for the same userPrompt
 			langMenu.addEventListener("select", function() {
-				Logger.debug("firing event languageMenuChanged with userPrompt " + langUp + " and lang " + this.selectedItem.value);
 				art_semanticturkey.evtMgr.fireEvent("languageMenuChanged",
 						{userPrompt: langUp, lang: this.selectedItem.value});
 			}, false);
@@ -232,9 +244,9 @@ createUriInput = function(formEntryXml){
 	textbox.setAttribute("userPrompt", formEntryXml.getAttribute("userPrompt"));
 	textbox.setAttribute("flex", "1");
 	textbox.setAttribute("height", "25");
+	textbox.addEventListener("input", textboxChangedListener, false);
 	art_semanticturkey.Sanitizer.makeAutosanitizing(textbox);
 	mainBox.appendChild(textbox);
-	
 	//if there's a converter add a popup to see a conversion preview
 	var converterXml = formEntryXml.getElementsByTagName("converter")[0];
 	if (converterXml != null){
@@ -284,6 +296,7 @@ createDatetimeInput = function(formEntryXml){
 	textbox.setAttribute("height", "25");
 	textbox.setAttribute("tooltiptext", formEntryXml.getAttribute("datatype"));
 	textbox.setAttribute("value", getDatetime());
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	var datepicker = document.createElement("datepicker");
 	var timepicker = document.createElement("timepicker");
@@ -308,6 +321,7 @@ createDateInput = function(formEntryXml){
 	textbox.setAttribute("height", "25");
 	textbox.setAttribute("tooltiptext", formEntryXml.getAttribute("datatype"));
 	textbox.setAttribute("value", getDate());
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	var datepicker = document.createElement("datepicker");
 	datepicker.addEventListener("change", function(){
@@ -327,6 +341,7 @@ createTimeInput = function(formEntryXml){
 	textbox.setAttribute("height", "25");
 	textbox.setAttribute("tooltiptext", formEntryXml.getAttribute("datatype"));
 	textbox.setAttribute("value", getTime());
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	var timepicker = document.createElement("timepicker");
 	timepicker.addEventListener("command", function(){
@@ -347,6 +362,7 @@ createFloatInput = function(formEntryXml){
 	textbox.setAttribute("decimalplaces", "Infinity");
 	textbox.setAttribute("hidespinbuttons", "true");
 	textbox.setAttribute("tooltiptext", formEntryXml.getAttribute("datatype"));
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	return mainBox;
 }
@@ -361,6 +377,7 @@ createIntegerInput = function(formEntryXml){
 	textbox.setAttribute("type", "number");
 	textbox.setAttribute("hidespinbuttons", "true");
 	textbox.setAttribute("tooltiptext", formEntryXml.getAttribute("datatype"));
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	return mainBox;
 }
@@ -375,6 +392,7 @@ createBooleanInput = function(formEntryXml){
 	textbox.setAttribute("height", "25");
 	textbox.setAttribute("tooltiptext", formEntryXml.getAttribute("datatype"));
 	textbox.setAttribute("value", "true");
+	textbox.addEventListener("input", textboxChangedListener, false);
 	mainBox.appendChild(textbox);
 	var radiogroup = document.createElement("radiogroup");
 	radiogroup.setAttribute("orient", "horizontal");
@@ -457,6 +475,14 @@ optionalChecboxListener = function(){
 			inputBoxChild[i].disabled = true;
 		}
 	}
+}
+
+textboxChangedListener = function() {
+	var eventObject = {
+			userPrompt: this.getAttribute("userPrompt"),
+			value: this.value
+	}
+	art_semanticturkey.evtMgr.fireEvent("textboxInputChanged", eventObject);
 }
 
 /**
