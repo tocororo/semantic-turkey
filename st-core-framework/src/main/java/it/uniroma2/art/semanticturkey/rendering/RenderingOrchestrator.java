@@ -92,7 +92,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 							statements, NodeFilters.ANY, null);
 
 					if (anonCls != null) {
-						resource2rendering.put(res, anonCls.getManchExpr(project.getOntModel(), true, false));
+						resource2rendering.put(res, anonCls.getManchExpr(project.getOntModel(), true, true));
 						toBeRendered = false;
 					}
 				} else if (statements.hasType(res, RDF.Res.LIST, false, NodeFilters.ANY)
