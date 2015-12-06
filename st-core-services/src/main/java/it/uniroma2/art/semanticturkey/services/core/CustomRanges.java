@@ -5,6 +5,7 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -795,6 +796,24 @@ public class CustomRanges extends STServiceAdapter {
 		crConfig.removeConfigEntryFromProperty(property.getURI());
 		crConfig.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	@GenerateSTServiceController
+	public Response listConverterContracts() throws UnavailableResourceException, ProjectInconsistentException {
+		CODACore codaCore = getInitializedCodaCore(getOWLModel());
+		
+		XMLResponseREPLY replyResponse = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = replyResponse.getDataElement();
+		Element collectionElement = XMLHelp.newElement(dataElement, "collection");
+		
+		for (ConverterContractDescription aDescr : codaCore.listConverterContracts()) {
+			Element contractElem = XMLHelp.newElement(collectionElement, "converterContract");
+			contractElem.setAttribute("uri", aDescr.getContractURI());
+			contractElem.setAttribute("name", aDescr.getContractName());
+			contractElem.setAttribute("description", aDescr.getContractDescription());
+		}
+		
+		return replyResponse;
 	}
 	
 	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
