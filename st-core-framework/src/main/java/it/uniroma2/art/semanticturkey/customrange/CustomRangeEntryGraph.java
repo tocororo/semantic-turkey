@@ -1,5 +1,30 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
+import it.uniroma2.art.coda.converters.contracts.ContractConstants;
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ConverterException;
+import it.uniroma2.art.coda.exception.DependencyException;
+import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
+import it.uniroma2.art.coda.pearl.model.ProjectionRule;
+import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
+import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.coda.structures.SuggOntologyCoda;
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -41,31 +66,6 @@ import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import it.uniroma2.art.coda.contracts.ContractConstants;
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.ConverterException;
-import it.uniroma2.art.coda.exception.DependencyException;
-import it.uniroma2.art.coda.exception.PRParserException;
-import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.coda.pearl.model.ConverterMention;
-import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
-import it.uniroma2.art.coda.pearl.model.GraphElement;
-import it.uniroma2.art.coda.pearl.model.GraphStruct;
-import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
-import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
-import it.uniroma2.art.coda.pearl.model.ProjectionRule;
-import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
-import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.ARTTriple;
-import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 public class CustomRangeEntryGraph extends CustomRangeEntry {
 	
