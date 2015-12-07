@@ -57,6 +57,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 	private static final String XROLE = "xRole";
 	
 	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("([a-zA-Z]+)(?:\\.(([a-zA-Z]+)))?");
+	private static final Pattern PLACEHOLDER_START_PATTERN = Pattern.compile("\\$(\\$)?\\{");
 
 	private NativeTemplateBasedURIGeneratorConfiguration conf;
 
@@ -95,11 +96,27 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			String localName = "";
 			String currentTemplate = template;
 			while (currentTemplate.length() > 0) {
-				if (currentTemplate.startsWith("${")) {
+				// S{ is an escaped placeholder, $${ is a not escaped placeholder
+				if (currentTemplate.startsWith("${") || currentTemplate.startsWith("$${")) {
 					// get placeholder
-					String ph = currentTemplate.substring(
-							currentTemplate.indexOf("${") + 2,
-							currentTemplate.indexOf("}"));
+					// If ${, then escaped with 2 characters to be skipped
+					boolean phEscaped = true;
+					int phBegin = 2;
+					
+					// If $${, then not escaped with 3 characters to be skipped
+					if (currentTemplate.startsWith("$${")) {
+						phEscaped = false;
+						phBegin = 3;
+					}
+					
+					int phEnd = currentTemplate.indexOf("}");
+					
+					if (phEnd == -1) {
+						throw new IllegalArgumentException("Missing closing brace");
+					}
+					
+					String ph = currentTemplate.substring(phBegin, phEnd);
+					
 					// retrieve the value to replace the placeholder
 					String value;
 					if (ph.matches(RAND_REGEX)) {
@@ -121,17 +138,28 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 //									+ value + "\" for the placeholder \"" + ph
 //									+ "\" is not valid");
 					}
+					
+					if (phEscaped) {
+						value = escapeValue(value);
+					}
 					localName = localName + value; // compose the result
 					// remove the parsed part
-					currentTemplate = currentTemplate.substring(currentTemplate
-							.indexOf("}") + 1);
+					currentTemplate = currentTemplate.substring(phEnd + 1);
 				} else {
 					// concat the fixed part of the template
+					Matcher m = PLACEHOLDER_START_PATTERN.matcher(currentTemplate);
+					
+					int literalEnd;
+					
+					if (m.find()) {
+						literalEnd = m.start();
+					} else {
+						literalEnd = currentTemplate.length();
+					}
+					
 					localName = localName
-							+ currentTemplate.substring(0,
-									currentTemplate.indexOf("${"));
-					currentTemplate = currentTemplate.substring(currentTemplate
-							.indexOf("${"));
+							+ currentTemplate.substring(0,literalEnd);
+					currentTemplate = currentTemplate.substring(literalEnd);
 				}
 			}
 
@@ -150,6 +178,10 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 		}
 		
 		return uriRes;
+	}
+
+	private String escapeValue(String rawString) {
+		return UrlEscapers.urlPathSegmentEscaper().escape(rawString.trim().replaceAll("\\s+", "_"));
 	}
 
 	private String getRandomPart(STServiceContext stServiceContext, String placheholder) {
@@ -251,6 +283,6 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			return null;
 		}
 		
-		return UrlEscapers.urlPathSegmentEscaper().escape(rawString.trim().replaceAll("\\s+", "_"));
+		return rawString;
 	}
 }
