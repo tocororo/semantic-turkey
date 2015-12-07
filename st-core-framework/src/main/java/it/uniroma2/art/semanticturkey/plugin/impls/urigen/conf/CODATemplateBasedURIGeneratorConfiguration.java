@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf;
 
-import it.uniroma2.art.coda.converters.TemplateBasedRandomIdGenerator;
+import it.uniroma2.art.coda.converters.impl.TemplateBasedRandomIdGenerator;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfigurationParameter;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory;
 

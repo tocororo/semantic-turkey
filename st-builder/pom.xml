@@ -151,6 +151,28 @@
 							</artifactItems>
 						</configuration>
 					</execution>
+					<execution>
+						<!-- Copy CODA configuration file (because the plugin features-maven-plugin 
+							only supports the population of the directory /system) -->
+						<id>copy CODA cfg</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>it.uniroma2.art.coda</groupId>
+									<artifactId>coda-karaf</artifactId>
+									<version>${coda.version}</version>
+									<type>cfg</type>
+									<classifier>provisioning</classifier>
+									<outputDirectory>${project.basedir}/target/dependencies/etc</outputDirectory>
+									<destFileName>it.uniroma2.art.coda.provisioning.cfg</destFileName>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 

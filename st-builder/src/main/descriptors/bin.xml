@@ -89,6 +89,14 @@
 			<fileMode>0755</fileMode>
 		</fileSet>
 
+		<fileSet>
+			<directory>${project.basedir}/target/dependencies/etc</directory>
+			<outputDirectory>/etc/</outputDirectory>
+			<includes>
+				<include>*.cfg</include>
+			</includes>
+			<fileMode>0644</fileMode>
+		</fileSet>
 	</fileSets>
 
 	<files>

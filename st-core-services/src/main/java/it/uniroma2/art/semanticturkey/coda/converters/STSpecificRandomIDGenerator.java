@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import it.uniroma2.art.coda.contracts.RandomIdGenerator;
+import it.uniroma2.art.coda.converters.contracts.RandomIdGenerator;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -23,7 +23,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
  */
 public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 
-	public static final String IMPL_URI = "http://semanticturkey.uniroma2.it/coda/converters/randIdGen";
+	public static final String CONVERTER_URI = "http://semanticturkey.uniroma2.it/coda/converters/randIdGen";
 
 	@Autowired
 	private STServiceContext stServiceContext;
