@@ -26,6 +26,7 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.filter.NoLanguageResourcePredicate;
+import it.uniroma2.art.owlart.filter.NoSpecificResourcePredicate;
 import it.uniroma2.art.owlart.filter.RootClassesResourcePredicate;
 import it.uniroma2.art.owlart.filter.URIResourcePredicate;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
@@ -495,11 +496,13 @@ public class ClsOld extends ResourceOld {
 
 			// creating subclasses iterator
 			// URI filter and other complex operations for tree show
-			if (forTree)
+			if (forTree){
 				subClassesIterator = new SubClassesForTreeIterator(ontManager, cls, graphs);
-			else
+			} else {
 				// simple listDirectSubClasses for standard method
-				subClassesIterator = ((DirectReasoning) ontModel).listDirectSubClasses(cls, graphs);
+				//subClassesIterator = ((DirectReasoning) ontModel).listDirectSubClasses(cls, graphs);
+				subClassesIterator = ontModel.listSubClasses(cls, false, graphs);
+			}
 
 			Collection<STRDFResource> classes = STRDFNodeFactory.createEmptyResourceCollection();
 			while (subClassesIterator.streamOpen()) {
@@ -700,11 +703,13 @@ public class ClsOld extends ResourceOld {
 
 		// TODO filter on admin also here
 		ARTResourceIterator instancesIterator;
-		if (direct)
-			instancesIterator = ((DirectReasoning) ontModel).listDirectInstances(cls, graphs);
-		else
+		if (direct){
+			//instancesIterator = ((DirectReasoning) ontModel).listDirectInstances(cls, graphs);
+			instancesIterator = ontModel.listInstances(cls, false, graphs);
+		} else {
 			instancesIterator = ontModel.listInstances(cls, true, graphs);
-
+		}
+		
 		Collection<STRDFResource> instances = STRDFNodeFactory.createEmptyResourceCollection();
 		while (instancesIterator.streamOpen()) {
 			ARTResource instance = instancesIterator.getNext();
@@ -932,8 +937,12 @@ public class ClsOld extends ResourceOld {
 				finalIterator = Iterators.filter(subClassesIterator, rootUserClsPred);
 
 			} else {
-				subClassesIterator = ((DirectReasoning) ontModel).listDirectSubClasses(superCls, graphs);
-				finalIterator = subClassesIterator;
+				//subClassesIterator = ((DirectReasoning) ontModel).listDirectSubClasses(superCls, graphs);
+				subClassesIterator = ontModel.listSubClasses(superCls, false, graphs);
+				
+				Predicate<ARTResource> namedClasseAndNotItself = Predicates.and(new URIResourcePredicate(), 
+						new NoSpecificResourcePredicate(superCls));
+				finalIterator = Iterators.filter(subClassesIterator, namedClasseAndNotItself);
 			}
 		}
 

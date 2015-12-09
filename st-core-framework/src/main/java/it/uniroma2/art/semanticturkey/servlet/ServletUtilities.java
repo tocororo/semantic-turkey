@@ -86,7 +86,8 @@ public class ServletUtilities {
 	 */
 	void createInstancesXMLList(DirectReasoning repository, ARTResource cls, Element element)
 			throws ModelAccessException {
-		ARTResourceIterator IteratorInstances = repository.listDirectInstances(cls);
+		//ARTResourceIterator IteratorInstances = repository.listDirectInstances(cls);
+		ARTResourceIterator IteratorInstances = repository.listInstances(cls, false);
 		Element instances = XMLHelp.newElement(element, "Instances");
 		while (IteratorInstances.streamOpen()) {
 			ARTResource instance = (ARTResource) IteratorInstances.getNext();
