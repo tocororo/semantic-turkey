@@ -413,7 +413,7 @@ art_semanticturkey.onAccept = function() {
 	var renderingEngineFactoryID = "---";
 	//if optionalSettingsBox is never expanded, the selectedItem of the menu is not initialized, so perform the check
 	if (renderingEngineFactoryMenu.selectedItem != undefined) {
-		renderingEngineFactoryID = uriGenFactoryMenu.selectedItem.getAttribute("id");
+		renderingEngineFactoryID = renderingEngineFactoryMenu.selectedItem.getAttribute("id");
 	}
 	var renderingEngineConfiguration = null;
 	var renderingEngineParsArray = null;
