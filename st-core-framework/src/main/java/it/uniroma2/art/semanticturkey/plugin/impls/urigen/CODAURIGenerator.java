@@ -77,7 +77,7 @@ public class CODAURIGenerator implements URIGenerator {
 			codaCore.setConverterProperties(converter, converterProperties);
 			codaCore.initialize(stServiceContext.getProject().getOntModel(), ontFact);
 			ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
-					Arrays.<ConverterArgumentExpression> asList(new ConverterRDFLiteralArgument(xRole),
+					Arrays.<ConverterArgumentExpression> asList(ConverterRDFLiteralArgument.fromString(xRole),
 							ConverterMapArgument.fromNodesMap(args)));
 
 			logger.debug("Going to execute a CODA converter");
