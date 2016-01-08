@@ -798,24 +798,6 @@ public class CustomRanges extends STServiceAdapter {
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
-	@GenerateSTServiceController
-	public Response listConverterContracts() throws UnavailableResourceException, ProjectInconsistentException {
-		CODACore codaCore = getInitializedCodaCore(getOWLModel());
-		
-		XMLResponseREPLY replyResponse = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = replyResponse.getDataElement();
-		Element collectionElement = XMLHelp.newElement(dataElement, "collection");
-		
-		for (ConverterContractDescription aDescr : codaCore.listConverterContracts()) {
-			Element contractElem = XMLHelp.newElement(collectionElement, "converterContract");
-			contractElem.setAttribute("uri", aDescr.getContractURI());
-			contractElem.setAttribute("name", aDescr.getContractName());
-			contractElem.setAttribute("description", aDescr.getContractDescription());
-		}
-		
-		return replyResponse;
-	}
-	
 	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
 		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
 				getProject().getOntologyManagerImplID()).createModelFactory();

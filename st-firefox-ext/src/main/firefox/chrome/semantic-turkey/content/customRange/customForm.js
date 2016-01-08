@@ -38,7 +38,6 @@ var eventHandler = {
 					if (menu.getAttribute("userPrompt") == eventObject.userPrompt) {
 						if (menu.selectedItem.value != eventObject.lang) {
 							for (var j=0; j<menu.itemCount; j++) {
-								Logger.debug("comparing " + menu.getItemAtIndex(j).value + " with " + eventObject.lang);
 								if (menu.getItemAtIndex(j).value == eventObject.lang) {
 									menu.selectedIndex = j;
 									break;
