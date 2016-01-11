@@ -1,3 +1,11 @@
+version 0.12
+date: 11-01-2016
+  * implemented CustomRange mechanism to allow to customize the range of properties beyond what is
+  	axiomatically asserted in their definition
+  * allowed the customization of the RenderingEngine and the URIGenerator during the project creation
+  * introduced an alignment validation module
+  * added the possibility to define class axioms through Manchester expressions
+  
 version 0.11-SNAPSHOT
 date: xx-xx-201x
   * 
