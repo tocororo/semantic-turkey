@@ -54,6 +54,7 @@ import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.filter.DomainResourcePredicate;
+import it.uniroma2.art.semanticturkey.filter.STRootClassesResourcePredicate;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -930,7 +931,7 @@ public class ClsOld extends ResourceOld {
 				else
 					exclusionPredicate = DomainResourcePredicate.getPredicate(ontManager);
 
-				Predicate<ARTResource> rootUserClsPred = Predicates.and(new RootClassesResourcePredicate(
+				Predicate<ARTResource> rootUserClsPred = Predicates.and(new STRootClassesResourcePredicate(
 						ontModel), exclusionPredicate);
 
 				subClassesIterator = ontModel.listNamedClasses(true, graphs);
