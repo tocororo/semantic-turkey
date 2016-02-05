@@ -61,10 +61,10 @@ public class CatchAllExceptionHandlerControllerAdvice {
 
 		if (ex instanceof RuntimeException) {
 			// if a RuntimeException (i.e., unexpected failure), return an ST error
-			stResp = servUtils.createErrorResponse(extractServicRequestName(request), ex.getMessage());
+			stResp = servUtils.createErrorResponse(extractServicRequestName(request), ex.toString());
 		} else {
 			// otherwise, it is a foreseen failure, therefore return an ST exception
-			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex.getMessage());
+			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex.toString());
 		}
 		return formatResponse(stResp, request);
 	}
