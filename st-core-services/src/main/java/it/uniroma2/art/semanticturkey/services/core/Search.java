@@ -1,0 +1,318 @@
+package it.uniroma2.art.semanticturkey.services.core;
+
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.TupleBindings;
+import it.uniroma2.art.owlart.query.TupleBindingsIterator;
+import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.vocabulary.OWL;
+import it.uniroma2.art.owlart.vocabulary.RDF;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.owlart.vocabulary.RDFS;
+import it.uniroma2.art.owlart.vocabulary.SKOS;
+import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+
+import java.util.Collection;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.w3c.dom.Element;
+
+@GenerateSTServiceController
+@Validated
+@Component
+public class Search extends STServiceAdapter {
+
+	protected static Logger logger = LoggerFactory.getLogger(Search.class);
+	
+//	private static String CLASS_ROLE = "class";
+//	private static String CONCEPT_ROLE = "concept";
+//	private static String INSTANCE_ROLE = "instance";
+	
+	private static String START_SEARCH_MODE = "start";
+	private static String CONTAINS_SEARCH_MODE = "contain";
+	private static String END_SEARCH_MODE = "end";
+	private static String EXACT_SEARCH_MODE = "exact";
+	
+	@GenerateSTServiceController
+	public Response searchResource(String searchString, String [] rolesArray, boolean useLocalName,
+			String searchMode) throws ModelUpdateException, UnsupportedQueryLanguageException, 
+			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		
+		boolean isClassWanted = false;
+		boolean isConceptWanted = false;
+		boolean isInstanceWanted = false;
+		boolean isPropertyWanted = false;
+		
+		String searchModeSelected = null;
+		
+		
+		if(searchString.isEmpty()){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
+			Element dataElement = response.getDataElement();
+			dataElement.setTextContent("the serchString cannot be empty");
+			return response;
+		}
+		
+		for(int i=0; i<rolesArray.length; ++i){
+			if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.cls.name())){
+				isClassWanted = true;
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+				isConceptWanted = true;
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.individual.name())){
+				isInstanceWanted = true;
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.property.name())){
+				isPropertyWanted = true;
+			}
+		}
+		//@formatter:off
+		if(!isClassWanted && !isConceptWanted && !isInstanceWanted && !isPropertyWanted){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
+			Element dataElement = response.getDataElement();
+			dataElement.setTextContent("the serch roles should be at least one of: "+
+					RDFResourceRolesEnum.cls.name()+", "+
+					RDFResourceRolesEnum.concept.name()+", "+
+					RDFResourceRolesEnum.individual+" or "+
+					RDFResourceRolesEnum.property.name());
+			return response;
+		}
+		//@formatter:on
+		
+		if(searchMode.toLowerCase().contains(START_SEARCH_MODE)){
+			searchModeSelected = START_SEARCH_MODE;
+		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
+			searchModeSelected = CONTAINS_SEARCH_MODE;
+		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
+			searchModeSelected = END_SEARCH_MODE;
+		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
+			searchModeSelected = EXACT_SEARCH_MODE;
+		}
+		
+		if(searchModeSelected == null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
+			Element dataElement = response.getDataElement();
+			dataElement.setTextContent("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
+			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE);
+			return response;
+		}
+		
+		//TODO verify that in a SKOS it is possible to use a owl model
+		OWLModel owlModel = getOWLModel();
+		
+		
+		//@formatter:off
+		String query = "SELECT DISTINCT ?resource ?type"+ 
+			"\nWHERE{" +
+			"\n{";
+		//do a subquery to get the candidate resources
+		query+="\nSELECT DISTINCT ?resource ?type" +
+			"\nWHERE{" ;
+		
+		query+="\n?resource a ?type ."+
+				addFilterForRsourseType("?type", isClassWanted, isInstanceWanted, isPropertyWanted, 
+						isConceptWanted);
+		
+		/*if(isClassWanted){
+			previousPart = true;
+			query+="\n{" +
+					"\n?resource a <"+OWL.CLASS+"> ." +
+					"\n}";
+		}
+		if(isInstanceWanted){
+			if(previousPart){
+				query+="\nUNION";
+			}
+			previousPart = true;
+			query+="\n{" +
+					"\n?resource a ?className ." +
+					"FILTER(?className !=<"+OWL.CLASS+"> || ?className != <"+SKOS.CONCEPT+"> ||" +
+							"?className != <"+SKOSXL.LABEL+"> || ?className != <"+SKOS.CONCEPTSCHEME+"> " +
+									"?className != <"+RDF.PROPERTY+">)" +
+					"\n}";
+		}
+		
+		if(isConceptWanted){
+			if(previousPart){
+				query+="\nUNION";
+			}
+			previousPart = true;
+			query+="\n{" +
+					"\n?resource a <"+SKOS.CONCEPT+">" +
+					"\n}";
+		}
+		if(isPropertyWanted){
+			if(previousPart){
+				query+="\nUNION";
+			}
+			previousPart = true;
+			query+="\n{" +
+					"\n?resource a <"+RDF.PROPERTY+">" +
+					"\n}";
+		}*/
+		
+		query+="\n}" +
+			"\n}";
+			
+		
+		//now examine the rdf:label and/or skos:xlabel/skosxl:label
+		//see if the localName should be used in the query or not
+		if(useLocalName){
+			query+="\n{" +
+					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
+					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		//search in the rdfs:label
+		query+="\n{" +
+				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
+				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
+				"\n}";
+
+		//if you are searching among concepts, search in the skos:prefLabel/altLabel and 
+		// skosxl:prefLabel/altLabel
+		
+		if(isConceptWanted){
+			query+="\nUNION" +
+					"\n{" +
+					"\n?resource (<"+SKOS.PREFLABEL+"> | <"+SKOS.ALTLABEL+">) ?skosLabel ."+
+					searchModePrepareQuery("?skosLabel", searchString, searchModeSelected) +
+					"\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n?resource (<"+SKOSXL.PREFLABEL+"> | <"+SKOSXL.ALTLABEL+">) ?skosxlLabel ." +
+					"\n?skosxlLabel <"+SKOSXL.LITERALFORM+"> ?literalForm ." +
+					searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
+					"\n}";
+		}
+		
+		query+="\n}";
+		//@formatter:on
+		
+		logger.debug("query = "+query);
+		
+		TupleQuery tupleQuery;
+		tupleQuery = owlModel.createTupleQuery(query);
+		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(true);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
+		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
+		while (tupleBindingsIterator.hasNext()) {
+			TupleBindings tupleBindings = tupleBindingsIterator.next();
+			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
+
+			if (!resourceURI.isURIResource()) {
+				continue;
+			}
+
+			// TODO, explicit set to true
+			RDFResourceRolesEnum role = null;
+			if(rolesArray.length == 1){
+				role = RDFResourceRolesEnum.valueOf(rolesArray[0]);
+			} else{
+				//since there are more than one element in the input role array, see the resonce
+				String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
+				if(type.equals(OWL.CLASS)){
+					role = RDFResourceRolesEnum.cls;
+				} else if(type.equals(RDF.PROPERTY) || type.equals(OWL.DATATYPEPROPERTY) 
+						|| type.equals(OWL.OBJECTPROPERTY) || type.equals(OWL.ANNOTATIONPROPERTY)){
+					role = RDFResourceRolesEnum.property;
+				} else if(type.equals(SKOS.CONCEPT)){
+					role = RDFResourceRolesEnum.concept;
+				} else{
+					role = RDFResourceRolesEnum.individual;
+				} 
+			}
+			collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
+					true, true));
+		}
+		RDFXMLHelp.addRDFNodes(dataElement, collection);
+
+		return response;
+	}
+	
+	private String addFilterForRsourseType(String variable, boolean isClassWanted, boolean isInstanceWanted,
+			boolean isPropertyWanted, boolean isConceptWanted) {
+		boolean otherWanted = false;
+		String filterQuery = "\nFILTER( ";
+		if(isClassWanted){
+			filterQuery += variable+" = <"+OWL.CLASS+">"; 
+			otherWanted = true;
+		}
+		if(isPropertyWanted){
+			if(otherWanted){
+				filterQuery += " || ";
+			}
+			otherWanted = true;
+			//@formatter:off
+			filterQuery += variable+ " = <"+RDF.PROPERTY+"> || "+
+					variable+" = <"+OWL.OBJECTPROPERTY+"> || "+
+					variable+" = <"+OWL.DATATYPEPROPERTY+"> || "+
+					variable+" = <"+OWL.ANNOTATIONPROPERTY+">";
+			//@formatter:on
+		}
+		if(isConceptWanted){
+			if(otherWanted){
+				filterQuery += " || ";
+			}
+			otherWanted = true;
+			filterQuery += variable+" = <"+SKOS.CONCEPT+">";
+		}
+		if(isInstanceWanted){
+			if(otherWanted){
+				filterQuery += " || ( ";
+			}
+			//@formatter:off
+			filterQuery+=variable+"!= <"+OWL.CLASS+"> && "+
+					variable+"!=<"+RDF.PROPERTY+"> && "+
+					variable+"!=<"+OWL.OBJECTPROPERTY+"> && "+
+					variable+"!=<"+OWL.DATATYPEPROPERTY+"> && "+
+					variable+"!=<"+OWL.ANNOTATIONPROPERTY+"> && "+
+					variable+"!=<"+SKOS.CONCEPT+"> && "+
+					variable+"!=<"+SKOS.CONCEPTSCHEME+"> && "+
+					variable+"!=<"+SKOSXL.LABEL+">";
+			//@formatter:on
+			if(otherWanted){
+				filterQuery += " ) ";
+			}
+			otherWanted = true;
+		}
+		
+		filterQuery += ")";
+		return filterQuery;
+	}
+
+	private String searchModePrepareQuery(String variable, String value, String searchMode){
+		String query ="";
+		
+		if(searchMode.equals(START_SEARCH_MODE)){
+			query="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
+		} else if(searchMode.equals(END_SEARCH_MODE)){
+			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
+		} else if(searchMode.equals(CONTAINS_SEARCH_MODE)){
+			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
+		} else { // searchMode.equals(contains)
+			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
+		}
+		
+		return query;
+	}
+	
+}
