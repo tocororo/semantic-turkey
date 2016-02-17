@@ -85,6 +85,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 			respContent = XMLHelp.XML2String((Document) stResp.getResponseObject(), true);
 		}
 		responseHeaders.set("Content-Type", contentType + "; charset=UTF-8");
+		responseHeaders.set("Access-Control-Allow-Origin", "*");
 		return new ResponseEntity<String>(respContent, responseHeaders, HttpStatus.OK);
 	}
 
