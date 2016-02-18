@@ -19,7 +19,7 @@ Components.utils.import("resource://stservices/SERVICE_ResourceView.jsm", art_se
 Components.utils.import("resource://stmodules/Alert.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/AnnotationCommons.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/ARTResources.jsm", art_semanticturkey);
-Components.utils.import("resource://stmodules/STResUtils.jsm", art_semanticturkey);
+Components.utils.import("resource://stmodules/StResUtils.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Preferences.jsm", art_semanticturkey);
 Components.utils.import("resource://stmodules/Logger.jsm", art_semanticturkey);
 
