@@ -31,8 +31,10 @@ import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException
 import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
@@ -142,6 +144,60 @@ public class Refactor extends STServiceAdapter {
 		Element element = XMLHelp.newElement(dataElement, "UpdateResource");
 		element.setAttribute("name", oldURIResource.getNominalValue());
 		element.setAttribute("newname", newResource.getNominalValue());
+		return response;
+	}
+	
+	//This method does the EXACT same thing as renameResource , the only difference is the response
+	@GenerateSTServiceController
+	//in this method oldResource is String (instead ARTURIResource) to avoid checks performed by StringToARTUriResource converter 
+	public Response changeResourceURI(String oldResource, String newResource) throws 
+			ModelAccessException, DuplicatedResourceException, ModelUpdateException, NonExistingRDFResourceException {
+		RDFModel ontModel = getOWLModel();
+		ARTURIResource oldURIResource = retrieveExistingURIResource(ontModel, oldResource);
+		ARTURIResource newURIResource = ontModel.createURIResource(newResource);
+		
+		
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		Element oldElement = XMLHelp.newElement(dataElement, "oldResource");
+		STRDFURI oldStrdfuri = STRDFNodeFactory.createSTRDFURI(ontModel, oldURIResource, true, true, true);
+		RDFXMLHelp.addRDFNode(oldElement, oldStrdfuri);
+
+		if (ontModel.existsResource(newURIResource)) {
+			throw new DuplicatedResourceException("could not rename resource: "
+					+ oldURIResource.getNominalValue() + " to: " + newURIResource.getNominalValue()
+					+ " because a resource with this name already exists in the ontology");
+		}
+
+		if (ontModel instanceof TransactionBasedModel)
+			try {
+				((TransactionBasedModel) ontModel).setAutoCommit(false);
+			} catch (ModelUpdateException e1) {
+				throw new ModelUpdateException("sorry, unable to commit changes to the data, try to " +
+						"close the project and open it again");
+			}
+
+		try {
+			ontModel.renameResource(oldURIResource, newURIResource.getNominalValue());
+		} catch (ModelUpdateException e1) {
+			throw new ModelUpdateException(e1);
+		}
+
+		if (ontModel instanceof TransactionBasedModel) {
+			try {
+				((TransactionBasedModel) ontModel).setAutoCommit(true);
+			} catch (ModelUpdateException e) {
+				throw new ModelUpdateException("sorry, unable to commit changes to the data, try to " +
+						"close the project and open it again");
+			}
+		}
+		Element newElement = XMLHelp.newElement(dataElement, "newResource");
+		STRDFURI newStrdfuri = STRDFNodeFactory.createSTRDFURI(ontModel, newURIResource, true, true, true);
+		RDFXMLHelp.addRDFNode(newElement, newStrdfuri);
+		
+		/*Element element = XMLHelp.newElement(dataElement, "UpdateResource");
+		element.setAttribute("name", oldURIResource.getNominalValue());
+		element.setAttribute("newname", newURIResource.getNominalValue());*/
 		return response;
 	}
 	
