@@ -5,6 +5,7 @@ import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindings;
@@ -21,11 +22,17 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,6 +254,166 @@ public class Search extends STServiceAdapter {
 
 		return response;
 	}
+
+	@GenerateSTServiceController
+	public Response getPathFromRoot(String role, String resourceURI, @Optional String schemeURI){
+		
+		OWLModel owlModel = getOWLModel();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+
+		ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
+		
+		try {
+			
+			String query = null;
+			String superResourceVar = null, superSuperResourceVar = null;
+			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+				superResourceVar = "broader";
+				superSuperResourceVar = "broaderOfBroader";
+				//@formatter:off
+				query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept" + 
+						"\nWHERE{" + 
+						"\n<" + resourceURI + "> (<" + SKOS.BROADER + "> | ^<"+SKOS.NARROWER+"> )+ ?broader .";
+				if (schemeURI != null) {
+					query += "\n?broader <" + SKOS.INSCHEME + "> <" + schemeURI + "> ."+
+							"\nOPTIONAL{" +
+							"\nBIND (\"true\" AS ?isTopConcept)" +
+							"\n?broader (<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) <"+schemeURI+"> ." +
+							"\n}";
+				}
+				query += "\nOPTIONAL{" +
+						"\n?broader (<" + SKOS.BROADER + "> | ^<"+SKOS.NARROWER+">) ?broaderOfBroader .";
+				if (schemeURI != null) {
+					query += "\n?broaderOfBroader <" + SKOS.INSCHEME + "> <" + schemeURI + "> . ";
+				}
+				query +="\n}" + 
+						"\n}";
+				//@formatter:on
+			}
+			else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name())){
+				superResourceVar = "superProperty";
+				superSuperResourceVar = "superSuperProperty";
+				//@formatter:off
+				query = "SELECT DISTINCT ?superProperty ?superSuperProperty" + 
+						"\nWHERE{" + 
+						"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + "> ?superProperty .";
+				query += "\nOPTIONAL{" +
+						"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty .";
+				query +="\n}" + 
+						"\n}";
+				//@formatter:on
+			}
+			else { // role.toLowerCase().equals(RDFResourceRolesEnum.class))
+				superResourceVar = "superClass";
+				superSuperResourceVar = "superSuperClass";
+				//@formatter:off
+				query = "SELECT DISTINCT ?superClass ?superSuperClass" + 
+						"\nWHERE{" + 
+						"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + "> ?superClass .";
+				query += "\nOPTIONAL{" +
+						"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass .";
+				query +="\n}" + 
+						"\n}";
+				//@formatter:on
+			}
+			logger.debug("query: " + query);
+			TupleQuery tupleQuery = owlModel.createTupleQuery(query);
+
+			TupleBindingsIterator iter = tupleQuery.evaluate(false);
+			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = 
+					new HashMap<String, ResourceForHierarchy>();
+			while (iter.hasNext()) {
+				TupleBindings tupleBindings = iter.next();
+				ARTURIResource superResource = tupleBindings.getBinding(superResourceVar).getBoundValue()
+						.asURIResource();
+				String superResourceURI = superResource.getURI();
+				String superResourceShow = superResource.getLocalName();
+				ARTURIResource superSuperResource = null;
+				String superSuperResourceURI = null;
+				String superSuperResourceShow = null;
+				if (tupleBindings.hasBinding(superSuperResourceVar)) {
+					superSuperResource = tupleBindings.getBinding(superSuperResourceVar).getBoundValue()
+							.asURIResource();
+					superSuperResourceURI = superSuperResource.getURI();
+					superSuperResourceShow = superSuperResource.getLocalName();
+				}
+				if (!resourceToResourceForHierarchyMap.containsKey(superResourceURI)) {
+					resourceToResourceForHierarchyMap.put(superResourceURI, new ResourceForHierarchy(superResourceURI,
+							superResourceShow));
+				}
+				if (!tupleBindings.hasBinding("isTopConcept")) { // use only for concept
+					resourceToResourceForHierarchyMap.get(superResourceURI).setTopConcept(false);
+				}
+				if (superSuperResource != null) {
+					if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceURI)) {
+						resourceToResourceForHierarchyMap.put(superSuperResourceURI, 
+								new ResourceForHierarchy(superSuperResourceURI, superSuperResourceShow));
+					}
+					ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
+							.get(superSuperResourceURI);
+					resourceForHierarchy.addSubResource(superResourceURI);
+					
+					resourceToResourceForHierarchyMap.get(superResourceURI).setHasNoSuperResource(false);
+				}
+				
+			}
+			iter.close();
+			
+			//itertate over the resoruceToResourceForHierarchyMap and look for the topConcept
+			//and construct a list of list containg all the possible paths
+			List<List<String>> pathList = new ArrayList<List<String>>();
+			for(ResourceForHierarchy resourceForHierarchy : resourceToResourceForHierarchyMap.values()){
+				if(!resourceForHierarchy.hasNoSuperResource){
+					//since it has at least one superElement (superClass, broader concept or superProperty)
+					// it cannot be the first element of a path
+					continue;
+				}
+				if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+					//the role is a concept, so check it an input scheme was passed, if so, if it is not a 
+					// top concept (for that particular scheme) then pass to the next concept
+					if(schemeURI!=null && !resourceForHierarchy.isTopConcept){
+						continue;
+					}
+				} 
+				List<String> currentList = new ArrayList<String>();
+				currentList.add(resourceForHierarchy.getResource());
+				getNarrowerListUsingConceptFroNarrower(resourceForHierarchy, currentList, pathList, 
+						resourceToResourceForHierarchyMap);
+			}
+			//now construct the response
+			Element pathCollection = XMLHelp.newElement(dataElement, "collection");
+			for(List<String> path : pathList){
+				Element pathElem = XMLHelp.newElement(pathCollection, "path");
+				pathElem.setAttribute("length", path.size()+"");
+				Element pathInnerCollection = XMLHelp.newElement(pathElem, "collection");
+				for(String conceptInPath : path){
+					Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
+					concElem.setAttribute("role", role);
+					concElem.setAttribute("show", resourceToResourceForHierarchyMap.get(conceptInPath)
+							.getShow());
+					concElem.setTextContent(resourceToResourceForHierarchyMap.get(conceptInPath)
+							.getResource());
+				}
+				//add, at the end, the input concept
+				Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
+				concElem.setAttribute("role", role);
+				concElem.setAttribute("show", inputResource.getLocalName());
+				concElem.setTextContent(inputResource.getURI());
+			}
+			
+			return response;
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
+			return logAndSendException(e);
+		}
+	}
+	
 	
 	private String addFilterForRsourseType(String variable, boolean isClassWanted, boolean isInstanceWanted,
 			boolean isPropertyWanted, boolean isConceptWanted) {
@@ -314,5 +481,81 @@ public class Search extends STServiceAdapter {
 		
 		return query;
 	}
+	
+	private void getNarrowerListUsingConceptFroNarrower(ResourceForHierarchy resource, 
+			List<String> currentPathList, List<List<String>> pathList, 
+			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap ){
+		List<String> subResourceList = resource.getSubResourcesList();
+		
+		for(String subResource : subResourceList){
+			List<String> updatedPath = new ArrayList<String>(currentPathList);
+			if(updatedPath.contains(subResource)){
+				//this element already exist in the path, it is a cycle, so, skip this element
+				continue;
+			}
+			updatedPath.add(subResource);
+			// check if the subResource has no element above (broader or superClass), this mean that it 
+			// is the last element in the path
+			if(resourceToResourceForHierarchyMap.get(subResource).getSubResourcesList().isEmpty()){
+				pathList.add(updatedPath);
+				continue;
+			}
+			ResourceForHierarchy updatedResourceForHierarchy = resourceToResourceForHierarchyMap.get(subResource);
+			getNarrowerListUsingConceptFroNarrower(updatedResourceForHierarchy, updatedPath, pathList, 
+					resourceToResourceForHierarchyMap);
+		}
+	}
+	
+	private class ResourceForHierarchy {
+		private boolean isTopConcept; // used only for concept
+		private boolean hasNoSuperResource;
+		private List<String>subResourcesList;
+		private String resource;
+		private String show;
+		
+		public ResourceForHierarchy(String resource, String show) {
+			this.resource = resource;
+			this.show = show;
+			isTopConcept = true;
+			hasNoSuperResource = true;
+			subResourcesList = new ArrayList<String>();
+		}
+		
+		public String getResource(){
+			return resource;
+		}
+		
+		public String getShow(){
+			return show;
+		}
+
+		public boolean isTopConcept() {
+			return isTopConcept;
+		}
+
+		public void setTopConcept(boolean isTopConcept) {
+			this.isTopConcept = isTopConcept;
+		}
+
+		
+		public boolean hasNoSuperResource() {
+			return hasNoSuperResource;
+		}
+
+		public void setHasNoSuperResource(boolean haNoSuperResource) {
+			this.hasNoSuperResource = haNoSuperResource;
+		}
+
+		public List<String> getSubResourcesList() {
+			return subResourcesList;
+		}
+		
+		public void addSubResource(String subResource){
+			if(!subResourcesList.contains(subResource)){
+				subResourcesList.add(subResource);
+			}
+		}
+	}
+	
 	
 }
