@@ -294,11 +294,11 @@ public class Search extends STServiceAdapter {
 						"\n{" +
 						"\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> .";
 				if(schemeURI != null){
-						query+="\nFILTER NOT EXISTS{<"+resourceURI+"> " +
-								"(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) <"+schemeURI+">}";
+						query+="\n<"+resourceURI+"> " +
+								"(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) <"+schemeURI+">";
 				} else{
-					query+="\nFILTER NOT EXISTS{<"+resourceURI+"> " +
-							"(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) _:b1}";
+					query+="\n<"+resourceURI+"> " +
+							"(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) _:b1";
 				}
 				query+="\nBIND(\"true\" AS ?isTop )" +
 						"\n}" +
