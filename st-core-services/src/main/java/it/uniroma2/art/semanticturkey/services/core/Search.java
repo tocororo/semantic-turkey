@@ -272,8 +272,9 @@ public class Search extends STServiceAdapter {
 				superResourceVar = "broader";
 				superSuperResourceVar = "broaderOfBroader";
 				//@formatter:off
-				query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept" + 
-						"\nWHERE{" + 
+				query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
+						"\nWHERE{" +
+						"\n{" + 
 						"\n<" + resourceURI + "> (<" + SKOS.BROADER + "> | ^<"+SKOS.NARROWER+"> )+ ?broader .";
 				if (schemeURI != null) {
 					query += "\n?broader <" + SKOS.INSCHEME + "> <" + schemeURI + "> ."+
@@ -288,6 +289,19 @@ public class Search extends STServiceAdapter {
 					query += "\n?broaderOfBroader <" + SKOS.INSCHEME + "> <" + schemeURI + "> . ";
 				}
 				query +="\n}" + 
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> .";
+				if(schemeURI != null){
+						query+="\nFILTER NOT EXISTS{<"+resourceURI+"> " +
+								"(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) <"+schemeURI+">}";
+				} else{
+					query+="\nFILTER NOT EXISTS{<"+resourceURI+"> " +
+							"(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) _:b1}";
+				}
+				query+="\nBIND(\"true\" AS ?isTop )" +
+						"\n}" +
 						"\n}";
 				//@formatter:on
 			}
@@ -295,12 +309,26 @@ public class Search extends STServiceAdapter {
 				superResourceVar = "superProperty";
 				superSuperResourceVar = "superSuperProperty";
 				//@formatter:off
-				query = "SELECT DISTINCT ?superProperty ?superSuperProperty" + 
+				query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
 						"\nWHERE{" + 
-						"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + "> ?superProperty .";
+						"\n{" + 
+						"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + ">+ ?superProperty .";
 				query += "\nOPTIONAL{" +
 						"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty .";
 				query +="\n}" + 
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n<"+resourceURI+"> a ?type ." +
+						"\nFILTER( " +
+						"?type = <"+RDF.PROPERTY+"> || " +
+						"?type = <"+OWL.OBJECTPROPERTY+"> || " +
+						"?type = <"+OWL.DATATYPEPROPERTY+"> || " +
+						"?type = <"+OWL.ANNOTATIONPROPERTY+"> || " +
+						"?type = <"+OWL.ONTOLOGYPROPERTY+"> )" +
+						"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBPROPERTYOF+"> _:b1}" +
+						"\nBIND(\"true\" AS ?isTop )" +
+						"\n}" +
 						"\n}";
 				//@formatter:on
 			}
@@ -308,13 +336,21 @@ public class Search extends STServiceAdapter {
 				superResourceVar = "superClass";
 				superSuperResourceVar = "superSuperClass";
 				//@formatter:off
-				query = "SELECT DISTINCT ?superClass ?superSuperClass" + 
+				query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
 						"\nWHERE{" + 
-						"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + "> ?superClass .";
+						"\n{" + 
+						"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + ">+ ?superClass .";
 				query += "\nOPTIONAL{" +
 						"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass .";
 				query +="\n}" + 
-						"\n}";
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n<"+resourceURI+"> a <"+OWL.CLASS+">." +
+						"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBCLASSOF+"> _:b1}" +
+						"\nBIND(\"true\" AS ?isTop )" +
+						"\n}" +
+						"\n}";;
 				//@formatter:on
 			}
 			logger.debug("query: " + query);
@@ -323,42 +359,50 @@ public class Search extends STServiceAdapter {
 			TupleBindingsIterator iter = tupleQuery.evaluate(false);
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = 
 					new HashMap<String, ResourceForHierarchy>();
+			boolean isTopResource = false; 
 			while (iter.hasNext()) {
 				TupleBindings tupleBindings = iter.next();
-				ARTURIResource superResource = tupleBindings.getBinding(superResourceVar).getBoundValue()
-						.asURIResource();
-				String superResourceURI = superResource.getURI();
-				String superResourceShow = superResource.getLocalName();
-				ARTURIResource superSuperResource = null;
-				String superSuperResourceURI = null;
-				String superSuperResourceShow = null;
-				if (tupleBindings.hasBinding(superSuperResourceVar)) {
-					superSuperResource = tupleBindings.getBinding(superSuperResourceVar).getBoundValue()
+				if(tupleBindings.hasBinding(superResourceVar)){
+					ARTURIResource superResource = tupleBindings.getBinding(superResourceVar).getBoundValue()
 							.asURIResource();
-					superSuperResourceURI = superSuperResource.getURI();
-					superSuperResourceShow = superSuperResource.getLocalName();
-				}
-				if (!resourceToResourceForHierarchyMap.containsKey(superResourceURI)) {
-					resourceToResourceForHierarchyMap.put(superResourceURI, new ResourceForHierarchy(superResourceURI,
-							superResourceShow));
-				}
-				if (!tupleBindings.hasBinding("isTopConcept")) { // use only for concept
-					resourceToResourceForHierarchyMap.get(superResourceURI).setTopConcept(false);
-				}
-				if (superSuperResource != null) {
-					if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceURI)) {
-						resourceToResourceForHierarchyMap.put(superSuperResourceURI, 
-								new ResourceForHierarchy(superSuperResourceURI, superSuperResourceShow));
+					String superResourceURI = superResource.getURI();
+					String superResourceShow = superResource.getLocalName();
+					ARTURIResource superSuperResource = null;
+					String superSuperResourceURI = null;
+					String superSuperResourceShow = null;
+					if (tupleBindings.hasBinding(superSuperResourceVar)) {
+						superSuperResource = tupleBindings.getBinding(superSuperResourceVar).getBoundValue()
+								.asURIResource();
+						superSuperResourceURI = superSuperResource.getURI();
+						superSuperResourceShow = superSuperResource.getLocalName();
 					}
-					ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
-							.get(superSuperResourceURI);
-					resourceForHierarchy.addSubResource(superResourceURI);
+					if (!resourceToResourceForHierarchyMap.containsKey(superResourceURI)) {
+						resourceToResourceForHierarchyMap.put(superResourceURI, new ResourceForHierarchy(
+								superResourceURI, superResourceShow));
+					}
+					if (!tupleBindings.hasBinding("isTopConcept")) { // use only for concept
+						resourceToResourceForHierarchyMap.get(superResourceURI).setTopConcept(false);
+					}
 					
-					resourceToResourceForHierarchyMap.get(superResourceURI).setHasNoSuperResource(false);
+					if (superSuperResource != null) {
+						if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceURI)) {
+							resourceToResourceForHierarchyMap.put(superSuperResourceURI, 
+									new ResourceForHierarchy(superSuperResourceURI, superSuperResourceShow));
+						}
+						ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
+								.get(superSuperResourceURI);
+						resourceForHierarchy.addSubResource(superResourceURI);
+						
+						resourceToResourceForHierarchyMap.get(superResourceURI).setHasNoSuperResource(false);
+					}
+				}
+				if(tupleBindings.hasBinding("isTop")){
+					isTopResource = true;
 				}
 				
 			}
 			iter.close();
+			
 			
 			//itertate over the resoruceToResourceForHierarchyMap and look for the topConcept
 			//and construct a list of list containg all the possible paths
@@ -375,10 +419,10 @@ public class Search extends STServiceAdapter {
 					if(schemeURI!=null && !resourceForHierarchy.isTopConcept){
 						continue;
 					}
-				} 
+				}
 				List<String> currentList = new ArrayList<String>();
 				currentList.add(resourceForHierarchy.getResource());
-				getNarrowerListUsingConceptFroNarrower(resourceForHierarchy, currentList, pathList, 
+				getSubResourcesListUsingResourceFroHierarchy(resourceForHierarchy, currentList, pathList, 
 						resourceToResourceForHierarchyMap);
 			}
 			//now construct the response
@@ -396,6 +440,16 @@ public class Search extends STServiceAdapter {
 							.getResource());
 				}
 				//add, at the end, the input concept
+				Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
+				concElem.setAttribute("role", role);
+				concElem.setAttribute("show", inputResource.getLocalName());
+				concElem.setTextContent(inputResource.getURI());
+			}
+			if(isTopResource){
+				//the input resource is a top resource for its role (concept, class or property)
+				Element pathElem = XMLHelp.newElement(pathCollection, "path");
+				pathElem.setAttribute("length", "0");
+				Element pathInnerCollection = XMLHelp.newElement(pathElem, "collection");
 				Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
 				concElem.setAttribute("role", role);
 				concElem.setAttribute("show", inputResource.getLocalName());
@@ -432,7 +486,8 @@ public class Search extends STServiceAdapter {
 			filterQuery += variable+ " = <"+RDF.PROPERTY+"> || "+
 					variable+" = <"+OWL.OBJECTPROPERTY+"> || "+
 					variable+" = <"+OWL.DATATYPEPROPERTY+"> || "+
-					variable+" = <"+OWL.ANNOTATIONPROPERTY+">";
+					variable+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
+					variable+" = <"+OWL.ONTOLOGYPROPERTY+"> ";
 			//@formatter:on
 		}
 		if(isConceptWanted){
@@ -448,10 +503,13 @@ public class Search extends STServiceAdapter {
 			}
 			//@formatter:off
 			filterQuery+=variable+"!= <"+OWL.CLASS+"> && "+
+					variable+"!=<"+RDFS.CLASS+"> && "+
+					variable+"!=<"+RDFS.RESOURCE+"> && "+
 					variable+"!=<"+RDF.PROPERTY+"> && "+
 					variable+"!=<"+OWL.OBJECTPROPERTY+"> && "+
 					variable+"!=<"+OWL.DATATYPEPROPERTY+"> && "+
 					variable+"!=<"+OWL.ANNOTATIONPROPERTY+"> && "+
+					variable+"!=<"+OWL.ONTOLOGYPROPERTY+"> && "+
 					variable+"!=<"+SKOS.CONCEPT+"> && "+
 					variable+"!=<"+SKOS.CONCEPTSCHEME+"> && "+
 					variable+"!=<"+SKOSXL.LABEL+">";
@@ -482,27 +540,32 @@ public class Search extends STServiceAdapter {
 		return query;
 	}
 	
-	private void getNarrowerListUsingConceptFroNarrower(ResourceForHierarchy resource, 
+	private void getSubResourcesListUsingResourceFroHierarchy(ResourceForHierarchy resource, 
 			List<String> currentPathList, List<List<String>> pathList, 
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap ){
 		List<String> subResourceList = resource.getSubResourcesList();
 		
-		for(String subResource : subResourceList){
-			List<String> updatedPath = new ArrayList<String>(currentPathList);
-			if(updatedPath.contains(subResource)){
-				//this element already exist in the path, it is a cycle, so, skip this element
-				continue;
-			}
-			updatedPath.add(subResource);
-			// check if the subResource has no element above (broader or superClass), this mean that it 
-			// is the last element in the path
-			if(resourceToResourceForHierarchyMap.get(subResource).getSubResourcesList().isEmpty()){
-				pathList.add(updatedPath);
-				continue;
-			}
-			ResourceForHierarchy updatedResourceForHierarchy = resourceToResourceForHierarchyMap.get(subResource);
-			getNarrowerListUsingConceptFroNarrower(updatedResourceForHierarchy, updatedPath, pathList, 
-					resourceToResourceForHierarchyMap);
+		if(subResourceList.isEmpty()) {
+			pathList.add(currentPathList);
+		} else{
+			for(String subResource : subResourceList){
+				List<String> updatedPath = new ArrayList<String>(currentPathList);
+				if(updatedPath.contains(subResource)){
+					//this element already exist in the path, it is a cycle, so, skip this element
+					continue;
+				}
+				updatedPath.add(subResource);
+				// check if the subResource has no element above (broader or superClass), this mean that it 
+				// is the last element in the path
+				if(resourceToResourceForHierarchyMap.get(subResource).getSubResourcesList().isEmpty()){
+					pathList.add(updatedPath);
+					continue;
+				}
+				ResourceForHierarchy updatedResourceForHierarchy = resourceToResourceForHierarchyMap
+						.get(subResource);
+				getSubResourcesListUsingResourceFroHierarchy(updatedResourceForHierarchy, updatedPath, 
+						pathList, resourceToResourceForHierarchyMap);
+		}
 		}
 	}
 	
