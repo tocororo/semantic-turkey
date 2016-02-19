@@ -134,44 +134,6 @@ public class Search extends STServiceAdapter {
 				addFilterForRsourseType("?type", isClassWanted, isInstanceWanted, isPropertyWanted, 
 						isConceptWanted);
 		
-		/*if(isClassWanted){
-			previousPart = true;
-			query+="\n{" +
-					"\n?resource a <"+OWL.CLASS+"> ." +
-					"\n}";
-		}
-		if(isInstanceWanted){
-			if(previousPart){
-				query+="\nUNION";
-			}
-			previousPart = true;
-			query+="\n{" +
-					"\n?resource a ?className ." +
-					"FILTER(?className !=<"+OWL.CLASS+"> || ?className != <"+SKOS.CONCEPT+"> ||" +
-							"?className != <"+SKOSXL.LABEL+"> || ?className != <"+SKOS.CONCEPTSCHEME+"> " +
-									"?className != <"+RDF.PROPERTY+">)" +
-					"\n}";
-		}
-		
-		if(isConceptWanted){
-			if(previousPart){
-				query+="\nUNION";
-			}
-			previousPart = true;
-			query+="\n{" +
-					"\n?resource a <"+SKOS.CONCEPT+">" +
-					"\n}";
-		}
-		if(isPropertyWanted){
-			if(previousPart){
-				query+="\nUNION";
-			}
-			previousPart = true;
-			query+="\n{" +
-					"\n?resource a <"+RDF.PROPERTY+">" +
-					"\n}";
-		}*/
-		
 		query+="\n}" +
 			"\n}";
 			
@@ -216,11 +178,12 @@ public class Search extends STServiceAdapter {
 		
 		TupleQuery tupleQuery;
 		tupleQuery = owlModel.createTupleQuery(query);
-		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(true);
+		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(false);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
+		List<String> addedIndividualList = new ArrayList<String>();
 		while (tupleBindingsIterator.hasNext()) {
 			TupleBindings tupleBindings = tupleBindingsIterator.next();
 			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
@@ -231,22 +194,30 @@ public class Search extends STServiceAdapter {
 
 			// TODO, explicit set to true
 			RDFResourceRolesEnum role = null;
-			if(rolesArray.length == 1){
-				role = RDFResourceRolesEnum.valueOf(rolesArray[0]);
+			//since there are more than one element in the input role array, see the resonce
+			String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
+			if(type.equals(OWL.CLASS)){
+				role = RDFResourceRolesEnum.cls;
+			} else if(type.equals(RDF.PROPERTY)){
+				role = RDFResourceRolesEnum.property;
+			} else if(type.equals(OWL.OBJECTPROPERTY)){
+				role = RDFResourceRolesEnum.objectProperty;
+			} else if(type.equals(OWL.DATATYPEPROPERTY)){
+				role = RDFResourceRolesEnum.datatypeProperty;
+			} else if(type.equals(OWL.ANNOTATIONPROPERTY)){
+				role = RDFResourceRolesEnum.annotationProperty;
+			} else if(type.equals(OWL.ONTOLOGYPROPERTY)){
+				role = RDFResourceRolesEnum.ontologyProperty;
+			}  else if(type.equals(SKOS.CONCEPT)){
+				role = RDFResourceRolesEnum.concept;
 			} else{
-				//since there are more than one element in the input role array, see the resonce
-				String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
-				if(type.equals(OWL.CLASS)){
-					role = RDFResourceRolesEnum.cls;
-				} else if(type.equals(RDF.PROPERTY) || type.equals(OWL.DATATYPEPROPERTY) 
-						|| type.equals(OWL.OBJECTPROPERTY) || type.equals(OWL.ANNOTATIONPROPERTY)){
-					role = RDFResourceRolesEnum.property;
-				} else if(type.equals(SKOS.CONCEPT)){
-					role = RDFResourceRolesEnum.concept;
-				} else{
-					role = RDFResourceRolesEnum.individual;
-				} 
-			}
+				role = RDFResourceRolesEnum.individual;
+				if(addedIndividualList.contains(resourceURI.asURIResource())){
+					//the individual was already added
+					continue;
+				}
+				addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
+			} 
 			collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
 					true, true));
 		}
