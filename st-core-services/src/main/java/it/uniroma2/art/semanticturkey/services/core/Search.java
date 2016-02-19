@@ -426,25 +426,15 @@ public class Search extends STServiceAdapter {
 						resourceToResourceForHierarchyMap);
 			}
 			//now construct the response
-			Element pathCollection = XMLHelp.newElement(dataElement, "collection");
+			//to order the path (from the shortest to the longest) first find the maximum lenght
+			int maxLength = -1;
 			for(List<String> path : pathList){
-				Element pathElem = XMLHelp.newElement(pathCollection, "path");
-				pathElem.setAttribute("length", path.size()+"");
-				Element pathInnerCollection = XMLHelp.newElement(pathElem, "collection");
-				for(String conceptInPath : path){
-					Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
-					concElem.setAttribute("role", role);
-					concElem.setAttribute("show", resourceToResourceForHierarchyMap.get(conceptInPath)
-							.getShow());
-					concElem.setTextContent(resourceToResourceForHierarchyMap.get(conceptInPath)
-							.getResource());
+				int currentLength = path.size();
+				if(maxLength==-1 || maxLength<currentLength){
+					maxLength = currentLength;
 				}
-				//add, at the end, the input concept
-				Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
-				concElem.setAttribute("role", role);
-				concElem.setAttribute("show", inputResource.getLocalName());
-				concElem.setTextContent(inputResource.getURI());
 			}
+			Element pathCollection = XMLHelp.newElement(dataElement, "collection");
 			if(isTopResource){
 				//the input resource is a top resource for its role (concept, class or property)
 				Element pathElem = XMLHelp.newElement(pathCollection, "path");
@@ -455,6 +445,31 @@ public class Search extends STServiceAdapter {
 				concElem.setAttribute("show", inputResource.getLocalName());
 				concElem.setTextContent(inputResource.getURI());
 			}
+			for(int currentLength=1; currentLength<=maxLength; ++currentLength){
+				for(List<String> path : pathList){
+					if(currentLength != path.size()){
+						//it is not the right interation to add this path
+						continue;
+					}
+					Element pathElem = XMLHelp.newElement(pathCollection, "path");
+					pathElem.setAttribute("length", path.size()+"");
+					Element pathInnerCollection = XMLHelp.newElement(pathElem, "collection");
+					for(String conceptInPath : path){
+						Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
+						concElem.setAttribute("role", role);
+						concElem.setAttribute("show", resourceToResourceForHierarchyMap.get(conceptInPath)
+								.getShow());
+						concElem.setTextContent(resourceToResourceForHierarchyMap.get(conceptInPath)
+								.getResource());
+					}
+					//add, at the end, the input concept
+					Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
+					concElem.setAttribute("role", role);
+					concElem.setAttribute("show", inputResource.getLocalName());
+					concElem.setTextContent(inputResource.getURI());
+				}
+			}
+			
 			
 			return response;
 		} catch (ModelAccessException e) {
