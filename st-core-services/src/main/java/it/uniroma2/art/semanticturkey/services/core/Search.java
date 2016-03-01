@@ -212,7 +212,7 @@ public class Search extends STServiceAdapter {
 				role = RDFResourceRolesEnum.concept;
 			} else{
 				role = RDFResourceRolesEnum.individual;
-				if(addedIndividualList.contains(resourceURI.asURIResource())){
+				if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
 					//the individual was already added
 					continue;
 				}
@@ -455,8 +455,8 @@ public class Search extends STServiceAdapter {
 	}
 	
 	
-	private String addFilterForRsourseType(String variable, boolean isClassWanted, boolean isInstanceWanted,
-			boolean isPropertyWanted, boolean isConceptWanted) {
+	private String addFilterForRsourseType(String variable, boolean isClassWanted, 
+			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted) {
 		boolean otherWanted = false;
 		String filterQuery = "\nFILTER( ";
 		if(isClassWanted){
@@ -488,7 +488,10 @@ public class Search extends STServiceAdapter {
 				filterQuery += " || ( ";
 			}
 			//@formatter:off
-			filterQuery+=variable+"!= <"+OWL.CLASS+"> && "+
+			filterQuery+="EXISTS{"+variable+" a <"+OWL.CLASS+">}";
+			
+			//old version
+			/*filterQuery+=variable+"!= <"+OWL.CLASS+"> && "+
 					variable+"!=<"+RDFS.CLASS+"> && "+
 					variable+"!=<"+RDFS.RESOURCE+"> && "+
 					variable+"!=<"+RDF.PROPERTY+"> && "+
@@ -498,7 +501,7 @@ public class Search extends STServiceAdapter {
 					variable+"!=<"+OWL.ONTOLOGYPROPERTY+"> && "+
 					variable+"!=<"+SKOS.CONCEPT+"> && "+
 					variable+"!=<"+SKOS.CONCEPTSCHEME+"> && "+
-					variable+"!=<"+SKOSXL.LABEL+">";
+					variable+"!=<"+SKOSXL.LABEL+">";*/
 			//@formatter:on
 			if(otherWanted){
 				filterQuery += " ) ";
