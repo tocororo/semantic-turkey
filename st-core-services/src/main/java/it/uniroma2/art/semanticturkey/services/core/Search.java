@@ -28,6 +28,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -227,7 +228,8 @@ public class Search extends STServiceAdapter {
 	}
 
 	@GenerateSTServiceController
-	public Response getPathFromRoot(String role, String resourceURI, @Optional String schemeURI){
+	public Response getPathFromRoot(String role, String resourceURI, @Optional String schemeURI)
+			throws InvalidParameterException{
 		
 		OWLModel owlModel = getOWLModel();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -275,8 +277,7 @@ public class Search extends STServiceAdapter {
 						"\n}" +
 						"\n}";
 				//@formatter:on
-			}
-			else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name())){
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name())){
 				superResourceVar = "superProperty";
 				superSuperResourceVar = "superSuperProperty";
 				//@formatter:off
@@ -302,8 +303,7 @@ public class Search extends STServiceAdapter {
 						"\n}" +
 						"\n}";
 				//@formatter:on
-			}
-			else { // role.toLowerCase().equals(RDFResourceRolesEnum.class))
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.cls.name())) {
 				superResourceVar = "superClass";
 				superSuperResourceVar = "superSuperClass";
 				//@formatter:off
@@ -323,6 +323,8 @@ public class Search extends STServiceAdapter {
 						"\n}" +
 						"\n}";;
 				//@formatter:on
+			} else {
+				throw new IllegalArgumentException("Invalid input role: "+role);
 			}
 			logger.debug("query: " + query);
 			TupleQuery tupleQuery = owlModel.createTupleQuery(query);
