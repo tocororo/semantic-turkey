@@ -58,7 +58,7 @@ public class InputOutput extends STServiceAdapter {
 			@RequestParam(value="ext", required=false) String ext,
 			@RequestParam(value="format", required=false) String format,
 			@RequestParam(value = "allNGs", defaultValue = "false") boolean allNGs) 
-			throws IOException, ModelAccessException, UnsupportedRDFFormatException{
+			throws IOException, ModelAccessException, UnsupportedRDFFormatException {
 		
 		File tempServerFile;
 		RDFFormat rdfFormat = RDFFormat.parseFormat(format);
@@ -91,11 +91,13 @@ public class InputOutput extends STServiceAdapter {
 			model.writeRDF(tempServerFile, rdfFormat, getUserNamedGraphs());
 		else
 			model.writeRDF(tempServerFile, rdfFormat, getWorkingGraph());
+		
+		oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
+		oRes.setHeader("Access-Control-Allow-Origin", "*");
 		FileInputStream is = new FileInputStream(tempServerFile);
 		IOUtils.copy(is, oRes.getOutputStream());
 		oRes.setContentType(rdfFormat.getMIMEType());
 		oRes.setContentLength((int) tempServerFile.length());
-		oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
 		oRes.flushBuffer();
 		is.close();
 	}
