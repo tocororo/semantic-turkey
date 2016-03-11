@@ -373,11 +373,12 @@ public class Refactor extends STServiceAdapter {
 			tempTargetModel.close();
 			
 			//Return file as attachment in response
+			oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
+			oRes.setHeader("Access-Control-Allow-Origin", "*");
 			FileInputStream is = new FileInputStream(tempServerFile);
 			IOUtils.copy(is, oRes.getOutputStream());
 			oRes.setContentType(rdfFormat.getMIMEType());
 			oRes.setContentLength((int) tempServerFile.length());
-			oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
 			oRes.flushBuffer();
 			is.close();
 		} else {
