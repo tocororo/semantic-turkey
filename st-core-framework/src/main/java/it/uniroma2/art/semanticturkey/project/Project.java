@@ -84,6 +84,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	protected File infoSTPFile;
 	protected File modelConfigFile;
+	protected File renderingConfigFile;
+	protected File uriGenConfigFile;
 
 	protected STOntologyManager<MODELTYPE> ontManager;
 	Class<? extends ModelConfiguration> modelConfigClass;
@@ -169,6 +171,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		logger.debug("initializing project: " + projectName);
 		infoSTPFile = new File(projectDir, INFOFILENAME);
 		modelConfigFile = new File(projectDir, MODELCONFIG_FILENAME);
+		uriGenConfigFile = new File(projectDir, URI_GENERATOR_CONFIG_FILENAME);
+		renderingConfigFile = new File(projectDir, RENDERING_ENGINE_CONFIG_FILENAME);
 
 		stp_properties = new Properties();
 		try {

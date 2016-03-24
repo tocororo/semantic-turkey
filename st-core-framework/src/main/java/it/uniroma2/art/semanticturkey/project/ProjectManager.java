@@ -638,6 +638,8 @@ public class ProjectManager {
 		Utilities.copy(project.infoSTPFile, new File(tempDir, project.infoSTPFile.getName()));
 		Utilities.copy(project.nsPrefixMappingsPersistence.getFile(), new File(tempDir,
 				project.nsPrefixMappingsPersistence.getFile().getName()));
+		Utilities.copy(project.uriGenConfigFile, new File(tempDir, project.uriGenConfigFile.getName()));
+		Utilities.copy(project.renderingConfigFile, new File(tempDir, project.renderingConfigFile.getName()));
 		Utilities.copy(project.modelConfigFile, new File(tempDir, project.modelConfigFile.getName()));
 		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
 		Utilities
@@ -677,6 +679,10 @@ public class ProjectManager {
 				NSPrefixMappings.prefixMappingFileName));
 		Utilities.copy(new File(tempDir, Project.MODELCONFIG_FILENAME), new File(newProjDir,
 				Project.MODELCONFIG_FILENAME));
+		Utilities.copy(new File(tempDir, Project.URI_GENERATOR_CONFIG_FILENAME), new File(newProjDir,
+				Project.URI_GENERATOR_CONFIG_FILENAME));
+		Utilities.copy(new File(tempDir, Project.RENDERING_ENGINE_CONFIG_FILENAME), new File(newProjDir,
+				Project.RENDERING_ENGINE_CONFIG_FILENAME));
 
 		// ProjectType projectType = ProjectType.valueOf(stp_properties.getProperty(Project.PROJECT_TYPE));
 		// String ontManagerID = stp_properties.getProperty(Project.ONTOLOGY_MANAGER_ID_PROP);
@@ -688,13 +694,16 @@ public class ProjectManager {
 		Project<? extends RDFModel> newProj;
 		try {
 			newProj = activateProject(name);
-			newProj.setName(name);
-
-			newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
-					newProj.getBaseURI(), RDFFormat.NTRIPLES);
-
-			tempDir.delete();
-			tempDir.deleteOnExit();
+			try {
+				newProj.setName(name);
+				newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
+						newProj.getBaseURI(), RDFFormat.NTRIPLES);
+	
+				tempDir.delete();
+				tempDir.deleteOnExit();
+			} finally {
+				tearDownProject(newProj);
+			}
 		} catch (ProjectInexistentException e) {
 			throw new ProjectCreationException("Error while importing project from file: "
 					+ semTurkeyProjectFile
