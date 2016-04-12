@@ -1,59 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<features>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="semantic_turkey-${project.version}">
 
 	<repository>mvn:it.uniroma2.art.coda/coda-karaf/${coda.version}/xml/features</repository>
 	
 	<feature name="semantic_prereq" version="${project.version}">
-
-		
+	
+		<feature prerequisite="true" dependency="false">wrap</feature>
+	
 		<!-- These bundles provide optional dependencies for spring-web, in order to support multipart
 			resolver. It's important that these bundles are installed before spring-web, otherwise the latter
 			must be refreshed to pick the optional packages.
 			See http://fusesource.com/forums/thread.jspa?threadID=4139 -->
 		<!-- Commons io and fileupload -->
-		<bundle>mvn:commons-io/commons-io/2.4</bundle>
-		<bundle>mvn:org.apache.commons/com.springsource.org.apache.commons.fileupload/1.2.0</bundle>
+		<bundle dependency="true">mvn:commons-io/commons-io/2.4</bundle>
+		<bundle dependency="true">mvn:commons-fileupload/commons-fileupload/1.3.1</bundle>
 
 		<!-- Owlart -->
-		<bundle>mvn:it.uniroma2.art.owlart/owlart-api/${owlart-api.version}</bundle>
-		
+		<bundle dependency="true">mvn:it.uniroma2.art.owlart/owlart-api/2.5-SNAPSHOT</bundle>
+
+		<!-- Guava -->
+		<bundle dependency="true">mvn:com.google.guava/guava/15.0</bundle>
+
+		<!-- Second String -->
+		<bundle dependency="true">mvn:http://clojars.org/repo!com.wcohen.ss.art.uniroma2.it/secondstring-osgi/2006.06.15</bundle>
+
 		<!-- CODA -->
-		<feature>coda</feature>
+		<feature version="[1.3,2)">coda</feature>
 
 		<!-- Web-Console -->
 		<feature>webconsole</feature>
 
+		<!-- Pax WAR -->
+		<feature>pax-war</feature>
+
 		<!-- Spring/SpringDM -->
-		<feature>spring</feature>
-		<feature>spring-web</feature>
-		<feature>spring-dm</feature>
-		<feature>spring-dm-web</feature>
-		<bundle>mvn:org.springframework/spring-asm/3.1.4.RELEASE</bundle>
-		<bundle>mvn:org.aspectj/com.springsource.org.aspectj.weaver/1.6.8.RELEASE</bundle>
-		<bundle>mvn:org.aspectj/com.springsource.org.aspectj.runtime/1.6.8.RELEASE</bundle>
+		<!-- Note: coda usese uimafit which uses spring 3.1.X... check if it is possible to use just one version -->
+		<feature version="[3.2,4)">spring</feature>
+		<feature version="[3.2,4)">spring-web</feature>
+		<feature version="[1.2.1,2)">spring-dm</feature>
+		<feature version="[1.2.1,2)">spring-dm-web</feature>
 
+		<!-- Javax Validation -->
+		<bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final</bundle>
 
-		<!-- Dependencies -->
-		<bundle>mvn:org.jsoup/com.springsource.org.jsoup/1.5.2</bundle>
-		<bundle>mvn:org.joda/com.springsource.org.joda.time/1.6.0</bundle>
-		<bundle>mvn:org.hibernate/com.springsource.org.hibernate.validator/4.2.0.Final</bundle>
-		<bundle>mvn:org.osgi/org.osgi.compendium/4.2.0</bundle>
-		<bundle>mvn:javax.validation/com.springsource.javax.validation/1.0.0.GA</bundle>
-		<bundle>mvn:javax.inject/com.springsource.javax.inject/1.0.0</bundle>
-		<bundle>mvn:javax.persistence/com.springsource.javax.persistence/2.0.0</bundle>
-		<bundle>mvn:com.google.guava/guava/15.0</bundle>
-		<bundle>mvn:http://clojars.org/repo!com.wcohen.ss.art.uniroma2.it/secondstring-osgi/2006.06.15</bundle>
-		<bundle>mvn:net.sourceforge.cglib/com.springsource.net.sf.cglib/2.2.0</bundle>
-		<bundle>mvn:org.aopalliance/com.springsource.org.aopalliance/1.0.0</bundle>
-		<bundle>mvn:javax.el/com.springsource.javax.el/1.0.0</bundle>
-		<bundle>mvn:javax.servlet/com.springsource.javax.servlet/2.5.0</bundle>
-		<bundle>mvn:javax.servlet/com.springsource.javax.servlet.jsp/2.1.0</bundle>
-		<bundle>mvn:javax.servlet/com.springsource.javax.servlet.jsp.jstl/1.1.2</bundle>
-		<bundle>mvn:org.apache.taglibs/com.springsource.org.apache.taglibs.standard/1.1.2</bundle>
-		<bundle>mvn:org.ops4j.pax.web/pax-web-extender-war/1.1.4</bundle>		
+		<!-- Support for Hibernate validation -->
+		<bundle dependency="true">mvn:org.jsoup/com.springsource.org.jsoup/1.5.2</bundle>
+		<bundle dependency="true">mvn:org.joda/com.springsource.org.joda.time/1.6.0</bundle>
+		<bundle dependency="true">mvn:org.hibernate/com.springsource.org.hibernate.validator/4.2.0.Final</bundle>
+		<bundle dependency="true">mvn:javax.persistence/com.springsource.javax.persistence/2.0.0</bundle>
 
-		
+		<!-- Support for Sesame 4 -->
+		<bundle dependency="true">mvn:org.openrdf.sesame/sesame-runtime-osgi/4.1.1</bundle>
+		<bundle dependency="true">wrap:mvn:org.antlr/stringtemplate/3.2.1</bundle>
+		<bundle dependency="true">mvn:ch.qos.logback/logback-classic/1.1.2</bundle>
+		<bundle dependency="true">mvn:ch.qos.logback/logback-core/1.1.2</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.6.2</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/2.6.2</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.6.2</bundle>
+		<bundle dependency="true">mvn:com.github.jsonld-java/jsonld-java/0.7.0</bundle>
+		<bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/4.4.4</bundle>
+		<bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.1</bundle>
+		<bundle dependency="true">mvn:com.google.guava/guava/18.0</bundle>
+		<bundle dependency="true">mvn:com.opencsv/opencsv/3.2</bundle>
+		<bundle dependency="true">mvn:com.spatial4j/spatial4j/0.4.1</bundle>
+		<bundle dependency="true">mvn:org.mapdb/mapdb/1.0.7</bundle>
+		<bundle dependency="true">wrap:mvn:org.apache.commons/commons-lang3/3.3.2</bundle>
 		
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
@@ -68,7 +79,7 @@
 		</configfile>
 	</feature>
 
-	<feature name="semantic_turkey" version="1.0">
+	<feature name="semantic_turkey" version="${project.version}">
 
 		<!-- First install all prerequisites -->
 		<feature>semantic_prereq</feature>
@@ -77,6 +88,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sesame2-ontmanager/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sesame4-ontmanager/${project.version}</bundle>
 	</feature>
 
 </features>

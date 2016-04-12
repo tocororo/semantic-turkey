@@ -60,7 +60,6 @@ detectOS() {
     # For AIX, set an environment variable
     if $aix; then
          export LDR_CNTRL=MAXDATA=0xB0000000@DSA
-         export IBM_JAVA_HEAPDUMP_TEXT=true
          echo $LDR_CNTRL
     fi
 }
@@ -73,7 +72,7 @@ locateHome() {
     # In POSIX shells, CDPATH may cause cd to write to stdout
     (unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 
-    KARAF_HOME=`cd "$DIRNAME/.."; pwd`
+    KARAF_HOME=`cd $DIRNAME/..; pwd`
     if [ ! -d "$KARAF_HOME" ]; then
         die "KARAF_HOME is not valid: $KARAF_HOME"
     fi
@@ -99,6 +98,16 @@ locateData() {
     fi
 }
 
+locateEtc() {
+    if [ "x$KARAF_ETC" != "x" ]; then
+        if [ ! -d "$KARAF_ETC" ]; then
+            die "KARAF_ETC is not valid: $KARAF_ETC"
+        fi
+    else
+        KARAF_ETC=$KARAF_BASE/etc
+    fi
+}
+
 init() {
     # Determine if there is special OS handling we must perform
     detectOS
@@ -111,6 +120,9 @@ init() {
 
     # Locate the Karaf data directory
     locateData
+
+    # Locat the Karaf etc directory
+    locateEtc
 }
 
 run() {
@@ -118,7 +130,10 @@ run() {
         KARAF_HOME=`cygpath --path --windows "$KARAF_HOME"`
         KARAF_BASE=`cygpath --path --windows "$KARAF_BASE"`
         KARAF_DATA=`cygpath --path --windows "$KARAF_DATA"`
-        CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
+        KARAF_ETC=`cygpath --path --windows "$KARAF_ETC"`
+        if [ ! -z "$CLASSPATH" ]; then
+            CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
+        fi
     fi
     # Ensure the log directory exists -- we need to have a place to redirect stdout/stderr
     if [ ! -d "$KARAF_DATA/log" ]; then

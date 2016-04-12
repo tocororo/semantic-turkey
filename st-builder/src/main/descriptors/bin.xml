@@ -35,10 +35,7 @@
 			<directory>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>bin/admin.bat</include>
-				<include>bin/karaf.bat</include>
-				<include>bin/start.bat</include>
-				<include>bin/stop.bat</include>
+				<include>bin/*.bat</include>
 			</includes>
 			<fileMode>0755</fileMode>
 		</fileSet>
@@ -47,13 +44,6 @@
 		<fileSet>
 			<directory>src/main/distribution</directory>
 			<outputDirectory>/</outputDirectory>
-			<includes>
-				<include>bin/admin</include>
-				<include>bin/karaf</include>
-				<include>bin/st_server_run</include>
-				<include>bin/start</include>
-				<include>bin/stop</include>
-			</includes>
 			<fileMode>0755</fileMode>
 		</fileSet>
 
@@ -63,6 +53,9 @@
 			<includes>
 				<include>*.cfg</include>
 			</includes>
+			<excludes>
+				<exclude>karaf.bat</exclude>
+			</excludes>
 			<fileMode>0644</fileMode>
 		</fileSet>
 		
@@ -102,7 +95,7 @@
 	<files>
 	
 		<file>
-			<source>${project.basedir}/target/dependencies/apache-karaf-2.3.3/bin/karaf.bat
+			<source>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}/bin/karaf.bat
 			</source>
 			<outputDirectory>/bin/</outputDirectory>
 			<destName>st_server_run.bat</destName>

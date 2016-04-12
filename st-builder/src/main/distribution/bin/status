@@ -22,7 +22,7 @@ PROGNAME=`basename "$0"`
 #
 # Sourcing environment settings for karaf similar to tomcats setenv 
 #
-KARAF_SCRIPT="start"
+KARAF_SCRIPT="status"
 export KARAF_SCRIPT
 if [ -f "$DIRNAME/setenv" ]; then
   . "$DIRNAME/setenv"
@@ -108,14 +108,6 @@ locateEtc() {
     fi
 }
 
-enableRedirect() {
-    if [ "x$KARAF_REDIRECT" != "x" ]; then
-        warn "Redirecting Karaf output to $KARAF_REDIRECT"
-    else
-        KARAF_REDIRECT="/dev/null"
-    fi
-}
-
 init() {
     # Determine if there is special OS handling we must perform
     detectOS
@@ -131,9 +123,6 @@ init() {
 
     # Locate the Karaf etc directory
     locateEtc
-
-    # Enable or not the Karaf output redirection
-    enableRedirect
 }
 
 run() {
@@ -142,7 +131,7 @@ run() {
         KARAF_BASE=`cygpath --path --windows "$KARAF_BASE"`
         KARAF_DATA=`cygpath --path --windows "$KARAF_DATA"`
         KARAF_ETC=`cygpath --path --windows "$KARAF_ETC"`
-        if [ ! -z "$CLASSPATH" ]; then
+        if [ ! -z "$CLASSPATH" ]; then
             CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
         fi
     fi
@@ -150,7 +139,7 @@ run() {
     if [ ! -d "$KARAF_DATA/log" ]; then
         mkdir -p "$KARAF_DATA/log"
     fi
-    exec "$KARAF_HOME"/bin/karaf server "$@" >> "$KARAF_REDIRECT" 2>&1 &
+    exec "$KARAF_HOME"/bin/karaf status "$@"
 }
 
 main() {

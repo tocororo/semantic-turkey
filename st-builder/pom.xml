@@ -13,25 +13,24 @@
 	<packaging>pom</packaging>
 	<description>Semantic turkey builder subproject. It creates the karaf archive with the application already deployed.</description>
 
-
 	<properties>
-		<karaf.version>2.3.3</karaf.version>
+		<karaf.version>4.0.4</karaf.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.karaf</groupId>
 			<artifactId>apache-karaf</artifactId>
-			<version>2.3.3</version>
+			<version>${karaf.version}</version>
 			<type>zip</type>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.karaf.assemblies.features</groupId>
-			<artifactId>standard</artifactId>
-			<version>2.3.3</version>
-			<type>xml</type>
-			<classifier>features</classifier>
-		</dependency>
+		<!-- <dependency> -->
+		<!-- <groupId>org.apache.karaf.assemblies.features</groupId> -->
+		<!-- <artifactId>standard</artifactId> -->
+		<!-- <version>2.3.3</version> -->
+		<!-- <type>xml</type> -->
+		<!-- <classifier>features</classifier> -->
+		<!-- </dependency> -->
 	</dependencies>
 
 	<build>
@@ -178,8 +177,8 @@
 
 			<plugin>
 				<groupId>org.apache.karaf.tooling</groupId>
-				<artifactId>features-maven-plugin</artifactId>
-				<version>2.3.3</version>
+				<artifactId>karaf-maven-plugin</artifactId>
+				<version>${karaf.version}</version>
 				<!-- <version>2.1.6</version> 2.1.6 has no issues with Maven3 (at least, 
 					some version of MVN3), but fails in deploying all content to the target -->
 				<executions>
@@ -187,39 +186,24 @@
 						<id>add-features-to-repo</id>
 						<phase>prepare-package</phase>
 						<goals>
-							<goal>add-features-to-repo</goal>
+							<goal>features-add-to-repository</goal>
 						</goals>
 						<configuration>
 							<descriptors>
-								<descriptor>mvn:org.apache.karaf.assemblies.features/standard/2.3.3/xml/features</descriptor>
+								<descriptor>mvn:org.apache.karaf.features/standard/${karaf.version}/xml/features</descriptor>
+								<descriptor>mvn:org.apache.karaf.features/enterprise/${karaf.version}/xml/features</descriptor>
+								<descriptor>mvn:org.apache.karaf.features/spring/${karaf.version}/xml/features</descriptor>
 								<descriptor>file:${project.basedir}/target/classes/semanticturkey.xml</descriptor>
 							</descriptors>
 							<features>
 								<feature>semantic_turkey</feature>
 							</features>
+							<addTransitiveFeatures>true</addTransitiveFeatures>
+							
 							<!-- In 2.3.3 this property defaults to ${project.build.directory}/features-repo -->
 							<!-- <repository>${project.build.directory}/features-repo</repository> -->
 						</configuration>
 					</execution>
-					<execution>
-						<!-- Create the KAR archive -->
-						<id>create-kar</id>
-						<goals>
-							<goal>create-kar</goal>
-						</goals>
-						<configuration>
-							<featuresFile>${project.basedir}/target/classes/semanticturkey.xml</featuresFile>
-							<featureName>semantic_turkey</featureName>
-
-							<!-- Indicates a non-existing directory, to avoid that resources in 
-								target/classes are automatically copied into the KAR archive -->
-							<resourcesDir>${project.basedir}/target/some-fancy-directory</resourcesDir>
-
-							<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
-							<outputDirectory>${project.parent.basedir}/target/st-karaf</outputDirectory>
-						</configuration>
-					</execution>
-
 				</executions>
 			</plugin>
 
