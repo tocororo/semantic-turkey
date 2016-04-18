@@ -10,6 +10,7 @@ import javax.validation.ConstraintValidatorContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Deprecated
 public class ExistingValidator implements
 		ConstraintValidator<Existing, ARTResource> {
 	

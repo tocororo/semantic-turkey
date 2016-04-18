@@ -70,6 +70,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -77,6 +79,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 
+import org.openrdf.repository.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,24 +109,28 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String PROJECT_MODEL_TYPE = "ModelType";
 	public static final String PROJECT_STORE_DIR_NAME = "store";
 	public static final String PLUGINS_PROP = "plugins";
-	
+
 	// Constants concerning project plugins
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
-	
+
 	public static final String URI_GENERATOR_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".urigen";
 	public static final String URI_GENERATOR_FACTORY_ID_PROP = URI_GENERATOR_PROP_PREFIX + ".factoryID";
-	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = NativeTemplateBasedURIGeneratorFactory.class.getName();
-	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX + ".configType";
+	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = NativeTemplateBasedURIGeneratorFactory.class
+			.getName();
+	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX
+			+ ".configType";
 
 	public static final String RENDERING_ENGINE_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".rendering";
 	public static final String RENDERING_ENGINE_FACTORY_ID_PROP = RENDERING_ENGINE_PROP_PREFIX + ".factoryID";
-	public static final String RENDERING_ENGINE_FACTORY_ID_DEFAULT_PROP_VALUE = RDFSRenderingEngineFactory.class.getName();
-	public static final String RENDERING_ENGINE_CONFIGURATION_TYPE_PROP = RENDERING_ENGINE_PROP_PREFIX + ".configType";
-
+	public static final String RENDERING_ENGINE_FACTORY_ID_DEFAULT_PROP_VALUE = RDFSRenderingEngineFactory.class
+			.getName();
+	public static final String RENDERING_ENGINE_CONFIGURATION_TYPE_PROP = RENDERING_ENGINE_PROP_PREFIX
+			+ ".configType";
 
 	// this hashset, used by the setProperty(...) method, prevents ST system properties from being
 	// accidentally overwritten by third party plugins/extensions
 	public static final HashSet<String> reservedProperties = new HashSet<String>();
+
 	static {
 
 		reservedProperties.add(INFOFILENAME);
@@ -185,10 +192,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
-	void activate() throws ProjectIncompatibleException, ProjectInconsistentException,
-			ModelCreationException, ProjectUpdateException, UnavailableResourceException,
-			UnsupportedModelConfigurationException, UnloadableModelConfigurationException,
-			ProjectAccessException {
+	void activate() throws ProjectIncompatibleException, ProjectInconsistentException, ModelCreationException,
+			ProjectUpdateException, UnavailableResourceException, UnsupportedModelConfigurationException,
+			UnloadableModelConfigurationException, ProjectAccessException {
 		try {
 			OntologyManagerFactory<ModelConfiguration> ontMgrFact = PluginManager
 					.getOntManagerImpl(getOntologyManagerImplID());
@@ -220,25 +226,30 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			if (uriGenFactoryID == null) {
 				uriGenFactoryID = URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
 			}
-			
+
 			try {
 				PluginFactory<?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
 				PluginConfiguration uriGenConfig;
-				
+
 				if (uriGenConfigType != null) {
 					uriGenConfig = uriGenFactory.createPluginConfiguration(uriGenConfigType);
 					uriGenConfig.loadParameters(new File(_projectDir, URI_GENERATOR_CONFIG_FILENAME));
 				} else {
 					uriGenConfig = uriGenFactory.createDefaultPluginConfiguration();
 				}
-				
-				logger.debug("instantiating URIGenerator. PluginFactory.getID() = {} // PluginConfiguration = {}", uriGenFactory.getID(), uriGenConfig); 
 
-				this.uriGenerator = (URIGenerator)uriGenFactory.createInstance(uriGenConfig);
-			} catch (IOException | it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException | ClassNotFoundException | UnsupportedPluginConfigurationException | UnloadablePluginConfigurationException e) {
+				logger.debug(
+						"instantiating URIGenerator. PluginFactory.getID() = {} // PluginConfiguration = {}",
+						uriGenFactory.getID(), uriGenConfig);
+
+				this.uriGenerator = (URIGenerator) uriGenFactory.createInstance(uriGenConfig);
+			} catch (IOException
+					| it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException
+					| ClassNotFoundException | UnsupportedPluginConfigurationException
+					| UnloadablePluginConfigurationException e) {
 				throw new ProjectAccessException(e);
 			}
-			
+
 			// Activation of the rendering engine for this project
 			String renderingEngineFactoryID = getProperty(RENDERING_ENGINE_FACTORY_ID_PROP);
 			String renderingEngineConfigType = getProperty(RENDERING_ENGINE_CONFIGURATION_TYPE_PROP);
@@ -246,26 +257,34 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			if (renderingEngineFactoryID == null) {
 				renderingEngineFactoryID = determineBestRenderingEngine(getModelType());
 			}
-			
+
 			try {
-				PluginFactory<?> renderingEngineFactory = PluginManager.getPluginFactory(renderingEngineFactoryID);
+				PluginFactory<?> renderingEngineFactory = PluginManager
+						.getPluginFactory(renderingEngineFactoryID);
 				PluginConfiguration renderingEngineConfig;
-				
+
 				if (renderingEngineConfigType != null) {
-					renderingEngineConfig = renderingEngineFactory.createPluginConfiguration(renderingEngineConfigType);
-					renderingEngineConfig.loadParameters(new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME));
+					renderingEngineConfig = renderingEngineFactory
+							.createPluginConfiguration(renderingEngineConfigType);
+					renderingEngineConfig
+							.loadParameters(new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME));
 				} else {
 					renderingEngineConfig = renderingEngineFactory.createDefaultPluginConfiguration();
 				}
-				
-				logger.debug("instantiating RenderingEngine. PluginFactory.getID() = {} // PluginConfiguration = {}", renderingEngineFactory.getID(), renderingEngineConfig); 
 
-				this.renderingEngine = (RenderingEngine)renderingEngineFactory.createInstance(renderingEngineConfig);
-			} catch (IOException | it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException | ClassNotFoundException | UnsupportedPluginConfigurationException | UnloadablePluginConfigurationException e) {
+				logger.debug(
+						"instantiating RenderingEngine. PluginFactory.getID() = {} // PluginConfiguration = {}",
+						renderingEngineFactory.getID(), renderingEngineConfig);
+
+				this.renderingEngine = (RenderingEngine) renderingEngineFactory
+						.createInstance(renderingEngineConfig);
+			} catch (IOException
+					| it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException
+					| ClassNotFoundException | UnsupportedPluginConfigurationException
+					| UnloadablePluginConfigurationException e) {
 				throw new ProjectAccessException(e);
 			}
 
-			
 			logger.debug("activation of project: " + getName() + ": baseuri and OntologyManager ok");
 
 			// activates the ontModel loads the triples (implementation depends on project type)
@@ -282,7 +301,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			// be really weird), it sets it again as an initialization step
 			String liveGotNS = getOntModel().getDefaultNamespace();
 			if (liveGotNS == null || !liveGotNS.equals(defaultNamespace)) {
-				logger.debug("activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
+				logger.debug(
+						"activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
 				getOntModel().setDefaultNamespace(defaultNamespace);
 				logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
 						+ defaultNamespace);
@@ -326,7 +346,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			return RDFSRenderingEngineFactory.class.getName();
 		}
 	}
-	
+
 	/**
 	 * this initializes the {@link #model} field with a newly created {@link OWLModel} for this project
 	 * 
@@ -348,7 +368,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public String getOntologyManagerImplID() throws ProjectInconsistentException {
 		return getRequiredProperty(ONTOLOGY_MANAGER_ID_PROP);
 	}
-	
+
 	/*
 	 * @SuppressWarnings("unchecked") public Class<? extends STOntologyManager> getOntologyManagerImplClass()
 	 * throws ProjectInconsistentException { return getClassTypedProperty(ONTOLOGY_MANAGER_ID_PROP,
@@ -375,8 +395,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		logger.debug(propertyName + " declared for this project: " + propValue);
 		Class<?> classTypedPropertyValue;
 		if (propValue == null) {
-			throw new ProjectInconsistentException("property: " + propertyName
-					+ " not defined for this project");
+			throw new ProjectInconsistentException(
+					"property: " + propertyName + " not defined for this project");
 		}
 		try {
 			classTypedPropertyValue = Class.forName(propValue);
@@ -440,8 +460,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return stp_properties.getProperty(propName);
 	}
 
-	public void setProperty(String propName, String propValue) throws ProjectUpdateException,
-			ReservedPropertyUpdateException {
+	public void setProperty(String propName, String propValue)
+			throws ProjectUpdateException, ReservedPropertyUpdateException {
 		logger.debug("setting property: " + propName + " to value: " + propValue);
 		if (reservedProperties.contains(propName))
 			throw new ReservedPropertyUpdateException(propName);
@@ -600,13 +620,27 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
+	@Deprecated
 	public MODELTYPE getOntModel() {
 		return getOntologyManager().getOntModel();
 	}
 
+	@Deprecated
 	// TODO this should really only be in OWLModel and SKOSModel Projects
 	public OWLModel getOWLModel() {
 		return getOntologyManager().getOWLModel();
+	}
+
+	public Repository getRepository() {
+		RDFModel model = getOntologyManager().getOntModel();
+
+		try {
+			Method m = model.getClass().getMethod("getSesame4Repository");
+			return (Repository) m.invoke(model);
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e) {
+			throw new IllegalStateException("Cannot retrieve a Sesame4 Repository for the project", e);
+		}
 	}
 
 	public File getProjectStoreDir() {
@@ -622,15 +656,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public ProjectACL getACL() {
 		return acl;
 	}
-	
+
 	public URIGenerator getURIGenerator() {
 		return this.uriGenerator;
 	}
-	
+
 	public RenderingEngine getRenderingEngine() {
 		return this.renderingEngine;
 	}
-	
+
 	// Auxiliary graphs management
 
 	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";

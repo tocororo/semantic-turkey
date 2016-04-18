@@ -1,18 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.http;
 
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.services.InvalidContextException;
-import it.uniroma2.art.semanticturkey.services.STRequest;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-
 import java.io.IOException;
 import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.openrdf.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +14,14 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.Resource;
+
+import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.resources.Config;
+import it.uniroma2.art.semanticturkey.services.InvalidContextException;
+import it.uniroma2.art.semanticturkey.services.STRequest;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 public class STServiceHTTPContext implements STServiceContext, ApplicationListener<ContextRefreshedEvent> {
 
@@ -40,6 +41,9 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 	@Autowired
 	private ApplicationContext applicationContext;
+
+	@Autowired
+	private STHTTPRequestAwareContext httpRequestAwareContext;
 
 	private ConversionService conversionService;
 
@@ -165,6 +169,9 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		return token;
 	}
 	
-	
+	@Override
+	public RepositoryConnection getRepositoryConnection() {
+		return httpRequestAwareContext.acquireConnectionIfNecessary(getProject().getRepository());
+	}
 
 }

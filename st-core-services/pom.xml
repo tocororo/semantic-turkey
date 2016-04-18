@@ -79,6 +79,11 @@
 
 
 
+		<dependency>
+			<groupId>org.openrdf.sesame</groupId>
+			<artifactId>sesame-rio-ntriples</artifactId>
+			<version>${sesame.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>

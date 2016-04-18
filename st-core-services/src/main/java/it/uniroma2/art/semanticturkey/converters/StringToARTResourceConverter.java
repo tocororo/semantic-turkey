@@ -11,6 +11,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
 
+@Deprecated
 public class StringToARTResourceConverter implements Converter<String, ARTResource> {
 
 	@Autowired

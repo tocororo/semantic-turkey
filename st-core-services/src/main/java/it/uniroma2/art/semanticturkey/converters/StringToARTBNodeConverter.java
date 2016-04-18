@@ -6,6 +6,7 @@ import it.uniroma2.art.owlart.model.ARTBNode;
 
 import org.springframework.core.convert.converter.Converter;
 
+@Deprecated
 public class StringToARTBNodeConverter implements Converter<String, ARTBNode> {
 
 	@Override

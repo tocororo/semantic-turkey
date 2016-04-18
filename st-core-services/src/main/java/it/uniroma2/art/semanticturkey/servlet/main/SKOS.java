@@ -75,7 +75,7 @@ import org.w3c.dom.Element;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
-@Component
+@Component(value="skosOld")
 public class SKOS extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(SKOS.class);

@@ -9,6 +9,7 @@ import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 
+@Deprecated
 public class ToARTNodes implements ConverterFactory<String, ARTNode> {
 
 	@Override

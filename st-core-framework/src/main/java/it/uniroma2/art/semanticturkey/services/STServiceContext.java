@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.services;
 
+import org.openrdf.repository.RepositoryConnection;
+
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 
@@ -11,4 +13,5 @@ public interface STServiceContext {
 	String getExtensionPathComponent();
 	STRequest getRequest();
 	String getSessionToken();
+	RepositoryConnection getRepositoryConnection();
 }
