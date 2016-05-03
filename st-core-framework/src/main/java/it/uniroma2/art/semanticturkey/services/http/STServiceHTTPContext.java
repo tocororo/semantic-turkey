@@ -42,7 +42,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	@Autowired
+	@Autowired(required=false)
 	private STHTTPRequestAwareContext httpRequestAwareContext;
 
 	private ConversionService conversionService;
