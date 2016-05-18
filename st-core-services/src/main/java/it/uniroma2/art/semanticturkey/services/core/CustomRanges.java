@@ -5,7 +5,6 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -354,7 +353,7 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws QueryEvaluationException
 	 */
 	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore)
-			throws PRParserException, RDFModelNotSetException, UnsupportedQueryLanguageException, 
+			throws RDFModelNotSetException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
 		if (crEntries.isEmpty()){
@@ -367,20 +366,26 @@ public class CustomRanges extends STServiceAdapter {
 			int maxStats = 0;
 			CustomRangeEntryGraph bestCre = null;
 			for (CustomRangeEntryGraph cre : crEntries) {
-				//creating the construct query
-				StringBuilder queryBuilder = new StringBuilder();
-				queryBuilder.append("construct { ");
-				queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));
-				queryBuilder.append(" } where { ");
-				queryBuilder.append("bind(<" + resource.getNominalValue() + "> as " + cre.getEntryPointPlaceholder(codaCore) + ") ");
-				queryBuilder.append(cre.getGraphSectionAsString(codaCore, true));
-				queryBuilder.append(" }");
-				String query = queryBuilder.toString();
-				GraphQuery gq = model.createGraphQuery(query);
-				int nStats = Iterators.size(gq.evaluate(false));
-				if (nStats > maxStats) {
-					maxStats = nStats;
-					bestCre = cre;
+				try {
+					//creating the construct query
+					StringBuilder queryBuilder = new StringBuilder();
+					queryBuilder.append("construct { ");
+					queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));
+					queryBuilder.append(" } where { ");
+					queryBuilder.append("bind(<" + resource.getNominalValue() + "> as " + cre.getEntryPointPlaceholder(codaCore) + ") ");
+					queryBuilder.append(cre.getGraphSectionAsString(codaCore, true));
+					queryBuilder.append(" }");
+					String query = queryBuilder.toString();
+					GraphQuery gq = model.createGraphQuery(query);
+					int nStats = Iterators.size(gq.evaluate(false));
+					if (nStats > maxStats) {
+						maxStats = nStats;
+						bestCre = cre;
+					}
+				} catch (PRParserException e) {
+					//if one of the CRE contains an error, catch the exception and continue checking the other CREs
+					System.out.println("Parsing error in PEARL rule of CustomRangeEntry with ID " + cre.getId() + ". "
+							+ "The CustomRangeEntry will be ignored, please fix it PEARL rule.");
 				}
 			}
 			return bestCre;

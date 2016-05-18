@@ -256,16 +256,23 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 */
 	public String getGraphSectionAsString(CODACore codaCore, boolean optional) 
 			throws PRParserException, RDFModelNotSetException {
-		StringBuilder sb = new StringBuilder();
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
-		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
-		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
-		if (prRulesIt.hasNext()){
-			ProjectionRule projRule = prRulesIt.next();
-			serializeGraphList(projRule.getGraphList(), sb, optional);
+		try {
+			StringBuilder sb = new StringBuilder();
+			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
+			
+			ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+			Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
+			Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
+			if (prRulesIt.hasNext()){
+				ProjectionRule projRule = prRulesIt.next();
+				serializeGraphList(projRule.getGraphList(), sb, optional);
+			}
+			return sb.toString();
+		} catch (RuntimeException e) {
+			/* sometimes if PEARL contains error, a runtime EarlyExitException is thrown,
+			 * catch it and throw a PRParserException */
+			throw new PRParserException(e);
 		}
-		return sb.toString();
 	}
 	
 	/*
