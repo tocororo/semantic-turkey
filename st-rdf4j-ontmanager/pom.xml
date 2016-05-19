@@ -8,10 +8,10 @@
 		<version>0.13-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>st-sesame4-ontmanager</artifactId>
+	<artifactId>st-rdf4j-ontmanager</artifactId>
 	<packaging>bundle</packaging>
-	<name>ST EXT-R Sesame4ImplExtension</name>
-	<description>The OSGi bundle for Sesame4 implementation of Semantic Turkey Ontology Manager</description>
+	<name>ST EXT-R RDF4JImplExtension</name>
+	<description>The OSGi bundle for RDF4J implementation of Semantic Turkey Ontology Manager</description>
 
 	<developers>
 		<developer>
@@ -37,7 +37,7 @@
 						<!-- <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName> -->
 						<bundleDescription>${project.description}</bundleDescription>
 
-						<Bundle-Activator>it.uniroma2.art.semanticturkey.ontology.sesame4.Sesame4ImplBundle</Bundle-Activator>
+						<Bundle-Activator>it.uniroma2.art.semanticturkey.ontology.rdf4j.RDF4JImplBundle</Bundle-Activator>
 
 						<!-- <Private-Package>it.uniroma2.art.semanticturkey.ontology.sesame2, 
 							org.openrdf.*, info.aduna.*</Private-Package> <_exportcontents>it.uniroma2.art.semanticturkey.ontology.sesame2, 
@@ -51,8 +51,8 @@
 							!org.apache.commons.dbcp,
 							!org.apache.xerces.util,
 							!org.apache.log.*,
-							!info.aduna.app.*,
-							!info.aduna.webapp.views.*,
+							!org.eclipse.rdf4j.common.app.*,
+							!org.eclipse.rdf4j.common.webapp.views.*,
 							!org.springframework.*,
 							!javax.activation,
 							!javax.naming,
@@ -71,10 +71,10 @@
 							!javax.xml.xpath,
 							!org.w3c.dom,
 							!sun.reflect.generics.reflectiveObjects,
-							org.openrdf.sail.helpers,
+							org.eclipse.rdf4j.sail.helpers,
 							*</Import-Package>
 						<_exportcontents>
-							it.uniroma2.art.owlart.sesame4impl.*
+							it.uniroma2.art.owlart.rdf4jimpl.*
 						</_exportcontents>
 						<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
 						<!-- <Embed-Transitive>true</Embed-Transitive> -->
@@ -127,8 +127,8 @@
 		</dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.owlart</groupId>
-			<artifactId>owlart-sesame4impl</artifactId>
-			<version>${owlart-sesame4impl.version}</version>
+			<artifactId>owlart-rdf4jimpl</artifactId>
+			<version>${owlart-rdf4jimpl.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>

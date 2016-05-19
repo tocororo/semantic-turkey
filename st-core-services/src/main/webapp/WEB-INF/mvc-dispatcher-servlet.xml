@@ -3,13 +3,13 @@
 	xmlns:osgi="http://www.springframework.org/schema/osgi" xmlns:mvc="http://www.springframework.org/schema/mvc"
 	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
 	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd 
 	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
   	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
     http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
     http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
-    http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+    http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-3.1.xsd http://www.springframework.org/schema/tx  http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 
 	<mvc:annotation-driven conversion-service="conversionService" />
 	<mvc:resources mapping="/WEB-INF/pages/**" location="/WEB-INF/pages/" />
@@ -96,10 +96,17 @@
 		<property name="order" value="1" />
 	</bean>
 
-	<bean
-		class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator">
-		<property name="proxyTargetClass" value="true" />
-		<property name="order" value="0" />
+	<bean id="stServiceAspect" class="it.uniroma2.art.semanticturkey.tx.STServiceAspect">
+		<property name="order" value="100" />
+	</bean>
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<tx:annotation-driven transaction-manager="transactionManager"
+		proxy-target-class="true" order="200" />
+
+	<bean id="transactionManager"
+		class="it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManagerFactoryBean"
+		scope="request">
+		<aop:scoped-proxy proxy-target-class="false" />
 	</bean>
 
 	<bean class="org.springframework.aop.support.DefaultPointcutAdvisor">
