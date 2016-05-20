@@ -165,7 +165,7 @@ public class XMLHelp {
 	}
 
 	
-	private static void XML2StreamResult(Element xml, boolean indent, StreamResult streamResult) {
+	private static synchronized void XML2StreamResult(Element xml, boolean indent, StreamResult streamResult) {
 		Properties outputProps = new Properties();
 		outputProps.setProperty("encoding", "UTF-8");
 		outputProps.setProperty("indent", indent ? "yes" : "no");
