@@ -71,7 +71,7 @@
 		<bundle dependency="true">wrap:mvn:org.apache.commons/commons-lang3/3.3.2</bundle>
 	
 		<!-- Support for RDF4J -->
-<!-- 		<bundle dependency="true">mvn:org.eclipse.rdf4j/rdf4j-runtime-osgi/2.0M1</bundle> -->
+		<bundle dependency="true">mvn:org.eclipse.rdf4j/rdf4j-runtime-osgi/2.0-SNAPSHOT</bundle>
 <!-- 		<bundle dependency="true">wrap:mvn:org.antlr/stringtemplate/3.2.1</bundle> -->
 <!-- 		<bundle dependency="true">wrap:mvn:org.antlr/antlr-runtime/3.3</bundle> -->
 <!-- 		<bundle dependency="true">mvn:ch.qos.logback/logback-classic/1.1.2</bundle> -->
@@ -81,11 +81,11 @@
 <!-- 		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.6.2</bundle> -->
 <!-- 		<bundle dependency="true">mvn:com.github.jsonld-java/jsonld-java/0.7.0</bundle> -->
 <!-- 		<bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/4.4.4</bundle> -->
-<!-- 		<bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.2</bundle> -->
+		<bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.2</bundle>
 <!-- 		<bundle dependency="true">mvn:com.google.guava/guava/18.0</bundle> -->
 <!-- 		<bundle dependency="true">mvn:com.opencsv/opencsv/3.2</bundle> -->
 <!-- 		<bundle dependency="true">mvn:com.spatial4j/spatial4j/0.4.1</bundle> -->
-<!-- 		<bundle dependency="true">mvn:org.mapdb/mapdb/1.0.8</bundle> -->
+		<bundle dependency="true">mvn:org.mapdb/mapdb/1.0.8</bundle>
 <!-- 		<bundle dependency="true">wrap:mvn:org.apache.commons/commons-lang3/3.3.2</bundle> -->
 	
 		<!-- Console -->
@@ -111,7 +111,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sesame2-ontmanager/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sesame4-ontmanager/${project.version}</bundle>
-<!-- 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf4j-ontmanager/${project.version}</bundle> -->
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf4j-ontmanager/${project.version}</bundle>
 	</feature>
 
 </features>
