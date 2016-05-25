@@ -1,9 +1,11 @@
 package it.uniroma2.art.semanticturkey.tx;
 
-import org.openrdf.repository.DelegatingRepositoryConnection;
-import org.openrdf.repository.Repository;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.event.base.InterceptingRepositoryConnectionWrapper;
+import org.eclipse.rdf4j.repository.DelegatingRepositoryConnection;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.event.base.InterceptingRepositoryConnectionWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -17,27 +19,29 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  */
 public class RDF4JRepositoryUtils {
 
+	private static final Logger logger = LoggerFactory.getLogger(RDF4JRepositoryUtils.class);
+	
 	/**
-	 * Returns a connection to a Sesame Repository. This method is aware of a connection already bound to the
+	 * Returns a connection to a RDF4J Repository. This method is aware of a connection already bound to the
 	 * thread, e.g. by {@link RDF4JRepositoryTransactionManager}.
 	 * 
-	 * @param sesameRepository
+	 * @param repository
 	 * @return
 	 */
-	public static RepositoryConnection getConnection(Repository sesameRepository) {
+	public static RepositoryConnection getConnection(Repository repository) {
 		RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
-				.getResource(sesameRepository);
+				.getResource(repository);
 
 		if (connHolder != null
 				&& (connHolder.hasConnection() || connHolder.isSynchronizedWithTransaction())) {
 			connHolder.requested();
 			if (!connHolder.hasConnection()) {
-				connHolder.setConnection(sesameRepository.getConnection());
+				connHolder.setConnection(repository.getConnection());
 			}
 			return RDF4JRepositoryUtils.wrapConnection(connHolder.getConnection());
 		}
 
-		RepositoryConnection conn = sesameRepository.getConnection();
+		RepositoryConnection conn = repository.getConnection();
 
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 
@@ -50,10 +54,10 @@ public class RDF4JRepositoryUtils {
 			}
 			holderToUse.requested();
 			TransactionSynchronizationManager
-					.registerSynchronization(new ConnectionSynchronization(holderToUse, sesameRepository));
+					.registerSynchronization(new ConnectionSynchronization(holderToUse, repository));
 			holderToUse.setSynchronizedWithTransaction(true);
 			if (holderToUse != connHolder) {
-				TransactionSynchronizationManager.bindResource(sesameRepository, holderToUse);
+				TransactionSynchronizationManager.bindResource(repository, holderToUse);
 			}
 		}
 
@@ -65,15 +69,16 @@ public class RDF4JRepositoryUtils {
 	 * managed.
 	 * 
 	 * @param repoConn
-	 * @param sesameRepository
+	 * @param repository
 	 */
-	public static void releaseConnection(RepositoryConnection repoConn, Repository sesameRepository) {
+	public static void releaseConnection(RepositoryConnection repoConn, Repository repository) {
+		logger.debug("Inside releaseConnection; repoConn = {}, repository = {}", repoConn, repository);
 		if (repoConn == null)
 			return;
 
-		if (sesameRepository != null) {
+		if (repository != null) {
 			RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
-					.getResource(sesameRepository);
+					.getResource(repository);
 
 			if (connHolder != null && connectionEquals(connHolder.getConnection(), repoConn)) {
 				connHolder.released();
@@ -81,7 +86,7 @@ public class RDF4JRepositoryUtils {
 			}
 		}
 
-		System.out.println("Connection closed");
+		logger.debug("About to close the connection");
 		repoConn.close();
 	}
 
@@ -95,7 +100,7 @@ public class RDF4JRepositoryUtils {
 	 */
 	private static boolean connectionEquals(RepositoryConnection heldConnection,
 			RepositoryConnection connection) {
-		if (connection instanceof DelegatingRepositoryConnection) {
+		while (connection instanceof DelegatingRepositoryConnection) {
 			connection = ((DelegatingRepositoryConnection) connection).getDelegate();
 		}
 		return heldConnection == connection || heldConnection.equals(connection);
@@ -110,15 +115,17 @@ public class RDF4JRepositoryUtils {
 	 * @return
 	 */
 	private static RepositoryConnection wrapConnection(RepositoryConnection connection) {
-		if (TransactionSynchronizationManager.isSynchronizationActive()
-				&& TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-			System.out.println("Proxied");
-			@SuppressWarnings("resource")
-			InterceptingRepositoryConnectionWrapper wrappedConnection = new InterceptingRepositoryConnectionWrapper(
-					connection.getRepository(), connection);
-			wrappedConnection.addRepositoryConnectionInterceptor(
-					new ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor());
-			connection = wrappedConnection;
+		if (TransactionSynchronizationManager.isSynchronizationActive()) {
+			if (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
+				@SuppressWarnings("resource")
+				InterceptingRepositoryConnectionWrapper wrappedConnection = new InterceptingRepositoryConnectionWrapper(
+						connection.getRepository(), connection);
+				wrappedConnection.addRepositoryConnectionInterceptor(
+						new ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor());
+				connection = wrappedConnection;
+			}
+
+			connection = new TransactionAwareRDF4JRepostoryConnection(connection.getRepository(), connection);
 		}
 		return connection;
 	}
@@ -126,12 +133,12 @@ public class RDF4JRepositoryUtils {
 	private static class ConnectionSynchronization implements TransactionSynchronization {
 
 		private RDF4JRepositoryConnectionHolder connHolder;
-		private Repository sesameRepository;
+		private Repository rdf4jRepository;
 
 		public ConnectionSynchronization(RDF4JRepositoryConnectionHolder connHolder,
-				Repository sesameRepository) {
+				Repository rdf4jRepository) {
 			this.connHolder = connHolder;
-			this.sesameRepository = sesameRepository;
+			this.rdf4jRepository = rdf4jRepository;
 		}
 
 		@Override

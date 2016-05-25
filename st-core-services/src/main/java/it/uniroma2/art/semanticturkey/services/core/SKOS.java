@@ -3,23 +3,19 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.openrdf.model.IRI;
-import org.openrdf.model.Literal;
-import org.openrdf.model.Model;
-import org.openrdf.model.Resource;
-import org.openrdf.model.Value;
-import org.openrdf.model.impl.LinkedHashModel;
-import org.openrdf.model.vocabulary.RDF;
-import org.openrdf.query.QueryResults;
-import org.openrdf.query.TupleQuery;
-import org.openrdf.query.Update;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.util.Repositories;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -95,18 +91,18 @@ public class SKOS extends STServiceAdapter2 {
 
 		IRI newConceptIRI = generateConceptURI(newConcept, conceptScheme);
 
-		quadAdditions.add(newConceptIRI, RDF.TYPE, org.openrdf.model.vocabulary.SKOS.CONCEPT);
+		quadAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
 
 		if (newConcept != null) {
-			quadAdditions.add(newConceptIRI, org.openrdf.model.vocabulary.SKOS.PREF_LABEL, newConcept);
+			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, newConcept);
 		}
 
-		quadAdditions.add(newConceptIRI, org.openrdf.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);
+		quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);
 
 		if (broaderConcept != null) {
-			quadAdditions.add(newConceptIRI, org.openrdf.model.vocabulary.SKOS.BROADER, broaderConcept);
+			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
 		} else {
-			quadAdditions.add(newConceptIRI, org.openrdf.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
 		}
 
 		applyPatch(quadAdditions, quadRemovals);

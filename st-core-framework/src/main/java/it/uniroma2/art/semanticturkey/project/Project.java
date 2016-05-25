@@ -26,6 +26,23 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+
+import org.eclipse.rdf4j.repository.Repository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -65,23 +82,6 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-
-import org.openrdf.repository.Repository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
 
@@ -635,7 +635,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		RDFModel model = getOntologyManager().getOntModel();
 
 		try {
-			Method m = model.getClass().getMethod("getSesame4Repository");
+			Method m = model.getClass().getMethod("getRDF4JRepository");
 			return (Repository) m.invoke(model);
 		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {

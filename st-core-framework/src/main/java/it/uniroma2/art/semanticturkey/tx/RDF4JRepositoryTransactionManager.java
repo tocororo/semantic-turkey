@@ -3,9 +3,11 @@
  */
 package it.uniroma2.art.semanticturkey.tx;
 
-import org.openrdf.repository.Repository;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -28,17 +30,19 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 
 	private static final long serialVersionUID = -3096599710354974784L;
 
-	private static class SesameRepositoryTransactionObject {
+	private static final Logger logger = LoggerFactory.getLogger(RDF4JRepositoryTransactionManager.class);
+	
+	private static class RDF4JRepositoryTransactionObject {
 
 		private RDF4JRepositoryConnectionHolder conHolder;
 		private boolean newConnectionHolder;
 		
-		public void setSesameRepositoryConnectionHolder(RDF4JRepositoryConnectionHolder conHolder, boolean newConnectionHolder) {
+		public void setRDF4JRepositoryConnectionHolder(RDF4JRepositoryConnectionHolder conHolder, boolean newConnectionHolder) {
 			this.conHolder = conHolder;
 			this.newConnectionHolder = newConnectionHolder;
 		}
 
-		public RDF4JRepositoryConnectionHolder getSesameRepositoryConnectionHolder() {
+		public RDF4JRepositoryConnectionHolder getRDF4JRepositoryConnectionHolder() {
 			return this.conHolder;
 		}
 
@@ -47,104 +51,105 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 		}
 	}
 
-	private Repository sesameRepository;
+	private Repository repository;
 
 	public RDF4JRepositoryTransactionManager(Repository sesameRepository) {
-		this.sesameRepository = sesameRepository;
+		this.repository = sesameRepository;
 		this.setNestedTransactionAllowed(false);
 	}
 
 	@Override
 	protected Object doGetTransaction() throws TransactionException {
-		SesameRepositoryTransactionObject txObject = new SesameRepositoryTransactionObject();
+		RDF4JRepositoryTransactionObject txObject = new RDF4JRepositoryTransactionObject();
 
 		RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
-				.getResource(this.sesameRepository);
+				.getResource(this.repository);
 
-		txObject.setSesameRepositoryConnectionHolder(connHolder, false);
+		txObject.setRDF4JRepositoryConnectionHolder(connHolder, false);
 
 		return txObject;
 	}
 
 	@Override
 	protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
-		SesameRepositoryTransactionObject txObject = (SesameRepositoryTransactionObject) transaction;
+		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) transaction;
 		RepositoryConnection conn = null;
 
 		try {
+			logger.debug("Inside doBegin");
 			boolean newConnHolder = false;
 
-			if (txObject.getSesameRepositoryConnectionHolder() == null
-					|| txObject.getSesameRepositoryConnectionHolder().isSynchronizedWithTransaction()) {
-				System.out.println("New connection!");
-				conn = this.sesameRepository.getConnection();
-				txObject.setSesameRepositoryConnectionHolder(
+			if (txObject.getRDF4JRepositoryConnectionHolder() == null
+					|| txObject.getRDF4JRepositoryConnectionHolder().isSynchronizedWithTransaction()) {
+				conn = this.repository.getConnection();
+				logger.debug("New connection: {}", conn);
+				txObject.setRDF4JRepositoryConnectionHolder(
 						new RDF4JRepositoryConnectionHolder(conn), true);
 				newConnHolder = true;
 			}
 
-			txObject.getSesameRepositoryConnectionHolder().setSynchronizedWithTransaction(true);
-			conn = txObject.getSesameRepositoryConnectionHolder().getConnection();
+			txObject.getRDF4JRepositoryConnectionHolder().setSynchronizedWithTransaction(true);
+			conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
 
-			System.out.println("Beginning!");
+			logger.debug("About to begin");
 
 			conn.begin();
 
-			txObject.getSesameRepositoryConnectionHolder().setTransactionActive(true);
+			txObject.getRDF4JRepositoryConnectionHolder().setTransactionActive(true);
 
 			int timeout = determineTimeout(definition);
 
 			if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-				txObject.getSesameRepositoryConnectionHolder().setTimeoutInSeconds(timeout);
+				txObject.getRDF4JRepositoryConnectionHolder().setTimeoutInSeconds(timeout);
 			}
 			if (newConnHolder) {
-				TransactionSynchronizationManager.bindResource(this.sesameRepository,
-						txObject.getSesameRepositoryConnectionHolder());
+				TransactionSynchronizationManager.bindResource(this.repository,
+						txObject.getRDF4JRepositoryConnectionHolder());
 			}
 		} catch (Throwable e) {
-			RDF4JRepositoryUtils.releaseConnection(conn, sesameRepository);
-			throw new CannotCreateTransactionException("Could not open Sesame Connection for transaction", e);
+			RDF4JRepositoryUtils.releaseConnection(conn, repository);
+			throw new CannotCreateTransactionException("Could not open RDF4J Connection for transaction", e);
 		}
 	}
 
 	@Override
 	protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
-		SesameRepositoryTransactionObject txObject = (SesameRepositoryTransactionObject) status
+		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) status
 				.getTransaction();
-		RepositoryConnection conn = txObject.getSesameRepositoryConnectionHolder().getConnection();
+		RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
 
 		try {
-			System.out.println("Committing");
+			logger.debug("About to commit");
 			conn.commit();
 		} catch (RepositoryException e) {
-			throw new TransactionSystemException("Could not commit Sesame transaction", e);
+			throw new TransactionSystemException("Could not commit RDF4J transaction", e);
 		}
 	}
 
 	@Override
 	protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
-		SesameRepositoryTransactionObject txObject = (SesameRepositoryTransactionObject) status
+		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) status
 				.getTransaction();
-		RepositoryConnection conn = txObject.getSesameRepositoryConnectionHolder().getConnection();
+		RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
 
 		try {
-			System.out.println("Rolling back");
+			logger.debug("About to rollback");
 			conn.rollback();
 		} catch (RepositoryException e) {
-			throw new TransactionSystemException("Could not rollback Sesame transaction", e);
+			throw new TransactionSystemException("Could not rollback RDF4J transaction", e);
 		}
 	}
 
 	@Override
 	protected void doCleanupAfterCompletion(Object transaction) {
-		SesameRepositoryTransactionObject txObject = (SesameRepositoryTransactionObject) transaction;
+		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) transaction;
 
 		if (txObject.isNewConnectionHolder()) {
-			TransactionSynchronizationManager.unbindResource(this.sesameRepository);
-			RepositoryConnection conn = txObject.getSesameRepositoryConnectionHolder().getConnection();
-			RDF4JRepositoryUtils.releaseConnection(conn, this.sesameRepository);
+			TransactionSynchronizationManager.unbindResource(this.repository);
+			RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
+			RDF4JRepositoryUtils.releaseConnection(conn, this.repository);
 		}
-		txObject.getSesameRepositoryConnectionHolder().clear();
+		txObject.getRDF4JRepositoryConnectionHolder().clear();
 	}
 
 }

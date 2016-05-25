@@ -58,16 +58,16 @@
 					<constructor-arg ref="datasetMetadataRepository" />
 				</bean>
 
-				<bean id="StringToSesameBNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToSesameBNodeConverter" />
-				<bean id="StringToSesameIRIConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToSesameIRIConverter" />
-				<bean id="StringToSesameLiteralConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToSesameLiteralConverter" />
-				<bean id="StringToSesameResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToSesameResourceConverter" />
-				<bean id="StringToSesameValueConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToSesameValueConverter" />
+				<bean id="StringToRDF4JBNodeConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JBNodeConverter" />
+				<bean id="StringToRDF4JIRIConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JIRIConverter" />
+				<bean id="StringToRDF4JLiteralConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JLiteralConverter" />
+				<bean id="StringToRDF4JResourceConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JResourceConverter" />
+				<bean id="StringToRDF4JValueConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter" />
 			</list>
 		</property>
 	</bean>
@@ -126,6 +126,7 @@
 		<!-- Use explicitly the ValidatorFactory enabling dependency injection 
 			on constraint validators -->
 		<property name="validatorFactory" ref="validatorFactory"></property>
+		<property name="order" value="300" />
 	</bean>
 
 
@@ -140,11 +141,6 @@
 	<!-- TEST STServiceHTTPContext -->
 	<bean
 		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext">
-	</bean>
-	<bean
-		class="it.uniroma2.art.semanticturkey.services.http.STHTTPRequestAwareContext"
-		scope="request">
-		<aop:scoped-proxy />
 	</bean>
 
 	<!-- This enables Spring multipart handling by adding a multipart resolver -->

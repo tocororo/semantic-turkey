@@ -3,8 +3,8 @@ package it.uniroma2.art.semanticturkey.validators;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.openrdf.model.Resource;
-import org.openrdf.repository.RepositoryConnection;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
@@ -36,12 +36,9 @@ public class LocallyDefinedValidator implements ConstraintValidator<LocallyDefin
 				return false;
 			}
 
-			RepositoryConnection repoConn = RDF4JRepositoryUtils
-					.getConnection(serviceContext.getProject().getRepository());
-			try {
+			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
+					.getConnection(serviceContext.getProject().getRepository())) {
 				return repoConn.hasStatement(value, null, null, true);
-			} finally {
-				RDF4JRepositoryUtils.releaseConnection(repoConn, serviceContext.getProject().getRepository());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

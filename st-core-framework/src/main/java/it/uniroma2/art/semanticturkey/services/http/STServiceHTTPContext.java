@@ -5,7 +5,6 @@ import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.openrdf.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,9 +40,6 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 	@Autowired
 	private ApplicationContext applicationContext;
-
-	@Autowired(required=false)
-	private STHTTPRequestAwareContext httpRequestAwareContext;
 
 	private ConversionService conversionService;
 
@@ -167,11 +163,6 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 			throw new InvalidContextException("The token has not been passed through the request");
 		}
 		return token;
-	}
-	
-	@Override
-	public RepositoryConnection getRepositoryConnection() {
-		return httpRequestAwareContext.acquireConnectionIfNecessary(getProject().getRepository());
 	}
 
 }

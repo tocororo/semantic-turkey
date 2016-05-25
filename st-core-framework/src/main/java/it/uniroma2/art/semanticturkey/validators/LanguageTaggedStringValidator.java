@@ -3,7 +3,7 @@ package it.uniroma2.art.semanticturkey.validators;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.openrdf.model.Literal;
+import org.eclipse.rdf4j.model.Literal;
 
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 

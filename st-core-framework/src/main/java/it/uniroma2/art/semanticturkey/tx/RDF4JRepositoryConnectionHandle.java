@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.tx;
 
-import org.openrdf.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 /**
  * 

@@ -1,14 +1,21 @@
 package it.uniroma2.art.semanticturkey.tx;
 
-import org.openrdf.model.IRI;
-import org.openrdf.model.Resource;
-import org.openrdf.model.Value;
-import org.openrdf.query.QueryLanguage;
-import org.openrdf.query.Update;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.RepositoryReadOnlyException;
-import org.openrdf.repository.event.RepositoryConnectionInterceptor;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryReadOnlyException;
+import org.eclipse.rdf4j.repository.event.RepositoryConnectionInterceptor;
 
+/**
+ * A {@link RepositoryConnectionInterceptor} throwing {@link RepositoryReadOnlyException} upon the invocation
+ * of mutation operations on a {@link RepositoryConnection}.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli>
+ *
+ */
 public class ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor implements RepositoryConnectionInterceptor {
 
 	@Override

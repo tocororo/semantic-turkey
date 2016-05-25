@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.tx;
 
-import org.openrdf.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.support.ResourceHolder;
 import org.springframework.transaction.support.ResourceHolderSupport;
 
@@ -12,6 +14,8 @@ import org.springframework.transaction.support.ResourceHolderSupport;
  */
 public class RDF4JRepositoryConnectionHolder extends ResourceHolderSupport implements ResourceHolder  {
 
+	private static final Logger logger = LoggerFactory.getLogger(RDF4JRepositoryConnectionHolder.class);
+	
 	private RepositoryConnection currentConnection;
 	private SimpleRDF4JRepositoryConnectionHandle connectionHandle;
 	private boolean transactionActive = false;
@@ -32,13 +36,13 @@ public class RDF4JRepositoryConnectionHolder extends ResourceHolderSupport imple
 	@Override
 	public void requested() {
 		super.requested();
-		System.out.println("Requested!");
+		logger.debug("Requested holder: {}", this);
 	}
 	
 	@Override
 	public void released() {
 		super.released();
-		System.out.println("Released!");
+		logger.debug("Released holder: {}", this);
 		if (!isOpen() && this.currentConnection != null) {
 			this.connectionHandle.releaseConnection(this.currentConnection);
 			this.currentConnection = null;

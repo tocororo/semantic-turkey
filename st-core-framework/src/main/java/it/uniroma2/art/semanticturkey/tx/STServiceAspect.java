@@ -10,12 +10,22 @@ import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
+/**
+ * Aspect wrapping the execution of a service method with appropriate bookkeeping logic.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ *
+ */
 @Aspect
 public class STServiceAspect implements Ordered {
+	
+	private static final Logger logger = LoggerFactory.getLogger(STServiceAspect.class);
 	
 	private int order = Ordered.LOWEST_PRECEDENCE;
 	
@@ -42,8 +52,7 @@ public class STServiceAspect implements Ordered {
 		
 		STServiceInvocaton serviceInvocation = STServiceInvocaton.create(method, args);
 		
-		System.out.println("New service invocation");
-		System.out.println(serviceInvocation);
+		logger.debug("Begin of service invocation: {}", serviceInvocation);
 		
 		serviceInvocations.get().add(serviceInvocation);
 	}
@@ -52,8 +61,7 @@ public class STServiceAspect implements Ordered {
 	public void afterServiceInvocation() throws Throwable {
 		STServiceInvocaton serviceInvocation = serviceInvocations.get().remove();
 		
-		System.out.println("Exiting service invocation");
-		System.out.println(serviceInvocation);
+		logger.debug("End of service invocation: {}", serviceInvocation);
 	}
 
 	public static STServiceInvocaton getCurrentServiceInvocation() {

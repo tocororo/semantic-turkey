@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.rdf4jimpl.factory.ARTModelFactoryRDF4JImpl;
-import it.uniroma2.art.owlart.sesame4impl.vocabulary.SESAME;
+import it.uniroma2.art.owlart.rdf4jimpl.vocabulary.SESAME;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 

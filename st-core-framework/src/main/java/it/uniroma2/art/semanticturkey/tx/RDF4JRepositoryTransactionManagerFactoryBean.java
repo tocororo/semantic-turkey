@@ -3,7 +3,7 @@ package it.uniroma2.art.semanticturkey.tx;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openrdf.repository.Repository;
+import org.eclipse.rdf4j.repository.Repository;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 

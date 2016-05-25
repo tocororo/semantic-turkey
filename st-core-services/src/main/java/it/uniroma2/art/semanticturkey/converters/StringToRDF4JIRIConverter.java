@@ -1,9 +1,9 @@
 package it.uniroma2.art.semanticturkey.converters;
 
-import org.openrdf.model.IRI;
-import org.openrdf.model.ValueFactory;
-import org.openrdf.model.impl.SimpleValueFactory;
-import org.openrdf.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.springframework.core.convert.converter.Converter;
 
 /**
@@ -11,7 +11,7 @@ import org.springframework.core.convert.converter.Converter;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class StringToSesameIRIConverter implements Converter<String, IRI>{
+public class StringToRDF4JIRIConverter implements Converter<String, IRI>{
 	private final ValueFactory vf = SimpleValueFactory.getInstance();
 	
 	@Override

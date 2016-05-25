@@ -1,10 +1,16 @@
 package it.uniroma2.art.semanticturkey.tx;
 
-import org.openrdf.repository.Repository;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.RepositoryException;
-import org.openrdf.repository.base.RepositoryConnectionWrapper;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 
+/**
+ * A {@link RepositoryConnectionWrapper} that is aware of possible transactions bound the current thread.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ *
+ */
 public class TransactionAwareRDF4JRepostoryConnection extends RepositoryConnectionWrapper {
 
 	public TransactionAwareRDF4JRepostoryConnection(Repository repository, RepositoryConnection delegate) {
