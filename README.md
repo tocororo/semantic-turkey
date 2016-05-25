@@ -1,12 +1,12 @@
 # Semantic Turkey #
 
-Semantic Turkey is a platform for Knowledge Acquisition and Management realized by the [ART Research Group](http://art.uniroma2.it) at the University of Rome, Tor Vergata
+Semantic Turkey is a platform for Knowledge Acquisition and Management realized by the [ART Research Group](http://art.uniroma2.it) at the University of Rome Tor Vergata.
 
 Everything about Semantic Turkey (user manual, build information etc..) is in its [official site](http://semanticturkey.uniroma2.it/)
 
 ## Building the project ##
 ### Requirements ###
-1. a properly installed JDK version 7 or superior (currently, ST should be run with Java 7)
+1. a properly installed JDK version 8
 2. a recent version of Apache Maven, preferably version 3.3.3 or superior (see section troubleshooting below)
 
 ### Building ###
