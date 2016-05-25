@@ -142,9 +142,12 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 
 	@Override
 	protected void doCleanupAfterCompletion(Object transaction) {
+		logger.debug("Inside doCleanupAfterCompletion");
+
 		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) transaction;
 
 		if (txObject.isNewConnectionHolder()) {
+			logger.debug("About to release connection");
 			TransactionSynchronizationManager.unbindResource(this.repository);
 			RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
 			RDF4JRepositoryUtils.releaseConnection(conn, this.repository);
