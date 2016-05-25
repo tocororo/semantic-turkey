@@ -233,7 +233,7 @@ public class LegacyServiceController implements ApplicationContextAware {
 					//System.out.println("@@@@@" + binolo.getClass().getCanonicalName());
 					List<ServiceInterface> serviceInterfaceList = ((List<ServiceInterface>) binolo);
 					for(ServiceInterface si : serviceInterfaceList){
-						if(si.getId().compareTo(serviceName) == 0){
+						if(si.getId().compareToIgnoreCase(serviceName) == 0){
 							service = si;
 							break;
 						}
