@@ -195,7 +195,6 @@ public class Individual extends ResourceOld {
 		return response;
 	}
 
-	// STARRED ti serve pure il nome della istanza?
 	/**
 	 * 
 	 * <Tree type="add_type"> <Type qname="rtv:Person"/> </Tree>
@@ -210,12 +209,6 @@ public class Individual extends ResourceOld {
 			ARTResource[] graphs = getUserNamedGraphs();
 			individual = retrieveExistingURIResource(model, indQName, graphs);
 			ARTURIResource typeCls = retrieveExistingURIResource(model, typeQName, graphs);
-
-			Collection<ARTResource> types = RDFIterators.getCollectionFromIterator(((DirectReasoning) model)
-					.listDirectTypes(individual, graphs));
-
-			if (types.contains(typeCls))
-				return logAndSendException(typeQName + " is not a type for: " + indQName);
 
 			model.addType(individual, typeCls, getWorkingGraph());
 
