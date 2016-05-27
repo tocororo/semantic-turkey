@@ -92,7 +92,6 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<owlart-api.version>2.5-SNAPSHOT</owlart-api.version>
 		<spring.version>3.2.4.RELEASE</spring.version>
 		<owlart-sesame2impl.version>1.5-SNAPSHOT</owlart-sesame2impl.version>
-		<owlart-sesame4impl.version>1.5-SNAPSHOT</owlart-sesame4impl.version>
 		<owlart-rdf4jimpl.version>1.5-SNAPSHOT</owlart-rdf4jimpl.version>
 		<maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
 		<sesame.version>4.1.1</sesame.version>
@@ -117,7 +116,6 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<module>st-core-framework</module>
 		<module>st-core-services</module>
 		<module>st-sesame2-ontmanager</module>
-		<module>st-sesame4-ontmanager</module>
 		<module>st-rdf4j-ontmanager</module>
  		<module>st-firefox-ext</module> 
 		<module>st-console</module>
