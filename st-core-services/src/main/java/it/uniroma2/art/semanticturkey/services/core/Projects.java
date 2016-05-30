@@ -181,32 +181,6 @@ public class Projects extends STServiceAdapter {
 		return response;
 	}
 
-	/*@GenerateSTServiceController
-	public void createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration, File rdfFile)
-			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException {
-
-		Project<?> project = ProjectManager.createProject(consumer, projectName, modelType, baseURI,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration);
-		try {
-			project.getOntModel().addRDF(rdfFile, baseURI, RDFFormat.guessRDFFormatFromFile(rdfFile),
-					NodeFilters.MAINGRAPH);
-		} catch (Exception e) {
-			try {
-				ProjectManager.deleteProject(projectName);
-			} catch (ProjectDeletionException e1) {
-				throw new ProjectCreationException(
-						"a problem raised when creating the project, however, we were not able to delete the folder which has been created for it; please delete it manually.\n"
-								+ "Also, the system was unable to delete the project. Pls remove it manually");
-			}
-			throw new ProjectCreationException(
-					"a problem raised when creating the project, however, we were not able to delete the folder which has been created for it; please delete it manually");
-
-		}
-	}*/
-
 	@GenerateSTServiceController
 	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException {
 		ProjectManager.deleteProject(projectName);

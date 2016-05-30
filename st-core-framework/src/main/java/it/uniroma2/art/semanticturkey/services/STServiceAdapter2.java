@@ -1,7 +1,10 @@
 package it.uniroma2.art.semanticturkey.services;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -19,7 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.rdf4jimpl.RDF4JARTResourceFactory;
@@ -69,8 +74,13 @@ public class STServiceAdapter2 implements STService {
 	}
 
 	public Resource[] getUserNamedGraphs() {
-		return Arrays.stream(stServiceContext.getRGraphs()).map(rdf4j2artFact::aRTResource2RDF4JResource)
-				.toArray(Resource[]::new);
+		List<ARTResource> rGraphs = Arrays.asList(stServiceContext.getRGraphs());
+		
+		if (rGraphs.contains(NodeFilters.ANY)) {
+			return new Resource[0];
+		}
+		
+		return rGraphs.stream().map(rdf4j2artFact::aRTResource2RDF4JResource).toArray(Resource[]::new);
 	}
 
 	public Resource getWorkingGraph() {

@@ -178,15 +178,15 @@ public class OntoSearch extends ServiceAdapter {
 //						perfectMatchingResource, null, 1));
 //			}
 			if ((perfectMatchingResource != null) && ontModel.existsResource(perfectMatchingResource)) {
-				if (types.equals("property") && ontModel.isProperty(perfectMatchingResource, NodeFilters.MAINGRAPH)){
+				if (types.equals("property") && ontModel.isProperty(perfectMatchingResource)){
 					results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
 							perfectMatchingResource, null, 1));
 				} else if (types.equals("clsNInd") && ontModel instanceof OWLModel){
-					if (((OWLModel) ontModel).isClass(perfectMatchingResource, NodeFilters.MAINGRAPH)){
+					if (((OWLModel) ontModel).isClass(perfectMatchingResource)){
 						results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
 								perfectMatchingResource, null, 1));
 					} else { //check if is an instance/individual
-						ARTResourceIterator instances = ((OWLModel) ontModel).listInstances(NodeFilters.ANY, true, NodeFilters.MAINGRAPH);
+						ARTResourceIterator instances = ((OWLModel) ontModel).listInstances(NodeFilters.ANY, true);
 						while (instances.hasNext()){
 							ARTResource i = instances.next();
 							if (i.equals(perfectMatchingResource)){
@@ -197,7 +197,7 @@ public class OntoSearch extends ServiceAdapter {
 						}
 					}
 				} else if (types.equals("concept") && ontModel instanceof SKOSModel && 
-						((SKOSModel) ontModel).isConcept(perfectMatchingResource, NodeFilters.MAINGRAPH)) {
+						((SKOSModel) ontModel).isConcept(perfectMatchingResource)) {
 					results.add(new Struct(ModelUtilities.getResourceRole(perfectMatchingResource, ontModel), 
 							perfectMatchingResource, null, 1));
 				}
@@ -265,8 +265,7 @@ public class OntoSearch extends ServiceAdapter {
 				if (types.equals("clsNInd")) {
 					ARTURIResourceIterator searchedResources;
 					if (ontModel instanceof RDFSModel) {
-						searchedResources = ((RDFSModel) ontModel).listNamedClasses(true,
-								NodeFilters.MAINGRAPH);
+						searchedResources = ((RDFSModel) ontModel).listNamedClasses(true);
 						logger.debug("collectResults for classes: ");
 						collectResults(searchedResources, ontModel, results, searchStringNamespace,
 								searchStringLocalName, namespaceGiven);
@@ -280,34 +279,31 @@ public class OntoSearch extends ServiceAdapter {
 
 					if (ontModel instanceof OWLModel) {
 
-						searchedProperties = ((OWLModel) ontModel).listObjectProperties(true,
-								NodeFilters.MAINGRAPH);
+						searchedProperties = ((OWLModel) ontModel).listObjectProperties(true);
 						collectResults(searchedProperties, ontModel, results, searchStringNamespace,
 								searchStringLocalName, namespaceGiven);
 
-						searchedProperties = ((OWLModel) ontModel).listDatatypeProperties(true,
-								NodeFilters.MAINGRAPH);
+						searchedProperties = ((OWLModel) ontModel).listDatatypeProperties(true);
 						collectResults(searchedProperties, ontModel, results, searchStringNamespace,
 								searchStringLocalName, namespaceGiven);
 
-						searchedProperties = ((OWLModel) ontModel).listAnnotationProperties(true,
-								NodeFilters.MAINGRAPH);
+						searchedProperties = ((OWLModel) ontModel).listAnnotationProperties(true);
 						collectResults(searchedProperties, ontModel, results, searchStringNamespace,
 								searchStringLocalName, namespaceGiven);
 
 					}
 
-					searchedProperties = ontModel.listProperties(NodeFilters.MAINGRAPH);
+					searchedProperties = ontModel.listProperties();
 					collectResults(searchedProperties, ontModel, results, searchStringNamespace, 
 							searchStringLocalName, namespaceGiven);
 				} else if(types.equals("concept")){
 					SKOSModel skosModel = (SKOSModel) ontModel;
-					ARTURIResourceIterator searchedConcepts = skosModel.listConcepts(true, NodeFilters.MAINGRAPH);
+					ARTURIResourceIterator searchedConcepts = skosModel.listConcepts(true);
 					ARTURIResource schemeRes = null;
 					if (scheme != null) {
 						schemeRes = skosModel.createURIResource(scheme); 
 						Iterator<ARTURIResource> filteredForScheme = Iterators.filter(
-								searchedConcepts, ConceptsInSchemePredicate.getFilter(skosModel, schemeRes, NodeFilters.MAINGRAPH));
+								searchedConcepts, ConceptsInSchemePredicate.getFilter(skosModel, schemeRes));
 						collectResults(filteredForScheme, ontModel, results, searchStringNamespace, 
 								searchStringLocalName,  namespaceGiven);
 					} else {					
@@ -381,10 +377,10 @@ public class OntoSearch extends ServiceAdapter {
 				//check the Preferred labels and the Alternative Labels
 				ARTResourceIterator labelIter;
 				//Preferred XLabels
-				labelIter = skosxlModel.listPrefXLabels(nextRes, NodeFilters.MAINGRAPH);
+				labelIter = skosxlModel.listPrefXLabels(nextRes);
 				while(labelIter.hasNext()){
 					ARTResource prefLabelRes = labelIter.next();
-					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes, NodeFilters.MAINGRAPH);
+					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes);
 					String label = labelLiteral.getLabel();
 					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
 						Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
@@ -393,10 +389,10 @@ public class OntoSearch extends ServiceAdapter {
 					}
 				}
 				//Alternative XLabels
-				labelIter = skosxlModel.listAltXLabels(nextRes, NodeFilters.MAINGRAPH);
+				labelIter = skosxlModel.listAltXLabels(nextRes);
 				while(labelIter.hasNext()){
 					ARTURIResource prefLabelRes = labelIter.next().asURIResource();
-					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes, NodeFilters.MAINGRAPH);
+					ARTLiteral labelLiteral = skosxlModel.getLiteralForm(prefLabelRes);
 					String label = labelLiteral.getLabel();
 					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
 						Struct s = new Struct(ModelUtilities.getResourceRole(nextRes, ontModel), nextRes, null, match);
@@ -408,7 +404,7 @@ public class OntoSearch extends ServiceAdapter {
 				SKOSModel skosModel = (SKOSModel)ontModel;
 				ARTLiteralIterator labelIter;
 				//Preferred Label
-				labelIter = skosModel.listPrefLabels(nextRes, true, NodeFilters.MAINGRAPH);
+				labelIter = skosModel.listPrefLabels(nextRes, true);
 				while(labelIter.hasNext()){
 					String label = labelIter.next().getLabel();
 					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
@@ -418,7 +414,7 @@ public class OntoSearch extends ServiceAdapter {
 					}
 				}
 				//Alternative Label
-				labelIter = ((SKOSModel)ontModel).listAltLabels(nextRes, true, NodeFilters.MAINGRAPH);
+				labelIter = ((SKOSModel)ontModel).listAltLabels(nextRes, true);
 				while(labelIter.hasNext()){
 					String label = labelIter.next().getLabel();
 					if ((match = CompareNames.compareSimilarNames(label, searchStringLocalName)) >= THRESHOLD){
@@ -533,7 +529,7 @@ public class OntoSearch extends ServiceAdapter {
 			return null;
 		}
 		path.add(concept);
-		if (skosModel.isTopConcept(concept, scheme, NodeFilters.MAINGRAPH)){
+		if (skosModel.isTopConcept(concept, scheme)){
 			//concept is top concept, returning a valid path			
 			return path;
 		} else {

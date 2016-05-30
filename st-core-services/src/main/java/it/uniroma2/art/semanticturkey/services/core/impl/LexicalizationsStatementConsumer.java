@@ -12,6 +12,7 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
@@ -36,45 +37,38 @@ import com.google.common.collect.Multimap;
 public class LexicalizationsStatementConsumer implements StatementConsumer {
 
 	@Override
-	public LinkedHashMap<String, ResourceViewSection> consumeStatements(
-			Project<?> project, ARTResource resource, ResourcePosition resourcePosition,
-			RDFResourceRolesEnum resourceRole,
-			StatementCollector stmtCollector,
-			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
-			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
-			throws ModelAccessException {
+	public LinkedHashMap<String, ResourceViewSection> consumeStatements(Project<?> project,
+			ARTResource resource, ResourcePosition resourcePosition, ARTResource workingGraph,
+			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
+			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering,
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm) throws ModelAccessException {
 
+		boolean currentProject = false;
+		if (resourcePosition instanceof LocalResourcePosition) {
+			currentProject = ((LocalResourcePosition)resourcePosition).getProject().equals(project);
+		}
+		
 		RDFModel ontModel = project.getOntModel();
 		Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
-		Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap
-				.create();
+		Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
 
 		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
-				.createPredicateObjectsList(art2STRDFPredicates,
-						resultPredicateObjectValues);
+				.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
 
-		for (ARTURIResource pred : Arrays.asList(RDFS.Res.LABEL,
-				SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL, SKOS.Res.HIDDENLABEL,
-				SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL,
-				SKOSXL.Res.HIDDENLABEL)) {
-			STRDFURI stPred = STRDFNodeFactory
-					.createSTRDFURI(
-							pred,
-							resource2Role.containsKey(pred) ? resource2Role
-									.get(pred)
-									: pred.getNamespace().equals(
-											SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
-											: RDFResourceRolesEnum.annotationProperty,
-							true,
-							ontModel.getQName(pred.getURI()));
+		for (ARTURIResource pred : Arrays.asList(RDFS.Res.LABEL, SKOS.Res.PREFLABEL, SKOS.Res.ALTLABEL,
+				SKOS.Res.HIDDENLABEL, SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL)) {
+			STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(pred, resource2Role.containsKey(pred)
+					? resource2Role.get(pred)
+					: pred.getNamespace().equals(SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
+							: RDFResourceRolesEnum.annotationProperty,
+					true, ontModel.getQName(pred.getURI()));
 			art2STRDFPredicates.put(pred, stPred);
 		}
 
-		Iterator<ARTStatement> stmtIt = stmtCollector.getStatements()
-				.iterator();
+		Iterator<ARTStatement> stmtIt = stmtCollector.getStatements().iterator();
 
-		List<ARTURIResource> relevantLexPreds = ResourceView.getLexicalizationPropertiesHelper(resource, resourcePosition);
+		List<ARTURIResource> relevantLexPreds = ResourceView.getLexicalizationPropertiesHelper(resource,
+				resourcePosition);
 
 		while (stmtIt.hasNext()) {
 			ARTStatement stmt = stmtIt.next();
@@ -93,11 +87,12 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 
 			ARTNode obj = stmt.getObject();
 
-			STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(ontModel, obj, false, graphs
-					.contains(NodeFilters.MAINGRAPH), false);
+			STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(ontModel, obj, false,
+					currentProject && graphs.contains(workingGraph), false);
 
-			if (!(stNode.isExplicit() || relevantLexPreds.contains(pred))) continue;
-			
+			if (!(stNode.isExplicit() || relevantLexPreds.contains(pred)))
+				continue;
+
 			if (stNode.isResource()) {
 				RDFResourceRolesEnum role = resource2Role.get(obj);
 
@@ -107,41 +102,40 @@ public class LexicalizationsStatementConsumer implements StatementConsumer {
 
 				if (RDFResourceRolesEnum.xLabel == role) {
 					ARTLiteral lit = xLabel2LiteralForm.get(obj);
-					
+
 					if (lit != null) {
 						stRes.setRendering(lit.getLabel());
-						
+
 						if (lit.getLanguage() != null) {
 							stRes.setInfo("lang", lit.getLanguage());
 						}
 					}
 				}
-				
+
 				stRes.setRole(role);
 			}
 
 			stNode.setInfo("graphs", Joiner.on(",").join(graphs));
 
 			resultPredicateObjectValues.put(pred, stNode);
-			
+
 			// Mark statement as processed
 			stmtCollector.markStatementAsProcessed(stmt);
 		}
-		
+
 		Iterator<ARTURIResource> keyIt = art2STRDFPredicates.keySet().iterator();
-		
+
 		// Removes predicates with no associated lexicalization
 		while (keyIt.hasNext()) {
 			ARTURIResource key = keyIt.next();
-						
-			if (!resultPredicateObjectValues.containsKey(key)){
+
+			if (!resultPredicateObjectValues.containsKey(key)) {
 				keyIt.remove();
 			}
 		}
-		
+
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
-		result.put("lexicalizations", new PredicateObjectsListSection(
-				predicateObjectsList));
+		result.put("lexicalizations", new PredicateObjectsListSection(predicateObjectsList));
 		return result;
 	}
 

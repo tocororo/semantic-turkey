@@ -10,6 +10,7 @@ import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
@@ -35,26 +36,29 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 	public OtherPropertiesStatementConsumer(CustomRangeProvider customRangeProvider) {
 		this.customRangeProvider = customRangeProvider;
 	}
-	
+
 	@Override
-	public LinkedHashMap<String, ResourceViewSection> consumeStatements(
-			Project<?> project, ARTResource resource, ResourcePosition resourcePosition,
-			RDFResourceRolesEnum resourceRole,
-			StatementCollector stmtCollector,
-			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
-			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
-			throws ModelAccessException {
+	public LinkedHashMap<String, ResourceViewSection> consumeStatements(Project<?> project,
+			ARTResource resource, ResourcePosition resourcePosition, ARTResource workingGraph,
+			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
+			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering,
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm) throws ModelAccessException {
 
 		RDFModel ontModel = project.getOntModel();
-		
+
+		boolean currentProject = false;
+		if (resourcePosition instanceof LocalResourcePosition) {
+			currentProject = ((LocalResourcePosition) resourcePosition).getProject().equals(project);
+		}
+
 		Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new HashMap<ARTURIResource, STRDFResource>();
 		Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
 
-		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory.createPredicateObjectsList(
-				art2STRDFPredicates, resultPredicateObjectValues);
+		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
+				.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
 
-		for (ARTStatement stmt : stmtCollector.getStatements(resource, NodeFilters.ANY, NodeFilters.ANY, true)) {
+		for (ARTStatement stmt : stmtCollector.getStatements(resource, NodeFilters.ANY, NodeFilters.ANY,
+				true)) {
 			Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 
 			ARTURIResource pred = stmt.getPredicate();
@@ -66,20 +70,23 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 			STRDFResource stPred = art2STRDFPredicates.get(pred);
 
 			if (stPred == null) {
-				stPred = STRDFNodeFactory.createSTRDFURI(pred,
-						resource2Role.containsKey(pred) ? resource2Role.get(pred)
-								: RDFResourceRolesEnum.property, true, ontModel.getQName(pred.getURI()));
-				stPred.setInfo("hasCustomRange", Boolean.toString(customRangeProvider.existsCustomRangeEntryGraphForProperty(pred.getURI())));
+				stPred = STRDFNodeFactory
+						.createSTRDFURI(pred,
+								resource2Role.containsKey(pred) ? resource2Role.get(pred)
+										: RDFResourceRolesEnum.property,
+								true, ontModel.getQName(pred.getURI()));
+				stPred.setInfo("hasCustomRange", Boolean
+						.toString(customRangeProvider.existsCustomRangeEntryGraphForProperty(pred.getURI())));
 				art2STRDFPredicates.put(pred, stPred);
 			}
 
 			ARTNode obj = stmt.getObject();
 
 			STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(ontModel, obj, false,
-					graphs.contains(NodeFilters.MAINGRAPH), false);
+					currentProject && graphs.contains(workingGraph), false);
 
 			if (stNode.isResource()) {
-				((STRDFResource) stNode).setRendering(resource2Rendering.get(obj));					
+				((STRDFResource) stNode).setRendering(resource2Rendering.get(obj));
 
 				RDFResourceRolesEnum nodeRole = resource2Role.get(obj);
 				((STRDFResource) stNode).setRole(nodeRole);
@@ -88,7 +95,7 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 					ARTLiteral lit = xLabel2LiteralForm.get(obj);
 
 					if (lit != null) {
-						((STRDFResource) stNode).setRendering(lit.getLabel());					
+						((STRDFResource) stNode).setRendering(lit.getLabel());
 
 						if (lit.getLanguage() != null) {
 							((STRDFResource) stNode).setInfo("lang", lit.getLanguage());
@@ -103,8 +110,7 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 		}
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
-		result.put("properties", new PredicateObjectsListSection(
-				predicateObjectsList));
+		result.put("properties", new PredicateObjectsListSection(predicateObjectsList));
 		return result;
 	}
 

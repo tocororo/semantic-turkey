@@ -953,19 +953,19 @@ public class Property extends ResourceOld {
 
 				// RDFResourceRolesEnum role;
 				if (propertyType.equals("rdf:Property")) {
-					ontModel.addProperty(propertyURI, superProperty);
+					ontModel.addProperty(propertyURI, superProperty, wgraph);
 					// role = RDFResourceRolesEnum.property;
 				} else if (propertyType.equals("owl:ObjectProperty")) {
-					ontModel.addObjectProperty(propertyURI, superProperty);
+					ontModel.addObjectProperty(propertyURI, superProperty, wgraph);
 					// role = RDFResourceRolesEnum.objectProperty;
 				} else if (propertyType.equals("owl:DatatypeProperty")) {
-					ontModel.addDatatypeProperty(propertyURI, superProperty);
+					ontModel.addDatatypeProperty(propertyURI, superProperty, wgraph);
 					// role = RDFResourceRolesEnum.datatypeProperty;
 				} else if (propertyType.equals("owl:AnnotationProperty")) {
-					ontModel.addAnnotationProperty(propertyURI, superProperty);
+					ontModel.addAnnotationProperty(propertyURI, superProperty, wgraph);
 					// role = RDFResourceRolesEnum.annotationProperty;
 				} else if (propertyType.equals("owl:OntologyProperty")) {
-					ontModel.addOntologyProperty(propertyURI, superProperty);
+					ontModel.addOntologyProperty(propertyURI, superProperty, wgraph);
 					// role = RDFResourceRolesEnum.ontologyProperty;
 				} else
 					return servletUtilities.createExceptionResponse(request, propertyType
@@ -995,7 +995,7 @@ public class Property extends ResourceOld {
 			case addSuperProperty: {
 				ARTURIResource superProperty = ontModel
 						.createURIResource(ontModel.expandQName(parameters[0]));
-				ontModel.addSuperProperty(property, superProperty);
+				ontModel.addSuperProperty(property, superProperty, wgraph);
 			}
 				break;
 
@@ -1003,7 +1003,7 @@ public class Property extends ResourceOld {
 			case removeSuperProperty: {
 				ARTURIResource superProperty = ontModel
 						.createURIResource(ontModel.expandQName(parameters[0]));
-				ontModel.removeSuperProperty(property, superProperty);
+				ontModel.removeSuperProperty(property, superProperty, wgraph);
 			}
 				break;
 
@@ -1011,7 +1011,7 @@ public class Property extends ResourceOld {
 			case addPropertyDomain: {
 				ARTURIResource domainProperty = ontModel.createURIResource(ontModel
 						.expandQName(parameters[0]));
-				ontModel.addPropertyDomain(property, domainProperty);
+				ontModel.addPropertyDomain(property, domainProperty, wgraph);
 			}
 				break;
 
@@ -1019,7 +1019,7 @@ public class Property extends ResourceOld {
 			case removePropertyDomain: {
 				ARTURIResource domainProperty = ontModel.createURIResource(ontModel
 						.expandQName(parameters[0]));
-				ontModel.removePropertyDomain(property, domainProperty);
+				ontModel.removePropertyDomain(property, domainProperty, wgraph);
 			}
 				break;
 
@@ -1027,7 +1027,7 @@ public class Property extends ResourceOld {
 			case addPropertyRange: {
 				ARTURIResource rangeProperty = ontModel
 						.createURIResource(ontModel.expandQName(parameters[0]));
-				ontModel.addPropertyRange(property, rangeProperty);
+				ontModel.addPropertyRange(property, rangeProperty, wgraph);
 			}
 				break;
 
@@ -1035,7 +1035,7 @@ public class Property extends ResourceOld {
 			case removePropertyRange: {
 				ARTURIResource rangeProperty = ontModel
 						.createURIResource(ontModel.expandQName(parameters[0]));
-				ontModel.removePropertyRange(property, rangeProperty);
+				ontModel.removePropertyRange(property, rangeProperty, wgraph);
 			}
 				break;
 
@@ -1068,6 +1068,14 @@ public class Property extends ResourceOld {
 			String valueString, RDFTypesEnum valueType, String rangeQName, String lang,
 			String oldValueString, RDFTypesEnum oldValueType, String oldRangeQName, String oldLang) {
 		OWLModel model = getOWLModel();
+		ARTResource wgraph = null;
+		
+		try {
+			wgraph = getWorkingGraph();
+		} catch (ModelAccessException | NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		}
+
 		ServletUtilities servletUtilities = new ServletUtilities();
 
 		String propertyURI;
@@ -1111,16 +1119,16 @@ public class Property extends ResourceOld {
 				if (valueType == RDFTypesEnum.plainLiteral) {
 					logger.debug("instantiating property: " + property + " with value: " + valueString
 							+ " and lang: " + lang);
-					model.instantiatePropertyWithPlainLiteral(individual, property, valueString, lang);
+					model.instantiatePropertyWithPlainLiteral(individual, property, valueString, lang, wgraph);
 				} else if (valueType == RDFTypesEnum.typedLiteral) {
 					logger.debug("instantiating property: " + property + " with value: " + valueString
 							+ "typed after: " + rangeQName);
 					model.instantiatePropertyWithTypedLiteral(individual, property, valueString,
-							range.asURIResource());
+							range.asURIResource(), wgraph);
 				} else if (valueType == RDFTypesEnum.resource) {
 					model.addInstance(model.expandQName(valueString), range);
 					ARTURIResource objIndividual = model.createURIResource(model.expandQName(valueString));
-					model.instantiatePropertyWithResource(individual, property, objIndividual);
+					model.instantiatePropertyWithResource(individual, property, objIndividual, wgraph);
 				} else
 					return servletUtilities.createExceptionResponse(request, valueType
 							+ " is not an admitted type for this value; only " + RDFTypesEnum.plainLiteral
@@ -1145,7 +1153,7 @@ public class Property extends ResourceOld {
 					return servletUtilities.createExceptionResponse(request, "there is no object named: "
 							+ valueURI + " !");
 				}
-				model.instantiatePropertyWithResource(individual, property, valueObject);
+				model.instantiatePropertyWithResource(individual, property, valueObject, wgraph);
 			} catch (ModelAccessException e) {
 				return servletUtilities.createExceptionResponse(request, e);
 			} catch (ModelUpdateException e) {
@@ -1159,7 +1167,7 @@ public class Property extends ResourceOld {
 			try {
 				valueURI = model.expandQName(valueString);
 				ARTURIResource valueObject = model.createURIResource(valueURI);
-				model.instantiatePropertyWithResource(individual, property, valueObject);
+				model.instantiatePropertyWithResource(individual, property, valueObject, wgraph);
 			} catch (ModelAccessException e) {
 				return servletUtilities.createExceptionResponse(request, e);
 			} catch (ModelUpdateException e) {
@@ -1170,10 +1178,10 @@ public class Property extends ResourceOld {
 		else if (request.equals(Req.removePropValueRequest)) {
 			try {
 				if (valueType == RDFTypesEnum.plainLiteral)
-					model.deleteTriple(individual, property, model.createLiteral(valueString, lang));
+					model.deleteTriple(individual, property, model.createLiteral(valueString, lang), wgraph);
 				else if (valueType == RDFTypesEnum.typedLiteral) {
 					model.deleteTriple(individual, property,
-							model.createLiteral(valueString, range.asURIResource()));
+							model.createLiteral(valueString, range.asURIResource()), wgraph);
 				} else if (RDFTypesEnum.isResource(valueType)) {
 					ARTResource valueResourceObject;
 					if (valueType == RDFTypesEnum.uri) {
@@ -1187,7 +1195,7 @@ public class Property extends ResourceOld {
 						return servletUtilities.createExceptionResponse(request, "there is no object: "
 								+ valueResourceObject + " !");
 					}
-					model.deleteTriple(individual, property, valueResourceObject);
+					model.deleteTriple(individual, property, valueResourceObject, wgraph);
 				} else {
 					return servletUtilities.createErrorResponse(request, "unable to delete value; type: "
 							+ valueType + " is not recognized");
@@ -1206,7 +1214,7 @@ public class Property extends ResourceOld {
 			// remove the property value
 			try {
 				if (oldValueType == RDFTypesEnum.plainLiteral)
-					model.deleteTriple(individual, property, model.createLiteral(oldValueString, oldLang));
+					model.deleteTriple(individual, property, model.createLiteral(oldValueString, oldLang), wgraph);
 				else if (oldValueType == RDFTypesEnum.typedLiteral) {
 					ARTURIResource oldRange = null;
 					if (oldRangeQName != null) {
@@ -1219,7 +1227,7 @@ public class Property extends ResourceOld {
 						}
 					}
 					model.deleteTriple(individual, property,
-							model.createLiteral(oldValueString, oldRange.asURIResource()));
+							model.createLiteral(oldValueString, oldRange.asURIResource()), wgraph);
 				} else if (RDFTypesEnum.isResource(oldValueType)) {
 					ARTResource valueResourceObject;
 					if (valueType == RDFTypesEnum.uri) {
@@ -1233,7 +1241,7 @@ public class Property extends ResourceOld {
 						return servletUtilities.createExceptionResponse(request, "there is no object: "
 								+ valueResourceObject + " !");
 					}
-					model.deleteTriple(individual, property, valueResourceObject);
+					model.deleteTriple(individual, property, valueResourceObject, wgraph);
 				} else {
 					return servletUtilities.createErrorResponse(request, "unable to delete value; type: "
 							+ valueType + " is not recognized");
@@ -1251,16 +1259,16 @@ public class Property extends ResourceOld {
 				if (valueType == RDFTypesEnum.plainLiteral) {
 					logger.debug("instantiating property: " + property + " with value: " + valueString
 							+ " and lang: " + lang);
-					model.instantiatePropertyWithPlainLiteral(individual, property, valueString, lang);
+					model.instantiatePropertyWithPlainLiteral(individual, property, valueString, lang, wgraph);
 				} else if (valueType == RDFTypesEnum.typedLiteral) {
 					logger.debug("instantiating property: " + property + " with value: " + valueString
 							+ "typed after: " + rangeQName);
 					model.instantiatePropertyWithTypedLiteral(individual, property, valueString,
-							range.asURIResource());
+							range.asURIResource(), wgraph);
 				} else if (valueType == RDFTypesEnum.resource) {
 					model.addInstance(model.expandQName(valueString), range);
 					ARTURIResource objIndividual = model.createURIResource(model.expandQName(valueString));
-					model.instantiatePropertyWithResource(individual, property, objIndividual);
+					model.instantiatePropertyWithResource(individual, property, objIndividual, wgraph);
 				} else
 					return servletUtilities.createExceptionResponse(request, valueType
 							+ " is not an admitted type for this value; only " + RDFTypesEnum.plainLiteral
@@ -1293,7 +1301,7 @@ public class Property extends ResourceOld {
 					RDFTypesEnum.valueOf(nodeType));
 			XMLResponseREPLY response = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
-			ARTLiteralIterator it = ontModel.parseDataRange(dataRange, NodeFilters.MAINGRAPH);
+			ARTLiteralIterator it = ontModel.parseDataRange(dataRange);
 			while (it.streamOpen()) {
 				RDFXMLHelp.addRDFNode(dataElement, ontModel, it.getNext(), false, true);
 			}
@@ -1320,8 +1328,7 @@ public class Property extends ResourceOld {
 		Element dataElement = response.getDataElement();
 		try {
 			property = ontModel.createURIResource(ontModel.expandQName(propertyQName));
-			ARTResourceIterator domainClasses = ontModel.listPropertyDomains(property, true,
-					NodeFilters.MAINGRAPH);
+			ARTResourceIterator domainClasses = ontModel.listPropertyDomains(property, true);
 			while (domainClasses.streamOpen()) {
 				ARTResource domainClass = domainClasses.getNext();
 				if (domainClass.isURIResource())
@@ -1347,8 +1354,7 @@ public class Property extends ResourceOld {
 		Element dataElement = response.getDataElement();
 		try {
 			property = ontModel.createURIResource(ontModel.expandQName(propertyQName));
-			ARTResourceIterator rangeClasses = ontModel.listPropertyRanges(property, true,
-					NodeFilters.MAINGRAPH);
+			ARTResourceIterator rangeClasses = ontModel.listPropertyRanges(property, true);
 			while (rangeClasses.streamOpen()) {
 				ARTResource rangeClass = rangeClasses.getNext();
 				if (rangeClass.isURIResource())

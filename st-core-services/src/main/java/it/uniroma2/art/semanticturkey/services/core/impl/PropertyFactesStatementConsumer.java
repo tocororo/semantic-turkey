@@ -9,6 +9,7 @@ import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -26,14 +27,17 @@ import com.google.common.base.Joiner;
 public class PropertyFactesStatementConsumer implements StatementConsumer {
 
 	@Override
-	public LinkedHashMap<String, ResourceViewSection> consumeStatements(
-			Project<?> project, ARTResource resource, ResourcePosition resourcePosition,
-			RDFResourceRolesEnum resourceRole,
-			StatementCollector stmtCollector,
-			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
-			Map<ARTResource, String> resource2Rendering,
-			Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
-			throws ModelAccessException {
+	public LinkedHashMap<String, ResourceViewSection> consumeStatements(Project<?> project,
+			ARTResource resource, ResourcePosition resourcePosition, ARTResource workingGraph,
+			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
+			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering,
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm) throws ModelAccessException {
+	
+		boolean currentProject = false;
+		if (resourcePosition instanceof LocalResourcePosition) {
+			currentProject = ((LocalResourcePosition)resourcePosition).getProject().equals(project);
+		}
+		
 		boolean symmetric = false;
 		boolean symmetricExplicit = true;
 
@@ -48,39 +52,44 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 
 		Set<ARTStatement> stmts;
 		Set<ARTResource> graphs;
-		
+
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY, NodeFilters.ANY)) {
 			symmetric = true;
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY);
-			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY));
-			symmetricExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource,
+					RDF.Res.TYPE, OWL.Res.SYMMETRICPROPERTY));
+			symmetricExplicit = currentProject && graphs.contains(workingGraph);
 			// Mark statements as processed
 			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
-		
+
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY, NodeFilters.ANY)) {
 			functional = true;
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY);
-			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY));
-			functionalExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource,
+					RDF.Res.TYPE, OWL.Res.FUNCTIONALPROPERTY));
+			functionalExplicit = currentProject && graphs.contains(workingGraph);
 			// Mark statements as processed
 			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
-		
-		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY, NodeFilters.ANY)) {
+
+		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY,
+				NodeFilters.ANY)) {
 			inverseFunctional = true;
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY);
-			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY));
-			inverseFunctionalExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource,
+					RDF.Res.TYPE, OWL.Res.INVERSEFUNCTIONALPROPERTY));
+			inverseFunctionalExplicit = currentProject && graphs.contains(workingGraph);
 			// Mark statements as processed
 			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
-		
+
 		if (stmtCollector.hasStatement(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY, NodeFilters.ANY)) {
 			transitive = true;
 			stmts = stmtCollector.getStatements(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY);
-			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource, RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY));
-			transitiveExplicit = graphs.contains(NodeFilters.MAINGRAPH);
+			graphs = stmtCollector.getGraphsFor(VocabUtilities.nodeFactory.createStatement(resource,
+					RDF.Res.TYPE, OWL.Res.TRANSITIVEPROPERTY));
+			transitiveExplicit = currentProject && graphs.contains(workingGraph);
 			// Mark statements as processed
 			stmtCollector.markAllStatementsAsProcessed(stmts);
 		}
@@ -93,16 +102,15 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 		for (ARTStatement stmt : inverseOfStmts) {
 			graphs = stmtCollector.getGraphsFor(stmt);
 			STRDFResource stRes = STRDFNodeFactory.createSTRDFResource(stmt.getObject().asResource(),
-					resource2Role.get(stmt.getObject()), graphs.contains(NodeFilters.MAINGRAPH),
+					resource2Role.get(stmt.getObject()), currentProject && graphs.contains(workingGraph),
 					resource2Rendering.get(stmt.getObject()));
 			stRes.setInfo("graphs", Joiner.on(",").join(graphs));
 			inverseOf.add(stRes);
 		}
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
-		result .put("facets", new PropertyFacets(symmetric, symmetricExplicit, functional,
-				functionalExplicit, inverseFunctional, inverseFunctionalExplicit, transitive,
-				transitiveExplicit, inverseOf));
+		result.put("facets", new PropertyFacets(symmetric, symmetricExplicit, functional, functionalExplicit,
+				inverseFunctional, inverseFunctionalExplicit, transitive, transitiveExplicit, inverseOf));
 
 		// Mark inverse of statements as processed
 		stmtCollector.markAllStatementsAsProcessed(inverseOfStmts);

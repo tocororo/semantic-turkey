@@ -1518,8 +1518,7 @@ public class ResourceOld extends ServiceAdapter {
 		ARTResource wgraph = getWorkingGraph();
 		Element rangesElement = XMLHelp.newElement(treeElement, "ranges");
 		// TODO check todo when wgraph!=MAINGRAPH
-		Set<ARTResource> ranges = RDFIterators.getSetFromIterator(ontModel.listPropertyRanges(property, true,
-				wgraph));
+		Set<ARTResource> ranges = RDFIterators.getSetFromIterator(ontModel.listPropertyRanges(property, true));
 		Collection<ARTResource> explicitRanges = RDFIterators.getCollectionFromIterator(ontModel
 				.listPropertyRanges(property, false, wgraph));
 

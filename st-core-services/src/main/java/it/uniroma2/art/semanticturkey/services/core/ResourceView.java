@@ -228,7 +228,7 @@ public class ResourceView extends STServiceAdapter {
 		}
 
 		LinkedHashMap<String, ResourceViewSection> sections = reorganizeInformation(resource,
-				resourcePosition, subjectRole, stmtCollector, resource2Role, resource2Rendering,
+				resourcePosition, workingGraph, subjectRole, stmtCollector, resource2Role, resource2Rendering,
 				xLabel2LiteralForm);
 
 		// ****************************************
@@ -414,7 +414,7 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource,
-			ResourcePosition resourcePosition, RDFResourceRolesEnum resourceRole, OWLModel stmtCollector,
+			ResourcePosition resourcePosition, ARTResource workingGraph, RDFResourceRolesEnum resourceRole, OWLModel stmtCollector,
 			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering, Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
 			throws DOMException, ModelAccessException {
@@ -435,7 +435,7 @@ public class ResourceView extends STServiceAdapter {
 		for (StatementConsumer stmtConsumer : statementConsumerProvider
 				.getTemplateForResourceRole(resourceRole)) {
 			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(
-					getProject(), resource, resourcePosition, resourceRole, newCollector, resource2Role,
+					getProject(), resource, resourcePosition, workingGraph, resourceRole, newCollector, resource2Role,
 					resource2Rendering, xLabel2LiteralForm);
 
 			result.putAll(newResults);

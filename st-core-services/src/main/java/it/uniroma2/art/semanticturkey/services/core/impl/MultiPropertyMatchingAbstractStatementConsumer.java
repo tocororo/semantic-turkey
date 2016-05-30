@@ -1,5 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core.impl;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.base.Joiner;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -8,6 +16,7 @@ import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsListFactory;
@@ -16,14 +25,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.project.Project;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 
 public class MultiPropertyMatchingAbstractStatementConsumer implements StatementConsumer {
 
@@ -37,18 +38,23 @@ public class MultiPropertyMatchingAbstractStatementConsumer implements Statement
 
 	@Override
 	public LinkedHashMap<String, ResourceViewSection> consumeStatements(Project<?> project,
-			ARTResource resource, ResourcePosition resourcePosition, RDFResourceRolesEnum resourceRole,
-			StatementCollector stmtCollector, Map<ARTResource, RDFResourceRolesEnum> resource2Role,
-			Map<ARTResource, String> resource2Rendering, Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
-			throws ModelAccessException {
+			ARTResource resource, ResourcePosition resourcePosition, ARTResource workingGraph,
+			RDFResourceRolesEnum resourceRole, StatementCollector stmtCollector,
+			Map<ARTResource, RDFResourceRolesEnum> resource2Role, Map<ARTResource, String> resource2Rendering,
+			Map<ARTResource, ARTLiteral> xLabel2LiteralForm) throws ModelAccessException {
+
+		boolean currentProject = false;
+		if (resourcePosition instanceof LocalResourcePosition) {
+			currentProject = ((LocalResourcePosition)resourcePosition).getProject().equals(project);
+		}
 
 		Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
 		Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
 
 		for (ARTURIResource property : properties) {
 			// Selects the relevant statements
-			Set<ARTStatement> relevantStmts = stmtCollector
-					.getStatements(resource, property, NodeFilters.ANY);
+			Set<ARTStatement> relevantStmts = stmtCollector.getStatements(resource, property,
+					NodeFilters.ANY);
 
 			// Skips empty sections
 			if (relevantStmts.isEmpty())
@@ -64,7 +70,7 @@ public class MultiPropertyMatchingAbstractStatementConsumer implements Statement
 				ARTNode obj = stmt.getObject();
 				Set<ARTResource> graphs = stmtCollector.getGraphsFor(stmt);
 				STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(project.getOntModel(), obj, false,
-						graphs.contains(NodeFilters.MAINGRAPH), false);
+						currentProject && graphs.contains(workingGraph), false);
 
 				if (stNode.isResource()) {
 					RDFResourceRolesEnum role = resource2Role.get(obj);
@@ -97,8 +103,8 @@ public class MultiPropertyMatchingAbstractStatementConsumer implements Statement
 			stmtCollector.markAllStatementsAsProcessed(relevantStmts);
 		}
 
-		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory.createPredicateObjectsList(
-				art2STRDFPredicates, resultPredicateObjectValues);
+		PredicateObjectsList predicateObjectsList = PredicateObjectsListFactory
+				.createPredicateObjectsList(art2STRDFPredicates, resultPredicateObjectValues);
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
 		result.put(sectionName, new PredicateObjectsListSection(predicateObjectsList));

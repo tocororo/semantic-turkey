@@ -65,12 +65,16 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		return project;
 	}
 
+	/**
+	 * Returns the working graph. If none is indicated as a parameter of the request URL (see
+	 * {@value #HTTP_PARAM_WGRAPH}), then it returns the base URI of the current project.
+	 */
 	@Override
 	public ARTResource getWGraph() {
 		String wgraphParameter = request.getParameter(HTTP_PARAM_WGRAPH);
 
 		if (wgraphParameter == null) {
-			wgraphParameter = HTTP_ARG_DEFAULT_GRAPH;
+			wgraphParameter = getProject().getBaseURI();
 		}
 
 		ARTResource wgraph = conversionService.convert(wgraphParameter, ARTResource.class);
@@ -113,28 +117,35 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		if (extensionPathComponent != null) {
 			return extensionPathComponent;
 		}
-		
-		// Otherwise, computes the extension path component by looking at the path of the resource pom.properties added by Maven
+
+		// Otherwise, computes the extension path component by looking at the path of the resource
+		// pom.properties added by Maven
 		Resource[] resources;
 		try {
 			resources = applicationContext.getResources("classpath*:/META-INF/maven/**/pom.properties");
 		} catch (IOException e) {
-			throw new InvalidContextException("An exception occurred while loading resources from the location classpath*:/META-INF/maven/**/pom.properties", e);
+			throw new InvalidContextException(
+					"An exception occurred while loading resources from the location classpath*:/META-INF/maven/**/pom.properties",
+					e);
 		}
 		if (resources.length == 0) {
-			throw new InvalidContextException("No resource found at the location classpath*:/META-INF/maven/**/pom.properties");
+			throw new InvalidContextException(
+					"No resource found at the location classpath*:/META-INF/maven/**/pom.properties");
 		}
-		
+
 		Resource r = resources[0];
-		
+
 		try {
 			// Path elements should be xxx, yyy, zzz, META-INF, maven, groupId, artifactId, pom.properties
 			String[] pathElements = r.getURI().getPath().split("/");
-			extensionPathComponent = pathElements[pathElements.length - 3 ] + "/" + pathElements[pathElements.length - 2];
+			extensionPathComponent = pathElements[pathElements.length - 3] + "/"
+					+ pathElements[pathElements.length - 2];
 		} catch (IOException e) {
-			throw new InvalidContextException("Error while referencing a resource located at classpath*:/META-INF/maven/**/pom.properties", e);
+			throw new InvalidContextException(
+					"Error while referencing a resource located at classpath*:/META-INF/maven/**/pom.properties",
+					e);
 		}
-		
+
 		return extensionPathComponent;
 	}
 

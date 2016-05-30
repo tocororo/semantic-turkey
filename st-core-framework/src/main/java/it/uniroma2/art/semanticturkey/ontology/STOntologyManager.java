@@ -876,7 +876,7 @@ public abstract class STOntologyManager<T extends RDFModel> {
 			// the ontology
 			if (updateImportStatement) {
 				logger.debug("adding import statement for uri: " + baseURI);
-				((OWLModel) model).addImportStatement(baseURI);
+				((OWLModel) model).addImportStatement(baseURI, model.createURIResource(model.getBaseURI()));
 			}
 
 			// updates the related import set with the loaded ontology
@@ -1289,7 +1289,7 @@ public abstract class STOntologyManager<T extends RDFModel> {
 	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format)
 			throws FileNotFoundException, IOException, ModelAccessException, ModelUpdateException,
 			UnsupportedRDFFormatException {
-		loadOntologyData(inputFile, baseURI, format, NodeFilters.MAINGRAPH);
+		loadOntologyData(inputFile, baseURI, format, model.createURIResource(model.getBaseURI()));
 	}
 
 	/**
@@ -1312,13 +1312,13 @@ public abstract class STOntologyManager<T extends RDFModel> {
 		if (multigraph)
 			model.writeRDF(outPutFile, format);
 		else
-			model.writeRDF(outPutFile, format, NodeFilters.MAINGRAPH);
+			model.writeRDF(outPutFile, format, model.createURIResource(model.getBaseURI()));
 	}
 
 	public Document writeRDFonDOMDocument(OWLModel r) throws Exception {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BufferedOutputStream bos = new BufferedOutputStream(baos);
-		model.writeRDF(bos, RDFFormat.RDFXML, NodeFilters.MAINGRAPH);
+		model.writeRDF(bos, RDFFormat.RDFXML, model.createURIResource(model.getBaseURI()));
 		bos.flush();
 		return XMLHelp.byteArrayOutputStream2XML(baos);
 	}

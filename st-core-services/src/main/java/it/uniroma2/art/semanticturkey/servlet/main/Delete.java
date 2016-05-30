@@ -138,6 +138,8 @@ public class Delete extends ServiceAdapter {
 			return servletUtilities.createExceptionResponse("deleteResource",
 					"problems in deleting resource " + qname + " from the ontModel.\n"
 							+ Utilities.printStackTrace(e));
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
 		}
 		logger.debug("deleting request is: " + request + ", for resource: " + qname);
 
@@ -173,9 +175,7 @@ public class Delete extends ServiceAdapter {
 			
 			RDFXMLHelp.addRDFNode(response, stClass);
 			return response;
-		} catch (ModelAccessException e) {
-			return logAndSendException(e);
-		} catch (NonExistingRDFResourceException e) {
+		} catch (ModelAccessException | NonExistingRDFResourceException e) {
 			return logAndSendException(e);
 		}
 		
@@ -216,11 +216,12 @@ public class Delete extends ServiceAdapter {
 	 * @param ontModel
 	 * @return
 	 * @throws ModelAccessException
+	 * @throws NonExistingRDFResourceException 
 	 */
 	public boolean checkPropertyDeleatability(ARTURIResource property, OWLModel ontModel)
-			throws ModelAccessException {
+			throws ModelAccessException, NonExistingRDFResourceException {
 		ARTStatementIterator stit = ontModel.listStatements(NodeFilters.ANY, property, NodeFilters.ANY,
-				false, NodeFilters.MAINGRAPH);
+				false, getWorkingGraph());
 		return !stit.hasNext();
 	}
 

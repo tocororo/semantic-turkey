@@ -14,6 +14,7 @@ import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTBNode;
 import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
@@ -109,7 +110,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	private String getSingleManchExpression(ARTBNode artNode, OWLModel model, List<ARTStatement> tripleList,
 			boolean usePrefixes, boolean useUppercaseSyntax) throws ModelAccessException {
 		ManchesterClassInterface manchClassFromBNode = model.getManchClassFromBNode(artNode, model,
-				NodeFilters.MAINGRAPH, tripleList);
+				getWorkingGraph(), tripleList);
 		String manchExpr = manchClassFromBNode.getManchExpr(usePrefixes, useUppercaseSyntax);
 		return manchExpr;
 	}
@@ -119,6 +120,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			throws ModelAccessException, ModelUpdateException {
 
 		OWLModel model = getOWLModel();
+		ARTResource workingGraph = getWorkingGraph();
 
 		if (!artNode.isBlank()) {
 			// this should never happen
@@ -127,12 +129,12 @@ public class ManchesterHandler extends STServiceAdapter {
 
 		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		List<ARTStatement> tripleList = new ArrayList<ARTStatement>();
-		model.getManchClassFromBNode(artNode.asBNode(), model, getWorkingGraph(), tripleList);
+		model.getManchClassFromBNode(artNode.asBNode(), model, workingGraph, tripleList);
 		// remove all the triple
 		for (ARTStatement artStatement : tripleList) {
-			model.deleteStatement(artStatement, NodeFilters.MAINGRAPH);
+			model.deleteStatement(artStatement, workingGraph);
 		}
-		model.deleteTriple(classUri, exprType, artNode.asBNode(), NodeFilters.MAINGRAPH);
+		model.deleteTriple(classUri, exprType, artNode.asBNode(), workingGraph);
 
 		return resp;
 	}
@@ -155,7 +157,8 @@ public class ManchesterHandler extends STServiceAdapter {
 	public Response createRestriction(ARTURIResource classUri, ARTURIResource exprType, String manchExpr)
 			throws ManchesterSyntaxException, ModelUpdateException {
 		OWLModel model = getOWLModel();
-
+		ARTResource workingGraph = getWorkingGraph();
+		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
@@ -172,7 +175,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			Element collElem = XMLHelp.newElement(dataElement, "collection");
 			// add all the statement to the maingraph
 			for (ARTStatement stat : statList) {
-				model.addStatement(stat, NodeFilters.MAINGRAPH);
+				model.addStatement(stat, workingGraph);
 				Element tripleElem = XMLHelp.newElement(collElem, "triple");
 				XMLHelp.newElement(tripleElem, "subject", RDFNodeSerializer.toNT(stat.getSubject()));
 				XMLHelp.newElement(tripleElem, "predicate", RDFNodeSerializer.toNT(stat.getPredicate()));
@@ -181,13 +184,13 @@ public class ManchesterHandler extends STServiceAdapter {
 
 			// add the subClass o equivalentClass property between the main ClassURI and the new BNode
 			Element infoClassType;
-			model.addTriple(classUri, exprType, bnode, NodeFilters.MAINGRAPH);
+			model.addTriple(classUri, exprType, bnode, workingGraph);
 			infoClassType = XMLHelp.newElement(dataElement, exprType.getLocalName());
 			dataElement.appendChild(infoClassType);
 
 			STRDFResource stBNode = STRDFNodeFactory.createSTRDFResource(model, bnode,
 					RDFResourceRolesEnum.undetermined,
-					servletUtilities.checkWritable(model, bnode, getWorkingGraph()), false);
+					servletUtilities.checkWritable(model, bnode, workingGraph), false);
 			RDFXMLHelp.addRDFNode(infoClassType, stBNode);
 		} catch (RecognitionException | ModelAccessException e) {
 			throw new ManchesterSyntaxException("Syntax problem with the expression : " + manchExpr);

@@ -741,7 +741,7 @@ public class ClsOld extends ResourceOld {
 				return logAndSendException("there is another resource with the same name!");
 			}
 			ARTURIResource clsRes = retrieveExistingURIResource(ontModel, clsQName, getUserNamedGraphs());
-			ontModel.addInstance(ontModel.expandQName(instanceQName), clsRes);
+			ontModel.addInstance(ontModel.expandQName(instanceQName), clsRes, getWorkingGraph());
 			return updateClassOnTree(clsQName, instanceQName);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
@@ -1042,6 +1042,8 @@ public class ClsOld extends ResourceOld {
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();
+			ARTResource wgraph = getWorkingGraph();
+			
 			ARTURIResource cls = retrieveExistingURIResource(ontModel, clsQName, graphs);
 			ARTURIResource superCls = retrieveExistingURIResource(ontModel, superclsQName, graphs);
 
@@ -1052,13 +1054,12 @@ public class ClsOld extends ResourceOld {
 			if (superClasses.contains(superCls))
 				return logAndSendException(superclsQName + " is already a superclass of: " + clsQName);
 
-			ontModel.addSuperClass(cls, superCls);
+			ontModel.addSuperClass(cls, superCls, wgraph);
 
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
 
 			Element clsElement = XMLHelp.newElement(dataElement, "Class");
-			ARTResource wgraph = getWorkingGraph();
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
 					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
@@ -1099,6 +1100,7 @@ public class ClsOld extends ResourceOld {
 
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();
+			ARTResource wgraph = getWorkingGraph();
 			ARTResource cls = retrieveExistingURIResource(ontModel, clsQName, graphs);
 			ARTResource superCls = retrieveExistingURIResource(ontModel, superClassQName, graphs);
 
@@ -1109,16 +1111,15 @@ public class ClsOld extends ResourceOld {
 			if (!superClasses.contains(superCls))
 				return logAndSendException(superClassQName + " is not a superclass for: " + clsQName);
 
-			if (!ontModel.hasTriple(cls, RDFS.Res.SUBCLASSOF, superCls, false, getWorkingGraph()))
+			if (!ontModel.hasTriple(cls, RDFS.Res.SUBCLASSOF, superCls, false, wgraph))
 				return logAndSendException("this sublcass relationship comes from an imported ontology or has been inferred, so it cannot be deleted explicitly");
 
-			ontModel.removeSuperClass(cls, superCls);
+			ontModel.removeSuperClass(cls, superCls, wgraph);
 
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
 
 			Element clsElement = XMLHelp.newElement(dataElement, "Class");
-			ARTResource wgraph = getWorkingGraph();
 			STRDFResource stClass = STRDFNodeFactory.createSTRDFResource(ontModel, cls,
 					ModelUtilities.getResourceRole(cls, ontModel),
 					servletUtilities.checkWritable(ontModel, cls, wgraph), false);
@@ -1190,8 +1191,8 @@ public class ClsOld extends ResourceOld {
 			ARTResource superClassResource = retrieveExistingURIResource(ontModel, superClassQName,
 					getUserNamedGraphs());
 
-			ontModel.addClass(newClassURI);
-			ontModel.addSuperClass(classRes, superClassResource);
+			ontModel.addClass(newClassURI, wgraph);
+			ontModel.addSuperClass(classRes, superClassResource, wgraph);
 
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();

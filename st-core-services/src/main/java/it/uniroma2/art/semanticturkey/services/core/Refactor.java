@@ -54,6 +54,7 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
@@ -236,6 +237,7 @@ public class Refactor extends STServiceAdapter {
 			} else {
 				sourceBaseURI = ontModel.getBaseURI();
 				DataRefactoring.replaceBaseuri(ontModel, targetBaseURI, graphs);
+				getProject().setBaseURI(targetBaseURI);
 			}
 		} catch (ModelAccessException e) {
 			throw new ModelAccessException(
@@ -243,6 +245,9 @@ public class Refactor extends STServiceAdapter {
 		} catch (ModelUpdateException e) {
 			throw new ModelUpdateException(
 					"sorry, unable to replace the baseuri, try to close the project " + "and open it again");
+		} catch (ProjectUpdateException e) {
+			throw new ModelUpdateException(
+					"sorry, unable to replace the baseuri within project metadata");
 		}
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();

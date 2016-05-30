@@ -61,7 +61,8 @@ public class SaveToStoreProject<MODELTYPE extends RDFModel> extends Project<MODE
 
 	public void save() throws ProjectUpdateException {
 		try {
-			getOntModel().writeRDF(triplesFile, RDFFormat.NTRIPLES, NodeFilters.MAINGRAPH);
+			RDFModel model = getOntModel();
+			model.writeRDF(triplesFile, RDFFormat.NTRIPLES, model.createURIResource(model.getBaseURI()));
 			nsPrefixMappingsPersistence.updatePrefixMappingRegistry();
 		} catch (IOException e) {
 			throw new ProjectUpdateException("unable to write to the project file");

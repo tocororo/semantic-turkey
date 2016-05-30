@@ -98,7 +98,7 @@ public class RDFUtilities {
 		}
 
 		// has to be tested in any case: though it is not common, even a URI can be a dataRange
-		if (model.isDataRange(range, NodeFilters.MAINGRAPH))
+		if (model.isDataRange(range))
 			return getInferredAndCompatiblePropertyRange(model, property, RDFTypesEnum.literal);
 
 		return RDFTypesEnum.resource;
