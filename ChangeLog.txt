@@ -1,6 +1,7 @@
 version 0.13
 data: XX-YY-2016
   * required Java 8
+  * the working graph of a project is now named after the base URI. Previously, it was the null-context
   * upgraded Karaf to verion 4.0.4
   * started development of newer new-style services
   * started migration to RDF4J
