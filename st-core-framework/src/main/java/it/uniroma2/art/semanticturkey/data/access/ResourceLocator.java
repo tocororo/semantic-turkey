@@ -29,26 +29,23 @@ public class ResourceLocator {
 	/**
 	 * Locate a resource. The locator implements the following algorithm:
 	 * <ol>
-	 * <li>
-	 * if <code>resource</code> is a bnode ({@link ARTNode#isBlank()} returns <code>true</code>), then assumes
-	 * it belongs to the provided project</li>
-	 * <li>
-	 * otherwise; <code>resource</code> is a uri, the do the following
+	 * <li>if <code>resource</code> is a bnode ({@link ARTNode#isBlank()} returns <code>true</code>), then
+	 * assumes it belongs to the provided project</li>
+	 * <li>otherwise; <code>resource</code> is a uri, then do the following
 	 * <ol>
-	 * <li>
-	 * if the namespace of <code>resource</code> is equal to the default namespace of <code>project</code> or
-	 * <code>resource</code> is defined in any graph of <code>project</code>, then assumes that
-	 * <code>resource</code> belongs to <code>project</code></li>
-	 * <li>
-	 * for each open project <code>p</code>, if the namespace of <code>resource</code> is equal to the default
-	 * namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs to <code>p</code></li>
-	 * <li>
-	 * attempt to locate <code>resource</code> in a remote dataset (see
+	 * <li>if the namespace of <code>resource</code> is equal to the default namespace of <code>project</code>
+	 * or <code>resource</code> is defined in any graph of <code>project</code> (see
+	 * {@link RDFModel#isLocallyDefined(ARTResource, ARTResource...)}, then assumes that <code>resource</code>
+	 * belongs to <code>project</code></li>
+	 * <li>for each open project <code>p</code>, if the namespace of <code>resource</code> is equal to the
+	 * default namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs to
+	 * <code>p</code></li>
+	 * <li>attempt to locate <code>resource</code> in a remote dataset (see
 	 * {@link DatasetMetadataRepository#findDatasetForResource(ARTURIResource)}</li>
-	 * <li>
-	 * otherwise; states that the position is unknown</li>
+	 * <li>otherwise; states that the position is unknown</li>
 	 * </ol>
-	 * </li> </ol>
+	 * </li>
+	 * </ol>
 	 * 
 	 * @param project
 	 *            the current project
