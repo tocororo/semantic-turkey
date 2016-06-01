@@ -59,7 +59,7 @@ public class Search extends STServiceAdapter {
 	
 	@GenerateSTServiceController
 	public Response searchResource(String searchString, String [] rolesArray, boolean useLocalName,
-			String searchMode) throws ModelUpdateException, UnsupportedQueryLanguageException, 
+			String searchMode, @Optional String lang) throws ModelUpdateException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		
 		boolean isClassWanted = false;
@@ -68,6 +68,8 @@ public class Search extends STServiceAdapter {
 		boolean isPropertyWanted = false;
 		
 		String searchModeSelected = null;
+		
+		String show = null;
 		
 		
 		if(searchString.isEmpty()){
@@ -124,7 +126,7 @@ public class Search extends STServiceAdapter {
 		
 		
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type"+ 
+		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
@@ -169,6 +171,22 @@ public class Search extends STServiceAdapter {
 					"\n?resource (<"+SKOSXL.PREFLABEL+"> | <"+SKOSXL.ALTLABEL+">) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERALFORM+"> ?literalForm ." +
 					searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
+					"\n}";
+		}
+		
+		//if language was specified, try to take first the literalForm for that language and then,
+		// if it has not such value, the skosLabel (always considering just the prefLabel)
+		if(lang!=null && lang.length()>0){
+			query+="\nOPTIONAL" +
+					"\n{" +
+					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabe ." +
+					"\n?skosPrefLabel <"+SKOSXL.LITERALFORM+"> ?show ." +
+					"\n?FILTER(lang(?show) = "+lang+")"+
+					"\n}" +
+					"\nOPTIONAL" +
+					"\n{" +
+					"\n?resource <"+SKOS.PREFLABEL+"> ?show ." +
+					"\n?FILTER(lang(?show) = "+lang+")"+
 					"\n}";
 		}
 		
@@ -219,8 +237,22 @@ public class Search extends STServiceAdapter {
 				}
 				addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
 			} 
-			collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
-					true, true));
+			
+			
+			
+			//if a show was found, use it instead of the automatically retrieve one (the qnome)
+			if(tupleBindings.hasBinding("show")){
+				show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+			}
+			if(show!= null && show.length()>0){
+				collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
+						true, show));
+			} else {
+				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
+						true, true));
+			}
+			
+			
 		}
 		RDFXMLHelp.addRDFNodes(dataElement, collection);
 
