@@ -181,12 +181,12 @@ public class Search extends STServiceAdapter {
 					"\n{" +
 					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabe ." +
 					"\n?skosPrefLabel <"+SKOSXL.LITERALFORM+"> ?show ." +
-					"\n?FILTER(lang(?show) = "+lang+")"+
+					"\nFILTER(lang(?show) = \""+lang+"\")"+
 					"\n}" +
 					"\nOPTIONAL" +
 					"\n{" +
 					"\n?resource <"+SKOS.PREFLABEL+"> ?show ." +
-					"\n?FILTER(lang(?show) = "+lang+")"+
+					"\nFILTER(lang(?show) = \""+lang+"\")"+
 					"\n}";
 		}
 		
