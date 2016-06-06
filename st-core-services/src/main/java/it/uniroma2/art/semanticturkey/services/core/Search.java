@@ -69,7 +69,7 @@ public class Search extends STServiceAdapter {
 		
 		String searchModeSelected = null;
 		
-		String show = null;
+		
 		
 		
 		if(searchString.isEmpty()){
@@ -246,16 +246,26 @@ public class Search extends STServiceAdapter {
 			
 			
 			//if a show was found, use it instead of the automatically retrieve one (the qnome)
+			String show = null;
 			if(tupleBindings.hasBinding("show")){
 				show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+				if(show.length()>0){
+					collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
+							true, show));
+				}
 			}
-			if(show!= null && show.length()>0){
+			else{
+				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
+						true, true));
+			}
+			
+			/*if(show!= null && show.length()>0){
 				collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
 						true, show));
 			} else {
 				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
 						true, true));
-			}
+			}*/
 			
 			
 		}
