@@ -561,7 +561,7 @@ public class Search extends STServiceAdapter {
 		
 		if(isClassWanted){
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+resource+" = <"+OWL.CLASS+">)" +
+					"\nFILTER("+type+" = <"+OWL.CLASS+">)" +
 					"\n}";
 			otherWanted = true;
 		}
@@ -570,11 +570,11 @@ public class Search extends STServiceAdapter {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+resource+ " = <"+RDF.PROPERTY+"> || "+
-					resource+" = <"+OWL.OBJECTPROPERTY+"> || "+
-					resource+" = <"+OWL.DATATYPEPROPERTY+"> || "+
-					resource+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
-					resource+" = <"+OWL.ONTOLOGYPROPERTY+"> )"+
+					"\nFILTER("+type+ " = <"+RDF.PROPERTY+"> || "+
+					type+" = <"+OWL.OBJECTPROPERTY+"> || "+
+					type+" = <"+OWL.DATATYPEPROPERTY+"> || "+
+					type+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
+					type+" = <"+OWL.ONTOLOGYPROPERTY+"> )"+
 					"\n}";
 			otherWanted = true;
 		}
@@ -583,7 +583,7 @@ public class Search extends STServiceAdapter {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+resource+" = <"+SKOS.CONCEPT+">)";
+					 "\nFILTER("+type+" = <"+SKOS.CONCEPT+">)";
 			if(scheme!=null && scheme.getURI().length()>0){
 				filterQuery += "\n"+resource+" <"+SKOS.INSCHEME+"> <"+scheme.getURI()+"> .";
 			}
