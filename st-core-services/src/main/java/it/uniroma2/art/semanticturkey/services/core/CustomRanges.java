@@ -385,7 +385,7 @@ public class CustomRanges extends STServiceAdapter {
 				} catch (PRParserException e) {
 					//if one of the CRE contains an error, catch the exception and continue checking the other CREs
 					System.out.println("Parsing error in PEARL rule of CustomRangeEntry with ID " + cre.getId() + ". "
-							+ "The CustomRangeEntry will be ignored, please fix it PEARL rule.");
+							+ "The CustomRangeEntry will be ignored, please fix its PEARL rule.");
 				}
 			}
 			return bestCre;

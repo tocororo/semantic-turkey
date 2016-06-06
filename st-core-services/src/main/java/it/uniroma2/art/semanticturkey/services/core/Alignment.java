@@ -645,16 +645,17 @@ public class Alignment extends STServiceAdapter {
 	public Response listSuggestedProperties(ARTURIResource entity, String relation) 
 			throws ModelAccessException, InvalidAlignmentRelationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = response.getDataElement();
-		Element collElem = XMLHelp.newElement(dataElem, "collection");
 		OWLModel ontoModel = getOWLModel();
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		List<ARTURIResource> props = alignmentModel.suggestPropertiesForRelation(entity, relation, ontoModel);
+		
+		Collection<STRDFURI> propColl = STRDFNodeFactory.createEmptyURICollection();
 		for (ARTURIResource p : props) {
-			Element mpElem = XMLHelp.newElement(collElem, "mappingProperty");
-			mpElem.setTextContent(p.getURI());
-			mpElem.setAttribute("show", ontoModel.getQName(p.getURI()));
+			propColl.add(STRDFNodeFactory.createSTRDFURI(p,	ModelUtilities.getPropertyRole(p, ontoModel), true,
+					ontoModel.getQName(p.getURI())));
 		}
+		RDFXMLHelp.addRDFNodes(response, propColl);
+		
 		return response;
 	}
 	
