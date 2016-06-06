@@ -31,22 +31,44 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceRequest;
 
 public interface ServiceInterface extends STOSGIExtension {
 
-    /**
-     * @param oReq HttpServletRequest
-     */
-    public void setServiceRequest(ServiceRequest oReq);
+	/**
+	 * @param oReq
+	 *            HttpServletRequest
+	 * @deprecated See {@link ServiceInterface#handleRequest(ServiceRequest)}
+	 */
+	@Deprecated
+	public void setServiceRequest(ServiceRequest oReq);
 
-    /**
-     * @param the listener to be added to this service
-     */
-    public void addListener(ServletListener l);
+	/**
+	 * @param the
+	 *            listener to be added to this service
+	 */
+	public void addListener(ServletListener l);
 
-    /**
-     * remove the listener associated to this server
-     * @param l listener da rimuovere
-     */
-    public void removeListener(ServletListener l);
+	/**
+	 * remove the listener associated to this server
+	 * 
+	 * @param l
+	 *            listener da rimuovere
+	 */
+	public void removeListener(ServletListener l);
 
-    public Response getResponse();
+	/**
+	 * @return
+	 * @deprecated See {@link ServiceInterface#handleRequest(ServiceRequest)}
+	 */
+	@Deprecated
+	public Response getResponse();
+
+	/**
+	 * Processes a {@link ServiceRequest} and produces a {@link Response}. This operation is intended to
+	 * replace the combined use of {@link #setServiceRequest(ServiceRequest)} and {@link #getResponse()}. The
+	 * use of a single method simplifies the management of the thread-bound resources used to handle a
+	 * request.
+	 * 
+	 * @param oReq
+	 * @return
+	 */
+	public Response handleRequest(ServiceRequest oReq);
 
 }

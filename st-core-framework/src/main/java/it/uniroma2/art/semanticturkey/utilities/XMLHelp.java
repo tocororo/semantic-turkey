@@ -23,15 +23,14 @@
 
 package it.uniroma2.art.semanticturkey.utilities;
 
-import org.w3c.dom.*;
-import org.w3c.dom.bootstrap.DOMImplementationRegistry;
-import org.w3c.dom.ls.DOMImplementationLS;
-import org.w3c.dom.ls.LSOutput;
-import org.w3c.dom.ls.LSSerializer;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringBufferInputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
@@ -39,7 +38,6 @@ import java.util.Properties;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -47,28 +45,34 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.commons.io.input.ReaderInputStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 /**
  * @author Donato Griesi, Armando Stellato
  * 
  */
 public class XMLHelp {
 
-	static DOMImplementationRegistry registry;
-	static DOMImplementation _DOMImpl;
-	static Transformer _IdentityTransformer;
-	static DocumentBuilder builder;
+	// static DOMImplementationRegistry registry;
+	// static DOMImplementation _DOMImpl;
+	// static Transformer _IdentityTransformer;
+	// static DocumentBuilder builder;
 
-	public static void initialize() throws ClassCastException, ClassNotFoundException,
-			InstantiationException, IllegalAccessException, ParserConfigurationException,
-			TransformerConfigurationException {
-		registry = DOMImplementationRegistry.newInstance();
-		DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
-		builder = domBuilderFactory.newDocumentBuilder();
-		_DOMImpl = builder.getDOMImplementation();
-
-		TransformerFactory transformerFactory = TransformerFactory.newInstance();
-		_IdentityTransformer = transformerFactory.newTransformer();
-		// _IdentityTransformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+	public static void initialize() throws ClassCastException, ClassNotFoundException, InstantiationException,
+			IllegalAccessException, ParserConfigurationException, TransformerConfigurationException {
+		// registry = DOMImplementationRegistry.newInstance();
+		// DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
+		// builder = domBuilderFactory.newDocumentBuilder();
+		// _DOMImpl = builder.getDOMImplementation();
+		//
+		// TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		// _IdentityTransformer = transformerFactory.newTransformer();
+		// // _IdentityTransformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 	}
 
 	/**
@@ -164,17 +168,21 @@ public class XMLHelp {
 		XML2StreamResult(xml, indent, streamResult);
 	}
 
-	
-	private static synchronized void XML2StreamResult(Element xml, boolean indent, StreamResult streamResult) {
-		Properties outputProps = new Properties();
-		outputProps.setProperty("encoding", "UTF-8");
-		outputProps.setProperty("indent", indent ? "yes" : "no");
-		outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-		_IdentityTransformer.setOutputProperties(outputProps);
-
-		DOMSource domSource = new DOMSource(xml);
+	private static void XML2StreamResult(Element xml, boolean indent,
+			StreamResult streamResult) {
 		try {
-			_IdentityTransformer.transform(domSource, streamResult);
+			Properties outputProps = new Properties();
+			outputProps.setProperty("encoding", "UTF-8");
+			outputProps.setProperty("indent", indent ? "yes" : "no");
+			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			
+			Transformer identityTranformer = TransformerFactory.newInstance().newTransformer();
+			
+			identityTranformer.setOutputProperties(outputProps);
+
+			DOMSource domSource = new DOMSource(xml);
+
+			identityTranformer.transform(domSource, streamResult);
 		} catch (TransformerException e) {
 			// don't want to have this method throw an exception, so, considering that exception
 			// should never happen...
@@ -223,24 +231,32 @@ public class XMLHelp {
 	}
 
 	public static Document createNewDoc() {
-		return _DOMImpl.createDocument(null, null, null);
+		try {
+			DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			return docBuilder.newDocument();
+		} catch (ParserConfigurationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static Document inputStream2XML(InputStream streamedXml) throws SAXException, IOException {
-		return builder.parse(streamedXml);
+		try {
+			DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			return docBuilder.parse(streamedXml);
+		} catch (ParserConfigurationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	public static Document byteArrayOutputStream2XML(ByteArrayOutputStream streamedXml) throws SAXException,
-			IOException {
+	public static Document byteArrayOutputStream2XML(ByteArrayOutputStream streamedXml)
+			throws SAXException, IOException {
 		ByteArrayInputStream bais = new ByteArrayInputStream(streamedXml.toByteArray());
-		Document doc = (Document) builder.parse(bais);
-		return doc;
+		return inputStream2XML(bais);
 	}
 
 	public static Document string2XML(String stringedXml) throws SAXException, IOException {
-		InputSource inStream = new InputSource();
-		inStream.setCharacterStream(new StringReader(stringedXml));
-		return builder.parse(inStream);
+		ReaderInputStream sbis = new ReaderInputStream(new StringReader(stringedXml));
+		return inputStream2XML(sbis);
 	}
 
 	/**

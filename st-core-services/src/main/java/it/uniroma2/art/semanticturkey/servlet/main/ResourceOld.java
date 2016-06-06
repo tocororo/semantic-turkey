@@ -1762,7 +1762,7 @@ public class ResourceOld extends ServiceAdapter {
 	}
 
 	protected String getLanguagePref() {
-		String lang = httpParameters.get(langTag);
+		String lang = httpParameters().get(langTag);
 		return lang != null ? lang : "en";
 	}
 

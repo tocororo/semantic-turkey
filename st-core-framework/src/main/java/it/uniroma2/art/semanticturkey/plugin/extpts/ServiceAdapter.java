@@ -27,12 +27,28 @@
  */
 package it.uniroma2.art.semanticturkey.plugin.extpts;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
@@ -51,23 +67,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-
 /**
  * @author Armando Stellato
  * @author Andrea Turbati
@@ -78,22 +77,37 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	@Autowired
 	protected STServiceContext serviceContext;
 
-	protected String id;
-	protected ServiceRequest _oReq = null;
-	protected List<ServletListener> listeners = new ArrayList<ServletListener>();
-	protected ServletUtilities servletUtilities;
+	protected final String id;
+	protected final List<ServletListener> listeners;
+	protected final ServletUtilities servletUtilities;
 
-	protected ARTResource[] userGraphs;
-
-	protected HashMap<String, String> httpParameters;
+	protected final ThreadLocal<ServiceRequest> _oReq;
+	protected final ThreadLocal<Map<String, String>> httpParameters;
 
 	public ServiceAdapter(String id) {
-		servletUtilities = ServletUtilities.getService();
-		httpParameters = new HashMap<String, String>();
 		this.id = id;
+		this.listeners = new ArrayList<>();
+		this.servletUtilities = ServletUtilities.getService();
+		this._oReq = ThreadLocal.withInitial(() -> null);
+		this.httpParameters = ThreadLocal.withInitial(HashMap::new);
+	}
 
-		userGraphs = new ARTResource[1];
-		userGraphs[0] = NodeFilters.ANY;
+	/**
+	 * Returns the {@code ServiceRequest} bound to the current thread of execution
+	 * 
+	 * @return
+	 */
+	protected ServiceRequest req() {
+		return _oReq.get();
+	}
+
+	/**
+	 * Returns the map holding the paramters processed by the current thread of execution
+	 * 
+	 * @return
+	 */
+	protected Map<String, String> httpParameters() {
+		return httpParameters.get();
 	}
 
 	/**
@@ -110,8 +124,8 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @return
 	 */
 	public String setHttpPar(String parameterName) {
-		String value = _oReq.getParameter(parameterName);
-		httpParameters.put(parameterName, value);
+		String value = req().getParameter(parameterName);
+		httpParameters().put(parameterName, value);
 		return value;
 	}
 
@@ -124,7 +138,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 */
 	public File setHttpMultipartFilePar(String parameterName) {
 		try {
-			HttpServiceRequestWrapper reqWrapper = (HttpServiceRequestWrapper) _oReq;
+			HttpServiceRequestWrapper reqWrapper = (HttpServiceRequestWrapper) req();
 			HttpServletRequest httpReq = reqWrapper.getHttpRequest();
 			if (httpReq instanceof MultipartHttpServletRequest) {
 				MultipartHttpServletRequest reqMultipart = (MultipartHttpServletRequest) httpReq;
@@ -141,8 +155,8 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	}
 
 	/**
-	 * as for {@link ServiceAdapter#setHttpPar(String) but invokes {@link Boolean#parseBoolean(String)} on
-	 * the string value of the parameter}. Defaults to <code>false</code>.
+	 * as for {@link ServiceAdapter#setHttpPar(String) but invokes {@link Boolean#parseBoolean(String)} on the
+	 * string value of the parameter}. Defaults to <code>false</code>.
 	 * 
 	 * @param parameterName
 	 * @return
@@ -173,7 +187,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 */
 	public void checkRequestParametersAllNotNull(String... pars) throws HTTPParameterUnspecifiedException {
 		for (int i = 0; i < pars.length; i++) {
-			if (httpParameters.get(pars[i]) == null)
+			if (httpParameters().get(pars[i]) == null)
 				throw new HTTPParameterUnspecifiedException(pars[i]);
 		}
 	}
@@ -195,15 +209,14 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * .HttpServletRequest)
 	 */
 	public void setServiceRequest(ServiceRequest oReq) {
-		_oReq = oReq;
+		_oReq.set(oReq);
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface#addListener(it.uniroma2.art.semanticturkey
-	 * .plugin.extpts.ServletListener)
+	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface#addListener(it.uniroma2.art.
+	 * semanticturkey .plugin.extpts.ServletListener)
 	 */
 	public synchronized void addListener(ServletListener l) {
 		listeners.add(l);
@@ -212,9 +225,8 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface#removeListener(it.uniroma2.art.semanticturkey
-	 * .plugin.extpts.ServletListener)
+	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface#removeListener(it.uniroma2.art.
+	 * semanticturkey .plugin.extpts.ServletListener)
 	 */
 	public synchronized void removeListener(ServletListener l) {
 		listeners.remove(l);
@@ -224,7 +236,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * Funzione per chiamare avvertire tutti i listener che si erano registrati
 	 */
 	protected synchronized void fireServletEvent() {
-		STEvent event = new STEvent(this, _oReq);
+		STEvent event = new STEvent(this, req());
 		Iterator<ServletListener> iterator = listeners.iterator();
 		while (iterator.hasNext()) {
 			iterator.next().EventRecived(event);
@@ -258,30 +270,44 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return resp;
 	}
 
+	@Override
+	public Response handleRequest(ServiceRequest oReq) {
+		try {
+			setServiceRequest(oReq);
+			return getResponse();
+		} finally {
+			try {
+				_oReq.remove();
+			} finally {
+				httpParameters.remove();
+			}
+		}
+	}
+
 	// RESPONSE PACKAGING
 
 	protected XMLResponseREPLY createBooleanResponse(boolean resp) {
-		return servletUtilities.createBooleanResponse(httpParameters.get("request"), resp);
+		return servletUtilities.createBooleanResponse(httpParameters().get("request"), resp);
 	}
 
 	protected XMLResponseREPLY createIntegerResponse(int value) {
-		return servletUtilities.createIntegerResponse(httpParameters.get("request"), value);
+		return servletUtilities.createIntegerResponse(httpParameters().get("request"), value);
 	}
 
 	protected XMLResponseREPLY createReplyResponse(RepliesStatus status) {
-		return servletUtilities.createReplyResponse(httpParameters.get("request"), status);
+		return servletUtilities.createReplyResponse(httpParameters().get("request"), status);
 	}
 
 	protected XMLResponseREPLY createReplyFAIL(String message) {
-		return servletUtilities.createReplyFAIL(httpParameters.get("request"), message);
+		return servletUtilities.createReplyFAIL(httpParameters().get("request"), message);
 	}
 
 	protected ResponseREPLY createReplyResponse(RepliesStatus status, SerializationType ser_type) {
-		return servletUtilities.createReplyResponse(httpParameters.get("request"), status, ser_type);
+		return servletUtilities.createReplyResponse(httpParameters().get("request"), status, ser_type);
 	}
 
 	public ResponseREPLY createReplyFAIL(String message, SerializationType ser_type) {
-		return servletUtilities.createReplyFAIL(_oReq.getParameter("request"), message, ser_type);
+		return servletUtilities.createReplyFAIL(httpParameters().get("request"), message, ser_type);
 	}
 
 	/**
@@ -301,15 +327,15 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	protected abstract Logger getLogger();
 
 	protected Response logAndSendException(Exception e) {
-		return logAndSendException(httpParameters.get("request"), e);
+		return logAndSendException(httpParameters().get("request"), e);
 	}
 
 	protected Response logAndSendException(Exception e, String msg) {
-		return logAndSendException(httpParameters.get("request"), e, msg);
+		return logAndSendException(httpParameters().get("request"), e, msg);
 	}
 
 	protected Response logAndSendException(String msg) {
-		return logAndSendException(httpParameters.get("request"), msg);
+		return logAndSendException(httpParameters().get("request"), msg);
 	}
 
 	/**
@@ -353,12 +379,13 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return serviceContext.getWGraph();
 	}
 
-	protected ARTResource[] getUserNamedGraphs() throws ModelAccessException, NonExistingRDFResourceException {
+	protected ARTResource[] getUserNamedGraphs()
+			throws ModelAccessException, NonExistingRDFResourceException {
 		return serviceContext.getRGraphs();
 	}
 
-	protected ARTResourceIterator listNamedGraphs() throws ModelAccessException,
-			NonExistingRDFResourceException {
+	protected ARTResourceIterator listNamedGraphs()
+			throws ModelAccessException, NonExistingRDFResourceException {
 		RDFModel model = getOntModel();
 		return model.listNamedGraphs();
 	}
@@ -436,7 +463,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 			throws URIGenerationException {
 		try {
 			return getProject().getURIGenerator().generateURI(serviceContext, xRole, valueMapping);
-		} catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			throw e;
 		}

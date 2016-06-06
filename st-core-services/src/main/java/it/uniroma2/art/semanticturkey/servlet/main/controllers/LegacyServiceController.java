@@ -265,9 +265,8 @@ public class LegacyServiceController implements ApplicationContextAware {
 			try {
 				logger.debug("handling the request.. for service: " + serviceName
 						+ service.getClass().getCanonicalName());
-				service.setServiceRequest(new HttpServiceRequestWrapper(oReq));
+				response = service.handleRequest(new HttpServiceRequestWrapper(oReq));
 				logger.debug("with parameters: " + oReq.toString());
-				response = service.getResponse();
 
 			} catch (RuntimeException e) {
 				logger.error(Utilities.printFullStackTrace(e));

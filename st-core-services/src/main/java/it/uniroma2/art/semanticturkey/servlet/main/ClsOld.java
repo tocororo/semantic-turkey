@@ -233,7 +233,7 @@ public class ClsOld extends ResourceOld {
 			checkRequestParametersAllNotNull(clsQNamePar, typeQNamePar);
 			response = individual.addType(clsQName, typeQName);
 		} else if (request.equals(removeTypeRequest))
-			response = individual.removeType(setHttpPar("clsqname"), _oReq.getParameter("typeqname"));
+			response = individual.removeType(setHttpPar("clsqname"), req().getParameter("typeqname"));
 		else if (request.equals(addIntersectionOfRequest)) {
 			String clsName = setHttpPar(clsQNameField);
 			String clsDescriptions = setHttpPar(clsDescriptionsPar);
@@ -269,7 +269,7 @@ public class ClsOld extends ResourceOld {
 		} else if (request.equals(addSuperClsRequest))
 			response = addSuperClass(setHttpPar("clsqname"), setHttpPar("superclsqname"));
 		else if (request.equals(removeSuperClsRequest))
-			response = removeSuperClass(setHttpPar("clsqname"), _oReq.getParameter("superclsqname"));
+			response = removeSuperClass(setHttpPar("clsqname"), req().getParameter("superclsqname"));
 		else if (request.equals(createClassRequest)) {
 			String superClassName = setHttpPar(superClassNamePar);
 			String newClassName = setHttpPar(newClassNamePar);
@@ -293,11 +293,11 @@ public class ClsOld extends ResourceOld {
 	public Response addOneOf(String clsName, String[] individuals) {
 		try {
 			OWLModel owlModel = getOWLModel();
-			ARTResource cls = retrieveExistingResource(owlModel, clsName, userGraphs);
+			ARTResource cls = retrieveExistingResource(owlModel, clsName, getUserNamedGraphs());
 
 			Collection<ARTURIResource> items = new ArrayList<ARTURIResource>(individuals.length);
 			for (String anIndividual : individuals) {
-				items.add(retrieveExistingURIResource(owlModel, anIndividual, userGraphs));
+				items.add(retrieveExistingURIResource(owlModel, anIndividual, getUserNamedGraphs()));
 			}
 
 			owlModel.instantiatePropertyWithCollecton(cls, OWL.Res.ONEOF, items, getWorkingGraph());
@@ -353,7 +353,7 @@ public class ClsOld extends ResourceOld {
 		try {
 			OWLModel owlModel = getOWLModel();
 
-			ARTResource cls = retrieveExistingResource(owlModel, clsName, userGraphs);
+			ARTResource cls = retrieveExistingResource(owlModel, clsName, getUserNamedGraphs());
 
 			List<ARTResource> intesectedItems = new ArrayList<ARTResource>();
 
@@ -397,10 +397,10 @@ public class ClsOld extends ResourceOld {
 		try {
 			OWLModel owlModel = getOWLModel();
 
-			ARTResource cls = retrieveExistingResource(owlModel, clsName, userGraphs);
-			ARTResource collection = retrieveExistingResource(owlModel, collectionNode, userGraphs);
+			ARTResource cls = retrieveExistingResource(owlModel, clsName, getUserNamedGraphs());
+			ARTResource collection = retrieveExistingResource(owlModel, collectionNode, getUserNamedGraphs());
 
-			Collection<ARTNode> collectionItems = owlModel.getItems(collection, true, userGraphs);
+			Collection<ARTNode> collectionItems = owlModel.getItems(collection, true, getUserNamedGraphs());
 
 			List<ARTStatement> stmts = new ArrayList<ARTStatement>();
 

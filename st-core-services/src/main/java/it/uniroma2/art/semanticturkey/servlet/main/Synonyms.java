@@ -99,7 +99,7 @@ public class Synonyms extends ServiceAdapter {
 
 		BufferedReader reader = null;
 		try {
-			reader = ((HttpServiceRequestWrapper) _oReq).getHttpRequest().getReader();
+			reader = ((HttpServiceRequestWrapper) req()).getHttpRequest().getReader();
 		} catch (IOException e) {
 			return ServletUtilities.getService().createExceptionResponse(request, e.getMessage());
 		}
