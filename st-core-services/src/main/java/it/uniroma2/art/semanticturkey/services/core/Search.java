@@ -179,7 +179,7 @@ public class Search extends STServiceAdapter {
 		if(lang!=null && lang.length()>0){
 			query+="\nOPTIONAL" +
 					"\n{" +
-					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabe ." +
+					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabel ." +
 					"\n?skosPrefLabel <"+SKOSXL.LITERALFORM+"> ?show ." +
 					"\nFILTER(lang(?show) = \""+lang+"\")"+
 					"\n}" +
