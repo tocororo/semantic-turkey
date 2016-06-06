@@ -59,7 +59,7 @@ public class Search extends STServiceAdapter {
 	
 	@GenerateSTServiceController
 	public Response searchResource(String searchString, String [] rolesArray, boolean useLocalName,
-			String searchMode, @Optional String lang) throws ModelUpdateException, UnsupportedQueryLanguageException, 
+			String searchMode, @Optional String lang, @Optional ARTURIResource scheme) throws ModelUpdateException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		
 		boolean isClassWanted = false;
@@ -133,9 +133,14 @@ public class Search extends STServiceAdapter {
 		query+="\nSELECT DISTINCT ?resource ?type" +
 			"\nWHERE{" ;
 		
-		query+="\n?resource a ?type ."+
+		//Old version, prior to adding the otional scheme
+		/*query+="\n?resource a ?type ."+
 				addFilterForRsourseType("?type", isClassWanted, isInstanceWanted, isPropertyWanted, 
-						isConceptWanted);
+						isConceptWanted);*/
+		
+		query+=filterResourceTypeAndScheme("?resource", "?type", isClassWanted, isInstanceWanted, 
+				isPropertyWanted, isConceptWanted, scheme);
+		
 		
 		query+="\n}" +
 			"\n}";
@@ -544,6 +549,61 @@ public class Search extends STServiceAdapter {
 		}
 		
 		filterQuery += ")";
+		return filterQuery;
+	}
+	
+	
+	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
+			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
+			ARTURIResource scheme){
+		boolean otherWanted = false;
+		String filterQuery = "";
+		
+		if(isClassWanted){
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					"\nFILTER("+resource+" = <"+OWL.CLASS+">)" +
+					"\n}";
+			otherWanted = true;
+		}
+		if(isPropertyWanted){
+			if(otherWanted){
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					"\nFILTER("+resource+ " = <"+RDF.PROPERTY+"> || "+
+					resource+" = <"+OWL.OBJECTPROPERTY+"> || "+
+					resource+" = <"+OWL.DATATYPEPROPERTY+"> || "+
+					resource+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
+					resource+" = <"+OWL.ONTOLOGYPROPERTY+"> )"+
+					"\n}";
+			otherWanted = true;
+		}
+		if(isConceptWanted){
+			if(otherWanted){
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					 "\nFILTER("+resource+" = <"+SKOS.CONCEPT+">)";
+			if(scheme!=null && scheme.getURI().length()>0){
+				filterQuery += "\n"+resource+" <"+SKOS.INSCHEME+"> <"+scheme.getURI()+"> .";
+			}
+			
+			filterQuery += "\n}";
+			
+			otherWanted = true;
+		}
+		if(isInstanceWanted) {
+			if(otherWanted){
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					"\n?type a ?classType ." +
+					"FILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
+					"\n}";
+				
+				otherWanted = true;
+		}
+		
 		return filterQuery;
 	}
 
