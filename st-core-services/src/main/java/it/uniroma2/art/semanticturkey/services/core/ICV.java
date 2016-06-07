@@ -9,15 +9,18 @@ import org.w3c.dom.Element;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.query.Update;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -36,8 +39,10 @@ public class ICV extends STServiceAdapter {
 	//-----ICV ON CONCEPTS STRUCTURE-----
 	
 	/**
-	 * Returns a list of records <concept-scheme>, where concept is a dangling skos:Concept, and scheme is the
-	 * skos:ConceptScheme where concept is dangling 
+	 * Returns a list of records <concept>, where concept is a dangling skos:Concept in the given
+	 * skos:ConceptScheme
+	 * @param scheme scheme where the concepts are dangling
+	 * @param limit limit of the record to return
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
 	 * @throws ModelAccessException
@@ -45,16 +50,17 @@ public class ICV extends STServiceAdapter {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
-	public Response listDanglingConcepts(@Optional (defaultValue="0") Integer limit) throws UnsupportedQueryLanguageException,
+	public Response listDanglingConcepts(ARTURIResource scheme, @Optional (defaultValue="0") Integer limit) throws UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		OWLModel model = getOWLModel();
 		//nested query
-		String q = "SELECT ?concept ?scheme ?count WHERE { \n"
+		String q = "SELECT ?concept ?count WHERE { \n"
 				//this counts records
 				+ "{ SELECT (COUNT (*) AS ?count) WHERE{\n"
+				+ "BIND(<" + scheme.getURI() + "> as ?scheme)"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
 				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
 				+ "{?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -77,6 +83,7 @@ public class ICV extends STServiceAdapter {
 				+ "} } }"
 				//this retrieves data
 				+ "{ SELECT ?concept ?scheme WHERE{\n"
+				+ "BIND(<" + scheme.getURI() + "> as ?scheme)"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
 				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
 				+ "{?concept a <" + SKOS.CONCEPT + "> .\n"
@@ -110,14 +117,12 @@ public class ICV extends STServiceAdapter {
 			String count = tb.getBinding("count").getBoundValue().getNominalValue();
 			collectionElem.setAttribute("count", count);
 			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String scheme = tb.getBinding("scheme").getBoundValue().getNominalValue();
 			Element recordElem = XMLHelp.newElement(collectionElem, "record");
 			recordElem.setAttribute("concept", concept);
-			recordElem.setAttribute("scheme", scheme);
 		}
 		return response;
 	}
-		
+	
 	/**
 	 * Detects cyclic hierarchical relations. Returns a list of records top, n1, n2 where 
 	 * top is likely the cause of the cycle, n1 and n2 are vertex that belong to the cycle
@@ -932,6 +937,83 @@ public class ICV extends STServiceAdapter {
 			XMLHelp.newElement(collectionElem, "resource", resource);
 		}
 		return response;
+	}
+	
+	//########### QUICK FIXES #################
+	
+	/**
+	 * Quick fix for dangling concepts. Set all dangling concepts as topConceptOf the given scheme
+	 * @param conceptsUri
+	 * @param scheme
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response setAllDanglingAsTopConcept(String [] conceptsUri, ARTURIResource scheme) 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "INSERT { ?dangling <" + SKOS.TOPCONCEPTOF + "> <" + scheme.getURI() + "> }\n"
+			+ "WHERE { VALUES ?dangling {\n";
+		for (int i = 0; i < conceptsUri.length; i++) {
+			q += "<" + conceptsUri[i] + ">\n";
+		}
+		q += "}\n}";
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for dangling concepts. Set a concept of broader for all dangling concepts
+	 * @param conceptsUri
+	 * @param broader
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response setBroaderForAllDangling(String [] conceptsUri, ARTURIResource broader) 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE { ?dangling <" + SKOS.BROADER + "> <" + broader.getURI() + "> }\n"
+			+ "WHERE { VALUES ?dangling {\n";
+		for (int i = 0; i < conceptsUri.length; i++) {
+			q += "<" + conceptsUri[i] + ">\n";
+		}
+		q += "}\n}";
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for dangling concepts. Removes all dangling concepts from their scheme
+	 * @param conceptsUri
+	 * @param scheme
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response removeAllFromScheme(String[] conceptsUri, ARTURIResource scheme) 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE { ?dangling <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
+				+ "WHERE { VALUES ?dangling {\n";
+		for (int i = 0; i < conceptsUri.length; i++) {
+			q += "<" + conceptsUri[i] + ">\n";
+		}
+		q += "}\n}";
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
 	}
 
 }
