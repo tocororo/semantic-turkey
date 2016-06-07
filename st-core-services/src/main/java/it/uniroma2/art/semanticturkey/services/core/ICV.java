@@ -262,7 +262,7 @@ public class ICV extends STServiceAdapter {
 		String q = "SELECT DISTINCT ?concept ?scheme WHERE {\n"
 				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
-				+ "FILTER (EXISTS { ?broader <" + SKOS.INSCHEME + "> ?scheme . } ) }";
+				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
 		logger.info("query [listTopConceptsWithBroader]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
@@ -960,6 +960,7 @@ public class ICV extends STServiceAdapter {
 			q += "<" + conceptsUri[i] + ">\n";
 		}
 		q += "}\n}";
+		logger.info("query [setAllDanglingAsTopConcept]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
 		update.evaluate(false);
@@ -985,6 +986,7 @@ public class ICV extends STServiceAdapter {
 			q += "<" + conceptsUri[i] + ">\n";
 		}
 		q += "}\n}";
+		logger.info("query [setBroaderForAllDangling]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
 		update.evaluate(false);
@@ -1002,7 +1004,7 @@ public class ICV extends STServiceAdapter {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response removeAllFromScheme(String[] conceptsUri, ARTURIResource scheme) 
+	public Response removeAllConceptsFromScheme(String[] conceptsUri, ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE { ?dangling <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
 				+ "WHERE { VALUES ?dangling {\n";
@@ -1010,6 +1012,117 @@ public class ICV extends STServiceAdapter {
 			q += "<" + conceptsUri[i] + ">\n";
 		}
 		q += "}\n}";
+		logger.info("query [removeAllConceptsFromScheme]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for concepts in no scheme. Add all concepts to a scheme
+	 * @param conceptsUri
+	 * @param scheme
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response addAllConceptsToScheme(String [] conceptsUri, ARTURIResource scheme) 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "INSERT { ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
+			+ "WHERE { VALUES ?concept {\n";
+		for (int i = 0; i < conceptsUri.length; i++) {
+			q += "<" + conceptsUri[i] + ">\n";
+		}
+		q += "}\n}";
+		logger.info("query [addAllConceptsToScheme]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Fix for topConcept with broader. Remove all the broader relation in the given scheme of the given concept.
+	 * @param concept
+	 * @param scheme
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response removeBroadersToConcept(ARTURIResource concept, ARTURIResource scheme)
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE {\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broader .\n"
+				+ "?broader <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "} WHERE {\n"
+				+ "BIND (<" + concept.getURI() + "> as ?concept) \n"
+				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+		logger.info("query [removeBroadersToConcept]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for topConcept with broader. Remove all the broader relation in the given scheme of the given concepts.
+	 * @param conceptsUri
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response removeBroadersToAllConcepts(String [] conceptsUri)  
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE {\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broader .\n"
+				+ "?broader <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "} WHERE {\n"
+				+ "VALUES ?concept {\n";
+		for (int i=0; i<conceptsUri.length; i++) {
+			q += "<" + conceptsUri[i] + ">\n";
+		}
+		q += "}\n"	
+				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+		logger.info("query [removeBroadersToAllConcepts]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for topConcept with broader. Remove as topConceptOf all the topConcept with broader.
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response removeAllAsTopConceptsWithBroader() 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE {\n"
+				+ "?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme .\n"
+				+ "?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept .\n"
+				+ "} WHERE {\n"
+				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+   				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+   				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+		logger.info("query [removeAllAsTopConceptsWithBroader]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
 		update.evaluate(false);
