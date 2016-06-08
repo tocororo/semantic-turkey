@@ -39,13 +39,8 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.rdf4j.repository.Repository;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 
@@ -56,19 +51,7 @@ import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.RDFSModel;
-import it.uniroma2.art.owlart.models.SKOSModel;
-import it.uniroma2.art.owlart.models.SKOSXLModel;
-import it.uniroma2.art.owlart.models.impl.OWLModelImpl;
-import it.uniroma2.art.owlart.models.impl.RDFSModelImpl;
-import it.uniroma2.art.owlart.models.impl.SKOSModelImpl;
-import it.uniroma2.art.owlart.models.impl.SKOSXLModelImpl;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
-import it.uniroma2.art.owlart.rdf4jimpl.models.BaseRDFModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.OWLModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.RDFSModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSXLModelRDF4JImpl;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
@@ -83,8 +66,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.tx.TransactionAwareRDF4JRepository;
-import it.uniroma2.art.semanticturkey.tx.TransactionAwareRDF4JRepostoryConnection;
 
 /**
  * @author Armando Stellato
@@ -96,16 +77,12 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	@Autowired
 	protected STServiceContext serviceContext;
 
-	@Autowired
-	private PlatformTransactionManager transactionManager;
-	
 	protected final String id;
 	protected final List<ServletListener> listeners;
 	protected final ServletUtilities servletUtilities;
 
 	protected final ThreadLocal<ServiceRequest> _oReq;
 	protected final ThreadLocal<Map<String, String>> httpParameters;
-	protected final ThreadLocal<RDFModel> ontModelHolder;
 
 	public ServiceAdapter(String id) {
 		this.id = id;
@@ -113,7 +90,6 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		this.servletUtilities = ServletUtilities.getService();
 		this._oReq = ThreadLocal.withInitial(() -> null);
 		this.httpParameters = ThreadLocal.withInitial(HashMap::new);
-		this.ontModelHolder = ThreadLocal.withInitial(()->null);
 	}
 
 	/**
@@ -297,61 +273,13 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	@Override
 	public Response handleRequest(ServiceRequest oReq) {
 		try {
-			DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
-			TransactionStatus status = transactionManager.getTransaction(definition);
-			try {
-				RDFModel rawModel = serviceContext.getProject().getOntModel();
-
-				Repository wrappedRepository = new TransactionAwareRDF4JRepository(
-						getProject().getRepository());
-				boolean rdfsReasoning = false;
-				boolean directTypeReasoning = false;
-
-				RDFModel ontModel;
-
-				if (rawModel instanceof SKOSXLModel) {
-					ontModel = new SKOSXLModelRDF4JImpl(
-							new BaseRDFModelRDF4JImpl(wrappedRepository, rdfsReasoning, directTypeReasoning));
-				} else if (rawModel instanceof SKOSModel) {
-					ontModel = new SKOSModelRDF4JImpl(
-							new BaseRDFModelRDF4JImpl(wrappedRepository, rdfsReasoning, directTypeReasoning));
-				} else if (rawModel instanceof OWLModel) {
-					ontModel = new OWLModelRDF4JImpl(
-							new BaseRDFModelRDF4JImpl(wrappedRepository, rdfsReasoning, directTypeReasoning));
-				} else if (rawModel instanceof RDFSModel) {
-					ontModel = new RDFSModelRDF4JImpl(
-							new BaseRDFModelRDF4JImpl(wrappedRepository, rdfsReasoning, directTypeReasoning));
-				} else {
-					throw new IllegalStateException("Unsupported model type");
-				}
-				
-				ontModel.setDefaultNamespace(getProject().getDefaultNamespace());
-				ontModel.setBaseURI(getProject().getBaseURI());
-
-				ontModelHolder.set(ontModel);
-
-				setServiceRequest(oReq);
-				Response response = getResponse();
-
-				transactionManager.commit(status);
-
-				return response;
-			} catch (RuntimeException e) {
-				transactionManager.rollback(status);
-				throw e;
-			} catch (Exception e) {
-				transactionManager.rollback(status);
-				return logAndSendException(e);
-			}
+			setServiceRequest(oReq);
+			return getResponse();
 		} finally {
 			try {
-				ontModelHolder.remove();
+				_oReq.remove();
 			} finally {
-				try {
-					_oReq.remove();
-				} finally {
-					httpParameters.remove();
-				}
+				httpParameters.remove();
 			}
 		}
 	}
@@ -467,15 +395,11 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	}
 
 	protected RDFModel getOntModel() {
-		return ontModelHolder.get();
+		return serviceContext.getProject().getOntModel();
 	}
 
 	protected OWLModel getOWLModel() {
-		RDFModel ontModel = getOntModel();
-		if (ontModel instanceof SKOSModel) {
-			return ((SKOSModel) ontModel).getOWLModel();
-		}
-		return (OWLModel)ontModel;
+		return serviceContext.getProject().getOWLModel();
 	}
 
 	protected ARTResource retrieveExistingResource(RDFModel model, String qname, ARTResource... graphs)

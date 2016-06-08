@@ -91,6 +91,7 @@
 		<!-- Finally install Semantic Turkey -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sesame2-ontmanager/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf4j-ontmanager/${project.version}</bundle>
 	</feature>
 
