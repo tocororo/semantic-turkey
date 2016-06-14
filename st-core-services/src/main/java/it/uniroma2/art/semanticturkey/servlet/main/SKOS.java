@@ -551,13 +551,18 @@ public class SKOS extends ResourceOld {
 			String queryFragment =
 				"	?resource a <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
 				"	FILTER NOT EXISTS {\n" +
-				"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" + 
-				"	}\n";
+				"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
+				"	}\n" +
+				"	OPTIONAL {\n" +
+				"		?resource <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
+				"	}\n" +
+				"	BIND(IF(BOUND(?nestedCollection), \"1\", \"0\") as ?info_more)\n";
 			// @formatter:on
 
-			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryFragment, getWorkingGraph().asURIResource());
+			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryFragment, getWorkingGraph().asURIResource(), "info_more");
 			List<String> variables = new ArrayList<>();
 			variables.add("resource");
+			variables.add("info_more");
 			variables.add("explicit");
 			
 			if (lang != null) {
@@ -597,15 +602,21 @@ public class SKOS extends ResourceOld {
 			List<String> variables = new ArrayList<>();
 			variables.add("resource");
 			variables.add("explicit");
+			variables.add("info_more");
 
 			// @formatter:off
 			StringBuilder queryStringBuilder = new StringBuilder(
 				RDFNodeSerializer.toNT(containingCollectionRes)).append(" <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
 				"?resource a <http://www.w3.org/2004/02/skos/core#Collection> .\n"
-				);
+				).append(
+					"OPTIONAL {\n" +
+					"	?resource <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
+					"}\n" +
+					"BIND(IF(BOUND(?nestedCollection), \"1\", \"0\") as ?info_more)\n"
+					);
 			// @formatter:on
 
-			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryStringBuilder.toString(), getWorkingGraph().asURIResource());
+			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryStringBuilder.toString(), getWorkingGraph().asURIResource(), "info_more");
 
 			if (lang != null) {
 				queryString = SPARQLUtilities.wrapQueryWithGroupConcat(queryString, variables,

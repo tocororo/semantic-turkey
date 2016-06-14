@@ -9,7 +9,6 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
-import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -22,10 +21,15 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 
 public class SPARQLUtilities {
-	public static String buildResourceQueryWithExplicit(String queryFragment, ARTURIResource workingGraph) {
+	public static String buildResourceQueryWithExplicit(String queryFragment, ARTURIResource workingGraph, String... additionalVariables) {
 		StringBuilder queryStringBuilder = new StringBuilder();
 
-		queryStringBuilder.append("SELECT DISTINCT ?resource ?explicit {\n");
+		queryStringBuilder.append("SELECT DISTINCT ?resource ?explicit");
+		
+		for (String aVar : additionalVariables) {
+			queryStringBuilder.append(" ?").append(aVar);
+		}
+		queryStringBuilder.append(" {\n");
 		queryStringBuilder.append(queryFragment).append("\n");
 		queryStringBuilder.append("OPTIONAL {\n");
 		queryStringBuilder.append("GRAPH ").append(RDFNodeSerializer.toNT(workingGraph)).append(" {\n");
@@ -97,9 +101,8 @@ public class SPARQLUtilities {
 
 			while (it.streamOpen()) {
 				TupleBindings bindings = it.getNext();
-				System.out.println(bindings);
 				ARTResource collectionResource = bindings.getBoundValue("resource").asResource();
-				boolean isCollectionExplicit = bindings.hasBinding("explicit")
+				boolean isResourceExplicit = bindings.hasBinding("explicit")
 						? bindings.getBoundValue("explicit").asLiteral().getLabel().equalsIgnoreCase("true")
 						: false;
 				String resourceShow;
@@ -115,13 +118,23 @@ public class SPARQLUtilities {
 					}
 				}
 
-				RDFResourceRolesEnum collectionRole = bindings.hasBinding("role")
+				RDFResourceRolesEnum resourceRole = bindings.hasBinding("role")
 						? RDFResourceRolesEnum.valueOf(bindings.getBoundValue("role").asLiteral().getLabel())
 						: RDFResourceRolesEnum.undetermined;
 
-				STRDFResource collectionStRes = STRDFNodeFactory.createSTRDFResource(collectionResource,
-						collectionRole, isCollectionExplicit, resourceShow);
-				collection.add(collectionStRes);
+				STRDFResource stResource = STRDFNodeFactory.createSTRDFResource(collectionResource,
+						resourceRole, isResourceExplicit, resourceShow);
+				
+				for (String bindingName : bindings.getBindingNames()) {
+					if (bindingName.startsWith("info_") && bindings.hasBinding(bindingName)) {
+						String propName = bindingName.substring("info_".length());
+						String propValue = bindings.getBoundValue(bindingName).getNominalValue();
+
+						stResource.setInfo(propName, propValue);
+					}
+				}
+				
+				collection.add(stResource);
 			}
 
 			return collection;
