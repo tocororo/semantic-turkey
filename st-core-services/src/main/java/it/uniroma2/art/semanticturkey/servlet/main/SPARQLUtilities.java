@@ -21,11 +21,12 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 
 public class SPARQLUtilities {
-	public static String buildResourceQueryWithExplicit(String queryFragment, ARTURIResource workingGraph, String... additionalVariables) {
+	public static String buildResourceQueryWithExplicit(String queryFragment, ARTURIResource workingGraph,
+			String... additionalVariables) {
 		StringBuilder queryStringBuilder = new StringBuilder();
 
 		queryStringBuilder.append("SELECT DISTINCT ?resource ?explicit");
-		
+
 		for (String aVar : additionalVariables) {
 			queryStringBuilder.append(" ?").append(aVar);
 		}
@@ -62,7 +63,7 @@ public class SPARQLUtilities {
 		for (String variable : variables) {
 			queryStringBuilder.append(" ?").append(variable);
 		}
-		
+
 		queryStringBuilder.append("\nHAVING BOUND(?").append(variables.iterator().next()).append(")\n");
 
 		return queryStringBuilder.toString();
@@ -79,7 +80,7 @@ public class SPARQLUtilities {
 		}
 
 		queryStringBuilder.append(" (MAX(?").append(fragmentVariable).append("Temp) as ?")
-		.append(fragmentVariable).append("){\n" + "	{" + innerQuery + "}\n").append(fragment)
+				.append(fragmentVariable).append("){\n" + "	{" + innerQuery + "}\n").append(fragment)
 				.append("}\n").append("GROUP BY");
 
 		for (String variable : variables) {
@@ -91,8 +92,7 @@ public class SPARQLUtilities {
 	}
 
 	public static Collection<STRDFResource> getSTRDFResourcesFromTupleQuery(RDFModel model,
-			String queryString)
-					throws DOMException, ModelAccessException, UnsupportedQueryLanguageException,
+			String queryString) throws DOMException, ModelAccessException, UnsupportedQueryLanguageException,
 					MalformedQueryException, QueryEvaluationException, IllegalAccessException {
 		TupleQuery query = model.createTupleQuery(queryString);
 
@@ -105,16 +105,22 @@ public class SPARQLUtilities {
 				boolean isResourceExplicit = bindings.hasBinding("explicit")
 						? bindings.getBoundValue("explicit").asLiteral().getLabel().equalsIgnoreCase("true")
 						: false;
-				String resourceShow;
+				String resourceShow = null;
 
 				if (bindings.hasBinding("show")) {
 					resourceShow = bindings.getBoundValue("show").asLiteral().getLabel();
-				} else if (collectionResource.isBlank()) {
-					resourceShow = "_:" + collectionResource.getNominalValue();
-				} else {
-					resourceShow = model.getQName(collectionResource.getNominalValue());
-					if (resourceShow.equals(collectionResource.getNominalValue())) {
-						resourceShow = RDFNodeSerializer.toNT(collectionResource);
+				}
+
+				// The adopted SPARQL query based on group_concat returns an empty string when no label is
+				// available
+				if (resourceShow == null || resourceShow.equals("")) {
+					if (collectionResource.isBlank()) {
+						resourceShow = "_:" + collectionResource.getNominalValue();
+					} else {
+						resourceShow = model.getQName(collectionResource.getNominalValue());
+						if (resourceShow.equals(collectionResource.getNominalValue())) {
+							resourceShow = RDFNodeSerializer.toNT(collectionResource);
+						}
 					}
 				}
 
@@ -124,7 +130,7 @@ public class SPARQLUtilities {
 
 				STRDFResource stResource = STRDFNodeFactory.createSTRDFResource(collectionResource,
 						resourceRole, isResourceExplicit, resourceShow);
-				
+
 				for (String bindingName : bindings.getBindingNames()) {
 					if (bindingName.startsWith("info_") && bindings.hasBinding(bindingName)) {
 						String propName = bindingName.substring("info_".length());
@@ -133,7 +139,7 @@ public class SPARQLUtilities {
 						stResource.setInfo(propName, propValue);
 					}
 				}
-				
+
 				collection.add(stResource);
 			}
 
