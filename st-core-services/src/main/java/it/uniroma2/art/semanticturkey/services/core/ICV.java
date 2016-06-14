@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.util.Collection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -9,6 +11,8 @@ import org.w3c.dom.Element;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
@@ -16,11 +20,13 @@ import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -891,6 +897,38 @@ public class ICV extends STServiceAdapter {
 		return response;
 	}
 	
+	/**
+	 * Returns a list of dangling skosxl:Label, namely the skosxl:Label not linked with any concept
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response listDanglingXLabels() throws UnsupportedQueryLanguageException, ModelAccessException,
+			MalformedQueryException, QueryEvaluationException {
+		String q = "SELECT ?xlabel WHERE {\n"
+				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
+				+ "FILTER NOT EXISTS {\n" 
+				+ "?concept <" + SKOSXL.PREFLABEL + "> | <" + SKOSXL.ALTLABEL + "> | <" + SKOSXL.HIDDENLABEL + "> ?xlabel.\n"
+				+ "} }";
+		logger.info("query [listDanglingXLabels]:\n" + q);
+		OWLModel model = getOWLModel();
+		TupleQuery query = model.createTupleQuery(q);
+		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		Collection<STRDFResource> result = STRDFNodeFactory.createEmptyResourceCollection();
+		while (itTupleBinding.hasNext()) {
+			TupleBindings tb = itTupleBinding.next();
+			ARTNode xlabelNode = tb.getBinding("xlabel").getBoundValue();
+			result.add(STRDFNodeFactory.createSTRDFResource(
+					xlabelNode.asResource(), RDFResourceRolesEnum.xLabel, true, xlabelNode.getNominalValue()));
+		}
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		RDFXMLHelp.addRDFNodes(response, result);
+		return response;
+	}
+	
 	//-----GENERICS-----
 	
 	@GenerateSTServiceController
@@ -943,7 +981,6 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Quick fix for dangling concepts. Set all dangling concepts as topConceptOf the given scheme
-	 * @param conceptsUri
 	 * @param scheme
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
@@ -951,15 +988,34 @@ public class ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
 	 */
-	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response setAllDanglingAsTopConcept(String [] conceptsUri, ARTURIResource scheme) 
+	@GenerateSTServiceController
+	public Response setAllDanglingAsTopConcept(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
-		String q = "INSERT { ?dangling <" + SKOS.TOPCONCEPTOF + "> <" + scheme.getURI() + "> }\n"
-			+ "WHERE { VALUES ?dangling {\n";
-		for (int i = 0; i < conceptsUri.length; i++) {
-			q += "<" + conceptsUri[i] + ">\n";
-		}
-		q += "}\n}";
+		String q = "INSERT {\n"
+				+ "GRAPH <" + getWorkingGraph().getNominalValue() + ">\n"
+				+ "{ ?concept <" + SKOS.TOPCONCEPTOF + "> <" + scheme.getURI() + "> }\n"
+				+ "} WHERE {\n"
+				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "} {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "} }";
 		logger.info("query [setAllDanglingAsTopConcept]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
@@ -968,8 +1024,8 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Quick fix for dangling concepts. Set a concept of broader for all dangling concepts
-	 * @param conceptsUri
+	 * Quick fix for dangling concepts. Set the given broader for all dangling concepts in the given scheme 
+	 * @param scheme
 	 * @param broader
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
@@ -977,15 +1033,34 @@ public class ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
 	 */
-	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response setBroaderForAllDangling(String [] conceptsUri, ARTURIResource broader) 
+	@GenerateSTServiceController
+	public Response setBroaderForAllDangling(ARTURIResource scheme, ARTURIResource broader) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
-		String q = "DELETE { ?dangling <" + SKOS.BROADER + "> <" + broader.getURI() + "> }\n"
-			+ "WHERE { VALUES ?dangling {\n";
-		for (int i = 0; i < conceptsUri.length; i++) {
-			q += "<" + conceptsUri[i] + ">\n";
-		}
-		q += "}\n}";
+		String q = "INSERT {\n"
+				+ "GRAPH <" + getWorkingGraph().getNominalValue() + ">\n"
+				+ "{ ?concept <" + SKOS.BROADER + "> <" + broader.getURI() + "> }\n"
+				+ "} WHERE {\n"
+				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "} {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "} }";
 		logger.info("query [setBroaderForAllDangling]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
@@ -994,8 +1069,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Quick fix for dangling concepts. Removes all dangling concepts from their scheme
-	 * @param conceptsUri
+	 * Quick fix for dangling concepts. Removes all dangling concepts from the given scheme
 	 * @param scheme
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
@@ -1003,16 +1077,33 @@ public class ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
 	 */
-	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response removeAllConceptsFromScheme(String[] conceptsUri, ARTURIResource scheme) 
+	@GenerateSTServiceController
+	public Response removeAllDanglingFromScheme(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
-		String q = "DELETE { ?dangling <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
-				+ "WHERE { VALUES ?dangling {\n";
-		for (int i = 0; i < conceptsUri.length; i++) {
-			q += "<" + conceptsUri[i] + ">\n";
-		}
-		q += "}\n}";
-		logger.info("query [removeAllConceptsFromScheme]:\n" + q);
+		String q = "DELETE { ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
+				+ "WHERE {\n"
+				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "} {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "}\n}";
+		logger.info("query [removeAllDanglingFromScheme]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
 		update.evaluate(false);
@@ -1020,8 +1111,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Quick fix for concepts in no scheme. Add all concepts to a scheme
-	 * @param conceptsUri
+	 * Quick fix for dangling concepts. Delete all the dangling concepts of the given scheme
 	 * @param scheme
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
@@ -1029,15 +1119,61 @@ public class ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
 	 */
-	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response addAllConceptsToScheme(String [] conceptsUri, ARTURIResource scheme) 
+	@GenerateSTServiceController
+	public Response deleteAllDanglingConcepts(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
-		String q = "INSERT { ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
-			+ "WHERE { VALUES ?concept {\n";
-		for (int i = 0; i < conceptsUri.length; i++) {
-			q += "<" + conceptsUri[i] + ">\n";
-		}
-		q += "}\n}";
+		String q = "DELETE { "
+				+ "?concept ?p1 ?o .\n"
+				+ "?s ?p2 ?concept \n"
+				+ "} WHERE {\n"
+				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "OPTIONAL { ?concept ?p1 ?o . }\n"
+				+ "OPTIONAL { ?s ?p2 ?concept . }\n"
+				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "} {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
+				+ "} UNION {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "}\n}";
+		logger.info("query [deleteAllDanglingConcepts]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for concepts in no scheme. Add all concepts without scheme to the given scheme
+	 * @param scheme
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response addAllConceptsToScheme(ARTURIResource scheme) 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "INSERT {\n"
+				+ "GRAPH <" + getWorkingGraph().getNominalValue() + ">\n"
+				+ "{ ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
+				+ "} WHERE {\n"
+				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+				+ "FILTER NOT EXISTS { ?concept <" + SKOS.INSCHEME + "> ?scheme . } }";
 		logger.info("query [addAllConceptsToScheme]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
@@ -1074,26 +1210,21 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Quick fix for topConcept with broader. Remove all the broader relation in the given scheme of the given concepts.
-	 * @param conceptsUri
+	 * Quick fix for topConcept with broader. Remove all the broader (or narrower) relation in the 
+	 * of top concepts with broader (in the same scheme).
 	 * @return
 	 * @throws UnsupportedQueryLanguageException
 	 * @throws ModelAccessException
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
 	 */
-	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response removeBroadersToAllConcepts(String [] conceptsUri)  
+	@GenerateSTServiceController
+	public Response removeBroadersToAllConcepts()  
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE {\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broader .\n"
 				+ "?broader <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "} WHERE {\n"
-				+ "VALUES ?concept {\n";
-		for (int i=0; i<conceptsUri.length; i++) {
-			q += "<" + conceptsUri[i] + ">\n";
-		}
-		q += "}\n"	
 				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
@@ -1123,6 +1254,98 @@ public class ICV extends STServiceAdapter {
    				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
    				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
 		logger.info("query [removeAllAsTopConceptsWithBroader]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for hierarchical redundancy. Remove narrower/broader redundant relations.
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response removeAllHierarchicalRedundancy() 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE {\n"
+				+ "?narrower <" + SKOS.BROADER + "> ?broader .\n"
+				+ "?broader <" + SKOS.NARROWER + "> ?narrower .\n"
+				+ "} WHERE {\n"
+				+ "?narrower <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "?narrower (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?middle .\n"
+				+ "?middle <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
+				+ "FILTER(?narrower != ?middle) }";
+		logger.info("query [removeAllHierarchicalRedundancy]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Quick fix for dangling xLabel. Deletes all triples that involve the dangling xLabel(s)
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response deleteAllDanglingXLabel() 
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "DELETE {\n"
+				+ "?s ?p1 ?xlabel .\n"
+				+ "?xlabel ?p2 ?o .\n"
+				+ "} WHERE {\n"
+				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
+				+ "OPTIONAL { ?s ?p1 ?xlabel . }\n"
+				+ "OPTIONAL { ?xlabel ?p2 ?o . }\n"
+				+ "FILTER NOT EXISTS {\n"
+				+ "?concept <" + SKOSXL.PREFLABEL + "> | <" + SKOSXL.ALTLABEL + "> | <" + SKOSXL.HIDDENLABEL + "> ?xlabel.\n"
+				+ "} }";
+		logger.info("query [deleteAllDanglingXLabel]:\n" + q);
+		OWLModel model = getOWLModel();
+		Update update = model.createUpdateQuery(q);
+		update.evaluate(false);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Fix for dangling xLabel. Links the dangling xLabel to the given concept through the given predicate 
+	 * @param concept
+	 * @param xlabelPred
+	 * @param xlabel
+	 * @return
+	 * @throws UnsupportedQueryLanguageException
+	 * @throws ModelAccessException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	@GenerateSTServiceController
+	public Response setDanglingXLabel(ARTURIResource concept, ARTURIResource xlabelPred, ARTResource xlabel)
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		String q = "";
+		if (xlabelPred.equals(SKOSXL.Res.PREFLABEL)) {
+			q = "DELETE {\n"
+					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> ?oldPrefLabel\n"
+					+ "} INSERT {\n"
+					+ "GRAPH <" + getWorkingGraph() + "> {\n"
+					+ "<" + concept.getURI() + "> <" + SKOSXL.ALTLABEL + "> ?oldPrefLabel .\n"
+					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> <" + xlabel.getNominalValue() + "> . }\n"
+					+ "} WHERE {\n"
+					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> ?oldPrefLabel \n"
+					+ "}";
+		} else { //altLabel or hiddenLabel
+			q = "INSERT DATA {\n"
+					+ "GRAPH <" + getWorkingGraph() + "> {\n"
+					+ "<" + concept.getURI() + "> <" + xlabelPred.getURI() + "> <" + xlabel.getNominalValue() + "> \n"
+					+ "}\n}";
+		}
+		logger.info("query [setDanglingXLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		Update update = model.createUpdateQuery(q);
 		update.evaluate(false);
