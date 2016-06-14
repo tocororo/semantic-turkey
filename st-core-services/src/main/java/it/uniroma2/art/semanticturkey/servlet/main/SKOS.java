@@ -22,48 +22,14 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
-import it.uniroma2.art.owlart.filter.RootConceptsPredicate;
-import it.uniroma2.art.owlart.model.ARTLiteral;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.SKOSModel;
-import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
-import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.owlart.query.TupleBindingsIterator;
-import it.uniroma2.art.owlart.query.TupleQuery;
-import it.uniroma2.art.owlart.utilities.RDFIterators;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
-import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +41,48 @@ import org.w3c.dom.Element;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
-@Component(value="skosOld")
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
+import it.uniroma2.art.owlart.filter.RootConceptsPredicate;
+import it.uniroma2.art.owlart.io.RDFNodeSerializer;
+import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
+import it.uniroma2.art.owlart.models.TransactionBasedModel;
+import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
+import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.TupleBindingsIterator;
+import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.utilities.RDFIterators;
+import it.uniroma2.art.owlart.vocabulary.RDF;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
+import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+
+@Component(value = "skosOld")
 public class SKOS extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(SKOS.class);
@@ -91,6 +98,8 @@ public class SKOS extends ResourceOld {
 		public static final String getAltLabelsRequest = "getAltLabels";
 		public static final String getSchemesMatrixPerConceptRequest = "getSchemesMatrixPerConceptRequest";
 		public static final String getShowRequest = "getShow";
+		public static final String getRootCollectionsRequest = "getRootCollections";
+		public static final String getNestedCollectionsRequest = "getNestedCollections";
 
 		// IS REQUESTS
 		public static final String isTopConceptRequest = "isTopConcept";
@@ -106,6 +115,7 @@ public class SKOS extends ResourceOld {
 		// CREATE REQUESTS
 		public static final String createConceptRequest = "createConcept";
 		public static final String createSchemeRequest = "createScheme";
+		public static final String createCollectionRequest = "createCollection";
 
 		// REMOVE REQUESTS
 		public static final String removeTopConceptRequest = "removeTopConcept";
@@ -144,6 +154,8 @@ public class SKOS extends ResourceOld {
 		final static public String sourceScheme = "sourceScheme";
 		final static public String targetScheme = "targetScheme";
 		final static public String treeView = "treeView";
+		final static public String container = "container";
+		public static String collection = "collection";
 	}
 
 	@Autowired
@@ -217,6 +229,15 @@ public class SKOS extends ResourceOld {
 			String lang = setHttpPar(Par.lang);
 			checkRequestParametersAllNotNull(Par.concept, Par.lang);
 			response = getSchemesMatrixPerConcept(skosConceptName, lang);
+		} else if (request.equals(Req.getRootCollectionsRequest)) {
+			String lang = setHttpPar(Par.lang);
+			response = getRootCollections(lang);
+		} else if (request.equals(Req.getNestedCollectionsRequest)) {
+			String containingCollection = setHttpPar(Par.container);
+			String lang = setHttpPar(Par.lang);
+			checkRequestParametersAllNotNull(Par.container);
+
+			response = getNestedCollections(containingCollection, lang);
 
 			// IS METHODS
 		} else if (request.equals(Req.isTopConceptRequest)) {
@@ -340,6 +361,15 @@ public class SKOS extends ResourceOld {
 
 			// MODIFY
 
+		} else if (request.equals(Req.createCollectionRequest)) {
+			String collectionName = setHttpPar(Par.collection);
+			String prefLabel = setHttpPar(Par.prefLabel);
+			String prefLabelLang = setHttpPar(Par.prefLabelLang);
+			String language = setHttpPar(Par.lang);
+			String containingCollectionName = setHttpPar(Par.container);
+
+			response = createCollection(collectionName, containingCollectionName, prefLabel,
+					prefLabelLang, language);
 		} else if (request.equals(Req.assignHierarchyToSchemeRequest)) {
 			String conceptName = setHttpPar(Par.concept);
 			String sourceSchemeName = setHttpPar(Par.sourceScheme);
@@ -369,6 +399,238 @@ public class SKOS extends ResourceOld {
 
 		this.fireServletEvent();
 		return response;
+	}
+
+	public Response createCollection(String collectionName, String containingCollectionName,
+			String prefLabel, String prefLabelLang, String language) {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		try {
+			ARTResource wrkGraph = getWorkingGraph();
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+
+			ARTURIResource newCollectionRes = null;
+			if (collectionName == null) {
+				newCollectionRes = generateCollectionURI(prefLabel, prefLabelLang);
+			} else {
+				newCollectionRes = createNewURIResource(skosModel, collectionName, graphs);
+			}
+
+			ARTURIResource containingCollectionRes;
+			if (containingCollectionName != null)
+				containingCollectionRes = retrieveExistingURIResource(skosModel, containingCollectionName, graphs);
+			else
+				containingCollectionRes = null;
+
+			skosModel.addTriple(newCollectionRes, RDF.Res.TYPE, it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
+			
+			if (containingCollectionRes != null) {
+				skosModel.addTriple(containingCollectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+			}
+			
+			if (prefLabel != null && prefLabelLang != null) {
+				skosModel.setPrefLabel(newCollectionRes, prefLabel, prefLabelLang, wrkGraph);
+			}
+			RDFXMLHelp.addRDFNode(response, createSTCollection(skosModel, newCollectionRes, true, language));
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (ModelUpdateException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (DuplicatedResourceException e) {
+			return logAndSendException(e);
+		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+
+	protected String getShowQueryFragment(String lang) {
+		StringBuilder queryStringBuilder = new StringBuilder();
+
+		String propertyPath = (getSKOSModel() instanceof SKOSXLModel)
+				? "<http://www.w3.org/2008/05/skos-xl#prefLabel>/<http://www.w3.org/2008/05/skos-xl#literalForm>"
+				: "<http://www.w3.org/2004/02/skos/core#prefLabel>";
+
+		// @formatter:off
+		queryStringBuilder.append(
+		"	OPTIONAL {\n" +
+		"		?resource " + propertyPath + " ?showTemp .\n" +
+		"		FILTER(LANG(?showTemp) = \"" + SPARQLUtil.encodeString(lang) + "\")\n" +
+		"	}\n"
+		);
+		// @formatter:on
+
+		return queryStringBuilder.toString();
+	}
+
+	protected String getRoleQueryFragment() {
+		// @formatter:off
+
+		 return 
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Concept> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsConcept\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#ConceptScheme> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsScheme\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsSkosCollection\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2008/05/skos-xl#Label> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsLabel\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DataRange> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsDataRange\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsClass\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsRdfsClass\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsObjectProperty\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DataTypeProperty> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsDataTypeProperty\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#AnnotationProperty> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsAnnotationProperty\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#OntologyProperty> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsOntologyProperty\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsProperty\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Ontology> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsOntology\n" +
+				 " }\n" +
+				 " BIND(IF(BOUND(?resourceAsConcept), \"concept\",\n" +
+				 " IF(BOUND(?resourceAsScheme), \"conceptScheme\",\n" +
+				 " IF(BOUND(?resourceAsSkosCollection), \"skosCollection\",\n" +
+				 " IF(BOUND(?resourceAsLabel), \"xLabel\",\n" +
+				 " IF(BOUND(?resourceAsDataRange), \"dataRange\",\n" +
+				 " IF(BOUND(?resourceAsClass), \"cls\",\n" +
+				 " IF(BOUND(?resourceAsRdfsClass), \"cls\",\n" +
+				 " IF(BOUND(?resourceAsObjectProperty), \"objectProperty\",\n" +
+				 " IF(BOUND(?resourceAsDataTypeProperty), \"datatypeProperty\",\n" +
+				 " IF(BOUND(?resourceAsAnnotationProperty), \"annotationProperty\",\n" +
+				 " IF(BOUND(?resourceAsOntologyProperty), \"ontologyProperty\",\n" +
+				 " IF(BOUND(?resourceAsProperty), \"property\",\n" +
+				 " IF(BOUND(?resourceAsOntology), \"ontology\",\n" +
+				 " \"individual\"))))))))))))) as ?roleTemp)\n";
+
+		// @formatter:on
+
+	}
+
+	private Response getRootCollections(String lang) {
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+
+			// @formatter:off
+			String queryFragment =
+				"	?resource a <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
+				"	FILTER NOT EXISTS {\n" +
+				"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" + 
+				"	}\n";
+			// @formatter:on
+
+			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryFragment, getWorkingGraph().asURIResource());
+			List<String> variables = new ArrayList<>();
+			variables.add("resource");
+			variables.add("explicit");
+			
+			if (lang != null) {
+				queryString = SPARQLUtilities.wrapQueryWithGroupConcat(queryString, variables,
+						getShowQueryFragment(lang), "show", ", ");
+				variables.add("show");
+			}
+
+			queryString = SPARQLUtilities.wrapQueryWithMax(queryString, variables, getRoleQueryFragment(),
+					"role");
+
+			variables.add("role");
+
+			logger.debug(queryString);
+			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel,
+					queryString);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElement = response.getDataElement();
+			RDFXMLHelp.addRDFNodes(dataElement, collections);
+
+			return response;
+		} catch (ModelAccessException | NonExistingRDFResourceException | UnsupportedQueryLanguageException
+				| MalformedQueryException | QueryEvaluationException | DOMException
+				| IllegalAccessException e) {
+			return logAndSendException(e);
+		}
+	}
+
+	private Response getNestedCollections(String containingCollection, String lang) {
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+
+			ARTURIResource containingCollectionRes = retrieveExistingURIResource(skosModel, containingCollection,
+					graphs);
+
+			List<String> variables = new ArrayList<>();
+			variables.add("resource");
+			variables.add("explicit");
+
+			// @formatter:off
+			StringBuilder queryStringBuilder = new StringBuilder(
+				RDFNodeSerializer.toNT(containingCollectionRes)).append(" <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
+				"?resource a <http://www.w3.org/2004/02/skos/core#Collection> .\n"
+				);
+			// @formatter:on
+
+			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryStringBuilder.toString(), getWorkingGraph().asURIResource());
+
+			if (lang != null) {
+				queryString = SPARQLUtilities.wrapQueryWithGroupConcat(queryString, variables,
+						getShowQueryFragment(lang), "show", ", ");
+				variables.add("show");
+			}
+
+			queryString = SPARQLUtilities.wrapQueryWithMax(queryString, variables, getRoleQueryFragment(),
+					"role");
+			
+			variables.add("role");
+
+			logger.debug(queryString);
+			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel,
+					queryString);
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			Element dataElement = response.getDataElement();
+			RDFXMLHelp.addRDFNodes(dataElement, collections);
+
+			return response;
+		} catch (ModelAccessException | NonExistingRDFResourceException | UnsupportedQueryLanguageException
+				| MalformedQueryException | QueryEvaluationException | DOMException
+				| IllegalAccessException e) {
+			return logAndSendException(e);
+		}
 	}
 
 	private Response removeTopConcept(String schemeName, String conceptName) {
@@ -448,7 +710,8 @@ public class SKOS extends ResourceOld {
 		try {
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, graphs);
-			ARTURIResource broaderConcept = retrieveExistingURIResource(skosModel, broaderConceptName, graphs);
+			ARTURIResource broaderConcept = retrieveExistingURIResource(skosModel, broaderConceptName,
+					graphs);
 
 			skosModel.removeBroaderConcept(concept, broaderConcept, getWorkingGraph());
 			skosModel.removeNarroweConcept(broaderConcept, concept, getWorkingGraph());
@@ -515,7 +778,7 @@ public class SKOS extends ResourceOld {
 	 */
 	private void assignHierarchyToSchemeRecursive(SKOSModel skosModel, ARTURIResource concept,
 			ARTURIResource sourceScheme, ARTURIResource targetScheme, ARTResource... graphs)
-			throws ModelAccessException, ModelUpdateException, NonExistingRDFResourceException {
+					throws ModelAccessException, ModelUpdateException, NonExistingRDFResourceException {
 		skosModel.addConceptToScheme(concept, targetScheme, graphs);
 		ARTURIResourceIterator narrowers = skosModel.listNarrowerConcepts(concept, false, true, graphs);
 		Iterator<ARTURIResource> filteredNarrowers = Iterators.filter(narrowers,
@@ -556,8 +819,8 @@ public class SKOS extends ResourceOld {
 			ARTResource[] graphs = getUserNamedGraphs();
 			Element dataElement = response.getDataElement();
 			ARTURIResource skosConcept = retrieveExistingURIResource(skosModel, skosConceptName, graphs);
-			Collection<ARTURIResource> schemesForConcept = RDFIterators.getCollectionFromIterator(skosModel
-					.listAllSchemesForConcept(skosConcept, graphs));
+			Collection<ARTURIResource> schemesForConcept = RDFIterators
+					.getCollectionFromIterator(skosModel.listAllSchemesForConcept(skosConcept, graphs));
 			ARTURIResourceIterator schemes = skosModel.listAllSchemes(graphs);
 			while (schemes.streamOpen()) {
 				ARTURIResource scheme = schemes.getNext();
@@ -625,8 +888,8 @@ public class SKOS extends ResourceOld {
 	 * @throws ModelAccessException
 	 * @throws NonExistingRDFResourceException
 	 */
-	public ARTURIResourceIterator getTopConcepts() throws ModelAccessException,
-			NonExistingRDFResourceException {
+	public ARTURIResourceIterator getTopConcepts()
+			throws ModelAccessException, NonExistingRDFResourceException {
 		SKOSModel skosModel = getSKOSModel();
 		ARTResource[] graphs = getUserNamedGraphs();
 		Predicate<ARTURIResource> rootConceptsPred = new RootConceptsPredicate(skosModel, graphs);
@@ -654,17 +917,17 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, graphs);
-			if (skosModel.listNarrowerConcepts(concept, false, true, getUserNamedGraphs()).streamOpen()) {
-				return createReplyFAIL("concept: " + conceptName
-						+ " has narrower concepts; delete them before");
+			if (RDFIterators.getFirst(skosModel.listNarrowerConcepts(concept, false, true, getUserNamedGraphs())) != null) {
+				return createReplyFAIL(
+						"concept: " + conceptName + " has narrower concepts; delete them before");
 			}
 			skosModel.deleteConcept(concept, getWorkingGraph());
 		} catch (ModelAccessException e) {
-			logAndSendException(e);
+			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
-			logAndSendException(e);
+			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
-			e.printStackTrace();
+			return logAndSendException(e);
 		}
 		return response;
 	}
@@ -690,11 +953,11 @@ public class SKOS extends ResourceOld {
 			skosModel.deleteScheme(scheme, forceDeleteDanglingConcepts, getWorkingGraph());
 
 		} catch (ModelAccessException e) {
-			logAndSendException(e);
+			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
-			logAndSendException(e);
+			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
-			logAndSendException(e);
+			return logAndSendException(e);
 		}
 		return response;
 	}
@@ -791,7 +1054,8 @@ public class SKOS extends ResourceOld {
 								RDFResourceRolesEnum.concept, true, null));
 					}
 				}
-			} catch (QueryEvaluationException | UnsupportedQueryLanguageException | MalformedQueryException e) {
+			} catch (QueryEvaluationException | UnsupportedQueryLanguageException
+					| MalformedQueryException e) {
 				return logAndSendException(e);
 			}
 
@@ -911,7 +1175,8 @@ public class SKOS extends ResourceOld {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
 
-			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, getUserNamedGraphs());
+			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName,
+					getUserNamedGraphs());
 			ARTURIResourceIterator unfilteredIt = skosModel.listNarrowerConcepts(concept, false, true,
 					getUserNamedGraphs());
 			Iterator<ARTURIResource> it;
@@ -955,7 +1220,8 @@ public class SKOS extends ResourceOld {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
 
-			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, getUserNamedGraphs());
+			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName,
+					getUserNamedGraphs());
 			ARTURIResourceIterator unfilteredIt = skosModel.listBroaderConcepts(concept, false, true,
 					getUserNamedGraphs());
 			Iterator<ARTURIResource> it;
@@ -991,10 +1257,8 @@ public class SKOS extends ResourceOld {
 		try {
 			ARTURIResourceIterator it = skosModel.listAllSchemes(getUserNamedGraphs());
 
-			RDFXMLHelp.addRDFNodes(
-					response,
-					createSTSKOSResourceCollection(skosModel, it, RDFResourceRolesEnum.conceptScheme, true,
-							defaultLanguage));
+			RDFXMLHelp.addRDFNodes(response, createSTSKOSResourceCollection(skosModel, it,
+					RDFResourceRolesEnum.conceptScheme, true, defaultLanguage));
 
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
@@ -1308,8 +1572,8 @@ public class SKOS extends ResourceOld {
 	 * @throws NonExistingRDFResourceException
 	 */
 	protected STRDFResource createSTSKOSResource(SKOSModel skosModel, ARTURIResource resource,
-			RDFResourceRolesEnum role, boolean explicit, String defaultLanguage) throws ModelAccessException,
-			NonExistingRDFResourceException {
+			RDFResourceRolesEnum role, boolean explicit, String defaultLanguage)
+					throws ModelAccessException, NonExistingRDFResourceException {
 		String show;
 		ARTLiteral lbl = null;
 		if (defaultLanguage != null)
@@ -1328,6 +1592,12 @@ public class SKOS extends ResourceOld {
 				defaultLanguage);
 	}
 
+	protected STRDFNode createSTCollection(SKOSModel skosModel, ARTURIResource collection, boolean explicit,
+			String defaultLanguage) throws ModelAccessException, NonExistingRDFResourceException {
+		return createSTSKOSResource(skosModel, collection, RDFResourceRolesEnum.skosCollection, explicit,
+				defaultLanguage);
+	}
+	
 	// TODO this method would me much better in the STRDFNodeFactory class, but
 	// I need to define some standard
 	// way to specify how to get the language for a node
@@ -1347,7 +1617,7 @@ public class SKOS extends ResourceOld {
 	 */
 	public Collection<STRDFResource> createSTSKOSResourceCollection(SKOSModel model,
 			ARTURIResourceIterator it, RDFResourceRolesEnum role, boolean explicit, String lang)
-			throws ModelAccessException, NonExistingRDFResourceException {
+					throws ModelAccessException, NonExistingRDFResourceException {
 		Collection<STRDFResource> uris = new ArrayList<STRDFResource>();
 		while (it.streamOpen()) {
 			uris.add(createSTSKOSResource(model, it.getNext(), role, explicit, lang));
@@ -1373,10 +1643,10 @@ public class SKOS extends ResourceOld {
 	}
 
 	public static void decorateForTreeView(SKOSModel model, STRDFResource concept, ARTURIResource scheme,
-			boolean inference, ARTResource[] graphs) throws ModelAccessException,
-			NonExistingRDFResourceException {
-		ARTURIResourceIterator unfilteredIt = model.listNarrowerConcepts(
-				(ARTURIResource) concept.getARTNode(), false, inference, graphs);
+			boolean inference, ARTResource[] graphs)
+					throws ModelAccessException, NonExistingRDFResourceException {
+		ARTURIResourceIterator unfilteredIt = model
+				.listNarrowerConcepts((ARTURIResource) concept.getARTNode(), false, inference, graphs);
 
 		if (scheme != null) {
 			Iterator<ARTURIResource> it = Iterators.filter(unfilteredIt,
@@ -1535,5 +1805,55 @@ public class SKOS extends ResourceOld {
 		}
 
 		return generateURI(URIGenerator.Roles.conceptScheme, args);
+	}
+	
+	/**
+	 * Generates a new URI for a SKOS collection, optionally given its accompanying preferred label. This
+	 * method delegates to {@link #generateCollectionURI(ARTLiteral)}.
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the collection (can be <code>null</code>)
+	 * @param lang
+	 *            the language of the label defined hereby (can be <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateCollectionURI(String label, String lang) throws URIGenerationException {
+		ARTLiteral labelObj = null;
+
+		if (label != null) {
+			if (lang != null) {
+				labelObj = getOntModel().createLiteral(label, lang);
+			} else {
+				labelObj = getOntModel().createLiteral(label);
+			}
+		}
+
+		return generateCollectionURI(labelObj);
+	}
+
+	/**
+	 * Generates a new URI for a SKOS collection, optionally given its accompanying preferred label. The
+	 * actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes
+	 * the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i>
+	 * will be provided with the following:
+	 * <ul>
+	 * <li><code>skosCollection</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>label</code> (if not <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the collection (can be <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public ARTURIResource generateCollectionURI(ARTLiteral label) throws URIGenerationException {
+		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
+
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+
+		return generateURI(URIGenerator.Roles.skosCollection, args);
 	}
 }

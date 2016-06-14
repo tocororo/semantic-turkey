@@ -17,6 +17,7 @@ public interface URIGenerator {
 		public static final String conceptScheme = "conceptScheme";
 		public static final String xLabel = "xLabel";
 		public static final String xNote = "xNote";
+		public static final String skosCollection = "skosCollection";
 	}
 	
 	public static final class Parameters {
@@ -50,6 +51,11 @@ public interface URIGenerator {
 	 * <li><code>conceptScheme</code> (for <code>skos:ConceptScheme</code>s)
 	 * <ul>
 	 * <li><code>label</code> (optional): the accompaying preferred label of the <i>skos:Concept</i></li>
+	 * </ul>
+	 * </li>
+	 * <li><code>skosCollection</code> (for <code>skos:Collection</code>s)
+	 * <ul>
+	 * <li><code>label</code> (optional): the accompaying preferred label of the <i>skos:Collection</i></li>
 	 * </ul>
 	 * </li>
 	 * <li><code>xLabel</code> (for <code>skosxl:Labels</code>s)

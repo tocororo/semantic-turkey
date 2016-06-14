@@ -8,9 +8,11 @@ import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
+import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
@@ -566,6 +568,57 @@ public class SKOSXL extends SKOS {
 			if (prefXLabel != null) {
 				RDFXMLHelp.addRDFNode(response, createSTXLabel(skosxlModel, prefXLabel, true));
 			}
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (ModelUpdateException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (DuplicatedResourceException e) {
+			return logAndSendException(e);
+		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+
+	public Response createCollection(String collectionName, String containingCollectionName,
+			String prefLabel, String prefLabelLang, String language) {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		try {
+			ARTResource wrkGraph = getWorkingGraph();
+			SKOSXLModel skosxlModel = getSKOSXLModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+
+			ARTURIResource newCollectionRes = null;
+			if (collectionName == null) {
+				newCollectionRes = generateCollectionURI(prefLabel, prefLabelLang);
+			} else {
+				newCollectionRes = createNewURIResource(skosxlModel, collectionName, graphs);
+			}
+
+			ARTURIResource containingCollectionRes;
+			if (containingCollectionName != null)
+				containingCollectionRes = retrieveExistingURIResource(skosxlModel, containingCollectionName, graphs);
+			else
+				containingCollectionRes = null;
+
+			skosxlModel.addTriple(newCollectionRes, RDF.Res.TYPE, it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
+			
+			if (containingCollectionRes != null) {
+				skosxlModel.addTriple(containingCollectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+			}
+			
+			if (prefLabel != null && prefLabelLang != null) {
+				ARTURIResource prefXLabelURI = generateXLabelURI(prefLabelLang, prefLabel, newCollectionRes,
+						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
+				ARTURIResource prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel, prefLabelLang,
+						getWorkingGraph());
+				skosxlModel.setPrefXLabel(newCollectionRes, prefXLabel, getWorkingGraph());
+			}
+			RDFXMLHelp.addRDFNode(response, createSTCollection(skosxlModel, newCollectionRes, true, language));
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
