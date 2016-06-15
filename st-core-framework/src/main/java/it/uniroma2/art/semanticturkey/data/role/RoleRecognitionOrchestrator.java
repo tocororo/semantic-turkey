@@ -120,7 +120,10 @@ public class RoleRecognitionOrchestrator {
 			newRole = RDFResourceRolesEnum.conceptScheme;
 		} else if (type.equals(SKOSXL.Res.LABEL) && role == RDFResourceRolesEnum.individual) {
 			newRole = RDFResourceRolesEnum.xLabel;
-		} else if ((type.equals(RDFS.Res.CLASS) || type.equals(OWL.Res.CLASS)) && role == RDFResourceRolesEnum.individual) {
+		} else if (type.equals(SKOS.Res.COLLECTION)
+				&& (role == RDFResourceRolesEnum.individual || role == null)) {
+			newRole = RDFResourceRolesEnum.skosCollection;
+		}else if ((type.equals(RDFS.Res.CLASS) || type.equals(OWL.Res.CLASS)) && role == RDFResourceRolesEnum.individual) {
 			newRole = RDFResourceRolesEnum.cls;
 		} else if (type.equals(OWL.Res.OBJECTPROPERTY)
 				&& (role == RDFResourceRolesEnum.individual | role == RDFResourceRolesEnum.property || role == null)) {
