@@ -16,7 +16,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
-public class STServiceAdapter implements STService {
+public class STServiceAdapter implements STService, NewStyleService {
 
 	@Autowired
 	private STServiceContext stServiceContext;

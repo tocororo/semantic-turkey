@@ -1,9 +1,11 @@
 package it.uniroma2.art.semanticturkey.servlet.main.controllers;
 
+import it.uniroma2.art.semanticturkey.mvc.IntrospectableController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
 import it.uniroma2.art.semanticturkey.servlet.HttpServiceRequestWrapper;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponse;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -34,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.w3c.dom.Document;
 
 @org.springframework.stereotype.Controller
-public class LegacyServiceController implements ApplicationContextAware {
+public class LegacyServiceController implements ApplicationContextAware, IntrospectableController {
 	
 	@Autowired
 	protected STServiceContext serviceContext;
@@ -290,7 +292,11 @@ public class LegacyServiceController implements ApplicationContextAware {
 	@Override
 	public void setApplicationContext(ApplicationContext arg0) throws BeansException {
 		context = arg0;
+	}
 
+	@Override
+	public ServiceSpecies getServiceSpecies() {
+		return ServiceSpecies.OldStyle;
 	}
 
 }

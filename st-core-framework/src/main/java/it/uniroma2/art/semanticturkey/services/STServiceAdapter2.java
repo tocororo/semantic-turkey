@@ -1,9 +1,7 @@
 package it.uniroma2.art.semanticturkey.services;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +36,6 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.tx.STServiceInvocaton;
-import it.uniroma2.art.semanticturkey.tx.TransactionAwareRDF4JRepostoryConnection;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
 /**
@@ -47,7 +44,7 @@ import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
  * @author <a href="mailto:manuel.fiorelli@gmail.com">Manuel Fiorelli</a>
  *
  */
-public class STServiceAdapter2 implements STService {
+public class STServiceAdapter2 implements STService, NewerNewStyleService {
 
 	@Autowired
 	private STServiceContext stServiceContext;

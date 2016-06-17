@@ -5,8 +5,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
@@ -41,10 +43,10 @@ public class STServiceAspect implements Ordered {
 	private static final ThreadLocal<Queue<STServiceInvocaton>> serviceInvocations = ThreadLocal.withInitial(LinkedList::new);
 	
 	@Pointcut("target(it.uniroma2.art.semanticturkey.services.STServiceAdapter2) && (execution(@it.uniroma2.art.semanticturkey.services.annotations.Read public * *(..)) || execution(@it.uniroma2.art.semanticturkey.services.annotations.Write public * *(..)))")
-	public void stServiceMethod() {};
-	
-	@Before("stServiceMethod()")
-	public void beforeServiceInvocation(JoinPoint joinPoint) throws Throwable {
+	public void stNewerNewStyleServiceMethod() {};
+
+	@Before("stNewerNewStyleServiceMethod()")
+	public void beforeNewerNewStyleServiceInvocation(JoinPoint joinPoint) throws Throwable {
 		Signature signature = joinPoint.getSignature();
 		Object[] args = joinPoint.getArgs();
 
@@ -57,13 +59,13 @@ public class STServiceAspect implements Ordered {
 		serviceInvocations.get().add(serviceInvocation);
 	}
 	
-	@After("stServiceMethod()")
-	public void afterServiceInvocation() throws Throwable {
+	@After("stNewerNewStyleServiceMethod()")
+	public void afterNewerNewStyleServiceInvocation() throws Throwable {
 		STServiceInvocaton serviceInvocation = serviceInvocations.get().remove();
 		
 		logger.debug("End of service invocation: {}", serviceInvocation);
 	}
-
+	
 	public static STServiceInvocaton getCurrentServiceInvocation() {
 		return serviceInvocations.get().peek();
 	}

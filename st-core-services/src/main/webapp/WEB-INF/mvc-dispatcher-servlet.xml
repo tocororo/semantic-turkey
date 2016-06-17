@@ -13,7 +13,12 @@
 
 	<mvc:annotation-driven conversion-service="conversionService" />
 	<mvc:resources mapping="/WEB-INF/pages/**" location="/WEB-INF/pages/" />
-
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<bean class="it.uniroma2.art.semanticturkey.mvc.LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
 	<!-- Retrieves the DatasetMetadataRepository -->
 	<osgi:reference id="datasetMetadataRepository"
 		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />

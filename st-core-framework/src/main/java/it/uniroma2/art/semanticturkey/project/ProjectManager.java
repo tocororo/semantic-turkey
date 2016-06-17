@@ -1290,7 +1290,7 @@ public class ProjectManager {
 
 	private static void tearDownProject(Project<?> project) throws ModelUpdateException {
 		logger.debug("closing project: " + project);
-		project.getOntModel().close();
+		project.getPrimordialOntModel().close();
 		openProjects.removeProject(project);
 	}
 	

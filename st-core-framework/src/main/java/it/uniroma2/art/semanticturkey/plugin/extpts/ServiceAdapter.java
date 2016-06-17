@@ -76,7 +76,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 
 	@Autowired
 	protected STServiceContext serviceContext;
-
+	
 	protected final String id;
 	protected final List<ServletListener> listeners;
 	protected final ServletUtilities servletUtilities;
@@ -274,7 +274,8 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	public Response handleRequest(ServiceRequest oReq) {
 		try {
 			setServiceRequest(oReq);
-			return getResponse();
+			Response response = getResponse();
+			return response;
 		} finally {
 			try {
 				_oReq.remove();
@@ -395,11 +396,11 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	}
 
 	protected RDFModel getOntModel() {
-		return serviceContext.getProject().getOntModel();
+		return getProject().getOntModel();
 	}
 
 	protected OWLModel getOWLModel() {
-		return serviceContext.getProject().getOWLModel();
+		return getProject().getOWLModel();
 	}
 
 	protected ARTResource retrieveExistingResource(RDFModel model, String qname, ARTResource... graphs)

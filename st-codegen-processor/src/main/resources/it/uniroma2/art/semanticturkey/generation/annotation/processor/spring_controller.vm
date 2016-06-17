@@ -2,6 +2,9 @@ package ${generatedPackageName};
 
 import ${packageName}.${classSimpleName};
 
+import it.uniroma2.art.semanticturkey.mvc.IntrospectableController;
+import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
+import it.uniroma2.art.semanticturkey.services.NewStyleService;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 
@@ -20,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class ${generatedClassSimpleName} 
-    implements ApplicationContextAware {
+    implements ApplicationContextAware, IntrospectableController {
     ApplicationContext context;
     
 	@Override
@@ -29,6 +32,14 @@ public class ${generatedClassSimpleName}
 		context=arg0;
 		
 	}
+	
+	@Override
+	public ServiceSpecies getServiceSpecies() {
+		Object serviceBean = context.getBean(${classSimpleName}.class);
+		
+		return ServiceSpecies.speciesOf(serviceBean);
+	}
+	
 #*
 	For each service method to be published, generate a method in the controller
 *###

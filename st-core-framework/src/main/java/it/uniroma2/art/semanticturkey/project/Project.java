@@ -157,7 +157,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private ProjectACL acl;
 	private URIGenerator uriGenerator;
 	private RenderingEngine renderingEngine;
-
+	
+	private final ThreadLocal<MODELTYPE> modelHolder;
+	
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
@@ -180,7 +182,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		modelConfigFile = new File(projectDir, MODELCONFIG_FILENAME);
 		uriGenConfigFile = new File(projectDir, URI_GENERATOR_CONFIG_FILENAME);
 		renderingConfigFile = new File(projectDir, RENDERING_ENGINE_CONFIG_FILENAME);
-
+		modelHolder = new ThreadLocal<>();
+		
 		stp_properties = new Properties();
 		try {
 			FileInputStream propFileInStream = new FileInputStream(infoSTPFile);
@@ -299,11 +302,11 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			// retrieves the default namespace (in case it is persisted somehow by the triple store
 			// if it is null (non persisted) or different from the one stored in the project (well, that would
 			// be really weird), it sets it again as an initialization step
-			String liveGotNS = getOntModel().getDefaultNamespace();
+			String liveGotNS = getPrimordialOntModel().getDefaultNamespace();
 			if (liveGotNS == null || !liveGotNS.equals(defaultNamespace)) {
 				logger.debug(
 						"activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
-				getOntModel().setDefaultNamespace(defaultNamespace);
+				getPrimordialOntModel().setDefaultNamespace(defaultNamespace);
 				logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
 						+ defaultNamespace);
 				// it may seem strange that ST is reporting the msg:
@@ -318,13 +321,13 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				// the "" prefix, and no redundanc should be present
 			}
 
-			ontManager.declareApplicationOntology(getOntModel().createURIResource(SemAnnotVocab.NAMESPACE),
+			ontManager.declareApplicationOntology(getPrimordialOntModel().createURIResource(SemAnnotVocab.NAMESPACE),
 					false, true);
 
 			// nsPrefixMappingsPersistence must have been already created by constructor of Project subclasses
 			ontManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
 
-			SemanticTurkey.initializeVocabularies(getOntModel());
+			SemanticTurkey.initializeVocabularies(getPrimordialOntModel());
 			logger.info("defaultnamespace set to: " + defaultNamespace);
 		} catch (ModelAccessException e) {
 			throw new ProjectUpdateException(e);
@@ -620,15 +623,56 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
+	public MODELTYPE getPrimordialOntModel() {
+		return this.ontManager.getOntModel();
+	}
+
+	public RDFModel unbindModelFromThread() throws ModelUpdateException {
+		RDFModel oldModel = modelHolder.get();
+		modelHolder.remove();
+		if (oldModel == null) {
+			logger.warn("Unbinding null model");
+		} else {
+			oldModel.close();
+		}
+		logger.debug("Unbound model {}", oldModel);
+
+		return oldModel;
+	}
+	
+	public void createModelAndBoundToThread() throws ModelCreationException {
+		if (modelHolder.get() != null) {
+			throw new IllegalStateException("Model already bound to thread");
+		}
+		MODELTYPE forkedModel = (MODELTYPE)getPrimordialOntModel().forkModel();
+		modelHolder.set(forkedModel);
+		logger.debug("Fork model {} producing new model {}", getPrimordialOntModel(), forkedModel);
+	}
+
 	@Deprecated
 	public MODELTYPE getOntModel() {
-		return getOntologyManager().getOntModel();
+		MODELTYPE model = modelHolder.get();
+		
+		if (model == null) {
+			if (0==0)throw new RuntimeException("Could not obtain thread-bound model");
+			logger.warn("Implicit access to primordial model");
+//			throw new IllegalStateException("No model has been bound to the current thread");
+			return getPrimordialOntModel();
+		}
+		
+		return model;
 	}
 
 	@Deprecated
 	// TODO this should really only be in OWLModel and SKOSModel Projects
 	public OWLModel getOWLModel() {
-		return getOntologyManager().getOWLModel();
+		MODELTYPE model = getOntModel();
+		
+		if (model instanceof SKOSModel) {
+			return ((SKOSModel)model).getOWLModel();
+		}
+		
+		return (OWLModel)model;
 	}
 
 	public Repository getRepository() {
