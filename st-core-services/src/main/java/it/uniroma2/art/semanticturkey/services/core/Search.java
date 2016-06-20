@@ -66,6 +66,7 @@ public class Search extends STServiceAdapter {
 		boolean isConceptWanted = false;
 		boolean isInstanceWanted = false;
 		boolean isPropertyWanted = false;
+		boolean isCollectionWanted = false;
 		
 		String searchModeSelected = null;
 		
@@ -88,17 +89,21 @@ public class Search extends STServiceAdapter {
 				isInstanceWanted = true;
 			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.property.name())){
 				isPropertyWanted = true;
-			}
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name())){
+				isCollectionWanted = true;
+			} 
 		}
 		//@formatter:off
-		if(!isClassWanted && !isConceptWanted && !isInstanceWanted && !isPropertyWanted){
+		if(!isClassWanted && !isConceptWanted && !isInstanceWanted && !isPropertyWanted 
+				&& isCollectionWanted){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
 			Element dataElement = response.getDataElement();
 			dataElement.setTextContent("the serch roles should be at least one of: "+
 					RDFResourceRolesEnum.cls.name()+", "+
 					RDFResourceRolesEnum.concept.name()+", "+
 					RDFResourceRolesEnum.individual+" or "+
-					RDFResourceRolesEnum.property.name());
+					RDFResourceRolesEnum.property.name() +" or "+
+					RDFResourceRolesEnum.skosCollection.name());
 			return response;
 		}
 		//@formatter:on
@@ -139,7 +144,7 @@ public class Search extends STServiceAdapter {
 						isConceptWanted);*/
 		
 		query+=filterResourceTypeAndScheme("?resource", "?type", isClassWanted, isInstanceWanted, 
-				isPropertyWanted, isConceptWanted, scheme);
+				isPropertyWanted, isConceptWanted, isCollectionWanted, scheme);
 		
 		
 		query+="\n}" +
@@ -162,10 +167,10 @@ public class Search extends STServiceAdapter {
 				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
 				"\n}";
 
-		//if you are searching among concepts, search in the skos:prefLabel/altLabel and 
+		//if you are searching among concepts or collections, search in the skos:prefLabel/altLabel and 
 		// skosxl:prefLabel/altLabel
 		
-		if(isConceptWanted){
+		if(isConceptWanted || isCollectionWanted){
 			query+="\nUNION" +
 					"\n{" +
 					"\n?resource (<"+SKOS.PREFLABEL+"> | <"+SKOS.ALTLABEL+">) ?skosLabel ."+
@@ -181,7 +186,9 @@ public class Search extends STServiceAdapter {
 		
 		//if language was specified, try to take first the literalForm for that language and then,
 		// if it has not such value, the skosLabel (always considering just the prefLabel)
-		if(lang!=null && lang.length()>0){
+		// the language is used only to return the concept/collection with the labels in the desired 
+		// language and it is not used to filter a resource
+		if((isConceptWanted || isCollectionWanted)&& lang!=null && lang.length()>0){
 			query+="\nOPTIONAL" +
 					"\n{" +
 					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabel ." +
@@ -218,7 +225,7 @@ public class Search extends STServiceAdapter {
 
 			// TODO, explicit set to true
 			RDFResourceRolesEnum role = null;
-			//since there are more than one element in the input role array, see the resonce
+			//since there are more than one element in the input role array, see the resource
 			String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
 			if(type.equals(OWL.CLASS)){
 				role = RDFResourceRolesEnum.cls;
@@ -234,7 +241,9 @@ public class Search extends STServiceAdapter {
 				role = RDFResourceRolesEnum.ontologyProperty;
 			}  else if(type.equals(SKOS.CONCEPT)){
 				role = RDFResourceRolesEnum.concept;
-			} else{
+			} else if(type.equals(SKOS.COLLECTION)){
+				role = RDFResourceRolesEnum.skosCollection;
+			}else{
 				role = RDFResourceRolesEnum.individual;
 				if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
 					//the individual was already added
@@ -565,7 +574,7 @@ public class Search extends STServiceAdapter {
 	
 	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
 			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			ARTURIResource scheme){
+			boolean isCollectionWanted, ARTURIResource scheme){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
@@ -573,6 +582,7 @@ public class Search extends STServiceAdapter {
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
 					"\nFILTER("+type+" = <"+OWL.CLASS+">)" +
 					"\n}";
+			
 			otherWanted = true;
 		}
 		if(isPropertyWanted){
@@ -599,6 +609,16 @@ public class Search extends STServiceAdapter {
 			}
 			
 			filterQuery += "\n}";
+			
+			otherWanted = true;
+		}
+		if(isCollectionWanted) {
+			if(otherWanted){
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					 "\nFILTER("+type+" = <"+SKOS.COLLECTION+">)" +
+					 "\n}";
 			
 			otherWanted = true;
 		}
