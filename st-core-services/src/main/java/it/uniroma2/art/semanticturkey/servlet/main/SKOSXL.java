@@ -827,9 +827,9 @@ public class SKOSXL extends SKOS {
 
 		try {
 			ARTLiteral xlabelLiteral = skosxlModel.createLiteral(label, lang);
-			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel,
-					skosxlModel.expandQName(xlabelURI));
+			
 			ARTResource graph = getWorkingGraph();
+			ARTResource xLabel = retrieveExistingResource(skosxlModel, xlabelURI, graph);
 			// get the old value
 			ARTStatementIterator artStatIter = skosxlModel.listStatements(xLabel,
 					it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.LITERALFORM, NodeFilters.ANY, false, graph);
@@ -873,9 +873,10 @@ public class SKOSXL extends SKOS {
 		Element xlabelElem = XMLHelp.newElement(dataElement, SKOSXL.Par.xlabelURI);
 		try {
 			ARTURIResource skosConcept = skosxlModel.createURIResource(skosxlModel.expandQName(conceptURI));
-			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel,
-					skosxlModel.expandQName(xlabelURI));
+			
 			ARTResource graph = getWorkingGraph();
+			ARTResource xLabel = retrieveExistingResource(skosxlModel, xlabelURI, graph);
+			
 			skosxlModel.deleteTriple(skosConcept,
 					skosxlModel.createURIResource(it.uniroma2.art.owlart.vocabulary.SKOSXL.PREFLABEL),
 					xLabel, graph);
@@ -904,10 +905,10 @@ public class SKOSXL extends SKOS {
 		Element xlabelElem = XMLHelp.newElement(dataElement, SKOSXL.Par.xlabelURI);
 		try {
 			ARTURIResource skosConcept = skosxlModel.createURIResource(skosxlModel.expandQName(conceptURI));
-			ARTURIResource xLabel = retrieveExistingURIResource(skosxlModel,
-					skosxlModel.expandQName(xlabelURI));
+			
 			ARTResource graph = getWorkingGraph();
-
+			ARTResource xLabel = retrieveExistingResource(skosxlModel, xlabelURI, graph);
+			
 			// change the other preferred label (of the same language) to alternative label, as only one
 			// preferred label per language can exist
 			String lang = skosxlModel.getLiteralForm(xLabel, graph).getLanguage();
