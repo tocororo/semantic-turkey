@@ -9,6 +9,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -93,7 +94,21 @@ public class LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor imple
 	@Override
 	public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
 			Exception ex) throws Exception {
-		// Nothing to do
+		// We expect that the model has already been unbound from the thread. However, in case of abrupt
+		// termination of a handler, the method postHandle is not invoked. Thus, we repeat the release here. 
+		if (shouldManage(handler)) {
+			String projectName = request.getParameter("ctx_project");
+			if (projectName != null) {
+				Project<?> project = ProjectManager.getProject(projectName);
+				if (project != null) {
+					try {
+						project.unbindModelFromThread();
+					} catch (ModelUpdateException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
 	}
 
 	/**
