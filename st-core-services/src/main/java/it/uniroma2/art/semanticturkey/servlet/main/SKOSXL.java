@@ -840,7 +840,7 @@ public class SKOSXL extends SKOS {
 				ARTLiteral oldLabel = artStatIter.next().getObject().asLiteral();
 				xlabel.setAttribute("oldLabel", oldLabel.getLabel());
 				xlabel.setAttribute("oldLang", oldLabel.getLanguage());
-				if (oldLabel.getLabel().compareTo(label) != 0 || oldLabel.getLanguage().compareTo(lang) != 0) {
+				if (oldLabel.getLabel().compareTo(label) != 0 || oldLabel.getLanguage() == null || oldLabel.getLanguage().compareTo(lang) != 0) {
 					// remove the old values and add the new one
 					skosxlModel.deleteTriple(xLabel,
 							it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.LITERALFORM, oldLabel, graph);

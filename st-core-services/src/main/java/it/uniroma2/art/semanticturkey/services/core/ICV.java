@@ -11,8 +11,8 @@ import org.w3c.dom.Element;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTNodeFactory;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
@@ -655,7 +655,8 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns a list of records concept-labelPred-label of that concept that have a skos label without languageTag
+	 * Returns a list of records resource-labelPred-label of concepts or scheme that have 
+	 * a skos label without languageTag
 	 * @return
 	 * @throws QueryEvaluationException
 	 * @throws UnsupportedQueryLanguageException
@@ -663,38 +664,56 @@ public class ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
-	public Response listConceptsWithNoLanguageTagSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
+	public Response listResourcesWithNoLanguageTagSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred ?label WHERE {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+		String q = "SELECT ?resource ?labelPred ?label ?type WHERE {\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
+				+ "UNION \n"
+				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . }\n"
+				+ "?resource a ?type \n"
 				+ "{ bind(<" + SKOS.PREFLABEL + "> as ?labelPred)}\n"
 				+ "UNION\n"
 				+ "{bind(<" + SKOS.ALTLABEL + "> as ?labelPred)}\n"
-				+ "?concept ?labelPred ?label .\n"
-				+ "bind(lang(?label) as ?lang)\n"
-				+ "FILTER (?lang = '') }";
-		logger.info("query [listConceptsWithNoLanguageTagSKOSLabel]:\n" + q);
+				+ "?resource ?labelPred ?label .\n"
+				+ "FILTER (lang(?label) = '') }";
+		logger.info("query [listResourcesWithNoLanguageTagSKOSLabel]:\n" + q);
 		OWLModel model = getOWLModel();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
 		while (itTupleBinding.hasNext()){
 			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String labelPred = tb.getBinding("labelPred").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
+			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
+			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			if (type.equals(SKOS.CONCEPT)) {
+				role = RDFResourceRolesEnum.concept;
+			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+				role = RDFResourceRolesEnum.conceptScheme;
+			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
-			recordElem.setAttribute("concept", concept);
-			recordElem.setAttribute("labelPred", labelPred);
-			recordElem.setAttribute("label", label);
+			
+			Element resourceElem = XMLHelp.newElement(recordElem, "resource");
+			STRDFURI stResource = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
+			RDFXMLHelp.addRDFNode(resourceElem, stResource);
+			
+			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
+			ARTURIResource labelPred = tb.getBinding("labelPred").getBoundValue().asURIResource();
+			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRolesEnum.annotationProperty, true, model.getQName(labelPred.getURI()));
+			RDFXMLHelp.addRDFNode(predicateElem, stPredicate);
+			
+			Element objectElem = XMLHelp.newElement(recordElem, "object");
+			ARTLiteral label = tb.getBinding("label").getBoundValue().asLiteral();
+			STRDFLiteral stObject = STRDFNodeFactory.createSTRDFLiteral(label, true, label.getLabel());
+			RDFXMLHelp.addRDFNode(objectElem, stObject);
 		}
 		return response;
 	}
 	
 	/**
-	 * Returns a list of records concept-labelPred-xlabel-literal of that concept that have a skosxl:Label 
-	 * without languageTag
+	 * Returns a list of records resource-labelPred-xlabel-literal of concepts or schemes that
+	 * have a skosxl:Label without languageTag
 	 * @return
 	 * @throws QueryEvaluationException
 	 * @throws UnsupportedQueryLanguageException
@@ -702,32 +721,52 @@ public class ICV extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
-	public Response listConceptsWithNoLanguageTagSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
+	public Response listResourcesWithNoLanguageTagSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		String q = "SELECT ?concept ?labelPred ?label WHERE {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
+		String q = "SELECT ?resource ?labelPred ?xlabel ?literalForm ?type WHERE {\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
+				+ "UNION \n"
+				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . }\n"
+				+ "?resource a ?type . \n"
 				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
-				+ "?concept ?labelPred ?xlabel .\n"
-				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?label .\n"
-				+ "bind(lang(?label) as ?lang)\n"
-				+ "FILTER (?lang = '') }";
+				+ "?resource ?labelPred ?xlabel .\n"
+				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?literalForm .\n"
+				+ "FILTER (lang(?literalForm)= '') }";
 		logger.info("query [listConceptsWithNoLanguageTagSKOSXLLabel]:\n" + q);
 		OWLModel model = getOWLModel();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
 		TupleQuery query = model.createTupleQuery(q);
 		TupleBindingsIterator itTupleBinding = query.evaluate(false);
 		while (itTupleBinding.hasNext()){
 			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String labelPred = tb.getBinding("labelPred").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
+			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
+			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			if (type.equals(SKOS.CONCEPT)) {
+				role = RDFResourceRolesEnum.concept;
+			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+				role = RDFResourceRolesEnum.conceptScheme;
+			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
-			recordElem.setAttribute("concept", concept);
-			recordElem.setAttribute("labelPred", labelPred);
-			recordElem.setAttribute("label", label);
+			
+			Element resourceElem = XMLHelp.newElement(recordElem, "resource");
+			STRDFURI stResource = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
+			RDFXMLHelp.addRDFNode(resourceElem, stResource);
+			
+			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
+			ARTURIResource labelPred = tb.getBinding("labelPred").getBoundValue().asURIResource();
+			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRolesEnum.objectProperty, true, model.getQName(labelPred.getURI()));
+			RDFXMLHelp.addRDFNode(predicateElem, stPredicate);
+			
+			Element objectElem = XMLHelp.newElement(recordElem, "object");
+			ARTResource label = tb.getBinding("xlabel").getBoundValue().asResource();
+			ARTLiteral literalForm = tb.getBinding("literalForm").getBoundValue().asLiteral();
+			STRDFResource stObject = STRDFNodeFactory.createSTRDFResource(label, RDFResourceRolesEnum.xLabel, true, literalForm.getLabel());
+			RDFXMLHelp.addRDFNode(objectElem, stObject);
 		}
 		return response;
+		
 	}
 	
 	/**
