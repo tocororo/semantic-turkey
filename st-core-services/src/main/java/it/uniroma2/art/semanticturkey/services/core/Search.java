@@ -297,7 +297,7 @@ public class Search extends STServiceAdapter {
 			
 			String query = null;
 			String superResourceVar = null, superSuperResourceVar = null;
-			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
 				superResourceVar = "broader";
 				superSuperResourceVar = "broaderOfBroader";
 				//@formatter:off
@@ -333,17 +333,17 @@ public class Search extends STServiceAdapter {
 						"\n}" +
 						"\n}";
 				//@formatter:on
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name())){
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
 				superResourceVar = "superProperty";
 				superSuperResourceVar = "superSuperProperty";
 				//@formatter:off
 				query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
 						"\nWHERE{" + 
 						"\n{" + 
-						"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + ">+ ?superProperty .";
-				query += "\nOPTIONAL{" +
-						"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty .";
-				query +="\n}" + 
+						"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + ">+ ?superProperty ." +
+						"\nOPTIONAL{" +
+						"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty ." +
+						"\n}" + 
 						"\n}" +
 						"\nUNION" +
 						"\n{" +
@@ -359,17 +359,17 @@ public class Search extends STServiceAdapter {
 						"\n}" +
 						"\n}";
 				//@formatter:on
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.cls.name())) {
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.cls.name().toLowerCase())) {
 				superResourceVar = "superClass";
 				superSuperResourceVar = "superSuperClass";
 				//@formatter:off
 				query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
 						"\nWHERE{" + 
 						"\n{" + 
-						"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + ">+ ?superClass .";
-				query += "\nOPTIONAL{" +
-						"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass .";
-				query +="\n}" + 
+						"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + ">+ ?superClass ." + 
+						"\nOPTIONAL{" +
+						"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass ." +
+						"\n}" + 
 						"\n}" +
 						"\nUNION" +
 						"\n{" +
@@ -377,9 +377,29 @@ public class Search extends STServiceAdapter {
 						"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBCLASSOF+"> _:b1}" +
 						"\nBIND(\"true\" AS ?isTop )" +
 						"\n}" +
-						"\n}";;
+						"\n}";
 				//@formatter:on
-			} else {
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+				superResourceVar = "superCollection";
+				superSuperResourceVar = "superSuperCollection";
+				//@formatter:off
+				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
+						"\nWHERE {"+
+						"\n{"+
+						"\n?superCollection <"+SKOS.MEMBER+">+ <"+resourceURI+"> ." +
+						"\nOPTIONAL {"+
+						"?superSuperCollection <"+SKOS.MEMBER+"> ?superCollection ." +
+						"\n}" +
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n<"+resourceURI+"> a <"+SKOS.COLLECTION+"> ." +
+						"\nFILTER NOT EXISTS{ _:b1 <"+SKOS.MEMBER+"> <"+resourceURI+"> }" +
+						"\nBIND(\"true\" AS ?isTop )" +
+						"\n}" +
+						"\n}";
+				//@formatter:on
+			}else {
 				throw new IllegalArgumentException("Invalid input role: "+role);
 			}
 			logger.debug("query: " + query);
@@ -455,7 +475,7 @@ public class Search extends STServiceAdapter {
 						resourceToResourceForHierarchyMap);
 			}
 			//now construct the response
-			//to order the path (from the shortest to the longest) first find the maximum lenght
+			//to order the path (from the shortest to the longest) first find the maximum length
 			int maxLength = -1;
 			for(List<String> path : pathList){
 				int currentLength = path.size();
@@ -498,7 +518,6 @@ public class Search extends STServiceAdapter {
 					concElem.setTextContent(inputResource.getURI());
 				}
 			}
-			
 			
 			return response;
 		} catch (ModelAccessException e) {
