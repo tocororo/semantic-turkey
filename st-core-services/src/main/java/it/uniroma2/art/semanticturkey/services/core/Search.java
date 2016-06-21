@@ -83,25 +83,25 @@ public class Search extends STServiceAdapter {
 		for(int i=0; i<rolesArray.length; ++i){
 			if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.cls.name())){
 				isClassWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
 				isConceptWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.individual.name())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.individual.name().toLowerCase())){
 				isInstanceWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.property.name())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
 				isPropertyWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
 				isCollectionWanted = true;
 			} 
 		}
 		//@formatter:off
 		if(!isClassWanted && !isConceptWanted && !isInstanceWanted && !isPropertyWanted 
-				&& isCollectionWanted){
+				&& !isCollectionWanted){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
 			Element dataElement = response.getDataElement();
 			dataElement.setTextContent("the serch roles should be at least one of: "+
 					RDFResourceRolesEnum.cls.name()+", "+
 					RDFResourceRolesEnum.concept.name()+", "+
-					RDFResourceRolesEnum.individual+" or "+
+					RDFResourceRolesEnum.individual+", "+
 					RDFResourceRolesEnum.property.name() +" or "+
 					RDFResourceRolesEnum.skosCollection.name());
 			return response;
@@ -513,63 +513,63 @@ public class Search extends STServiceAdapter {
 	}
 	
 	
-	private String addFilterForRsourseType(String variable, boolean isClassWanted, 
-			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted) {
-		boolean otherWanted = false;
-		String filterQuery = "\nFILTER( ";
-		if(isClassWanted){
-			filterQuery += variable+" = <"+OWL.CLASS+">"; 
-			otherWanted = true;
-		}
-		if(isPropertyWanted){
-			if(otherWanted){
-				filterQuery += " || ";
-			}
-			otherWanted = true;
-			//@formatter:off
-			filterQuery += variable+ " = <"+RDF.PROPERTY+"> || "+
-					variable+" = <"+OWL.OBJECTPROPERTY+"> || "+
-					variable+" = <"+OWL.DATATYPEPROPERTY+"> || "+
-					variable+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
-					variable+" = <"+OWL.ONTOLOGYPROPERTY+"> ";
-			//@formatter:on
-		}
-		if(isConceptWanted){
-			if(otherWanted){
-				filterQuery += " || ";
-			}
-			otherWanted = true;
-			filterQuery += variable+" = <"+SKOS.CONCEPT+">";
-		}
-		if(isInstanceWanted){
-			if(otherWanted){
-				filterQuery += " || ( ";
-			}
-			//@formatter:off
-			filterQuery+="EXISTS{"+variable+" a <"+OWL.CLASS+">}";
-			
-			//old version
-			/*filterQuery+=variable+"!= <"+OWL.CLASS+"> && "+
-					variable+"!=<"+RDFS.CLASS+"> && "+
-					variable+"!=<"+RDFS.RESOURCE+"> && "+
-					variable+"!=<"+RDF.PROPERTY+"> && "+
-					variable+"!=<"+OWL.OBJECTPROPERTY+"> && "+
-					variable+"!=<"+OWL.DATATYPEPROPERTY+"> && "+
-					variable+"!=<"+OWL.ANNOTATIONPROPERTY+"> && "+
-					variable+"!=<"+OWL.ONTOLOGYPROPERTY+"> && "+
-					variable+"!=<"+SKOS.CONCEPT+"> && "+
-					variable+"!=<"+SKOS.CONCEPTSCHEME+"> && "+
-					variable+"!=<"+SKOSXL.LABEL+">";*/
-			//@formatter:on
-			if(otherWanted){
-				filterQuery += " ) ";
-			}
-			otherWanted = true;
-		}
-		
-		filterQuery += ")";
-		return filterQuery;
-	}
+//	private String addFilterForRsourseType(String variable, boolean isClassWanted, 
+//			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted) {
+//		boolean otherWanted = false;
+//		String filterQuery = "\nFILTER( ";
+//		if(isClassWanted){
+//			filterQuery += variable+" = <"+OWL.CLASS+">"; 
+//			otherWanted = true;
+//		}
+//		if(isPropertyWanted){
+//			if(otherWanted){
+//				filterQuery += " || ";
+//			}
+//			otherWanted = true;
+//			//@formatter:off
+//			filterQuery += variable+ " = <"+RDF.PROPERTY+"> || "+
+//					variable+" = <"+OWL.OBJECTPROPERTY+"> || "+
+//					variable+" = <"+OWL.DATATYPEPROPERTY+"> || "+
+//					variable+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
+//					variable+" = <"+OWL.ONTOLOGYPROPERTY+"> ";
+//			//@formatter:on
+//		}
+//		if(isConceptWanted){
+//			if(otherWanted){
+//				filterQuery += " || ";
+//			}
+//			otherWanted = true;
+//			filterQuery += variable+" = <"+SKOS.CONCEPT+">";
+//		}
+//		if(isInstanceWanted){
+//			if(otherWanted){
+//				filterQuery += " || ( ";
+//			}
+//			//@formatter:off
+//			filterQuery+="EXISTS{"+variable+" a <"+OWL.CLASS+">}";
+//			
+//			//old version
+//			/*filterQuery+=variable+"!= <"+OWL.CLASS+"> && "+
+//					variable+"!=<"+RDFS.CLASS+"> && "+
+//					variable+"!=<"+RDFS.RESOURCE+"> && "+
+//					variable+"!=<"+RDF.PROPERTY+"> && "+
+//					variable+"!=<"+OWL.OBJECTPROPERTY+"> && "+
+//					variable+"!=<"+OWL.DATATYPEPROPERTY+"> && "+
+//					variable+"!=<"+OWL.ANNOTATIONPROPERTY+"> && "+
+//					variable+"!=<"+OWL.ONTOLOGYPROPERTY+"> && "+
+//					variable+"!=<"+SKOS.CONCEPT+"> && "+
+//					variable+"!=<"+SKOS.CONCEPTSCHEME+"> && "+
+//					variable+"!=<"+SKOSXL.LABEL+">";*/
+//			//@formatter:on
+//			if(otherWanted){
+//				filterQuery += " ) ";
+//			}
+//			otherWanted = true;
+//		}
+//		
+//		filterQuery += ")";
+//		return filterQuery;
+//	}
 	
 	
 	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
