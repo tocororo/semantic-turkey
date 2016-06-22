@@ -646,8 +646,9 @@ public class Search extends STServiceAdapter {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\n?type a ?classType ." +
-					"FILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
+					"\n?type a <"+OWL.CLASS+"> . "+
+					//"\n?type a ?classType ." +
+					//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
 					"\n}";
 				
 				otherWanted = true;
