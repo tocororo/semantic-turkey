@@ -584,41 +584,52 @@ public class SKOSXL extends SKOS {
 		return response;
 	}
 
-	public Response createCollection(String collectionName, String containingCollectionName,
-			String prefLabel, String prefLabelLang, String language) {
+	@Override
+	public Response createCollection(String collectionName, String containingCollectionName, String prefLabel,
+			String prefLabelLang, String language, CollectionCreationMode mode) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
 			ARTResource wrkGraph = getWorkingGraph();
 			SKOSXLModel skosxlModel = getSKOSXLModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 
-			ARTURIResource newCollectionRes = null;
+			ARTResource newCollectionRes = null;
 			if (collectionName == null) {
-				newCollectionRes = generateCollectionURI(prefLabel, prefLabelLang);
+				if (mode == CollectionCreationMode.uri) {
+					newCollectionRes = generateCollectionURI(prefLabel, prefLabelLang);
+				} else {
+					newCollectionRes = skosxlModel.createBNode();
+				}
 			} else {
 				newCollectionRes = createNewURIResource(skosxlModel, collectionName, graphs);
 			}
 
-			ARTURIResource containingCollectionRes;
+			ARTResource containingCollectionRes;
 			if (containingCollectionName != null)
-				containingCollectionRes = retrieveExistingURIResource(skosxlModel, containingCollectionName, graphs);
+				containingCollectionRes = retrieveExistingURIResource(skosxlModel, containingCollectionName,
+						graphs);
 			else
 				containingCollectionRes = null;
 
-			skosxlModel.addTriple(newCollectionRes, RDF.Res.TYPE, it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
-			
+			skosxlModel.addTriple(newCollectionRes, RDF.Res.TYPE,
+					it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
+
 			if (containingCollectionRes != null) {
-				skosxlModel.addTriple(containingCollectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+				skosxlModel.addTriple(containingCollectionRes,
+						it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
 			}
-			
+
 			if (prefLabel != null && prefLabelLang != null) {
-				ARTURIResource prefXLabelURI = generateXLabelURI(prefLabelLang, prefLabel, newCollectionRes,
+				// NOTE: in the statement below, we omit the lexicalized resource, when it is a bnode (altough
+				// by contract this is a mandatory parameter)
+				ARTURIResource prefXLabelURI = generateXLabelURI(prefLabelLang, prefLabel, newCollectionRes.isURIResource() ? newCollectionRes.asURIResource() : null,
 						it.uniroma2.art.owlart.vocabulary.SKOSXL.Res.PREFLABEL);
-				ARTURIResource prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel, prefLabelLang,
-						getWorkingGraph());
+				ARTURIResource prefXLabel = skosxlModel.addXLabel(prefXLabelURI.getURI(), prefLabel,
+						prefLabelLang, getWorkingGraph());
 				skosxlModel.setPrefXLabel(newCollectionRes, prefXLabel, getWorkingGraph());
 			}
-			RDFXMLHelp.addRDFNode(response, createSTCollection(skosxlModel, newCollectionRes, true, language));
+			RDFXMLHelp.addRDFNode(response,
+					createSTCollection(skosxlModel, newCollectionRes, true, language));
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {

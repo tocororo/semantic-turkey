@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
@@ -47,7 +46,6 @@ import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
 import it.uniroma2.art.owlart.filter.RootConceptsPredicate;
-import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
@@ -56,7 +54,6 @@ import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
-import it.uniroma2.art.owlart.models.TransactionBasedModel;
 import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
@@ -80,12 +77,17 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.main.SPARQLUtilities.ResourceQuery;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 @Component(value = "skosOld")
 public class SKOS extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(SKOS.class);
+
+	protected static enum CollectionCreationMode {
+		bnode, uri
+	};
 
 	// REQUESTS
 	public static class Req {
@@ -155,7 +157,8 @@ public class SKOS extends ResourceOld {
 		final static public String targetScheme = "targetScheme";
 		final static public String treeView = "treeView";
 		final static public String container = "container";
-		public static String collection = "collection";
+		final static public String collection = "collection";
+		final static public String mode = "mode";
 	}
 
 	@Autowired
@@ -367,9 +370,12 @@ public class SKOS extends ResourceOld {
 			String prefLabelLang = setHttpPar(Par.prefLabelLang);
 			String language = setHttpPar(Par.lang);
 			String containingCollectionName = setHttpPar(Par.container);
+			String modeString = setHttpPar(Par.mode);
 
-			response = createCollection(collectionName, containingCollectionName, prefLabel,
-					prefLabelLang, language);
+			CollectionCreationMode mode = CollectionCreationMode.valueOf(modeString);
+			
+			response = createCollection(collectionName, containingCollectionName, prefLabel, prefLabelLang,
+					language, mode);
 		} else if (request.equals(Req.assignHierarchyToSchemeRequest)) {
 			String conceptName = setHttpPar(Par.concept);
 			String sourceSchemeName = setHttpPar(Par.sourceScheme);
@@ -401,33 +407,40 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response createCollection(String collectionName, String containingCollectionName,
-			String prefLabel, String prefLabelLang, String language) {
+	public Response createCollection(String collectionName, String containingCollectionName, String prefLabel,
+			String prefLabelLang, String language, CollectionCreationMode mode) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
 			ARTResource wrkGraph = getWorkingGraph();
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 
-			ARTURIResource newCollectionRes = null;
+			ARTResource newCollectionRes = null;
 			if (collectionName == null) {
-				newCollectionRes = generateCollectionURI(prefLabel, prefLabelLang);
+				if (mode == CollectionCreationMode.uri) {
+					newCollectionRes = generateCollectionURI(prefLabel, prefLabelLang);
+				} else {
+					newCollectionRes = skosModel.createBNode();
+				}
 			} else {
 				newCollectionRes = createNewURIResource(skosModel, collectionName, graphs);
 			}
 
-			ARTURIResource containingCollectionRes;
+			ARTResource containingCollectionRes;
 			if (containingCollectionName != null)
-				containingCollectionRes = retrieveExistingURIResource(skosModel, containingCollectionName, graphs);
+				containingCollectionRes = retrieveExistingResource(skosModel, containingCollectionName,
+						graphs);
 			else
 				containingCollectionRes = null;
 
-			skosModel.addTriple(newCollectionRes, RDF.Res.TYPE, it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
-			
+			skosModel.addTriple(newCollectionRes, RDF.Res.TYPE,
+					it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
+
 			if (containingCollectionRes != null) {
-				skosModel.addTriple(containingCollectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+				skosModel.addTriple(containingCollectionRes,
+						it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
 			}
-			
+
 			if (prefLabel != null && prefLabelLang != null) {
 				skosModel.setPrefLabel(newCollectionRes, prefLabel, prefLabelLang, wrkGraph);
 			}
@@ -472,59 +485,64 @@ public class SKOS extends ResourceOld {
 
 		 return 
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Concept> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Concept> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsConcept\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#ConceptScheme> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#ConceptScheme> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsScheme\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> ; " +
+				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsSkosOrderedCollection\n" +
+				 " }\n" +
+				 " OPTIONAL {\n" +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsSkosCollection\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2008/05/skos-xl#Label> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2008/05/skos-xl#Label> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsLabel\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DataRange> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DataRange> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsDataRange\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsClass\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsRdfsClass\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsObjectProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DataTypeProperty> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DataTypeProperty> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsDataTypeProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#AnnotationProperty> ; " +
+				 " 		%resource%e <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#AnnotationProperty> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsAnnotationProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#OntologyProperty> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#OntologyProperty> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsOntologyProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Ontology> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Ontology> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsOntology\n" +
 				 " }\n" +
 				 " BIND(IF(BOUND(?resourceAsConcept), \"concept\",\n" +
 				 " IF(BOUND(?resourceAsScheme), \"conceptScheme\",\n" +
+				 " IF(BOUND(?resourceAsSkosOrderedCollection), \"skosOrderedCollection\",\n" +
 				 " IF(BOUND(?resourceAsSkosCollection), \"skosCollection\",\n" +
 				 " IF(BOUND(?resourceAsLabel), \"xLabel\",\n" +
 				 " IF(BOUND(?resourceAsDataRange), \"dataRange\",\n" +
@@ -536,7 +554,7 @@ public class SKOS extends ResourceOld {
 				 " IF(BOUND(?resourceAsOntologyProperty), \"ontologyProperty\",\n" +
 				 " IF(BOUND(?resourceAsProperty), \"property\",\n" +
 				 " IF(BOUND(?resourceAsOntology), \"ontology\",\n" +
-				 " \"individual\"))))))))))))) as ?roleTemp)\n";
+				 " \"individual\")))))))))))))) as ?role)\n";
 
 		// @formatter:on
 
@@ -546,39 +564,43 @@ public class SKOS extends ResourceOld {
 		try {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
-
+			ARTResource workingGraph = getWorkingGraph();
+			
 			// @formatter:off
 			String queryFragment =
-				"	?resource a <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
+				"	{?resource a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
 				"	FILTER NOT EXISTS {\n" +
 				"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
-				"	}\n" +
-				"	OPTIONAL {\n" +
-				"		?resource <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
-				"	}\n" +
-				"	BIND(IF(BOUND(?nestedCollection), \"1\", \"0\") as ?info_more)\n";
+				"	}\n";
 			// @formatter:on
 
-			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryFragment, getWorkingGraph().asURIResource(), "info_more");
-			List<String> variables = new ArrayList<>();
-			variables.add("resource");
-			variables.add("info_more");
-			variables.add("explicit");
-			
+			// @formatter:off
+			String moreFragment =
+					"OPTIONAL {\n" +
+					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
+					"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
+					"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+					"	BIND(\"1\" as ?info_more_temp1)" +
+					"}\n" +
+					"OPTIONAL {\n" +
+					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
+					"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
+					"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
+					"	BIND(\"1\" as ?info_more_temp2)" +
+					"}\n" +	
+					"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+			// @formatter:on
+
+			ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
+					.withPattern("resource", queryFragment).addInformation("info_more", moreFragment).addInformation("role", getRoleQueryFragment());
+
+
 			if (lang != null) {
-				queryString = SPARQLUtilities.wrapQueryWithGroupConcat(queryString, variables,
-						getShowQueryFragment(lang), "show", ", ");
-				variables.add("show");
+				queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show", getShowQueryFragment(lang));
 			}
 
-			queryString = SPARQLUtilities.wrapQueryWithMax(queryString, variables, getRoleQueryFragment(),
-					"role");
-
-			variables.add("role");
-
-			logger.debug(queryString);
-			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel,
-					queryString);
+			TupleQuery query = queryResourceBuilder.query(workingGraph);
+			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
 			RDFXMLHelp.addRDFNodes(dataElement, collections);
@@ -591,47 +613,62 @@ public class SKOS extends ResourceOld {
 		}
 	}
 
-	private Response getNestedCollections(String containingCollection, String lang) {
+	private Response getNestedCollections(String container, String lang) {
 		try {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
-
-			ARTURIResource containingCollectionRes = retrieveExistingURIResource(skosModel, containingCollection,
-					graphs);
-
-			List<String> variables = new ArrayList<>();
-			variables.add("resource");
-			variables.add("explicit");
-			variables.add("info_more");
-
+			ARTResource workingGraph = getWorkingGraph();
+			
+			ARTResource containerRes = retrieveExistingResource(skosModel, container, graphs);
+			
 			// @formatter:off
-			StringBuilder queryStringBuilder = new StringBuilder(
-				RDFNodeSerializer.toNT(containingCollectionRes)).append(" <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
-				"?resource a <http://www.w3.org/2004/02/skos/core#Collection> .\n"
-				).append(
-					"OPTIONAL {\n" +
-					"	?resource <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
-					"}\n" +
-					"BIND(IF(BOUND(?nestedCollection), \"1\", \"0\") as ?info_more)\n"
-					);
+			// @formatter:off
+			String queryFragment =
+				"{\n" +
+			    "	FILTER NOT EXISTS {?container <http://www.w3.org/2004/02/skos/core#memberList> []}\n" +
+				"	?container <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
+				"	{?resource a <http://www.w3.org/2004/02/skos/core#Collection> .} union {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+				"} UNION {\n" +
+				"	?container <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
+				"	?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>* ?mid .\n" +
+				"	?mid <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>* ?node .\n" +
+				"	?node <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?resource .\n" +
+				"	{?resource a <http://www.w3.org/2004/02/skos/core#Collection> .} union {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+				"}\n";
+			// @formatter:on
 			// @formatter:on
 
-			String queryString = SPARQLUtilities.buildResourceQueryWithExplicit(queryStringBuilder.toString(), getWorkingGraph().asURIResource(), "info_more");
+			// See http://stackoverflow.com/a/17530689 for a description of a pure SPARQL solution to obtain
+			// the elements of an RDF collection together with their position
+			
+			// @formatter:off
+			String moreFragment =
+					"OPTIONAL {\n" +
+					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
+					"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
+					"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+					"	BIND(\"1\" as ?info_more_temp1)" +
+					"}\n" +
+					"OPTIONAL {\n" +
+					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
+					"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
+					"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
+					"	BIND(\"1\" as ?info_more_temp2)" +
+					"}\n" +	
+					"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+			// @formatter:on
+
+			ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
+					.withPattern("resource", queryFragment).addInformation("info_more", moreFragment).addInformation("role", getRoleQueryFragment());
+
 
 			if (lang != null) {
-				queryString = SPARQLUtilities.wrapQueryWithGroupConcat(queryString, variables,
-						getShowQueryFragment(lang), "show", ", ");
-				variables.add("show");
+				queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show", getShowQueryFragment(lang));
 			}
 
-			queryString = SPARQLUtilities.wrapQueryWithMax(queryString, variables, getRoleQueryFragment(),
-					"role");
-			
-			variables.add("role");
-
-			logger.debug(queryString);
-			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel,
-					queryString);
+			TupleQuery query = queryResourceBuilder.groupBy("node").countDistinct("mid", "index").orderBy("index").query(workingGraph);
+			query.setBinding("container", containerRes);
+			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
 			RDFXMLHelp.addRDFNodes(dataElement, collections);
@@ -928,7 +965,8 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, graphs);
-			if (RDFIterators.getFirst(skosModel.listNarrowerConcepts(concept, false, true, getUserNamedGraphs())) != null) {
+			if (RDFIterators.getFirst(
+					skosModel.listNarrowerConcepts(concept, false, true, getUserNamedGraphs())) != null) {
 				return createReplyFAIL(
 						"concept: " + conceptName + " has narrower concepts; delete them before");
 			}
@@ -1582,7 +1620,7 @@ public class SKOS extends ResourceOld {
 	 * @throws ModelAccessException
 	 * @throws NonExistingRDFResourceException
 	 */
-	protected STRDFResource createSTSKOSResource(SKOSModel skosModel, ARTURIResource resource,
+	protected STRDFResource createSTSKOSResource(SKOSModel skosModel, ARTResource resource,
 			RDFResourceRolesEnum role, boolean explicit, String defaultLanguage)
 					throws ModelAccessException, NonExistingRDFResourceException {
 		String show;
@@ -1591,10 +1629,14 @@ public class SKOS extends ResourceOld {
 			lbl = skosModel.getPrefLabel(resource, defaultLanguage, true, getUserNamedGraphs());
 		if (lbl != null)
 			show = lbl.getLabel();
-		else
-			show = skosModel.getQName(resource.getURI());
-
-		return STRDFNodeFactory.createSTRDFURI(resource, role, explicit, show);
+		else {
+			if (resource.isURIResource()) {
+				show = skosModel.getQName(resource.getNominalValue());
+			} else {
+				show = "_:" + resource.getNominalValue();
+			}
+		}
+		return STRDFNodeFactory.createSTRDFResource(resource, role, explicit, show);
 	}
 
 	protected STRDFResource createSTConcept(SKOSModel skosModel, ARTURIResource concept, boolean explicit,
@@ -1603,12 +1645,12 @@ public class SKOS extends ResourceOld {
 				defaultLanguage);
 	}
 
-	protected STRDFNode createSTCollection(SKOSModel skosModel, ARTURIResource collection, boolean explicit,
+	protected STRDFNode createSTCollection(SKOSModel skosModel, ARTResource collection, boolean explicit,
 			String defaultLanguage) throws ModelAccessException, NonExistingRDFResourceException {
 		return createSTSKOSResource(skosModel, collection, RDFResourceRolesEnum.skosCollection, explicit,
 				defaultLanguage);
 	}
-	
+
 	// TODO this method would me much better in the STRDFNodeFactory class, but
 	// I need to define some standard
 	// way to specify how to get the language for a node
@@ -1817,7 +1859,7 @@ public class SKOS extends ResourceOld {
 
 		return generateURI(URIGenerator.Roles.conceptScheme, args);
 	}
-	
+
 	/**
 	 * Generates a new URI for a SKOS collection, optionally given its accompanying preferred label. This
 	 * method delegates to {@link #generateCollectionURI(ARTLiteral)}.
