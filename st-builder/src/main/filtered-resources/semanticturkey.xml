@@ -61,7 +61,7 @@
 		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.6.2</bundle>
 		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/2.6.2</bundle>
 		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.6.2</bundle>
-		<bundle dependency="true">mvn:com.github.jsonld-java/jsonld-java/0.7.0</bundle>
+		<bundle dependency="true">mvn:com.github.jsonld-java/jsonld-java/0.8.0</bundle>
 		<bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/4.4.4</bundle>
 		<bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.2</bundle>
 		<bundle dependency="true">mvn:com.google.guava/guava/18.0</bundle>
