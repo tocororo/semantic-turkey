@@ -29,13 +29,15 @@ public class StatementConsumerProvider {
 		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(customRangeProvider);
 		TopConceptOfStatementConsumer topConceptOfStatementConsumer = new TopConceptOfStatementConsumer();
 		InSchemeStatementConsumer inSchemeStatementConsumer = new InSchemeStatementConsumer();
-		
+		SKOSCollectionMemberStatementConsumer skosCollectionMemberStatementConsumer = new SKOSCollectionMemberStatementConsumer();
+
 		role2template = new HashMap<RDFResourceRolesEnum, List<StatementConsumer>>();
 		role2template.put(RDFResourceRolesEnum.cls, Arrays.asList(typesStatementConsumer, classAxiomsStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.concept, Arrays.asList(typesStatementConsumer, topConceptOfStatementConsumer, inSchemeStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.property, Arrays.asList(typesStatementConsumer, subPropertyOfStatementConsumer, lexicalizationsStatementConsumer, propertyFactesStatementConsumer, domainsStatementConsumer, rangesStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.conceptScheme, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.ontology, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, ontologyImportsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRolesEnum.skosCollection, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, skosCollectionMemberStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRolesEnum.individual, Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 	}
 	

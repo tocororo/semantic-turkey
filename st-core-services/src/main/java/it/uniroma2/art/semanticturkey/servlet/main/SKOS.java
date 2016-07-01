@@ -113,11 +113,15 @@ public class SKOS extends ResourceOld {
 		public static final String setPrefLabelRequest = "setPrefLabel";
 		public static final String addAltLabelRequest = "addAltLabel";
 		public static final String addHiddenLabelRequest = "addHiddenLabel";
+		public static final String addFirstToOrderedCollectionRequest = "addFirstToOrderedCollection";
+		public static final String addLastToOrderedCollectionRequest = "addLastToOrderedCollection";
+		public static final String addInPositionToOrderedCollectionRequest = "addInPositionToOrderedCollection";
 
 		// CREATE REQUESTS
 		public static final String createConceptRequest = "createConcept";
 		public static final String createSchemeRequest = "createScheme";
 		public static final String createCollectionRequest = "createCollection";
+		public static final String createOrderedCollectionRequest = "createOrderedCollection";
 
 		// REMOVE REQUESTS
 		public static final String removeTopConceptRequest = "removeTopConcept";
@@ -128,6 +132,7 @@ public class SKOS extends ResourceOld {
 		public static final String removeConceptFromSchemeRequest = "removeConceptFromScheme";
 		public static final String removeBroaderConcept = "removeBroaderConcept";
 		public static final String removeHiddenLabelRequest = "removeHiddenLabel";
+		public static final String removeFromOrderedCollectionRequest = "removeFromOrderedCollection";
 
 		// MODIFY REQUESTS
 		public static final String assignHierarchyToSchemeRequest = "assignHierarchyToScheme";
@@ -159,6 +164,8 @@ public class SKOS extends ResourceOld {
 		final static public String container = "container";
 		final static public String collection = "collection";
 		final static public String mode = "mode";
+		final public static String index = "index";
+		final public static String element = "element";
 	}
 
 	@Autowired
@@ -270,6 +277,28 @@ public class SKOS extends ResourceOld {
 			checkRequestParametersAllNotNull(Par.scheme, Par.concept);
 			logger.debug("SKOS." + Req.addTopConceptRequest + ":\n" + response);
 			response = addTopConcept(scheme, concept, language);
+		} else if (request.equals(Req.addFirstToOrderedCollectionRequest)) {
+			String collection = setHttpPar(Par.collection);
+			String element = setHttpPar(Par.element);
+
+			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
+			response = addFirstToOrderedCollection(collection, element);
+		} else if (request.equals(Req.addLastToOrderedCollectionRequest)) {
+			String collection = setHttpPar(Par.collection);
+			String element = setHttpPar(Par.element);
+
+			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
+			response = addLastToOrderedCollection(collection, element);
+		} else if (request.equals(Req.addInPositionToOrderedCollectionRequest)) {
+			String collection = setHttpPar(Par.collection);
+			String element = setHttpPar(Par.element);
+			int index = setHttpIntPar(Par.index);
+
+			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
+			response = addInPositionToOrderedCollection(collection, index, element);
 		} else if (request.equals(Req.removeTopConceptRequest)) {
 			String scheme = setHttpPar(Par.scheme);
 			String concept = setHttpPar(Par.concept);
@@ -302,7 +331,13 @@ public class SKOS extends ResourceOld {
 			String scheme = setHttpPar(Par.scheme);
 			checkRequestParametersAllNotNull(Par.concept, Par.scheme);
 			response = removeConceptFromScheme(concept, scheme);
-
+		} else if (request.equals(Req.removeFromOrderedCollectionRequest)) {
+			String collection = setHttpPar(Par.collection);
+			String element = setHttpPar(Par.element);
+			
+			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			
+			response = removeFromOrderedCollection(collection, element);
 			// ADD SKOS METHODS
 		} else if (request.equals(Req.addBroaderConceptRequest)) {
 			// newConcept, relatedConcept,rdfsLabel,
@@ -371,10 +406,22 @@ public class SKOS extends ResourceOld {
 			String language = setHttpPar(Par.lang);
 			String containingCollectionName = setHttpPar(Par.container);
 			String modeString = setHttpPar(Par.mode);
-
-			CollectionCreationMode mode = CollectionCreationMode.valueOf(modeString);
 			
-			response = createCollection(collectionName, containingCollectionName, prefLabel, prefLabelLang,
+			CollectionCreationMode mode = modeString != null ? CollectionCreationMode.valueOf(modeString) : CollectionCreationMode.uri;
+			
+			response = createCollection(it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, collectionName, containingCollectionName, prefLabel, prefLabelLang,
+					language, mode);
+		} else if (request.equals(Req.createOrderedCollectionRequest)) {
+			String collectionName = setHttpPar(Par.collection);
+			String prefLabel = setHttpPar(Par.prefLabel);
+			String prefLabelLang = setHttpPar(Par.prefLabelLang);
+			String language = setHttpPar(Par.lang);
+			String containingCollectionName = setHttpPar(Par.container);
+			String modeString = setHttpPar(Par.mode);
+
+			CollectionCreationMode mode = modeString != null ? CollectionCreationMode.valueOf(modeString) : CollectionCreationMode.uri;
+			
+			response = createCollection(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION, collectionName, containingCollectionName, prefLabel, prefLabelLang,
 					language, mode);
 		} else if (request.equals(Req.assignHierarchyToSchemeRequest)) {
 			String conceptName = setHttpPar(Par.concept);
@@ -407,7 +454,7 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response createCollection(String collectionName, String containingCollectionName, String prefLabel,
+	public Response createCollection(ARTURIResource collectionType, String collectionName, String containingCollectionName, String prefLabel,
 			String prefLabelLang, String language, CollectionCreationMode mode) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
@@ -433,12 +480,17 @@ public class SKOS extends ResourceOld {
 			else
 				containingCollectionRes = null;
 
-			skosModel.addTriple(newCollectionRes, RDF.Res.TYPE,
-					it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
+			skosModel.addTriple(newCollectionRes, RDF.Res.TYPE, collectionType, wrkGraph);
 
 			if (containingCollectionRes != null) {
-				skosModel.addTriple(containingCollectionRes,
-						it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+				if (skosModel.hasType(containingCollectionRes,
+						it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION, true, wrkGraph)) {
+					skosModel.addLastToSKOSOrderedCollection(newCollectionRes, containingCollectionRes,
+							wrkGraph);
+				} else {
+					skosModel.addTriple(containingCollectionRes,
+							it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+				}
 			}
 
 			if (prefLabel != null && prefLabelLang != null) {
@@ -456,6 +508,27 @@ public class SKOS extends ResourceOld {
 		} catch (MalformedURIException e) {
 			return logAndSendException(e);
 		} catch (URIGenerationException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+	
+	public Response removeFromOrderedCollection(String collectionName, String elementName) {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		try {
+			ARTResource wrkGraph = getWorkingGraph();
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+
+			ARTResource collectioRes = retrieveExistingResource(skosModel, collectionName, graphs);
+			ARTResource elementRes = retrieveExistingResource(skosModel, elementName, graphs);
+
+			skosModel.removeFromCollection(elementRes, collectioRes, wrkGraph);
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (ModelUpdateException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
 			return logAndSendException(e);
 		}
 		return response;
@@ -1430,6 +1503,83 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
+	/**
+	 * this service adds an element to a collection at its beginning.
+	 * 
+	 * @param collection
+	 * @param index
+	 * @param element
+	 * @return
+	 */
+	public Response addFirstToOrderedCollection(String collection, String element) {
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+			ARTResource workingGraph = getWorkingGraph();
+
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
+			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
+			
+			System.out.println("WORKING GRAPH = " + workingGraph + " // element = " + elementRes + " // collection = " + collectionRes);
+			skosModel.addFirstToSKOSOrderedCollection(elementRes, collectionRes, workingGraph);
+			
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
+	}
+	
+	/**
+	 * this service adds an element to a collection at its end.
+	 * 
+	 * @param collection
+	 * @param index
+	 * @param element
+	 * @return
+	 */
+	public Response addLastToOrderedCollection(String collection, String element) {
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+			ARTResource workingGraph = getWorkingGraph();
+
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
+			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
+			
+			skosModel.addLastToSKOSOrderedCollection(elementRes, collectionRes, workingGraph);
+			
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
+	}
+	
+	/**
+	 * this service adds an element to a collection at a given position.
+	 * 
+	 * @param collection
+	 * @param index
+	 * @param element
+	 * @return
+	 */
+	public Response addInPositionToOrderedCollection(String collection, int index, String element) {
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+			ARTResource workingGraph = getWorkingGraph();
+
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
+			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
+			
+			skosModel.addInPositionToSKOSOrderedCollection(elementRes, index, collectionRes, workingGraph);
+			
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
+
+	}
+	
 	/**
 	 * this service removes the preferred label for a given language
 	 * 

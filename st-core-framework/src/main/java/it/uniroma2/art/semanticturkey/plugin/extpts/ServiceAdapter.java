@@ -180,6 +180,32 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	}
 
 	/**
+	 * as for {@link ServiceAdapter#setHttpPar(String) but invokes {@link Integer#parseInt(String))} on the
+	 * string value of the parameter}. Defaults to <code>0</code>.
+	 * 
+	 * @param parameterName
+	 * @return
+	 */
+	public int setHttpIntPar(String parameterName) {
+		String strvalue = setHttpPar(parameterName);
+		return (strvalue == null) ? 0 : (Integer.parseInt(strvalue));
+	}
+	
+	/**
+	 * ad for {@link #setHttpIntPar(String)} but allows for the specification of the default value in case
+	 * the parameter has not been specified
+	 * 
+	 * @param parameterName
+	 * @param defaultValue
+	 * @return
+	 */
+	public int setHttpIntPar(String parameterName, int defaultValue) {
+		String strvalue = setHttpPar(parameterName);
+		return (strvalue == null) ? defaultValue : (Integer.parseInt(strvalue));
+	}
+
+	
+	/**
 	 * checks that the http parameters identified by <code>pars</code> have been properly initialized
 	 * 
 	 * @param pars

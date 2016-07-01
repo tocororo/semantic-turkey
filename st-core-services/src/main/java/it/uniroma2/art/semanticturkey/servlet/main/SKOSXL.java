@@ -585,7 +585,7 @@ public class SKOSXL extends SKOS {
 	}
 
 	@Override
-	public Response createCollection(String collectionName, String containingCollectionName, String prefLabel,
+	public Response createCollection(ARTURIResource collectionType, String collectionName, String containingCollectionName, String prefLabel,
 			String prefLabelLang, String language, CollectionCreationMode mode) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
@@ -615,8 +615,14 @@ public class SKOSXL extends SKOS {
 					it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
 
 			if (containingCollectionRes != null) {
-				skosxlModel.addTriple(containingCollectionRes,
-						it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
+				if (skosxlModel.hasType(containingCollectionRes,
+						it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION, true, wrkGraph)) {
+					skosxlModel.addLastToSKOSOrderedCollection(newCollectionRes, containingCollectionRes,
+							wrkGraph);
+				} else {
+					skosxlModel.addTriple(containingCollectionRes,
+							it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, graphs);
+				}
 			}
 
 			if (prefLabel != null && prefLabelLang != null) {
