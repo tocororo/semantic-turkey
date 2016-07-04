@@ -56,9 +56,13 @@ import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
+import it.uniroma2.art.owlart.query.BooleanQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.query.Update;
+import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.owlart.utilities.PropertyChainsTree;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
@@ -127,6 +131,8 @@ public class SKOS extends ResourceOld {
 		public static final String removeTopConceptRequest = "removeTopConcept";
 		public static final String deleteConceptRequest = "deleteConcept";
 		public static final String deleteSchemeRequest = "deleteScheme";
+		public static final String deleteCollectionRequest = "deleteCollection";
+		public static final String deleteOrderedCollectionRequest = "deleteOrderedCollection";
 		public static final String removePrefLabelRequest = "removePrefLabel";
 		public static final String removeAltLabelRequest = "removeAltLabel";
 		public static final String removeConceptFromSchemeRequest = "removeConceptFromScheme";
@@ -269,6 +275,14 @@ public class SKOS extends ResourceOld {
 			checkRequestParametersAllNotNull(Par.scheme);
 			response = deleteScheme(scheme, setForceDeleteDanglingConcepts, forceDeleteDanglingConcepts);
 
+		} else if (request.equals(Req.deleteCollectionRequest)) {
+			String collectionName = setHttpPar(Par.collection);
+			checkRequestParametersAllNotNull(Par.collection);
+			response = deleteCollection(collectionName);
+		} else if (request.equals(Req.deleteOrderedCollectionRequest)) {
+			String collectionName = setHttpPar(Par.collection);
+			checkRequestParametersAllNotNull(Par.collection);
+			response = deleteOrderedCollection(collectionName);
 		} else if (request.equals(Req.addTopConceptRequest)) {
 			String scheme = setHttpPar(Par.scheme);
 			String concept = setHttpPar(Par.concept);
@@ -454,8 +468,9 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 
-	public Response createCollection(ARTURIResource collectionType, String collectionName, String containingCollectionName, String prefLabel,
-			String prefLabelLang, String language, CollectionCreationMode mode) {
+	public Response createCollection(ARTURIResource collectionType, String collectionName,
+			String containingCollectionName, String prefLabel, String prefLabelLang, String language,
+			CollectionCreationMode mode) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
 			ARTResource wrkGraph = getWorkingGraph();
@@ -482,6 +497,10 @@ public class SKOS extends ResourceOld {
 
 			skosModel.addTriple(newCollectionRes, RDF.Res.TYPE, collectionType, wrkGraph);
 
+			if (collectionType.equals(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION)) {
+				skosModel.addTriple(newCollectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBERLIST,
+						RDF.Res.NIL, wrkGraph);
+			}
 			if (containingCollectionRes != null) {
 				if (skosModel.hasType(containingCollectionRes,
 						it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION, true, wrkGraph)) {
@@ -644,6 +663,9 @@ public class SKOS extends ResourceOld {
 				"	{?resource a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
 				"	FILTER NOT EXISTS {\n" +
 				"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
+				"	}\n" +
+				"	FILTER NOT EXISTS {\n" +
+				"		[] <http://www.w3.org/2004/02/skos/core#memberList>/<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?resource .\n" +
 				"	}\n";
 			// @formatter:on
 
@@ -1114,6 +1136,225 @@ public class SKOS extends ResourceOld {
 		} catch (NonExistingRDFResourceException e) {
 			return logAndSendException(e);
 		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+	
+	public Response deleteCollection(String collectionName) {
+		logger.debug("delete collection: " + collectionName);
+
+		Response response = createReplyResponse(RepliesStatus.ok);
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();		
+			
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collectionName, graphs);
+			
+			BooleanQuery deleteContraintQuery = skosModel.createBooleanQuery("ASK {?resource <http://www.w3.org/2004/02/skos/core#member> ?member ."+
+			"{?member a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?member a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}}");
+			deleteContraintQuery.setBinding("resource", collectionRes);
+			boolean deletionForbidden = deleteContraintQuery.evaluate(true);
+			
+			if (deletionForbidden) {
+				return createReplyFAIL(
+						"collection: " + collectionName + " has nested collections; delete them before");	
+			}
+			
+			// @formatter:off
+			String updateString =
+			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+			"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+			"DELETE {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"      ?parentUnorderedCollection skos:member ?deletedCollection .\n" +
+			"      ?parentOrderedCollection skos:memberList ?memberListFirstNode .\n" +
+			"      ?prevNode rdf:rest ?itemNode .\n" +
+			"      ?itemNode ?p2 ?o2 .\n" +
+			"      ?memberListFirstNode ?p1 ?o1 .\n" +
+			"   }\n" +
+			"}\n" +
+			"INSERT {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"	   ?parentOrderedCollection skos:memberList ?memberListNewFirstNode .\n" +
+			"   	?prevNode rdf:rest ?memberListRest .\n" +
+			"   }\n" +
+			"}\n" +
+			"WHERE {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"      optional {\n" +
+			"            ?parentUnorderedCollection skos:member ?deletedCollection .\n" +
+			"      }\n" +
+			"      ?parentOrderedCollection skos:memberList ?memberList .\n" +
+			"      optional {\n" +
+			"         ?memberList rdf:first ?deletedCollection .\n" +
+			"         ?memberList rdf:rest ?memberListNewFirstNode .\n" +
+			"         BIND(?memberList as ?memberListFirstNode)\n" +
+			"         ?memberListFirstNode ?p1 ?o1 .\n" +
+			"      }\n" +
+			"      optional {\n" +
+			"         ?memberList rdf:rest* ?prevNode .\n" +
+			"         ?prevNode rdf:rest ?itemNode .\n" +
+			"         ?itemNode rdf:first ?deletedCollection .\n" +
+			"         ?itemNode rdf:rest ?memberListRest .\n" +
+			"         \n" +
+			"         ?itemNode ?p2 ?o2 .\n" +
+			"      }\n" +
+			"   }\n" +
+			"};\n" +
+			"DELETE {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"      ?s ?p ?o.\n" +
+			"   }\n" +
+			"}\n" +
+			"WHERE {\n" +
+			"\n" +
+			"   {\n" +
+			"      BIND(?deletedCollection as ?s)\n" +
+			"      GRAPH ?workingGraph {\n" +
+			"	      ?s ?p ?o .\n" +
+			"      }\n" +
+			"   }\n" +
+			"   UNION {\n" +
+			"      GRAPH ?workingGraph {\n" +
+			"     	 ?deletedCollection skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?xLabel .\n" +
+			"         BIND(?xLabel as ?s)\n" +
+			"	     ?s ?p ?o .\n" +
+			"      }\n" +
+			"   }\n" +
+			"}\n";
+			// @formatter:on
+
+			logger.debug(updateString);
+
+			Update update = skosModel.createUpdateQuery(updateString);
+			update.setBinding("workingGraph", getWorkingGraph());
+			update.setBinding("deletedCollection", collectionRes);
+			update.evaluate(false);
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+
+	public Response deleteOrderedCollection(String collectionName) {
+		logger.debug("delete collection: " + collectionName);
+
+		Response response = createReplyResponse(RepliesStatus.ok);
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();		
+			
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collectionName, graphs);
+			
+			BooleanQuery deleteContraintQuery = skosModel.createBooleanQuery("ASK {?resource <http://www.w3.org/2004/02/skos/core#memberList> ?memberList . "+
+			"?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?member . " +
+					"{?member a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?member a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}}");
+			deleteContraintQuery.setBinding("resource", collectionRes);
+			boolean deletionForbidden = deleteContraintQuery.evaluate(true);
+			
+			if (deletionForbidden) {
+				return createReplyFAIL(
+						"ordered collection: " + collectionName + " has nested collections; delete them before");	
+			}
+			
+			// @formatter:off
+			String updateString =
+			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+			"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+			"DELETE {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"      ?parentUnorderedCollection skos:member ?deletedCollection .\n" +
+			"      ?parentOrderedCollection skos:memberList ?memberListFirstNode .\n" +
+			"      ?prevNode rdf:rest ?itemNode .\n" +
+			"      ?itemNode ?p2 ?o2 .\n" +
+			"      ?memberListFirstNode ?p1 ?o1 .\n" +
+			"   }\n" +
+			"}\n" +
+			"INSERT {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"	   ?parentOrderedCollection skos:memberList ?memberListNewFirstNode .\n" +
+			"   	?prevNode rdf:rest ?memberListRest .\n" +
+			"   }\n" +
+			"}\n" +
+			"WHERE {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"      optional {\n" +
+			"            ?parentUnorderedCollection skos:member ?deletedCollection .\n" +
+			"      }\n" +
+			"      ?parentOrderedCollection skos:memberList ?memberList .\n" +
+			"      optional {\n" +
+			"         ?memberList rdf:first ?deletedCollection .\n" +
+			"         ?memberList rdf:rest ?memberListNewFirstNode .\n" +
+			"         BIND(?memberList as ?memberListFirstNode)\n" +
+			"         ?memberListFirstNode ?p1 ?o1 .\n" +
+			"      }\n" +
+			"      optional {\n" +
+			"         ?memberList rdf:rest* ?prevNode .\n" +
+			"         ?prevNode rdf:rest ?itemNode .\n" +
+			"         ?itemNode rdf:first ?deletedCollection .\n" +
+			"         ?itemNode rdf:rest ?memberListRest .\n" +
+			"         \n" +
+			"         ?itemNode ?p2 ?o2 .\n" +
+			"      }\n" +
+			"   }\n" +
+			"};\n" +
+			"DELETE {\n" +
+			"   GRAPH ?workingGraph {\n" +
+			"      ?s ?p ?o.\n" +
+			"   }\n" +
+			"}\n" +
+			"WHERE {\n" +
+			"\n" +
+			"   {\n" +
+			"      BIND(?deletedCollection as ?s)\n" +
+			"      GRAPH ?workingGraph {\n" +
+			"	      ?s ?p ?o .\n" +
+			"      }\n" +
+			"   }\n" +
+			"   UNION {\n" +
+			"      GRAPH ?workingGraph {\n" +
+			"     	 ?deletedCollection skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?xLabel .\n" +
+			"         BIND(?xLabel as ?s)\n" +
+			"	     ?s ?p ?o .\n" +
+			"      }\n" +
+			"   }\n" +
+			"   UNION {\n" +
+			"      GRAPH ?workingGraph {\n" +
+			"     	 ?deletedCollection skos:memberList/rdf:rest* ?list .\n" +
+			"		 FILTER(!sameTerm(?list, rdf:nil))\n"+
+			"        BIND(?list as ?s)\n" +
+			"	     ?s ?p ?o .\n" +
+			"      }\n" +
+			"   }\n" +
+			"}\n";
+			// @formatter:on
+
+			logger.debug(updateString);
+
+			Update update = skosModel.createUpdateQuery(updateString);
+			update.setBinding("workingGraph", getWorkingGraph());
+			update.setBinding("deletedCollection", collectionRes);
+			update.evaluate(false);
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
 		return response;
