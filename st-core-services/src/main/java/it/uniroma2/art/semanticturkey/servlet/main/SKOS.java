@@ -296,7 +296,7 @@ public class SKOS extends ResourceOld {
 			String element = setHttpPar(Par.element);
 			int index = setHttpIntPar(Par.index);
 
-			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			checkRequestParametersAllNotNull(Par.collection, Par.element, Par.index);
 			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
 			response = addInPositionToOrderedCollection(collection, index, element);
 		} else if (request.equals(Req.removeTopConceptRequest)) {
