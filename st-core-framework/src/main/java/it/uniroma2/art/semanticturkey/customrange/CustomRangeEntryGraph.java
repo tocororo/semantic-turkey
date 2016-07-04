@@ -6,6 +6,7 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
@@ -106,9 +107,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @return
 	 * @throws PRParserException 
 	 * @throws RDFModelNotSetException 
+	 * @throws RepeteadAssignmentException 
 	 */
 	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) 
-			throws PRParserException, RDFModelNotSetException{
+			throws PRParserException, RDFModelNotSetException, RepeteadAssignmentException{
 		Collection<String> predicates = new ArrayList<String>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -158,7 +160,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 
 	@Override
-	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
+	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, RDFModelNotSetException, RepeteadAssignmentException {
 		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -228,7 +230,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		return formMap.values();
 	}
 	
-	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
+	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, RDFModelNotSetException, RepeteadAssignmentException {
 		String entryPoint = "";
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -253,9 +255,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @return
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
+	 * @throws RepeteadAssignmentException 
 	 */
 	public String getGraphSectionAsString(CODACore codaCore, boolean optional) 
-			throws PRParserException, RDFModelNotSetException {
+			throws PRParserException, RDFModelNotSetException, RepeteadAssignmentException {
 		try {
 			StringBuilder sb = new StringBuilder();
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
@@ -348,7 +351,8 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException | 
 				UnsupportedQueryLanguageException | ModelAccessException | MalformedQueryException | 
-				QueryEvaluationException | DependencyException | UIMAException | RDFModelNotSetException e) {
+				QueryEvaluationException | DependencyException | UIMAException | RDFModelNotSetException | 
+				RepeteadAssignmentException e) {
 			throw new CODAException(e);
 		}
 		return triples;
@@ -362,9 +366,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws ResourceInitializationException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException 
+	 * @throws RepeteadAssignmentException 
 	 */
 	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore) 
-			throws ResourceInitializationException, PRParserException, RDFModelNotSetException{
+			throws ResourceInitializationException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException{
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		//init the projection rules model with the pearl
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));

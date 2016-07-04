@@ -4,6 +4,7 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -201,12 +202,14 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws QueryEvaluationException 
 	 * @throws MalformedQueryException 
 	 * @throws UnsupportedQueryLanguageException 
+	 * @throws RepeteadAssignmentException 
 	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController
 	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
 			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException, 
-			RDFModelNotSetException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
+			RDFModelNotSetException, UnsupportedQueryLanguageException, MalformedQueryException, 
+			QueryEvaluationException, RepeteadAssignmentException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
@@ -300,12 +303,13 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
+	 * @throws RepeteadAssignmentException 
 	 */
 	@GenerateSTServiceController
 	public Response removeReifiedResource(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource)
 			throws ModelUpdateException, UnsupportedQueryLanguageException, ModelAccessException,
 			MalformedQueryException, QueryEvaluationException, UnavailableResourceException, 
-			ProjectInconsistentException, PRParserException, RDFModelNotSetException{
+			ProjectInconsistentException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		
 		logger.debug("deleting reified resource " + resource.getNominalValue());
@@ -351,10 +355,11 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws ModelAccessException
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
+	 * @throws RepeteadAssignmentException 
 	 */
 	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore)
 			throws RDFModelNotSetException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+			ModelAccessException, MalformedQueryException, QueryEvaluationException, RepeteadAssignmentException {
 		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
 		if (crEntries.isEmpty()){
 			return null;
@@ -550,10 +555,11 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
+	 * @throws RepeteadAssignmentException 
 	 */
 	@GenerateSTServiceController
 	public Response getCustomRangeEntryForm(String id) throws UnavailableResourceException,
-			ProjectInconsistentException, PRParserException, RDFModelNotSetException {
+			ProjectInconsistentException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException {
 		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
 		if (crEntry != null){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
