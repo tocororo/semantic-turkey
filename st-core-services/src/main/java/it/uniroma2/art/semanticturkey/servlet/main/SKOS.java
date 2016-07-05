@@ -621,7 +621,7 @@ public class SKOS extends ResourceOld {
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsDataTypeProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
-				 " 		%resource%e <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#AnnotationProperty> ; " +
+				 " 		%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#AnnotationProperty> ; " +
 				 "	<http://semanticturkey.uniroma2.it/NOT-A-URI>* ?resourceAsAnnotationProperty\n" +
 				 " }\n" +
 				 " OPTIONAL {\n" +
