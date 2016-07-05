@@ -1183,25 +1183,26 @@ public class SKOS extends ResourceOld {
 			"}\n" +
 			"WHERE {\n" +
 			"   GRAPH ?workingGraph {\n" +
-			"      optional {\n" +
-			"            ?parentUnorderedCollection skos:member ?deletedCollection .\n" +
-			"      }\n" +
-			"      ?parentOrderedCollection skos:memberList ?memberList .\n" +
-			"      optional {\n" +
-			"         ?memberList rdf:first ?deletedCollection .\n" +
-			"         ?memberList rdf:rest ?memberListNewFirstNode .\n" +
-			"         BIND(?memberList as ?memberListFirstNode)\n" +
-			"         ?memberListFirstNode ?p1 ?o1 .\n" +
-			"      }\n" +
-			"      optional {\n" +
-			"         ?memberList rdf:rest* ?prevNode .\n" +
-			"         ?prevNode rdf:rest ?itemNode .\n" +
-			"         ?itemNode rdf:first ?deletedCollection .\n" +
-			"         ?itemNode rdf:rest ?memberListRest .\n" +
-			"         \n" +
-			"         ?itemNode ?p2 ?o2 .\n" +
-			"      }\n" +
-			"   }\n" +
+			"		optional {\n" +
+			"       	?parentUnorderedCollection skos:member ?deletedCollection .\n" +
+			"		}\n" +
+			"		optional {\n" +
+			"			?parentOrderedCollection skos:memberList ?memberList .\n" +
+			"			optional {\n" +
+			"				?memberList rdf:first ?deletedCollection .\n" +
+			"				?memberList rdf:rest ?memberListNewFirstNode .\n" +
+			"				BIND(?memberList as ?memberListFirstNode)\n" +
+			"				?memberListFirstNode ?p1 ?o1 .\n" +
+			"			}\n" +
+			"			optional {\n" +
+			"				?memberList rdf:rest* ?prevNode .\n" +
+			"				?prevNode rdf:rest ?itemNode .\n" +
+			"				?itemNode rdf:first ?deletedCollection .\n" +
+			"				?itemNode rdf:rest ?memberListRest .\n" +
+			" 		        ?itemNode ?p2 ?o2 .\n" +
+			"			}\n" +
+			"		}\n" +
+			"	}\n" +
 			"};\n" +
 			"DELETE {\n" +
 			"   GRAPH ?workingGraph {\n" +
@@ -1289,25 +1290,26 @@ public class SKOS extends ResourceOld {
 			"}\n" +
 			"WHERE {\n" +
 			"   GRAPH ?workingGraph {\n" +
-			"      optional {\n" +
-			"            ?parentUnorderedCollection skos:member ?deletedCollection .\n" +
-			"      }\n" +
-			"      ?parentOrderedCollection skos:memberList ?memberList .\n" +
-			"      optional {\n" +
-			"         ?memberList rdf:first ?deletedCollection .\n" +
-			"         ?memberList rdf:rest ?memberListNewFirstNode .\n" +
-			"         BIND(?memberList as ?memberListFirstNode)\n" +
-			"         ?memberListFirstNode ?p1 ?o1 .\n" +
-			"      }\n" +
-			"      optional {\n" +
-			"         ?memberList rdf:rest* ?prevNode .\n" +
-			"         ?prevNode rdf:rest ?itemNode .\n" +
-			"         ?itemNode rdf:first ?deletedCollection .\n" +
-			"         ?itemNode rdf:rest ?memberListRest .\n" +
-			"         \n" +
-			"         ?itemNode ?p2 ?o2 .\n" +
-			"      }\n" +
-			"   }\n" +
+			"		optional {\n" +
+			"       	?parentUnorderedCollection skos:member ?deletedCollection .\n" +
+			"		}\n" +
+			"		optional {\n" +
+			"			?parentOrderedCollection skos:memberList ?memberList .\n" +
+			"			optional {\n" +
+			"				?memberList rdf:first ?deletedCollection .\n" +
+			"				?memberList rdf:rest ?memberListNewFirstNode .\n" +
+			"				BIND(?memberList as ?memberListFirstNode)\n" +
+			"				?memberListFirstNode ?p1 ?o1 .\n" +
+			"			}\n" +
+			"			optional {\n" +
+			"				?memberList rdf:rest* ?prevNode .\n" +
+			"				?prevNode rdf:rest ?itemNode .\n" +
+			"				?itemNode rdf:first ?deletedCollection .\n" +
+			"				?itemNode rdf:rest ?memberListRest .\n" +
+			" 		        ?itemNode ?p2 ?o2 .\n" +
+			"			}\n" +
+			"		}\n" +
+			"	}\n" +
 			"};\n" +
 			"DELETE {\n" +
 			"   GRAPH ?workingGraph {\n" +
