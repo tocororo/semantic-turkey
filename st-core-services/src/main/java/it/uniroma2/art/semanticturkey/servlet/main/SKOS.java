@@ -567,8 +567,8 @@ public class SKOS extends ResourceOld {
 		// @formatter:off
 		queryStringBuilder.append(
 		"	OPTIONAL {\n" +
-		"		?resource " + propertyPath + " ?showTemp .\n" +
-		"		FILTER(LANG(?showTemp) = \"" + SPARQLUtil.encodeString(lang) + "\")\n" +
+		"		?resource " + propertyPath + " ?showIt .\n" +
+		"		FILTER(LANG(?showIt) = \"" + SPARQLUtil.encodeString(lang) + "\")\n" +
 		"	}\n"
 		);
 		// @formatter:on
