@@ -634,8 +634,11 @@ public class SKOSXL extends SKOS {
 						prefLabelLang, getWorkingGraph());
 				skosxlModel.setPrefXLabel(newCollectionRes, prefXLabel, getWorkingGraph());
 			}
-			RDFXMLHelp.addRDFNode(response,
-					createSTCollection(skosxlModel, newCollectionRes, true, language));
+			if (collectionType.equals(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION)) {
+				RDFXMLHelp.addRDFNode(response, createSTOrderedCollection(skosxlModel, newCollectionRes, true, language));
+			} else {
+				RDFXMLHelp.addRDFNode(response, createSTCollection(skosxlModel, newCollectionRes, true, language));
+			}
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
