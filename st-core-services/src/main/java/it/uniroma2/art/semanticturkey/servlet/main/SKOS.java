@@ -515,7 +515,11 @@ public class SKOS extends ResourceOld {
 			if (prefLabel != null && prefLabelLang != null) {
 				skosModel.setPrefLabel(newCollectionRes, prefLabel, prefLabelLang, wrkGraph);
 			}
-			RDFXMLHelp.addRDFNode(response, createSTCollection(skosModel, newCollectionRes, true, language));
+			if (collectionType.equals(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION)) {
+				RDFXMLHelp.addRDFNode(response, createSTOrderedCollection(skosModel, newCollectionRes, true, language));
+			} else {
+				RDFXMLHelp.addRDFNode(response, createSTCollection(skosModel, newCollectionRes, true, language));
+			}
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
@@ -2035,6 +2039,12 @@ public class SKOS extends ResourceOld {
 	protected STRDFResource createSTConcept(SKOSModel skosModel, ARTURIResource concept, boolean explicit,
 			String defaultLanguage) throws ModelAccessException, NonExistingRDFResourceException {
 		return createSTSKOSResource(skosModel, concept, RDFResourceRolesEnum.concept, explicit,
+				defaultLanguage);
+	}
+
+	protected STRDFNode createSTOrderedCollection(SKOSModel skosModel, ARTResource collection, boolean explicit,
+			String defaultLanguage) throws ModelAccessException, NonExistingRDFResourceException {
+		return createSTSKOSResource(skosModel, collection, RDFResourceRolesEnum.skosOrderedCollection, explicit,
 				defaultLanguage);
 	}
 
