@@ -25,6 +25,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.main.SKOS.CollectionCreationMode;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
@@ -606,14 +607,17 @@ public class SKOSXL extends SKOS {
 
 			ARTResource containingCollectionRes;
 			if (containingCollectionName != null)
-				containingCollectionRes = retrieveExistingURIResource(skosxlModel, containingCollectionName,
+				containingCollectionRes = retrieveExistingResource(skosxlModel, containingCollectionName,
 						graphs);
 			else
 				containingCollectionRes = null;
 
-			skosxlModel.addTriple(newCollectionRes, RDF.Res.TYPE,
-					it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, wrkGraph);
+			skosxlModel.addTriple(newCollectionRes, RDF.Res.TYPE, collectionType, wrkGraph);
 
+			if (collectionType.equals(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION)) {
+				skosxlModel.addTriple(newCollectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBERLIST,
+						RDF.Res.NIL, wrkGraph);
+			}
 			if (containingCollectionRes != null) {
 				if (skosxlModel.hasType(containingCollectionRes,
 						it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION, true, wrkGraph)) {
