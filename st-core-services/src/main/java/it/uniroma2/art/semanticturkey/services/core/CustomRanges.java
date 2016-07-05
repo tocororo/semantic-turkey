@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
+import it.uniroma2.art.coda.exception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.PRParserException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
@@ -109,11 +110,12 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws UnavailableResourceException 
 	 * @throws ModelUpdateException 
 	 * @throws CustomRangeInitializationException 
+	 * @throws NodeNotDefinedException 
 	 */
 	@SuppressWarnings("unchecked")
 	@GenerateSTServiceController
 	public Response runCoda(ARTResource subject, ARTURIResource predicate, String crEntryId) throws FileNotFoundException, CODAException, 
-			UnavailableResourceException, ProjectInconsistentException, ModelUpdateException, CustomRangeInitializationException {
+			UnavailableResourceException, ProjectInconsistentException, ModelUpdateException, CustomRangeInitializationException, NodeNotDefinedException {
 		//get the parameters to put in the userPromptMap from the request
 		Map<String, String[]> parMap = request.getParameterMap();//the others params (form key and values) are dynamic, get it directly from request
 		Map<String, String> userPromptMap = new HashMap<String, String>();
@@ -203,13 +205,14 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws MalformedQueryException 
 	 * @throws UnsupportedQueryLanguageException 
 	 * @throws RepeteadAssignmentException 
+	 * @throws NodeNotDefinedException 
 	 * @throws CustomRangeInitializationException 
 	 */
 	@GenerateSTServiceController
 	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
 			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException, 
 			RDFModelNotSetException, UnsupportedQueryLanguageException, MalformedQueryException, 
-			QueryEvaluationException, RepeteadAssignmentException {
+			QueryEvaluationException, RepeteadAssignmentException, NodeNotDefinedException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
@@ -304,12 +307,13 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
 	 * @throws RepeteadAssignmentException 
+	 * @throws NodeNotDefinedException 
 	 */
 	@GenerateSTServiceController
 	public Response removeReifiedResource(ARTURIResource subject, ARTURIResource predicate, ARTURIResource resource)
 			throws ModelUpdateException, UnsupportedQueryLanguageException, ModelAccessException,
 			MalformedQueryException, QueryEvaluationException, UnavailableResourceException, 
-			ProjectInconsistentException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException{
+			ProjectInconsistentException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		
 		logger.debug("deleting reified resource " + resource.getNominalValue());
@@ -356,10 +360,11 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws MalformedQueryException
 	 * @throws QueryEvaluationException
 	 * @throws RepeteadAssignmentException 
+	 * @throws NodeNotDefinedException 
 	 */
 	private CustomRangeEntryGraph getCREGraphSeed(ARTResource resource, ARTURIResource predicate, CODACore codaCore)
 			throws RDFModelNotSetException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException, QueryEvaluationException, RepeteadAssignmentException {
+			ModelAccessException, MalformedQueryException, QueryEvaluationException, RepeteadAssignmentException, NodeNotDefinedException {
 		Collection<CustomRangeEntryGraph> crEntries = crProvider.getCustomRangeEntriesGraphForProperty(predicate.getURI());
 		if (crEntries.isEmpty()){
 			return null;
@@ -556,10 +561,11 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
 	 * @throws RepeteadAssignmentException 
+	 * @throws NodeNotDefinedException 
 	 */
 	@GenerateSTServiceController
 	public Response getCustomRangeEntryForm(String id) throws UnavailableResourceException,
-			ProjectInconsistentException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException {
+			ProjectInconsistentException, PRParserException, RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException {
 		CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(id);
 		if (crEntry != null){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);

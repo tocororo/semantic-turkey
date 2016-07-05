@@ -621,7 +621,7 @@ public class SKOSXL extends SKOS {
 							wrkGraph);
 				} else {
 					skosxlModel.addTriple(containingCollectionRes,
-							it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, graphs);
+							it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, newCollectionRes, wrkGraph);
 				}
 			}
 
