@@ -195,7 +195,10 @@ public class SPARQLUtilities {
 			}
 
 			sb2.append("\n");
-			sb2.append("HAVING BOUND(?").append(resourceVariable).append(")\n");
+			
+			if (groupByPresent) {
+				sb2.append("HAVING BOUND(?").append(resourceVariable).append(")\n");
+			}
 
 			if (!orderingVariables.isEmpty()) {
 				sb2.append("ORDER BY");
