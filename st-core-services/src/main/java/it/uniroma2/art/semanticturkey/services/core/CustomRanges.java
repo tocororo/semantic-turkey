@@ -4,8 +4,10 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -111,11 +113,14 @@ public class CustomRanges extends STServiceAdapter {
 	 * @throws ModelUpdateException 
 	 * @throws CustomRangeInitializationException 
 	 * @throws NodeNotDefinedException 
+	 * @throws UnassignableFeaturePathException 
+	 * @throws ProjectionRuleModelNotSet 
 	 */
 	@SuppressWarnings("unchecked")
 	@GenerateSTServiceController
 	public Response runCoda(ARTResource subject, ARTURIResource predicate, String crEntryId) throws FileNotFoundException, CODAException, 
-			UnavailableResourceException, ProjectInconsistentException, ModelUpdateException, CustomRangeInitializationException, NodeNotDefinedException {
+			UnavailableResourceException, ProjectInconsistentException, ModelUpdateException, CustomRangeInitializationException, NodeNotDefinedException, 
+			ProjectionRuleModelNotSet, UnassignableFeaturePathException {
 		//get the parameters to put in the userPromptMap from the request
 		Map<String, String[]> parMap = request.getParameterMap();//the others params (form key and values) are dynamic, get it directly from request
 		Map<String, String> userPromptMap = new HashMap<String, String>();

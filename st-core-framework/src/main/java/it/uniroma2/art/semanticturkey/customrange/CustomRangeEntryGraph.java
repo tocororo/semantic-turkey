@@ -6,8 +6,10 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
@@ -316,9 +318,11 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @return 
 	 * @throws CODAException 
 	 * @throws NodeNotDefinedException 
+	 * @throws UnassignableFeaturePathException 
+	 * @throws ProjectionRuleModelNotSet 
 	 */
 	public List<ARTTriple> executePearl(CODACore codaCore, Map<String, String> userPromptMap) 
-			throws CODAException, NodeNotDefinedException{
+			throws CODAException, NodeNotDefinedException, ProjectionRuleModelNotSet, UnassignableFeaturePathException{
 		List<ARTTriple> triples = null;
 		try{
 			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
