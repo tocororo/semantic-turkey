@@ -61,8 +61,6 @@ import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
-import it.uniroma2.art.owlart.utilities.PropertyChainsTree;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
@@ -120,6 +118,7 @@ public class SKOS extends ResourceOld {
 		public static final String addFirstToOrderedCollectionRequest = "addFirstToOrderedCollection";
 		public static final String addLastToOrderedCollectionRequest = "addLastToOrderedCollection";
 		public static final String addInPositionToOrderedCollectionRequest = "addInPositionToOrderedCollection";
+		public static final String addToCollectionRequest = "addToCollection";
 
 		// CREATE REQUESTS
 		public static final String createConceptRequest = "createConcept";
@@ -313,6 +312,13 @@ public class SKOS extends ResourceOld {
 			checkRequestParametersAllNotNull(Par.collection, Par.element, Par.index);
 			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
 			response = addInPositionToOrderedCollection(collection, index, element);
+		} else if (request.equals(Req.addToCollectionRequest)) {
+			String collection = setHttpPar(Par.collection);
+			String element = setHttpPar(Par.element);
+
+			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			logger.debug("SKOS." + Req.addToCollectionRequest + ":\n" + response);
+			response = addToCollection(collection, element);
 		} else if (request.equals(Req.removeTopConceptRequest)) {
 			String scheme = setHttpPar(Par.scheme);
 			String concept = setHttpPar(Par.concept);
@@ -1767,7 +1773,9 @@ public class SKOS extends ResourceOld {
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
 			
-			System.out.println("WORKING GRAPH = " + workingGraph + " // element = " + elementRes + " // collection = " + collectionRes);
+			if (skosModel.hasPositionInList(elementRes, collectionRes, NodeFilters.ANY) != 0) {
+				return createReplyFAIL("Element: " + elementRes + " already contained in collection: " + collectionRes);
+			}
 			skosModel.addFirstToSKOSOrderedCollection(elementRes, collectionRes, workingGraph);
 			
 			return createReplyResponse(RepliesStatus.ok);
@@ -1793,6 +1801,9 @@ public class SKOS extends ResourceOld {
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
 			
+			if (skosModel.hasPositionInList(elementRes, collectionRes, NodeFilters.ANY) != 0) {
+				return createReplyFAIL("Element: " + elementRes + " already contained in collection: " + collectionRes);
+			}
 			skosModel.addLastToSKOSOrderedCollection(elementRes, collectionRes, workingGraph);
 			
 			return createReplyResponse(RepliesStatus.ok);
@@ -1818,6 +1829,9 @@ public class SKOS extends ResourceOld {
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
 			
+			if (skosModel.hasPositionInList(elementRes, collectionRes, NodeFilters.ANY) != 0) {
+				return createReplyFAIL("Element: " + elementRes + " already contained in collection: " + collectionRes);
+			}
 			skosModel.addInPositionToSKOSOrderedCollection(elementRes, index, collectionRes, workingGraph);
 			
 			return createReplyResponse(RepliesStatus.ok);
@@ -1825,6 +1839,36 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		}
 
+	}
+	
+	/**
+	 * this service adds an element to a (unordered) collection.
+	 * 
+	 * @param collection
+	 * @param element
+	 * @return
+	 */
+	public Response addToCollection(String collection, String element) {
+		try {
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+			ARTResource workingGraph = getWorkingGraph();
+
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
+			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
+
+			if (skosModel.hasTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER,
+					elementRes, false, NodeFilters.ANY)) {
+				return createReplyFAIL(
+						"Element: " + elementRes + " already contained in collection: " + collectionRes);
+			}
+			skosModel.addTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, elementRes,
+					workingGraph);
+
+			return createReplyResponse(RepliesStatus.ok);
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			return logAndSendException(e);
+		}
 	}
 	
 	/**
