@@ -294,32 +294,36 @@ public class SKOS extends ResourceOld {
 		} else if (request.equals(Req.addFirstToOrderedCollectionRequest)) {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
+			String lang = setHttpPar(Par.lang);
 
 			checkRequestParametersAllNotNull(Par.collection, Par.element);
 			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
-			response = addFirstToOrderedCollection(collection, element);
+			response = addFirstToOrderedCollection(collection, element, lang);
 		} else if (request.equals(Req.addLastToOrderedCollectionRequest)) {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
+			String lang = setHttpPar(Par.lang);
 
 			checkRequestParametersAllNotNull(Par.collection, Par.element);
 			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
-			response = addLastToOrderedCollection(collection, element);
+			response = addLastToOrderedCollection(collection, element, lang);
 		} else if (request.equals(Req.addInPositionToOrderedCollectionRequest)) {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
 			int index = setHttpIntPar(Par.index);
+			String lang = setHttpPar(Par.lang);
 
 			checkRequestParametersAllNotNull(Par.collection, Par.element, Par.index);
 			logger.debug("SKOS." + Req.addFirstToOrderedCollectionRequest + ":\n" + response);
-			response = addInPositionToOrderedCollection(collection, index, element);
+			response = addInPositionToOrderedCollection(collection, index, element, lang);
 		} else if (request.equals(Req.addToCollectionRequest)) {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
+			String lang = setHttpPar(Par.lang);
 
 			checkRequestParametersAllNotNull(Par.collection, Par.element);
 			logger.debug("SKOS." + Req.addToCollectionRequest + ":\n" + response);
-			response = addToCollection(collection, element);
+			response = addToCollection(collection, element, lang);
 		} else if (request.equals(Req.removeTopConceptRequest)) {
 			String scheme = setHttpPar(Par.scheme);
 			String concept = setHttpPar(Par.concept);
@@ -1853,9 +1857,10 @@ public class SKOS extends ResourceOld {
 	 * @param collection
 	 * @param index
 	 * @param element
+	 * @param lang 
 	 * @return
 	 */
-	public Response addFirstToOrderedCollection(String collection, String element) {
+	public Response addFirstToOrderedCollection(String collection, String element, String lang) {
 		try {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
@@ -1863,14 +1868,19 @@ public class SKOS extends ResourceOld {
 
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
-			
+
 			if (skosModel.hasPositionInList(elementRes, collectionRes, NodeFilters.ANY) != 0) {
-				return createReplyFAIL("Element: " + elementRes + " already contained in collection: " + collectionRes);
+				return createReplyFAIL(
+						"Element: " + elementRes + " already contained in collection: " + collectionRes);
 			}
 			skosModel.addFirstToSKOSOrderedCollection(elementRes, collectionRes, workingGraph);
-			
-			return createReplyResponse(RepliesStatus.ok);
-		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			decorateReponseWithAddedNested(response, skosModel, workingGraph, elementRes, lang);
+			return response;
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException | DOMException
+				| IllegalAccessException | UnsupportedQueryLanguageException | MalformedQueryException
+				| QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
 	}
@@ -1881,9 +1891,10 @@ public class SKOS extends ResourceOld {
 	 * @param collection
 	 * @param index
 	 * @param element
+	 * @param lang
 	 * @return
 	 */
-	public Response addLastToOrderedCollection(String collection, String element) {
+	public Response addLastToOrderedCollection(String collection, String element, String lang) {
 		try {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
@@ -1891,14 +1902,19 @@ public class SKOS extends ResourceOld {
 
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
-			
+
 			if (skosModel.hasPositionInList(elementRes, collectionRes, NodeFilters.ANY) != 0) {
-				return createReplyFAIL("Element: " + elementRes + " already contained in collection: " + collectionRes);
+				return createReplyFAIL(
+						"Element: " + elementRes + " already contained in collection: " + collectionRes);
 			}
 			skosModel.addLastToSKOSOrderedCollection(elementRes, collectionRes, workingGraph);
-			
-			return createReplyResponse(RepliesStatus.ok);
-		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			decorateReponseWithAddedNested(response, skosModel, workingGraph, elementRes, lang);
+			return response;
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException | DOMException
+				| IllegalAccessException | UnsupportedQueryLanguageException | MalformedQueryException
+				| QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
 	}
@@ -1909,9 +1925,11 @@ public class SKOS extends ResourceOld {
 	 * @param collection
 	 * @param index
 	 * @param element
+	 * @param lang 
 	 * @return
 	 */
-	public Response addInPositionToOrderedCollection(String collection, int index, String element) {
+	public Response addInPositionToOrderedCollection(String collection, int index, String element,
+			String lang) {
 		try {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
@@ -1919,17 +1937,21 @@ public class SKOS extends ResourceOld {
 
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collection, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, element, graphs);
-			
+
 			if (skosModel.hasPositionInList(elementRes, collectionRes, NodeFilters.ANY) != 0) {
-				return createReplyFAIL("Element: " + elementRes + " already contained in collection: " + collectionRes);
+				return createReplyFAIL(
+						"Element: " + elementRes + " already contained in collection: " + collectionRes);
 			}
 			skosModel.addInPositionToSKOSOrderedCollection(elementRes, index, collectionRes, workingGraph);
-			
-			return createReplyResponse(RepliesStatus.ok);
-		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			decorateReponseWithAddedNested(response, skosModel, workingGraph, elementRes, lang);
+			return response;
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException | DOMException
+				| IllegalAccessException | UnsupportedQueryLanguageException | MalformedQueryException
+				| QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
-
 	}
 	
 	/**
@@ -1937,9 +1959,10 @@ public class SKOS extends ResourceOld {
 	 * 
 	 * @param collection
 	 * @param element
+	 * @param lang 
 	 * @return
 	 */
-	public Response addToCollection(String collection, String element) {
+	public Response addToCollection(String collection, String element, String lang) {
 		try {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
@@ -1956,9 +1979,61 @@ public class SKOS extends ResourceOld {
 			skosModel.addTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, elementRes,
 					workingGraph);
 
-			return createReplyResponse(RepliesStatus.ok);
-		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException e) {
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+			decorateReponseWithAddedNested(response, skosModel, workingGraph, elementRes, lang);
+			return response;
+		} catch (ModelAccessException | NonExistingRDFResourceException | ModelUpdateException | DOMException
+				| IllegalAccessException | UnsupportedQueryLanguageException | MalformedQueryException
+				| QueryEvaluationException e) {
 			return logAndSendException(e);
+		}
+	}
+	
+	private void decorateReponseWithAddedNested(XMLResponseREPLY response, SKOSModel skosModel,
+			ARTResource workingGraph, ARTResource resource, String lang)
+					throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
+					DOMException, IllegalAccessException, QueryEvaluationException {
+		// @formatter:off
+		String moreFragment =
+				"OPTIONAL {\n" +
+				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
+				"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
+				"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+				"	BIND(\"1\" as ?info_more_temp1)" +
+				"}\n" +
+				"OPTIONAL {\n" +
+				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
+				"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
+				"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
+				"	BIND(\"1\" as ?info_more_temp2)" +
+				"}\n" +	
+				"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+		// @formatter:on
+
+		ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
+				.withPattern("resource",
+						"{?resource a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}")
+				.addInformation("info_more", moreFragment).addInformation("role", getRoleQueryFragment());
+
+		if (lang != null) {
+			queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show",
+					getShowQueryFragment(lang));
+		}
+
+		TupleQuery query = queryResourceBuilder.query(workingGraph);
+		query.setBinding("resource", resource);
+
+		// This collection should only contain one element, when the element removed from the collection
+		// is a root collection
+		Collection<STRDFResource> resourceAsNewNestedCollection = SPARQLUtilities
+				.getSTRDFResourcesFromTupleQuery(skosModel, query);
+
+		if (!resourceAsNewNestedCollection.isEmpty()) {
+			Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(),
+					"collectionTreeChange");
+			Element addedNestedElement = XMLHelp.newElement(collectionTreeChangeElement, "addedNested");
+			STRDFResource newRoot = resourceAsNewNestedCollection.iterator().next();
+			RDFXMLHelp.addRDFResource(addedNestedElement, newRoot);
 		}
 	}
 	
