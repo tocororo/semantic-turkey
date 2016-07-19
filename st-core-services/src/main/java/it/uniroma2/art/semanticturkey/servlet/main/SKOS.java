@@ -138,6 +138,7 @@ public class SKOS extends ResourceOld {
 		public static final String removeBroaderConcept = "removeBroaderConcept";
 		public static final String removeHiddenLabelRequest = "removeHiddenLabel";
 		public static final String removeFromOrderedCollectionRequest = "removeFromOrderedCollection";
+		public static final String removeFromCollectionRequest = "removeFromCollection";
 
 		// MODIFY REQUESTS
 		public static final String assignHierarchyToSchemeRequest = "assignHierarchyToScheme";
@@ -354,10 +355,20 @@ public class SKOS extends ResourceOld {
 		} else if (request.equals(Req.removeFromOrderedCollectionRequest)) {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
+			String lang = setHttpPar(Par.lang);
 			
 			checkRequestParametersAllNotNull(Par.collection, Par.element);
 			
-			response = removeFromOrderedCollection(collection, element);
+			response = removeFromOrderedCollection(collection, element, lang);
+			// ADD SKOS METHODS
+		} else if (request.equals(Req.removeFromCollectionRequest)) {
+			String collection = setHttpPar(Par.collection);
+			String element = setHttpPar(Par.element);
+			String lang = setHttpPar(Par.lang);
+			
+			checkRequestParametersAllNotNull(Par.collection, Par.element);
+			
+			response = removeFromCollection(collection, element, lang);
 			// ADD SKOS METHODS
 		} else if (request.equals(Req.addBroaderConceptRequest)) {
 			// newConcept, relatedConcept,rdfsLabel,
@@ -542,7 +553,7 @@ public class SKOS extends ResourceOld {
 		return response;
 	}
 	
-	public Response removeFromOrderedCollection(String collectionName, String elementName) {
+	public Response removeFromOrderedCollection(String collectionName, String elementName, String lang) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
 			ARTResource wrkGraph = getWorkingGraph();
@@ -553,11 +564,80 @@ public class SKOS extends ResourceOld {
 			ARTResource elementRes = retrieveExistingResource(skosModel, elementName, graphs);
 
 			skosModel.removeFromCollection(elementRes, collectioRes, wrkGraph);
+			
+			TupleQuery query = createRootCollectionsQuery(wrkGraph, lang, elementRes);
+			// This collection should only contain one element, when the element removed from the collection
+			// is a root collection
+			Collection<STRDFResource> resourceAsNewRootCollection = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
+
+			if (!resourceAsNewRootCollection.isEmpty()) {
+				Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(), "collectionTreeChange");
+				Element addedConceptElement = XMLHelp.newElement(collectionTreeChangeElement, "addedRoot");
+				STRDFResource newRoot = resourceAsNewRootCollection.iterator().next();
+				RDFXMLHelp.addRDFResource(addedConceptElement, newRoot);
+			}
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
 		} catch (ModelUpdateException e) {
 			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (DOMException e) {
+			return logAndSendException(e);
+		} catch (IllegalAccessException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
+			return logAndSendException(e);
+		}
+		return response;
+	}
+	
+	public Response removeFromCollection(String collectionName, String elementName, String lang) {
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		try {
+			ARTResource wrkGraph = getWorkingGraph();
+			SKOSModel skosModel = getSKOSModel();
+			ARTResource[] graphs = getUserNamedGraphs();
+
+			ARTResource collectionRes = retrieveExistingResource(skosModel, collectionName, graphs);
+			ARTResource elementRes = retrieveExistingResource(skosModel, elementName, graphs);
+
+			if (!skosModel.hasTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, elementRes, false, wrkGraph)) {
+				return createReplyFAIL("Resource: " + elementRes + " is not a member of collection: " + collectionRes);
+			}
+			
+			skosModel.deleteTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, elementRes, wrkGraph);
+			
+			TupleQuery query = createRootCollectionsQuery(wrkGraph, lang, elementRes);
+			// This collection should only contain one element, when the element removed from the collection
+			// is a root collection
+			Collection<STRDFResource> resourceAsNewRootCollection = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
+
+			if (!resourceAsNewRootCollection.isEmpty()) {
+				Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(), "collectionTreeChange");
+				Element addedConceptElement = XMLHelp.newElement(collectionTreeChangeElement, "addedRoot");
+				STRDFResource newRoot = resourceAsNewRootCollection.iterator().next();
+				RDFXMLHelp.addRDFResource(addedConceptElement, newRoot);
+			}
+		} catch (ModelAccessException e) {
+			return logAndSendException(e);
+		} catch (ModelUpdateException e) {
+			return logAndSendException(e);
+		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (DOMException e) {
+			return logAndSendException(e);
+		} catch (IllegalAccessException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
 		return response;
@@ -668,43 +748,8 @@ public class SKOS extends ResourceOld {
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTResource workingGraph = getWorkingGraph();
 			
-			// @formatter:off
-			String queryFragment =
-				"	{?resource a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
-				"	FILTER NOT EXISTS {\n" +
-				"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
-				"	}\n" +
-				"	FILTER NOT EXISTS {\n" +
-				"		[] <http://www.w3.org/2004/02/skos/core#memberList>/<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?resource .\n" +
-				"	}\n";
-			// @formatter:on
-
-			// @formatter:off
-			String moreFragment =
-					"OPTIONAL {\n" +
-					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
-					"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
-					"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
-					"	BIND(\"1\" as ?info_more_temp1)" +
-					"}\n" +
-					"OPTIONAL {\n" +
-					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
-					"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
-					"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
-					"	BIND(\"1\" as ?info_more_temp2)" +
-					"}\n" +	
-					"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
-			// @formatter:on
-
-			ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
-					.withPattern("resource", queryFragment).addInformation("info_more", moreFragment).addInformation("role", getRoleQueryFragment());
-
-
-			if (lang != null) {
-				queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show", getShowQueryFragment(lang));
-			}
-
-			TupleQuery query = queryResourceBuilder.query(workingGraph);
+			TupleQuery query = createRootCollectionsQuery(workingGraph, lang, null);
+			
 			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
@@ -716,6 +761,52 @@ public class SKOS extends ResourceOld {
 				| IllegalAccessException e) {
 			return logAndSendException(e);
 		}
+	}
+	
+	private TupleQuery createRootCollectionsQuery(ARTResource workingGraph, String lang, ARTResource resource)
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException {
+		// @formatter:off
+		String queryFragment =
+			"	{?resource a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?resource a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+			"	FILTER NOT EXISTS {\n" +
+			"		[] <http://www.w3.org/2004/02/skos/core#member> ?resource .\n" +
+			"	}\n" +
+			"	FILTER NOT EXISTS {\n" +
+			"		[] <http://www.w3.org/2004/02/skos/core#memberList>/<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?resource .\n" +
+			"	}\n";
+		// @formatter:on
+
+		// @formatter:off
+		String moreFragment =
+				"OPTIONAL {\n" +
+				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
+				"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
+				"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
+				"	BIND(\"1\" as ?info_more_temp1)" +
+				"}\n" +
+				"OPTIONAL {\n" +
+				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
+				"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
+				"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
+				"	BIND(\"1\" as ?info_more_temp2)" +
+				"}\n" +	
+				"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+		// @formatter:on
+
+		ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
+				.withPattern("resource", queryFragment).addInformation("info_more", moreFragment)
+				.addInformation("role", getRoleQueryFragment());
+
+		if (lang != null) {
+			queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show",
+					getShowQueryFragment(lang));
+		}
+
+		TupleQuery query = queryResourceBuilder.query(workingGraph);
+		if (resource != null) {
+			query.setBinding("resource", resource);
+		}
+		return query;
 	}
 
 	private Response getNestedCollections(String container, String lang) {
