@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import it.uniroma2.art.coda.converters.impl.TemplateBasedRandomIdGenerator;
+import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTURIResource;
@@ -49,14 +50,20 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 	public ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
 			Map<String, ARTNode> args) throws URIGenerationException {
 		try {
-			String randomCode = ProjectManager.getProjectProperty(stServiceContext.getProject().getName(), TemplateBasedRandomIdGenerator.PARAM_URI_RND_CODE_GENERATOR);
-			
+			String randomCode = ProjectManager.getProjectProperty(stServiceContext.getProject().getName(),
+					TemplateBasedRandomIdGenerator.PARAM_URI_RND_CODE_GENERATOR);
+
 			if (randomCode != null) {
-				convProps.setProperty(TemplateBasedRandomIdGenerator.PARAM_URI_RND_CODE_GENERATOR, randomCode);
+				convProps.setProperty(TemplateBasedRandomIdGenerator.PARAM_URI_RND_CODE_GENERATOR,
+						randomCode);
 			}
 		} catch (IOException | InvalidProjectNameException | ProjectInexistentException e) {
 		}
 		CODAContext ctx = new CODAContext(stServiceContext.getProject().getOntModel(), null, propsMap);
-		return converter.produceURI(ctx, null, xRole, args);
+		try {
+			return converter.produceURI(ctx, null, xRole, args);
+		} catch (ConverterException e) {
+			throw new URIGenerationException(e);
+		}
 	}
 }
