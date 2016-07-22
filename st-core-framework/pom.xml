@@ -44,6 +44,7 @@
 							org.hibernate.validator,
 							javax.inject,
 							javax.servlet.http,
+							it.uniroma2.art.coda.converters.impl;implementation=true,
 							*;resolution:=optional
 						</Import-Package>
 
