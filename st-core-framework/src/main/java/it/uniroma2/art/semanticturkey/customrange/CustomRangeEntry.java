@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.customrange;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.PrefixNotDefinedException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
 
@@ -124,9 +125,10 @@ public abstract class CustomRangeEntry {
 	 * @throws RDFModelNotSetException 
 	 * @throws RepeteadAssignmentException 
 	 * @throws NodeNotDefinedException 
+	 * @throws PrefixNotDefinedException 
 	 */
 	public abstract Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, 
-			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException;
+			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException, PrefixNotDefinedException;
 	
 	/**
 	 * Serialize the CustomRangeEntry on a xml file.

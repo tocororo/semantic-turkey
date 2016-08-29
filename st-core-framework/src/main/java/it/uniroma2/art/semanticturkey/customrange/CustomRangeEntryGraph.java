@@ -6,6 +6,7 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.PrefixNotDefinedException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
@@ -112,10 +113,11 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws RDFModelNotSetException 
 	 * @throws RepeteadAssignmentException 
 	 * @throws NodeNotDefinedException 
+	 * @throws PrefixNotDefinedException 
 	 */
 	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) 
 			throws PRParserException, RDFModelNotSetException, RepeteadAssignmentException, 
-			NodeNotDefinedException{
+			NodeNotDefinedException, PrefixNotDefinedException{
 		Collection<String> predicates = new ArrayList<String>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -166,7 +168,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 
 	@Override
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, 
-			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException {
+			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException, PrefixNotDefinedException {
 		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -237,7 +239,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, 
-			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException {
+			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException, PrefixNotDefinedException {
 		String entryPoint = "";
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -264,10 +266,11 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws RDFModelNotSetException
 	 * @throws RepeteadAssignmentException 
 	 * @throws NodeNotDefinedException 
+	 * @throws PrefixNotDefinedException 
 	 */
 	public String getGraphSectionAsString(CODACore codaCore, boolean optional) 
 			throws PRParserException, RDFModelNotSetException, RepeteadAssignmentException, 
-			NodeNotDefinedException {
+			NodeNotDefinedException, PrefixNotDefinedException {
 		try {
 			StringBuilder sb = new StringBuilder();
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
@@ -320,9 +323,10 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws NodeNotDefinedException 
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
+	 * @throws PrefixNotDefinedException 
 	 */
 	public List<ARTTriple> executePearl(CODACore codaCore, Map<String, String> userPromptMap) 
-			throws CODAException, NodeNotDefinedException, ProjectionRuleModelNotSet, UnassignableFeaturePathException{
+			throws CODAException, NodeNotDefinedException, ProjectionRuleModelNotSet, UnassignableFeaturePathException, PrefixNotDefinedException{
 		List<ARTTriple> triples = null;
 		try{
 			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
@@ -381,10 +385,11 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws RDFModelNotSetException 
 	 * @throws RepeteadAssignmentException 
 	 * @throws NodeNotDefinedException 
+	 * @throws PrefixNotDefinedException 
 	 */
 	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore) 
 			throws ResourceInitializationException, PRParserException, RDFModelNotSetException, 
-			RepeteadAssignmentException, NodeNotDefinedException{
+			RepeteadAssignmentException, NodeNotDefinedException, PrefixNotDefinedException{
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		//init the projection rules model with the pearl
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
