@@ -1,11 +1,12 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
 import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.NodeNotDefinedException;
-import it.uniroma2.art.coda.exception.PRParserException;
-import it.uniroma2.art.coda.exception.PrefixNotDefinedException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.coda.exception.RepeteadAssignmentException;
+import it.uniroma2.art.coda.exception.parserexception.NodeNotDefinedException;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.exception.parserexception.PrefixNotDefinedException;
+import it.uniroma2.art.coda.exception.parserexception.RepeteadAssignmentException;
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 
 import java.io.FileNotFoundException;
 import java.util.Collection;
@@ -123,12 +124,10 @@ public abstract class CustomRangeEntry {
 	 * @return
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException 
-	 * @throws RepeteadAssignmentException 
-	 * @throws NodeNotDefinedException 
-	 * @throws PrefixNotDefinedException 
+	 * @throws ModelAccessException 
 	 */
 	public abstract Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, 
-			RDFModelNotSetException, RepeteadAssignmentException, NodeNotDefinedException, PrefixNotDefinedException;
+			RDFModelNotSetException, ModelAccessException;
 	
 	/**
 	 * Serialize the CustomRangeEntry on a xml file.

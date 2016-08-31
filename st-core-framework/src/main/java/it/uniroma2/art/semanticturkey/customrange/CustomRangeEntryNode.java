@@ -1,7 +1,8 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
 import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.PRParserException;
+import it.uniroma2.art.coda.exception.parserexception.PRGenericException;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 
 import java.io.File;
@@ -58,7 +59,8 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 			}
 			form.add(upStruct);
 		} else {
-			throw new PRParserException("Invalid ref in CustomRangeEntry " + getId());
+			//throw new PRParserException("Invalid ref in CustomRangeEntry " + getId());
+			throw new PRGenericException("Invalid ref in CustomRangeEntry " + getId());
 		}
 		return form;
 	}
