@@ -48,7 +48,7 @@
 					if(typeof this.operations != "undefined"){
 					
 						//now add the buttons
-						if(this.operations.contains("add")){
+						if(this.operations.includes("add")){
 							var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfPredicate, "add");
 							var button = document.createElement("button");
 							button.setAttribute("label", "add");
@@ -61,7 +61,7 @@
 						}
 						
 						if(typeof this.rdfResourcesArray != "undefined" && this.rdfResourcesArray != null){
-							if(this.operations.contains("remove") && this.rdfResourcesArray.length>=5){
+							if(this.operations.includes("remove") && this.rdfResourcesArray.length>=5){
 								var imageSrc = art_semanticturkey.STResUtils.getImageSrc(this.rdfResource, "remove");
 								var button = document.createElement("button");
 								button.setAttribute("label", "remove");
