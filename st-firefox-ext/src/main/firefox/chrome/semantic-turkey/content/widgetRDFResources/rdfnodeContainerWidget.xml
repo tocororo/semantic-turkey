@@ -40,7 +40,7 @@
 						
 						//now get the url of the image to use inside the button
 						if(typeof this.operations != "undefined"){
-							if(operations.includes("remove")){
+							if(operations.indexOf("remove") != -1){
 								
 								//var button = document.getAnonymousElementByAttribute(this, "anonid", 
 								//		"boxbuttonId");
