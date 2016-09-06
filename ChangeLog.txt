@@ -1,3 +1,7 @@
+version 0.12.1
+date: 06-09-2016
+  * fixed a bug regarding the widget in the Resource View
+
 version 0.12
 date: 11-01-2016
   * implemented CustomRange mechanism to allow to customize the range of properties beyond what is
