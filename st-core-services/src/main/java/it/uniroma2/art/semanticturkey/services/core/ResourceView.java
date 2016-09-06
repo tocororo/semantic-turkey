@@ -22,6 +22,34 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
+
+import com.google.common.collect.Iterators;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -86,30 +114,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Element;
-
-import com.google.common.collect.Iterators;
-
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
  * possible) both on local resources and remote ones.
@@ -163,8 +167,8 @@ public class ResourceView extends STServiceAdapter {
 		// ******************************************
 		// Step X: Renderize resources & compute role
 
-		Collection<ARTResource> resourcesToBeRendered = RDFIterators.getCollectionFromIterator(RDFIterators
-				.filterResources(RDFIterators.listObjects(stmtCollector.listStatements(resource,
+		Collection<ARTResource> resourcesToBeRendered = RDFIterators.getCollectionFromIterator(
+				RDFIterators.filterResources(RDFIterators.listObjects(stmtCollector.listStatements(resource,
 						NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.ANY))));
 		resourcesToBeRendered.add(resource);
 
@@ -179,8 +183,8 @@ public class ResourceView extends STServiceAdapter {
 
 		String gp_literalForm = "optional {?resource a <http://www.w3.org/2008/05/skos-xl#Label> . ?resource <http://www.w3.org/2008/05/skos-xl#literalForm> ?resource_xlabel_literalForm . } optional {?object a <http://www.w3.org/2008/05/skos-xl#Label> . ?object <http://www.w3.org/2008/05/skos-xl#literalForm> ?object_xlabel_literalForm}";
 
-		String gp = String.format("{{?resource ?predicate ?object . %1$s} {%2$s union %3$s}}",
-				gp_literalForm, gp_rendering, gp_role);
+		String gp = String.format("{{?resource ?predicate ?object . %1$s} {%2$s union %3$s}}", gp_literalForm,
+				gp_rendering, gp_role);
 
 		logger.debug("graph pattern for resource {} is {}", resource, gp);
 
@@ -285,7 +289,8 @@ public class ResourceView extends STServiceAdapter {
 			QueryEvaluationException, MalformedURLException, IOException, ModelUpdateException {
 		if (position instanceof LocalResourcePosition) {
 			logger.debug("Retrieving statements for resource {} locally", resource);
-			RDFModel model = ((LocalResourcePosition) position).getProject().getOntModel();
+			// RDFModel model = ((LocalResourcePosition) position).getProject().getOntModel();
+			RDFModel model = acquireConnection(((LocalResourcePosition) position).getProject());
 			ARTStatementIterator it = model.listStatements(resource, NodeFilters.ANY, NodeFilters.ANY, false,
 					NodeFilters.ANY);
 			try {
@@ -298,11 +303,12 @@ public class ResourceView extends STServiceAdapter {
 			}
 
 			GraphQuery describeQuery;
-			
+
 			if (resource.isURIResource()) {
 				describeQuery = model.createGraphQuery("describe " + RDFNodeSerializer.toNT(resource));
 			} else {
-				describeQuery = model.createGraphQuery("describe ?resource where {bind(?resource2 as ?resource)}");
+				describeQuery = model
+						.createGraphQuery("describe ?resource where {bind(?resource2 as ?resource)}");
 				describeQuery.setBinding("resource2", resource);
 			}
 			it = describeQuery.evaluate(true);
@@ -326,10 +332,11 @@ public class ResourceView extends STServiceAdapter {
 			if (sparqlEndpoint != null) {
 				logger.debug("Retrieving statements for resource {} via SPARQL", resource);
 
-				TripleQueryModelHTTPConnection conn = getCurrentModelFactory().loadTripleQueryHTTPConnection(
-						sparqlEndpoint);
+				TripleQueryModelHTTPConnection conn = getCurrentModelFactory()
+						.loadTripleQueryHTTPConnection(sparqlEndpoint);
 
-				GraphQuery describeQuery = conn.createGraphQuery(QueryLanguage.SPARQL, "describe ?resource", null);
+				GraphQuery describeQuery = conn.createGraphQuery(QueryLanguage.SPARQL, "describe ?resource",
+						null);
 				describeQuery.setBinding("resource", resource);
 				try {
 					ARTStatementIterator it = describeQuery.evaluate(true);
@@ -380,6 +387,19 @@ public class ResourceView extends STServiceAdapter {
 		}
 	}
 
+	/**
+	 * Protected method that the resource view may use to acquire a connection to the model of a project
+	 * (possibly not the current one). This method is intended to be invoked during the handling of a user
+	 * request, and the acquired connections are automatically released when the request handling is complete.
+	 * 
+	 * @param project
+	 * @return
+	 * @throws ModelCreationException
+	 */
+	protected RDFModel acquireConnection(Project<?> project) throws ModelCreationException {
+		return connectionAcquisitionHelper.acquireConnection(project);
+	}
+
 	private Map<ARTResource, ARTLiteral> collectXLabels(Collection<TupleBindings> bindings) {
 
 		String[] subjectVariables = { "resource", "object" };
@@ -414,10 +434,10 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	private LinkedHashMap<String, ResourceViewSection> reorganizeInformation(ARTResource resource,
-			ResourcePosition resourcePosition, ARTResource workingGraph, RDFResourceRolesEnum resourceRole, OWLModel stmtCollector,
-			Map<ARTResource, RDFResourceRolesEnum> resource2Role,
+			ResourcePosition resourcePosition, ARTResource workingGraph, RDFResourceRolesEnum resourceRole,
+			OWLModel stmtCollector, Map<ARTResource, RDFResourceRolesEnum> resource2Role,
 			Map<ARTResource, String> resource2Rendering, Map<ARTResource, ARTLiteral> xLabel2LiteralForm)
-			throws DOMException, ModelAccessException {
+					throws DOMException, ModelAccessException {
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
 
@@ -435,8 +455,8 @@ public class ResourceView extends STServiceAdapter {
 		for (StatementConsumer stmtConsumer : statementConsumerProvider
 				.getTemplateForResourceRole(resourceRole)) {
 			LinkedHashMap<String, ResourceViewSection> newResults = stmtConsumer.consumeStatements(
-					getProject(), resource, resourcePosition, workingGraph, resourceRole, newCollector, resource2Role,
-					resource2Rendering, xLabel2LiteralForm);
+					getProject(), resource, resourcePosition, workingGraph, resourceRole, newCollector,
+					resource2Role, resource2Rendering, xLabel2LiteralForm);
 
 			result.putAll(newResults);
 		}
@@ -456,8 +476,8 @@ public class ResourceView extends STServiceAdapter {
 		for (ARTURIResource pred : getLexicalizationPropertiesHelper(resource, resourcePosition)) {
 			STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(pred,
 					pred.getNamespace().equals(SKOSXL.NAMESPACE) ? RDFResourceRolesEnum.objectProperty
-							: RDFResourceRolesEnum.annotationProperty, true,
-					getOWLModel().getQName(pred.getURI()));
+							: RDFResourceRolesEnum.annotationProperty,
+					true, getOWLModel().getQName(pred.getURI()));
 			lexicalizationProperties.add(stPred);
 		}
 
@@ -509,7 +529,7 @@ public class ResourceView extends STServiceAdapter {
 
 		if (resourcePosition instanceof LocalResourcePosition) {
 			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
-			RDFModel ontModel = hostingProject.getOntModel();
+			RDFModel ontModel = hostingProject.getPrimordialOntModel();
 			if (ontModel instanceof SKOSXLModel) {
 				return Arrays.asList(SKOSXL.Res.PREFLABEL, SKOSXL.Res.ALTLABEL, SKOSXL.Res.HIDDENLABEL);
 			} else if (ontModel instanceof SKOSModel) {
@@ -525,13 +545,14 @@ public class ResourceView extends STServiceAdapter {
 
 	private Collection<TupleBindings> matchGraphPattern(ResourcePosition resourcePosition,
 			ARTResource resource, String gp) throws UnsupportedQueryLanguageException, ModelAccessException,
-			MalformedQueryException, QueryEvaluationException, UnavailableResourceException,
-			ProjectInconsistentException, ModelCreationException {
+					MalformedQueryException, QueryEvaluationException, UnavailableResourceException,
+					ProjectInconsistentException, ModelCreationException {
 
 		if (resourcePosition instanceof LocalResourcePosition) {
 			logger.debug("Matching pattern against local project: {}",
 					((LocalResourcePosition) resourcePosition).getProject());
-			RDFModel ontModel = ((LocalResourcePosition) resourcePosition).getProject().getOntModel();
+			// RDFModel ontModel = ((LocalResourcePosition) resourcePosition).getProject().getOntModel();
+			RDFModel ontModel = acquireConnection(((LocalResourcePosition) resourcePosition).getProject());
 			TupleQuery q = ontModel.createTupleQuery("select * where " + gp);
 			q.setBinding("resource", resource);
 			TupleBindingsIterator bindingsIt = q.evaluate(true);
@@ -578,8 +599,8 @@ public class ResourceView extends STServiceAdapter {
 	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
 	 */
-	private ModelFactory<?> getCurrentModelFactory() throws UnavailableResourceException,
-			ProjectInconsistentException {
+	private ModelFactory<?> getCurrentModelFactory()
+			throws UnavailableResourceException, ProjectInconsistentException {
 		return PluginManager.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
 	}
 
@@ -595,4 +616,44 @@ public class ResourceView extends STServiceAdapter {
 		return new OWLModelImpl(getCurrentModelFactory().createLightweightRDFModel());
 	}
 
+	/**
+	 * This class is public only for technical reasons: it is not part of the public API.
+	 */
+	public static class ConnectionAcquisitionHelper implements Closeable {
+		private Set<Project<?>> projects2close = new HashSet<>();
+
+		public RDFModel acquireConnection(Project<?> project) throws ModelCreationException {
+			if (!project.isModelBoundToThread()) {
+				project.createModelAndBoundToThread();
+				projects2close.add(project);
+			}
+
+			return project.getOntModel();
+		}
+
+		@Override
+		public void close() throws IOException {
+			for (Project<?> aProject : projects2close) {
+				try {
+					System.out.println("Closing dependent project");
+					aProject.getOntModel().close();
+				} catch (ModelUpdateException e) {
+					logger.debug("An exception occured when closing a dependent project", e);
+				}
+			}
+		}
+	}
+
+	// The machinery below (i.e. the field connectionAcquisitionHelper and the @Bean annotated method
+	// ConnectionAcquisitionHelper connectionAcquisitionHelper()) creates a request-scoped helper object,
+	// which can be used to acquire a connection to additional projects other than the current one.
+
+	@Autowired
+	private ConnectionAcquisitionHelper connectionAcquisitionHelper;
+
+	@Bean
+	@Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+	private ConnectionAcquisitionHelper connectionAcquisitionHelper() {
+		return new ConnectionAcquisitionHelper();
+	}
 }

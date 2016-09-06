@@ -640,8 +640,13 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return oldModel;
 	}
 	
+	public boolean isModelBoundToThread() {
+		return modelHolder.get() != null;
+	}
+
+	
 	public void createModelAndBoundToThread() throws ModelCreationException {
-		if (modelHolder.get() != null) {
+		if (isModelBoundToThread()) {
 			throw new IllegalStateException("Model already bound to thread");
 		}
 		MODELTYPE forkedModel = (MODELTYPE)getPrimordialOntModel().forkModel();
