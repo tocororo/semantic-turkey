@@ -1383,9 +1383,9 @@ public class ICV extends STServiceAdapter {
 					+ "GRAPH <" + getWorkingGraph() + "> {\n"
 					+ "<" + concept.getURI() + "> <" + SKOSXL.ALTLABEL + "> ?oldPrefLabel .\n"
 					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> <" + xlabel.getNominalValue() + "> . }\n"
-					+ "} WHERE {\n"
+					+ "} WHERE {\nOPTIONAL {\n"
 					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> ?oldPrefLabel \n"
-					+ "}";
+					+ "} }";
 		} else { //altLabel or hiddenLabel
 			q = "INSERT DATA {\n"
 					+ "GRAPH <" + getWorkingGraph() + "> {\n"
