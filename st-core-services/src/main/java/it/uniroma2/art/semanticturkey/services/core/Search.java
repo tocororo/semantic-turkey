@@ -58,7 +58,7 @@ public class Search extends STServiceAdapter {
 	private static String EXACT_SEARCH_MODE = "exact";
 	
 	@GenerateSTServiceController
-	public Response searchResource(String searchString, String [] rolesArray, boolean useLocalName,
+	public Response searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
 			String searchMode, @Optional String lang, @Optional ARTURIResource scheme) throws ModelUpdateException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		
@@ -150,13 +150,25 @@ public class Search extends STServiceAdapter {
 		query+="\n}" +
 			"\n}";
 			
-		
 		//now examine the rdf:label and/or skos:xlabel/skosxl:label
-		//see if the localName should be used in the query or not
+		//see if the localName and/or URI should be used in the query or not
+		
+		
+		//check if the request want to search in the local name
 		if(useLocalName){
 			query+="\n{" +
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
 					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		
+		//check if the request want to search in the complete URI
+		if(useURI){
+			query+="\n{" +
+					"\nBIND(str(?resource) AS ?complURI)"+
+					searchModePrepareQuery("?complURI", searchString, searchModeSelected) +
 					"\n}"+
 					"\nUNION";
 		}
