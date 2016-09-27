@@ -611,7 +611,8 @@ public class Search extends STServiceAdapter {
 		
 		if(isClassWanted){
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+" = <"+OWL.CLASS+">)" +
+					"\nFILTER("+type+" = <"+OWL.CLASS+"> || " +
+							type+" = <"+RDFS.CLASS+"> )" +
 					"\n}";
 			
 			otherWanted = true;
