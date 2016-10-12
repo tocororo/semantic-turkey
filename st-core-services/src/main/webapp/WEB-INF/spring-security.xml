@@ -1,0 +1,59 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+
+	<!--
+	Overrides the default entry point of authentication. As default Spring-Security redirects to login page 
+	 -->
+	<http entry-point-ref="authEntryPoint">
+		<!-- Tells the login request url (it must be a POST) and the parameters username and password
+		and specifies the handler for successful and failed login -->
+		<form-login 
+			login-processing-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/login"
+			username-parameter="username"
+			password-parameter="password"
+			authentication-success-handler-ref="authSuccessHandler"
+			authentication-failure-handler-ref="authFailHandler"/>
+			
+		<!-- Tells the handler for denied access (when user requests an url which for has not enough permission) -->
+		<access-denied-handler ref="accessDeniedHandler"/>
+	
+		<!-- Tells the logout request url (GET)
+		and specifies the handler for successful logout -->			
+		<logout 
+			logout-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/logout"
+			delete-cookies="JSESSIONID"
+			success-handler-ref="logoutSuccessHandler"/>
+	
+		<!-- secure all services, requiring the role ROLE_USER to access -->
+		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**" access="ROLE_USER" />
+		<intercept-url pattern="/resources/stserver/**" access="ROLE_USER" />
+		<!-- <intercept-url pattern="" access="IS_AUTHENTICATED_ANONYMOUSLY" /> -->
+		
+		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS headers to responses -->
+		<custom-filter position="CHANNEL_FILTER" ref="corsFilter" />
+	</http>
+
+	<authentication-manager>
+		<!-- This bean handle the authentication -->
+		<authentication-provider ref="authenticationProvider"/>
+		<!-- <authentication-provider>
+			<user-service>
+				<user name="admin" password="admin" authorities="ROLE_ADMIN, ROLE_USER" />
+			</user-service>
+		</authentication-provider> -->
+	</authentication-manager>
+	
+	<beans:bean id="corsFilter" class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
+	<beans:bean id="authenticationProvider" class="it.uniroma2.art.semanticturkey.security.STAuthenticationProvider"/>
+	<beans:bean id="authEntryPoint" class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint"/>
+	<beans:bean id="authSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationSuccessHandler"/>
+	<beans:bean id="authFailHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler"/>
+	<beans:bean id="accessDeniedHandler" class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler"/>
+	<beans:bean id="logoutSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler"/>
+
+</beans:beans>
