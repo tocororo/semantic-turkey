@@ -30,14 +30,13 @@ public class STAuthenticationProvider implements AuthenticationProvider {
         if (name.equals("admin") && password.equals("admin")) {
             grantedAuths = new ArrayList<>();
             grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER"));
+            grantedAuths.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             auth = new UsernamePasswordAuthenticationToken(name, password, grantedAuths);
-        } 
-//        else if (name.equals("admin") && password.equals("password")) {
-//            grantedAuths = new ArrayList<>();
-//            grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER"));
-//            grantedAuths.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-//            auth = new UsernamePasswordAuthenticationToken(name, password, grantedAuths);
-//        }
+        } else if (name.equals("user") && password.equals("user")) {
+            grantedAuths = new ArrayList<>();
+            grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER"));
+            auth = new UsernamePasswordAuthenticationToken(name, password, grantedAuths);
+        }
         return auth;
 	}
 
