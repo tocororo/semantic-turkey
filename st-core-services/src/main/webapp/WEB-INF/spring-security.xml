@@ -30,8 +30,10 @@
 			success-handler-ref="logoutSuccessHandler"/>
 	
 		<!-- secure all services, requiring the role ROLE_USER to access -->
+		<!-- <intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin" access="ROLE_ADMIN" /> -->
 		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**" access="ROLE_USER" />
 		<intercept-url pattern="/resources/stserver/**" access="ROLE_USER" />
+		<!-- <intercept-url pattern="" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" /> -->
 		<!-- <intercept-url pattern="" access="IS_AUTHENTICATED_ANONYMOUSLY" /> -->
 		
 		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS headers to responses -->

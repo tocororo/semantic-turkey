@@ -171,6 +171,12 @@
 			<artifactId>spring-webmvc</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
+		<!-- Needed to handle AccessDeniedException in CatchAllExceptionHandlerControllerAdvice -->
+		<dependency>
+	    	<groupId>org.springframework.security</groupId>
+	    	<artifactId>spring-security-web</artifactId>
+	    	<version>${spring-security.version}</version>
+	    </dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.coda</groupId>
 			<artifactId>coda-osgi-bundle</artifactId>

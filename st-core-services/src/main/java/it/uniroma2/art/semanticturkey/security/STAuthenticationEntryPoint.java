@@ -7,15 +7,9 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
-
-import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 
 /**
  * 

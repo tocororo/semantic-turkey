@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -27,14 +28,15 @@ import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
 @GenerateSTServiceController
 @Validated
 @Component
 @Controller //needed for getUser method
-public class Auth extends STServiceAdapter {
+public class Users extends STServiceAdapter {
 	
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Auth/getUser", 
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/getUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String getUser(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
@@ -60,5 +62,27 @@ public class Auth extends STServiceAdapter {
 		}
 		return jsonResp.toString();
 	}
+	
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin", 
+			method = RequestMethod.GET, produces = "application/json")
+	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@ResponseBody
+	public String testRequiredAdmin(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
+		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
+				.createReplyResponse("testRequiredAdmin", RepliesStatus.ok, SerializationType.json);
+		return jsonResp.toString();
+	}
+	
+//	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin", 
+//			method = RequestMethod.GET, produces = "application/xml")
+//	@PreAuthorize("hasRole('ROLE_ADMIN')")
+//	@ResponseBody
+//	public String testRequiredAdmin(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
+//		XMLResponseREPLY xmlResp = (XMLResponseREPLY) ServletUtilities.getService()
+//				.createReplyResponse("testRequiredAdmin", RepliesStatus.ok, SerializationType.xml);
+//		return xmlResp.toString();
+//	}
+	
+	
 	
 }
