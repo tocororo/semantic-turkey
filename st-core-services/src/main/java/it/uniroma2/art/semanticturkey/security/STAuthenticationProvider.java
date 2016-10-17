@@ -14,6 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
  * @author Tiziano
  * This class handles the user authentication (retrieves authorities for a given username-password pair)
  * (Referenced in WEB-INF/spring-security.xml)
+ * Currently this is not used since it doesn't support rememberMe feature. See STUserDetailsService instead.
  */
 public class STAuthenticationProvider implements AuthenticationProvider {
 	

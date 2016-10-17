@@ -36,6 +36,10 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 @Controller //needed for getUser method
 public class Users extends STServiceAdapter {
 	
+	/**
+	 * Returns response containing user (username) and roles of the logged user.
+	 * An empty data element if no user is logged.
+	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/getUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
@@ -56,9 +60,6 @@ public class Users extends STServiceAdapter {
 			
 			jsonResp.getDataElement().put("user", loggedUser.getName());
 			jsonResp.getDataElement().put("roles", new JSONArray(roles));
-		} else {
-			//this should never be executed since getUser service is secured, so it cannot be invoked if no user is logged
-			jsonResp.getDataElement().put("user", "none");
 		}
 		return jsonResp.toString();
 	}
