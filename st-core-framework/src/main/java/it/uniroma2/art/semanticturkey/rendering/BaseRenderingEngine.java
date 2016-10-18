@@ -1,5 +1,29 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+
+import com.google.common.base.Objects;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -14,20 +38,9 @@ import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {
 	private static class LabelComparator implements Comparator<ARTLiteral> {
@@ -63,8 +76,8 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	private AbstractLabelBasedRenderingEngineConfiguration config;
-	private boolean takeAll;
-	private List<String> languages;
+	protected boolean takeAll;
+	protected List<String> languages;
 
 	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config) {
 		this.config = config;
@@ -82,14 +95,13 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				this.languages.add(langTag);
 			}
 		}
-
 	}
 
 	@Override
 	public Map<ARTResource, String> render(Project<?> project, ResourcePosition subjectPosition,
 			ARTResource subject, OWLModel statements, Collection<ARTResource> resources,
-			Collection<TupleBindings> bindings, String varPrefix) throws ModelAccessException,
-			DataAccessException {
+			Collection<TupleBindings> bindings, String varPrefix)
+					throws ModelAccessException, DataAccessException {
 
 		Multimap<ARTResource, ARTLiteral> labelBuilding = HashMultimap.create();
 
@@ -173,4 +185,56 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	protected abstract Set<ARTURIResource> getPlainURIs();
+
+	@Override
+	public GraphPattern getGraphPattern() {
+		return null;
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return true;
+	}
+	
+	@Override
+	public String getBindingVariable() {
+		return "resource";
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+		Repository rep = currentProject.getRepository();
+
+		HashMap<String, String> ns2prefix = new HashMap<>();
+		RepositoryConnection repConn = RDF4JRepositoryUtils.getConnection(rep);
+
+		try {
+			Iterations.stream(repConn.getNamespaces()).forEach(ns -> ns2prefix.put(ns.getName(), ns.getPrefix()));
+		} finally {
+			RDF4JRepositoryUtils.releaseConnection(repConn, rep);
+		}
+		
+		Map<Value, Literal> renderings = new HashMap<>();
+		ValueFactory vf = SimpleValueFactory.getInstance();
+		
+		resultTable.forEach(bindingSet -> {
+			Resource resource = (Resource) bindingSet.getValue("resource");
+			String show = ((Literal) bindingSet.getValue("label")).getLabel();
+			if (show.isEmpty()) {
+				show = resource.toString();
+				if (resource instanceof IRI) {
+					IRI resourceIRI = (IRI)resource;
+					String resNs = resourceIRI.getNamespace();
+					String prefix = ns2prefix.get(resNs);
+					if (prefix != null) {
+						show = prefix + ":" + resourceIRI.getLocalName();
+					}
+				}
+			}
+			
+			renderings.put(resource, vf.createLiteral(show));
+		});
+		
+		return renderings;
+	}
 }

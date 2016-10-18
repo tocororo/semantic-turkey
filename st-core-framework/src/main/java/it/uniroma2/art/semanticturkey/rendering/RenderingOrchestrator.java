@@ -1,5 +1,18 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.query.BindingSet;
+
+import com.google.common.base.Objects;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTBNode;
@@ -24,14 +37,8 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.base.Objects;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
 
 /**
  * The rendering orchestrator is the entry-point for clients willing to render a bunch of resources. The
@@ -48,19 +55,25 @@ import com.google.common.base.Objects;
  */
 public class RenderingOrchestrator implements RenderingEngine {
 
-	private static RenderingEngine instance;
+	private Project<?> project;
+	private ResourcePosition resourcePosition;
+	private RenderingEngine baseRenderingEngine;
+
+	public RenderingOrchestrator(Project<?> project, ResourcePosition resourcePosition,
+			RenderingEngine baseRenderingEngine) {
+				this.project = project;
+				this.resourcePosition = resourcePosition;
+				this.baseRenderingEngine = baseRenderingEngine;
+	}
 
 	/**
-	 * Gets the singleton instance of {@link RenderingOrchestrator}
+	 * Builds an instance of {@link RenderingOrchestrator}
 	 * 
 	 * @return
 	 */
-	public static synchronized RenderingEngine getInstance() {
-		if (instance == null) {
-			instance = new RenderingOrchestrator();
-		}
-
-		return instance;
+	public static RenderingEngine buildInstance(Project<?> project, ResourcePosition resourcePosition) {
+		RenderingEngine baseRenderingEngine = getRenderingEngine(resourcePosition);
+		return new RenderingOrchestrator(project, resourcePosition, baseRenderingEngine);
 	}
 
 	@Override
@@ -191,7 +204,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 	 * @param subjectPosition
 	 * @return
 	 */
-	private RenderingEngine getRenderingEngine(ResourcePosition subjectPosition) {
+	private static RenderingEngine getRenderingEngine(ResourcePosition subjectPosition) {
 		if (subjectPosition instanceof LocalResourcePosition) {
 			Project<?> project = ((LocalResourcePosition) (subjectPosition)).getProject();
 			RDFModel ontModel = project.getOntModel();
@@ -212,4 +225,23 @@ public class RenderingOrchestrator implements RenderingEngine {
 				resourceToBeRendered, varPrefix);
 	}
 
+	@Override
+	public GraphPattern getGraphPattern() {
+		return baseRenderingEngine.getGraphPattern();
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return baseRenderingEngine.introducesDuplicates();
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> project, List<BindingSet> resultTable) {
+		return baseRenderingEngine.processBindings(project, resultTable);
+	}
+
+	@Override
+	public String getBindingVariable() {
+		return "resource";
+	}
 }

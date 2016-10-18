@@ -172,7 +172,7 @@ public class ResourceView extends STServiceAdapter {
 						NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.ANY))));
 		resourcesToBeRendered.add(resource);
 
-		RenderingEngine renderingOrchestrator = RenderingOrchestrator.getInstance();
+		RenderingEngine renderingOrchestrator = RenderingOrchestrator.buildInstance(project, resourcePosition);
 		RoleRecognitionOrchestrator roleRecognitionOrchestrator = RoleRecognitionOrchestrator.getInstance();
 
 		String gp_rendering = renderingOrchestrator.getGraphPatternForDescribe(resourcePosition, resource,

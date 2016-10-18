@@ -1,7 +1,10 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor;
 
+import it.uniroma2.art.semanticturkey.generation.annotation.DoNotGenerateController;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.processor.internal.VelocitySupportTools;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +34,7 @@ import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 
-
-@SupportedAnnotationTypes("it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController")
+@SupportedAnnotationTypes("it.uniroma2.art.semanticturkey.services.annotations.STService")
 @SupportedSourceVersion(SourceVersion.RELEASE_6)
 public class STServiceProcessor extends AbstractProcessor {
 
@@ -83,7 +85,11 @@ public class STServiceProcessor extends AbstractProcessor {
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		System.out.println("generating:");
-		for (Element i : roundEnv.getElementsAnnotatedWith(GenerateSTServiceController.class)) {
+		for (Element i : roundEnv.getElementsAnnotatedWith(STService.class)) {
+			if (i.getAnnotation(DoNotGenerateController.class) != null) {
+				continue;
+			}
+			
 			if (i.getKind() != ElementKind.CLASS)
 				continue;
 
@@ -101,21 +107,8 @@ public class STServiceProcessor extends AbstractProcessor {
 			classSimpleName = classElement.getSimpleName().toString();
 			packageName = packageElement.getQualifiedName().toString();
 
-			for (Element e : roundEnv.getElementsAnnotatedWith(GenerateSTServiceController.class)) {
-				if (e.getKind() == ElementKind.FIELD) {
-
-					System.out.println(fqClassName + " " + (TypeElement) e.getEnclosingElement());
-
-					if (!((TypeElement) e.getEnclosingElement()).getQualifiedName().toString()
-							.equals(fqClassName))
-						continue;
-
-					VariableElement varElement = (VariableElement) e;
-
-					System.out.println("annotated field: " + varElement.getSimpleName());
-					fields.put(varElement.getSimpleName().toString(), varElement);
-
-				} else if (e.getKind() == ElementKind.METHOD) {
+			for (Element e : roundEnv.getElementsAnnotatedWith(STServiceOperation.class)) {
+				if (e.getKind() == ElementKind.METHOD) {
 
 					System.out.println(fqClassName + " " + (TypeElement) e.getEnclosingElement());
 

@@ -28,6 +28,11 @@
 			<artifactId>st-codegen-annotations</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-core-framework</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

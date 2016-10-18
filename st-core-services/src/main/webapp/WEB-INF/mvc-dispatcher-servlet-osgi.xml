@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:osgi="http://www.springframework.org/schema/osgi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+    http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-3.1.xsd ">
+
+	<!-- Retrieves the DatasetMetadataRepository -->
+	<osgi:reference id="datasetMetadataRepository"
+		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
+
+	<!-- Retrieves the ResourceLocator -->
+	<osgi:reference id="resourceLocator"
+		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
+
+	<!-- Imports the custom range provider from the service registry -->
+	<osgi:reference id="customRangeProvider"
+		interface="it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider" />
+
+	<!-- Imports the CODA-core provider from the service registry -->
+	<osgi:reference id="CODACoreProvider"
+		interface="it.uniroma2.art.semanticturkey.customrange.CODACoreProvider" />
+
+
+	<osgi:service ref="conversionService"
+		interface="org.springframework.core.convert.ConversionService" />
+
+	<osgi:list id="thirdPartyServices" cardinality="0..N"
+		interface="it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface" />
+
+	<osgi:reference id="codaOSGiFactory"
+		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
+
+
+	<osgi:service ref="stSpecificRandomIDGenerator"
+		interface="it.uniroma2.art.coda.interfaces.Converter">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.coda.contract" value="http://art.uniroma2.it/coda/contracts/randIdGen" />
+			<entry key="it.uniroma2.art.coda.converter">
+				<util:constant
+					static-field="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator.CONVERTER_URI" />
+			</entry>
+		</osgi:service-properties>
+	</osgi:service>
+</beans>

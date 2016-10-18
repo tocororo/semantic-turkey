@@ -16,12 +16,25 @@ import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-public class RoleRecognitionOrchestrator {
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.query.BindingSet;
+
+import com.google.common.collect.Sets;
+
+public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 
 	public static final int MAXIMUM_REMOTE_DATASET_ACCESS = 5;
 
@@ -42,7 +55,7 @@ public class RoleRecognitionOrchestrator {
 	public Map<ARTResource, RDFResourceRolesEnum> computeRoleOf(Project<?> project,
 			ResourcePosition subjectPosition, ARTResource subject, OWLModel statements,
 			Collection<ARTResource> resources, Collection<TupleBindings> bindings, String varPrefix)
-			throws ModelAccessException, DataAccessException {
+					throws ModelAccessException, DataAccessException {
 
 		Map<ARTResource, RDFResourceRolesEnum> result = new HashMap<ARTResource, RDFResourceRolesEnum>();
 
@@ -54,7 +67,8 @@ public class RoleRecognitionOrchestrator {
 
 		// ///////////////////////////
 		// Process subject statements
-		try (ARTStatementIterator stmtIt = statements.listStatements(NodeFilters.ANY, RDF.Res.TYPE, NodeFilters.ANY, true)) {
+		try (ARTStatementIterator stmtIt = statements.listStatements(NodeFilters.ANY, RDF.Res.TYPE,
+				NodeFilters.ANY, true)) {
 			while (stmtIt.streamOpen()) {
 				ARTStatement stmt = stmtIt.getNext();
 				processTypeAssignment(stmt.getSubject(), stmt.getObject().asResource(), result);
@@ -79,12 +93,12 @@ public class RoleRecognitionOrchestrator {
 			if (aBinding.hasBinding(resourceTypeVar)) {
 				res = aBinding.getBoundValue(resourceVar).asResource();
 				type = aBinding.getBoundValue(resourceTypeVar).asResource();
-			} else if(aBinding.hasBinding(predicateTypeVar)) {
+			} else if (aBinding.hasBinding(predicateTypeVar)) {
 				res = aBinding.getBoundValue(predicateVar).asResource();
-				type = aBinding.getBoundValue(predicateTypeVar).asResource();				
-			} else if(aBinding.hasBinding(objectTypeVar)) {
+				type = aBinding.getBoundValue(predicateTypeVar).asResource();
+			} else if (aBinding.hasBinding(objectTypeVar)) {
 				res = aBinding.getBoundValue(objectVar).asResource();
-				type = aBinding.getBoundValue(objectTypeVar).asResource();				
+				type = aBinding.getBoundValue(objectTypeVar).asResource();
 			} else
 				continue;
 
@@ -100,14 +114,14 @@ public class RoleRecognitionOrchestrator {
 			Map<ARTResource, RDFResourceRolesEnum> result) {
 
 		RDFResourceRolesEnum role = result.get(resource);
-		
+
 		if (role == null) {
 			role = RDFResourceRolesEnum.individual;
 			result.put(resource, role);
 		}
-		
+
 		RDFResourceRolesEnum newRole = null;
-		
+
 		// if (role == null)
 		// continue;
 		//
@@ -120,16 +134,18 @@ public class RoleRecognitionOrchestrator {
 			newRole = RDFResourceRolesEnum.conceptScheme;
 		} else if (type.equals(SKOSXL.Res.LABEL) && role == RDFResourceRolesEnum.individual) {
 			newRole = RDFResourceRolesEnum.xLabel;
-		} else if (type.equals(SKOS.Res.ORDEREDCOLLECTION)
-				&& (role == RDFResourceRolesEnum.individual || role == RDFResourceRolesEnum.skosCollection || role == null)) {
+		} else if (type.equals(SKOS.Res.ORDEREDCOLLECTION) && (role == RDFResourceRolesEnum.individual
+				|| role == RDFResourceRolesEnum.skosCollection || role == null)) {
 			newRole = RDFResourceRolesEnum.skosOrderedCollection;
 		} else if (type.equals(SKOS.Res.COLLECTION)
 				&& (role == RDFResourceRolesEnum.individual || role == null)) {
 			newRole = RDFResourceRolesEnum.skosCollection;
-		} else if ((type.equals(RDFS.Res.CLASS) || type.equals(OWL.Res.CLASS)) && role == RDFResourceRolesEnum.individual) {
+		} else if ((type.equals(RDFS.Res.CLASS) || type.equals(OWL.Res.CLASS))
+				&& role == RDFResourceRolesEnum.individual) {
 			newRole = RDFResourceRolesEnum.cls;
 		} else if (type.equals(OWL.Res.OBJECTPROPERTY)
-				&& (role == RDFResourceRolesEnum.individual | role == RDFResourceRolesEnum.property || role == null)) {
+				&& (role == RDFResourceRolesEnum.individual | role == RDFResourceRolesEnum.property
+						|| role == null)) {
 			newRole = RDFResourceRolesEnum.objectProperty;
 		} else if (type.equals(OWL.Res.DATATYPEPROPERTY)
 				&& (role == RDFResourceRolesEnum.individual | role == RDFResourceRolesEnum.objectProperty
@@ -143,14 +159,14 @@ public class RoleRecognitionOrchestrator {
 				&& (role == RDFResourceRolesEnum.individual | role == RDFResourceRolesEnum.objectProperty
 						| role == RDFResourceRolesEnum.property || role == null)) {
 			newRole = RDFResourceRolesEnum.ontologyProperty;
-		} else if (type.equals(OWL.Res.DATARANGE)
-				&& (role == RDFResourceRolesEnum.individual || role == null)) {
+		} else
+			if (type.equals(OWL.Res.DATARANGE) && (role == RDFResourceRolesEnum.individual || role == null)) {
 			newRole = RDFResourceRolesEnum.dataRange;
 		} else if (type.equals(OWL.Res.ONTOLOGY)
 				&& (role == RDFResourceRolesEnum.individual || role == null)) {
 			newRole = RDFResourceRolesEnum.ontology;
-		} else if (type.equals(RDF.Res.PROPERTY)
-				&& (role == RDFResourceRolesEnum.individual || role == null)) {
+		} else
+			if (type.equals(RDF.Res.PROPERTY) && (role == RDFResourceRolesEnum.individual || role == null)) {
 			newRole = RDFResourceRolesEnum.property;
 		}
 
@@ -160,9 +176,48 @@ public class RoleRecognitionOrchestrator {
 
 	}
 
-	public String getGraphPatternForDescribe(ResourcePosition resourcePosition,
-			ARTResource resourceToBeRoled, String varPrefix) {
-		return String.format("{{?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_object_type .} union {?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_subject_type .} union {?predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_predicate_type .}}",
+	public String getGraphPatternForDescribe(ResourcePosition resourcePosition, ARTResource resourceToBeRoled,
+			String varPrefix) {
+		return String.format(
+				"{{?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_object_type .} union {?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_subject_type .} union {?predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_predicate_type .}}",
 				varPrefix);
+	}
+
+	@Override
+	public GraphPattern getGraphPattern() {
+		return GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE).prefix("rdfs", RDFS.NAMESPACE).prefix("owl", OWL.NAMESPACE)
+				.prefix("skos", SKOS.NAMESPACE).prefix("skosxl", SKOSXL.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_role"))
+				.pattern(
+				// @formatter:off
+				"BIND(IF(EXISTS {?resource a [rdfs:subClassOf* skos:Concept]}, \"concept\", " +
+						"IF(EXISTS {?resource a [rdfs:subClassOf* skos:ConceptConceptScheme]}, \"conceptScheme\", " + 
+							"IF(EXISTS {?resource a [rdfs:subClassOf* skosxl:Label]}, \"xLabel\", " +
+								"IF(EXISTS {?resource a [rdfs:subClassOf* skos:OrderedCollection]}, \"skosOrderedCollection\", " +
+									"IF(EXISTS {?resource a [rdfs:subClassOf* skos:Collection]}, \"skosCollection\", " +
+										"IF(EXISTS {?resource a [rdfs:subClassOf* rdfs:Class]}, \"cls\", " +
+											"IF(EXISTS {?resource a [rdfs:subClassOf* owl:DatatypeProperty]}, \"datatypeProperty\", " +
+												"IF(EXISTS {?resource a [rdfs:subClassOf* owl:AnnotationProperty]}, \"ontologyProperty\", " +
+													"IF(EXISTS {?resource a [rdfs:subClassOf* owl:AnnotationProperty]}, \"annotationProperty\", " +
+														"IF(EXISTS {?resource a [rdfs:subClassOf* owl:ObjectProperty]}, \"objectProperty\", " +
+															"IF(EXISTS {?resource a [rdfs:subClassOf* owl:DataRange]}, \"dataRange\", " +
+																"IF(EXISTS {?resource a [rdfs:subClassOf* rdf:Property]}, \"property\", " +
+							"\"individual\")))))))))))) as ?attr_role)"		
+				// @formatter:on
+		).graphPattern();
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return true;
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> project, List<BindingSet> resultTable) {
+		return null;
+	}
+
+	@Override
+	public String getBindingVariable() {
+		return "resource";
 	}
 }

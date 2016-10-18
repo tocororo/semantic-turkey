@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.data.access;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
@@ -12,8 +14,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class is used to locate a resource either as belonging to a currently open project or to a remote
@@ -41,7 +41,7 @@ public class ResourceLocator {
 	 * default namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs to
 	 * <code>p</code></li>
 	 * <li>attempt to locate <code>resource</code> in a remote dataset (see
-	 * {@link DatasetMetadataRepository#findDatasetForResource(ARTURIResource)}</li>
+	 * {@link DatasetMetadataRepositoryImpl#findDatasetForResource(ARTURIResource)}</li>
 	 * <li>otherwise; states that the position is unknown</li>
 	 * </ol>
 	 * </li>

@@ -2,13 +2,23 @@ package it.uniroma2.art.semanticturkey.plugin.impls.rendering;
 
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+
+import static java.util.stream.Collectors.joining;
 
 import java.util.Collections;
 import java.util.Set;
+
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
 
 /**
  * An implementation of {@link RenderingEngine} dealing with <code>skosxl:prefLabel</a>s.
@@ -33,4 +43,18 @@ public class SKOSXLRenderingEngine extends BaseRenderingEngine implements Render
 		return Collections.emptySet();
 	}
 
+	@Override
+	public GraphPattern getGraphPattern() {
+		StringBuilder gp = new StringBuilder();
+		gp.append("?resource skosxl:prefLabel [ skosxl:literalForm ?labelInternal ].                     \n");
+		if (!takeAll) {
+			gp.append(String.format(" FILTER(LANG(?labelInternal) IN (%s))", languages.stream()
+					.map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"").collect(joining(", "))));
+		}
+		gp.append(
+				"BIND(CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\") AS ?labelInternal2)\n");
+		return GraphPatternBuilder.create().prefix("skosxl", SKOSXL.NAMESPACE)
+				.projection(ProjectionElementBuilder.groupConcat("labelInternal2", "label"))
+				.pattern(gp.toString()).graphPattern();
+	}
 }

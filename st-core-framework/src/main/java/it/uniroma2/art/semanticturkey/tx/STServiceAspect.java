@@ -5,10 +5,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.After;
-import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
@@ -42,7 +40,7 @@ public class STServiceAspect implements Ordered {
 
 	private static final ThreadLocal<Queue<STServiceInvocaton>> serviceInvocations = ThreadLocal.withInitial(LinkedList::new);
 	
-	@Pointcut("target(it.uniroma2.art.semanticturkey.services.STServiceAdapter2) && (execution(@it.uniroma2.art.semanticturkey.services.annotations.Read public * *(..)) || execution(@it.uniroma2.art.semanticturkey.services.annotations.Write public * *(..)))")
+	@Pointcut("target(it.uniroma2.art.semanticturkey.services.STServiceAdapter2) && execution(@it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation public * *(..))")
 	public void stNewerNewStyleServiceMethod() {};
 
 	@Before("stNewerNewStyleServiceMethod()")

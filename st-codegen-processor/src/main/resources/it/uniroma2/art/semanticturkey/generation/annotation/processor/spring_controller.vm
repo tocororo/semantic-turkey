@@ -5,8 +5,10 @@ import ${packageName}.${classSimpleName};
 import it.uniroma2.art.semanticturkey.mvc.IntrospectableController;
 import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
 import it.uniroma2.art.semanticturkey.services.NewStyleService;
+import it.uniroma2.art.semanticturkey.services.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -86,21 +88,32 @@ public class ${generatedClassSimpleName}
 #end
 #end
 
-    @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = $tools.getRequestMethodAsSource($method), produces = "application/xml;charset=UTF-8")
-	public HttpEntity<String>  ${method.simpleName}Published(${arguments}) $throwsDeclaration
+    @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = $tools.getRequestMethodAsSource($method), produces = "application/json;charset=UTF-8")
+	public HttpEntity<#if($tools.isVoidMethod($method))
+String
+#else
+Response<${method.returnType}>
+#end>  ${method.simpleName}Published(${arguments}) $throwsDeclaration
 	{
-		String body;
 #if($tools.isVoidMethod($method))
+		String body;
+
 		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
 		fun.${method.simpleName}(${subarg});		
-		body = ServletUtilities.getService().createReplyResponse($tools.toStringLiteral($path.toString()), RepliesStatus.ok).getResponseContent();
+		body = ServletUtilities.getService().createReplyResponse($tools.toStringLiteral($path.toString()), RepliesStatus.ok, SerializationType.json).getResponseContent();
 #else
+		
 		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
-		body = fun.${method.simpleName}(${subarg}).getResponseContent();
+		${method.returnType} body = fun.${method.simpleName}(${subarg});
 #end
 		HttpHeaders responseHeaders = new HttpHeaders();
    		responseHeaders.set("Access-Control-Allow-Origin", "*");
-   		return new HttpEntity<String>(body, responseHeaders);	
+   		
+#if($tools.isVoidMethod($method))
+  		return new HttpEntity<>(body, responseHeaders);	 
+#else
+	return new HttpEntity<>(new Response<>(body), responseHeaders);	
+#end		
     }
 #end
 }

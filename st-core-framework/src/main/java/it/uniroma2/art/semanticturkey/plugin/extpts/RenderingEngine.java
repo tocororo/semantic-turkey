@@ -7,6 +7,7 @@ import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 
 import java.util.Collection;
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.Map;
 /**
  * A component able to compute the rendering of a collection of resources.
  */
-public interface RenderingEngine {
+public interface RenderingEngine extends QueryBuilderProcessor {
 
 	Map<ARTResource, String> render(Project<?> project, ResourcePosition subjectPosition, ARTResource subject,
 			OWLModel statements, Collection<ARTResource> resources, Collection<TupleBindings> bindings, String varPrefix) throws ModelAccessException, DataAccessException;

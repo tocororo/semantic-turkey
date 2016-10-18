@@ -30,7 +30,7 @@ public class STServiceInvocaton {
 				.toString();
 	}
 
-	public Object getMethod() {
+	public Method getMethod() {
 		return method;
 	}
 	

@@ -33,6 +33,8 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -53,6 +55,7 @@ public class PluginManager {
 
 	private static boolean directAccessTest = false;
 	private static Class<? extends OntologyManagerFactory<ModelConfiguration>> testOntManagerFactoryCls;
+	private static Collection<PluginFactory<?>> testPluginFactoryCls = new ArrayList<>();
 
 	public static boolean isDirectAccessTest() {
 		return directAccessTest;
@@ -69,6 +72,10 @@ public class PluginManager {
 	public static void setTestOntManagerFactoryImpl(
 			Class<? extends OntologyManagerFactory<ModelConfiguration>> ontmgrcls) {
 		testOntManagerFactoryCls = ontmgrcls;
+	}
+
+	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?>> impls) {
+		testPluginFactoryCls = impls;
 	}
 
 	/**
@@ -217,35 +224,43 @@ public class PluginManager {
 
 	// // New Methods
 	public static <T extends PluginConfiguration> PluginFactory<T> getPluginFactory(String factoryID) {
-		ServiceTracker tracker = new ServiceTracker(m_felix, PluginFactory.class.getName(), null);
-		tracker.open();
-		PluginFactory<T> repImpl = null;
-		Object[] services = tracker.getServices();
-		for (int i = 0; (services != null) && i < services.length; ++i) {
-			if (((PluginFactory<T>) services[i]).getID().equals(factoryID)) {
-				repImpl = (PluginFactory<T>) services[i];
-				break;
+		// test preamble
+		if (isDirectAccessTest()) {
+			return (PluginFactory<T>) testPluginFactoryCls.stream().filter(pf->pf.getID().equals(factoryID)).findFirst().orElse(null);
+		} else {
+			// real use
+			ServiceTracker tracker = new ServiceTracker(m_felix, PluginFactory.class.getName(), null);
+			tracker.open();
+			PluginFactory<T> repImpl = null;
+			Object[] services = tracker.getServices();
+			for (int i = 0; (services != null) && i < services.length; ++i) {
+				if (((PluginFactory<T>) services[i]).getID().equals(factoryID)) {
+					repImpl = (PluginFactory<T>) services[i];
+					break;
+				}
 			}
+			tracker.close();
+			return repImpl;
 		}
-		tracker.close();
-		return repImpl;
 	}
 
 	public static Collection<PluginFactory<?>> getPluginFactories(String extensionPoint) {
 		ServiceTracker tracker = null;
 		try {
-			tracker = new ServiceTracker(m_felix, m_felix.createFilter(String.format(
-					"(&(objectClass=%s)(it.uniroma2.art.semanticturkey.extensionpoint=%s))",
-					PluginFactory.class.getName(), extensionPoint)), null);
+			tracker = new ServiceTracker(m_felix,
+					m_felix.createFilter(String.format(
+							"(&(objectClass=%s)(it.uniroma2.art.semanticturkey.extensionpoint=%s))",
+							PluginFactory.class.getName(), extensionPoint)),
+					null);
 		} catch (InvalidSyntaxException e) {
 			new RuntimeException("This should have never happened", e);
 		}
-		
+
 		tracker.open();
 		Collection<PluginFactory<?>> pluginFactories = new ArrayList<PluginFactory<?>>();
 		Object[] services = tracker.getServices();
 		for (int i = 0; (services != null) && i < services.length; ++i) {
-			pluginFactories.add((PluginFactory<?>)services[i]);
+			pluginFactories.add((PluginFactory<?>) services[i]);
 		}
 		tracker.close();
 		return pluginFactories;

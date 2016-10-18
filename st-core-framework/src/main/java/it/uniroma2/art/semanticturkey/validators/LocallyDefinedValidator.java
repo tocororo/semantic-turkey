@@ -33,7 +33,7 @@ public class LocallyDefinedValidator implements ConstraintValidator<LocallyDefin
 	public boolean isValid(Resource value, ConstraintValidatorContext context) {
 		try {
 			if (value == null) {
-				return false;
+				return true;
 			}
 
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils

@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor.internal;
 
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-
 import java.util.Map.Entry;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -10,6 +8,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
+
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 public class VelocitySupportTools {
 
@@ -73,13 +74,29 @@ public class VelocitySupportTools {
 	
 	public String getRequestMethodAsSource(ExecutableElement executableElement) {
 		GenerateSTServiceController ann = executableElement.getAnnotation(GenerateSTServiceController.class);
-		String requestMethodName = ann.method().toString();
-		if (requestMethodName.equals("GET")) {
-			return "RequestMethod.GET";
-		} else if (requestMethodName.equals("POST")){
-			return "RequestMethod.POST";
-		} else {
-			throw new IllegalArgumentException("Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
+		if (ann != null) {
+			String requestMethodName = ann.method().toString();
+			if (requestMethodName.equals("GET")) {
+				return "RequestMethod.GET";
+			} else if (requestMethodName.equals("POST")){
+				return "RequestMethod.POST";
+			} else {
+				throw new IllegalArgumentException("Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
+			}
 		}
+		
+		STServiceOperation ann2 = executableElement.getAnnotation(STServiceOperation.class);
+		if (ann2 != null) {
+			String requestMethodName = ann2.method().toString();
+			if (requestMethodName.equals("GET")) {
+				return "RequestMethod.GET";
+			} else if (requestMethodName.equals("POST")){
+				return "RequestMethod.POST";
+			} else {
+				throw new IllegalArgumentException("Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
+			}
+		}
+		
+		throw new IllegalArgumentException("Missing operation-related annotation on " + executableElement);
 	}
 }

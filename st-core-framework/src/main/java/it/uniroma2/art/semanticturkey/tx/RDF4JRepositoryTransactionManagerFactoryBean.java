@@ -29,7 +29,10 @@ public class RDF4JRepositoryTransactionManagerFactoryBean
 
 	@Override
 	public RDF4JRepositoryTransactionManager getObject() throws Exception {
-		final String projectName = stContext.getProject().getName();
+		System.out.println("Project is = " + stContext.getProject());
+		final String projectName = stContext
+				.getProject()
+				.getName();
 		final Repository repository = stContext.getProject().getRepository();
 
 		return transactionManagers.computeIfAbsent(projectName,

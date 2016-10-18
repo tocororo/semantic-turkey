@@ -28,7 +28,7 @@ import org.w3c.dom.Document;
 public class CatchAllExceptionHandlerControllerAdvice {
 
 	private static Logger logger = LoggerFactory.getLogger(CatchAllExceptionHandlerControllerAdvice.class);
-	
+
 	@ExceptionHandler(MethodConstraintViolationException.class)
 	public ResponseEntity<String> handleException(MethodConstraintViolationException ex,
 			HttpServletRequest request) {

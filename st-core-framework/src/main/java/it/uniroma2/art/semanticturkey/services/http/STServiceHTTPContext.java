@@ -62,6 +62,10 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		logger.trace("project = " + project);
 
+		if (project == null) {
+			throw new InvalidContextException(
+					"not an open project: " + (projectParameter == "null" ? "<current>" : projectParameter));
+		}
 		return project;
 	}
 

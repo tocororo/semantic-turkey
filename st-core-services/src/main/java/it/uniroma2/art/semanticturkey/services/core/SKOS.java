@@ -1,7 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -16,72 +20,96 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
 
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter2;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 
 /**
  * This class provides services for manipulating SKOS constructs.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-@GenerateSTServiceController
-@Validated
-@Component
+@STService
 public class SKOS extends STServiceAdapter2 {
 
 	private static Logger logger = LoggerFactory.getLogger(SKOS.class);
 
-	@GenerateSTServiceController
+	@STServiceOperation
 	@Read
-	public Response getNarrowerConcepts(@LocallyDefined Resource resource) {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse("getNarrowerConcept",
-				RepliesStatus.ok);
+	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
+			@Optional @LocallyDefined Resource conceptScheme,
+			@Optional(defaultValue = "") String[] languages) {
+		try (RepositoryConnection conn = getManagedConnection()) {
+			String queryString = ""
+			// @formatter:off
+				+ "        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                            \n"
+				+ "        PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                            \n"
+				+ "        SELECT DISTINCT ?narrower ?label where {                                       \n"
+				+ "           ?narrower skos:broader|^skos:narrower ?concept .                            \n";
+			// @formatter:on
 
-		try (RepositoryConnection conn = getRepositoryConnection()) {
-			TupleQuery query = conn.prepareTupleQuery("prefix skos: <http://www.w3.org/2004/02/skos/core#> "
-					+ "select distinct ?narrower where {?narrower skos:broader|^skos:narrower ?broader}");
-			query.setBinding("broader", resource);
+			if (conceptScheme != null) {
+				queryString += ""
+					// @formatter:off
+						+ "   ?narrower skos:inScheme ?conceptScheme .                                   \n";
+					// @formatter:on
+			}
+
+			if (languages != null) {
+				queryString += ""
+					// @formatter:off
+						+ "   OPTIONAL {                                                                  \n"
+						+ "      ?narrower skosxl:prefLabel [                                             \n"
+						+ "          skosxl:literalForm ?label                                            \n"
+						+ "      ] .                                                                      \n"
+						+ "   }                                                                           \n";
+					// @formatter:on
+			}
+
+			queryString += "}\n";
+
+			logger.debug("query = " + queryString);
+
+			TupleQuery query = conn.prepareTupleQuery(queryString);
+			query.setBinding("concept", concept);
+
+			if (conceptScheme != null) {
+				query.setBinding("conceptScheme", conceptScheme);
+			}
 
 			query.setIncludeInferred(false);
 
 			// SimpleDataset simpleDataset = new SimpleDataset();
 			// simpleDataset.addDefaultGraph(null);
 			// query.setDataset(simpleDataset);
-			
-			System.out.println("- Begin Results -");
-			QueryResults.stream(query.evaluate()).forEach(System.out::println);
-			System.out.println("- End Results - ");
-		}
 
-		return response;
+			return QueryResults.stream(query.evaluate()).map(bindingSet -> {
+				return new AnnotatedValue<Resource>((Resource) bindingSet.getValue("narrower"));
+			}).collect(Collectors.toList());
+		}
 	}
-	
-	@GenerateSTServiceController
+
+	@STServiceOperation
 	@Read
 	public void failingReadServiceContainingUpdate() {
-		try (RepositoryConnection conn = getRepositoryConnection()) {
-			Update update = conn.prepareUpdate("insert data {<http://test.it/> <http://test.it/> <http://test.it/> . }");
+		try (RepositoryConnection conn = getManagedConnection()) {
+			Update update = conn
+					.prepareUpdate("insert data {<http://test.it/> <http://test.it/> <http://test.it/> . }");
 			update.execute();
 		}
 	}
 
-
-	@GenerateSTServiceController
+	@STServiceOperation
 	@Write
 	public void createConcept(@Optional @LanguageTaggedString Literal newConcept,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme)
@@ -102,7 +130,8 @@ public class SKOS extends STServiceAdapter2 {
 		if (broaderConcept != null) {
 			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
 		} else {
-			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF,
+					conceptScheme);
 		}
 
 		applyPatch(quadAdditions, quadRemovals);
@@ -139,5 +168,11 @@ public class SKOS extends STServiceAdapter2 {
 		}
 
 		return generateURI(URIGenerator.Roles.concept, args);
+	}
+
+	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
+		Method m = SKOS.class.getMethod("getNarrowerConcepts", Resource.class, Resource.class,
+				String[].class);
+		System.out.println(m.getGenericReturnType());
 	}
 }
