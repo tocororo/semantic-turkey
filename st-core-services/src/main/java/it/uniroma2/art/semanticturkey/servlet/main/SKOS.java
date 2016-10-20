@@ -1220,6 +1220,12 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTURIResource newScheme = createNewURIResource(skosModel, schemeQName, getUserNamedGraphs());
 
+			if (schemeQName == null) {
+				newScheme = generateConceptSchemeURI(prefLabel, lang);
+			} else {
+				newScheme = createNewURIResource(skosModel, schemeQName, getUserNamedGraphs());
+			}
+
 			// add a new concept scheme...
 			skosModel.addSKOSConceptScheme(newScheme, getWorkingGraph());
 
@@ -1241,6 +1247,8 @@ public class SKOS extends ResourceOld {
 		} catch (NonExistingRDFResourceException e) {
 			return logAndSendException(e);
 		} catch (MalformedURIException e) {
+			return logAndSendException(e);
+		} catch (URIGenerationException e) {
 			return logAndSendException(e);
 		}
 		return response;
