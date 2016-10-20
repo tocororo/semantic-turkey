@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
+import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 
 /**
@@ -41,21 +43,27 @@ public class STAuthenticationSuccessHandler extends SimpleUrlAuthenticationSucce
 		ServletOutputStream out = response.getOutputStream();
 		
 		List<String> roles = new ArrayList<String>();
-		Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+		
+		STUser loggedUser = (STUser) authentication.getPrincipal();
+		Collection<? extends GrantedAuthority> authorities = loggedUser.getAuthorities();
 		Iterator<? extends GrantedAuthority> authIt = authorities.iterator();
 		while (authIt.hasNext()) {
 			roles.add(authIt.next().getAuthority());
 		}
 		
-		//create json response with the same structure of STResponse
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("login", RepliesStatus.ok, SerializationType.json);
 		try {
-			jsonResp.getDataElement().put("user", authentication.getName());
-			jsonResp.getDataElement().put("roles", new JSONArray(roles));
+			JSONObject userJson = new JSONObject();
+			userJson.put("email", loggedUser.getUsername());
+			userJson.put("firstName", loggedUser.getFirstName());
+			userJson.put("lastName", loggedUser.getLastName());
+			userJson.put("roles", new JSONArray(roles));
+			jsonResp.getDataElement().put("user", userJson);
 		} catch (JSONException e) {
 			throw new ServletException(e);
 		}
+		
 		out.print(jsonResp.toString());
 		
 	}

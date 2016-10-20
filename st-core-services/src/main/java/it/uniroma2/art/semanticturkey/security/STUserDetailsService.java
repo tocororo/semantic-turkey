@@ -1,14 +1,11 @@
 package it.uniroma2.art.semanticturkey.security;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import it.uniroma2.art.semanticturkey.user.STUser;
 
 /**
  * @author Tiziano
@@ -18,29 +15,18 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
  * (Referenced in WEB-INF/spring-security.xml)
  */
 public class STUserDetailsService implements UserDetailsService {
+	
+	@Autowired
+	UserService userService;
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		
-        // Ideally it should be fetched from model and populated instance of
-        // #org.springframework.security.core.userdetails.User should be returned from this method
-        UserDetails user;
-        
-        List<GrantedAuthority> grantedAuths;
-        if (username.equals("user")) {
-            grantedAuths = new ArrayList<>();
-            grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER"));
-            user = new User(username, "user", grantedAuths);
-        } else if (username.equals("admin")) {
-            grantedAuths = new ArrayList<>();
-            grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER"));
-            grantedAuths.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-            user = new User(username, "admin", grantedAuths);
-        } else {
-        	throw new UsernameNotFoundException("username " + username+ " not found");
-        }
-        
-        return user;
+		STUser user = userService.findUser(username);
+		if (user != null) {
+			return user;
+		} else {
+			throw new UsernameNotFoundException("username " + username+ " not found");
+		}
 	}
 
 }
