@@ -60,7 +60,7 @@ public class TupleQueryShallowModel {
 		if (groupByInsertionIndex != -1) {
 			sb.append(query.substring(graphPatternInsertionIndex, groupByInsertionIndex));
 			sb.append(
-					additionalGroupingVariables.stream().map(varName -> "?" + varName).collect(joining(" ")));
+					additionalGroupingVariables.stream().map(varName -> "?" + varName).collect(joining(" ", "", " ")));
 			sb.append(query.substring(groupByInsertionIndex));
 		} else {
 			sb.append(query.substring(graphPatternInsertionIndex));

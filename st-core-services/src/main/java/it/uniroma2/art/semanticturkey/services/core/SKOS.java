@@ -2,10 +2,9 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -14,17 +13,18 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter2;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -33,6 +33,11 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 
 /**
  * This class provides services for manipulating SKOS constructs.
@@ -46,59 +51,206 @@ public class SKOS extends STServiceAdapter2 {
 
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefined Resource conceptScheme,
-			@Optional(defaultValue = "") String[] languages) {
-		try (RepositoryConnection conn = getManagedConnection()) {
-			String queryString = ""
-			// @formatter:off
-				+ "        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                            \n"
-				+ "        PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                            \n"
-				+ "        SELECT DISTINCT ?narrower ?label where {                                       \n"
-				+ "           ?narrower skos:broader|^skos:narrower ?concept .                            \n";
-			// @formatter:on
+	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefined Resource scheme) {
+		QueryBuilder qb;
 
-			if (conceptScheme != null) {
-				queryString += ""
+		if (scheme != null) {
+			qb = createQueryBuilder(
 					// @formatter:off
-						+ "   ?narrower skos:inScheme ?conceptScheme .                                   \n";
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+                    "                                                                                    \n" +
+					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
+					"     OPTIONAL {                                                                     \n" +
+					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
+					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
+					"     }                                                                              \n" +
+					" }                                                                                  \n" +
+					" GROUP BY ?resource ?attr_more                                                      \n"
 					// @formatter:on
-			}
-
-			if (languages != null) {
-				queryString += ""
+			);
+			qb.setBinding("scheme", scheme);
+		} else {
+			qb = createQueryBuilder(
 					// @formatter:off
-						+ "   OPTIONAL {                                                                  \n"
-						+ "      ?narrower skosxl:prefLabel [                                             \n"
-						+ "          skosxl:literalForm ?label                                            \n"
-						+ "      ] .                                                                      \n"
-						+ "   }                                                                           \n";
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+                    "                                                                                    \n" +
+					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
+					"     FILTER NOT EXISTS {[] skos:broader|^skos:narrower ?resource}                   \n" +
+					"     OPTIONAL {                                                                     \n" +
+					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource . } as ?attr_more ) \n" +
+					"     }                                                                              \n" +
+					" }                                                                                  \n" +
+					" GROUP BY ?resource ?attr_more                                                      \n"
 					// @formatter:on
-			}
-
-			queryString += "}\n";
-
-			logger.debug("query = " + queryString);
-
-			TupleQuery query = conn.prepareTupleQuery(queryString);
-			query.setBinding("concept", concept);
-
-			if (conceptScheme != null) {
-				query.setBinding("conceptScheme", conceptScheme);
-			}
-
-			query.setIncludeInferred(false);
-
-			// SimpleDataset simpleDataset = new SimpleDataset();
-			// simpleDataset.addDefaultGraph(null);
-			// query.setDataset(simpleDataset);
-
-			return QueryResults.stream(query.evaluate()).map(bindingSet -> {
-				return new AnnotatedValue<Resource>((Resource) bindingSet.getValue("narrower"));
-			}).collect(Collectors.toList());
+			);
 		}
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
 	}
 
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
+			@Optional @LocallyDefined Resource scheme) {
+		QueryBuilder qb;
+
+		if (scheme != null) {
+			qb = createQueryBuilder(
+					// @formatter:off
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+                    "                                                                                    \n" +
+					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
+					"     ?resource skos:inScheme ?scheme.                                               \n" +
+					"     OPTIONAL {                                                                     \n" +
+					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
+					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
+					"     }                                                                              \n" +
+					" }                                                                                  \n" +
+					" GROUP BY ?resource ?attr_more                                                      \n"
+					// @formatter:on
+			);
+			qb.setBinding("scheme", scheme);
+		} else {
+			qb = createQueryBuilder(
+					// @formatter:off
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+                    "                                                                                    \n" +
+					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
+					"     OPTIONAL {                                                                     \n" +
+					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource . } as ?attr_more ) \n" +
+					"     }                                                                              \n" +
+					" }                                                                                  \n" +
+					" GROUP BY ?resource ?attr_more                                                      \n"
+					// @formatter:on
+			);
+		}
+		qb.processRole();
+		qb.processRendering();
+		qb.setBinding("concept", concept);
+		return qb.runQuery();
+	}
+
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getAllSchemes() {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                       \n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                      \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                 \n" +
+                "                                                                           \n" +
+				" SELECT ?resource WHERE {                                                  \n" +
+				"     ?resource rdf:type/rdfs:subClassOf* skos:ConceptScheme .              \n" +
+				" }                                                                         \n" +
+				" GROUP BY ?resource                                                        \n"
+				// @formatter:on
+		);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+	}
+
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getSchemesMatrixPerConcept(@LocallyDefined Resource concept) {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                    \n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                   \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                              \n" +
+                "                                                                                        \n" +
+				" SELECT ?resource ?attr_inScheme WHERE {                                                \n" +
+				"    ?resource rdf:type/rdfs:subClassOf* skos:ConceptScheme .                            \n" +
+				"    BIND(EXISTS{                                                                        \n" +
+				"             ?resource skos:hasTopConcept|^skos:isTopConceptOf|^skos:inScheme ?concept .\n" +
+				"         } AS ?attr_inScheme )                                                          \n" +
+				" }                                                                                      \n" +
+				" GROUP BY ?resource ?attr_inScheme                                                      \n"
+				// @formatter:on
+		);
+		qb.processRole();
+		qb.processRendering();
+		qb.setBinding("concept", concept);
+		return qb.runQuery();
+	}
+
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getRootCollections() {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                        \n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                       \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                  \n" +
+                "                                                                            \n" +
+				" SELECT DISTINCT ?resource WHERE {                                          \n" +
+				"   ?resource rdf:type/rdfs:subClassOf* skos:Collection .                    \n" +
+				"   FILTER NOT EXISTS {                                                      \n" +
+				" 	  [] skos:member ?resource .                                             \n" +
+				" 	}                                                                        \n" +
+				" 	FILTER NOT EXISTS {                                                      \n" +
+				" 	  [] skos:memberList/rdf:rest*/rdf:first ?resource .                     \n" +
+				" 	}                                                                        \n" +
+				" }                                                                          \n" +
+				" GROUP BY ?resource                                                         \n"
+				// @formatter:on
+		);
+		qb.process(CollectionsMoreProcessor.INSTANCE, "resource", "attr_more");
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+	}
+
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getNestedCollections(@LocallyDefined Resource container) {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                        \n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                       \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                  \n" +
+                "                                                                            \n" +
+                " SELECT ?resource (COUNT(DISTINCT ?mid) AS ?index) WHERE {                  \n" +
+				"   {                                                                        \n" +
+				" 	  FILTER NOT EXISTS {?container skos:memberList [] }                     \n" +
+				" 	  ?container skos:member ?resource .                                     \n" +
+				"   } UNION {                                                                \n" +
+				" 	  ?container skos:memberList ?memberList .                               \n" +
+				" 	  ?memberList rdf:rest* ?mid .                                           \n" +
+				" 	  ?mid rdf:rest* ?node .                                                 \n" +
+				" 	  ?node rdf:first ?resource .                                            \n" +
+				"   }                                                                        \n" +
+				" 	FILTER EXISTS { ?resource rdf:type/rdfs:subClassOf skos:Collection . }   \n" +
+				" }                                                                          \n" +
+				" GROUP BY ?resource                                                         \n" +
+				" ORDER BY ?index                                                            \n"
+				// @formatter:on
+		);
+		qb.process(CollectionsMoreProcessor.INSTANCE, "resource", "attr_more");
+		qb.processRole();
+		qb.processRendering();
+		qb.setBinding("container", container);
+		return qb.runQuery();
+	}
+
+	
 	@STServiceOperation
 	@Read
 	public void failingReadServiceContainingUpdate() {
@@ -176,3 +328,47 @@ public class SKOS extends STServiceAdapter2 {
 		System.out.println(m.getGenericReturnType());
 	}
 }
+
+class CollectionsMoreProcessor implements QueryBuilderProcessor {
+
+	public static final CollectionsMoreProcessor INSTANCE = new CollectionsMoreProcessor();
+	private GraphPattern graphPattern;
+
+	private CollectionsMoreProcessor() {
+		this.graphPattern = GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE)
+				.prefix("rdfs", RDFS.NAMESPACE)
+				.prefix("skos", org.eclipse.rdf4j.model.vocabulary.SKOS.NAMESPACE)
+				.projection(ProjectionElementBuilder.variable("attr_more"))
+				.pattern(
+					// @formatter:off
+					" BIND(EXISTS { {                                                                    \n" +
+					"                 ?resource a skos:Collection .                                      \n" +
+					"                 ?resource skos:member [rdf:type/rdfs:subClassOf* skos:Collection] .\n" +
+					"               } union {                                                            \n" +
+					"                 ?resource rdf:type/rdfs:subClassOf* skos:OrderedCollection .       \n" +
+					"                 ?resource skos:memberList/rdf:rest*/rdf:first [rdf:type/rdfs:subClassOf* skos:Collection] . \n" +
+					"             } } AS ?attr_more)                                                     \n"
+					// @formatter:on
+		).graphPattern();
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return false;
+	}
+
+	@Override
+	public String getBindingVariable() {
+		return "resource";
+	}
+
+	@Override
+	public GraphPattern getGraphPattern() {
+		return graphPattern;
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+		return null;
+	}
+};
