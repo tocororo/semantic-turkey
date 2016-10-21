@@ -22,7 +22,7 @@ public class CODATemplateBasedURIGeneratorConfiguration extends CODAURIGenerator
 	public String xLabel = "xl_${lexicalForm.language}_${rand()}";
 	
 	@PluginConfigurationParameter(description="Template for SKOS Definitions")
-	public String xDefinition = "xDef_${rand()}";
+	public String xNote = "xNote_${rand()}";
 
 	@PluginConfigurationParameter(description="Fallback template for any unknown genre of resource")
 	public String fallback = "${xRole}_${rand()}";
