@@ -53,7 +53,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -87,7 +87,7 @@ import com.google.common.collect.Multimap;
 @GenerateSTServiceController
 @Validated
 @Component
-public class CustomRanges extends STServiceAdapter {
+public class CustomRanges extends STServiceAdapterOLD {
 	
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;

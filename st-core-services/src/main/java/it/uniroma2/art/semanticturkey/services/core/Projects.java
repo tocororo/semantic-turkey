@@ -32,7 +32,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -73,7 +73,7 @@ import org.w3c.dom.Element;
 @Validated
 @Component
 @Controller //just for exportProject service
-public class Projects extends STServiceAdapter {
+public class Projects extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
 	

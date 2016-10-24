@@ -30,7 +30,7 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -40,7 +40,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @GenerateSTServiceController
 @Validated
 @Component
-public class ManchesterHandler extends STServiceAdapter {
+public class ManchesterHandler extends STServiceAdapterOLD {
 
 	@GenerateSTServiceController
 	public Response getAllDLExpression(ARTURIResource classUri,

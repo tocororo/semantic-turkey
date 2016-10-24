@@ -54,7 +54,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -66,7 +66,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @Validated
 @Component
 @Controller //needed for saveAlignment method
-public class Alignment extends STServiceAdapter {
+public class Alignment extends STServiceAdapterOLD {
 	
 	@Autowired
 	private STServiceContext stServiceContext;

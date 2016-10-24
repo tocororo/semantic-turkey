@@ -31,7 +31,7 @@ import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedExcepti
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -40,7 +40,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @GenerateSTServiceController
 @Validated
 @Component
-public class TestPerformance  extends STServiceAdapter {
+public class TestPerformance  extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(ServiceAdapter.class);
 	

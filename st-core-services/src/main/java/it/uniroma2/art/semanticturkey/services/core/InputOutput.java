@@ -8,7 +8,7 @@ import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -38,7 +38,7 @@ import org.w3c.dom.Element;
 @Validated
 @Component
 @Controller //just for saveRDF service
-public class InputOutput extends STServiceAdapter {
+public class InputOutput extends STServiceAdapterOLD {
 	
 	protected static Logger logger = LoggerFactory.getLogger(InputOutput.class);
 	

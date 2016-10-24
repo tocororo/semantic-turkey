@@ -103,7 +103,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.rendering.RenderingOrchestrator;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.core.impl.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.impl.StatementCollector;
@@ -122,7 +122,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @GenerateSTServiceController
 @Validated
 @Component
-public class ResourceView extends STServiceAdapter {
+public class ResourceView extends STServiceAdapterOLD {
 
 	public static final ARTURIResource INFERENCE_GRAPH = VocabUtilities.nodeFactory
 			.createURIResource("http://semanticturkey/inference-graph");

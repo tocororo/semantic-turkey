@@ -21,7 +21,7 @@ import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceCon
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -44,7 +44,7 @@ import org.w3c.dom.Element;
 @GenerateSTServiceController
 @Validated
 @Component
-public class Search extends STServiceAdapter {
+public class Search extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(Search.class);
 	

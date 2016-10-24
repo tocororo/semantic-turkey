@@ -8,7 +8,7 @@ import org.w3c.dom.Element;
 
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -19,7 +19,7 @@ import it.uniroma2.art.semanticturkey.validators.XSDDatatypeValidator;
 @GenerateSTServiceController
 @Validated
 @Component
-public class XMLSchema extends STServiceAdapter{
+public class XMLSchema extends STServiceAdapterOLD{
 	
 	@GenerateSTServiceController
 	public Response formatDateTime(int year, int month, int day, int hour, int minute, int second, @Optional(defaultValue="Z") String offset) throws ParseException {

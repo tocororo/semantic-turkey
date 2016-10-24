@@ -35,7 +35,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.ContentType;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfigurationParameter;
 import it.uniroma2.art.semanticturkey.plugin.configuration.RequiredConfigurationParameter;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -53,7 +53,7 @@ import org.w3c.dom.Element;
 @GenerateSTServiceController
 @Validated
 @Component
-public class Plugins extends STServiceAdapter {
+public class Plugins extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(Plugins.class);
 

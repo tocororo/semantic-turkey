@@ -26,7 +26,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter2;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -45,7 +45,7 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
-public class SKOS extends STServiceAdapter2 {
+public class SKOS extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(SKOS.class);
 

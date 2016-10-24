@@ -40,7 +40,7 @@ public class STServiceAspect implements Ordered {
 
 	private static final ThreadLocal<Queue<STServiceInvocaton>> serviceInvocations = ThreadLocal.withInitial(LinkedList::new);
 	
-	@Pointcut("target(it.uniroma2.art.semanticturkey.services.STServiceAdapter2) && execution(@it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation public * *(..))")
+	@Pointcut("target(it.uniroma2.art.semanticturkey.services.STServiceAdapter) && execution(@it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation public * *(..))")
 	public void stNewerNewStyleServiceMethod() {};
 
 	@Before("stNewerNewStyleServiceMethod()")

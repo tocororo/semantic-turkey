@@ -30,7 +30,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -41,7 +41,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @GenerateSTServiceController
 @Validated
 @Component
-public class ICV extends STServiceAdapter {
+public class ICV extends STServiceAdapterOLD {
 	
 	protected static Logger logger = LoggerFactory.getLogger(ICV.class);
 	

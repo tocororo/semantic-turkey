@@ -12,7 +12,7 @@ import it.uniroma2.art.semanticturkey.constraints.Existing;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
 
 import java.util.Collection;
@@ -23,7 +23,7 @@ import org.springframework.validation.annotation.Validated;
 @GenerateSTServiceController
 @Validated
 @Component
-public class Resource extends STServiceAdapter {
+public class Resource extends STServiceAdapterOLD {
 
 	// Temporarily disabled, since we still have not automatic handling of domain objects
 	//@GenerateSTServiceController
