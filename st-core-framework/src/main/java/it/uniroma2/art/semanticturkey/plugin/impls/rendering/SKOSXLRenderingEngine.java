@@ -2,7 +2,6 @@ package it.uniroma2.art.semanticturkey.plugin.impls.rendering;
 
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
@@ -16,8 +15,7 @@ import static java.util.stream.Collectors.joining;
 import java.util.Collections;
 import java.util.Set;
 
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
 
 /**
