@@ -1217,7 +1217,7 @@ public class SKOS extends ResourceOld {
 		try {
 
 			SKOSModel skosModel = getSKOSModel();
-			ARTURIResource newScheme = createNewURIResource(skosModel, schemeQName, getUserNamedGraphs());
+			ARTURIResource newScheme;
 
 			if (schemeQName == null) {
 				newScheme = generateConceptSchemeURI(prefLabel, lang);

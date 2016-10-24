@@ -666,8 +666,14 @@ public class SKOSXL extends SKOS {
 		try {
 
 			SKOSXLModel skosxlModel = getSKOSXLModel();
-			ARTURIResource newScheme = createNewURIResource(skosxlModel, schemeQName, getUserNamedGraphs());
+			ARTURIResource newScheme;
 
+			if (schemeQName == null) {
+				newScheme = generateConceptSchemeURI(prefLabel, prefLabelLang);
+			} else {
+				newScheme = createNewURIResource(skosxlModel, schemeQName, getUserNamedGraphs());
+			}
+			
 			// add a new concept scheme...
 			skosxlModel.addSKOSConceptScheme(newScheme, getWorkingGraph());
 
