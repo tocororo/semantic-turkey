@@ -429,7 +429,6 @@ public class SKOS extends ResourceOld {
 			String preferredLabelLanguage = setHttpPar(Par.prefLabelLang);
 			String language = setHttpPar(Par.lang);
 
-			checkRequestParametersAllNotNull(Par.scheme);
 			response = createConceptScheme(schemeName, preferredLabel, preferredLabelLanguage, language);
 
 			// MODIFY

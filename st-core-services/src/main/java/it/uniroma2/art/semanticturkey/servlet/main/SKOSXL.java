@@ -182,7 +182,6 @@ public class SKOSXL extends SKOS {
 			String preferredLabelLanguage = setHttpPar(SKOS.Par.prefLabelLang);
 			String language = setHttpPar(SKOS.Par.lang);
 
-			checkRequestParametersAllNotNull(SKOS.Par.scheme);
 			response = createConceptScheme(schemeName, preferredLabel, preferredLabelLanguage, language);
 
 		} else if (request.equals(Req.setPrefLabelRequest)) {
