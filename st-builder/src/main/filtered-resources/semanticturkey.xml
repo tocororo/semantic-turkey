@@ -58,9 +58,9 @@
 		<bundle dependency="true">wrap:mvn:org.antlr/antlr-runtime/3.3</bundle>
 		<bundle dependency="true">mvn:ch.qos.logback/logback-classic/1.1.2</bundle>
 		<bundle dependency="true">mvn:ch.qos.logback/logback-core/1.1.2</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.7.4</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/2.7.4</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.7.0</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.8.2</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/2.8.2</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.8.2</bundle>
 		<bundle dependency="true">mvn:com.github.jsonld-java/jsonld-java/0.8.3</bundle>
 		<bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/4.4.4</bundle>
 		<bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.2</bundle>
