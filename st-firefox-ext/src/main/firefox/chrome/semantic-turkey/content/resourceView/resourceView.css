@@ -1,8 +1,0 @@
-groupbox {
-	border: 1px solid darkgrey;
-}
-
-toolbarbutton[disabled="true"] image {
-	filter: grayscale(1);
-	opacity: 0.5;
-}

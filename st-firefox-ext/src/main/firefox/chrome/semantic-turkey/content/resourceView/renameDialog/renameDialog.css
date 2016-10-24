@@ -1,9 +1,0 @@
-@CHARSET "UTF-8";
-
-dialog#renameDialog {
-	width: 30em;	
-}
-
-textbox#nameBox {
-	width: 30em;	
-}
