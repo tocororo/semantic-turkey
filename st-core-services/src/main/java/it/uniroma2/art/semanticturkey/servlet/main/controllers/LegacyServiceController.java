@@ -99,7 +99,6 @@ public class LegacyServiceController implements ApplicationContextAware, Introsp
 		//System.out.println("response encoding: " + oRes.getCharacterEncoding());
 		logger.debug("response encoding: " + oRes.getCharacterEncoding());
 		oRes.setCharacterEncoding("UTF-8");
-		oRes.setHeader("Access-Control-Allow-Origin", "*");
 		ServletOutputStream out;
 
 		//System.out.println("encoding: " + oRes.getCharacterEncoding());

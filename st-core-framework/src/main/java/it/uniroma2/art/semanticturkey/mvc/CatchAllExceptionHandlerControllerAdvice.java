@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.w3c.dom.Document;
@@ -28,7 +29,24 @@ import org.w3c.dom.Document;
 public class CatchAllExceptionHandlerControllerAdvice {
 
 	private static Logger logger = LoggerFactory.getLogger(CatchAllExceptionHandlerControllerAdvice.class);
-
+	
+	/**
+	 * In st-core-services some methods are secured with @PreAuthorized annotation. 
+	 * When an authenticated user that has no enough privileges try to access the method, 
+	 * an AccessDeniedException is thrown. This exception should be handled by 
+	 * STAccessDeniedHandler (a custom AccessDeniedHandler).
+	 * The following ExceptionHandler prevent @ExceptionHandler(Exception.class) from catching the
+	 * AccessDeniedException and simply re-throw it so that it bubble up untill the STAccessDeniedHandler
+	 * @param ex
+	 * @param request
+	 */
+	@ExceptionHandler(AccessDeniedException.class)
+	public void handleException(AccessDeniedException ex, HttpServletRequest request) {
+		
+		logger.debug("Exception catched by the Controller Advice", ex);
+		throw new AccessDeniedException(ex.getMessage());
+	}
+	
 	@ExceptionHandler(MethodConstraintViolationException.class)
 	public ResponseEntity<String> handleException(MethodConstraintViolationException ex,
 			HttpServletRequest request) {
@@ -85,7 +103,6 @@ public class CatchAllExceptionHandlerControllerAdvice {
 			respContent = XMLHelp.XML2String((Document) stResp.getResponseObject(), true);
 		}
 		responseHeaders.set("Content-Type", contentType + "; charset=UTF-8");
-		responseHeaders.set("Access-Control-Allow-Origin", "*");
 		return new ResponseEntity<String>(respContent, responseHeaders, HttpStatus.OK);
 	}
 
