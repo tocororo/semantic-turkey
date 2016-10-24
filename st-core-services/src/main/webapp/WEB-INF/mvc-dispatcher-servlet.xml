@@ -66,6 +66,8 @@
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey">
 		<context:exclude-filter type="regex"
 			expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*" />
+		<context:exclude-filter type="regex"
+			expression="it\.uniroma2\.art\.semanticturkey\.security\..*" />
 	</context:component-scan>
 
 	<!--A ValidatorFactory whose products (Validators) support dependency injection 

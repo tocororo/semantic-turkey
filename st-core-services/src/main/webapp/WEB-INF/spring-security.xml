@@ -1,10 +1,14 @@
 <beans:beans xmlns="http://www.springframework.org/schema/security"
 	xmlns:beans="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
 	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
 	http://www.springframework.org/schema/security
 	http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+	
+	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security"/>
 
 	<!--
 	Overrides the default entry point of authentication. As default Spring-Security redirects to login page 
@@ -14,7 +18,7 @@
 		and specifies the handler for successful and failed login -->
 		<form-login 
 			login-processing-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/login"
-			username-parameter="username"
+			username-parameter="email"
 			password-parameter="password"
 			authentication-success-handler-ref="authSuccessHandler"
 			authentication-failure-handler-ref="authFailHandler"/>
@@ -31,6 +35,7 @@
 	
 		<!-- http://docs.spring.io/spring-security/site/docs/3.1.x/reference/el-access.html -->
 		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUser" access="permitAll" />
+		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser" access="permitAll" />
 		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**" access="isAuthenticated()" />
 		<intercept-url pattern="/resources/stserver/**" access="isAuthenticated()" />
 		<!-- <intercept-url pattern="" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" /> -->
@@ -52,8 +57,10 @@
 		<!-- with AuthenticationProvider bean -->
 		<!-- <authentication-provider ref="authenticationProvider"/> -->
 		
-		<!-- with UserDetailsService bean -->
-		<authentication-provider user-service-ref="stUserDetailsService"/>
+		<!-- with UserDetailsService bean and password encoder -->
+		<authentication-provider user-service-ref="stUserDetailsService">
+			<password-encoder ref="bCryptPasswordEncoder"/>
+		</authentication-provider>
 	</authentication-manager>
 	
 	<beans:bean id="corsFilter" class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
@@ -64,5 +71,6 @@
 	<beans:bean id="authFailHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler"/>
 	<beans:bean id="accessDeniedHandler" class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler"/>
 	<beans:bean id="logoutSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler"/>
-
+	<beans:bean id='bCryptPasswordEncoder' class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder'/>
+	
 </beans:beans>
