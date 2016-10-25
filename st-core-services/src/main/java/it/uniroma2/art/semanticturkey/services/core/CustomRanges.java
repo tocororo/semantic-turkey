@@ -1,14 +1,45 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.servlet.ServletRequest;
+
+import org.antlr.runtime.ANTLRStringStream;
+import org.antlr.runtime.CharStream;
+import org.antlr.runtime.CommonTokenStream;
+import org.antlr.runtime.RecognitionException;
+import org.antlr.runtime.TokenStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Multimap;
+
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
-import it.uniroma2.art.coda.exception.parserexception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.exception.parserexception.PrefixNotDefinedException;
-import it.uniroma2.art.coda.exception.parserexception.RepeteadAssignmentException;
+import it.uniroma2.art.coda.pearl.parser.antlr.AntlrLexer;
+import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParser;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -59,30 +90,6 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
-import java.io.FileNotFoundException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.servlet.ServletRequest;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Multimap;
 
 @GenerateSTServiceController
 @Validated
@@ -812,6 +819,46 @@ public class CustomRanges extends STServiceAdapterOLD {
 		crConfig.saveXML();
 		return createReplyResponse(RepliesStatus.ok);
 	}
+	
+	/**
+	 * Tries to validate a pearl code.
+	 * @param pearl rule to be parsed, it should be a whole pearl rule if the CRE is a graph entry
+     * or a converter if the CRE is a node entry
+	 * @param creType tells if the CRE is type "node" or "graph".
+     * Determines also the nature of the pearl parameter
+	 * @return
+	 * @throws ProjectInconsistentException 
+	 * @throws UnavailableResourceException 
+	 * @throws ModelAccessException 
+	 * @throws RDFModelNotSetException 
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response validatePearl(String pearl, String creType) throws UnavailableResourceException, ProjectInconsistentException, RDFModelNotSetException, ModelAccessException{
+		if (creType.equals(CustomRangeEntry.Types.graph.toString())) {
+			try {
+				InputStream pearlStream = new ByteArrayInputStream(pearl.getBytes(StandardCharsets.UTF_8));
+				CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
+				codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+				//setProjectionRulesModelAndParseIt didn't throw exception, so pearl is valid
+				return createReplyResponse(RepliesStatus.ok);
+			} catch (PRParserException e) {
+				return createReplyFAIL("Invalid pearl rule: " + e.getErrorAsString());
+			}
+		} else { //type node
+			try {
+				CharStream pearlStream = new ANTLRStringStream(pearl);
+				AntlrLexer lexer = new AntlrLexer(pearlStream);
+				TokenStream token = new CommonTokenStream(lexer);
+				AntlrParser parser = new AntlrParser(token);
+				parser.projectionOperator().getTree();
+				//projectionOperator didn't throw exception, so pearl is valid
+				return createReplyResponse(RepliesStatus.ok);
+			} catch (RecognitionException e) {
+				return createReplyFAIL("Invalid projection operator \"" + pearl + "\"");
+			}
+		}
+	}
+	
 	
 	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
 		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
