@@ -25,7 +25,7 @@ public class STAccessDeniedHandler implements AccessDeniedHandler {
 	public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException)
 	        throws IOException, ServletException {
 		
-		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 		ServletOutputStream out = response.getOutputStream();
 		
 //		//retrieve service method's name
