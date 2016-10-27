@@ -1,14 +1,20 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
+import java.util.Iterator;
+
+import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
+
 public class UserPromptStruct {
 	
-	private String placeholderId;
+	private String placeholderId; //id of the CODA placeholder (triple: PH - projectionOperator - FS)
 	private String userPromptName; //name of the feature userPrompt/example
 	private String rdfType; //uri or literal
-	private String literalDatatype;
-	private String literalLang;
-	private String converter; //in the future this could be a list since a placeholder could be defined through multiple waterfall converters
-	private String converterArg;
+	private String literalDatatype; //optional datatype of the literal converter
+	private String literalLang; //optional language of the literal converter
+	private ConverterMention converter; //in the future this could be a list since a placeholder could be defined through multiple waterfall converters
+	private String converterArgPhId; //used only when converter is langString and uses a placeholder as argument
 	private boolean mandatory;
 	
 	/**
@@ -21,6 +27,7 @@ public class UserPromptStruct {
 		this.userPromptName = userPromptName;
 		this.rdfType = rdfType;
 		this.mandatory = true;
+		this.converter = new ConverterMention("http://art.uniroma2.it/coda/contracts/default");
 	}
 	
 	public String getPlaceholderId() {
@@ -47,6 +54,10 @@ public class UserPromptStruct {
 		return rdfType;
 	}
 
+	/**
+	 * Sets the type of the user prompt. It must be 'uri' or 'literal'
+	 * @param rdfType
+	 */
 	public void setRdfType(String rdfType) {
 		this.rdfType = rdfType;
 	}
@@ -67,20 +78,20 @@ public class UserPromptStruct {
 		this.literalLang = literalLang;
 	}
 	
-	public String getConverter(){
+	public ConverterMention getConverter(){
 		return converter;
 	}
 	
-	public void setConverter(String converter) {
+	public void setConverter(ConverterMention converter) {
 		this.converter = converter;
 	}
 	
-	public String getConverterArg(){
-		return converterArg;
+	public String getConverterArgPhId(){
+		return converterArgPhId;
 	}
 	
-	public void setConverterArg(String arg) {
-		this.converterArg = arg;
+	public void setConverterArgPhId(String phId) {
+		this.converterArgPhId = phId;
 	}
 	
 	public boolean isMandatory(){
@@ -109,5 +120,21 @@ public class UserPromptStruct {
 	
 	public boolean hasConverter(){
 		return converter != null;
+	}
+	
+	public String toString() {
+		String s = "placeholderId: " + placeholderId;
+		s += "\nuserPromptName: " + userPromptName;
+		s += "\nrdfType: " + rdfType;
+		s += "\nliteralDatatype: " + literalDatatype;
+		s += "\nliteralLang: " + literalLang;
+		s += "\nconverter: " + converter.getURI();
+		s += "\nconverterArg: ";
+		Iterator<ConverterArgumentExpression> itArgs = converter.getAdditionalArguments().iterator();
+		while (itArgs.hasNext()) { //TODO here I assume that all the arguments of a converter are literal. Handle better
+			s += "\n\t" + ((ConverterRDFLiteralArgument) itArgs.next()).getLiteralValue().getNominalValue();
+		}
+		s += "\nmandatory: " + mandatory;
+		return s;
 	}
 }

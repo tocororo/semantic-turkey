@@ -7,10 +7,7 @@ import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
-import it.uniroma2.art.coda.exception.parserexception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.exception.parserexception.PrefixNotDefinedException;
-import it.uniroma2.art.coda.exception.parserexception.RepeteadAssignmentException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
@@ -53,7 +50,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.antlr.runtime.EarlyExitException;
 import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
@@ -223,8 +219,8 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 							//fill the UserPromptStruct independently from its type (literal or uri)
 							upStruct.setLiteralDatatype(literalDatatype);
 							upStruct.setLiteralLang(literalLang);
-							upStruct.setConverter(converter.getURI());//for now I suppese there is used only one converter
-							upStruct.setConverterArg(converterArgPh);
+							upStruct.setConverter(converter);//for now I suppese there is used only one converter
+							upStruct.setConverterArgPhId(converterArgPh);
 							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
 							formMap.put(upsId, upStruct);
 						}

@@ -13,11 +13,7 @@ import java.util.Map.Entry;
 
 import javax.servlet.ServletRequest;
 
-import org.antlr.runtime.ANTLRStringStream;
-import org.antlr.runtime.CharStream;
-import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
-import org.antlr.runtime.TokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
@@ -38,8 +34,8 @@ import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.pearl.parser.antlr.AntlrLexer;
-import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParser;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -68,6 +64,7 @@ import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryGraph;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryNode;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryParseUtils;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.customrange.UserPromptStruct;
@@ -587,12 +584,12 @@ public class CustomRanges extends STServiceAdapterOLD {
 					formEntryElem.setAttribute("type", formEntry.getRdfType());
 					formEntryElem.setAttribute("mandatory", formEntry.isMandatory()+"");
 					if (formEntry.hasConverter()) {
-						String converter = formEntry.getConverter();
+						ConverterMention converter = formEntry.getConverter();
 						Element converterElem = XMLHelp.newElement(formEntryElem, "converter");
-						converterElem.setAttribute("uri", converter);
+						converterElem.setAttribute("uri", converter.getURI());
 						//for special case langString, specify the converter argument too
-						if (formEntry.getConverterArg() != null) {
-							String phLangId = formEntry.getConverterArg();
+						if (formEntry.getConverterArgPhId() != null) {
+							String phLangId = formEntry.getConverterArgPhId();
 							/* the language placeholder (arguments of langString converter)
 							 * is already added to the xml as formEntry element since in
 							 * PEARL it must be defined before it's used as argument,
@@ -821,6 +818,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 	}
 	
 	/**
+	 * TODO: use CustomRangeEntryParseUtils
 	 * Tries to validate a pearl code.
 	 * @param pearl rule to be parsed, it should be a whole pearl rule if the CRE is a graph entry
      * or a converter if the CRE is a node entry
@@ -843,22 +841,23 @@ public class CustomRanges extends STServiceAdapterOLD {
 				return createReplyResponse(RepliesStatus.ok);
 			} catch (PRParserException e) {
 				return createReplyFAIL("Invalid pearl rule: " + e.getErrorAsString());
+			} catch (AntlrParserRuntimeException e) {
+				return createReplyFAIL("Invalid pearl rule: " + e.getMsg());
 			}
 		} else { //type node
 			try {
-				CharStream pearlStream = new ANTLRStringStream(pearl);
-				AntlrLexer lexer = new AntlrLexer(pearlStream);
-				TokenStream token = new CommonTokenStream(lexer);
-				AntlrParser parser = new AntlrParser(token);
-				parser.projectionOperator().getTree();
-				//projectionOperator didn't throw exception, so pearl is valid
+				CustomRangeEntryParseUtils.createProjectionOperatorTree(pearl);
+				//parser didn't throw exception, so pearl is valid
 				return createReplyResponse(RepliesStatus.ok);
 			} catch (RecognitionException e) {
-				return createReplyFAIL("Invalid projection operator \"" + pearl + "\"");
+				System.out.println(e.getMessage());
+				return createReplyFAIL("Invalid projection operator");
+			} catch (AntlrParserRuntimeException e) {
+				System.out.println(e.getMsg() + " - " + e.getMessage());
+				return createReplyFAIL("Invalid projection operator: " + e.getMsg());
 			}
 		}
 	}
-	
 	
 	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
 		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
