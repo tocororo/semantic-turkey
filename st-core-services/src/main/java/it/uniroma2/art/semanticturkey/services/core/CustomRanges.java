@@ -35,6 +35,7 @@ import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
@@ -63,7 +64,6 @@ import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfigEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryGraph;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryNode;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryParseUtils;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
@@ -156,17 +156,9 @@ public class CustomRanges extends STServiceAdapterOLD {
 					rdfModel.addTriple(triple.getSubject(), triple.getPredicate(), triple.getObject(), getWorkingGraph());
 				}
 			} else if (crEntry.isTypeNode()){
-				CustomRangeEntryNode creNode = crEntry.asCustomRangeEntryNode();
-				UserPromptStruct upStruct = creNode.getForm(codaCore).iterator().next();//if type=node, it's sure that there is only 1 form entry
 				String value = userPromptMap.entrySet().iterator().next().getValue();//get the only value
-				ARTNode artNode;
-				if (upStruct.isLiteral()){
-					artNode = codaCore.executeLiteralConverter(
-							upStruct.getConverter(), value, upStruct.getLiteralDatatype(), upStruct.getLiteralLang());
-				} else {//type "uri"
-					artNode = codaCore.executeURIConverter(upStruct.getConverter(), value);
-				}
-//				System.out.println("S:\t"+subject.getNominalValue()+"\nP:\t"+predicate.getNominalValue()+"\nO:\t"+artNode.getNominalValue());
+				ProjectionOperator projOperator = CustomRangeEntryParseUtils.getProjectionOperator(codaCore, crEntry.getRef());
+				ARTNode artNode = codaCore.executeProjectionOperator(projOperator, value);
 				rdfModel.addTriple(subject, predicate, artNode, getWorkingGraph());
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException e){
@@ -846,6 +838,12 @@ public class CustomRanges extends STServiceAdapterOLD {
 			}
 		} else { //type node
 			try {
+				//Treat separately the case where pearl is simply "literal", because parser.projectionOperator()
+				//called in createProjectionOperatorTree()
+				//inexplicably throws an exception (no viable alternative at input <EOF>)
+				if (pearl.equals("literal")) {
+					return createReplyResponse(RepliesStatus.ok); 
+				}
 				CustomRangeEntryParseUtils.createProjectionOperatorTree(pearl);
 				//parser didn't throw exception, so pearl is valid
 				return createReplyResponse(RepliesStatus.ok);

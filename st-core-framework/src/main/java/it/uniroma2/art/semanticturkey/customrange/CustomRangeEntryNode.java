@@ -1,9 +1,5 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.parserexception.PRGenericException;
-import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,9 +14,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.antlr.runtime.RecognitionException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 
 public class CustomRangeEntryNode extends CustomRangeEntry {
 	
@@ -32,12 +30,8 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException {
 		Collection<UserPromptStruct> form = new ArrayList<UserPromptStruct>();
 		String ref = getRef();
-		try {
-			UserPromptStruct upStruct = CustomRangeEntryParseUtils.createUserPromptForNodeEntry(ref);
-			form.add(upStruct);
-		} catch (RecognitionException e) {
-			throw new PRGenericException("Invalid ref in CustomRangeEntry " + getId());
-		}
+		UserPromptStruct upStruct = CustomRangeEntryParseUtils.createUserPromptForNodeEntry(ref, codaCore);
+		form.add(upStruct);
 		return form;
 	}
 	
