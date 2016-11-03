@@ -93,7 +93,6 @@ public class InputOutput extends STServiceAdapterOLD {
 			model.writeRDF(tempServerFile, rdfFormat, getWorkingGraph());
 		
 		oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
-		oRes.setHeader("Access-Control-Allow-Origin", "*");
 		FileInputStream is = new FileInputStream(tempServerFile);
 		IOUtils.copy(is, oRes.getOutputStream());
 		oRes.setContentType(rdfFormat.getMIMEType());

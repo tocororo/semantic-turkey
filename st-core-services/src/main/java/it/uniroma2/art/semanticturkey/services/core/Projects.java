@@ -352,7 +352,6 @@ public class Projects extends STServiceAdapterOLD {
 		logger.info("requested to export current project");
 		ProjectManager.exportProject(projectName, tempServerFile);
 		oRes.setHeader("Content-Disposition", "attachment; filename=export.zip");
-		oRes.setHeader("Access-Control-Allow-Origin", "*");
 		FileInputStream is = new FileInputStream(tempServerFile);
 		IOUtils.copy(is, oRes.getOutputStream());
 		oRes.setContentType("application/zip");

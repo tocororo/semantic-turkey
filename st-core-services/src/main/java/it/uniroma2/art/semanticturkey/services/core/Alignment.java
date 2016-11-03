@@ -625,7 +625,6 @@ public class Alignment extends STServiceAdapterOLD {
 		alignmentModel.serialize(tempServerFile);
 		FileInputStream is = new FileInputStream(tempServerFile);
 		IOUtils.copy(is, oRes.getOutputStream());
-		oRes.setHeader("Access-Control-Allow-Origin", "*");
 		oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
 		oRes.setContentType(RDFFormat.RDFXML_ABBREV.getMIMEType());
 		oRes.setContentLength((int) tempServerFile.length());
