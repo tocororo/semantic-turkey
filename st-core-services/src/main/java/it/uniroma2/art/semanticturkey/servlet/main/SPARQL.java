@@ -1,34 +1,5 @@
 package it.uniroma2.art.semanticturkey.servlet.main;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.query.BooleanQuery;
-import it.uniroma2.art.owlart.query.GraphQuery;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.owlart.query.Query;
-import it.uniroma2.art.owlart.query.QueryLanguage;
-import it.uniroma2.art.owlart.query.TupleQuery;
-import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.query.io.TupleBindingsWriterException;
-import it.uniroma2.art.owlart.query.io.TupleBindingsWritingFormat;
-import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
-import it.uniroma2.art.semanticturkey.utilities.Utilities;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -44,6 +15,33 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
+
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
+import it.uniroma2.art.owlart.query.BooleanQuery;
+import it.uniroma2.art.owlart.query.GraphQuery;
+import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.query.Query;
+import it.uniroma2.art.owlart.query.QueryLanguage;
+import it.uniroma2.art.owlart.query.TupleQuery;
+import it.uniroma2.art.owlart.query.Update;
+import it.uniroma2.art.owlart.query.io.TupleBindingsWriterException;
+import it.uniroma2.art.owlart.query.io.TupleBindingsWritingFormat;
+import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
+import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 /**
  * This service replies to SPARQL queries (or queries expressed in other query languages if supported by the
@@ -195,7 +193,10 @@ public class SPARQL extends ServiceAdapter {
 							logger.debug("query is a boolean query");
 							data.put(resultTypeAttr, "boolean");
 							boolean result = ((BooleanQuery) query).evaluate(infer);
-							data.put("result", Boolean.toString(result));
+							JSONObject sparqlObj = new JSONObject();
+							sparqlObj.put("head", new JSONObject());
+							sparqlObj.put("boolean", result);
+							data.put("sparql", sparqlObj);
 						}
 	
 						logger.debug("JSON data: \n" + data.toString(3));

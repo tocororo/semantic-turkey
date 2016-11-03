@@ -26,23 +26,8 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.utilities.JSONHelp;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -54,6 +39,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
+
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
+import it.uniroma2.art.owlart.model.ARTURIResource;
+import it.uniroma2.art.owlart.model.NodeFilters;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
+import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.JSONHelp;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 @Component
 public class Statement extends ServiceAdapter {
@@ -85,6 +87,19 @@ public class Statement extends ServiceAdapter {
 	public final static String typeAttr = "type";
 	public final static String mainGraphValue = "main";
 	public final static String anyNodeValue = "any";
+	
+	public final static String sparqlJSONAttr = "sparql";
+	public final static String headJSONAttr = "head";
+	public final static String varsJSONAttr = "vars";
+	public final static String resultsJSONAttr = "results";
+	public final static String bindingsJSONAttr = "bindings";
+	public final static String valueJSONAttr = "value";
+	public final static String xmlLangJSONAttr = "xml:lang";
+	public final static String datatypeJSONAAttr = "datatype";
+	public final static String uriJSONAValue = "uri";
+	public final static String bnodeJSONAValue = "bnode";
+	public final static String literalJSONAValue = "literal";
+	
 	public final static String uriXMLValue = "uri";
 	public final static String literalXMLValue = "lit";
 	public final static String bnodeXMLValue = "bn";
@@ -232,34 +247,69 @@ public class Statement extends ServiceAdapter {
 
 	public static void createStatementsList(RDFModel owlModel, ARTStatementIterator statIt, JSONObject data)
 			throws ModelAccessException, JSONException {
-		JSONArray stats = new JSONArray();
+		JSONObject sparqlObject = new JSONObject();
+		
+		JSONObject headObject = new JSONObject();
+		List<String> vars = new ArrayList<String>();
+		vars.add(subjTag);
+		vars.add(predTag);
+		vars.add(objTag);
+		headObject.put(varsJSONAttr, new JSONArray(vars));
+		sparqlObject.put(headJSONAttr, headObject);
+		
+		JSONObject resultsObject = new JSONObject();
+		JSONArray bindingsArray = new JSONArray();
+		
 		while (statIt.streamOpen()) {
 			ARTStatement stat = statIt.getNext();
-			JSONObject statObject = new JSONObject();
+			
+			JSONObject bindingObject = new JSONObject();
+			
+			JSONObject subjObject = new JSONObject();
 			ARTResource subj = stat.getSubject();
 			if (subj.isURIResource()) {
-				logger.debug(owlModel.getQName("vediamo questa stringa:  " + subj.asURIResource().getURI()));
-				JSONHelp.newObject(statObject, subjTag, owlModel.getQName(subj.asURIResource().getURI()))
-						.put(typeAttr, uriXMLValue);
-			} else
-				JSONHelp.newObject(statObject, subjTag, subj.toString()).put(typeAttr, bnodeXMLValue);
+				JSONHelp.newObject(subjObject, typeAttr, uriJSONAValue);
+				JSONHelp.newObject(subjObject, valueJSONAttr, subj.asURIResource().getURI());
+			} else { //bnode
+				JSONHelp.newObject(subjObject, typeAttr, bnodeJSONAValue);
+				JSONHelp.newObject(subjObject, valueJSONAttr, subj.toString());
+			}
+			bindingObject.put(subjTag, subjObject);
 
-			JSONHelp.newObject(statObject, predTag, owlModel.getQName(stat.getPredicate().getURI())).put(
-					typeAttr, uriXMLValue);
+			JSONObject predObject = new JSONObject();
+			JSONHelp.newObject(predObject, typeAttr, uriJSONAValue);
+			JSONHelp.newObject(predObject, valueJSONAttr, stat.getPredicate().getURI());
+			bindingObject.put(predTag, predObject);
 
+			JSONObject objObject = new JSONObject();
 			ARTNode obj = stat.getObject();
 			if (obj.isResource()) {
-				if (obj.isURIResource())
-					JSONHelp.newObject(statObject, objTag, owlModel.getQName(obj.asURIResource().getURI()))
-							.put(typeAttr, uriXMLValue);
-				else
-					JSONHelp.newObject(statObject, objTag, obj.toString()).put(typeAttr, bnodeXMLValue);
-			} else
-				JSONHelp.newObject(statObject, objTag, obj.asLiteral().toString()).put(typeAttr,
-						literalXMLValue);
-			stats.put(statObject);
+				if (obj.isURIResource()) {
+					JSONHelp.newObject(objObject, typeAttr, uriJSONAValue);
+					JSONHelp.newObject(objObject, valueJSONAttr, obj.asURIResource().getURI());
+				} else { //bnode
+					JSONHelp.newObject(objObject, typeAttr, bnodeJSONAValue);
+					JSONHelp.newObject(objObject, valueJSONAttr, obj.toString());
+				}
+			} else { //literal
+				ARTLiteral objLiteral = obj.asLiteral();
+				JSONHelp.newObject(objObject, typeAttr, literalJSONAValue);
+				JSONHelp.newObject(objObject, valueJSONAttr, objLiteral.getLabel());
+				if (objLiteral.getDatatype() != null) {
+					JSONHelp.newObject(objObject, datatypeJSONAAttr, objLiteral.getDatatype().getURI());
+				}
+				if (objLiteral.getLanguage() != null) {
+					JSONHelp.newObject(objObject, xmlLangJSONAttr, objLiteral.getLanguage());
+				}
+			}
+			bindingObject.put(objTag, objObject);
+			
+			bindingsArray.put(bindingObject);
 		}
-		data.put(statementTag, stats);
+		resultsObject.put(bindingsJSONAttr, bindingsArray);
+		sparqlObject.put(resultsJSONAttr, resultsObject);
+		data.put(sparqlJSONAttr, sparqlObject);
+		
 		statIt.close();
 	}
 
