@@ -636,7 +636,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root object properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:ObjectProperty", excludedPropSet, relevantDomains);
+							RDFResourceRolesEnum.objectProperty, excludedPropSet, relevantDomains);
 			}
 
 			// DATATYPE PROPERTIES
@@ -646,7 +646,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root datatype properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:DatatypeProperty", excludedPropSet, relevantDomains);
+							RDFResourceRolesEnum.datatypeProperty, excludedPropSet, relevantDomains);
 			}
 
 			// ANNOTATION PROPERTIES
@@ -656,7 +656,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root annotation properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:AnnotationProperty", excludedPropSet, relevantDomains);
+							RDFResourceRolesEnum.annotationProperty, excludedPropSet, relevantDomains);
 			}
 
 			// ONTOLOGY PROPERTIES
@@ -666,7 +666,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root annotation properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:OntologyProperty", excludedPropSet, relevantDomains);
+							RDFResourceRolesEnum.ontologyProperty, excludedPropSet, relevantDomains);
 			}
 
 			// PlainRDF PROPERTIES
@@ -679,7 +679,7 @@ public class Property extends ResourceOld {
 				logger.debug("\n\nontology root rdf:properties: \n");
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"rdf:Property", excludedPropSet, relevantDomains);
+							RDFResourceRolesEnum.property, excludedPropSet, relevantDomains);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getPropertiesTreeRequest, e);
@@ -702,7 +702,7 @@ public class Property extends ResourceOld {
 	 * @throws DOMException
 	 **/
 	void recursiveCreatePropertiesXMLTree(OWLModel ontModel, ARTURIResource property, Element element,
-			String type, HashSet<String> excludedPropSet, Set<ARTResource> relevantDomains) throws DOMException, ModelAccessException {
+			RDFResourceRolesEnum type, HashSet<String> excludedPropSet, Set<ARTResource> relevantDomains) throws DOMException, ModelAccessException {
 		if (excludedPropSet.contains(property.getURI()))
 			return;
 		
@@ -723,7 +723,7 @@ public class Property extends ResourceOld {
 		boolean deleteForbidden = servletUtilities.checkReadOnly(property, getProject());
 		propElement.setAttribute("name", ontModel.getQName(property.getURI()));
 
-		propElement.setAttribute("type", type);
+		propElement.setAttribute("type", type.name());
 		propElement.setAttribute("uri", property.getURI());
 		propElement.setAttribute("deleteForbidden", Boolean.toString(deleteForbidden));
 
@@ -952,21 +952,16 @@ public class Property extends ResourceOld {
 					superProperty = ontModel.createURIResource(ontModel.expandQName(superPropertyQName));
 
 				// RDFResourceRolesEnum role;
-				if (propertyType.equals("rdf:Property")) {
+				if (propertyType.equals(RDFResourceRolesEnum.property.name())) {
 					ontModel.addProperty(propertyURI, superProperty, wgraph);
-					// role = RDFResourceRolesEnum.property;
-				} else if (propertyType.equals("owl:ObjectProperty")) {
+				} else if (propertyType.equals(RDFResourceRolesEnum.objectProperty.name())) {
 					ontModel.addObjectProperty(propertyURI, superProperty, wgraph);
-					// role = RDFResourceRolesEnum.objectProperty;
-				} else if (propertyType.equals("owl:DatatypeProperty")) {
+				} else if (propertyType.equals(RDFResourceRolesEnum.datatypeProperty.name())) {
 					ontModel.addDatatypeProperty(propertyURI, superProperty, wgraph);
-					// role = RDFResourceRolesEnum.datatypeProperty;
-				} else if (propertyType.equals("owl:AnnotationProperty")) {
+				} else if (propertyType.equals(RDFResourceRolesEnum.annotationProperty.name())) {
 					ontModel.addAnnotationProperty(propertyURI, superProperty, wgraph);
-					// role = RDFResourceRolesEnum.annotationProperty;
-				} else if (propertyType.equals("owl:OntologyProperty")) {
+				} else if (propertyType.equals(RDFResourceRolesEnum.ontologyProperty.name())) {
 					ontModel.addOntologyProperty(propertyURI, superProperty, wgraph);
-					// role = RDFResourceRolesEnum.ontologyProperty;
 				} else
 					return servletUtilities.createExceptionResponse(request, propertyType
 							+ " is not a recognized property type!");
