@@ -19,7 +19,7 @@ public class StringToARTResourceConverter implements Converter<String, ARTResour
 	
 	@Override
 	public ARTResource convert(String NTTerm) {
-		RDFModel model = serviceContext.getProject().getOntModel();
+		RDFModel model = serviceContext.getProject().getPrimordialOntModel();
 		try {
 			if (NTTerm.equals("ANY")) return NodeFilters.ANY;
 			if (NTTerm.equals("DEFAULT")) return NodeFilters.MAINGRAPH;

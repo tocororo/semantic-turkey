@@ -140,89 +140,100 @@ public class QueryBuilder {
 		Repository repo = serviceContext.getProject().getRepository();
 		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
-			QueryBuildOutput queryBuildOutput = computeEnrichedQuery();
-			TupleQueryShallowModel enrichedQuery = queryBuildOutput.queryModel;
-
-			String enrichedQueryString = enrichedQuery.linearize();
-			Map<QueryBuilderProcessor, BiMap<String, String>> processorVariableBinding = queryBuildOutput.mangled2processorSpecificVariableMapping;
-
-			logger.debug(enrichedQueryString);
-			
-			TupleQuery query = conn.prepareTupleQuery(enrichedQueryString);
-			bindingSet.forEach(query::setBinding);
-
-			List<String> bindingNames;
-			List<BindingSet> bindings;
-			
-			try(TupleQueryResult queryResults = query.evaluate()) {
-				bindingNames = queryResults.getBindingNames();
-				bindings = QueryResults.asList(queryResults).stream().filter(bs->bs.getValue("resource") != null).collect(toList());
-			}
-
-			List<String> initialQueryVariables = enrichedQuery.getInitialQueryVariables();
-
-			BiMap<String, String> projected2baseVarMapping = HashBiMap.create();
-			initialQueryVariables.forEach(varName -> projected2baseVarMapping.put(varName, varName));
-
-			TupleQueryResult projectedOverallResults = projectResults(bindings, projected2baseVarMapping);
-
-			Map<Value, Map<String, Literal>> additionalColumns = new HashMap<>();
-
-			for (Map.Entry<QueryBuilderProcessor, BiMap<String, String>> entry : processorVariableBinding
-					.entrySet()) {
-				QueryBuilderProcessor proc = entry.getKey();
-				BiMap<String, String> projected2BaseVariableBinding = entry.getValue();
-
-				List<BindingSet> projectedResults = QueryResults
-						.asList(projectResults(bindings, projected2BaseVariableBinding));
-				
-				Map<Value, Literal> processorResults = proc.processBindings(serviceContext.getProject(),
-						projectedResults);
-
-				GraphPatternBinding graphPatternBinding = attachedProcessorsGraphPatternBinding.get(proc);
-
-				if (processorResults != null) {
-
-					for (Map.Entry<Value, Literal> individualResult : processorResults.entrySet()) {
-						Map<String, Literal> row = additionalColumns.get(individualResult.getKey());
-						if (row == null) {
-							row = new HashMap<>();
-							additionalColumns.put(individualResult.getKey(), row);
-						}
-						row.put(graphPatternBinding.getProjectedOutputVariable(),
-								individualResult.getValue());
-					}
-
-				} else {
-
-					String targetVariable = proc.getGraphPattern().getProjectionElement().getTargetVariable();
-					String outputVariable = graphPatternBinding.getProjectedOutputVariable();
-
-					for (BindingSet projectedResultsEntry : projectedResults) {
-						Value resource = projectedResultsEntry.getValue(proc.getBindingVariable());
-
-						Literal value = (Literal) projectedResultsEntry.getValue(targetVariable);
-
-						if (value == null)
-							continue; // Skip unbound variables
-
-						Map<String, Literal> row = additionalColumns.get(resource);
-						if (row == null) {
-							row = new HashMap<>();
-							additionalColumns.put(resource, row);
-						}
-						row.put(outputVariable, value);
-
-					}
-				}
-
-			}
-			
-			return QueryResults.stream(projectedOverallResults)
-					.map(bs -> bindingSet2annotatedResource(bs, additionalColumns)).collect(toList());
+			return runQuery(conn);
 		} finally {
 			RDF4JRepositoryUtils.releaseConnection(conn, repo);
 		}
+	}
+
+	/**
+	 * Evaluates the (possibly enriched) query on the given repository connection and returns the retrieved
+	 * resources.
+	 * 
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public Collection<AnnotatedValue<Resource>> runQuery(RepositoryConnection conn) {
+		QueryBuildOutput queryBuildOutput = computeEnrichedQuery();
+		TupleQueryShallowModel enrichedQuery = queryBuildOutput.queryModel;
+
+		String enrichedQueryString = enrichedQuery.linearize();
+		Map<QueryBuilderProcessor, BiMap<String, String>> processorVariableBinding = queryBuildOutput.mangled2processorSpecificVariableMapping;
+
+		logger.debug(enrichedQueryString);
+
+		TupleQuery query = conn.prepareTupleQuery(enrichedQueryString);
+		bindingSet.forEach(query::setBinding);
+
+		List<String> bindingNames;
+		List<BindingSet> bindings;
+
+		try (TupleQueryResult queryResults = query.evaluate()) {
+			bindingNames = queryResults.getBindingNames();
+			bindings = QueryResults.asList(queryResults).stream()
+					.filter(bs -> bs.getValue("resource") != null).collect(toList());
+		}
+
+		List<String> initialQueryVariables = enrichedQuery.getInitialQueryVariables();
+
+		BiMap<String, String> projected2baseVarMapping = HashBiMap.create();
+		initialQueryVariables.forEach(varName -> projected2baseVarMapping.put(varName, varName));
+
+		TupleQueryResult projectedOverallResults = projectResults(bindings, projected2baseVarMapping);
+
+		Map<Value, Map<String, Literal>> additionalColumns = new HashMap<>();
+
+		for (Map.Entry<QueryBuilderProcessor, BiMap<String, String>> entry : processorVariableBinding
+				.entrySet()) {
+			QueryBuilderProcessor proc = entry.getKey();
+			BiMap<String, String> projected2BaseVariableBinding = entry.getValue();
+
+			List<BindingSet> projectedResults = QueryResults
+					.asList(projectResults(bindings, projected2BaseVariableBinding));
+
+			Map<Value, Literal> processorResults = proc.processBindings(serviceContext.getProject(),
+					projectedResults);
+
+			GraphPatternBinding graphPatternBinding = attachedProcessorsGraphPatternBinding.get(proc);
+
+			if (processorResults != null) {
+
+				for (Map.Entry<Value, Literal> individualResult : processorResults.entrySet()) {
+					Map<String, Literal> row = additionalColumns.get(individualResult.getKey());
+					if (row == null) {
+						row = new HashMap<>();
+						additionalColumns.put(individualResult.getKey(), row);
+					}
+					row.put(graphPatternBinding.getProjectedOutputVariable(), individualResult.getValue());
+				}
+
+			} else {
+
+				String targetVariable = proc.getGraphPattern().getProjectionElement().getTargetVariable();
+				String outputVariable = graphPatternBinding.getProjectedOutputVariable();
+
+				for (BindingSet projectedResultsEntry : projectedResults) {
+					Value resource = projectedResultsEntry.getValue(proc.getBindingVariable());
+
+					Literal value = (Literal) projectedResultsEntry.getValue(targetVariable);
+
+					if (value == null)
+						continue; // Skip unbound variables
+
+					Map<String, Literal> row = additionalColumns.get(resource);
+					if (row == null) {
+						row = new HashMap<>();
+						additionalColumns.put(resource, row);
+					}
+					row.put(outputVariable, value);
+
+				}
+			}
+
+		}
+
+		return QueryResults.stream(projectedOverallResults)
+				.map(bs -> bindingSet2annotatedResource(bs, additionalColumns)).collect(toList());
 	}
 
 	private static TupleQueryResult projectResults(List<BindingSet> queryResults,

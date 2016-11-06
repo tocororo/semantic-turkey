@@ -1,5 +1,12 @@
 package it.uniroma2.art.semanticturkey.data.access;
 
+import java.util.Objects;
+
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -8,12 +15,14 @@ import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.rdf4jimpl.model.ARTResourceRDF4JImpl;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 /**
  * This class is used to locate a resource either as belonging to a currently open project or to a remote
@@ -55,6 +64,48 @@ public class ResourceLocator {
 	 * @throws ModelAccessException
 	 * @throws ProjectAccessException
 	 */
+	public ResourcePosition locateResource(Project<?> project, Resource resource)
+			throws ModelAccessException, ProjectAccessException {
+		if (resource instanceof BNode) {
+			return new LocalResourcePosition(project); // TODO: implement a better condition
+		}
+
+		IRI iriResource = (IRI)resource;
+
+		Repository repo = project.getRepository();
+		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
+		try {
+			if (Objects.equals(repoConn.getNamespace(""), iriResource.getNamespace()) || repoConn.hasStatement(iriResource, null, null, false)) {
+				return new LocalResourcePosition(project);
+			}
+	
+		} finally {
+			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
+		}
+
+		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
+			if (!ProjectManager.isOpen(abstrProj.getName()))
+				continue;
+
+			Project<?> proj = ProjectManager.getProject(abstrProj.getName());
+
+			String ns = proj.getDefaultNamespace();
+
+			if (ns.equals(iriResource.getNamespace())) {
+				return new LocalResourcePosition((Project<?>) proj);
+			}
+		}
+
+		DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(iriResource);
+
+		if (meta != null) {
+			return new RemoteResourcePosition(meta);
+		} else {
+			return UNKNOWN_RESOURCE_POSITION;
+		}
+	}
+
+	@Deprecated
 	public ResourcePosition locateResource(Project<?> project, ARTResource resource)
 			throws ModelAccessException, ProjectAccessException {
 

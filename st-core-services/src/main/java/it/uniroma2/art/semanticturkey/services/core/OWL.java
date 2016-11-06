@@ -39,11 +39,10 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 public class OWL extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(OWL.class);
-
+	
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getSubClasses(@LocallyDefined Resource superClass,
-			@Optional(defaultValue = "") String[] languages) {
+	public Collection<AnnotatedValue<Resource>> getSubClasses(@LocallyDefined Resource superClass) {
 		QueryBuilder qb = createQueryBuilder(
 			// @formatter:off
 			" SELECT ?resource ?g ?metaClass WHERE {                        \n" +  

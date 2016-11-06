@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 
-@Component
+@Component(value="StatementConsumerProviderOLD")
 public class StatementConsumerProvider {
 	private HashMap<RDFResourceRolesEnum, List<StatementConsumer>> role2template;
 	

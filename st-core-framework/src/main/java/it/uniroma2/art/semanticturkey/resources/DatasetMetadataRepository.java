@@ -47,6 +47,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -88,7 +89,7 @@ public class DatasetMetadataRepository {
 		try {
 			this.repoDirectory = new File(baseDir, DATASET_METADATA_REPOSITORY_DIRECTORY);
 			this.repoFile = new File(repoDirectory, DATASET_METADATA_REPOSITORY_FILE);
-			this.repoDirectory.mkdir();
+			this.repoDirectory.mkdirs();
 
 			if (!this.repoDirectory.exists()) {
 				throw new DatasetMetadataRepositoryCreationException(
@@ -269,6 +270,54 @@ public class DatasetMetadataRepository {
 	 * @param uriResource
 	 * @return
 	 */
+	public synchronized DatasetMetadata findDatasetForResource(IRI iriResource) {
+		// -------------------------------------------------------------------------------------------
+		// The following resolution strategy might be subject to ambiguity in some rare circumstances
+
+		DatasetMetadata datasetMetadata;
+
+		// -----------------------------------------
+		// Case 1: The provided URI is the base URI
+
+		datasetMetadata = base2meta.get(iriResource.stringValue());
+
+		if (datasetMetadata != null) {
+			return datasetMetadata;
+		}
+
+		// ------------------------------------------
+		// Case 2: The namespace is the base URI
+		// e.g., [http://example.org/]Person
+
+		String namespace = iriResource.getNamespace();
+
+		datasetMetadata = base2meta.get(namespace);
+
+		if (datasetMetadata != null) {
+			return datasetMetadata;
+		}
+
+		// --------------------------------------------
+		// Case 2: The namespace is the base URI + "#"
+		// e.g., [http://example.org]#Person
+
+		if (namespace.endsWith("#")) {
+			datasetMetadata = base2meta.get(namespace.substring(0, namespace.length() - 1));
+			return datasetMetadata;
+		} else {
+			return null;
+		}
+
+	}
+	
+	/**
+	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method
+	 * returns <code>null</code>.
+	 * 
+	 * @param uriResource
+	 * @return
+	 */
+	@Deprecated
 	public synchronized DatasetMetadata findDatasetForResource(ARTURIResource uriResource) {
 		// -------------------------------------------------------------------------------------------
 		// The following resolution strategy might be subject to ambiguity in some rare circumstances

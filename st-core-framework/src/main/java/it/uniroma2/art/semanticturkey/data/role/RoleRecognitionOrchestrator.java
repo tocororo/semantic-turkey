@@ -190,7 +190,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 				.pattern(
 				// @formatter:off
 				"BIND(IF(EXISTS {?resource a [rdfs:subClassOf* skos:Concept]}, \"concept\", " +
-						"IF(EXISTS {?resource a [rdfs:subClassOf* skos:ConceptConceptScheme]}, \"conceptScheme\", " + 
+						"IF(EXISTS {?resource a [rdfs:subClassOf* skos:ConceptScheme]}, \"conceptScheme\", " + 
 							"IF(EXISTS {?resource a [rdfs:subClassOf* skosxl:Label]}, \"xLabel\", " +
 								"IF(EXISTS {?resource a [rdfs:subClassOf* skos:OrderedCollection]}, \"skosOrderedCollection\", " +
 									"IF(EXISTS {?resource a [rdfs:subClassOf* skos:Collection]}, \"skosCollection\", " +
