@@ -54,7 +54,7 @@ public class STRDFLiteralImpl extends STRDFNodeImpl implements STRDFLiteral {
 	STRDFLiteralImpl(ARTLiteral node, boolean explicit, String show) {
 		super(node, explicit, show);		
 		ARTURIResource dt = node.getDatatype();
-		if (dt!=null) {
+		if (dt!=null && !dt.getURI().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")) {
 			dtURI = dt.getURI();
 			isTypedLiteral = true;
 		}
@@ -63,7 +63,7 @@ public class STRDFLiteralImpl extends STRDFNodeImpl implements STRDFLiteral {
 	STRDFLiteralImpl(ARTLiteral node, boolean explicit) {
 		super(node, explicit);		
 		ARTURIResource dt = node.getDatatype();
-		if (dt!=null) {
+		if (dt!=null && !dt.getURI().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")) {
 			dtURI = dt.getURI();
 			isTypedLiteral = true;
 		} 
