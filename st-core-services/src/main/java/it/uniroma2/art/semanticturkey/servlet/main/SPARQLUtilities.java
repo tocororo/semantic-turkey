@@ -42,6 +42,11 @@ public class SPARQLUtilities {
 
 			while (it.streamOpen()) {
 				TupleBindings bindings = it.getNext();
+				
+				if (!bindings.hasBinding("resource")) {
+					continue;
+				}
+				
 				ARTResource collectionResource = bindings.getBoundValue("resource").asResource();
 				boolean isResourceExplicit = bindings.hasBinding("explicit")
 						? bindings.getBoundValue("explicit").asLiteral().getLabel().equalsIgnoreCase("true")

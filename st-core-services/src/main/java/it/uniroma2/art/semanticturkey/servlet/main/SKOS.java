@@ -785,15 +785,15 @@ public class SKOS extends ResourceOld {
 				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
 				"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
 				"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
-				"	BIND(\"1\" as ?info_more_temp1)" +
+				"	BIND(true as ?info_more_temp1)" +
 				"}\n" +
 				"OPTIONAL {\n" +
 				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
 				"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
 				"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
-				"	BIND(\"1\" as ?info_more_temp2)" +
+				"	BIND(EXISTS {?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> [ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>/<http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://www.w3.org/2004/02/skos/core#Collection>]} as ?info_more_temp2)" +
 				"}\n" +	
-				"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+				"BIND(IF(COALESCE(?info_more_temp2, ?info_more_temp1), \"1\", \"0\") as ?info_more)\n";
 		// @formatter:on
 
 		ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
@@ -846,15 +846,15 @@ public class SKOS extends ResourceOld {
 					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
 					"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
 					"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
-					"	BIND(\"1\" as ?info_more_temp1)" +
+					"	BIND(true as ?info_more_temp1)" +
 					"}\n" +
 					"OPTIONAL {\n" +
 					"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
 					"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
 					"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
-					"	BIND(\"1\" as ?info_more_temp2)" +
+					"	BIND(EXISTS {?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> [ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>/<http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://www.w3.org/2004/02/skos/core#Collection>]} as ?info_more_temp2)" +
 					"}\n" +	
-					"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+					"BIND(IF(COALESCE(?info_more_temp2, ?info_more_temp1), \"1\", \"0\") as ?info_more)\n";
 			// @formatter:on
 
 			ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
@@ -2006,15 +2006,15 @@ public class SKOS extends ResourceOld {
 				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Collection> .\n" +
 				"	%resource% <http://www.w3.org/2004/02/skos/core#member> ?nestedCollection .\n" +
 				"	{?nestedCollection a <http://www.w3.org/2004/02/skos/core#Collection> .} UNION {?nestedCollection a <http://www.w3.org/2004/02/skos/core#OrderedCollection> .}\n" +
-				"	BIND(\"1\" as ?info_more_temp1)" +
+				"	BIND(true as ?info_more_temp1)" +
 				"}\n" +
 				"OPTIONAL {\n" +
 				"	%resource% <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#OrderedCollection> .\n" +
 				"	%resource% <http://www.w3.org/2004/02/skos/core#memberList> ?memberList .\n" +
 				"	FILTER(?memberList != <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>)\n" +
-				"	BIND(\"1\" as ?info_more_temp2)" +
+				"	BIND(EXISTS {?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> [ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>/<http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://www.w3.org/2004/02/skos/core#Collection>]} as ?info_more_temp2)" +
 				"}\n" +	
-				"BIND(IF(BOUND(?info_more_temp1) || BOUND(?info_more_temp2), \"1\", \"0\") as ?info_more)\n";
+				"BIND(IF(COALESCE(?info_more_temp2, ?info_more_temp1), \"1\", \"0\") as ?info_more)\n";
 		// @formatter:on
 
 		ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
