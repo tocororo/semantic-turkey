@@ -135,9 +135,11 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		// // Process tuple bindings
 
 		String objectLabelVar = varPrefix + "_object_label";
+		String indirectObjectLabelVar = varPrefix + "_indirectObject_label";
 		String subjectLabelVar = varPrefix + "_subject_label";
 
 		String objectVar = "object";
+		String indirectObjectVar = varPrefix + "_indirectObject";
 
 		for (TupleBindings aBinding : bindings) {
 			ARTResource res;
@@ -149,6 +151,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			} else if (aBinding.hasBinding(subjectLabelVar)) {
 				res = subject;
 				label = aBinding.getBoundValue(subjectLabelVar).asLiteral();
+			} else if (aBinding.hasBinding(indirectObjectLabelVar)) {
+				res = aBinding.getBoundValue(indirectObjectVar).asResource();
+				label = aBinding.getBoundValue(indirectObjectLabelVar).asLiteral();
 			} else {
 				continue;
 			}

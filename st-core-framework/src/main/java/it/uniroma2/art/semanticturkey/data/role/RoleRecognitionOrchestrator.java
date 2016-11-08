@@ -81,10 +81,12 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 		String resourceTypeVar = varPrefix + "_subject_type";
 		String predicateTypeVar = varPrefix + "_predicate_type";
 		String objectTypeVar = varPrefix + "_object_type";
+		String indirectObjectTypeVar = varPrefix + "_indirectObject_type";
 
 		String objectVar = "object";
 		String predicateVar = "predicate";
 		String resourceVar = "resource";
+		String indirectObjectVar = varPrefix + "_indirectObject";
 
 		for (TupleBindings aBinding : bindings) {
 			ARTResource res;
@@ -99,6 +101,9 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 			} else if (aBinding.hasBinding(objectTypeVar)) {
 				res = aBinding.getBoundValue(objectVar).asResource();
 				type = aBinding.getBoundValue(objectTypeVar).asResource();
+			} else if (aBinding.hasBinding(indirectObjectTypeVar)) {
+				res = aBinding.getBoundValue(indirectObjectVar).asResource();
+				type = aBinding.getBoundValue(indirectObjectTypeVar).asResource();
 			} else
 				continue;
 
@@ -179,7 +184,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	public String getGraphPatternForDescribe(ResourcePosition resourcePosition, ARTResource resourceToBeRoled,
 			String varPrefix) {
 		return String.format(
-				"{{?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_object_type .} union {?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_subject_type .} union {?predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_predicate_type .}}",
+				"{{?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_object_type .} union {?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?%1$s_indirectObject . ?%1$s_indirectObject <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_indirectObject_type .} union {?resource <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_subject_type .} union {?predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?%1$s_predicate_type .}}",
 				varPrefix);
 	}
 

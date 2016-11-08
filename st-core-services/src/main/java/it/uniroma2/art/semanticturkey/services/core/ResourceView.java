@@ -22,6 +22,8 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -172,7 +174,16 @@ public class ResourceView extends STServiceAdapterOLD {
 						NodeFilters.ANY, NodeFilters.ANY, false, NodeFilters.ANY))));
 		resourcesToBeRendered.add(resource);
 
-		RenderingEngine renderingOrchestrator = RenderingOrchestrator.buildInstance(project, resourcePosition);
+		TupleQuery indirectObjectsQuery = stmtCollector.createTupleQuery(
+				"prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns> select distinct ?o2 where {?resource ?p ?o . ?o rdf:rest*/rdf:first ?o2 .}");
+		indirectObjectsQuery.setBinding("resource", resource);
+		
+		resourcesToBeRendered
+				.addAll(RDFIterators.getCollectionFromIterator(indirectObjectsQuery.evaluate(true)).stream()
+						.map(tb -> tb.getBoundValue("o2").asResource()).collect(toList()));
+
+		RenderingEngine renderingOrchestrator = RenderingOrchestrator.buildInstance(project,
+				resourcePosition);
 		RoleRecognitionOrchestrator roleRecognitionOrchestrator = RoleRecognitionOrchestrator.getInstance();
 
 		String gp_rendering = renderingOrchestrator.getGraphPatternForDescribe(resourcePosition, resource,
@@ -291,12 +302,46 @@ public class ResourceView extends STServiceAdapterOLD {
 			logger.debug("Retrieving statements for resource {} locally", resource);
 			// RDFModel model = ((LocalResourcePosition) position).getProject().getOntModel();
 			RDFModel model = acquireConnection(((LocalResourcePosition) position).getProject());
-			ARTStatementIterator it = model.listStatements(resource, NodeFilters.ANY, NodeFilters.ANY, false,
-					NodeFilters.ANY);
+			
+			TupleQuery tupleQuery = model.createTupleQuery(
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
+				" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
+				"     GRAPH ?g {                                                         \n" +
+				"       ?s ?p ?o .                                                       \n" +
+				"     }                                                                  \n" +
+				"     OPTIONAL {                                                         \n" +
+				"       ?o rdf:rest* ?s2                                                 \n" +
+				"       FILTER(isBLANK(?o))                                              \n" +
+				"       GRAPH ?g2 {                                                      \n" +
+				"         ?s2 ?p2 ?o2 .                                                  \n" +
+				"       }                                                                \n" +
+				"     }                                                                  \n" +
+				" }	                                                                     \n"
+				// @formatter:on
+				);
+			tupleQuery.setBinding("s", resource);
+			TupleBindingsIterator it = tupleQuery.evaluate(false);
+			
 			try {
 				while (it.streamOpen()) {
-					ARTStatement stmt = it.getNext();
-					stmtCollector.addStatement(stmt);
+					TupleBindings bindingSet = it.getNext();
+					
+					ARTResource g = bindingSet.getBoundValue("g").asResource();
+					ARTResource s = bindingSet.getBoundValue("s").asResource();
+					ARTURIResource p = bindingSet.getBoundValue("p").asURIResource();
+					ARTNode o = bindingSet.getBoundValue("o");
+
+					stmtCollector.addTriple(s, p, o, g);
+
+					if (bindingSet.hasBinding("g2")) {
+						ARTResource g2 = bindingSet.getBoundValue("g2").asResource();
+						ARTResource s2 = bindingSet.getBoundValue("s2").asResource();
+						ARTURIResource p2 = bindingSet.getBoundValue("p2").asURIResource();
+						ARTNode o2 = bindingSet.getBoundValue("o2");
+
+						stmtCollector.addTriple(s2, p2, o2, g2);
+					}
 				}
 			} finally {
 				it.close();
@@ -311,17 +356,17 @@ public class ResourceView extends STServiceAdapterOLD {
 						.createGraphQuery("describe ?resource where {bind(?resource2 as ?resource)}");
 				describeQuery.setBinding("resource2", resource);
 			}
-			it = describeQuery.evaluate(true);
+			ARTStatementIterator it2 = describeQuery.evaluate(true);
 			try {
-				while (it.streamOpen()) {
-					ARTStatement stmt = it.getNext();
+				while (it2.streamOpen()) {
+					ARTStatement stmt = it2.getNext();
 					if (!stmtCollector.hasStatement(stmt, false, NodeFilters.ANY)) {
 						stmtCollector.addTriple(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
 								INFERENCE_GRAPH);
 					}
 				}
 			} finally {
-				it.close();
+				it2.close();
 			}
 
 		} else if (position instanceof RemoteResourcePosition) {
