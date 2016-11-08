@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
  * 
  * @author Tiziano
  * We need a custom authenticationEntryPoint because default Spring-Security config will
- * redirect to login page. In our case we need just a https status 401 and a json response.
+ * redirect to login page when a not authenticated user performs a request.
+ * In our case we need just a https status 401 and a json response.
  * (Referenced in WEB-INF/spring-security.xml)
  */
 @Component

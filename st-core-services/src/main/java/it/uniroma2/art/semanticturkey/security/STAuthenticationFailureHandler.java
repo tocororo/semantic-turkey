@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  * 
  * @author Tiziano
  * Specifies what happen when a user tries to login with wrong credentials
- * Simply returns a 401 response (unauthorized) with text content "Authentication failed"
+ * Simply returns a 403 response (forbidden) with text content "Authentication failed"
  * (Referenced in WEB-INF/spring-security.xml)
  *
  */
@@ -25,7 +25,7 @@ public class STAuthenticationFailureHandler extends SimpleUrlAuthenticationFailu
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
-		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 		ServletOutputStream out = response.getOutputStream();
 		
 		//create json response with the same structure of STResponse

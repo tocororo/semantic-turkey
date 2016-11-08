@@ -26,9 +26,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import it.uniroma2.art.semanticturkey.exceptions.InvalidAccountDataException;
+import it.uniroma2.art.semanticturkey.exceptions.UserCreationException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.security.UserService;
+import it.uniroma2.art.semanticturkey.security.UserManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -43,7 +43,7 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 public class Users extends STServiceAdapter {
 	
 	@Autowired
-	UserService userService;
+	UserManager userMgr;
 	
 	/**
 	 * Returns response containing a json representation of the logged user.
@@ -100,11 +100,11 @@ public class Users extends STServiceAdapter {
 	public String registerUser(@RequestParam("email") String email, @RequestParam("password") String password,
 			@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
 		try {
-			userService.registerUser(email, password, firstName, lastName);
+			userMgr.registerUser(email, password, firstName, lastName);
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyResponse("registerUser", RepliesStatus.ok, SerializationType.json);
 			return jsonResp.toString();
-		} catch (InvalidAccountDataException e) {
+		} catch (UserCreationException e) {
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyFAIL("registerUser", e.getMessage(), SerializationType.json);
 			return jsonResp.toString();

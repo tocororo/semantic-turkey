@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.security;
 
+import java.text.ParseException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,15 +19,20 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 public class STUserDetailsService implements UserDetailsService {
 	
 	@Autowired
-	UserService userService;
+	UserManager userMgr;
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		STUser user = userService.findUser(username);
-		if (user != null) {
-			return user;
-		} else {
-			throw new UsernameNotFoundException("username " + username+ " not found");
+		STUser user;
+		try {
+			user = userMgr.getUserByEmail(username);
+			if (user != null) {
+				return user;
+			} else {
+				throw new UsernameNotFoundException("username " + username+ " not found");
+			}
+		} catch (ParseException e) {
+			throw new UsernameNotFoundException("Error retrieving user " + username);
 		}
 	}
 
