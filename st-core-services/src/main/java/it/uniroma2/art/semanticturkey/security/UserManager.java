@@ -48,21 +48,42 @@ public class UserManager {
 	 * @param lastName
 	 * @throws UserCreationException
 	 */
-	public void registerUser(String email, String password, String firstName, String lastName) throws UserCreationException {
+	public void registerUser(String email, String password, String firstName, String lastName,
+			String birthday, String gender, String country, String address, String affiliation,
+			String url, String phone) throws UserCreationException {
 		try {
 			if (!isEmailAvailable(email)) {
 				throw new UserCreationException("E-mail address " + email + " already used by another user");
+			} else {
+				STUser newUser = new STUser(email, passwordEncoder.encode(password), firstName, lastName);
+				if (birthday != null) {
+					newUser.setBirthday(birthday);
+				}
+				if (gender != null) {
+					newUser.setGender(gender);
+				}
+				if (country != null) {
+					newUser.setCountry(country);
+				}
+				if (address != null) {
+					newUser.setAddress(address);
+				}
+				if (affiliation != null) {
+					newUser.setAffiliation(affiliation);
+				}
+				if (url != null) {
+					newUser.setUrl(url);
+				}
+				if (phone != null) {
+					newUser.setPhone(phone);
+				}
+				newUser.addAuthority(new SimpleGrantedAuthority(UserRolesEnum.ROLE_USER.name()));
+				usersRepository.insertUser(newUser);
+				createUserDetailsFolder(newUser);
 			}
 		} catch (ParseException e) {
 			throw new UserCreationException(e);
 		}
-		STUser newUser = new STUser(
-				email,
-				passwordEncoder.encode(password),
-				firstName, lastName);
-		newUser.addAuthority(new SimpleGrantedAuthority(UserRolesEnum.ROLE_USER.name()));
-		usersRepository.insertUser(newUser);
-		createUserDetailsFolder(newUser);
 	}
 	
 	/**

@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.user;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -131,6 +132,10 @@ public class STUser implements UserDetails {
 	
 	public void setBirthday(Date birthday) {
 		this.birthday = birthday;
+	}
+	
+	public void setBirthday(String birthday) throws ParseException {
+		this.birthday = new SimpleDateFormat(USER_DATE_FORMAT).parse(birthday);
 	}
 	
 	public String getGender() {

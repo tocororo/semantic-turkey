@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.security;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -55,10 +56,19 @@ public class STAuthenticationSuccessHandler extends SimpleUrlAuthenticationSucce
 				.createReplyResponse("login", RepliesStatus.ok, SerializationType.json);
 		try {
 			JSONObject userJson = new JSONObject();
-			userJson.put("email", loggedUser.getUsername());
+			userJson.put("email", loggedUser.getEmail());
 			userJson.put("firstName", loggedUser.getFirstName());
 			userJson.put("lastName", loggedUser.getLastName());
 			userJson.put("roles", new JSONArray(roles));
+			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(loggedUser.getBirthday()));
+			userJson.put("gender", loggedUser.getGender());
+			userJson.put("country", loggedUser.getCountry());
+			userJson.put("address", loggedUser.getAddress());
+			userJson.put("registrationDate", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(loggedUser.getRegistrationDate()));
+			userJson.put("affiliation", loggedUser.getAffiliation());
+			userJson.put("url", loggedUser.getUrl());
+			userJson.put("phone", loggedUser.getPhone());
+			
 			jsonResp.getDataElement().put("user", userJson);
 		} catch (JSONException e) {
 			throw new ServletException(e);

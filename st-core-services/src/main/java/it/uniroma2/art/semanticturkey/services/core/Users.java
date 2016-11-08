@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -68,10 +69,18 @@ public class Users extends STServiceAdapter {
 			}
 			//build the user json object
 			JSONObject userJson = new JSONObject();
-			userJson.put("email", loggedUser.getUsername());
+			userJson.put("email", loggedUser.getEmail());
 			userJson.put("firstName", loggedUser.getFirstName());
 			userJson.put("lastName", loggedUser.getLastName());
 			userJson.put("roles", new JSONArray(roles));
+			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(loggedUser.getBirthday()));
+			userJson.put("gender", loggedUser.getGender());
+			userJson.put("country", loggedUser.getCountry());
+			userJson.put("address", loggedUser.getAddress());
+			userJson.put("registrationDate", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(loggedUser.getRegistrationDate()));
+			userJson.put("affiliation", loggedUser.getAffiliation());
+			userJson.put("url", loggedUser.getUrl());
+			userJson.put("phone", loggedUser.getPhone());
 			
 			jsonResp.getDataElement().put("user", userJson);
 		}
@@ -97,10 +106,18 @@ public class Users extends STServiceAdapter {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser", 
 			method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
-	public String registerUser(@RequestParam("email") String email, @RequestParam("password") String password,
-			@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
+	public String registerUser(
+			@RequestParam("email") String email, @RequestParam("password") String password,
+			@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName,
+			@RequestParam(value = "birthday", required = false) String birthday,
+			@RequestParam(value = "gender", required = false) String gender,
+			@RequestParam(value = "country", required = false) String country,
+			@RequestParam(value = "address", required = false) String address,
+			@RequestParam(value = "affiliation", required = false) String affiliation,
+			@RequestParam(value = "url", required = false) String url,
+			@RequestParam(value = "phone", required = false) String phone) {
 		try {
-			userMgr.registerUser(email, password, firstName, lastName);
+			userMgr.registerUser(email, password, firstName, lastName, birthday, gender, country, address, affiliation, url, phone);
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyResponse("registerUser", RepliesStatus.ok, SerializationType.json);
 			return jsonResp.toString();
