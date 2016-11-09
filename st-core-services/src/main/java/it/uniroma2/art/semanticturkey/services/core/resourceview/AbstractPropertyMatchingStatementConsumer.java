@@ -83,6 +83,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
 
 			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
+			addRole(annotatedPredicate, resource2attributes);
+			addShowOrRenderXLabel(annotatedPredicate, resource2attributes, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
 

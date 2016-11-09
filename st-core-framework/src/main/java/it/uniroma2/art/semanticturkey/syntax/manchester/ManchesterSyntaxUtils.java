@@ -182,7 +182,7 @@ public class ManchesterSyntaxUtils {
 
 	}
 
-	public static String getManchExprFromBNode(BNode bnode, Resource graphs, 
+	public static String getManchExprFromBNode(BNode bnode, Resource[] graphs, 
 			List<Statement> tripleList, boolean useUppercaseSyntax, RepositoryConnection conn) {
 		ManchesterClassInterface mci = getManchClassFromBNode(bnode, graphs, tripleList, conn);
 		if (mci != null) {
@@ -192,7 +192,7 @@ public class ManchesterSyntaxUtils {
 	}
 	
 	public static String getManchExprFromBNode(BNode bnode, Map<String, String> namespaceToPrefixMap, 
-			boolean getPrefixName, Resource graphs, List<Statement> tripleList, 
+			boolean getPrefixName, Resource[] graphs, List<Statement> tripleList, 
 			boolean useUppercaseSyntax, RepositoryConnection conn) {
 		ManchesterClassInterface mci = getManchClassFromBNode(bnode, graphs, tripleList, conn);
 		if (mci != null) {
@@ -203,7 +203,7 @@ public class ManchesterSyntaxUtils {
 	
 
 	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode,
-			Resource graphs, List<Statement> tripleList, RepositoryConnection conn) {
+			Resource[] graphs, List<Statement> tripleList, RepositoryConnection conn) {
 		RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
 		
 		// check the predicate, which can be:
@@ -356,7 +356,7 @@ public class ManchesterSyntaxUtils {
 	}
 	
 	private static void parseListFirstRest(Resource bnode, List<ManchesterClassInterface> manchClassList,
-			Resource graphs, List<Statement> tripleList, RepositoryConnection conn) {
+			Resource[] graphs, List<Statement> tripleList, RepositoryConnection conn) {
 		RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
 		while (statements.hasNext()) {
 			Statement stat = statements.next();

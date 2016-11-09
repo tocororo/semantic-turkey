@@ -40,6 +40,7 @@ import java.util.Set;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
@@ -50,7 +51,6 @@ import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -114,7 +114,10 @@ public class ResourceView2 extends STServiceAdapter {
 			}
 
 			Model retrievedStatements = retrieveStatements(resourcePosition, resource);
-
+			QueryResults.stream(getManagedConnection().getNamespaces()).forEach(ns -> {
+				retrievedStatements.setNamespace(ns.getPrefix(), ns.getName());
+			});
+			
 			Map<Resource, Map<String, Value>> resource2attributes = retrieveSubjectAndObjectsAddtionalInformation(
 					resourcePosition, resource);
 
@@ -142,7 +145,7 @@ public class ResourceView2 extends STServiceAdapter {
 					.flatMap(c -> c.getMatchedProperties().stream()).collect(toList());
 
 			Model propertyModel = retrievePredicateInformation(resourcePosition, resourcePredicates,
-					specialProperties);
+					specialProperties, resource2attributes, retrievedStatements);
 
 			for (StatementConsumer aConsumer : viewTemplate) {
 				Map<String, ResourceViewSection> producedSections = aConsumer.consumeStatements(project,
@@ -159,7 +162,9 @@ public class ResourceView2 extends STServiceAdapter {
 	}
 
 	private Model retrievePredicateInformation(ResourcePosition resourcePosition, Set<IRI> resourcePredicates,
-			List<IRI> specialProperties) {
+			List<IRI> specialProperties, Map<Resource, Map<String, Value>> resource2attributes, Model statements) {
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+		
 		String predicatesValuesFrag = resourcePredicates.stream()
 				.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
 		String specialPredicatesValuesFrag = specialProperties.stream()
@@ -169,11 +174,11 @@ public class ResourceView2 extends STServiceAdapter {
 			RepositoryConnection acquireManagedConnection = acquireManagedConnectionToProject(
 					((LocalResourcePosition) resourcePosition).getProject());
 
-			TupleQuery query = acquireManagedConnection.prepareTupleQuery(String.format(
+			QueryBuilder qb = createQueryBuilder(String.format(
 				// @formatter:off  
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                            \n" +
-					" 	SELECT ?resource (GROUP_CONCAT(DISTINCT ?parentProp; separator = \"><\") AS ?parents) WHERE {     \n" +
+					" 	SELECT ?resource (GROUP_CONCAT(DISTINCT $parentProp; separator = \"><\") AS ?attr_parents) WHERE {     \n" +
 					" 	  VALUES(?resource){                                                          \n" +
 					" 	    %s						                                                  \n" +
 					" 	  }                                                                           \n" +
@@ -182,25 +187,47 @@ public class ResourceView2 extends STServiceAdapter {
 					" 	  }                                                                           \n" +
 					" 	  OPTIONAL {                                                                  \n" +
 					" 	    ?resource rdfs:subPropertyOf* ?specialProp                                \n" +
-					" 	    BIND(STR(?specialProp) as ?parentProp)                                    \n" +
+					" 	    BIND(STR(?specialProp) as $parentProp)                                    \n" +
 					" 	  }	                                                                          \n" +
 					" 	}                                                                             \n" +
 					" 	GROUP BY ?resource                                                            \n"
 				// @formatter:on
 							,
 					predicatesValuesFrag, specialPredicatesValuesFrag));
-
+			qb.processRole();
 			Model propertyModel = new LinkedHashModel();
-			QueryResults.stream(query.evaluate()).forEach(bs -> {
-				List<IRI> parents = Arrays.stream(bs.getValue("parents").stringValue().split("><"))
-						.filter(s -> !s.isEmpty()).map(s -> SimpleValueFactory.getInstance().createIRI(s))
+			qb.runQuery(acquireManagedConnection).stream().forEach(annotatedPredicate -> {
+				List<IRI> parents = Arrays
+						.stream(annotatedPredicate.getAttributes().get("parents").stringValue().split("><"))
+						.filter(s -> !s.isEmpty()).map(s -> vf.createIRI(s))
 						.collect(toList());
-				IRI predicate = (IRI) bs.getValue("resource");
-
+				IRI predicate = (IRI)annotatedPredicate.getValue();
 				parents.forEach(parent -> {
 					propertyModel.add(predicate, RDFS.SUBPROPERTYOF, parent);
 				});
+				
+				Map<String, Value> attrs = resource2attributes.get(predicate);
+				if (attrs == null) {
+					attrs = new HashMap<>();
+					resource2attributes.put(predicate, attrs);
+				}
+				attrs.putAll(annotatedPredicate.getAttributes());
 			});
+
+			Map<String, String> ns2prefixMap = new HashMap<>();
+			for (Namespace ns : statements.getNamespaces()) {
+				ns2prefixMap.put(ns.getName(), ns.getPrefix());
+			}
+			for (IRI predicate : resourcePredicates) {
+				Map<String, Value> attrs = resource2attributes.computeIfAbsent(predicate, k -> new HashMap<>());
+
+				String prefix = ns2prefixMap.get(predicate.getNamespace());
+				if (prefix == null) {
+					attrs.put("show",  vf.createLiteral(predicate.stringValue()));
+				} else {
+					attrs.put("show", vf.createLiteral(prefix + ":" + predicate.getLocalName()));
+				}
+			}
 			
 			return propertyModel;
 		} else {
@@ -271,7 +298,6 @@ public class ResourceView2 extends STServiceAdapter {
 
 				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
 			});
-
 		} else {
 			throw new IllegalArgumentException("Unknown resource position: " + resourcePosition);
 		}

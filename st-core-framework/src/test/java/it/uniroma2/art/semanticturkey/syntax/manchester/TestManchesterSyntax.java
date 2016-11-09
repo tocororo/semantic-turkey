@@ -115,7 +115,7 @@ public class TestManchesterSyntax {
 	private void startWriteTest(RepositoryConnection conn) throws RecognitionException, ManchesterParserException {
 		ManchesterClassInterface manchesterClassInterface;
 
-		Resource graphs = conn.getValueFactory().createIRI("http://maingraph.it");
+		Resource[] graphs = new Resource[] { conn.getValueFactory().createIRI("http://maingraph.it") };
 		
 		String class1uri = "<http://test.it#class1>";
 		String class2uri = "<http://test.it#class2>";
@@ -163,7 +163,7 @@ public class TestManchesterSyntax {
 		printResults(inputString, null, manchesterClassInterface);
 	}
 	
-	private void addAllStatements(RepositoryConnection conn, List<Statement> statList, Resource graphs){
+	private void addAllStatements(RepositoryConnection conn, List<Statement> statList, Resource... graphs){
 		for(Statement statement : statList){
 			conn.add(statement, graphs);
 		}
