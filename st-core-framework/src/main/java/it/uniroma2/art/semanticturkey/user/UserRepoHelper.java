@@ -145,62 +145,10 @@ public class UserRepoHelper {
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult result = tq.evaluate();
 		//collect users
-		ArrayList<STUser> list = new ArrayList<STUser>();
-		tupleLoop: while (result.hasNext()) {
-			BindingSet tuple = result.next();
-			
-			String email = tuple.getValue(BINDING_EMAIL).stringValue();
-			STUser user = new STUser(
-					email,
-					tuple.getValue(BINDING_PASSWORD).stringValue(),
-					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
-					tuple.getValue(BINDING_LAST_NAME).stringValue());
-			
-			//Check if the current tuple is about an user already fetched (and differs just for the role)
-			for (STUser u : list) {
-				if (u.getEmail().equals(email)) {
-					//user already in list
-					//don't check if binding != null, cause it is so for sure, since it is the only value that differs
-					String role = tuple.getValue(BINDING_ROLE).stringValue();
-					u.addAuthority(new SimpleGrantedAuthority(role));
-					continue tupleLoop; //ignore other bindings and go to the following tuple 
-				}
-			}
-			
-			if (tuple.getBinding(BINDING_ROLE) != null) {
-				user.addAuthority(new SimpleGrantedAuthority(tuple.getValue(BINDING_ROLE).stringValue()));
-			}
-			if (tuple.getBinding(BINDING_URL) != null) {
-				user.setUrl(tuple.getValue(BINDING_URL).stringValue());
-			}
-			if (tuple.getBinding(BINDING_PHONE) != null) {
-				user.setPhone(tuple.getValue(BINDING_PHONE).stringValue());
-			}
-			if (tuple.getBinding(BINDING_BIRTHDAY) != null) {
-			    Date d =  dateFormat.parse(tuple.getValue(BINDING_BIRTHDAY).stringValue());
-				user.setBirthday(d);
-			}
-			if (tuple.getBinding(BINDING_GENDER) != null) {
-				user.setGender(tuple.getValue(BINDING_GENDER).stringValue());
-			}
-			if (tuple.getBinding(BINDING_AFFILIATION) != null) {
-				user.setAffiliation(tuple.getValue(BINDING_AFFILIATION).stringValue());
-			}
-			if (tuple.getBinding(BINDING_COUNTRY) != null) {
-				user.setCountry(tuple.getValue(BINDING_COUNTRY).stringValue());
-			}
-			if (tuple.getBinding(BINDING_ADDRESS) != null) {
-				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
-			}
-			if (tuple.getBinding(BINDING_REGISTRATION_DATE) != null) {
-			    Date d =  dateFormat.parse(tuple.getValue(BINDING_REGISTRATION_DATE).stringValue());
-				user.setRegistrationDate(d);
-			}
-			list.add(user);
-		}
+		List<STUser> userList = getUsersFromTupleResult(result);
 		
 		conn.close();
-		return list;
+		return userList;
 	}
 	
 	/**
@@ -235,46 +183,10 @@ public class UserRepoHelper {
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult result = tq.evaluate();
 		// collect users
-		ArrayList<STUser> list = new ArrayList<STUser>();
-		while (result.hasNext()) {
-			BindingSet tuple = result.next();
-			STUser user = new STUser(
-					tuple.getValue(BINDING_EMAIL).stringValue(),
-					tuple.getValue(BINDING_PASSWORD).stringValue(),
-					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
-					tuple.getValue(BINDING_LAST_NAME).stringValue());
-			
-			if (tuple.getBinding(BINDING_URL) != null) {
-				user.setUrl(tuple.getValue(BINDING_URL).stringValue());
-			}
-			if (tuple.getBinding(BINDING_PHONE) != null) {
-				user.setPhone(tuple.getValue(BINDING_PHONE).stringValue());
-			}
-			if (tuple.getBinding(BINDING_BIRTHDAY) != null) {
-			    Date d =  dateFormat.parse(tuple.getValue(BINDING_BIRTHDAY).stringValue());
-				user.setBirthday(d);
-			}
-			if (tuple.getBinding(BINDING_GENDER) != null) {
-				user.setGender(tuple.getValue(BINDING_GENDER).stringValue());
-			}
-			if (tuple.getBinding(BINDING_AFFILIATION) != null) {
-				user.setAffiliation(tuple.getValue(BINDING_AFFILIATION).stringValue());
-			}
-			if (tuple.getBinding(BINDING_COUNTRY) != null) {
-				user.setCountry(tuple.getValue(BINDING_COUNTRY).stringValue());
-			}
-			if (tuple.getBinding(BINDING_ADDRESS) != null) {
-				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
-			}
-			if (tuple.getBinding(BINDING_REGISTRATION_DATE) != null) {
-			    Date d =  dateFormat.parse(tuple.getValue(BINDING_REGISTRATION_DATE).stringValue());
-				user.setRegistrationDate(d);
-			}
-			list.add(user);
-		}
+		List<STUser> userList = getUsersFromTupleResult(result);
 		
 		conn.close();
-		return list;
+		return userList;
 	}
 	
 	/**
@@ -312,6 +224,64 @@ public class UserRepoHelper {
 		} finally {
 			conn.close();
 		}
+	}
+	
+	private List<STUser> getUsersFromTupleResult(TupleQueryResult result) throws ParseException {
+		// collect users
+		ArrayList<STUser> list = new ArrayList<STUser>();
+		tupleLoop: while (result.hasNext()) {
+			BindingSet tuple = result.next();
+
+			String email = tuple.getValue(BINDING_EMAIL).stringValue();
+			STUser user = new STUser(email, tuple.getValue(BINDING_PASSWORD).stringValue(),
+					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
+					tuple.getValue(BINDING_LAST_NAME).stringValue());
+
+			// Check if the current tuple is about an user already fetched (and differs just for the role)
+			for (STUser u : list) {
+				if (u.getEmail().equals(email)) {
+					// user already in list
+					// don't check if binding != null, cause it is so for sure, since it is the only value
+					// that differs
+					String role = tuple.getValue(BINDING_ROLE).stringValue();
+					u.addAuthority(new SimpleGrantedAuthority(role));
+					continue tupleLoop; // ignore other bindings and go to the following tuple
+				}
+			}
+
+			if (tuple.getBinding(BINDING_ROLE) != null) {
+				user.addAuthority(
+						new SimpleGrantedAuthority(tuple.getValue(BINDING_ROLE).stringValue()));
+			}
+			if (tuple.getBinding(BINDING_URL) != null) {
+				user.setUrl(tuple.getValue(BINDING_URL).stringValue());
+			}
+			if (tuple.getBinding(BINDING_PHONE) != null) {
+				user.setPhone(tuple.getValue(BINDING_PHONE).stringValue());
+			}
+			if (tuple.getBinding(BINDING_BIRTHDAY) != null) {
+				Date d = dateFormat.parse(tuple.getValue(BINDING_BIRTHDAY).stringValue());
+				user.setBirthday(d);
+			}
+			if (tuple.getBinding(BINDING_GENDER) != null) {
+				user.setGender(tuple.getValue(BINDING_GENDER).stringValue());
+			}
+			if (tuple.getBinding(BINDING_AFFILIATION) != null) {
+				user.setAffiliation(tuple.getValue(BINDING_AFFILIATION).stringValue());
+			}
+			if (tuple.getBinding(BINDING_COUNTRY) != null) {
+				user.setCountry(tuple.getValue(BINDING_COUNTRY).stringValue());
+			}
+			if (tuple.getBinding(BINDING_ADDRESS) != null) {
+				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
+			}
+			if (tuple.getBinding(BINDING_REGISTRATION_DATE) != null) {
+				Date d = dateFormat.parse(tuple.getValue(BINDING_REGISTRATION_DATE).stringValue());
+				user.setRegistrationDate(d);
+			}
+			list.add(user);
+		}
+		return list;
 	}
 	
 }
