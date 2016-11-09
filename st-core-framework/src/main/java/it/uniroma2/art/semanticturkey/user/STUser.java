@@ -7,7 +7,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -176,6 +180,37 @@ public class STUser implements UserDetails {
 	
 	public void setRegistrationDate(Date registrationDate) {
 		this.registrationDate = registrationDate;
+	}
+	
+	public JSONObject getAsJSONObject() throws JSONException {
+		JSONObject userJson = new JSONObject();
+		userJson.put("email", email);
+		userJson.put("firstName", firstName);
+		userJson.put("lastName", lastName);
+		
+		List<String> roles = new ArrayList<String>();
+		Iterator<? extends GrantedAuthority> authIt = authorities.iterator();
+		while (authIt.hasNext()) {
+			roles.add(authIt.next().getAuthority());
+		}
+		userJson.put("roles", new JSONArray(roles));
+		
+		if (birthday != null) {
+			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday));
+		} else {
+			userJson.put("birthday", birthday); //empty field
+		}
+		
+		userJson.put("gender", gender);
+		userJson.put("country", country);
+		userJson.put("address", address);
+		//skip test registrationDate != null because registrationDate is automatically set during registration
+		userJson.put("registrationDate", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(registrationDate));
+		userJson.put("affiliation", affiliation);
+		userJson.put("url", url);
+		userJson.put("phone", phone);
+		
+		return userJson;
 	}
 	
 	public String toString() {
