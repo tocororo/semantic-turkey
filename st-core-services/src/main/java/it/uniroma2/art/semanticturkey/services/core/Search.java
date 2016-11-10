@@ -17,6 +17,7 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
@@ -227,6 +228,7 @@ public class Search extends STServiceAdapterOLD {
 		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
 		List<String> addedIndividualList = new ArrayList<String>();
+		List<String> addedClassList = new ArrayList<String>();
 		while (tupleBindingsIterator.hasNext()) {
 			TupleBindings tupleBindings = tupleBindingsIterator.next();
 			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
@@ -239,8 +241,12 @@ public class Search extends STServiceAdapterOLD {
 			RDFResourceRolesEnum role = null;
 			//since there are more than one element in the input role array, see the resource
 			String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
-			if(type.equals(OWL.CLASS)){
+			if(type.equals(OWL.CLASS) || type.equals(RDFS.CLASS) ){
 				role = RDFResourceRolesEnum.cls;
+				if(	addedClassList.contains(resourceURI.asURIResource().getNominalValue())){
+					continue;
+				}
+				addedClassList.add(resourceURI.asURIResource().getNominalValue());
 			} else if(type.equals(RDF.PROPERTY)){
 				role = RDFResourceRolesEnum.property;
 			} else if(type.equals(OWL.OBJECTPROPERTY)){
@@ -264,9 +270,20 @@ public class Search extends STServiceAdapterOLD {
 				addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
 			} 
 			
+			//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
+			// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
+			// when the parent class is Owl:Thing the service filters out those classes with 
+			// NoLanguageResourcePredicate)
+			if(role.equals(RDFResourceRolesEnum.cls)){
+				String resNamespace = resourceURI.asURIResource().getNamespace();
+				if(resNamespace.equals(XmlSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
+						|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
+					continue;
+				}
+			}
 			
 			
-			//if a show was found, use it instead of the automatically retrieve one (the qnome)
+			//if a show was found, use it instead of the automatically retrieve one (the qname)
 			String show = null;
 			if(tupleBindings.hasBinding("show")){
 				show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
@@ -288,6 +305,134 @@ public class Search extends STServiceAdapterOLD {
 						true, true));
 			}*/
 			
+			
+		}
+		RDFXMLHelp.addRDFNodes(dataElement, collection);
+
+		return response;
+	}
+	
+	@GenerateSTServiceController
+	public Response searchInstancesOfClass(ARTURIResource cls, String searchString, boolean useLocalName, 
+			boolean useURI, String searchMode, @Optional String lang) 
+					throws ModelUpdateException, UnsupportedQueryLanguageException, 
+			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+		
+		String searchModeSelected = null;
+		
+		
+		if(searchString.isEmpty()){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
+			Element dataElement = response.getDataElement();
+			dataElement.setTextContent("the serchString cannot be empty");
+			return response;
+		}
+
+		if(searchMode.toLowerCase().contains(START_SEARCH_MODE)){
+			searchModeSelected = START_SEARCH_MODE;
+		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
+			searchModeSelected = CONTAINS_SEARCH_MODE;
+		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
+			searchModeSelected = END_SEARCH_MODE;
+		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
+			searchModeSelected = EXACT_SEARCH_MODE;
+		}
+		
+		if(searchModeSelected == null){
+			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
+			Element dataElement = response.getDataElement();
+			dataElement.setTextContent("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
+			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE);
+			return response;
+		}
+		
+		OWLModel owlModel = getOWLModel();
+		
+		//@formatter:off
+		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
+			"\nWHERE{" +
+			"\n{";
+		//do a subquery to get the candidate resources
+		query+="\nSELECT DISTINCT ?resource" +
+			"\nWHERE{" + 
+			"\n ?resource a <"+cls.getNominalValue()+"> . " +
+			"\n}" +
+			"\n}";
+			
+		//now examine the rdf:label and/or skos:xlabel/skosxl:label
+		//see if the localName and/or URI should be used in the query or not
+		
+		
+		//check if the request want to search in the local name
+		if(useLocalName){
+			query+="\n{" +
+					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
+					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		
+		//check if the request want to search in the complete URI
+		if(useURI){
+			query+="\n{" +
+					"\nBIND(str(?resource) AS ?complURI)"+
+					searchModePrepareQuery("?complURI", searchString, searchModeSelected) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		//search in the rdfs:label
+		query+="\n{" +
+				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
+				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
+				"\n}";
+
+		
+		query+="\n}";
+		//@formatter:on
+		
+		logger.debug("query = "+query);
+		
+		TupleQuery tupleQuery;
+		tupleQuery = owlModel.createTupleQuery(query);
+		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(false);
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
+		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
+		List<String> addedIndividualList = new ArrayList<String>();
+		List<String> addedClassList = new ArrayList<String>();
+		while (tupleBindingsIterator.hasNext()) {
+			TupleBindings tupleBindings = tupleBindingsIterator.next();
+			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
+
+			if (!resourceURI.isURIResource()) {
+				continue;
+			}
+
+			// TODO, explicit set to true
+			RDFResourceRolesEnum role = RDFResourceRolesEnum.individual;
+			if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
+				//the individual was already added
+				continue;
+			}
+			addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
+			
+			
+			//if a show was found, use it instead of the automatically retrieve one (the qname)
+			String show = null;
+			if(tupleBindings.hasBinding("show")){
+				show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+				if(show.length()>0){
+					collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
+							true, show));
+				}
+			}
+			else{
+				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
+						true, true));
+			}
 			
 		}
 		RDFXMLHelp.addRDFNodes(dataElement, collection);
@@ -669,6 +814,7 @@ public class Search extends STServiceAdapterOLD {
 		
 		return filterQuery;
 	}
+	
 
 	private String searchModePrepareQuery(String variable, String value, String searchMode){
 		String query ="";
