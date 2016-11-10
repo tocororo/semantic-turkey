@@ -98,13 +98,14 @@ public class Search extends STServiceAdapterOLD {
 			} 
 		}
 		//@formatter:off
-		if(!isClassWanted && !isConceptWanted && !isCollectionWanted && !isInstanceWanted && !isPropertyWanted 
-				&& !isCollectionWanted){
+		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && !isCollectionWanted && 
+				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
 			Element dataElement = response.getDataElement();
 			dataElement.setTextContent("the serch roles should be at least one of: "+
 					RDFResourceRolesEnum.cls.name()+", "+
 					RDFResourceRolesEnum.concept.name()+", "+
+					RDFResourceRolesEnum.conceptScheme.name()+", "+
 					RDFResourceRolesEnum.individual+", "+
 					RDFResourceRolesEnum.property.name() +" or "+
 					RDFResourceRolesEnum.skosCollection.name());
