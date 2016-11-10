@@ -65,6 +65,7 @@ public class Search extends STServiceAdapterOLD {
 		
 		boolean isClassWanted = false;
 		boolean isConceptWanted = false;
+		boolean isConceptSchemeWanted = false;
 		boolean isInstanceWanted = false;
 		boolean isPropertyWanted = false;
 		boolean isCollectionWanted = false;
@@ -86,6 +87,8 @@ public class Search extends STServiceAdapterOLD {
 				isClassWanted = true;
 			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
 				isConceptWanted = true;
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.conceptScheme.name().toLowerCase())){
+				isConceptSchemeWanted = true;
 			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.individual.name().toLowerCase())){
 				isInstanceWanted = true;
 			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
@@ -95,7 +98,7 @@ public class Search extends STServiceAdapterOLD {
 			} 
 		}
 		//@formatter:off
-		if(!isClassWanted && !isConceptWanted && !isInstanceWanted && !isPropertyWanted 
+		if(!isClassWanted && !isConceptWanted && !isCollectionWanted && !isInstanceWanted && !isPropertyWanted 
 				&& !isCollectionWanted){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
 			Element dataElement = response.getDataElement();
@@ -145,7 +148,7 @@ public class Search extends STServiceAdapterOLD {
 						isConceptWanted);*/
 		
 		query+=filterResourceTypeAndScheme("?resource", "?type", isClassWanted, isInstanceWanted, 
-				isPropertyWanted, isConceptWanted, isCollectionWanted, scheme);
+				isPropertyWanted, isConceptWanted, isConceptSchemeWanted, isCollectionWanted, scheme);
 		
 		
 		query+="\n}" +
@@ -183,7 +186,7 @@ public class Search extends STServiceAdapterOLD {
 		//if you are searching among concepts or collections, search in the skos:prefLabel/altLabel and 
 		// skosxl:prefLabel/altLabel
 		
-		if(isConceptWanted || isCollectionWanted){
+		if(isConceptWanted || isConceptSchemeWanted || isCollectionWanted ){
 			query+="\nUNION" +
 					"\n{" +
 					"\n?resource (<"+SKOS.PREFLABEL+"> | <"+SKOS.ALTLABEL+">) ?skosLabel ."+
@@ -201,7 +204,7 @@ public class Search extends STServiceAdapterOLD {
 		// if it has not such value, the skosLabel (always considering just the prefLabel)
 		// the language is used only to return the concept/collection with the labels in the desired 
 		// language and it is not used to filter a resource
-		if((isConceptWanted || isCollectionWanted)&& lang!=null && lang.length()>0){
+		if((isConceptWanted || isConceptSchemeWanted || isCollectionWanted)&& lang!=null && lang.length()>0){
 			query+="\nOPTIONAL" +
 					"\n{" +
 					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabel ." +
@@ -618,8 +621,8 @@ public class Search extends STServiceAdapterOLD {
 			iter.close();
 			
 			
-			//itertate over the resoruceToResourceForHierarchyMap and look for the topConcept
-			//and construct a list of list containg all the possible paths
+			//iterate over the resoruceToResourceForHierarchyMap and look for the topConcept
+			//and construct a list of list containing all the possible paths
 			List<List<String>> pathList = new ArrayList<List<String>>();
 			for(ResourceForHierarchy resourceForHierarchy : resourceToResourceForHierarchyMap.values()){
 				if(!resourceForHierarchy.hasNoSuperResource){
@@ -758,7 +761,7 @@ public class Search extends STServiceAdapterOLD {
 	
 	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
 			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isCollectionWanted, ARTURIResource scheme){
+			boolean isConceptSchemeWanted, boolean isCollectionWanted, ARTURIResource scheme){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
@@ -792,6 +795,17 @@ public class Search extends STServiceAdapterOLD {
 			if(scheme!=null && scheme.getURI().length()>0){
 				filterQuery += "\n"+resource+" <"+SKOS.INSCHEME+"> <"+scheme.getURI()+"> .";
 			}
+			
+			filterQuery += "\n}";
+			
+			otherWanted = true;
+		}
+		if(isConceptSchemeWanted){
+			if(otherWanted){
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					 "\nFILTER("+type+" = <"+SKOS.CONCEPTSCHEME+">)";
 			
 			filterQuery += "\n}";
 			
