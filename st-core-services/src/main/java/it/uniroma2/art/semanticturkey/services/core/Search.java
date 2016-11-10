@@ -412,7 +412,21 @@ public class Search extends STServiceAdapterOLD {
 			}
 
 			// TODO, explicit set to true
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.individual;
+			RDFResourceRolesEnum role;
+			
+			if(cls.getURI().equals(SKOS.CONCEPT)){
+				role = RDFResourceRolesEnum.concept;
+			} else if(cls.getURI().equals(SKOSXL.LABEL)){
+				role = RDFResourceRolesEnum.xLabel;
+			} else if(cls.getURI().equals(SKOS.CONCEPTSCHEME)){
+				role = RDFResourceRolesEnum.conceptScheme;
+			} else if(cls.getURI().equals(SKOS.COLLECTION)){
+				role = RDFResourceRolesEnum.skosCollection;
+			} else if(cls.getURI().equals(SKOS.ORDEREDCOLLECTION)){
+				role = RDFResourceRolesEnum.skosOrderedCollection;
+			} else {
+				role = RDFResourceRolesEnum.individual;
+			}
 			if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
 				//the individual was already added
 				continue;
