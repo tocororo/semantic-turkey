@@ -477,8 +477,11 @@ public class Search extends STServiceAdapterOLD {
 				query +="\n}" + 
 						"\n}" +
 						"\nUNION" +
-						"\n{" +
-						"\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> .";
+						"\n{";
+				//this union is used when the first part does not return anything, so when the desired concept
+				// does not have any broader, but it is defined as topConcept (to either a specified scheme or
+				// to at least one)
+				query+= "\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> .";
 				if(schemeURI != null){
 						query+="\n<"+resourceURI+"> " +
 								"(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) <"+schemeURI+">";
@@ -487,8 +490,24 @@ public class Search extends STServiceAdapterOLD {
 							"(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) _:b1";
 				}
 				query+="\nBIND(\"true\" AS ?isTop )" +
-						"\n}" +
 						"\n}";
+						
+				// this using, used only when no scheme is selected, is used when the concept does not have any
+				// brader and it is not topConcept of any scheme
+				if(schemeURI == null){
+					query+="\nUNION" +
+							"\n{" +
+							"\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> ." +
+							"\nFILTER(NOT EXISTS{<"+resourceURI+"> "
+									+ "(<"+SKOS.BROADER+"> || ^<"+SKOS.NARROWER+">) ?genericConcept })" +
+							"\nFILTER (NOT EXISTS{ <"+resourceURI+"> "
+									+ "(<"+SKOS.TOPCONCEPTOF+"> || ^<"+SKOS.HASTOPCONCEPT+"> ) ?genericScheme})" +
+							"\nBIND(\"true\" AS ?isTop )" +
+							"\n}";
+				}
+						
+						
+				query+="\n}";
 				//@formatter:on
 			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
 				superResourceVar = "superProperty";
