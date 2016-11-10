@@ -241,34 +241,22 @@ public class Search extends STServiceAdapterOLD {
 			RDFResourceRolesEnum role = null;
 			//since there are more than one element in the input role array, see the resource
 			String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
-			if(type.equals(OWL.CLASS) || type.equals(RDFS.CLASS) ){
-				role = RDFResourceRolesEnum.cls;
+			
+			role = getRoleFromType(type);
+			
+			if(role.equals(RDFResourceRolesEnum.cls)){
 				if(	addedClassList.contains(resourceURI.asURIResource().getNominalValue())){
+					//the class was already added
 					continue;
 				}
 				addedClassList.add(resourceURI.asURIResource().getNominalValue());
-			} else if(type.equals(RDF.PROPERTY)){
-				role = RDFResourceRolesEnum.property;
-			} else if(type.equals(OWL.OBJECTPROPERTY)){
-				role = RDFResourceRolesEnum.objectProperty;
-			} else if(type.equals(OWL.DATATYPEPROPERTY)){
-				role = RDFResourceRolesEnum.datatypeProperty;
-			} else if(type.equals(OWL.ANNOTATIONPROPERTY)){
-				role = RDFResourceRolesEnum.annotationProperty;
-			} else if(type.equals(OWL.ONTOLOGYPROPERTY)){
-				role = RDFResourceRolesEnum.ontologyProperty;
-			}  else if(type.equals(SKOS.CONCEPT)){
-				role = RDFResourceRolesEnum.concept;
-			} else if(type.equals(SKOS.COLLECTION)){
-				role = RDFResourceRolesEnum.skosCollection;
-			}else{
-				role = RDFResourceRolesEnum.individual;
+			} else if(role.equals(RDFResourceRolesEnum.individual)){
 				if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
 					//the individual was already added
 					continue;
 				}
 				addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
-			} 
+			}
 			
 			//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
 			// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
@@ -411,27 +399,14 @@ public class Search extends STServiceAdapterOLD {
 				continue;
 			}
 
-			// TODO, explicit set to true
-			RDFResourceRolesEnum role;
-			
-			if(cls.getURI().equals(SKOS.CONCEPT)){
-				role = RDFResourceRolesEnum.concept;
-			} else if(cls.getURI().equals(SKOSXL.LABEL)){
-				role = RDFResourceRolesEnum.xLabel;
-			} else if(cls.getURI().equals(SKOS.CONCEPTSCHEME)){
-				role = RDFResourceRolesEnum.conceptScheme;
-			} else if(cls.getURI().equals(SKOS.COLLECTION)){
-				role = RDFResourceRolesEnum.skosCollection;
-			} else if(cls.getURI().equals(SKOS.ORDEREDCOLLECTION)){
-				role = RDFResourceRolesEnum.skosOrderedCollection;
-			} else {
-				role = RDFResourceRolesEnum.individual;
-			}
+			RDFResourceRolesEnum role = getRoleFromType(cls.getURI());
 			if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
 				//the individual was already added
 				continue;
 			}
 			addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
+			
+			
 			
 			
 			//if a show was found, use it instead of the automatically retrieve one (the qname)
@@ -513,9 +488,9 @@ public class Search extends STServiceAdapterOLD {
 							"\n{" +
 							"\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> ." +
 							"\nFILTER(NOT EXISTS{<"+resourceURI+"> "
-									+ "(<"+SKOS.BROADER+"> || ^<"+SKOS.NARROWER+">) ?genericConcept })" +
+									+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +
 							"\nFILTER (NOT EXISTS{ <"+resourceURI+"> "
-									+ "(<"+SKOS.TOPCONCEPTOF+"> || ^<"+SKOS.HASTOPCONCEPT+"> ) ?genericScheme})" +
+									+ "(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+"> ) ?genericScheme})" +
 							"\nBIND(\"true\" AS ?isTop )" +
 							"\n}";
 				}
@@ -945,5 +920,33 @@ public class Search extends STServiceAdapterOLD {
 		}
 	}
 	
+	private RDFResourceRolesEnum getRoleFromType(String typeURI){
+		RDFResourceRolesEnum role;
+		if(typeURI.equals(OWL.CLASS) || typeURI.equals(RDFS.CLASS) ){
+			role = RDFResourceRolesEnum.cls;
+		} else if(typeURI.equals(RDF.PROPERTY)){
+			role = RDFResourceRolesEnum.property;
+		} else if(typeURI.equals(OWL.OBJECTPROPERTY)){
+			role = RDFResourceRolesEnum.objectProperty;
+		} else if(typeURI.equals(OWL.DATATYPEPROPERTY)){
+			role = RDFResourceRolesEnum.datatypeProperty;
+		} else if(typeURI.equals(OWL.ANNOTATIONPROPERTY)){
+			role = RDFResourceRolesEnum.annotationProperty;
+		} else if(typeURI.equals(OWL.ONTOLOGYPROPERTY)){
+			role = RDFResourceRolesEnum.ontologyProperty;
+		}  else if(typeURI.equals(SKOS.CONCEPT)){
+			role = RDFResourceRolesEnum.concept;
+		} else if(typeURI.equals(SKOS.COLLECTION)){
+			role = RDFResourceRolesEnum.skosCollection;
+		} else if(typeURI.equals(SKOSXL.LABEL)){
+			role = RDFResourceRolesEnum.xLabel;
+		} else if(typeURI.equals(SKOS.CONCEPTSCHEME)){
+			role = RDFResourceRolesEnum.conceptScheme;
+		} else {
+			role = RDFResourceRolesEnum.individual;
+		} 
+		
+		return role;
+	}
 	
 }
