@@ -32,7 +32,6 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
@@ -243,15 +242,13 @@ public class UserRepoHelper {
 					// user already in list
 					// don't check if binding != null, cause it is so for sure, since it is the only value
 					// that differs
-					String role = tuple.getValue(BINDING_ROLE).stringValue();
-					u.addAuthority(new SimpleGrantedAuthority(role));
+					user.addRole(UserRolesEnum.valueOf(tuple.getValue(BINDING_ROLE).stringValue()));
 					continue tupleLoop; // ignore other bindings and go to the following tuple
 				}
 			}
 
 			if (tuple.getBinding(BINDING_ROLE) != null) {
-				user.addAuthority(
-						new SimpleGrantedAuthority(tuple.getValue(BINDING_ROLE).stringValue()));
+				user.addRole(UserRolesEnum.valueOf(tuple.getValue(BINDING_ROLE).stringValue()));
 			}
 			if (tuple.getBinding(BINDING_URL) != null) {
 				user.setUrl(tuple.getValue(BINDING_URL).stringValue());

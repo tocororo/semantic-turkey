@@ -23,6 +23,7 @@ public class STUser implements UserDetails {
 	private String lastName;
 	private String password; //encoded
 	private String email;
+	private Collection<UserRolesEnum> roles;
 	private Collection<GrantedAuthority> authorities;
 	private String url;
 	private String phone;
@@ -40,6 +41,7 @@ public class STUser implements UserDetails {
 		this.password = password;
 		this.firstName = firstName;
 		this.lastName = lastName;
+		roles = new ArrayList<UserRolesEnum>();
 		authorities = new ArrayList<GrantedAuthority>();
 	}
 	
@@ -92,6 +94,18 @@ public class STUser implements UserDetails {
 	
 	public void addAuthority(GrantedAuthority authority) {
 		this.authorities.add(authority);
+	}
+	
+	public Collection<UserRolesEnum> getRoles() {
+		return this.roles;
+	}
+	
+	public void addRoles(Collection<UserRolesEnum> roles) {
+		this.roles.addAll(roles);
+	}
+	
+	public void addRole(UserRolesEnum role) {
+		this.roles.add(role);
 	}
 
 	@Override

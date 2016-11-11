@@ -54,9 +54,6 @@
 	</http>
 
 	<authentication-manager>
-		<!-- with AuthenticationProvider bean -->
-		<!-- <authentication-provider ref="authenticationProvider"/> -->
-		
 		<!-- with UserDetailsService bean and password encoder -->
 		<authentication-provider user-service-ref="stUserDetailsService">
 			<password-encoder ref="bCryptPasswordEncoder"/>
@@ -64,7 +61,6 @@
 	</authentication-manager>
 	
 	<beans:bean id="corsFilter" class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
-	<!-- <beans:bean id="authenticationProvider" class="it.uniroma2.art.semanticturkey.security.STAuthenticationProvider"/> -->
 	<beans:bean id="stUserDetailsService" class="it.uniroma2.art.semanticturkey.security.STUserDetailsService"/>
 	<beans:bean id="authEntryPoint" class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint"/>
 	<beans:bean id="authSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationSuccessHandler"/>

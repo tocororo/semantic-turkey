@@ -1,13 +1,18 @@
 package it.uniroma2.art.semanticturkey.security;
 
 import java.text.ParseException;
+import java.util.Collection;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserPermissionsEnum;
+import it.uniroma2.art.semanticturkey.user.UserRolesEnum;
 
 /**
  * @author Tiziano
@@ -27,6 +32,7 @@ public class STUserDetailsService implements UserDetailsService {
 		try {
 			user = userMgr.getUserByEmail(username);
 			if (user != null) {
+				addAuthoritiesToUser(user);
 				return user;
 			} else {
 				throw new UsernameNotFoundException("username " + username+ " not found");
@@ -35,5 +41,20 @@ public class STUserDetailsService implements UserDetailsService {
 			throw new UsernameNotFoundException("Error retrieving user " + username);
 		}
 	}
+	
+	private void addAuthoritiesToUser(STUser user) {
+		Collection<UserRolesEnum> roles = user.getRoles();
+		System.out.println("Role for " + user.getEmail());
+		for (UserRolesEnum r : roles) {
+			System.out.println("\t" + r.name());
+			System.out.println("\tPermissions:");
+			List<UserPermissionsEnum> permissions = PermissionManager.getPermissionsForRole(r);
+			for (UserPermissionsEnum p : permissions) {
+				System.out.println("\t\t" + p.name());
+				user.addAuthority(new SimpleGrantedAuthority(p.name()));
+			}
+		}
+	}
 
 }
+

@@ -67,7 +67,7 @@ public class Users extends STServiceAdapter {
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin", 
 			method = RequestMethod.GET, produces = "application/json")
-	@PreAuthorize("hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('CAPABILITY_1')")
 	@ResponseBody
 	public String testRequiredAdmin(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
