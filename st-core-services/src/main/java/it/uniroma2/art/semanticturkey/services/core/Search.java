@@ -568,6 +568,24 @@ public class Search extends STServiceAdapterOLD {
 						"\n}" +
 						"\n}";
 				//@formatter:on
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+				//@formatter:off
+				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
+						"\nWHERE {"+
+						"\n{"+
+						"\n?superCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">)+ <"+resourceURI+"> ." +
+						"\nOPTIONAL {"+
+						"?superSuperCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">) ?superCollection ." +
+						"\n}" +
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n<"+resourceURI+"> a <"+SKOS.ORDEREDCOLLECTION+"> ." +
+						"\nFILTER NOT EXISTS{ _:b1 (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">) <"+resourceURI+"> }" +
+						"\nBIND(\"true\" AS ?isTop )" +
+						"\n}" +
+						"\n}";
+				//@formatter:on
 			}else {
 				throw new IllegalArgumentException("Invalid input role: "+role);
 			}
