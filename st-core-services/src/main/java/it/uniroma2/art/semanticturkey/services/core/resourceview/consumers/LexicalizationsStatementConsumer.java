@@ -1,0 +1,21 @@
+package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
+
+import java.util.Arrays;
+
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+
+import com.google.common.collect.Sets;
+
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractGroupingPropertyMatchingStatementConsumer;
+
+public class LexicalizationsStatementConsumer extends AbstractGroupingPropertyMatchingStatementConsumer {
+
+	public LexicalizationsStatementConsumer(CustomRangeProvider customRangeProvider) {
+		super(customRangeProvider, "lexicalizations", Sets.newLinkedHashSet(Arrays.asList(RDFS.LABEL, SKOS.PREF_LABEL, SKOS.ALT_LABEL,
+				SKOS.HIDDEN_LABEL, SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL)));
+	}
+
+}

@@ -109,7 +109,7 @@ public class PropertyFactesStatementConsumer implements StatementConsumer {
 		}
 
 		LinkedHashMap<String, ResourceViewSection> result = new LinkedHashMap<String, ResourceViewSection>();
-		result.put("facets", new PropertyFacets(symmetric, symmetricExplicit, functional, functionalExplicit,
+		result.put("facets", new PropertyFacetsSection(symmetric, symmetricExplicit, functional, functionalExplicit,
 				inverseFunctional, inverseFunctionalExplicit, transitive, transitiveExplicit, inverseOf));
 
 		// Mark inverse of statements as processed

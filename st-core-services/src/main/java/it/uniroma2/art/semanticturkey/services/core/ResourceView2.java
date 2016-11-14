@@ -27,7 +27,10 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -44,24 +47,34 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.google.common.collect.Sets;
+
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -117,7 +130,7 @@ public class ResourceView2 extends STServiceAdapter {
 			QueryResults.stream(getManagedConnection().getNamespaces()).forEach(ns -> {
 				retrievedStatements.setNamespace(ns.getPrefix(), ns.getName());
 			});
-			
+
 			Map<Resource, Map<String, Value>> resource2attributes = retrieveSubjectAndObjectsAddtionalInformation(
 					resourcePosition, resource);
 
@@ -141,8 +154,8 @@ public class ResourceView2 extends STServiceAdapter {
 					.getTemplateForResourceRole(resourceRole);
 
 			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
-			List<IRI> specialProperties = viewTemplate.stream()
-					.flatMap(c -> c.getMatchedProperties().stream()).collect(toList());
+			Set<IRI> specialProperties = viewTemplate.stream().flatMap(c -> c.getMatchedProperties().stream())
+					.collect(toSet());
 
 			Model propertyModel = retrievePredicateInformation(resourcePosition, resourcePredicates,
 					specialProperties, resource2attributes, retrievedStatements);
@@ -161,11 +174,79 @@ public class ResourceView2 extends STServiceAdapter {
 		}
 	}
 
+	@STServiceOperation
+	@Read
+	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
+			@Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException {
+		if (resourcePosition == null) {
+			resourcePosition = resource != null ? resourceLocator.locateResource(getProject(), resource)
+					: ResourceLocator.UNKNOWN_RESOURCE_POSITION;
+		}
+
+		Map<String, String> ns2prefixMap = QueryResults.stream(getManagedConnection().getNamespaces())
+				.collect(toMap(Namespace::getName, Namespace::getPrefix));
+
+		ValueFactory vf = SimpleValueFactory.getInstance();
+
+		List<AnnotatedValue<IRI>> lexicalizationProperties = new ArrayList<>();
+
+		HashSet<IRI> annotationProps = Sets.newHashSet(RDFS.LABEL, SKOS.PREF_LABEL, SKOS.ALT_LABEL,
+				SKOS.HIDDEN_LABEL);
+		HashSet<IRI> objectProps = Sets.newHashSet(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
+
+		for (IRI pred : getLexicalizationPropertiesHelper(resource, resourcePosition)) {
+			AnnotatedValue<IRI> annotatedPred = new AnnotatedValue<IRI>(RDFS.LABEL);
+			Map<String, Value> predAttrs = annotatedPred.getAttributes();
+
+			String prefix = ns2prefixMap.get(pred.getNamespace());
+
+			String show = pred.stringValue();
+			if (prefix != null) {
+				show = prefix + ":" + pred.getLocalName();
+			}
+			predAttrs.put("show", vf.createLiteral(show));
+
+			RDFResourceRolesEnum role = RDFResourceRolesEnum.property;
+
+			if (annotationProps.contains(pred)) {
+				role = RDFResourceRolesEnum.annotationProperty;
+			} else if (objectProps.contains(pred)) {
+				role = RDFResourceRolesEnum.objectProperty;
+			}
+
+			predAttrs.put("role", vf.createLiteral(role.toString()));
+
+			lexicalizationProperties.add(annotatedPred);
+		}
+
+		return lexicalizationProperties;
+	}
+
+	// TODO place this method into a better place
+	private List<IRI> getLexicalizationPropertiesHelper(Resource resource,
+			ResourcePosition resourcePosition) {
+		if (resourcePosition instanceof LocalResourcePosition) {
+			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
+			RDFModel ontModel = hostingProject.getPrimordialOntModel();
+			if (ontModel instanceof SKOSXLModel) {
+				return Arrays.asList(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
+			} else if (ontModel instanceof SKOSModel) {
+				return Arrays.asList(SKOS.PREF_LABEL, SKOS.ALT_LABEL, SKOS.HIDDEN_LABEL);
+			} else {
+				return Arrays.asList(RDFS.LABEL);
+			}
+		}
+
+		return Arrays.asList(RDFS.LABEL, SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL,
+				SKOS.PREF_LABEL, SKOS.ALT_LABEL, SKOS.HIDDEN_LABEL);
+	}
+
 	private Model retrievePredicateInformation(ResourcePosition resourcePosition, Set<IRI> resourcePredicates,
-			List<IRI> specialProperties, Map<Resource, Map<String, Value>> resource2attributes, Model statements) {
+			Set<IRI> specialProperties, Map<Resource, Map<String, Value>> resource2attributes,
+			Model statements) {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
-		
-		String predicatesValuesFrag = resourcePredicates.stream()
+
+		String predicatesValuesFrag = Sets.union(resourcePredicates, specialProperties).stream()
 				.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
 		String specialPredicatesValuesFrag = specialProperties.stream()
 				.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
@@ -199,13 +280,12 @@ public class ResourceView2 extends STServiceAdapter {
 			qb.runQuery(acquireManagedConnection).stream().forEach(annotatedPredicate -> {
 				List<IRI> parents = Arrays
 						.stream(annotatedPredicate.getAttributes().get("parents").stringValue().split("><"))
-						.filter(s -> !s.isEmpty()).map(s -> vf.createIRI(s))
-						.collect(toList());
-				IRI predicate = (IRI)annotatedPredicate.getValue();
+						.filter(s -> !s.isEmpty()).map(s -> vf.createIRI(s)).collect(toList());
+				IRI predicate = (IRI) annotatedPredicate.getValue();
 				parents.forEach(parent -> {
 					propertyModel.add(predicate, RDFS.SUBPROPERTYOF, parent);
 				});
-				
+
 				Map<String, Value> attrs = resource2attributes.get(predicate);
 				if (attrs == null) {
 					attrs = new HashMap<>();
@@ -219,16 +299,17 @@ public class ResourceView2 extends STServiceAdapter {
 				ns2prefixMap.put(ns.getName(), ns.getPrefix());
 			}
 			for (IRI predicate : resourcePredicates) {
-				Map<String, Value> attrs = resource2attributes.computeIfAbsent(predicate, k -> new HashMap<>());
+				Map<String, Value> attrs = resource2attributes.computeIfAbsent(predicate,
+						k -> new HashMap<>());
 
 				String prefix = ns2prefixMap.get(predicate.getNamespace());
 				if (prefix == null) {
-					attrs.put("show",  vf.createLiteral(predicate.stringValue()));
+					attrs.put("show", vf.createLiteral(predicate.stringValue()));
 				} else {
 					attrs.put("show", vf.createLiteral(prefix + ":" + predicate.getLocalName()));
 				}
 			}
-			
+
 			return propertyModel;
 		} else {
 			throw new IllegalArgumentException("Resource position not supported yet: " + resourcePosition);
@@ -282,8 +363,45 @@ public class ResourceView2 extends STServiceAdapter {
 
 			RepositoryConnection managedConnection = acquireManagedConnectionToProject(
 					resourceHoldingProject);
-			QueryResults.addAll(managedConnection.getStatements(resource, null, null, false),
-					retrievedStatements);
+
+			TupleQuery tupleQuery = managedConnection.prepareTupleQuery(
+					// @formatter:off
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
+					" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
+					"     GRAPH ?g {                                                         \n" +
+					"       ?s ?p ?o .                                                       \n" +
+					"     }                                                                  \n" +
+					"     OPTIONAL {                                                         \n" +
+					"       ?o rdf:rest* ?s2                                                 \n" +
+					"       FILTER(isBLANK(?o))                                              \n" +
+					"       GRAPH ?g2 {                                                      \n" +
+					"         ?s2 ?p2 ?o2 .                                                  \n" +
+					"       }                                                                \n" +
+					"     }                                                                  \n" +
+					" }	                                                                     \n"
+					// @formatter:on
+			);
+			tupleQuery.setBinding("s", resource);
+			tupleQuery.setIncludeInferred(false);
+			try (TupleQueryResult result = tupleQuery.evaluate()) {
+				while (result.hasNext()) {
+					BindingSet bindingSet = result.next();
+					Resource g = (Resource) bindingSet.getValue("g");
+					Resource s = (Resource) bindingSet.getValue("s");
+					IRI p = (IRI) bindingSet.getValue("p");
+					Value o = bindingSet.getValue("o");
+					retrievedStatements.add(s, p, o, g);
+
+					if (bindingSet.hasBinding("g2")) {
+						Resource g2 = (Resource) bindingSet.getValue("g2");
+						Resource s2 = (Resource) bindingSet.getValue("s2");
+						IRI p2 = (IRI) bindingSet.getValue("p2");
+						Value o2 = bindingSet.getValue("o2");
+
+						retrievedStatements.add(s2, p2, o2, g2);
+					}
+				}
+			}
 
 			GraphQuery describeQuery = managedConnection
 					.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");

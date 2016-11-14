@@ -11,21 +11,29 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 
-public class PredicateObjectsListSerializer extends JsonSerializer<PredicateObjectsList> {
+public class PredicateValueListSerializer extends JsonSerializer<PredicateValueList<?>> {
 
 	@Override
-	public void serialize(PredicateObjectsList value, JsonGenerator gen, SerializerProvider serializers)
+	public void serialize(PredicateValueList<?> value, JsonGenerator gen, SerializerProvider serializers)
 			throws IOException, JsonProcessingException {
 		gen.writeStartArray();
 
 		for (AnnotatedValue<IRI> aPredicate : value.getPredicates()) {
 			gen.writeStartObject();
 			gen.writeObjectField("predicate", aPredicate);
-			gen.writeArrayFieldStart("objects");
-			for (AnnotatedValue<?> annotatedObject : value.getValue(aPredicate.getValue())) {
-				gen.writeObject(annotatedObject);
+			
+			Object predicateValue = value.getValue(aPredicate.getValue());
+			if (predicateValue instanceof Iterable) {
+				gen.writeArrayFieldStart("value");
+				
+				for (Object obj : (Iterable<?>)predicateValue) {
+					gen.writeObject(obj);
+				}
+				
+				gen.writeEndArray();
+			} else {
+				gen.writeObjectField("value", predicateValue);
 			}
-			gen.writeEndArray();
 			gen.writeEndObject();
 		}
 		

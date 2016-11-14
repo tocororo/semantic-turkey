@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
@@ -44,12 +45,23 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	}
 
 	public static String computeDefaultShow(Resource resource) {
+		return computeDefaultShow(resource, Collections.emptyMap());
+	}
+	
+	public static String computeDefaultShow(Resource resource, Map<String, String> ns2prefixMapping) {
 		if (resource instanceof BNode) {
 			return "_:" + resource.stringValue();
 		} else {
-			return resource.stringValue();
+			String prefix = ns2prefixMapping.get(((IRI)resource).getLocalName());
+			
+			if (prefix == null) {
+				return resource.stringValue();
+			} else {
+				return prefix + ":" + ((IRI)resource).getLocalName();
+			}
 		}
 	}
+
 
 	public static String computeGraphs(Set<Resource> graphs) {
 		return graphs.stream().map(g -> g == null ? "MAINGRAPH" : g.toString()).collect(joining(","));
@@ -111,7 +123,9 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			}
 		}
 
-		return computeDefaultShow(resource);
+		Map<String, String> ns2prefixMap = QueryResults.stream(repoConn.getNamespaces()).collect(toMap(Namespace::getName, Namespace::getPrefix));
+		
+		return computeDefaultShow(resource, ns2prefixMap);
 	}
 
 	public static void addShowOrRenderXLabel(AnnotatedValue<? extends Resource> annotatedResource,

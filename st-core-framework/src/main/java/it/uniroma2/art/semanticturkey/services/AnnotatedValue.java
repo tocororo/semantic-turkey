@@ -8,7 +8,6 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonSerialize(using = AnnotatedValueSerializer.class)
@@ -67,4 +66,9 @@ public class AnnotatedValue<T extends Value> {
 	public void setAttribute(String name, String value) {
 		this.attributes.put(name, SimpleValueFactory.getInstance().createLiteral(value));
 	}
+	
+	public void setAttribute(String name, int value) {
+		this.attributes.put(name, SimpleValueFactory.getInstance().createLiteral(value));
+	}
+
 }

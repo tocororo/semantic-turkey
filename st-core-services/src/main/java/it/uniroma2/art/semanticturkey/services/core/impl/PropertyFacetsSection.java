@@ -2,13 +2,16 @@ package it.uniroma2.art.semanticturkey.services.core.impl;
 
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsSectionSerializer;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.util.List;
 
 import org.w3c.dom.Element;
 
-public class PropertyFacets implements ResourceViewSection {
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+public class PropertyFacetsSection implements ResourceViewSection {
 
 	private boolean symmetric;
 	private boolean symmetricExplicit;
@@ -24,7 +27,7 @@ public class PropertyFacets implements ResourceViewSection {
 
 	private List<STRDFNode> inverseOf;
 
-	public PropertyFacets(boolean symmetric, boolean symmetricExplicit, boolean functional,
+	public PropertyFacetsSection(boolean symmetric, boolean symmetricExplicit, boolean functional,
 			boolean functionalExplicit, boolean inverseFunctional, boolean inverseFunctionalExplicit,
 			boolean transitive, boolean transitiveExplicit, List<STRDFNode> inverseOf) {
 		this.symmetric = symmetric;
