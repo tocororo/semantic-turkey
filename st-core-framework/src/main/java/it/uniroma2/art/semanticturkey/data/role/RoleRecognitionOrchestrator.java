@@ -201,7 +201,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 									"IF(EXISTS {?resource a [rdfs:subClassOf* skos:Collection]}, \"skosCollection\", " +
 										"IF(EXISTS {?resource a [rdfs:subClassOf* rdfs:Class]}, \"cls\", " +
 											"IF(EXISTS {?resource a [rdfs:subClassOf* owl:DatatypeProperty]}, \"datatypeProperty\", " +
-												"IF(EXISTS {?resource a [rdfs:subClassOf* owl:AnnotationProperty]}, \"ontologyProperty\", " +
+												"IF(EXISTS {?resource a [rdfs:subClassOf* owl:OntologyProperty]}, \"ontologyProperty\", " +
 													"IF(EXISTS {?resource a [rdfs:subClassOf* owl:AnnotationProperty]}, \"annotationProperty\", " +
 														"IF(EXISTS {?resource a [rdfs:subClassOf* owl:ObjectProperty]}, \"objectProperty\", " +
 															"IF(EXISTS {?resource a [rdfs:subClassOf* owl:DataRange]}, \"dataRange\", " +
