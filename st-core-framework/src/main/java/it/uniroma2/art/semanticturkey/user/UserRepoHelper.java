@@ -8,8 +8,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +31,6 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.security.core.GrantedAuthority;
 
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
@@ -71,6 +70,7 @@ public class UserRepoHelper {
 		RepositoryConnection conn = repository.getConnection();
 		conn.add(userDetailsFile, UserVocabulary.URI, RDFFormat.TURTLE);
 		conn.close();
+//		printRepository();
 	}
 	
 	public void insertUser(STUser user) {
@@ -81,9 +81,9 @@ public class UserRepoHelper {
 				+ " _:user <" + UserVocabulary.EMAIL+ "> '" + user.getEmail() + "' ."
 				+ " _:user <" + UserVocabulary.PASSWORD+ "> '" + user.getPassword() + "' ."
 				+ " _:user <" + UserVocabulary.REGISTRATION_DATE+ "> '" + dateFormat.format(new Date()) + "' .";
-		Iterator<? extends GrantedAuthority> itRoles = user.getAuthorities().iterator();
-		while (itRoles.hasNext()) {
-			query += " _:user <" + UserVocabulary.ROLE + "> '" + itRoles.next().getAuthority() + "' .";
+		Collection<UserRolesEnum> roles = user.getRoles();
+		for (UserRolesEnum r : roles) {
+			query += " _:user <" + UserVocabulary.ROLE + "> '" + r.name() + "' .";
 		}
 		if (user.getUrl() != null) {
 			query += " _:user <" + UserVocabulary.URL+ "> '" + user.getUrl() + "' .";
@@ -188,6 +188,41 @@ public class UserRepoHelper {
 		return userList;
 	}
 	
+	public void updateUserInfo(STUser user, String bindingToUpdate, String newValue) {
+		String propertyToUpdate = "";
+		if (bindingToUpdate.equals(BINDING_FIRST_NAME)) {
+			propertyToUpdate = UserVocabulary.FIRST_NAME;
+		} else if (bindingToUpdate.equals(BINDING_LAST_NAME)) {
+			propertyToUpdate = UserVocabulary.LAST_NAME;
+		} else if (bindingToUpdate.equals(BINDING_GENDER)) {
+			propertyToUpdate = UserVocabulary.GENDER;
+		} else if (bindingToUpdate.equals(BINDING_BIRTHDAY)) {
+			propertyToUpdate = UserVocabulary.BIRTHDAY;
+		} else if (bindingToUpdate.equals(BINDING_PHONE)) {
+			propertyToUpdate = UserVocabulary.PHONE;
+		} else if (bindingToUpdate.equals(BINDING_COUNTRY)) {
+			propertyToUpdate = UserVocabulary.COUNTRY;
+		} else if (bindingToUpdate.equals(BINDING_ADDRESS)) {
+			propertyToUpdate = UserVocabulary.ADDRESS;
+		} else if (bindingToUpdate.equals(BINDING_AFFILIATION)) {
+			propertyToUpdate = UserVocabulary.AFFILIATION;
+		} else if (bindingToUpdate.equals(BINDING_URL)) {
+			propertyToUpdate = UserVocabulary.URL;
+		}
+		
+		String query = "DELETE { ?user <" + propertyToUpdate + "> ?oldValue } \n"
+				+ "INSERT { ?user  <" + propertyToUpdate + "> '" + newValue + "' } \n"
+				+ "WHERE {\n"
+				+ "?user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' . \n"
+				+ "?user <" + propertyToUpdate + "> ?oldValue . \n"
+				+ "}";
+		//execute query
+		RepositoryConnection conn = repository.getConnection();
+		Update update = conn.prepareUpdate(query);
+		update.execute();
+		conn.close();
+	}
+	
 	/**
 	 * Delete the given user. 
 	 * Note, since e-mail should be unique, delete the user with the same e-mail of the given user.
@@ -239,10 +274,10 @@ public class UserRepoHelper {
 			// Check if the current tuple is about an user already fetched (and differs just for the role)
 			for (STUser u : list) {
 				if (u.getEmail().equals(email)) {
-					// user already in list
+					// user already in list => add the role to it
 					// don't check if binding != null, cause it is so for sure, since it is the only value
 					// that differs
-					user.addRole(UserRolesEnum.valueOf(tuple.getValue(BINDING_ROLE).stringValue()));
+					u.addRole(UserRolesEnum.valueOf(tuple.getValue(BINDING_ROLE).stringValue()));
 					continue tupleLoop; // ignore other bindings and go to the following tuple
 				}
 			}
@@ -279,6 +314,20 @@ public class UserRepoHelper {
 			list.add(user);
 		}
 		return list;
+	}
+	
+	/**
+	 * For testing
+	 */
+	@SuppressWarnings("unused")
+	private void printRepository() {
+		RepositoryResult<Statement> stmt = repository.getConnection().getStatements(null, null, null);
+		while (stmt.hasNext()) {
+			Statement s = stmt.next();
+			System.out.println("S: " + s.getSubject().stringValue() +
+					"\nP: " + s.getPredicate().stringValue() +
+					"\nO: " + s.getObject().stringValue() + "\n");
+		}
 	}
 	
 }

@@ -6,10 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.security.core.GrantedAuthority;
@@ -100,12 +98,10 @@ public class STUser implements UserDetails {
 		return this.roles;
 	}
 	
-	public void addRoles(Collection<UserRolesEnum> roles) {
-		this.roles.addAll(roles);
-	}
-	
 	public void addRole(UserRolesEnum role) {
-		this.roles.add(role);
+		if (!this.roles.contains(role)) {
+			this.roles.add(role);
+		}
 	}
 
 	@Override
@@ -202,12 +198,11 @@ public class STUser implements UserDetails {
 		userJson.put("firstName", firstName);
 		userJson.put("lastName", lastName);
 		
-		List<String> roles = new ArrayList<String>();
-		Iterator<? extends GrantedAuthority> authIt = authorities.iterator();
-		while (authIt.hasNext()) {
-			roles.add(authIt.next().getAuthority());
+		List<String> roleList = new ArrayList<String>();
+		for (UserRolesEnum r : roles) {
+			roleList.add(r.name());
 		}
-		userJson.put("roles", new JSONArray(roles));
+		userJson.put("roles", roleList);
 		
 		if (birthday != null) {
 			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday));
@@ -235,9 +230,8 @@ public class STUser implements UserDetails {
 		s += "\nPassword: " + this.password;
 		s += "\ne-mail: " + this.email;
 		s += "\nroles:";
-		Iterator<? extends GrantedAuthority> authIt = this.authorities.iterator();
-		while (authIt.hasNext()) {
-			s += " " + authIt.next().getAuthority();
+		for (UserRolesEnum r : roles) {
+			s += " " + r.name();
 		}
 		s += "\nUrl: " + this.url;
 		s += "\nPhone: " + this.phone;

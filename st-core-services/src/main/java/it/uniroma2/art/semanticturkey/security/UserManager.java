@@ -11,7 +11,6 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -41,7 +40,7 @@ public class UserManager {
 	}
 	
 	/**
-	 * Adds a user.
+	 * Registers a user with just user role
 	 * @param email
 	 * @param password
 	 * @param firstName
@@ -77,9 +76,9 @@ public class UserManager {
 				if (phone != null) {
 					newUser.setPhone(phone);
 				}
-				newUser.addAuthority(new SimpleGrantedAuthority(UserRolesEnum.ROLE_USER.name()));
+				newUser.addRole(UserRolesEnum.ROLE_USER);
 				usersRepository.insertUser(newUser);
-				createUserDetailsFolder(newUser);
+				createOrUpdateUserDetailsFolder(newUser);
 			}
 		} catch (ParseException e) {
 			throw new UserCreationException(e);
@@ -133,6 +132,7 @@ public class UserManager {
 		if (!users.isEmpty()) {
 			user = users.get(0);
 		}
+		
 		return user;
 	}
 	
@@ -147,6 +147,124 @@ public class UserManager {
 		usersRepository.deleteUser(user);
 		//and delete its folder from server data
 		deleteUserDetailsFolder(user);
+	}
+	
+	/**
+	 * Updates the first name of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserFirstName(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_FIRST_NAME, newValue);
+		user.setFirstName(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the last name of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserLastName(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_LAST_NAME, newValue);
+		user.setLastName(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the phone number of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserPhone(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_PHONE, newValue);
+		user.setPhone(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the last name of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 * @throws ParseException 
+	 */
+	public STUser updateUserBirthday(STUser user, String newValue) throws ParseException {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_BIRTHDAY, newValue);
+		user.setBirthday(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the gender of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserGender(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_GENDER, newValue);
+		user.setGender(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the country of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserCountry(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_COUNTRY, newValue);
+		user.setCountry(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the address of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserAddress(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_ADDRESS, newValue);
+		user.setAddress(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the affiliation of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserAffiliation(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_AFFILIATION, newValue);
+		user.setAffiliation(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the url of the given user and returns it updated
+	 * @param user
+	 * @param newValue
+	 * @return
+	 */
+	public STUser updateUserUrl(STUser user, String newValue) {
+		usersRepository.updateUserInfo(user, UserRepoHelper.BINDING_URL, newValue);
+		user.setUrl(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
 	}
 	
 	private void initUserRepository() throws RDFParseException, RepositoryException, IOException {
@@ -164,19 +282,29 @@ public class UserManager {
 		}
 	}
 	
+	/**
+	 * Initialize a folder structure with a users/ folder and a folder for an admin user containing
+	 * its user details file.
+	 * @throws UserCreationException
+	 */
 	private void initializeUsersFileStructure() throws UserCreationException{
 		File usersFolder = getUsersFolder();
 		usersFolder.mkdir();
 		
 		//create and register admin user
 		STUser admin = new STUser("admin@admin.com", passwordEncoder.encode("admin"), "Admin", "Admin");
-		admin.addAuthority(new SimpleGrantedAuthority(UserRolesEnum.ROLE_ADMIN.name()));
-		admin.addAuthority(new SimpleGrantedAuthority(UserRolesEnum.ROLE_USER.name()));
+		admin.addRole(UserRolesEnum.ROLE_ADMIN);
+		admin.addRole(UserRolesEnum.ROLE_USER);
 		usersRepository.insertUser(admin);
-		createUserDetailsFolder(admin);
+		createOrUpdateUserDetailsFolder(admin);
 	}
 	
-	private void createUserDetailsFolder(STUser user) {
+	/**
+	 * Creates a folder for the given user and serializes the details about the user in a file.
+	 * If the folder is already created, simply update the info in the user details file.
+	 * @param user
+	 */
+	private void createOrUpdateUserDetailsFolder(STUser user) {
 		UserRepoHelper newUserTempRepo = new UserRepoHelper();
 		newUserTempRepo.insertUser(user);
 		newUserTempRepo.saveUserDetailsFile(getUserDetailsFile(user));
