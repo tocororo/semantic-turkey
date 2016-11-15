@@ -98,7 +98,7 @@ public class Search extends STServiceAdapterOLD {
 			} 
 		}
 		//@formatter:off
-		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && !isCollectionWanted && 
+		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
 				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
 			Element dataElement = response.getDataElement();
@@ -548,6 +548,8 @@ public class Search extends STServiceAdapterOLD {
 						"\n}" +
 						"\n}";
 				//@formatter:on
+				/*
+				 // old version, now skosCollection and skosOrderedCollection are managed together
 			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
 				superResourceVar = "superCollection";
 				superSuperResourceVar = "superSuperCollection";
@@ -568,25 +570,48 @@ public class Search extends STServiceAdapterOLD {
 						"\n}" +
 						"\n}";
 				//@formatter:on
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosOrderedCollection.name().toLowerCase())){
 				//@formatter:off
 				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
 						"\nWHERE {"+
 						"\n{"+
-						"\n?superCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">)+ <"+resourceURI+"> ." +
+						"\n?superCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">)+ <"+resourceURI+"> ." +
 						"\nOPTIONAL {"+
-						"?superSuperCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">) ?superCollection ." +
+						"?superSuperCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) ?superCollection ." +
 						"\n}" +
 						"\n}" +
 						"\nUNION" +
 						"\n{" +
 						"\n<"+resourceURI+"> a <"+SKOS.ORDEREDCOLLECTION+"> ." +
-						"\nFILTER NOT EXISTS{ _:b1 (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">) <"+resourceURI+"> }" +
+						"\nFILTER NOT EXISTS{ _:b1 (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) <"+resourceURI+"> }" +
 						"\nBIND(\"true\" AS ?isTop )" +
 						"\n}" +
 						"\n}";
 				//@formatter:on
-			}else {
+			*/
+			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+				superResourceVar = "superCollection";
+				superSuperResourceVar = "superSuperCollection";
+				String complexPropPath = "(<"+SKOS.MEMBER+"> | (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">))";
+				//@formatter:off
+				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
+						"\nWHERE {"+
+						"\n{"+
+						"\n?superCollection "+complexPropPath+"+ <"+resourceURI+"> ." +
+						"\nOPTIONAL {"+
+						"?superSuperCollection "+complexPropPath+" ?superCollection ." +
+						"\n}" +
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n<"+resourceURI+"> a ?type ." +
+						"\nFILTER(?type != <"+SKOS.COLLECTION+"> &&  ?type != <"+SKOS.ORDEREDCOLLECTION+"> )"+
+						"\nFILTER NOT EXISTS{ _:b1 "+complexPropPath+" <"+resourceURI+"> }" +
+						"\nBIND(\"true\" AS ?isTop )" +
+						"\n}" +
+						"\n}";
+				//@formatter:on
+			} else {
 				throw new IllegalArgumentException("Invalid input role: "+role);
 			}
 			logger.debug("query: " + query);
@@ -835,7 +860,8 @@ public class Search extends STServiceAdapterOLD {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.COLLECTION+">)" +
+					 "\nFILTER("+type+" = <"+SKOS.COLLECTION+"> || " +
+					 		 type+" = <"+SKOS.ORDEREDCOLLECTION+")" +
 					 "\n}";
 			
 			otherWanted = true;
