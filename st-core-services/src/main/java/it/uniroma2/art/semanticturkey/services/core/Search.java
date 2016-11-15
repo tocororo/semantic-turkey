@@ -861,7 +861,7 @@ public class Search extends STServiceAdapterOLD {
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
 					 "\nFILTER("+type+" = <"+SKOS.COLLECTION+"> || " +
-					 		 type+" = <"+SKOS.ORDEREDCOLLECTION+")" +
+					 		 type+" = <"+SKOS.ORDEREDCOLLECTION+"> )" +
 					 "\n}";
 			
 			otherWanted = true;
