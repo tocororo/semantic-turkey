@@ -28,10 +28,9 @@ public class STUserDetailsService implements UserDetailsService {
 			user = userMgr.getUserByEmail(username);
 			if (user != null) {
 				addAuthoritiesToUser(user);
-				System.out.println("loadUserByUsername user " + user);
 				return user;
 			} else {
-				throw new UsernameNotFoundException("username " + username+ " not found");
+				throw new UsernameNotFoundException("User with e-mail address '" + username+ "' not found");
 			}
 		} catch (ParseException e) {
 			throw new UsernameNotFoundException("Error retrieving user " + username);

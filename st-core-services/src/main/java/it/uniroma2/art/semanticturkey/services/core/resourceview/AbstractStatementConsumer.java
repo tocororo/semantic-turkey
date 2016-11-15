@@ -123,7 +123,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			}
 		}
 
-		Map<String, String> ns2prefixMap = QueryResults.stream(repoConn.getNamespaces()).collect(toMap(Namespace::getName, Namespace::getPrefix));
+		Map<String, String> ns2prefixMap = QueryResults.stream(repoConn.getNamespaces()).collect(toMap(Namespace::getName, Namespace::getPrefix, (x,y)->x));
 		
 		return computeDefaultShow(resource, ns2prefixMap);
 	}

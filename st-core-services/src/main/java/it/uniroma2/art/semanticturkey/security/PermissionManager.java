@@ -18,7 +18,7 @@ public class PermissionManager {
 	static {
 		rolePermissionMap = new HashMap<UserRolesEnum, List<UserPermissionsEnum>>();
 		List<UserPermissionsEnum> adminCapabilities = new ArrayList<UserPermissionsEnum>();
-		adminCapabilities.add(UserPermissionsEnum.CAPABILITY_1);
+		adminCapabilities.add(UserPermissionsEnum.CAPABILITY_ADMIN);
 		adminCapabilities.add(UserPermissionsEnum.CAPABILITY_2);
 		adminCapabilities.add(UserPermissionsEnum.CAPABILITY_3);
 		adminCapabilities.add(UserPermissionsEnum.CAPABILITY_4);
@@ -34,6 +34,18 @@ public class PermissionManager {
 		return rolePermissionMap.get(role);
 	}
 	
+	public static Collection<UserPermissionsEnum> getPermissionsForRoles(Collection<UserRolesEnum> roles) {
+		Collection<UserPermissionsEnum> permissions = new ArrayList<>();
+		for (UserRolesEnum r : roles) {
+			for (UserPermissionsEnum p : rolePermissionMap.get(r)) {
+				if (!permissions.contains(p)) {
+					permissions.add(p);
+				}
+			}
+		}
+		return permissions;
+	}
+	
 	public static Collection<GrantedAuthority> getAuthoritiesForRole(UserRolesEnum role) {
 		Collection<GrantedAuthority> authorities = new ArrayList<>();
 		for (UserPermissionsEnum p : rolePermissionMap.get(role)) {
@@ -44,12 +56,10 @@ public class PermissionManager {
 	
 	public static Collection<GrantedAuthority> getAuthoritiesForRoles(Collection<UserRolesEnum> roles) {
 		Collection<GrantedAuthority> authorities = new ArrayList<>();
-		for (UserRolesEnum r : roles) {
-			for (UserPermissionsEnum p : rolePermissionMap.get(r)) {
-				GrantedAuthority auth = new SimpleGrantedAuthority(p.name());
-				if (authorities.contains(auth)) {
-					authorities.add(auth);
-				}
+		for (UserPermissionsEnum p : getPermissionsForRoles(roles)) {
+			GrantedAuthority auth = new SimpleGrantedAuthority(p.name());
+			if (!authorities.contains(auth)) {
+				authorities.add(auth);
 			}
 		}
 		return authorities;

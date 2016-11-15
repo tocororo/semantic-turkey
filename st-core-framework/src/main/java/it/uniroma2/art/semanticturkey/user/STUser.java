@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import org.json.JSONException;
@@ -232,6 +233,11 @@ public class STUser implements UserDetails {
 		s += "\nroles:";
 		for (UserRolesEnum r : roles) {
 			s += " " + r.name();
+		}
+		s += "\nauthorities:";
+		Iterator<GrantedAuthority> itAuth = authorities.iterator();
+		while (itAuth.hasNext()) {
+			s += " " + itAuth.next().getAuthority();
 		}
 		s += "\nUrl: " + this.url;
 		s += "\nPhone: " + this.phone;

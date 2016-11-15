@@ -60,6 +60,8 @@
 		</authentication-provider>
 	</authentication-manager>
 	
+	<global-method-security pre-post-annotations="enabled"></global-method-security>
+	
 	<beans:bean id="corsFilter" class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
 	<beans:bean id="stUserDetailsService" class="it.uniroma2.art.semanticturkey.security.STUserDetailsService"/>
 	<beans:bean id="authEntryPoint" class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint"/>
