@@ -605,7 +605,7 @@ public class Search extends STServiceAdapterOLD {
 						"\nUNION" +
 						"\n{" +
 						"\n<"+resourceURI+"> a ?type ." +
-						"\nFILTER(?type != <"+SKOS.COLLECTION+"> &&  ?type != <"+SKOS.ORDEREDCOLLECTION+"> )"+
+						"\nFILTER(?type = <"+SKOS.COLLECTION+"> ||  ?type = <"+SKOS.ORDEREDCOLLECTION+"> )"+
 						"\nFILTER NOT EXISTS{ _:b1 "+complexPropPath+" <"+resourceURI+"> }" +
 						"\nBIND(\"true\" AS ?isTop )" +
 						"\n}" +
@@ -997,6 +997,8 @@ public class Search extends STServiceAdapterOLD {
 			role = RDFResourceRolesEnum.concept;
 		} else if(typeURI.equals(SKOS.COLLECTION)){
 			role = RDFResourceRolesEnum.skosCollection;
+		} else if(typeURI.equals(SKOS.ORDEREDCOLLECTION)){
+			role = RDFResourceRolesEnum.skosOrderedCollection;
 		} else if(typeURI.equals(SKOSXL.LABEL)){
 			role = RDFResourceRolesEnum.xLabel;
 		} else if(typeURI.equals(SKOS.CONCEPTSCHEME)){
