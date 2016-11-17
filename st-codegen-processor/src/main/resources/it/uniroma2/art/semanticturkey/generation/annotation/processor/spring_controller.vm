@@ -107,7 +107,6 @@ Response<${method.returnType}>
 		${method.returnType} body = fun.${method.simpleName}(${subarg});
 #end
 		HttpHeaders responseHeaders = new HttpHeaders();
-   		responseHeaders.set("Access-Control-Allow-Origin", "*");
    		
 #if($tools.isVoidMethod($method))
   		return new HttpEntity<>(body, responseHeaders);	 
