@@ -62,7 +62,8 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
                     "                                                                                    \n" +
 					" SELECT ?resource ?attr_more WHERE {                                                \n" +
-					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
@@ -81,7 +82,8 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
                     "                                                                                    \n" +
 					" SELECT ?resource ?attr_more WHERE {                                                \n" +
-					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
 					"     FILTER NOT EXISTS {[] skos:broader|^skos:narrower ?resource}                   \n" +
 					"     OPTIONAL {                                                                     \n" +
@@ -111,7 +113,8 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
                     "                                                                                    \n" +
 					" SELECT ?resource ?attr_more WHERE {                                                \n" +
-					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
 					"     ?resource skos:inScheme ?scheme.                                               \n" +
 					"     OPTIONAL {                                                                     \n" +
@@ -131,7 +134,8 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
                     "                                                                                    \n" +
 					" SELECT ?resource ?attr_more WHERE {                                                \n" +
-					"     ?resource rdf:type/rdfs:subClassOf* skos:Concept .                             \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource . } as ?attr_more ) \n" +
@@ -157,7 +161,8 @@ public class SKOS extends STServiceAdapter {
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                 \n" +
                 "                                                                           \n" +
 				" SELECT ?resource WHERE {                                                  \n" +
-				"     ?resource rdf:type/rdfs:subClassOf* skos:ConceptScheme .              \n" +
+				"     ?conceptSchemeSubClass rdfs:subClassOf* skos:ConceptScheme .          \n" +
+				"     ?resource rdf:type ?conceptSchemeSubClass .                           \n" +
 				" }                                                                         \n" +
 				" GROUP BY ?resource                                                        \n"
 				// @formatter:on
@@ -177,7 +182,8 @@ public class SKOS extends STServiceAdapter {
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                              \n" +
                 "                                                                                        \n" +
 				" SELECT ?resource ?attr_inScheme WHERE {                                                \n" +
-				"    ?resource rdf:type/rdfs:subClassOf* skos:ConceptScheme .                            \n" +
+				"    ?conceptSchemeSubClass rdfs:subClassOf* skos:ConceptScheme .                        \n" +
+				"    ?resource rdf:type ?conceptSchemeSubClass .                                         \n" +
 				"    BIND(EXISTS{                                                                        \n" +
 				"             ?resource skos:hasTopConcept|^skos:isTopConceptOf|^skos:inScheme ?concept .\n" +
 				"         } AS ?attr_inScheme )                                                          \n" +
@@ -201,7 +207,8 @@ public class SKOS extends STServiceAdapter {
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                  \n" +
                 "                                                                            \n" +
 				" SELECT DISTINCT ?resource WHERE {                                          \n" +
-				"   ?resource rdf:type/rdfs:subClassOf* skos:Collection .                    \n" +
+                "   ?collectionSubClass rdfs:subClassOf* skos:Collection .                   \n" +
+				"   ?resource rdf:type ?collectionSubClass.                                  \n" +
 				"   FILTER NOT EXISTS {                                                      \n" +
 				" 	  [] skos:member ?resource .                                             \n" +
 				" 	}                                                                        \n" +
