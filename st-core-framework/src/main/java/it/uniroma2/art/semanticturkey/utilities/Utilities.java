@@ -106,8 +106,12 @@ public class Utilities {
 	 * @param destinationFile
 	 * @throws IOException
 	 */
-	public static void downloadRDF(URL url, String destinationFile) throws IOException {		
-		download(url, RDFFormat.getAllFormatsForContentAcceptHTTPHeader(), destinationFile);
+	public static void downloadRDF(URL url, String destinationFile) throws IOException {	
+		
+		RDFFormat rdfFormat = RDFFormat.guessRDFFormatFromFile(new File(destinationFile));
+		String mimeType = rdfFormat.getMIMEType();
+		
+		download(url, mimeType, destinationFile);
 	}
 
 	/**
@@ -119,7 +123,7 @@ public class Utilities {
 	 * @param destinationFile
 	 * @throws IOException
 	 */
-	public static void download(URL url, String acceptedMIMEs, String destinationFile) throws IOException {
+	public static void download(URL url, String acceptedMIME, String destinationFile) throws IOException {
 
 		URLConnection c = url.openConnection();
 
@@ -128,9 +132,14 @@ public class Utilities {
 
 		HttpURLConnection h = (HttpURLConnection) c;
 
-		h.setRequestProperty("Accept", acceptedMIMEs);
+		h.setRequestProperty("Accept", acceptedMIME);
 		h.connect();
 
+		String returnedType = h.getContentType();
+		if(returnedType == null || !h.getContentType().contains(acceptedMIME)){
+			throw new IOException("requested format not available. Resquested format was "+acceptedMIME+
+					", while the returned was "+returnedType);
+		}
 		InputStream in = h.getInputStream();
 
 		store(in, destinationFile);

@@ -780,7 +780,34 @@ public abstract class STOntologyManager<T extends RDFModel> {
 	public void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
 			RDFFormat rdfFormat, ImportModality modality, boolean updateImportStatement)
 			throws MalformedURLException, ModelUpdateException {
+		
+		//first of all, try to download the ontology in the mirror file in the format specified by the user 
+		// (or inferred from the extention of the file). Then, if this download was done without any problem,
+		// import the ontology
+		
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
+		RDFFormat guessedFormat = RDFFormat.guessRDFFormatFromFile(mirFile.getFile());
+		
+		if(rdfFormat!= null){
+			//check it the input rdfFormat is compliant with the file extention
+			if(guessedFormat==null || rdfFormat != guessedFormat){
+				//change the file extention according to the input RDFFormat
+				String newLocalFile = toLocalFile+"."+RDFFormat.getFormatExtensions(rdfFormat)[0];
+				mirFile = new MirroredOntologyFile(newLocalFile);
+			}
+		} else {
+			if(guessedFormat==null){
+				String newLocalFile = toLocalFile+"."+RDFFormat.getFormatExtensions(RDFFormat.RDFXML)[0];
+				mirFile = new MirroredOntologyFile(newLocalFile);
+			}
+		}
+		
+		
+		//try to download the ontology
+		notifiedAddedOntologyImport(fromWebToMirror, baseURI, sourceURL, mirFile, modality,
+				updateImportStatement);
+		
+		//if the download was achieved, import the ontology in the model
 		try {
 			model.addRDF(new URL(sourceURL), baseURI, rdfFormat, model.createURIResource(baseURI));
 		} catch (Exception e) {
@@ -790,8 +817,7 @@ public abstract class STOntologyManager<T extends RDFModel> {
 			} else
 				throw new ModelUpdateException(e);
 		}
-		notifiedAddedOntologyImport(fromWebToMirror, baseURI, sourceURL, mirFile, modality,
-				updateImportStatement);
+		
 	}
 
 	// @TODO this method will be put in a subclass of this which only handles OWLModel
