@@ -746,11 +746,11 @@ public class Property extends ResourceOld {
 			if(parentPropertyList.contains(subProp.getURI())){
 				//there is a loop, so do not follow it
 				continue;
-			} else{
-				parentPropertyList.add(subProp.getURI());
 			}
+			parentPropertyList.add(subProp.getURI());
 			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type, excludedPropSet, 
 					relevantDomains, parentPropertyList);
+			parentPropertyList.remove(parentPropertyList.size()-1);
 		}
 	}
 
