@@ -634,9 +634,11 @@ public class Property extends ResourceOld {
 				filteredPropsIterator = Iterators.filter(
 						ontModel.listObjectProperties(inference, NodeFilters.ANY), rootUserPropsPred);
 				logger.debug("\n\nontology root object properties: \n");
+				List<String> parentPropertyList = new ArrayList<String>();
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:ObjectProperty", excludedPropSet, relevantDomains);
+							"owl:ObjectProperty", excludedPropSet, relevantDomains,
+							parentPropertyList);
 			}
 
 			// DATATYPE PROPERTIES
@@ -644,9 +646,11 @@ public class Property extends ResourceOld {
 				filteredPropsIterator = Iterators.filter(
 						ontModel.listDatatypeProperties(inference, NodeFilters.ANY), rootUserPropsPred);
 				logger.debug("\n\nontology root datatype properties: \n");
+				List<String> parentPropertyList = new ArrayList<String>();
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:DatatypeProperty", excludedPropSet, relevantDomains);
+							"owl:DatatypeProperty", excludedPropSet, relevantDomains,
+							parentPropertyList);
 			}
 
 			// ANNOTATION PROPERTIES
@@ -654,9 +658,11 @@ public class Property extends ResourceOld {
 				filteredPropsIterator = Iterators.filter(
 						ontModel.listAnnotationProperties(inference, NodeFilters.ANY), rootUserPropsPred);
 				logger.debug("\n\nontology root annotation properties: \n");
+				List<String> parentPropertyList = new ArrayList<String>();
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:AnnotationProperty", excludedPropSet, relevantDomains);
+							"owl:AnnotationProperty", excludedPropSet, relevantDomains,
+							parentPropertyList);
 			}
 
 			// ONTOLOGY PROPERTIES
@@ -664,9 +670,11 @@ public class Property extends ResourceOld {
 				filteredPropsIterator = Iterators.filter(
 						ontModel.listOntologyProperties(inference, NodeFilters.ANY), rootUserPropsPred);
 				logger.debug("\n\nontology root annotation properties: \n");
+				List<String> parentPropertyList = new ArrayList<String>();
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"owl:OntologyProperty", excludedPropSet, relevantDomains);
+							"owl:OntologyProperty", excludedPropSet, relevantDomains,
+							parentPropertyList);
 			}
 
 			// PlainRDF PROPERTIES
@@ -677,9 +685,11 @@ public class Property extends ResourceOld {
 				filteredPropsIterator = Iterators.filter(ontModel.listProperties(NodeFilters.ANY),
 						rdfPropsPredicate);
 				logger.debug("\n\nontology root rdf:properties: \n");
+				List<String> parentPropertyList = new ArrayList<String>();
 				while (filteredPropsIterator.hasNext())
 					recursiveCreatePropertiesXMLTree(ontModel, filteredPropsIterator.next(), dataElement,
-							"rdf:Property", excludedPropSet, relevantDomains);
+							"rdf:Property", excludedPropSet, relevantDomains,
+							parentPropertyList);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getPropertiesTreeRequest, e);
@@ -702,7 +712,8 @@ public class Property extends ResourceOld {
 	 * @throws DOMException
 	 **/
 	void recursiveCreatePropertiesXMLTree(OWLModel ontModel, ARTURIResource property, Element element,
-			String type, HashSet<String> excludedPropSet, Set<ARTResource> relevantDomains) throws DOMException, ModelAccessException {
+			String type, HashSet<String> excludedPropSet, Set<ARTResource> relevantDomains, 
+			List <String>parentPropertyList) throws DOMException, ModelAccessException {
 		if (excludedPropSet.contains(property.getURI()))
 			return;
 		
@@ -732,7 +743,14 @@ public class Property extends ResourceOld {
 		Element subPropertiesElem = XMLHelp.newElement(propElement, "SubProperties");
 		while (subPropertiesIterator.hasNext()) {
 			ARTURIResource subProp = subPropertiesIterator.next();
-			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type, excludedPropSet, relevantDomains);
+			if(parentPropertyList.contains(subProp.getURI())){
+				//there is a loop, so do not follow it
+				continue;
+			} else{
+				parentPropertyList.add(subProp.getURI());
+			}
+			recursiveCreatePropertiesXMLTree(ontModel, subProp, subPropertiesElem, type, excludedPropSet, 
+					relevantDomains, parentPropertyList);
 		}
 	}
 
