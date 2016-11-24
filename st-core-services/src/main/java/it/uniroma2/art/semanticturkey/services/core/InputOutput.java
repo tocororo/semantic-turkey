@@ -51,6 +51,8 @@ public class InputOutput extends STServiceAdapterOLD {
 	 * @throws IOException
 	 * @throws ModelAccessException
 	 * @throws UnsupportedRDFFormatException
+	 * @throws ModelUpdateException 
+	 * @throws ModelCreationException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/InputOutput/saveRDF", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
@@ -58,7 +60,7 @@ public class InputOutput extends STServiceAdapterOLD {
 			@RequestParam(value="ext", required=false) String ext,
 			@RequestParam(value="format", required=false) String format,
 			@RequestParam(value = "allNGs", defaultValue = "false") boolean allNGs) 
-			throws IOException, ModelAccessException, UnsupportedRDFFormatException {
+			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ModelUpdateException, ModelCreationException {
 		
 		File tempServerFile;
 		RDFFormat rdfFormat = RDFFormat.parseFormat(format);
@@ -86,19 +88,27 @@ public class InputOutput extends STServiceAdapterOLD {
 			
 		tempServerFile = File.createTempFile("save", "."+ext);
 		
-		RDFModel model = getOWLModel();
-		if (allNGs)
-			model.writeRDF(tempServerFile, rdfFormat, getUserNamedGraphs());
-		else
-			model.writeRDF(tempServerFile, rdfFormat, getWorkingGraph());
+		try {
+			getProject().createModelAndBoundToThread();
+			RDFModel model = getOWLModel();
+			if (allNGs)
+				model.writeRDF(tempServerFile, rdfFormat, getUserNamedGraphs());
+			else
+				model.writeRDF(tempServerFile, rdfFormat, getWorkingGraph());
+			
+			oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
+			FileInputStream is = new FileInputStream(tempServerFile);
+			IOUtils.copy(is, oRes.getOutputStream());
+			oRes.setContentType(rdfFormat.getMIMEType());
+			oRes.setContentLength((int) tempServerFile.length());
+			oRes.flushBuffer();
+			is.close();
+		} catch (ModelCreationException e) {
+			throw new ModelCreationException(e);
+		} finally {
+			getProject().unbindModelFromThread();
+		}
 		
-		oRes.setHeader("Content-Disposition", "attachment; filename=save." + ext);
-		FileInputStream is = new FileInputStream(tempServerFile);
-		IOUtils.copy(is, oRes.getOutputStream());
-		oRes.setContentType(rdfFormat.getMIMEType());
-		oRes.setContentLength((int) tempServerFile.length());
-		oRes.flushBuffer();
-		is.close();
 	}
 	
 	/**
