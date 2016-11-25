@@ -6,8 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +20,6 @@ public class STUser implements UserDetails {
 	private String lastName;
 	private String password; //encoded
 	private String email;
-	private Collection<UserRolesEnum> roles;
 	private Collection<GrantedAuthority> authorities;
 	private String url;
 	private String phone;
@@ -40,7 +37,6 @@ public class STUser implements UserDetails {
 		this.password = password;
 		this.firstName = firstName;
 		this.lastName = lastName;
-		roles = new ArrayList<UserRolesEnum>();
 		authorities = new ArrayList<GrantedAuthority>();
 	}
 	
@@ -87,24 +83,6 @@ public class STUser implements UserDetails {
 		return authorities;
 	}
 	
-	public void addAuthorities(Collection<GrantedAuthority> authorities) {
-		this.authorities.addAll(authorities);
-	}
-	
-	public void addAuthority(GrantedAuthority authority) {
-		this.authorities.add(authority);
-	}
-	
-	public Collection<UserRolesEnum> getRoles() {
-		return this.roles;
-	}
-	
-	public void addRole(UserRolesEnum role) {
-		if (!this.roles.contains(role)) {
-			this.roles.add(role);
-		}
-	}
-
 	@Override
 	public boolean isAccountNonExpired() {
 		return true;
@@ -149,8 +127,12 @@ public class STUser implements UserDetails {
 		this.birthday = birthday;
 	}
 	
-	public void setBirthday(String birthday) throws ParseException {
-		this.birthday = new SimpleDateFormat(USER_DATE_FORMAT).parse(birthday);
+	public void setBirthday(String birthday) {
+		try {
+			this.birthday = new SimpleDateFormat(USER_DATE_FORMAT).parse(birthday);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String getGender() {
@@ -199,12 +181,6 @@ public class STUser implements UserDetails {
 		userJson.put("firstName", firstName);
 		userJson.put("lastName", lastName);
 		
-		List<String> roleList = new ArrayList<String>();
-		for (UserRolesEnum r : roles) {
-			roleList.add(r.name());
-		}
-		userJson.put("roles", roleList);
-		
 		if (birthday != null) {
 			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday));
 		} else {
@@ -230,15 +206,6 @@ public class STUser implements UserDetails {
 		s += "\nLast Name: " + this.lastName;
 		s += "\nPassword: " + this.password;
 		s += "\ne-mail: " + this.email;
-		s += "\nroles:";
-		for (UserRolesEnum r : roles) {
-			s += " " + r.name();
-		}
-		s += "\nauthorities:";
-		Iterator<GrantedAuthority> itAuth = authorities.iterator();
-		while (itAuth.hasNext()) {
-			s += " " + itAuth.next().getAuthority();
-		}
 		s += "\nUrl: " + this.url;
 		s += "\nPhone: " + this.phone;
 		if (this.birthday != null) {

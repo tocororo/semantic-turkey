@@ -32,6 +32,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
+import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -52,6 +53,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -76,6 +78,9 @@ import org.w3c.dom.Element;
 public class Projects extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
+	
+	@Autowired
+	private ProjectUserBindingManager puBindingMgr;
 	
 	public static class XMLNames {
 		// response tags and attributes
@@ -103,7 +108,7 @@ public class Projects extends STServiceAdapterOLD {
 			@Optional String renderingEngineFactoryID, @Optional String renderingEngineConfigurationClass,
 			@Optional Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException {
+			ProjectInconsistentException, ProjectUpdateException, IOException {
 		
 		// Handles the default values for the configuration of URI generators
 		{
@@ -175,6 +180,10 @@ public class Projects extends STServiceAdapterOLD {
 				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
 				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
 		
+		//create the folders for the bindings between project and users
+		//this is required (is not enough in accessProject, cause accessProject is not invoked after createProject)
+		puBindingMgr.createPUBindingsOfProject(projectName);
+		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		XMLHelp.newElement(dataElement, "type", proj.getType());
@@ -182,8 +191,10 @@ public class Projects extends STServiceAdapterOLD {
 	}
 
 	@GenerateSTServiceController
-	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException {
+	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException, IOException {
 		ProjectManager.deleteProject(projectName);
+		//delete the folder about project-user bindings
+		puBindingMgr.deletePUBindingsOfProject(projectName);
 	}
 
 	/**
@@ -199,14 +210,21 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectAccessException
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
+	 * @throws IOException 
 	 */
 	@GenerateSTServiceController
 	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException {
+			ForbiddenProjectAccessException, IOException {
 
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
+		//if there aren't the folders for the project-user bindings of the current project, create them
+		//this scenario could happen when the project is imported
+		//(by means the import function or the copy of a project folder in SemanticTurkeyData/projects) 
+		if (puBindingMgr.existsPUBindingsOfProject(projectName)) {
+			puBindingMgr.createPUBindingsOfProject(projectName);
+		}
 	}
 
 	/**

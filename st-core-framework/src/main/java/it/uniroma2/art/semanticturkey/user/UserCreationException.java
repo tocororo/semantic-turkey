@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.exceptions;
+package it.uniroma2.art.semanticturkey.user;
 
 public class UserCreationException extends Exception {
 

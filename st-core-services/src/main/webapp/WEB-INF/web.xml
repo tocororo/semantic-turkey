@@ -45,6 +45,13 @@
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
 	
+	<!-- Required in order to autowire HttpServletRequest in STAuthorizationEvaluator -->
+	<listener>
+	    <listener-class>
+	        org.springframework.web.context.request.RequestContextListener
+	    </listener-class>
+	</listener>
+	
 	<!-- Spring Security -->
 	<!-- Filter chain of spring security. Among these filters, I added corsFilter in order 
 		to add CORS headers to all the response (see spring-security.xml) -->

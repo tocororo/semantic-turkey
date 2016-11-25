@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
-import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,16 +20,17 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import it.uniroma2.art.semanticturkey.exceptions.UserCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.security.PermissionManager;
-import it.uniroma2.art.semanticturkey.security.UserManager;
+import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
+import it.uniroma2.art.semanticturkey.security.UsersManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserCreationException;
 
 @GenerateSTServiceController
 @Validated
@@ -39,7 +39,10 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 public class Users extends STServiceAdapter {
 	
 	@Autowired
-	UserManager userMgr;
+	UsersManager usersMgr;
+	
+	@Autowired
+	ProjectUserBindingManager puBindingMgr;
 	
 	/**
 	 * Returns response containing a json representation of the logged user.
@@ -49,27 +52,22 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String getUser(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
-
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("getUser", RepliesStatus.ok, SerializationType.json);
-		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (!(auth instanceof AnonymousAuthenticationToken)) {//if there's a user authenticated
 			STUser loggedUser = (STUser) auth.getPrincipal();
-			
 			jsonResp.getDataElement().put("user", loggedUser.getAsJSONObject());
 		}
-		
 		return jsonResp.toString();
 	}
 	
 	/**
-	 * Just an example to test a service for which ROLE_ADMIN is required. If the current logged user
-	 * has no ROLE_ADMIN authority, a denied response is returned
+	 * Just an example to test a service for which a capability is required. If the current logged user
+	 * has no the capability determined in auth.isAuthorized, then a denied response is returned
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin", 
 			method = RequestMethod.GET, produces = "application/json")
-//	@PreAuthorize("hasRole('CAPABILITY_1')")
 	@PreAuthorize("@auth.isAuthorized('concept', 'lexicalization', 'update')")
 	@ResponseBody
 	public String testRequiredAdmin(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
@@ -92,6 +90,7 @@ public class Users extends STServiceAdapter {
 	 * @param url
 	 * @param phone
 	 * @return
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser", 
 			method = RequestMethod.POST, produces = "application/json")
@@ -105,13 +104,36 @@ public class Users extends STServiceAdapter {
 			@RequestParam(value = "address", required = false) String address,
 			@RequestParam(value = "affiliation", required = false) String affiliation,
 			@RequestParam(value = "url", required = false) String url,
-			@RequestParam(value = "phone", required = false) String phone) {
+			@RequestParam(value = "phone", required = false) String phone) throws IOException {
 		try {
-			userMgr.registerUser(email, password, firstName, lastName, birthday, gender, country, address, affiliation, url, phone);
+			STUser user = new STUser(email, password, firstName, lastName);
+			if (birthday != null) {
+				user.setBirthday(birthday);
+			}
+			if (gender != null) {
+				user.setGender(gender);
+			}
+			if (country != null) {
+				user.setCountry(country);
+			}
+			if (address != null) {
+				user.setAddress(address);
+			}
+			if (affiliation != null) {
+				user.setAffiliation(affiliation);
+			}
+			if (url != null) {
+				user.setUrl(url);
+			}
+			if (phone != null) {
+				user.setPhone(phone);
+			}
+			usersMgr.registerUser(user);
+			puBindingMgr.createPUBindingsOfUser(email);
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyResponse("registerUser", RepliesStatus.ok, SerializationType.json);
 			return jsonResp.toString();
-		} catch (UserCreationException e) {
+		} catch (UserCreationException | ProjectAccessException e) {
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyFAIL("registerUser", e.getMessage(), SerializationType.json);
 			return jsonResp.toString();
@@ -123,15 +145,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param firstName
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserFirstName", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserFirstName(@RequestParam("email") String email, @RequestParam("firstName") String firstName) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserFirstName(user, firstName);
+	public String updateUserFirstName(@RequestParam("email") String email, @RequestParam("firstName") String firstName) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserFirstName(user, firstName);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -145,15 +167,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param lastName
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserLastName", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserLastName(@RequestParam("email") String email, @RequestParam("lastName") String lastName) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserLastName(user, lastName);
+	public String updateUserLastName(@RequestParam("email") String email, @RequestParam("lastName") String lastName) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserLastName(user, lastName);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -167,15 +189,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param phone
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserPhone", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserPhone(@RequestParam("email") String email, @RequestParam("phone") String phone) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserPhone(user, phone);
+	public String updateUserPhone(@RequestParam("email") String email, @RequestParam("phone") String phone) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -189,15 +211,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param birthday
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserBirthday", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserBirthday(user, birthday);
+	public String updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserBirthday(user, birthday);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -211,15 +233,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param gender
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserGender", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserGender(@RequestParam("email") String email, @RequestParam("gender") String gender) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserGender(user, gender);
+	public String updateUserGender(@RequestParam("email") String email, @RequestParam("gender") String gender) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserGender(user, gender);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -233,15 +255,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param country
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserCountry", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserCountry(@RequestParam("email") String email, @RequestParam("country") String country) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserCountry(user, country);
+	public String updateUserCountry(@RequestParam("email") String email, @RequestParam("country") String country) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserCountry(user, country);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -255,15 +277,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param address
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserAddress", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserAddress(@RequestParam("email") String email, @RequestParam("address") String address) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserAddress(user, address);
+	public String updateUserAddress(@RequestParam("email") String email, @RequestParam("address") String address) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -277,15 +299,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param affiliation
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserAffiliation", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserAffiliation(@RequestParam("email") String email, @RequestParam("affiliation") String affiliation) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserAffiliation(user, affiliation);
+	public String updateUserAffiliation(@RequestParam("email") String email, @RequestParam("affiliation") String affiliation) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -299,15 +321,15 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param url
 	 * @return
-	 * @throws ParseException 
 	 * @throws JSONException 
+	 * @throws IOException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserUrl", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserUrl(@RequestParam("email") String email, @RequestParam("url") String url) throws ParseException, JSONException {
-		STUser user = userMgr.getUserByEmail(email);
-		user = userMgr.updateUserUrl(user, url);
+	public String updateUserUrl(@RequestParam("email") String email, @RequestParam("url") String url) throws JSONException, IOException {
+		STUser user = usersMgr.getUserByEmail(email);
+		user = usersMgr.updateUserUrl(user, url);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -316,8 +338,24 @@ public class Users extends STServiceAdapter {
 		return jsonResp.toString();
 	}
 	
+	/**
+	 * Deletes an user
+	 * @param email
+	 * @throws IOException 
+	 */
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/deleteUser", 
+			method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public String deleteUser(@RequestParam("email") String email) throws IOException {
+		usersMgr.deleteUser(email);
+		puBindingMgr.deletePUBindingsOfUser(email);
+		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
+				.createReplyResponse("deleteUser", RepliesStatus.ok, SerializationType.json);
+		return jsonResp.toString();
+	}
+	
 	private void updateUserInSecurityContext(STUser user) {
-		Authentication auth = new UsernamePasswordAuthenticationToken(user, null, PermissionManager.getAuthoritiesForRoles(user.getRoles()));
+		Authentication auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 		SecurityContextHolder.getContext().setAuthentication(auth);
 	}
 	

@@ -8,9 +8,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
@@ -25,25 +25,30 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
-public class UserRepoHelper {
+public class UsersRepoHelper {
+	
+	protected static Logger logger = LoggerFactory.getLogger(UsersRepoHelper.class);
+	
+	private Repository repository;
 	
 	private DateFormat dateFormat;
-	private Repository repository;
+	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 	
 	public static String BINDING_FIRST_NAME = "firstName";
 	public static String BINDING_LAST_NAME = "lastName";
 	public static String BINDING_PASSWORD = "password";
 	public static String BINDING_EMAIL = "email";
-	public static String BINDING_ROLE = "role";
 	public static String BINDING_URL = "url";
 	public static String BINDING_PHONE = "phone";
 	public static String BINDING_BIRTHDAY = "birthday";
@@ -53,38 +58,30 @@ public class UserRepoHelper {
 	public static String BINDING_ADDRESS = "address";
 	public static String BINDING_REGISTRATION_DATE = "registrationDate";
 	
-	public UserRepoHelper() {
-		
+	public UsersRepoHelper(Repository repo) {
+		this.repository = repo;
 		dateFormat = new SimpleDateFormat(STUser.USER_DATE_FORMAT);
-		// initialize a non-persistent repository
-		MemoryStore memStore = new MemoryStore();
-		memStore.setPersist(false);
-		repository = new SailRepository(memStore);
-		repository.initialize();
-//		RepositoryConnection conn = repository.getConnection();
-//		conn.setNamespace("", UserVocabulary.NAMESPACE);
-//		conn.close();
 	}
 	
 	public void loadUserDetails(File userDetailsFile) throws RDFParseException, RepositoryException, IOException {
 		RepositoryConnection conn = repository.getConnection();
 		conn.add(userDetailsFile, UserVocabulary.URI, RDFFormat.TURTLE);
 		conn.close();
-//		printRepository();
 	}
 	
+	/**
+	 * 
+	 * @param user User to register
+	 * (Note: the password is encoded here, so the user should have a not encoded pwd)
+	 */
 	public void insertUser(STUser user) {
 		String query = "INSERT DATA {"
 				+ " _:user a <" + UserVocabulary.USER + "> ."
 				+ " _:user <" + UserVocabulary.FIRST_NAME + "> '" + user.getFirstName() + "' ."
 				+ " _:user <" + UserVocabulary.LAST_NAME + "> '" + user.getLastName() + "' ."
 				+ " _:user <" + UserVocabulary.EMAIL+ "> '" + user.getEmail() + "' ."
-				+ " _:user <" + UserVocabulary.PASSWORD+ "> '" + user.getPassword() + "' ."
+				+ " _:user <" + UserVocabulary.PASSWORD+ "> '" + passwordEncoder.encode(user.getPassword()) + "' ."
 				+ " _:user <" + UserVocabulary.REGISTRATION_DATE+ "> '" + dateFormat.format(new Date()) + "' .";
-		Collection<UserRolesEnum> roles = user.getRoles();
-		for (UserRolesEnum r : roles) {
-			query += " _:user <" + UserVocabulary.ROLE + "> '" + r.name() + "' .";
-		}
 		if (user.getUrl() != null) {
 			query += " _:user <" + UserVocabulary.URL+ "> '" + user.getUrl() + "' .";
 		}
@@ -109,11 +106,11 @@ public class UserRepoHelper {
 		query += " }";
 		
 		//execute query
-		RepositoryConnection conn = repository.getConnection();
-		Update update = conn.prepareUpdate(query);
-		update.execute();
-		conn.close();
-		
+		logger.debug(query);
+		try (RepositoryConnection conn = repository.getConnection()) {
+			Update update = conn.prepareUpdate(query);
+			update.execute();
+		}
 	}
 	
 	/**
@@ -121,14 +118,13 @@ public class UserRepoHelper {
 	 * @return
 	 * @throws ParseException
 	 */
-	public List<STUser> listUsers() throws ParseException {
+	public Collection<STUser> listUsers() {
 		String query = "SELECT * WHERE {"
 				+ " ?userNode a <" + UserVocabulary.USER + "> ."
 				+ " ?userNode <" + UserVocabulary.FIRST_NAME + "> ?" + BINDING_FIRST_NAME + " ."
 				+ " ?userNode <" + UserVocabulary.LAST_NAME + "> ?" + BINDING_LAST_NAME + " ."
 				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
 				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.ROLE + "> ?" + BINDING_ROLE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
@@ -140,14 +136,18 @@ public class UserRepoHelper {
 				+ "}";
 		
 		//execute query
-		RepositoryConnection conn = repository.getConnection();
-		TupleQuery tq = conn.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		//collect users
-		List<STUser> userList = getUsersFromTupleResult(result);
-		
-		conn.close();
-		return userList;
+		logger.debug(query);
+		TupleQueryResult result = null;
+		try (RepositoryConnection conn = repository.getConnection()) {
+			TupleQuery tq = conn.prepareTupleQuery(query);
+			result = tq.evaluate();
+			//collect and return users
+			return getUsersFromTupleResult(result);
+		} finally {
+			if (result != null) {
+				result.close();
+			}
+		}
 	}
 	
 	/**
@@ -157,7 +157,7 @@ public class UserRepoHelper {
 	 * @return
 	 * @throws ParseException
 	 */
-	public List<STUser> searchUsers(Map<String, String> filters) throws ParseException {
+	public Collection<STUser> searchUsers(Map<String, String> filters) {
 		String query = "SELECT * WHERE { ?userNode a <" + UserVocabulary.USER + "> .";
 		for (String key : filters.keySet()) {
 			query += " BIND('" + filters.get(key) + "' AS ?" + key + ")";
@@ -166,7 +166,6 @@ public class UserRepoHelper {
 				+ " ?userNode <" + UserVocabulary.LAST_NAME + "> ?" + BINDING_LAST_NAME + " ."
 				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
 				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.ROLE + "> ?" + BINDING_ROLE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
@@ -178,17 +177,21 @@ public class UserRepoHelper {
 				+ "}";
 		
 		// execute query
-		RepositoryConnection conn = repository.getConnection();
-		TupleQuery tq = conn.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		// collect users
-		List<STUser> userList = getUsersFromTupleResult(result);
-		
-		conn.close();
-		return userList;
+		logger.debug(query);
+		TupleQueryResult result = null;
+		try (RepositoryConnection conn = repository.getConnection()) {
+			TupleQuery tq = conn.prepareTupleQuery(query);
+			result = tq.evaluate();
+			//collect and return users
+			return getUsersFromTupleResult(result);
+		} finally {
+			if (result != null) {
+				result.close();
+			}
+		}
 	}
 	
-	public void updateUserInfo(STUser user, String bindingToUpdate, String newValue) {
+	public void updateUserInfo(String userEmail, String bindingToUpdate, String newValue) {
 		String propertyToUpdate = "";
 		if (bindingToUpdate.equals(BINDING_FIRST_NAME)) {
 			propertyToUpdate = UserVocabulary.FIRST_NAME;
@@ -213,46 +216,49 @@ public class UserRepoHelper {
 		String query = "DELETE { ?user <" + propertyToUpdate + "> ?oldValue } \n"
 				+ "INSERT { ?user  <" + propertyToUpdate + "> '" + newValue + "' } \n"
 				+ "WHERE {\n"
-				+ "?user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' . \n"
+				+ "?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' . \n"
 				+ "?user <" + propertyToUpdate + "> ?oldValue . \n"
 				+ "}";
 		//execute query
-		RepositoryConnection conn = repository.getConnection();
-		Update update = conn.prepareUpdate(query);
-		update.execute();
-		conn.close();
+		logger.debug(query);
+		try (RepositoryConnection conn = repository.getConnection()) {
+			Update update = conn.prepareUpdate(query);
+			update.execute();
+		}
 	}
 	
 	/**
 	 * Delete the given user. 
 	 * Note, since e-mail should be unique, delete the user with the same e-mail of the given user.
-	 * @param user
+	 * @param userEmail
 	 */
-	public void deleteUser(STUser user) {
-		String query = "DELETE WHERE {"
+	public void deleteUser(String userEmail) {
+		String query = "DELETE { ?user ?p ?o }"
+				+ " WHERE {"
 				+ " ?user a <" + UserVocabulary.USER + "> ."
-				+ " ?user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' ."
-				+ " ?user ?p ?o . }";
-		RepositoryConnection conn = repository.getConnection();
-		Update update = conn.prepareUpdate(query);
-		update.execute();
-		conn.close();
+				+ " ?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' ."
+				+ " }";
+		logger.debug(query);
+		try (RepositoryConnection conn = repository.getConnection()) {
+			Update update = conn.prepareUpdate(query);
+			update.execute();
+		}
 	}
 	
-	public void saveUserDetailsFile(File file) {
+	public void saveUserDetailsFile(File file) throws IOException {
 		RepositoryConnection conn = repository.getConnection();
 		
 		try {
 			RepositoryResult<Statement> stats = conn.getStatements(null, null, null, false);
 			Model model = Iterations.addAll(stats, new LinkedHashModel());
-			FileOutputStream out = new FileOutputStream(file);
-			
-			RDFWriter writer = Rio.createWriter(RDFFormat.TURTLE, out);
-			writer.startRDF();
-			for (Statement st : model) {
-				writer.handleStatement(st);
+			try (FileOutputStream out = new FileOutputStream(file)) {
+				RDFWriter writer = Rio.createWriter(RDFFormat.TURTLE, out);
+				writer.startRDF();
+				for (Statement st : model) {
+					writer.handleStatement(st);
+				}
+				writer.endRDF();
 			}
-			writer.endRDF();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} finally {
@@ -260,10 +266,11 @@ public class UserRepoHelper {
 		}
 	}
 	
-	private List<STUser> getUsersFromTupleResult(TupleQueryResult result) throws ParseException {
+	private Collection<STUser> getUsersFromTupleResult(TupleQueryResult result) {
 		// collect users
-		ArrayList<STUser> list = new ArrayList<STUser>();
-		tupleLoop: while (result.hasNext()) {
+		Collection<STUser> list = new ArrayList<STUser>();
+//		tupleLoop: 
+		while (result.hasNext()) {
 			BindingSet tuple = result.next();
 
 			String email = tuple.getValue(BINDING_EMAIL).stringValue();
@@ -271,20 +278,6 @@ public class UserRepoHelper {
 					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
 					tuple.getValue(BINDING_LAST_NAME).stringValue());
 
-			// Check if the current tuple is about an user already fetched (and differs just for the role)
-			for (STUser u : list) {
-				if (u.getEmail().equals(email)) {
-					// user already in list => add the role to it
-					// don't check if binding != null, cause it is so for sure, since it is the only value
-					// that differs
-					u.addRole(UserRolesEnum.valueOf(tuple.getValue(BINDING_ROLE).stringValue()));
-					continue tupleLoop; // ignore other bindings and go to the following tuple
-				}
-			}
-
-			if (tuple.getBinding(BINDING_ROLE) != null) {
-				user.addRole(UserRolesEnum.valueOf(tuple.getValue(BINDING_ROLE).stringValue()));
-			}
 			if (tuple.getBinding(BINDING_URL) != null) {
 				user.setUrl(tuple.getValue(BINDING_URL).stringValue());
 			}
@@ -292,8 +285,12 @@ public class UserRepoHelper {
 				user.setPhone(tuple.getValue(BINDING_PHONE).stringValue());
 			}
 			if (tuple.getBinding(BINDING_BIRTHDAY) != null) {
-				Date d = dateFormat.parse(tuple.getValue(BINDING_BIRTHDAY).stringValue());
-				user.setBirthday(d);
+				try {
+					Date d = dateFormat.parse(tuple.getValue(BINDING_BIRTHDAY).stringValue());
+					user.setBirthday(d);
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
 			}
 			if (tuple.getBinding(BINDING_GENDER) != null) {
 				user.setGender(tuple.getValue(BINDING_GENDER).stringValue());
@@ -308,12 +305,26 @@ public class UserRepoHelper {
 				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
 			}
 			if (tuple.getBinding(BINDING_REGISTRATION_DATE) != null) {
-				Date d = dateFormat.parse(tuple.getValue(BINDING_REGISTRATION_DATE).stringValue());
-				user.setRegistrationDate(d);
+				try {
+					Date d = dateFormat.parse(tuple.getValue(BINDING_REGISTRATION_DATE).stringValue());
+					user.setRegistrationDate(d);
+				} catch (ParseException e) {
+					e.printStackTrace();
+					//in case of wrong registration date, set 1st January 1970
+					Calendar cal = Calendar.getInstance();
+					cal.set(Calendar.YEAR, 1970);
+					cal.set(Calendar.MONTH, Calendar.JANUARY);
+					cal.set(Calendar.DAY_OF_MONTH, 1);
+					user.setRegistrationDate(cal.getTime());
+				}
 			}
 			list.add(user);
 		}
 		return list;
+	}
+	
+	public void shutDownRepository() {
+		repository.shutDown();
 	}
 	
 	/**
