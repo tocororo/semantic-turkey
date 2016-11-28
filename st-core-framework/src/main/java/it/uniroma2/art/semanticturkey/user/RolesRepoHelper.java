@@ -170,6 +170,7 @@ public class RolesRepoHelper {
 				+ " WHERE {"
 				+ " ?role a <" + UserVocabulary.ROLE + "> ."
 				+ " ?role <" + UserVocabulary.ROLE_NAME + "> '" + role.getName() + "' ."
+				+ " ?role ?p ?o ."
 				+ " }";
 		// execute query
 		logger.debug(query);

@@ -1,7 +1,19 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,6 +34,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
 import it.uniroma2.art.semanticturkey.security.UsersManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -31,6 +44,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
+import it.uniroma2.art.semanticturkey.user.UsersRepoHelper;
 
 @GenerateSTServiceController
 @Validated
@@ -91,6 +105,9 @@ public class Users extends STServiceAdapter {
 	 * @param phone
 	 * @return
 	 * @throws IOException 
+	 * @throws MessagingException 
+	 * @throws ProjectAccessException 
+	 * @throws UserCreationException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser", 
 			method = RequestMethod.POST, produces = "application/json")
@@ -104,7 +121,7 @@ public class Users extends STServiceAdapter {
 			@RequestParam(value = "address", required = false) String address,
 			@RequestParam(value = "affiliation", required = false) String affiliation,
 			@RequestParam(value = "url", required = false) String url,
-			@RequestParam(value = "phone", required = false) String phone) throws IOException {
+			@RequestParam(value = "phone", required = false) String phone) throws IOException, MessagingException, ProjectAccessException, UserCreationException {
 		try {
 			STUser user = new STUser(email, password, firstName, lastName);
 			if (birthday != null) {
@@ -130,10 +147,15 @@ public class Users extends STServiceAdapter {
 			}
 			usersMgr.registerUser(user);
 			puBindingMgr.createPUBindingsOfUser(email);
+			
+			//TODO to enable when AccessControl role-base is completed (so the admin can set a valid admin email config) 
+//			EmailSender.sendRegistrationMail(email, firstName, lastName);
+			//TODO send mail to system administrator too in order to enable new user
+			
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyResponse("registerUser", RepliesStatus.ok, SerializationType.json);
 			return jsonResp.toString();
-		} catch (UserCreationException | ProjectAccessException e) {
+		} catch (UserCreationException e) {
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyFAIL("registerUser", e.getMessage(), SerializationType.json);
 			return jsonResp.toString();
@@ -339,6 +361,29 @@ public class Users extends STServiceAdapter {
 	}
 	
 	/**
+	 * Enables or disables the given user
+	 * @param email
+	 * @param enable
+	 * @return
+	 * @throws IOException 
+	 */
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/enableUser", 
+			method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public String enableUser(@RequestParam("email") String email, @RequestParam("enable") boolean enabled) throws IOException  {
+		STUser user = usersMgr.getUserByEmail(email);
+		if (enabled) {
+			usersMgr.enableUser(user);
+		} else {
+			usersMgr.disableUser(user);
+		}
+		
+		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
+				.createReplyResponse("enableUser", RepliesStatus.ok, SerializationType.json);
+		return jsonResp.toString();
+	}
+	
+	/**
 	 * Deletes an user
 	 * @param email
 	 * @throws IOException 
@@ -348,6 +393,15 @@ public class Users extends STServiceAdapter {
 	@ResponseBody
 	public String deleteUser(@RequestParam("email") String email) throws IOException {
 		usersMgr.deleteUser(email);
+		
+		Map<String, String> filter = new HashMap<String, String>();
+		filter.put(UsersRepoHelper.BINDING_EMAIL, email);
+		Collection<STUser> users = usersMgr.searchUsers(filter);
+		for (STUser u : users) {
+			System.out.println("user found");
+			System.out.println(u);
+		}
+		
 		puBindingMgr.deletePUBindingsOfUser(email);
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("deleteUser", RepliesStatus.ok, SerializationType.json);
@@ -357,6 +411,56 @@ public class Users extends STServiceAdapter {
 	private void updateUserInSecurityContext(STUser user) {
 		Authentication auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 		SecurityContextHolder.getContext().setAuthentication(auth);
+	}
+	
+	
+	
+	private static class EmailSender {
+		
+		public static void sendRegistrationMail(String toEmail, String firstName, String lastName) throws MessagingException, UnsupportedEncodingException {
+			
+			String emailAddress = Config.getEmailAddress();
+			String emailPassword = Config.getEmailPassword();
+			String emailAlias = Config.getEmailAlias();
+			String emailHost = Config.getEmailHost();
+			String emailPort = Config.getEmailPort();
+			
+			if (emailAddress == null || emailPassword == null || emailAlias == null || emailHost == null || emailPort == null) {
+				//TODO create and use a dedicated exception ????
+				throw new MessagingException("Wrong mail configuration, impossible to send a confirmation e-mail");
+			}
+			
+			Properties props = new Properties();
+			props.put("mail.smtp.host", emailHost);
+			props.put("mail.smtp.socketFactory.port", emailPort);
+			props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+			props.put("mail.smtp.auth", "true");
+			props.put("mail.smtp.port", emailPort);
+			
+			Session session = Session.getDefaultInstance(props, new javax.mail.Authenticator() {
+				protected PasswordAuthentication getPasswordAuthentication() {
+					return new PasswordAuthentication(emailAddress, emailPassword);
+				}
+			});
+			
+			String text = "Dear " + firstName + " " + lastName + ","
+					+ "\nthank you for registering as a user of VocBench 3."
+					+ " Your request has been received. Please wait for the administrator to approve it."
+					+ " You will be informed when you can start to login in the system."
+					+ " After approval, you can log into VocBench with the e-mail " + toEmail + " and your chosen password."
+					+ "\nThanks for your interest."
+					+ "\nIf you want to unregister, please send an email with your e-mail address and the subject:"
+					+ " 'VocBench - Unregister' to " + emailAddress + "."
+					+ "\nRegards,\nThe VocBench Team.";
+			
+			Message message = new MimeMessage(session);
+			message.setFrom(new InternetAddress("itartartemide@gmail.com", "VocBench Admin"));
+			message.setSubject("VocBench3 registration");
+			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+			message.setText(text);
+			Transport.send(message);
+		}
+		
 	}
 	
 }

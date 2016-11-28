@@ -118,6 +118,7 @@ public class AccessControlManager {
 
 		// create and register admin user
 		STUser admin = new STUser("admin@admin.com", "admin", "Admin", "Admin");
+		admin.setEnabled(true);
 		usersMgr.registerUser(admin);
 	}
 	

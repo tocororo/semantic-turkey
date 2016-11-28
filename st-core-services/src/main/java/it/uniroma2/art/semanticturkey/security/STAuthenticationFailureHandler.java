@@ -7,6 +7,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
@@ -27,19 +28,11 @@ public class STAuthenticationFailureHandler extends SimpleUrlAuthenticationFailu
 			AuthenticationException exception) throws IOException, ServletException {
 		response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 		ServletOutputStream out = response.getOutputStream();
-		
-		//create json response with the same structure of STResponse
-//		response.setContentType("application/json");
-//		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-//				.createReplyResponse("login", RepliesStatus.fail, SerializationType.json);
-//		try {
-//			jsonResp.getDataElement().put("msg", "Authentication failed. Wrong username and password combination");
-//		} catch (JSONException e) {
-//			throw new ServletException(e);
-//		}
-//		out.print(jsonResp);
-		
-		out.print("Authentication failed. Wrong username and password combination");
+		if (exception.getClass().isAssignableFrom(DisabledException.class)) {
+			out.print("Authentication failed. User not yet enabled, please contact the system administrator");
+		} else {
+			out.print("Authentication failed. Wrong username and password combination");
+		}
 	}
 
 }

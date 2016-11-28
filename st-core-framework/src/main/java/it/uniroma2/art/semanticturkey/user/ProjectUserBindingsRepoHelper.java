@@ -114,6 +114,7 @@ public class ProjectUserBindingsRepoHelper {
 				+ " WHERE {"
 				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
 				+ " ?binding <" + UserVocabulary.PROJECT + "> '" + projectName + "' ."
+				+ " ?binding ?p ?o ."
 				+ " }";
 		logger.debug(query);
 		try (RepositoryConnection conn = repository.getConnection()) {
@@ -131,6 +132,7 @@ public class ProjectUserBindingsRepoHelper {
 				+ " WHERE {"
 				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
 				+ " ?binding <" + UserVocabulary.USER_PROP + "> '" + userEmail + "' ."
+				+ " ?binding ?p ?o ."
 				+ " }";
 		logger.debug(query);
 		try (RepositoryConnection conn = repository.getConnection()) {

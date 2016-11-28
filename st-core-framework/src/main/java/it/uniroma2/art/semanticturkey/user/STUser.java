@@ -29,6 +29,7 @@ public class STUser implements UserDetails {
 	private String country;
 	private String address;
 	private Date registrationDate;
+	private boolean enabled;
 	
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
@@ -37,7 +38,8 @@ public class STUser implements UserDetails {
 		this.password = password;
 		this.firstName = firstName;
 		this.lastName = lastName;
-		authorities = new ArrayList<GrantedAuthority>();
+		this.authorities = new ArrayList<GrantedAuthority>();
+		this.enabled = false;
 	}
 	
 	public String getFirstName() {
@@ -100,7 +102,11 @@ public class STUser implements UserDetails {
 
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return this.enabled;
+	}
+	
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 	
 	public String getUrl() {
@@ -217,11 +223,8 @@ public class STUser implements UserDetails {
 		s += "\nAffiliation: " + this.affiliation;
 		s += "\nCountry: " + this.country;
 		s += "\nAddress: " + this.address;
-		if (this.registrationDate != null) {
-			s += "\nRegistraion date: " + dateFormat.format(this.registrationDate);
-		} else {
-			s += "\nRegistraion date: " + this.registrationDate;
-		}
+		s += "\nRegistraion date: " + dateFormat.format(this.registrationDate);
+		s += "\nEnabled: " + this.enabled;
 		s += "\n";
 		return s;
 	}

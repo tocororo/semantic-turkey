@@ -62,6 +62,20 @@ public class UsersManager {
 		}
 	}
 	
+	public STUser enableUser(STUser user) throws IOException {
+		userRepoHelper.enableUser(user.getEmail(), true);
+		user.setEnabled(true);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	public STUser disableUser(STUser user) throws IOException {
+		userRepoHelper.enableUser(user.getEmail(), false);
+		user.setEnabled(false);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
 	/**
 	 * Returns a list of all the registered users
 	 * @return

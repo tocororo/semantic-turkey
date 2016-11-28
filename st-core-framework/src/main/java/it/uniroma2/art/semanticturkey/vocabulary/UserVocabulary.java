@@ -23,6 +23,7 @@ public class UserVocabulary {
 	public static final String COUNTRY = NAMESPACE + "country";
 	public static final String ADDRESS = NAMESPACE + "address";
 	public static final String REGISTRATION_DATE = NAMESPACE + "registration_date";
+	public static final String ENABLED = NAMESPACE + "enabled";
 	
 	//Role
 	public static final String ROLE = NAMESPACE + "Role";

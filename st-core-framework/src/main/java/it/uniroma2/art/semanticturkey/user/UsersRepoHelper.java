@@ -57,6 +57,7 @@ public class UsersRepoHelper {
 	public static String BINDING_COUNTRY = "country";
 	public static String BINDING_ADDRESS = "address";
 	public static String BINDING_REGISTRATION_DATE = "registrationDate";
+	public static String BINDING_ENABLED = "enabled";
 	
 	public UsersRepoHelper(Repository repo) {
 		this.repository = repo;
@@ -79,9 +80,10 @@ public class UsersRepoHelper {
 				+ " _:user a <" + UserVocabulary.USER + "> ."
 				+ " _:user <" + UserVocabulary.FIRST_NAME + "> '" + user.getFirstName() + "' ."
 				+ " _:user <" + UserVocabulary.LAST_NAME + "> '" + user.getLastName() + "' ."
-				+ " _:user <" + UserVocabulary.EMAIL+ "> '" + user.getEmail() + "' ."
-				+ " _:user <" + UserVocabulary.PASSWORD+ "> '" + passwordEncoder.encode(user.getPassword()) + "' ."
-				+ " _:user <" + UserVocabulary.REGISTRATION_DATE+ "> '" + dateFormat.format(new Date()) + "' .";
+				+ " _:user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' ."
+				+ " _:user <" + UserVocabulary.PASSWORD + "> '" + passwordEncoder.encode(user.getPassword()) + "' ."
+				+ " _:user <" + UserVocabulary.REGISTRATION_DATE + "> '" + dateFormat.format(new Date()) + "' ."
+				+ " _:user <" + UserVocabulary.ENABLED + "> " + user.isEnabled() + " .";
 		if (user.getUrl() != null) {
 			query += " _:user <" + UserVocabulary.URL+ "> '" + user.getUrl() + "' .";
 		}
@@ -125,6 +127,8 @@ public class UsersRepoHelper {
 				+ " ?userNode <" + UserVocabulary.LAST_NAME + "> ?" + BINDING_LAST_NAME + " ."
 				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
 				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
+				+ " ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " ."
+				+ " ?userNode <" + UserVocabulary.ENABLED + "> ?" + BINDING_ENABLED + " ."
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
@@ -132,7 +136,6 @@ public class UsersRepoHelper {
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.AFFILIATION + "> ?" + BINDING_AFFILIATION + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.COUNTRY + "> ?" + BINDING_COUNTRY + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.ADDRESS + "> ?" + BINDING_ADDRESS + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " . }"
 				+ "}";
 		
 		//execute query
@@ -166,6 +169,8 @@ public class UsersRepoHelper {
 				+ " ?userNode <" + UserVocabulary.LAST_NAME + "> ?" + BINDING_LAST_NAME + " ."
 				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
 				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
+				+ " ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " ."
+				+ " ?userNode <" + UserVocabulary.ENABLED + "> ?" + BINDING_ENABLED + " ."
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
@@ -173,7 +178,6 @@ public class UsersRepoHelper {
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.AFFILIATION + "> ?" + BINDING_AFFILIATION + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.COUNTRY + "> ?" + BINDING_COUNTRY + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.ADDRESS + "> ?" + BINDING_ADDRESS + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " . }"
 				+ "}";
 		
 		// execute query
@@ -227,6 +231,21 @@ public class UsersRepoHelper {
 		}
 	}
 	
+	public void enableUser(String userEmail, boolean enable) {
+		String query = "DELETE { ?user <" + UserVocabulary.ENABLED + "> ?oldValue } \n"
+				+ "INSERT { ?user  <" + UserVocabulary.ENABLED + "> " + enable + " } \n"
+				+ "WHERE {\n"
+				+ "?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' . \n"
+				+ "?user <" + UserVocabulary.ENABLED + "> ?oldValue . \n"
+				+ "}";
+		//execute query
+		logger.debug(query);
+		try (RepositoryConnection conn = repository.getConnection()) {
+			Update update = conn.prepareUpdate(query);
+			update.execute();
+		}
+	}
+	
 	/**
 	 * Delete the given user. 
 	 * Note, since e-mail should be unique, delete the user with the same e-mail of the given user.
@@ -237,6 +256,7 @@ public class UsersRepoHelper {
 				+ " WHERE {"
 				+ " ?user a <" + UserVocabulary.USER + "> ."
 				+ " ?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' ."
+				+ " ?user ?p ?o ."
 				+ " }";
 		logger.debug(query);
 		try (RepositoryConnection conn = repository.getConnection()) {
@@ -277,7 +297,24 @@ public class UsersRepoHelper {
 			STUser user = new STUser(email, tuple.getValue(BINDING_PASSWORD).stringValue(),
 					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
 					tuple.getValue(BINDING_LAST_NAME).stringValue());
+			
+			user.setEnabled(Boolean.parseBoolean(tuple.getValue(BINDING_ENABLED).stringValue()));
+			
+			String registrationDate = tuple.getValue(BINDING_REGISTRATION_DATE).stringValue();
+			try {
+				Date d = dateFormat.parse(registrationDate);
+				user.setRegistrationDate(d);
+			} catch (ParseException e) {
+				e.printStackTrace();
+				// in case of wrong registration date, set 1st January 1970
+				Calendar cal = Calendar.getInstance();
+				cal.set(Calendar.YEAR, 1970);
+				cal.set(Calendar.MONTH, Calendar.JANUARY);
+				cal.set(Calendar.DAY_OF_MONTH, 1);
+				user.setRegistrationDate(cal.getTime());
+			}
 
+			//Optional fields
 			if (tuple.getBinding(BINDING_URL) != null) {
 				user.setUrl(tuple.getValue(BINDING_URL).stringValue());
 			}
@@ -303,20 +340,6 @@ public class UsersRepoHelper {
 			}
 			if (tuple.getBinding(BINDING_ADDRESS) != null) {
 				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
-			}
-			if (tuple.getBinding(BINDING_REGISTRATION_DATE) != null) {
-				try {
-					Date d = dateFormat.parse(tuple.getValue(BINDING_REGISTRATION_DATE).stringValue());
-					user.setRegistrationDate(d);
-				} catch (ParseException e) {
-					e.printStackTrace();
-					//in case of wrong registration date, set 1st January 1970
-					Calendar cal = Calendar.getInstance();
-					cal.set(Calendar.YEAR, 1970);
-					cal.set(Calendar.MONTH, Calendar.JANUARY);
-					cal.set(Calendar.DAY_OF_MONTH, 1);
-					user.setRegistrationDate(cal.getTime());
-				}
 			}
 			list.add(user);
 		}
