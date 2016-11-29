@@ -23,7 +23,7 @@ public class UserVocabulary {
 	public static final String COUNTRY = NAMESPACE + "country";
 	public static final String ADDRESS = NAMESPACE + "address";
 	public static final String REGISTRATION_DATE = NAMESPACE + "registration_date";
-	public static final String ENABLED = NAMESPACE + "enabled";
+	public static final String STATUS = NAMESPACE + "status";
 	
 	//Role
 	public static final String ROLE = NAMESPACE + "Role";
@@ -52,6 +52,7 @@ public class UserVocabulary {
     	public static IRI COUNTRY;
     	public static IRI ADDRESS;
     	public static IRI REGISTRATION_DATE;
+    	public static IRI STATUS;
     	
     	public static IRI ROLE;
     	public static IRI ROLE_NAME;
@@ -78,6 +79,7 @@ public class UserVocabulary {
 	    	COUNTRY = fact.createIRI(UserVocabulary.COUNTRY);
 	    	ADDRESS = fact.createIRI(UserVocabulary.ADDRESS);
 	    	REGISTRATION_DATE = fact.createIRI(UserVocabulary.REGISTRATION_DATE);
+	    	STATUS = fact.createIRI(UserVocabulary.STATUS);
 	    	
 	    	ROLE = fact.createIRI(UserVocabulary.ROLE);
 	    	ROLE_NAME = fact.createIRI(UserVocabulary.ROLE_NAME);

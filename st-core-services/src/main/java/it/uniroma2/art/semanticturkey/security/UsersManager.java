@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
+import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersRepoHelper;
 
 @Component("usersMgr")
@@ -60,20 +61,6 @@ public class UsersManager {
 			userRepoHelper.insertUser(user); // insert user in the repo
 			createOrUpdateUserDetailsFolder(user); // serialize user detials
 		}
-	}
-	
-	public STUser enableUser(STUser user) throws IOException {
-		userRepoHelper.enableUser(user.getEmail(), true);
-		user.setEnabled(true);
-		createOrUpdateUserDetailsFolder(user);
-		return user;
-	}
-	
-	public STUser disableUser(STUser user) throws IOException {
-		userRepoHelper.enableUser(user.getEmail(), false);
-		user.setEnabled(false);
-		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 	
 	/**
@@ -121,6 +108,18 @@ public class UsersManager {
 		}
 		
 		return user;
+	}
+	
+	/**
+	 * Returns the users with the given status. Useful to get the users waiting for enabling after registration
+	 * @param status
+	 * @return
+	 */
+	public Collection<STUser> listUsersByStatus(UserStatus status) {
+		Map<String, String> filters = new HashMap<String, String>();
+		filters.put(UsersRepoHelper.BINDING_STATUS, status.name());
+		Collection<STUser> users = userRepoHelper.searchUsers(filters);
+		return users;
 	}
 	
 	/**
@@ -258,6 +257,20 @@ public class UsersManager {
 	public STUser updateUserUrl(STUser user, String newValue) throws IOException {
 		userRepoHelper.updateUserInfo(user.getEmail(), UsersRepoHelper.BINDING_URL, newValue);
 		user.setUrl(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the status of the given user and returns it update
+	 * @param user
+	 * @param newStatus
+	 * @return
+	 * @throws IOException
+	 */
+	public STUser updateUserStatus(STUser user, UserStatus newStatus) throws IOException {
+		userRepoHelper.updateUserInfo(user.getEmail(), UsersRepoHelper.BINDING_STATUS, newStatus.name());
+		user.setStatus(UserStatus.ENABLED);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}

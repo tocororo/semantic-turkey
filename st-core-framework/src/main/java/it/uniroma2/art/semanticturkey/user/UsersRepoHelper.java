@@ -57,7 +57,7 @@ public class UsersRepoHelper {
 	public static String BINDING_COUNTRY = "country";
 	public static String BINDING_ADDRESS = "address";
 	public static String BINDING_REGISTRATION_DATE = "registrationDate";
-	public static String BINDING_ENABLED = "enabled";
+	public static String BINDING_STATUS = "status";
 	
 	public UsersRepoHelper(Repository repo) {
 		this.repository = repo;
@@ -83,7 +83,7 @@ public class UsersRepoHelper {
 				+ " _:user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' ."
 				+ " _:user <" + UserVocabulary.PASSWORD + "> '" + passwordEncoder.encode(user.getPassword()) + "' ."
 				+ " _:user <" + UserVocabulary.REGISTRATION_DATE + "> '" + dateFormat.format(new Date()) + "' ."
-				+ " _:user <" + UserVocabulary.ENABLED + "> " + user.isEnabled() + " .";
+				+ " _:user <" + UserVocabulary.STATUS + "> '" + user.getStatus() + "' .";
 		if (user.getUrl() != null) {
 			query += " _:user <" + UserVocabulary.URL+ "> '" + user.getUrl() + "' .";
 		}
@@ -128,7 +128,7 @@ public class UsersRepoHelper {
 				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
 				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
 				+ " ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " ."
-				+ " ?userNode <" + UserVocabulary.ENABLED + "> ?" + BINDING_ENABLED + " ."
+				+ " ?userNode <" + UserVocabulary.STATUS + "> ?" + BINDING_STATUS + " ."
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
@@ -170,7 +170,7 @@ public class UsersRepoHelper {
 				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
 				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
 				+ " ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " ."
-				+ " ?userNode <" + UserVocabulary.ENABLED + "> ?" + BINDING_ENABLED + " ."
+				+ " ?userNode <" + UserVocabulary.STATUS + "> ?" + BINDING_STATUS + " ."
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
@@ -215,6 +215,8 @@ public class UsersRepoHelper {
 			propertyToUpdate = UserVocabulary.AFFILIATION;
 		} else if (bindingToUpdate.equals(BINDING_URL)) {
 			propertyToUpdate = UserVocabulary.URL;
+		} else if (bindingToUpdate.equals(BINDING_STATUS)) {
+			propertyToUpdate = UserVocabulary.STATUS;
 		}
 		
 		String query = "DELETE { ?user <" + propertyToUpdate + "> ?oldValue } \n"
@@ -222,21 +224,6 @@ public class UsersRepoHelper {
 				+ "WHERE {\n"
 				+ "?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' . \n"
 				+ "?user <" + propertyToUpdate + "> ?oldValue . \n"
-				+ "}";
-		//execute query
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
-		}
-	}
-	
-	public void enableUser(String userEmail, boolean enable) {
-		String query = "DELETE { ?user <" + UserVocabulary.ENABLED + "> ?oldValue } \n"
-				+ "INSERT { ?user  <" + UserVocabulary.ENABLED + "> " + enable + " } \n"
-				+ "WHERE {\n"
-				+ "?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' . \n"
-				+ "?user <" + UserVocabulary.ENABLED + "> ?oldValue . \n"
 				+ "}";
 		//execute query
 		logger.debug(query);
@@ -298,7 +285,7 @@ public class UsersRepoHelper {
 					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
 					tuple.getValue(BINDING_LAST_NAME).stringValue());
 			
-			user.setEnabled(Boolean.parseBoolean(tuple.getValue(BINDING_ENABLED).stringValue()));
+			user.setStatus(UserStatus.valueOf(tuple.getValue(BINDING_STATUS).stringValue()));
 			
 			String registrationDate = tuple.getValue(BINDING_REGISTRATION_DATE).stringValue();
 			try {

@@ -28,21 +28,6 @@ public class STAuthenticationEntryPoint implements AuthenticationEntryPoint {
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		ServletOutputStream out = response.getOutputStream();
 		
-		//retrieve service method's name
-//		String[] pathElements = request.getServletPath().split("/");
-//		String methodName = pathElements[pathElements.length - 1];
-//		
-//		//create json response with the same structure of STResponse
-//		response.setContentType("application/json");
-//		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-//				.createReplyResponse(methodName, RepliesStatus.fail, SerializationType.json);
-//		try {
-//			jsonResp.getDataElement().put("msg", "Access denied. You need to be logged in.");
-//		} catch (JSONException e) {
-//			throw new ServletException(e);
-//		}
-//		out.print(jsonResp.toString());
-		
 		out.print("Access denied. You need to be logged in");
 	}
 

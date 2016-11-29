@@ -29,7 +29,7 @@ public class STUser implements UserDetails {
 	private String country;
 	private String address;
 	private Date registrationDate;
-	private boolean enabled;
+	private UserStatus status;
 	
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
@@ -39,7 +39,7 @@ public class STUser implements UserDetails {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.authorities = new ArrayList<GrantedAuthority>();
-		this.enabled = false;
+		this.status = UserStatus.REGISTERED;
 	}
 	
 	public String getFirstName() {
@@ -102,11 +102,7 @@ public class STUser implements UserDetails {
 
 	@Override
 	public boolean isEnabled() {
-		return this.enabled;
-	}
-	
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
+		return this.status.equals(UserStatus.ENABLED);
 	}
 	
 	public String getUrl() {
@@ -181,18 +177,24 @@ public class STUser implements UserDetails {
 		this.registrationDate = registrationDate;
 	}
 	
+	public UserStatus getStatus() {
+		return this.status;
+	}
+	
+	public void setStatus(UserStatus status) {
+		this.status = status;
+	}
+	
 	public JSONObject getAsJSONObject() throws JSONException {
 		JSONObject userJson = new JSONObject();
 		userJson.put("email", email);
 		userJson.put("firstName", firstName);
 		userJson.put("lastName", lastName);
-		
 		if (birthday != null) {
 			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday));
 		} else {
 			userJson.put("birthday", birthday); //empty field
 		}
-		
 		userJson.put("gender", gender);
 		userJson.put("country", country);
 		userJson.put("address", address);
@@ -201,6 +203,7 @@ public class STUser implements UserDetails {
 		userJson.put("affiliation", affiliation);
 		userJson.put("url", url);
 		userJson.put("phone", phone);
+		userJson.put("status", status);
 		
 		return userJson;
 	}
@@ -224,7 +227,7 @@ public class STUser implements UserDetails {
 		s += "\nCountry: " + this.country;
 		s += "\nAddress: " + this.address;
 		s += "\nRegistraion date: " + dateFormat.format(this.registrationDate);
-		s += "\nEnabled: " + this.enabled;
+		s += "\nStatus: " + this.status;
 		s += "\n";
 		return s;
 	}

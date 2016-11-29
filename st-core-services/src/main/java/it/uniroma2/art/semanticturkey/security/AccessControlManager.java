@@ -23,6 +23,7 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserRolesEnum;
+import it.uniroma2.art.semanticturkey.user.UserStatus;
 
 @Component
 @DependsOn({"usersMgr", "rolesMgr", "puBindingMgr"})
@@ -118,7 +119,7 @@ public class AccessControlManager {
 
 		// create and register admin user
 		STUser admin = new STUser("admin@admin.com", "admin", "Admin", "Admin");
-		admin.setEnabled(true);
+		admin.setStatus(UserStatus.ENABLED);
 		usersMgr.registerUser(admin);
 	}
 	
