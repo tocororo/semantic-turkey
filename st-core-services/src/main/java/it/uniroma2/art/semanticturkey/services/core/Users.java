@@ -411,19 +411,21 @@ public class Users extends STServiceAdapter {
 	 * @param enable
 	 * @return
 	 * @throws IOException 
+	 * @throws JSONException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/enableUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled) throws IOException  {
+	public String enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled) throws IOException, JSONException  {
 		STUser user = usersMgr.getUserByEmail(email);
 		if (enabled) {
-			usersMgr.updateUserStatus(user, UserStatus.ENABLED);
+			user = usersMgr.updateUserStatus(user, UserStatus.ENABLED);
 		} else {
-			usersMgr.updateUserStatus(user, UserStatus.DISABLED);
+			user = usersMgr.updateUserStatus(user, UserStatus.DISABLED);
 		}
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("enableUser", RepliesStatus.ok, SerializationType.json);
+		jsonResp.getDataElement().put("user", user.getAsJSONObject());
 		return jsonResp.toString();
 	}
 	
