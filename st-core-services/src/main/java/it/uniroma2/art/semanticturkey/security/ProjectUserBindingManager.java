@@ -3,6 +3,8 @@ package it.uniroma2.art.semanticturkey.security;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -59,13 +61,32 @@ public class ProjectUserBindingManager {
 	}
 	
 	/**
-	 * Returns the ProjectUserBinding that binds the given user and project
+	 * Returns the ProjectUserBinding that binds the given user and project. Null if there is no binding
 	 * @param user
 	 * @param projectName
 	 * @return
 	 */
 	public ProjectUserBinding getPUBinding(STUser user, String projectName) {
-		return puRepoHelper.getPUBinding(user.getEmail(), projectName);
+		ProjectUserBinding puBinding = null;
+		Map<String, String> filters = new HashMap<String, String>();
+		filters.put(ProjectUserBindingsRepoHelper.BINDING_USER, user.getEmail());
+		filters.put(ProjectUserBindingsRepoHelper.BINDING_PROJECT, projectName);
+		Collection<ProjectUserBinding> puBindings = puRepoHelper.searchPUBindings(filters);
+		if (!puBindings.isEmpty()) {
+			puBinding = puBindings.iterator().next();
+		}
+		return puBinding;
+	}
+	
+	/**
+	 * Returns the ProjectUserBindings of the given project
+	 * @param projectName
+	 * @return
+	 */
+	public Collection<ProjectUserBinding> listPUBindingsOfProject(String projectName) {
+		Map<String, String> filters = new HashMap<String, String>();
+		filters.put(ProjectUserBindingsRepoHelper.BINDING_PROJECT, projectName);
+		return puRepoHelper.searchPUBindings(filters);
 	}
 	
 	/**

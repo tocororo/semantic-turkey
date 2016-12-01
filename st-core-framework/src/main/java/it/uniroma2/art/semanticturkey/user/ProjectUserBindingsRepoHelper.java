@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.Model;
@@ -32,9 +33,9 @@ public class ProjectUserBindingsRepoHelper {
 	
 	protected static Logger logger = LoggerFactory.getLogger(ProjectUserBindingsRepoHelper.class);
 	
-	private String BINDING_USER = "user";
-	private String BINDING_ROLE = "role";
-	private String BINDING_PROJECT = "project";
+	public final static String BINDING_USER = "user";
+	public final static String BINDING_ROLE = "role";
+	public final static String BINDING_PROJECT = "project";
 	
 	private Repository repository;
 	
@@ -98,6 +99,30 @@ public class ProjectUserBindingsRepoHelper {
 			} else {
 				return bindingList.iterator().next();
 			}
+		} finally {
+			if (result != null) {
+				result.close();
+			}
+		}
+	}
+	
+	public Collection<ProjectUserBinding> searchPUBindings(Map<String, String> filters) {
+		String query = "SELECT * WHERE { ?binding a <" + UserVocabulary.BINDING + "> .";
+				for (String key : filters.keySet()) {
+					query += " BIND('" + filters.get(key) + "' AS ?" + key + ")";
+				}
+		query += " ?binding <" + UserVocabulary.USER_PROP + "> ?" + BINDING_USER + " ."
+				+ " ?binding <" + UserVocabulary.PROJECT + "> ?" + BINDING_PROJECT + " ."
+				+ " ?binding <" + UserVocabulary.ROLE_PROP + "> ?" + BINDING_ROLE + " ."
+				+ " }";
+		// execute query
+		logger.debug(query);
+		TupleQueryResult result = null;
+		try (RepositoryConnection conn = repository.getConnection()) {
+			TupleQuery tq = conn.prepareTupleQuery(query);
+			result = tq.evaluate();
+			// collect bindings
+			return getPUBindingsFromTupleResult(result);
 		} finally {
 			if (result != null) {
 				result.close();
