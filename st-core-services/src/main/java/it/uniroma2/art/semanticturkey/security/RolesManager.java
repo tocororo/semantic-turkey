@@ -7,8 +7,6 @@ import java.util.Collection;
 
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
@@ -19,14 +17,12 @@ import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 
 @Component("rolesMgr")
-@DependsOn("acRepoHolder")
 public class RolesManager {
 	
-	private RolesRepoHelper rolesRepoHelper;
+	private Collection<STRole> roleList;
 	
-	@Autowired
-	public RolesManager(AccessControlRepositoryHolder acRepoHolder) {
-		rolesRepoHelper = new RolesRepoHelper(acRepoHolder.getRepository());
+	public RolesManager() {
+		roleList = new ArrayList<>();
 	}
 	
 	/**
@@ -37,8 +33,11 @@ public class RolesManager {
 	 * @throws UserCreationException
 	 */
 	public void loadRoles() throws RDFParseException, RepositoryException, IOException {
+		RolesRepoHelper repoHelper = new RolesRepoHelper();
 		File rolesFile = AccessContolUtils.getRolesDefinitionFile();
-		rolesRepoHelper.loadRolesDefinition(rolesFile);
+		repoHelper.loadRolesDefinition(rolesFile);
+		roleList = repoHelper.listRoles();
+		repoHelper.shutDownRepository();
 	}
 	
 	/**
@@ -48,10 +47,10 @@ public class RolesManager {
 	 * @throws IOException 
 	 */
 	public void createRole(STRole role) throws RoleCreationException, IOException {
-		if (rolesRepoHelper.searchRole(role.getName()) != null) {
+		if (searchRole(role.getName()) != null) {
 			throw new RoleCreationException("Role with name " + role.getName() + " already exists");
 		} else {
-			rolesRepoHelper.insertRole(role);
+			roleList.add(role);
 			createOrUpdateRolesDefinitionFile();
 		}
 	}
@@ -61,7 +60,7 @@ public class RolesManager {
 	 * @return
 	 */
 	public Collection<STRole> listRoles() {
-		return rolesRepoHelper.listRoles();
+		return roleList;
 	}
 	
 	/**
@@ -70,7 +69,13 @@ public class RolesManager {
 	 * @return
 	 */
 	public STRole searchRole(String roleName) {
-		return this.rolesRepoHelper.searchRole(roleName);
+		STRole role = null;
+		for (STRole r : roleList) {
+			if (r.getName().equals(roleName)) {
+				role = r;
+			}
+		}
+		return role;
 	}
 	
 	/**
@@ -81,7 +86,7 @@ public class RolesManager {
 	 * @throws IOException 
 	 */
 	public STRole addCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
-		rolesRepoHelper.addCapability(role, capability);
+		role = searchRole(role.getName());
 		role.addCapability(capability);
 		createOrUpdateRolesDefinitionFile();
 		return role;
@@ -95,7 +100,7 @@ public class RolesManager {
 	 * @throws IOException 
 	 */
 	public STRole removeCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
-		rolesRepoHelper.removeCapability(role, capability);
+		role = searchRole(role.getName());
 		role.removeCapability(capability);
 		createOrUpdateRolesDefinitionFile();
 		return role;
@@ -107,22 +112,9 @@ public class RolesManager {
 	 * @throws IOException 
 	 */
 	public void deleteRole(STRole role) throws IOException {
-		//remove role from repository
-		rolesRepoHelper.deleteRole(role);
+		roleList.remove(searchRole(role.getName()));
 		//save role definition file
 		createOrUpdateRolesDefinitionFile();
-	}
-	
-	public static Collection<UserCapabilitiesEnum> getCapabilitiesForRoles(Collection<STRole> roles) {
-		Collection<UserCapabilitiesEnum> capabilities = new ArrayList<>();
-		for (STRole r : roles) {
-			for (UserCapabilitiesEnum p : r.getCapabilities()) {
-				if (!capabilities.contains(p)) {
-					capabilities.add(p);
-				}
-			}
-		}
-		return capabilities;
 	}
 	
 	/**
@@ -132,7 +124,11 @@ public class RolesManager {
 	 * @throws IOException 
 	 */
 	private void createOrUpdateRolesDefinitionFile() throws IOException {
-		rolesRepoHelper.saveRoleCapabilityFile(AccessContolUtils.getRolesDefinitionFile());
+		RolesRepoHelper repoHelper = new RolesRepoHelper();
+		for (STRole r : roleList) {
+			repoHelper.insertRole(r);
+		}
+		repoHelper.saveRoleCapabilityFile(AccessContolUtils.getRolesDefinitionFile());
 	}
 	
 }

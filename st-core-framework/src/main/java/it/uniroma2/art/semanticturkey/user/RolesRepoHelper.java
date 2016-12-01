@@ -19,10 +19,12 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +36,14 @@ public class RolesRepoHelper {
 	
 	private Repository repository;
 	
-	public static String BINDING_ROLE = "role_name";
-	public static String BINDING_CAPABILITY = "capability";
+	private String BINDING_ROLE = "role_name";
+	private String BINDING_CAPABILITY = "capability";
 	
-	public RolesRepoHelper(Repository repo) {
-		this.repository = repo;
+	public RolesRepoHelper() {
+		MemoryStore memStore = new MemoryStore();
+		memStore.setPersist(false);
+		repository = new SailRepository(memStore);
+		repository.initialize();
 	}
 	
 	public void loadRolesDefinition(File roleCapabilityFile) throws RDFParseException, RepositoryException, IOException {
@@ -47,6 +52,10 @@ public class RolesRepoHelper {
 		conn.close();
 	}
 	
+	/**
+	 * Inserts a role in the repository
+	 * @param role
+	 */
 	public void insertRole(STRole role) {
 		String query = "INSERT DATA {"
 				+ " _:role a <" + UserVocabulary.ROLE + "> ."
@@ -66,7 +75,7 @@ public class RolesRepoHelper {
 	}
 	
 	/**
-	 * Returns a list of all the registered users
+	 * Returns a list of all the roles in the repository
 	 * @return
 	 */
 	public Collection<STRole> listRoles() {
@@ -87,96 +96,6 @@ public class RolesRepoHelper {
 			if (result != null) {
 				result.close();
 			}
-		}
-	}
-	
-	/**
-	 * Searches and returns the role with the given name. Null if no user has the given name
-	 * @return
-	 */
-	public STRole searchRole(String roleName) {
-		String query = "SELECT * WHERE {"
-				+ " ?role a <" + UserVocabulary.ROLE + "> ."
-				+ " BIND('" + roleName + "' AS ?" + BINDING_ROLE + ")"
-				+ " ?role <" + UserVocabulary.ROLE_NAME + "> ?" + BINDING_ROLE + " ."
-				+ " ?role <" + UserVocabulary.CAPABILITY + "> ?" + BINDING_CAPABILITY + " ."
-				+ " }";
-		// execute query
-		logger.debug(query);
-		TupleQueryResult result = null;
-		try (RepositoryConnection conn = repository.getConnection()) {
-			TupleQuery tq = conn.prepareTupleQuery(query);
-			result = tq.evaluate();
-			// collect roles
-			Collection<STRole> roleList = getRolesFromTupleResult(result);
-			if (roleList.isEmpty()) {
-				return null;
-			} else {
-				return roleList.iterator().next();
-			}
-		} finally {
-			if (result != null) {
-				result.close();
-			}
-		}
-	}
-	
-	/**
-	 * Add a capability to the given role
-	 * @param role
-	 * @param capability
-	 */
-	public void addCapability(STRole role, UserCapabilitiesEnum capability) {
-		String query = "INSERT {"
-				+ " ?role  <" + UserVocabulary.CAPABILITY + "> '" + capability.name() + "' }"
-				+ " WHERE {"
-				+ " ?role a <" + UserVocabulary.ROLE + "> ."
-				+ " ?role <" + UserVocabulary.ROLE_NAME + "> '" + role.getName() + "' ."
-				+ " }";
-		// execute query
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
-		}
-	}
-
-	/**
-	 * Removes the capability associated to the given list
-	 * @param role
-	 * @param capability
-	 */
-	public void removeCapability(STRole role, UserCapabilitiesEnum capability) {
-		String query = "DELETE {"
-				+ " ?role <" + UserVocabulary.CAPABILITY + "> '" + capability.name() + "' }"
-				+ " WHERE {"
-				+ " ?role a <" + UserVocabulary.ROLE + "> ."
-				+ " ?role <" + UserVocabulary.ROLE_NAME + "> '" + role.getName() + "' ."
-				+ " }";
-		// execute query
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
-		}
-	}
-	
-	/**
-	 * Deletes the given role from the repository
-	 * @param role
-	 */
-	public void deleteRole(STRole role) {
-		String query = "DELETE { ?role  ?p ?o }"
-				+ " WHERE {"
-				+ " ?role a <" + UserVocabulary.ROLE + "> ."
-				+ " ?role <" + UserVocabulary.ROLE_NAME + "> '" + role.getName() + "' ."
-				+ " ?role ?p ?o ."
-				+ " }";
-		// execute query
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
 		}
 	}
 	
@@ -209,6 +128,11 @@ public class RolesRepoHelper {
 		return list;
 	}
 	
+	/**
+	 * Serializes the role-capabilities mapping in the given file
+	 * @param file
+	 * @throws IOException
+	 */
 	public void saveRoleCapabilityFile(File file) throws IOException {
 		RepositoryConnection conn = repository.getConnection();
 		
@@ -228,6 +152,10 @@ public class RolesRepoHelper {
 		} finally {
 			conn.close();
 		}
+	}
+	
+	public void shutDownRepository() {
+		repository.shutDown();
 	}
 	
 	/**

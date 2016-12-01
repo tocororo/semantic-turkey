@@ -2,15 +2,13 @@ package it.uniroma2.art.semanticturkey.security;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -24,17 +22,16 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsRepoHelper;
 import it.uniroma2.art.semanticturkey.user.STUser;
 
 @Component("puBindingMgr")
-@DependsOn({"acRepoHolder","usersMgr"})
+@DependsOn("usersMgr")
 public class ProjectUserBindingManager {
-	
-	private ProjectUserBindingsRepoHelper puRepoHelper;
 	
 	@Autowired
 	private UsersManager usersMgr;
 	
-	@Autowired
-	public ProjectUserBindingManager(AccessControlRepositoryHolder acRepoHolder) {
-		puRepoHelper = new ProjectUserBindingsRepoHelper(acRepoHolder.getRepository());
+	private Collection<ProjectUserBinding> puBindingList;
+	
+	public ProjectUserBindingManager() {
+		puBindingList = new ArrayList<>();
 	}
 	
 	/**
@@ -44,9 +41,10 @@ public class ProjectUserBindingManager {
 	 * @throws RDFParseException 
 	 */
 	public void loadPUBindings() throws RDFParseException, RepositoryException, IOException {
+		ProjectUserBindingsRepoHelper repoHelper = new ProjectUserBindingsRepoHelper();
 		Collection<File> bindingsFolders = AccessContolUtils.getAllPUBindingFiles();
 		for (File f : bindingsFolders) {
-			puRepoHelper.loadBindingDetails(f);
+			repoHelper.loadBindingDetails(f);
 		}
 	}
 	
@@ -56,7 +54,7 @@ public class ProjectUserBindingManager {
 	 * @throws IOException 
 	 */
 	public void createPUBinding(ProjectUserBinding puBinding) throws IOException {
-		puRepoHelper.insertBinding(puBinding);
+		puBindingList.add(puBinding);
 		createOrUpdatePUBindingFolder(puBinding);
 	}
 	
@@ -68,12 +66,10 @@ public class ProjectUserBindingManager {
 	 */
 	public ProjectUserBinding getPUBinding(STUser user, String projectName) {
 		ProjectUserBinding puBinding = null;
-		Map<String, String> filters = new HashMap<String, String>();
-		filters.put(ProjectUserBindingsRepoHelper.BINDING_USER, user.getEmail());
-		filters.put(ProjectUserBindingsRepoHelper.BINDING_PROJECT, projectName);
-		Collection<ProjectUserBinding> puBindings = puRepoHelper.searchPUBindings(filters);
-		if (!puBindings.isEmpty()) {
-			puBinding = puBindings.iterator().next();
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUserEmail().equals(user.getEmail()) && pub.getProjectName().equals(projectName)) {
+				puBinding = pub;
+			}
 		}
 		return puBinding;
 	}
@@ -84,9 +80,13 @@ public class ProjectUserBindingManager {
 	 * @return
 	 */
 	public Collection<ProjectUserBinding> listPUBindingsOfProject(String projectName) {
-		Map<String, String> filters = new HashMap<String, String>();
-		filters.put(ProjectUserBindingsRepoHelper.BINDING_PROJECT, projectName);
-		return puRepoHelper.searchPUBindings(filters);
+		Collection<ProjectUserBinding> pubList = new ArrayList<>();
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getProjectName().equals(projectName)) {
+				pubList.add(pub);
+			}
+		}
+		return pubList;
 	}
 	
 	/**
@@ -119,8 +119,12 @@ public class ProjectUserBindingManager {
 	 * @throws IOException 
 	 */
 	public void deletePUBindingsOfProject(String projectName) throws IOException {
-		//remove bindings from repository
-		puRepoHelper.deletePUBindingOfProject(projectName);
+		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
+		while (itPUB.hasNext()) {
+			if (itPUB.next().getProjectName().equals(projectName)) {
+				itPUB.remove();
+			}
+		}
 		//delete folder about the project's bindings
 		FileUtils.deleteDirectory(AccessContolUtils.getProjBindingsFolder(projectName));
 	}
@@ -147,8 +151,12 @@ public class ProjectUserBindingManager {
 	 * @throws IOException 
 	 */
 	public void deletePUBindingsOfUser(String userEmail) throws IOException {
-		//remove bindings from repository
-		puRepoHelper.deletePUBindingOfUser(userEmail);
+		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
+		while (itPUB.hasNext()) {
+			if (itPUB.next().getUserEmail().equals(userEmail)) {
+				itPUB.remove();
+			}
+		}
 		//delete folders about the user's bindings
 		for (File userBindingFolder : AccessContolUtils.getUserBindingsFolders(userEmail)) {
 			FileUtils.deleteDirectory(userBindingFolder);
@@ -161,13 +169,7 @@ public class ProjectUserBindingManager {
 	 * @throws IOException 
 	 */
 	private void createOrUpdatePUBindingFolder(ProjectUserBinding puBinding) throws IOException {
-		// creates a temporary not persistent repository
-		MemoryStore memStore = new MemoryStore();
-		memStore.setPersist(false);
-		SailRepository tempRepo = new SailRepository(memStore);
-		tempRepo.initialize();
-
-		ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper(tempRepo);
+		ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 		tempPUBindingsRepoHelper.insertBinding(puBinding);
 		tempPUBindingsRepoHelper.saveBindingDetailsFile(AccessContolUtils.getPUBindingDetailsFile(puBinding));
 		tempPUBindingsRepoHelper.shutDownRepository();

@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.Model;
@@ -20,10 +19,12 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,14 +34,17 @@ public class ProjectUserBindingsRepoHelper {
 	
 	protected static Logger logger = LoggerFactory.getLogger(ProjectUserBindingsRepoHelper.class);
 	
-	public final static String BINDING_USER = "user";
-	public final static String BINDING_ROLE = "role";
-	public final static String BINDING_PROJECT = "project";
+	private static String BINDING_USER = "user";
+	private static String BINDING_ROLE = "role";
+	private static String BINDING_PROJECT = "project";
 	
 	private Repository repository;
 	
-	public ProjectUserBindingsRepoHelper(Repository repo) {
-		this.repository = repo;
+	public ProjectUserBindingsRepoHelper() {
+		MemoryStore memStore = new MemoryStore();
+		memStore.setPersist(false);
+		repository = new SailRepository(memStore);
+		repository.initialize();
 	}
 	
 	public void loadBindingDetails(File bindingDetailsFile) throws RDFParseException, RepositoryException, IOException {
@@ -77,41 +81,10 @@ public class ProjectUserBindingsRepoHelper {
 	 * @param projectName
 	 * @return
 	 */
-	public ProjectUserBinding getPUBinding(String userEmail, String projectName) {
+	public Collection<ProjectUserBinding> listPUBindings() {
 		String query = "SELECT * WHERE {"
 				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
-				+ " BIND('" + userEmail + "' AS ?" + BINDING_USER + ")"
-				+ " BIND('" + projectName + "' AS ?" + BINDING_PROJECT + ")"
 				+ " ?binding <" + UserVocabulary.USER_PROP + "> ?" + BINDING_USER + " ."
-				+ " ?binding <" + UserVocabulary.PROJECT + "> ?" + BINDING_PROJECT + " ."
-				+ " ?binding <" + UserVocabulary.ROLE_PROP + "> ?" + BINDING_ROLE + " ."
-				+ " }";
-		// execute query
-		logger.debug(query);
-		TupleQueryResult result = null;
-		try (RepositoryConnection conn = repository.getConnection()) {
-			TupleQuery tq = conn.prepareTupleQuery(query);
-			result = tq.evaluate();
-			// collect bindings
-			Collection<ProjectUserBinding> bindingList = getPUBindingsFromTupleResult(result);
-			if (bindingList.isEmpty()) {
-				return null;
-			} else {
-				return bindingList.iterator().next();
-			}
-		} finally {
-			if (result != null) {
-				result.close();
-			}
-		}
-	}
-	
-	public Collection<ProjectUserBinding> searchPUBindings(Map<String, String> filters) {
-		String query = "SELECT * WHERE { ?binding a <" + UserVocabulary.BINDING + "> .";
-				for (String key : filters.keySet()) {
-					query += " BIND('" + filters.get(key) + "' AS ?" + key + ")";
-				}
-		query += " ?binding <" + UserVocabulary.USER_PROP + "> ?" + BINDING_USER + " ."
 				+ " ?binding <" + UserVocabulary.PROJECT + "> ?" + BINDING_PROJECT + " ."
 				+ " ?binding <" + UserVocabulary.ROLE_PROP + "> ?" + BINDING_ROLE + " ."
 				+ " }";
@@ -127,42 +100,6 @@ public class ProjectUserBindingsRepoHelper {
 			if (result != null) {
 				result.close();
 			}
-		}
-	}
-	
-	/**
-	 * Deletes the bindings about the given project
-	 * @param projectName
-	 */
-	public void deletePUBindingOfProject(String projectName) {
-		String query = "DELETE { ?binding ?p ?o }"
-				+ " WHERE {"
-				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
-				+ " ?binding <" + UserVocabulary.PROJECT + "> '" + projectName + "' ."
-				+ " ?binding ?p ?o ."
-				+ " }";
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
-		}
-	}
-	
-	/**
-	 * Deletes the bindings about the given user. 
-	 * @param userEmail
-	 */
-	public void deletePUBindingOfUser(String userEmail) {
-		String query = "DELETE { ?binding ?p ?o }"
-				+ " WHERE {"
-				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
-				+ " ?binding <" + UserVocabulary.USER_PROP + "> '" + userEmail + "' ."
-				+ " ?binding ?p ?o ."
-				+ " }";
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
 		}
 	}
 	
@@ -194,6 +131,11 @@ public class ProjectUserBindingsRepoHelper {
 		return list;
 	}
 	
+	/**
+	 * Serializes the binding in the given file
+	 * @param file
+	 * @throws IOException
+	 */
 	public void saveBindingDetailsFile(File file) throws IOException {
 		RepositoryConnection conn = repository.getConnection();
 		try {

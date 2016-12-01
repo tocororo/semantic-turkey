@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Map;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.Model;
@@ -25,10 +24,12 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,22 +43,25 @@ public class UsersRepoHelper {
 	
 	private DateFormat dateFormat;
 	
-	public static String BINDING_FIRST_NAME = "firstName";
-	public static String BINDING_LAST_NAME = "lastName";
-	public static String BINDING_PASSWORD = "password";
-	public static String BINDING_EMAIL = "email";
-	public static String BINDING_URL = "url";
-	public static String BINDING_PHONE = "phone";
-	public static String BINDING_BIRTHDAY = "birthday";
-	public static String BINDING_GENDER = "gender";
-	public static String BINDING_AFFILIATION = "affiliation";
-	public static String BINDING_COUNTRY = "country";
-	public static String BINDING_ADDRESS = "address";
-	public static String BINDING_REGISTRATION_DATE = "registrationDate";
-	public static String BINDING_STATUS = "status";
+	private String BINDING_FIRST_NAME = "firstName";
+	private String BINDING_LAST_NAME = "lastName";
+	private String BINDING_PASSWORD = "password";
+	private String BINDING_EMAIL = "email";
+	private String BINDING_URL = "url";
+	private String BINDING_PHONE = "phone";
+	private String BINDING_BIRTHDAY = "birthday";
+	private String BINDING_GENDER = "gender";
+	private String BINDING_AFFILIATION = "affiliation";
+	private String BINDING_COUNTRY = "country";
+	private String BINDING_ADDRESS = "address";
+	private String BINDING_REGISTRATION_DATE = "registrationDate";
+	private String BINDING_STATUS = "status";
 	
-	public UsersRepoHelper(Repository repo) {
-		this.repository = repo;
+	public UsersRepoHelper() {
+		MemoryStore memStore = new MemoryStore();
+		memStore.setPersist(false);
+		repository = new SailRepository(memStore);
+		repository.initialize();
 		dateFormat = new SimpleDateFormat(STUser.USER_DATE_FORMAT);
 	}
 	
@@ -68,8 +72,8 @@ public class UsersRepoHelper {
 	}
 	
 	/**
-	 * 
-	 * @param user User to register
+	 * Insert the given user into the repository
+	 * @param user
 	 */
 	public void insertUser(STUser user) {
 		String query = "INSERT DATA {"
@@ -112,7 +116,7 @@ public class UsersRepoHelper {
 	}
 	
 	/**
-	 * Returns a list of all the registered users
+	 * Returns a list of all the users into the repository
 	 * @return
 	 * @throws ParseException
 	 */
@@ -150,104 +154,10 @@ public class UsersRepoHelper {
 	}
 	
 	/**
-	 * Searches and returns a list of users that respect the filters
-	 * @param filters Map of key value where the key is the field that the user should have and the 
-	 * value is the value of that field
-	 * @return
-	 * @throws ParseException
+	 * Serialize the content of the repository in the given file
+	 * @param file
+	 * @throws IOException
 	 */
-	public Collection<STUser> searchUsers(Map<String, String> filters) {
-		String query = "SELECT * WHERE { ?userNode a <" + UserVocabulary.USER + "> .";
-		for (String key : filters.keySet()) {
-			query += " BIND('" + filters.get(key) + "' AS ?" + key + ")";
-		}
-		query += " ?userNode <" + UserVocabulary.FIRST_NAME + "> ?" + BINDING_FIRST_NAME + " ."
-				+ " ?userNode <" + UserVocabulary.LAST_NAME + "> ?" + BINDING_LAST_NAME + " ."
-				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
-				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
-				+ " ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " ."
-				+ " ?userNode <" + UserVocabulary.STATUS + "> ?" + BINDING_STATUS + " ."
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.GENDER + "> ?" + BINDING_GENDER + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.AFFILIATION + "> ?" + BINDING_AFFILIATION + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.COUNTRY + "> ?" + BINDING_COUNTRY + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.ADDRESS + "> ?" + BINDING_ADDRESS + " . }"
-				+ "}";
-		
-		// execute query
-		logger.debug(query);
-		TupleQueryResult result = null;
-		try (RepositoryConnection conn = repository.getConnection()) {
-			TupleQuery tq = conn.prepareTupleQuery(query);
-			result = tq.evaluate();
-			//collect and return users
-			return getUsersFromTupleResult(result);
-		} finally {
-			if (result != null) {
-				result.close();
-			}
-		}
-	}
-	
-	public void updateUserInfo(String userEmail, String bindingToUpdate, String newValue) {
-		String propertyToUpdate = "";
-		if (bindingToUpdate.equals(BINDING_FIRST_NAME)) {
-			propertyToUpdate = UserVocabulary.FIRST_NAME;
-		} else if (bindingToUpdate.equals(BINDING_LAST_NAME)) {
-			propertyToUpdate = UserVocabulary.LAST_NAME;
-		} else if (bindingToUpdate.equals(BINDING_GENDER)) {
-			propertyToUpdate = UserVocabulary.GENDER;
-		} else if (bindingToUpdate.equals(BINDING_BIRTHDAY)) {
-			propertyToUpdate = UserVocabulary.BIRTHDAY;
-		} else if (bindingToUpdate.equals(BINDING_PHONE)) {
-			propertyToUpdate = UserVocabulary.PHONE;
-		} else if (bindingToUpdate.equals(BINDING_COUNTRY)) {
-			propertyToUpdate = UserVocabulary.COUNTRY;
-		} else if (bindingToUpdate.equals(BINDING_ADDRESS)) {
-			propertyToUpdate = UserVocabulary.ADDRESS;
-		} else if (bindingToUpdate.equals(BINDING_AFFILIATION)) {
-			propertyToUpdate = UserVocabulary.AFFILIATION;
-		} else if (bindingToUpdate.equals(BINDING_URL)) {
-			propertyToUpdate = UserVocabulary.URL;
-		} else if (bindingToUpdate.equals(BINDING_STATUS)) {
-			propertyToUpdate = UserVocabulary.STATUS;
-		}
-		
-		String query = "DELETE { ?user <" + propertyToUpdate + "> ?oldValue } \n"
-				+ "INSERT { ?user  <" + propertyToUpdate + "> '" + newValue + "' } \n"
-				+ "WHERE {\n"
-				+ "?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' . \n"
-				+ "?user <" + propertyToUpdate + "> ?oldValue . \n"
-				+ "}";
-		//execute query
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
-		}
-	}
-	
-	/**
-	 * Delete the given user. 
-	 * Note, since e-mail should be unique, delete the user with the same e-mail of the given user.
-	 * @param userEmail
-	 */
-	public void deleteUser(String userEmail) {
-		String query = "DELETE { ?user ?p ?o }"
-				+ " WHERE {"
-				+ " ?user a <" + UserVocabulary.USER + "> ."
-				+ " ?user <" + UserVocabulary.EMAIL + "> '" + userEmail + "' ."
-				+ " ?user ?p ?o ."
-				+ " }";
-		logger.debug(query);
-		try (RepositoryConnection conn = repository.getConnection()) {
-			Update update = conn.prepareUpdate(query);
-			update.execute();
-		}
-	}
-	
 	public void saveUserDetailsFile(File file) throws IOException {
 		RepositoryConnection conn = repository.getConnection();
 		
