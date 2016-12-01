@@ -137,7 +137,7 @@ public class Users extends STServiceAdapter {
 	/**
 	 * Registers a new user
 	 * @param email this will be used as id
-	 * @param password password not encoded, it will be encoded lately
+	 * @param password password not encoded, it is encoded here
 	 * @param firstName
 	 * @param lastName
 	 * @param birthday

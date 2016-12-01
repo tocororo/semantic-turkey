@@ -31,8 +31,6 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
@@ -43,7 +41,6 @@ public class UsersRepoHelper {
 	private Repository repository;
 	
 	private DateFormat dateFormat;
-	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 	
 	public static String BINDING_FIRST_NAME = "firstName";
 	public static String BINDING_LAST_NAME = "lastName";
@@ -73,7 +70,6 @@ public class UsersRepoHelper {
 	/**
 	 * 
 	 * @param user User to register
-	 * (Note: the password is encoded here, so the user should have a not encoded pwd)
 	 */
 	public void insertUser(STUser user) {
 		String query = "INSERT DATA {"
@@ -81,7 +77,7 @@ public class UsersRepoHelper {
 				+ " _:user <" + UserVocabulary.FIRST_NAME + "> '" + user.getFirstName() + "' ."
 				+ " _:user <" + UserVocabulary.LAST_NAME + "> '" + user.getLastName() + "' ."
 				+ " _:user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' ."
-				+ " _:user <" + UserVocabulary.PASSWORD + "> '" + passwordEncoder.encode(user.getPassword()) + "' ."
+				+ " _:user <" + UserVocabulary.PASSWORD + "> '" + user.getPassword() + "' ."
 				+ " _:user <" + UserVocabulary.REGISTRATION_DATE + "> '" + dateFormat.format(new Date()) + "' ."
 				+ " _:user <" + UserVocabulary.STATUS + "> '" + user.getStatus() + "' .";
 		if (user.getUrl() != null) {

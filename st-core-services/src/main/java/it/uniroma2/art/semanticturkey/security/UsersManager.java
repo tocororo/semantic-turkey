@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
@@ -58,6 +59,7 @@ public class UsersManager {
 		if (!isEmailAvailable(user.getEmail())) {
 			throw new UserCreationException("E-mail address " + user.getEmail() + " already used by another user");
 		} else {
+			user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); //encode password
 			userRepoHelper.insertUser(user); // insert user in the repo
 			createOrUpdateUserDetailsFolder(user); // serialize user detials
 		}
@@ -106,7 +108,6 @@ public class UsersManager {
 		if (!users.isEmpty()) {
 			user = users.iterator().next();
 		}
-		
 		return user;
 	}
 	
