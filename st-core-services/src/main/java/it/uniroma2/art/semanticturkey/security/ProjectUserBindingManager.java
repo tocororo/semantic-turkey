@@ -22,7 +22,7 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsRepoHelper;
 import it.uniroma2.art.semanticturkey.user.STUser;
 
 @Component("puBindingMgr")
-@DependsOn({"acRepoProvider","usersMgr"})
+@DependsOn({"acRepoHolder","usersMgr"})
 public class ProjectUserBindingManager {
 	
 	private ProjectUserBindingsRepoHelper puRepoHelper;

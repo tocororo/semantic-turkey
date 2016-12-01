@@ -18,7 +18,7 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.stereotype.Component;
 
-@Component("acRepoProvider")
+@Component("acRepoHolder")
 public class AccessControlRepositoryHolder {
 	
 	private Repository repository;

@@ -19,7 +19,7 @@ import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 
 @Component("rolesMgr")
-@DependsOn("acRepoProvider")
+@DependsOn("acRepoHolder")
 public class RolesManager {
 	
 	private RolesRepoHelper rolesRepoHelper;

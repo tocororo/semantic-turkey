@@ -23,7 +23,7 @@ import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersRepoHelper;
 
 @Component("usersMgr")
-@DependsOn("acRepoProvider")
+@DependsOn("acRepoHolder")
 public class UsersManager {
 	
 	private UsersRepoHelper userRepoHelper;

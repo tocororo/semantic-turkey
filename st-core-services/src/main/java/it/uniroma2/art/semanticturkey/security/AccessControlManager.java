@@ -58,16 +58,18 @@ public class AccessControlManager {
 		if (!AccessContolUtils.getUsersFolder().exists()) {
 			//not initialized (probably first ST launch) => initialize it
 			initializeUserFileStructure();
+		} else {
+			//init users and roles manager so they load users and roles in the repository kept by AccessControlRepositoryProvider
+			usersMgr.loadUsers();
+			rolesMgr.loadRoles();
 		}
-		//init users and roles manager so they load users and roles in the repository kept by AccessControlRepositoryProvider
-		usersMgr.loadUsers();
-		rolesMgr.loadRoles();
 		
 		if (!AccessContolUtils.getPUBindingsFolder().exists()) {
 			initializePUBindingFileStructure();
+		} else {
+			//init project-user binding manager so it loads bindings in the repository kept by AccessControlRepositoryProvider
+			puBindingMgr.loadPUBindings();
 		}
-		//init project-user binding manager so it loads bindings in the repository kept by AccessControlRepositoryProvider
-		puBindingMgr.loadPUBindings();
 	}
 	
 	/**
