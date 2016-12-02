@@ -42,6 +42,7 @@ import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
@@ -99,22 +100,23 @@ public class Users extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns all the users with the given status. Useful to get the user registered but not yet enabled
-	 * (waiting to be enabled by the admin)
-	 * @param status
+	 * Returns all the users that have at least a role in the given project
+	 * @param projectName
 	 * @return
-	 * @throws JSONException
+	 * @throws JSONException 
 	 */
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/listUsersByStatus", 
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/listUsersBoundToProject", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String listUsersByStatus(UserStatus status) throws JSONException {
+	public String listUsersBoundToProject(@RequestParam("projectName") String projectName) throws JSONException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-				.createReplyResponse("listUsersByStatus", RepliesStatus.ok, SerializationType.json);
-		Collection<STUser> users = usersMgr.listUsersByStatus(status);
+				.createReplyResponse("listUsersBoundToProject", RepliesStatus.ok, SerializationType.json);
+		Collection<ProjectUserBinding> puBindings = puBindingMgr.listPUBindingsOfProject(projectName);
 		JSONArray usersJson = new JSONArray();
-		for (STUser user : users) {
-			usersJson.put(user.getAsJSONObject());
+		for (ProjectUserBinding pub : puBindings) {
+			if (!pub.getRolesName().isEmpty()) {
+				usersJson.put(usersMgr.getUserByEmail(pub.getUserEmail()).getAsJSONObject());
+			}
 		}
 		jsonResp.getDataElement().put("users", usersJson);
 		return jsonResp.toString();
@@ -497,7 +499,6 @@ public class Users extends STServiceAdapter {
 			String emailPort = Config.getEmailFromPort();
 			
 			if (emailAddress == null || emailPassword == null || emailAlias == null || emailHost == null || emailPort == null) {
-				//TODO create and use a dedicated exception ????
 				throw new MessagingException("Wrong mail configuration, impossible to send a confirmation e-mail");
 			}
 			

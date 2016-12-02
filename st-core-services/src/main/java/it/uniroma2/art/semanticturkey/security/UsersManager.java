@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -56,6 +57,8 @@ public class UsersManager {
 			throw new UserCreationException("E-mail address " + user.getEmail() + " already used by another user");
 		} else {
 			user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); //encode password
+			user.setRegistrationDate(new Date());
+			userList.add(user);
 			createOrUpdateUserDetailsFolder(user); // serialize user detials
 		}
 	}

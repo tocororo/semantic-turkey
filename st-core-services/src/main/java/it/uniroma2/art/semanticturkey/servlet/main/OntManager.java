@@ -26,25 +26,12 @@
  */
 package it.uniroma2.art.semanticturkey.servlet.main;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Collection;
-
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
-import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.models.conf.ConfParameterNotFoundException;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
-import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.servlet.HttpServiceRequestWrapper;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponse;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import java.util.Enumeration;
+import java.util.Hashtable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,15 +40,44 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Element;
 
+import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
+import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
+import it.uniroma2.art.owlart.models.conf.ConfParameterNotFoundException;
+import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
+import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
+import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
+import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
+import it.uniroma2.art.semanticturkey.resources.OntTempFile;
+import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponse;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+
 /**
  * @author Armando Stellato
  */
 @Component
 public class OntManager extends ServiceAdapter {
 	protected static Logger logger = LoggerFactory.getLogger(OntManager.class);
+	
+	static int webUpdate = 0;
+	static int localUpdate = 1;
 
 	// GET REQUESTS
-	public static final String getOntManagerParametersRequest = "getOntManagerParameters";
+	protected static final String getOntManagerParametersRequest = "getOntManagerParameters";
+	protected static String getOntologyMirror = "getOntologyMirror";
+	protected static String deleteOntMirrorEntry = "deleteOntMirrorEntry";
+	protected static String updateOntMirrorEntry = "updateOntMirrorEntry";
 
 	// PARS
 	static final public String ontMgrIDField = "ontMgrID";
@@ -84,6 +100,32 @@ public class OntManager extends ServiceAdapter {
 			checkRequestParametersAllNotNull(ontMgrIDField);
 
 			return getOntologyManagerParameters(ontMgrID);
+			
+		} else if (request.equals(getOntologyMirror)) {
+			return getOntologyMirrorTable();
+		} else if (request.equals(deleteOntMirrorEntry)) {
+			String baseURI = setHttpPar("ns");
+			String cacheFileName = setHttpPar("file");
+			return deleteOntologyMirrorEntry(baseURI, cacheFileName);
+		} else if (request.equals(updateOntMirrorEntry)) {
+			String baseURI = setHttpPar("baseURI");
+			String mirrorFileName = setHttpPar("mirrorFileName");
+			String srcLoc = setHttpPar("srcLoc");
+			String location = null;
+			int updateType = 0;
+			if (srcLoc.equals("wbu")) {
+				location = baseURI;
+			} else if (srcLoc.equals("walturl")) {
+				location = setHttpPar("altURL");
+			} else if (srcLoc.equals("lf")) {
+				File localFile = setHttpMultipartFilePar("localFile");
+				location = localFile.getAbsolutePath();
+				updateType = 1;
+			} else {
+				return ServletUtilities.getService().createExceptionResponse(request,
+						"uncorrect or unspecified srcLoc parameter in http request");
+			}
+			return updateOntologyMirrorEntry(updateType, baseURI, mirrorFileName, location);
 
 		} else
 			return ServletUtilities.getService().createExceptionResponse(request,
@@ -149,6 +191,77 @@ public class OntManager extends ServiceAdapter {
 			return servletUtilities.createExceptionResponse(request, e.getMessage());
 		}
 
+	}
+	
+	/**
+	 * gets the namespace mapping for the loaded ontology
+	 * 
+	 * <streponse request="getOntologyMirror" type="data"> <Mirror
+	 * uri="http://xmlns.com/foaf/spec/20070524.rdf" file="foaf.rdf"/> <Mirror
+	 * uri="http://sweet.jpl.nasa.gov/ontology/earthrealm.owl" file="earthrealm.owl"/> </Tree>
+	 * 
+	 */
+	public ResponseREPLY getOntologyMirrorTable() {
+		Hashtable<Object, Object> mirror = OntologiesMirror.getFullMirror();
+		Enumeration<Object> uris = mirror.keys();
+
+		XMLResponseREPLY resp = ServletUtilities.getService().createReplyResponse(getOntologyMirror,
+				RepliesStatus.ok);
+		Element dataElement = resp.getDataElement();
+
+		while (uris.hasMoreElements()) {
+			String uri = (String) uris.nextElement();
+			Element mirrorElem = XMLHelp.newElement(dataElement, "Mirror");
+			mirrorElem.setAttribute("ns", uri);
+			mirrorElem.setAttribute("file", (String) mirror.get(uri));
+		}
+		return resp;
+	}
+
+	/**
+	 * deletes an entry (and its associated physical file) from the Ontology Mirror
+	 * 
+	 * @return
+	 */
+	public XMLResponse deleteOntologyMirrorEntry(String baseURI, String cacheFileName) {
+		OntologiesMirror.removeCachedOntologyEntry(baseURI);
+		File cacheFile = new File(Resources.getOntologiesMirrorDir(), cacheFileName);
+		cacheFile.delete();
+
+		return ServletUtilities.getService().createReplyResponse(deleteOntMirrorEntry, RepliesStatus.ok,
+				"mirror entry removed");
+	}
+
+	// TODO transform MirroredOntologyFile into an extended class for java.io.File
+	/**
+	 * updates an entry (and its associated physical file) from the Ontology Mirror
+	 * 
+	 * <Tree type="AckMsg"> <Msg content="mirror entry updated"/> </Tree>
+	 * 
+	 * @return
+	 */
+	public XMLResponse updateOntologyMirrorEntry(int updateType, String baseURI, String mirrorFileName,
+			String location) {
+
+		MirroredOntologyFile mirFile = new MirroredOntologyFile(mirrorFileName);
+		try {
+			if (updateType == webUpdate) { // use first a temporary file, just in case the download brokes in
+				// the middle, then copies the temporary to the destination in the
+				// mirror
+				OntTempFile tempFile = STOntologyManager.getTempFileEntry();
+				Utilities.downloadRDF(new URL(location), tempFile.getAbsolutePath());
+				Utilities.copy(tempFile.getAbsolutePath(), mirFile.getAbsolutePath());
+			} else if (updateType == localUpdate) {
+				Utilities.copy(location, mirFile.getAbsolutePath());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ServletUtilities.getService().createExceptionResponse(updateOntMirrorEntry,
+					"problems in updating mirrored ontology file:\n" + e.getMessage());
+		}
+
+		return ServletUtilities.getService().createReplyResponse(updateOntMirrorEntry, RepliesStatus.ok,
+				"mirror entry updated");
 	}
 
 }

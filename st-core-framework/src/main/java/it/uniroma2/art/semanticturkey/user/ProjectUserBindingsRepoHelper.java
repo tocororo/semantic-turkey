@@ -86,7 +86,7 @@ public class ProjectUserBindingsRepoHelper {
 				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
 				+ " ?binding <" + UserVocabulary.USER_PROP + "> ?" + BINDING_USER + " ."
 				+ " ?binding <" + UserVocabulary.PROJECT + "> ?" + BINDING_PROJECT + " ."
-				+ " ?binding <" + UserVocabulary.ROLE_PROP + "> ?" + BINDING_ROLE + " ."
+				+ " OPTIONAL { ?binding <" + UserVocabulary.ROLE_PROP + "> ?" + BINDING_ROLE + " . }"
 				+ " }";
 		// execute query
 		logger.debug(query);
@@ -111,21 +111,28 @@ public class ProjectUserBindingsRepoHelper {
 
 			String projectName = tuple.getValue(BINDING_PROJECT).stringValue();
 			String userEmail = tuple.getValue(BINDING_USER).stringValue();
-			String roleName = tuple.getValue(BINDING_ROLE).stringValue();
-
+			
 			ProjectUserBinding puBinding = new ProjectUserBinding(projectName, userEmail);
-
-			// Check if the current tuple is about a binding already fetched (and differs just for a role)
-			for (ProjectUserBinding b : list) {
-				if (b.getProjectName().equals(projectName) && b.getUserEmail().equals(userEmail)) {
-					// binding already in list => add the role to it
-					b.addRole(roleName);
-					continue tupleLoop;
-				}
+			
+			String roleName = null;
+			if (tuple.getBinding(BINDING_ROLE) != null) {
+				roleName = tuple.getValue(BINDING_ROLE).stringValue();
 			}
-			//if it reach this point, current binding was not already fetched
-			//so add the role to the binding and then the binding to the list
-			puBinding.addRole(roleName);
+			
+			if (roleName != null) {
+				// Check if the current tuple is about a binding already fetched (and differs just for a role)
+				for (ProjectUserBinding b : list) {
+					if (b.getProjectName().equals(projectName) && b.getUserEmail().equals(userEmail)) {
+						// binding already in list => add the role to it
+						b.addRole(roleName);
+						continue tupleLoop;
+					}
+				}
+				//if it reach this point, current binding was not already fetched
+				//so add the role to the binding and then the binding to the list
+				puBinding.addRole(roleName);
+			}
+
 			list.add(puBinding);
 		}
 		return list;

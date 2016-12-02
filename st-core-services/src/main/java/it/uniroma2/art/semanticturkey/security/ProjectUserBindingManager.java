@@ -46,6 +46,16 @@ public class ProjectUserBindingManager {
 		for (File f : bindingsFolders) {
 			repoHelper.loadBindingDetails(f);
 		}
+		puBindingList = repoHelper.listPUBindings();
+		repoHelper.shutDownRepository();
+	}
+	
+	/**
+	 * Returns all the project-user bindings
+	 * @return
+	 */
+	public Collection<ProjectUserBinding> listPUBindings() {
+		return this.puBindingList;
 	}
 	
 	/**

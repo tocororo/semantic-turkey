@@ -118,7 +118,7 @@ public class AccessControlManager {
 		rolesMgr.createRole(roleUser);
 
 		// create and register admin user
-		STUser admin = new STUser("admin@admin.com", "admin", "Admin", "Admin");
+		STUser admin = new STUser("admin@vocbench.com", "admin", "Admin", "Admin");
 		admin.setStatus(UserStatus.ENABLED);
 		usersMgr.registerUser(admin);
 	}

@@ -82,7 +82,7 @@ public class UsersRepoHelper {
 				+ " _:user <" + UserVocabulary.LAST_NAME + "> '" + user.getLastName() + "' ."
 				+ " _:user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' ."
 				+ " _:user <" + UserVocabulary.PASSWORD + "> '" + user.getPassword() + "' ."
-				+ " _:user <" + UserVocabulary.REGISTRATION_DATE + "> '" + dateFormat.format(new Date()) + "' ."
+				+ " _:user <" + UserVocabulary.REGISTRATION_DATE + "> '" + dateFormat.format(user.getRegistrationDate()) + "' ."
 				+ " _:user <" + UserVocabulary.STATUS + "> '" + user.getStatus() + "' .";
 		if (user.getUrl() != null) {
 			query += " _:user <" + UserVocabulary.URL+ "> '" + user.getUrl() + "' .";
