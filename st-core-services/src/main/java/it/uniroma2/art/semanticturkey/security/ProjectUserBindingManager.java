@@ -174,6 +174,44 @@ public class ProjectUserBindingManager {
 	}
 	
 	/**
+	 * Adds roles to the binding between the given project-user pair
+	 * @param userEmail
+	 * @param projectName
+	 * @param roles
+	 * @throws IOException
+	 */
+	public void addRolesToPUBinding(String userEmail, String projectName, Collection<String> roles) throws IOException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
+				for (String r : roles) {
+					pub.addRole(r);
+				}
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Removes a role from the binding between the given project-user pair
+	 * @param userEmail
+	 * @param projectName
+	 * @param role
+	 * @throws IOException
+	 */
+	public void removeRoleFromPUBinding(String userEmail, String projectName, String role) throws IOException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
+				Collection<String> roles = pub.getRolesName();
+				roles.remove(role);
+				pub.setRoles(roles);
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
 	 * Creates a folder for the given project-user bidning and serializes the details about it in a file.
 	 * If the folder is already created, simply update the info in the details file.
 	 * @throws IOException 

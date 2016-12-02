@@ -72,7 +72,7 @@ public class UsersManager {
 	}
 	
 	/**
-	 * Returns the user with the given email. Useful during the login procedure
+	 * Returns the user with the given email. Null if there is no user with the given email.
 	 * @param email
 	 * @return
 	 */

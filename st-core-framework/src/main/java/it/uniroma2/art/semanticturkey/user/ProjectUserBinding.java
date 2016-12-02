@@ -3,6 +3,10 @@ package it.uniroma2.art.semanticturkey.user;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class ProjectUserBinding {
 	
 	private String projectName;
@@ -41,4 +45,12 @@ public class ProjectUserBinding {
 		this.rolesName.remove(roleName);
 	}
 
+	public JSONObject getAsJSONObject() throws JSONException {
+		JSONObject bindingJson = new JSONObject();
+		bindingJson.put("userEmail", userEmail);
+		bindingJson.put("projectName", projectName);
+		JSONArray rolesJson = new JSONArray(rolesName);
+		bindingJson.put("roles", rolesJson);
+		return bindingJson;
+	}
 }

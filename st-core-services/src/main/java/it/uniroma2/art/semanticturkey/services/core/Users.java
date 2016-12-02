@@ -24,7 +24,6 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
 import it.uniroma2.art.semanticturkey.security.UsersManager;
@@ -47,10 +45,8 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 
-@GenerateSTServiceController
 @Validated
-@Component
-@Controller //needed for getUser method
+@Controller
 public class Users extends STServiceAdapter {
 	
 	@Autowired
@@ -415,6 +411,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 * @throws JSONException 
 	 */
+	//TODO move to Administration?
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/enableUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
@@ -436,6 +433,7 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @throws IOException 
 	 */
+	//TODO move to Administration?
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/deleteUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody

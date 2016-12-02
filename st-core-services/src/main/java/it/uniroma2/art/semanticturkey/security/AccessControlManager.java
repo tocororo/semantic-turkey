@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -136,11 +137,13 @@ public class AccessControlManager {
 		AccessContolUtils.getPUBindingsFolder().mkdir();
 
 		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
-			String projName = abstrProj.getName();
-			for (STUser user : usersMgr.listUsers()) {
-				ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail()); 
-				puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
-				puBindingMgr.createPUBinding(puBinding);
+			if (abstrProj instanceof Project<?>) {
+				String projName = abstrProj.getName();
+				for (STUser user : usersMgr.listUsers()) {
+					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail()); 
+					puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
+					puBindingMgr.createPUBinding(puBinding);
+				}
 			}
 		}
 	}
