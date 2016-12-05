@@ -165,7 +165,7 @@ public class CustomRangeConfig {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeFolder(), CUSTOM_RANGE_CONFIG_FILENAME));
+			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeFolder(), CUSTOM_RANGE_CONFIG_FILENAME).getPath());
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();
@@ -208,7 +208,7 @@ public class CustomRangeConfig {
 			outputProps.setProperty("indent", "yes");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeFolder(), "customRangeConfig.xml"));
+			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeFolder(), CUSTOM_RANGE_CONFIG_FILENAME).getPath());
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();
