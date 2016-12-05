@@ -81,6 +81,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
@@ -159,6 +160,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private RenderingEngine renderingEngine;
 	
 	private final ThreadLocal<MODELTYPE> modelHolder;
+	private RDF4JRepositoryTransactionManager repositoryTransactionManager;
 	
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -293,6 +295,18 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			// activates the ontModel loads the triples (implementation depends on project type)
 			loadTriples();
 			logger.debug("activation of project: " + getName() + ": all triples loaded");
+			
+			Repository rdf4jRepo = null;
+			try {
+				rdf4jRepo = getRepository();
+			} catch(IllegalStateException e) {
+				// not an RDF4J repostory
+			}
+			
+			if (rdf4jRepo != null) {
+				repositoryTransactionManager = new RDF4JRepositoryTransactionManager(rdf4jRepo);
+			}
+
 			String defaultNamespace = getDefaultNamespace();
 			if (defaultNamespace == null) {
 				defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
@@ -688,9 +702,18 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			return (Repository) m.invoke(model);
 		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {
-			throw new IllegalStateException("Cannot retrieve a Sesame4 Repository for the project", e);
+			throw new IllegalStateException("Cannot retrieve an RDF4J Repository for the project", e);
 		}
 	}
+	
+	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager() {
+		if (repositoryTransactionManager != null) {
+			return repositoryTransactionManager;
+		} else {
+			throw new IllegalStateException("Not an RDF4J project");
+		}
+	}
+
 
 	public File getProjectStoreDir() {
 		return new File(_projectDir, PROJECT_STORE_DIR_NAME);
