@@ -21,9 +21,6 @@
 		<!-- Guava -->
 		<bundle dependency="true">mvn:com.google.guava/guava/15.0</bundle>
 
-		<!-- Second String -->
-		<bundle dependency="true">mvn:http://clojars.org/repo!com.wcohen.ss.art.uniroma2.it/secondstring-osgi/2006.06.15</bundle>
-
 		<!-- CODA -->
 		<feature version="[1.3,2)">coda</feature>
 

@@ -88,11 +88,6 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.wcohen.ss.art.uniroma2.it</groupId>
-			<artifactId>secondstring-osgi</artifactId>
-			<version>2006.06.15</version>
-		</dependency>
-		<dependency>
 			<groupId>it.uniroma2.art.owlart</groupId>
 			<artifactId>owlart-api</artifactId>
 			<version>${owlart-api.version}</version>
