@@ -53,14 +53,15 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 			</roles>
 		</developer>
 		<developer>
-			<id>nscarpato</id>
-			<name>Noemi Scarpato</name>
-			<email>scarpato@info.uniroma2.it</email>
-			<url>http://art.uniroma2.it/scarpato</url>
+			<id>lorenzetti</id>
+			<name>Tiziano Lorenzetti</name>
+			<email>tiziano.lorenzetti@gmail.com</email>
+			<url>http://art.uniroma2.it/lorenzetti</url>
 			<organization>ART Group, University of Rome, Tor Vergata</organization>
 			<organizationUrl>http://art.uniroma2.it</organizationUrl>
 			<roles>
-				<role>UI development before version 0.7</role>
+				<role>st-core-services Development</role>
+				<role>contributions on st-framework module</role>
 			</roles>
 		</developer>
 	</developers>
