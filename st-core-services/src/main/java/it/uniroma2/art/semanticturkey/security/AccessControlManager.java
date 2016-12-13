@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.security;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import javax.annotation.PostConstruct;
@@ -23,7 +24,6 @@ import it.uniroma2.art.semanticturkey.user.STRole;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
-import it.uniroma2.art.semanticturkey.user.UserRolesEnum;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 
 @Component
@@ -31,10 +31,10 @@ import it.uniroma2.art.semanticturkey.user.UserStatus;
 public class AccessControlManager {
 	
 	/*
-	 * TODO here there are two managers autowired. Both of them work with repositories,
+	 * TODO here there are some managers autowired. All of them work with repositories,
 	 * so serialize in an RDF format.
 	 * If we want to provide an alternative serialization (e.g. property file), then we can
-	 * create UsersManager/RolesManager interfaces (that expose the method to interact with properties)
+	 * create Manager interfaces (that expose the method to interact with properties)
 	 * and transform this autowired components in implementations of the above interfaces.
 	 * In this scenario, we will autowire the interfaces and specify which implementation use in an
 	 * XML configuration file.
@@ -106,16 +106,11 @@ public class AccessControlManager {
 		AccessContolUtils.getUsersFolder().mkdir();
 		
 		// create default admin and user roles
-		STRole roleAdmin = new STRole(UserRolesEnum.ROLE_ADMIN.name());
-		roleAdmin.addCapability(UserCapabilitiesEnum.CAPABILITY_ADMIN);
-		roleAdmin.addCapability(UserCapabilitiesEnum.CAPABILITY_1);
-		roleAdmin.addCapability(UserCapabilitiesEnum.CAPABILITY_2);
-		roleAdmin.addCapability(UserCapabilitiesEnum.CAPABILITY_3);
+		STRole roleAdmin = new STRole("Administrator");
+		roleAdmin.setCapabilities(Arrays.asList(UserCapabilitiesEnum.values())); //all capabilities for administrator
 		rolesMgr.createRole(roleAdmin);
-		STRole roleUser = new STRole(UserRolesEnum.ROLE_USER.name());
+		STRole roleUser = new STRole("User");
 		roleUser.addCapability(UserCapabilitiesEnum.CAPABILITY_USER);
-		roleUser.addCapability(UserCapabilitiesEnum.CAPABILITY_4);
-		roleUser.addCapability(UserCapabilitiesEnum.CAPABILITY_5);
 		rolesMgr.createRole(roleUser);
 
 		// create and register admin user
@@ -140,8 +135,11 @@ public class AccessControlManager {
 			if (abstrProj instanceof Project<?>) {
 				String projName = abstrProj.getName();
 				for (STUser user : usersMgr.listUsers()) {
-					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail()); 
-					puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
+					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail());
+//					if (user.getEmail().equals("admin@vocbench.com")) {
+//						puBinding.addRole(UserRolesEnum.ROLE_ADMIN.name());
+//					}
+//					puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
 					puBindingMgr.createPUBinding(puBinding);
 				}
 			}

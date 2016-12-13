@@ -79,14 +79,13 @@ public class RolesManager {
 	}
 	
 	/**
-	 * Adds a capability to the given role and returns this one updated
+	 * Adds a capability to the given role and returns this one updated.
 	 * @param role
 	 * @param capability
 	 * @return
 	 * @throws IOException 
 	 */
 	public STRole addCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
-		role = searchRole(role.getName());
 		role.addCapability(capability);
 		createOrUpdateRolesDefinitionFile();
 		return role;
@@ -100,7 +99,6 @@ public class RolesManager {
 	 * @throws IOException 
 	 */
 	public STRole removeCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
-		role = searchRole(role.getName());
 		role.removeCapability(capability);
 		createOrUpdateRolesDefinitionFile();
 		return role;
@@ -111,8 +109,8 @@ public class RolesManager {
 	 * @param user
 	 * @throws IOException 
 	 */
-	public void deleteRole(STRole role) throws IOException {
-		roleList.remove(searchRole(role.getName()));
+	public void deleteRole(String roleName) throws IOException {
+		roleList.remove(searchRole(roleName));
 		//save role definition file
 		createOrUpdateRolesDefinitionFile();
 	}

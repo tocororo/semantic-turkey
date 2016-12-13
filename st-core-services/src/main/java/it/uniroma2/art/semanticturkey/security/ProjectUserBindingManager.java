@@ -212,6 +212,20 @@ public class ProjectUserBindingManager {
 	}
 	
 	/**
+	 * Removes a role from all the bindings (useful in case a role is deleted)
+	 * @param role
+	 * @throws IOException
+	 */
+	public void removeRoleFromAllPUBindings(String role) throws IOException {
+		for (ProjectUserBinding pub : puBindingList) {
+			Collection<String> roles = pub.getRolesName();
+			roles.remove(role);
+			pub.setRoles(roles);
+			createOrUpdatePUBindingFolder(pub);
+		}
+	}
+	
+	/**
 	 * Creates a folder for the given project-user bidning and serializes the details about it in a file.
 	 * If the folder is already created, simply update the info in the details file.
 	 * @throws IOException 

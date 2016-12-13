@@ -3,6 +3,10 @@ package it.uniroma2.art.semanticturkey.user;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class STRole {
 	
 	private String name;
@@ -50,6 +54,17 @@ public class STRole {
 	
 	public boolean areCapabilitiesCovered(Collection<UserCapabilitiesEnum> capabilities) {
 		return this.capabilities.containsAll(capabilities);
+	}
+	
+	public JSONObject getAsJSONObject() throws JSONException {
+		JSONObject roleJson = new JSONObject();
+		roleJson.put("name", name);
+		JSONArray capabilitiesJson = new JSONArray();
+		for (UserCapabilitiesEnum c : capabilities) {
+			capabilitiesJson.put(c.name());
+		}
+		roleJson.put("capabilities", capabilitiesJson);
+		return roleJson;
 	}
 
 }
