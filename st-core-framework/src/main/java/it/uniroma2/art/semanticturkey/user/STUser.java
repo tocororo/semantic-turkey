@@ -129,12 +129,8 @@ public class STUser implements UserDetails {
 		this.birthday = birthday;
 	}
 	
-	public void setBirthday(String birthday) {
-		try {
-			this.birthday = new SimpleDateFormat(USER_DATE_FORMAT).parse(birthday);
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
+	public void setBirthday(String birthday) throws ParseException {
+		this.birthday = new SimpleDateFormat(USER_DATE_FORMAT).parse(birthday);
 	}
 	
 	public String getGender() {

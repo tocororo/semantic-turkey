@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.security;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -145,8 +146,9 @@ public class UsersManager {
 	 * @param newValue
 	 * @return
 	 * @throws IOException 
+	 * @throws ParseException 
 	 */
-	public STUser updateUserBirthday(STUser user, String newValue) throws IOException {
+	public STUser updateUserBirthday(STUser user, String newValue) throws IOException, ParseException {
 		user = getUserByEmail(user.getEmail());
 		user.setBirthday(newValue);
 		createOrUpdateUserDetailsFolder(user);

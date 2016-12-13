@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -151,7 +152,9 @@ public class ProjectUserBindingManager {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
-			createPUBinding(new ProjectUserBinding(abstrProj.getName(), userEmail));
+			if (abstrProj instanceof Project<?>) {
+				createPUBinding(new ProjectUserBinding(abstrProj.getName(), userEmail));
+			}
 		}
 	}
 	

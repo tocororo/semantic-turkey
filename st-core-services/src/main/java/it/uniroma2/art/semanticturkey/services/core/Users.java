@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.text.ParseException;
 import java.util.Collection;
 import java.util.Properties;
 
@@ -150,6 +151,7 @@ public class Users extends STServiceAdapter {
 	 * @throws MessagingException 
 	 * @throws ProjectAccessException 
 	 * @throws UserCreationException 
+	 * @throws ParseException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser", 
 			method = RequestMethod.POST, produces = "application/json")
@@ -163,7 +165,7 @@ public class Users extends STServiceAdapter {
 			@RequestParam(value = "address", required = false) String address,
 			@RequestParam(value = "affiliation", required = false) String affiliation,
 			@RequestParam(value = "url", required = false) String url,
-			@RequestParam(value = "phone", required = false) String phone) throws IOException, MessagingException, ProjectAccessException, UserCreationException {
+			@RequestParam(value = "phone", required = false) String phone) throws IOException, MessagingException, ProjectAccessException, UserCreationException, ParseException {
 		try {
 			STUser user = new STUser(email, password, firstName, lastName);
 			if (birthday != null) {
@@ -278,11 +280,12 @@ public class Users extends STServiceAdapter {
 	 * @return
 	 * @throws JSONException 
 	 * @throws IOException 
+	 * @throws ParseException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserBirthday", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws JSONException, IOException {
+	public String updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws JSONException, IOException, ParseException {
 		STUser user = usersMgr.getUserByEmail(email);
 		user = usersMgr.updateUserBirthday(user, birthday);
 		updateUserInSecurityContext(user);
