@@ -66,6 +66,16 @@ public class Administration extends STServiceAdapter {
 		return jsonResp.toString();
 	}
 	
+	/**
+	 * Updates the administration config parameters
+	 * @param emailAdminAddress
+	 * @param emailFromAddress
+	 * @param emailFromPassword
+	 * @param emailFromAlias
+	 * @param emailFromHost
+	 * @param emailFromPort
+	 * @return
+	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Administration/updateAdministrationConfig", 
 			method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
@@ -75,7 +85,7 @@ public class Administration extends STServiceAdapter {
 			@RequestParam("emailFromPassword") String emailFromPassword,
 			@RequestParam("emailFromAlias") String emailFromAlias,
 			@RequestParam("emailFromHost") String emailFromHost,
-			@RequestParam("emailFromPort") String emailFromPort) throws JSONException {
+			@RequestParam("emailFromPort") String emailFromPort) {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("updateAdministrationConfig", RepliesStatus.ok, SerializationType.json);
 		Config.setEmailAdminAddress(emailAdminAddress);
