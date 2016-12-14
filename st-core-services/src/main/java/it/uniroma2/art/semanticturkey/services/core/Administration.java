@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
 import it.uniroma2.art.semanticturkey.security.RolesManager;
 import it.uniroma2.art.semanticturkey.security.UsersManager;
@@ -40,6 +42,51 @@ public class Administration extends STServiceAdapter {
 	
 	@Autowired
 	ProjectUserBindingManager puBindingMgr;
+	
+	
+	/**
+	 * Gets the administration config: a map with key value of configuration parameters
+	 * @return
+	 * @throws JSONException
+	 */
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Administration/getAdministrationConfig", 
+			method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public String getAdministrationConfig() throws JSONException {
+		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
+				.createReplyResponse("getAdministrationConfig", RepliesStatus.ok, SerializationType.json);
+		JSONObject configJson = new JSONObject();
+		configJson.put("emailAdminAddress", Config.getEmailAdminAddress());
+		configJson.put("emailFromAddress", Config.getEmailFromAddress());
+		configJson.put("emailFromPassword", Config.getEmailFromPassword());
+		configJson.put("emailFromAlias", Config.getEmailFromAlias());
+		configJson.put("emailFromHost", Config.getEmailFromHost());
+		configJson.put("emailFromPort", Config.getEmailFromPort());
+		jsonResp.getDataElement().put("config", configJson);
+		return jsonResp.toString();
+	}
+	
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Administration/updateAdministrationConfig", 
+			method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public String updateAdministrationConfig(
+			@RequestParam("emailAdminAddress") String emailAdminAddress,
+			@RequestParam("emailFromAddress") String emailFromAddress,
+			@RequestParam("emailFromPassword") String emailFromPassword,
+			@RequestParam("emailFromAlias") String emailFromAlias,
+			@RequestParam("emailFromHost") String emailFromHost,
+			@RequestParam("emailFromPort") String emailFromPort) throws JSONException {
+		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
+				.createReplyResponse("updateAdministrationConfig", RepliesStatus.ok, SerializationType.json);
+		Config.setEmailAdminAddress(emailAdminAddress);
+		Config.setEmailFromAddress(emailFromAddress);
+		Config.setEmailFromPassword(emailFromPassword);
+		Config.setEmailFromAlias(emailFromAlias);
+		Config.setEmailFromHost(emailFromHost);
+		Config.setEmailFromPort(emailFromPort);
+		return jsonResp.toString();
+	}
+	
 	
 	//PROJECT-USER BINDING SERVICES
 	
