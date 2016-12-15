@@ -79,25 +79,6 @@
 					</instructions>
 				</configuration>
 			</plugin>
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<phase>install</phase>
-						<configuration>
-							<target>
-								<copy todir="../${dist.karaf.bundles}">
-									<fileset dir="${project.build.directory}" includes="*.jar" />
-								</copy>
-							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 		<finalName>${project.groupId}.${project.artifactId}</finalName>
 	</build>

@@ -72,9 +72,6 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 
 		<dist.lib>components/lib</dist.lib>
 		
-		<dist.karaf>${dist}/st-karaf</dist.karaf>
-		<dist.karaf.bundles>${dist}/st-karaf/bundles</dist.karaf.bundles>
-
 		<dist.console>${dist}/st-console</dist.console>
 
 		<dist.server>${dist}/st-server</dist.server>
