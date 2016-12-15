@@ -15,6 +15,10 @@
 
 	<properties>
 		<karaf.version>4.0.4</karaf.version>
+		<maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
+		<!-- The following property definition is requred because of a bug described 
+			here: https://dzone.com/articles/stamping-version-number-and -->
+		<timestamp>${maven.build.timestamp}</timestamp>
 	</properties>
 
 	<dependencies>

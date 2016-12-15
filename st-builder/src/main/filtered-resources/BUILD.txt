@@ -1,1 +1,1 @@
-Build timestamp: ${maven.build.timestamp}
+Build timestamp: ${timestamp}
