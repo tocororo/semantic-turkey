@@ -624,37 +624,51 @@ public class Search extends STServiceAdapterOLD {
 			while (iter.hasNext()) {
 				TupleBindings tupleBindings = iter.next();
 				if(tupleBindings.hasBinding(superResourceVar)){
-					ARTURIResource superResource = tupleBindings.getBinding(superResourceVar).getBoundValue()
-							.asURIResource();
-					String superResourceURI = superResource.getURI();
-					String superResourceShow = superResource.getLocalName();
-					ARTURIResource superSuperResource = null;
-					String superSuperResourceURI = null;
+					ARTNode superArtNode = tupleBindings.getBinding(superResourceVar).getBoundValue();
+					boolean isResNotURI = false;
+					String superResourceShow = null;
+					String superResourceId; 
+					if(superArtNode.isURIResource()){
+						superResourceId = superArtNode.getNominalValue();
+						superResourceShow = superArtNode.asURIResource().getLocalName();
+					} else { // BNode or Literal 
+						superResourceId = "NOT URI "+superArtNode.getNominalValue();
+						isResNotURI = true;
+					} 
+					
+					String superSuperResourceId = null;
 					String superSuperResourceShow = null;
+					boolean isSuperResABNode = false;
 					if (tupleBindings.hasBinding(superSuperResourceVar)) {
-						superSuperResource = tupleBindings.getBinding(superSuperResourceVar).getBoundValue()
-								.asURIResource();
-						superSuperResourceURI = superSuperResource.getURI();
-						superSuperResourceShow = superSuperResource.getLocalName();
+						ARTNode superSuperResNode = tupleBindings.getBinding(superSuperResourceVar)
+								.getBoundValue();
+						if(superSuperResNode.isURIResource()){
+							superSuperResourceId = superSuperResNode.getNominalValue();
+							superSuperResourceShow = superSuperResNode.asURIResource().getLocalName();
+						} else { // BNode or Literal
+							superSuperResourceId = "NOT URI "+superSuperResNode.getNominalValue();
+							isSuperResABNode = true;
+						}
 					}
-					if (!resourceToResourceForHierarchyMap.containsKey(superResourceURI)) {
-						resourceToResourceForHierarchyMap.put(superResourceURI, new ResourceForHierarchy(
-								superResourceURI, superResourceShow));
+					if (!resourceToResourceForHierarchyMap.containsKey(superResourceId)) {
+						resourceToResourceForHierarchyMap.put(superResourceId, new ResourceForHierarchy(
+								superResourceId, superResourceShow, isResNotURI));
 					}
 					if (!tupleBindings.hasBinding("isTopConcept")) { // use only for concept
-						resourceToResourceForHierarchyMap.get(superResourceURI).setTopConcept(false);
+						resourceToResourceForHierarchyMap.get(superResourceId).setTopConcept(false);
 					}
 					
-					if (superSuperResource != null) {
-						if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceURI)) {
-							resourceToResourceForHierarchyMap.put(superSuperResourceURI, 
-									new ResourceForHierarchy(superSuperResourceURI, superSuperResourceShow));
+					if (superSuperResourceId != null) {
+						if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceId)) {
+							resourceToResourceForHierarchyMap.put(superSuperResourceId, 
+									new ResourceForHierarchy(superSuperResourceId, superSuperResourceShow, 
+											isSuperResABNode));
 						}
 						ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
-								.get(superSuperResourceURI);
-						resourceForHierarchy.addSubResource(superResourceURI);
+								.get(superSuperResourceId);
+						resourceForHierarchy.addSubResource(superResourceId);
 						
-						resourceToResourceForHierarchyMap.get(superResourceURI).setHasNoSuperResource(false);
+						resourceToResourceForHierarchyMap.get(superResourceId).setHasNoSuperResource(false);
 					}
 				}
 				if(tupleBindings.hasBinding("isTop")){
@@ -667,6 +681,7 @@ public class Search extends STServiceAdapterOLD {
 			
 			//iterate over the resoruceToResourceForHierarchyMap and look for the topConcept
 			//and construct a list of list containing all the possible paths
+			// exclude all the path having at least one elment which is not a URI (so a BNode or a Literal)
 			List<List<String>> pathList = new ArrayList<List<String>>();
 			for(ResourceForHierarchy resourceForHierarchy : resourceToResourceForHierarchyMap.values()){
 				if(!resourceForHierarchy.hasNoSuperResource){
@@ -686,6 +701,7 @@ public class Search extends STServiceAdapterOLD {
 				getSubResourcesListUsingResourceFroHierarchy(resourceForHierarchy, currentList, pathList, 
 						resourceToResourceForHierarchyMap);
 			}
+			
 			//now construct the response
 			//to order the path (from the shortest to the longest) first find the maximum length
 			int maxLength = -1;
@@ -696,7 +712,9 @@ public class Search extends STServiceAdapterOLD {
 				}
 			}
 			Element pathCollection = XMLHelp.newElement(dataElement, "collection");
-			if(isTopResource){
+			//if it is explicitly a topResource or if no path is returned while there was at least one 
+			// result from the SPARQL quey (this mean that all the paths contained at least one non-URI resource)
+			if(isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty() )){
 				//the input resource is a top resource for its role (concept, class or property)
 				Element pathElem = XMLHelp.newElement(pathCollection, "path");
 				pathElem.setAttribute("length", "0");
@@ -904,6 +922,12 @@ public class Search extends STServiceAdapterOLD {
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap ){
 		List<String> subResourceList = resource.getSubResourcesList();
 		
+		if(resource.isNotURI){
+			//since this resource is not a URI, then the path to which this resource belong to must not be 
+			// consider, so, do not add to the possible paths
+			return;
+		}
+		
 		if(subResourceList.isEmpty()) {
 			pathList.add(currentPathList);
 		} else{
@@ -934,13 +958,19 @@ public class Search extends STServiceAdapterOLD {
 		private List<String>subResourcesList;
 		private String resource;
 		private String show;
+		private boolean isNotURI;
 		
-		public ResourceForHierarchy(String resource, String show) {
+		public ResourceForHierarchy(String resource, String show, boolean isNotURI) {
 			this.resource = resource;
 			this.show = show;
+			this.isNotURI = isNotURI;
 			isTopConcept = true;
 			hasNoSuperResource = true;
 			subResourcesList = new ArrayList<String>();
+		}
+		
+		public boolean isNotURI(){
+			return isNotURI;
 		}
 		
 		public String getResource(){
