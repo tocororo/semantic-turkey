@@ -77,8 +77,7 @@ public class Search extends STServiceAdapterOLD {
 		
 		if(searchString.isEmpty()){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			Element dataElement = response.getDataElement();
-			dataElement.setTextContent("the serchString cannot be empty");
+			response.setReplyMessage("the serchString cannot be empty");
 			return response;
 		}
 		
@@ -101,8 +100,7 @@ public class Search extends STServiceAdapterOLD {
 		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
 				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			Element dataElement = response.getDataElement();
-			dataElement.setTextContent("the serch roles should be at least one of: "+
+			response.setReplyMessage("the serch roles should be at least one of: "+
 					RDFResourceRolesEnum.cls.name()+", "+
 					RDFResourceRolesEnum.concept.name()+", "+
 					RDFResourceRolesEnum.conceptScheme.name()+", "+
@@ -125,8 +123,7 @@ public class Search extends STServiceAdapterOLD {
 		
 		if(searchModeSelected == null){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			Element dataElement = response.getDataElement();
-			dataElement.setTextContent("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
+			response.setReplyMessage("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
 			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE);
 			return response;
 		}
@@ -315,8 +312,7 @@ public class Search extends STServiceAdapterOLD {
 		
 		if(searchString.isEmpty()){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			Element dataElement = response.getDataElement();
-			dataElement.setTextContent("the serchString cannot be empty");
+			response.setReplyMessage("the serchString cannot be empty");
 			return response;
 		}
 
@@ -332,8 +328,7 @@ public class Search extends STServiceAdapterOLD {
 		
 		if(searchModeSelected == null){
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			Element dataElement = response.getDataElement();
-			dataElement.setTextContent("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
+			response.setReplyMessage("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
 			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE);
 			return response;
 		}
