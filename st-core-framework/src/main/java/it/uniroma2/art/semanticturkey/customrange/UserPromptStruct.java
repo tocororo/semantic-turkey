@@ -132,7 +132,7 @@ public class UserPromptStruct {
 		s += "\nconverterArg: ";
 		Iterator<ConverterArgumentExpression> itArgs = converter.getAdditionalArguments().iterator();
 		while (itArgs.hasNext()) { //TODO here I assume that all the arguments of a converter are literal. Handle better
-			s += "\n\t" + ((ConverterRDFLiteralArgument) itArgs.next()).getLiteralValue().getNominalValue();
+			s += "\n\t" + ((ConverterRDFLiteralArgument) itArgs.next()).getLiteralValue().getLabel();
 		}
 		s += "\nmandatory: " + mandatory;
 		return s;

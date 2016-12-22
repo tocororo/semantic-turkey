@@ -1,5 +1,16 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Properties;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
+
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
@@ -7,28 +18,17 @@ import it.uniroma2.art.coda.pearl.model.ConverterMapArgument;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.models.ModelFactory;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectFactory;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * Implementation of the {@link URIGenerator} extension point that delegates to a CODA converter. 
@@ -72,23 +72,29 @@ public class CODAURIGenerator implements URIGenerator {
 				converterProperties.setProperty(par, config.getParameterValue(par).toString());
 			}
 			
-			ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
-					stServiceContext.getProject().getOntologyManagerImplID()).createModelFactory();
 			codaCore.setConverterProperties(converter, converterProperties);
-			codaCore.initialize(stServiceContext.getProject().getOntModel(), ontFact);
-			ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
-					Arrays.<ConverterArgumentExpression> asList(ConverterRDFLiteralArgument.fromString(xRole),
-							ConverterMapArgument.fromNodesMap(args)));
-
-			logger.debug("Going to execute a CODA converter");
-
-			return codaCore.executeURIConverter(converterMention);
-		} catch (ComponentProvisioningException | ConverterException | UnavailableResourceException
-				| ProjectInconsistentException | ConfParameterNotFoundException e) {
+			
+			Repository repo = stServiceContext.getProject().getRepository();
+			RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
+			try {
+				codaCore.initialize(conn);
+				ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
+						Arrays.<ConverterArgumentExpression> asList(ConverterRDFLiteralArgument.fromString(xRole),
+								ConverterMapArgument.fromNodesMap(RDF4JMigrationUtils.convert2rdf4j(args))));
+	
+				logger.debug("Going to execute a CODA converter");
+	
+				IRI resource = codaCore.executeURIConverter(converterMention);
+				return RDF4JMigrationUtils.convert2art(resource);
+			} finally {
+				RDF4JRepositoryUtils.releaseConnection(conn, repo);
+			}
+		} catch (ComponentProvisioningException | ConverterException | ConfParameterNotFoundException e) {
 			logger.debug("An exceprtion occuring during the generation of a URI", e);
 			throw new URIGenerationException(e);
 		} finally {
-			// / codaCore.stopAndClose();
+			codaCore.setRepositoryConnection(null); // necessary because connection handling is external to CODA
+			codaCore.stopAndClose();
 		}
 	}
 

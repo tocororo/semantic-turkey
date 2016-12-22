@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+
 import it.uniroma2.art.coda.converters.impl.TemplateBasedRandomIdGenerator;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
@@ -17,6 +21,8 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * Implementation of the {@link URIGenerator} extension point based on templates.
@@ -59,11 +65,20 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 			}
 		} catch (IOException | InvalidProjectNameException | ProjectInexistentException e) {
 		}
-		CODAContext ctx = new CODAContext(stServiceContext.getProject().getOntModel(), null, propsMap);
+		Repository repo = stServiceContext.getProject().getRepository();
+		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
-			return converter.produceURI(ctx, null, xRole, args);
-		} catch (ConverterException e) {
-			throw new URIGenerationException(e);
+
+			CODAContext ctx = new CODAContext(conn, propsMap);
+			try {
+				IRI resource = converter.produceURI(ctx, null, xRole,
+						RDF4JMigrationUtils.convert2rdf4j(args));
+				return RDF4JMigrationUtils.convert2art(resource);
+			} catch (ConverterException e) {
+				throw new URIGenerationException(e);
+			}
+		} finally {
+			RDF4JRepositoryUtils.releaseConnection(conn, repo);
 		}
 	}
 }

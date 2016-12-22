@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import javax.servlet.ServletRequest;
 
 import org.antlr.runtime.RecognitionException;
+import org.eclipse.rdf4j.model.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
@@ -56,6 +57,8 @@ import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.Update;
+import it.uniroma2.art.owlart.rdf4jimpl.models.RDFModelRDF4J;
+import it.uniroma2.art.owlart.rdf4jimpl.models.RDFModelRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
@@ -86,6 +89,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 @GenerateSTServiceController
@@ -153,12 +157,13 @@ public class CustomRanges extends STServiceAdapterOLD {
 				rdfModel.addTriple(subject, predicate, detectGraphEntry(triples), getWorkingGraph());
 				for (ARTTriple triple : triples){
 //					System.out.println("S:\t"+triple.getSubject()+"\nP:\t"+triple.getPredicate()+"\nO:\t"+triple.getObject());
-					rdfModel.addTriple(triple.getSubject(), triple.getPredicate(), triple.getObject(), getWorkingGraph());
+					rdfModel.addTriple(RDF4JMigrationUtils.convert2art(triple.getSubject()), RDF4JMigrationUtils.convert2art(triple.getPredicate()), RDF4JMigrationUtils.convert2art(triple.getObject()), getWorkingGraph());
 				}
 			} else if (crEntry.isTypeNode()){
 				String value = userPromptMap.entrySet().iterator().next().getValue();//get the only value
 				ProjectionOperator projOperator = CustomRangeEntryParseUtils.getProjectionOperator(codaCore, crEntry.getRef());
-				ARTNode artNode = codaCore.executeProjectionOperator(projOperator, value);
+				Value rdf4jNode = codaCore.executeProjectionOperator(projOperator, value);
+				ARTNode artNode = RDF4JMigrationUtils.convert2art(rdf4jNode);
 				rdfModel.addTriple(subject, predicate, artNode, getWorkingGraph());
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException e){
@@ -175,14 +180,14 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 */
 	private ARTResource detectGraphEntry(List<ARTTriple> triples){
 		for (ARTTriple t1 : triples){
-			ARTResource subj = t1.getSubject();
+			org.eclipse.rdf4j.model.Resource subj = t1.getSubject();
 			boolean neverObj = true;
 			for (ARTTriple t2 : triples){
-				if (subj.getNominalValue().equals(t2.getObject().getNominalValue()))
+				if (subj.equals(t2.getObject()))
 					neverObj = false;
 			}
 			if (neverObj)
-				return subj;
+				return RDF4JMigrationUtils.convert2art(subj);
 		}
 		return null;
 	}
@@ -403,9 +408,9 @@ public class CustomRanges extends STServiceAdapterOLD {
 		String result = "";
 		CODACore codaCore = getInitializedCodaCore(getOWLModel());
 		if (value != null){
-			result = codaCore.executeURIConverter(converter, value).getNominalValue();
+			result = codaCore.executeURIConverter(converter, value).stringValue();
 		} else {
-			result = codaCore.executeURIConverter(converter).getNominalValue();
+			result = codaCore.executeURIConverter(converter).stringValue();
 		}
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -423,7 +428,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 			datatype = null;
 		if (lang != null && lang.equals(""))
 			lang = null;
-		String result = codaCore.executeLiteralConverter(converter, value, datatype, lang).getNominalValue();
+		String result = codaCore.executeLiteralConverter(converter, value, datatype, lang).stringValue();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element valueElement = XMLHelp.newElement(dataElement, "value");
@@ -861,7 +866,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
 				getProject().getOntologyManagerImplID()).createModelFactory();
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-		codaCore.initialize(rdfModel, ontFact);
+		codaCore.initialize(RDF4JMigrationUtils.extractRDF4JConnection(rdfModel));
 		return codaCore;
 	}
 

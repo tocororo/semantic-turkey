@@ -22,9 +22,6 @@ import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 import java.io.ByteArrayInputStream;
@@ -317,50 +314,54 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
 	 */
-	public List<ARTTriple> executePearl(CODACore codaCore, Map<String, String> userPromptMap) 
-			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException{
+	public List<ARTTriple> executePearl(CODACore codaCore, Map<String, String> userPromptMap)
+			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
 		List<ARTTriple> triples = null;
-		try{
+		try {
 			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
-			JCas jcas = JCasFactory.createJCas(tsd);//this jcas has the structure defined by the TSD (created following the pearl)
+			JCas jcas = JCasFactory.createJCas(tsd);// this jcas has the structure defined by the TSD (created
+													// following the pearl)
 			CAS aCAS = jcas.getCas();
 			TypeSystem ts = aCAS.getTypeSystem();
-			//create an annotation named as the pearlRule (annotationTypeName is set with the pearl rule name in getTypeSystemDescription())
+			// create an annotation named as the pearlRule (annotationTypeName is set with the pearl rule name
+			// in getTypeSystemDescription())
 			Type annotationType = ts.getType(annotationTypeName);
 			AnnotationFS ann = aCAS.createAnnotation(annotationType, 0, 0);
-			//create a FS of type userPromptType and set its features with the value find in inputMap
+			// create a FS of type userPromptType and set its features with the value find in inputMap
 			Type userPromptType = ts.getType(USER_PROMPT_TYPE_PATH);
 			FeatureStructure userPromptFS = aCAS.createFS(userPromptType);
-			//get the userPrompt features (userPrompt/...)
+			// get the userPrompt features (userPrompt/...)
 			List<Feature> featuresList = userPromptType.getFeatures();
-			//fill the feature with the values specified in the inputMap
-			for (Feature f : featuresList){
-				if (f.getName().startsWith(USER_PROMPT_TYPE_PATH)){
-					//get the value of the given feature from the map
+			// fill the feature with the values specified in the inputMap
+			for (Feature f : featuresList) {
+				if (f.getName().startsWith(USER_PROMPT_TYPE_PATH)) {
+					// get the value of the given feature from the map
 					String userPromptName = f.getShortName();
 					String userPromptValue = userPromptMap.get(userPromptName);
-					//assign the value to the feature
+					// assign the value to the feature
 					userPromptFS.setStringValue(f, userPromptValue);
 				}
 			}
 			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
 			ann.setFeatureValue(userPromptFeature, userPromptFS);
 			aCAS.addFsToIndexes(ann);
-//			analyseCas(aCAS);
-			//run coda with the given pearl and the cas just created.
-//			System.out.println("pearl:\t" + getRef());
+			// analyseCas(aCAS);
+			// run coda with the given pearl and the cas just created.
+			// System.out.println("pearl:\t" + getRef());
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 			codaCore.setJCas(jcas);
-			while (codaCore.isAnotherAnnotationPresent()){
+			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
-				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")){//get only triples of rilevant annotations
+				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {// get only
+																								// triples of
+																								// rilevant
+																								// annotations
 					triples = suggOntCoda.getAllARTTriple();
 				}
 			}
-		} catch (PRParserException | ComponentProvisioningException | ConverterException | 
-				UnsupportedQueryLanguageException | ModelAccessException | MalformedQueryException | 
-				QueryEvaluationException | DependencyException | UIMAException | RDFModelNotSetException e) {
+		} catch (PRParserException | ComponentProvisioningException | ConverterException
+				| ModelAccessException | DependencyException | UIMAException | RDFModelNotSetException e) {
 			throw new CODAException(e);
 		}
 		return triples;

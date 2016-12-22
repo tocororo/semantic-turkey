@@ -3,6 +3,8 @@ package it.uniroma2.art.semanticturkey.coda.converters;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.coda.converters.contracts.RandomIdGenerator;
@@ -13,6 +15,7 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * A converter implementing the CODA contract {@link RandomIdGenerator} by using the generator bound to the
@@ -36,10 +39,12 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	 * , java.lang.String, java.util.Map)
 	 */
 	@Override
-	public ARTURIResource produceURI(CODAContext ctx, String value, String xRole, Map<String, ARTNode> args)
+	public IRI produceURI(CODAContext ctx, String value, String xRole, Map<String, Value> args)
 			throws ConverterException {
 		try {
-			return stServiceContext.getProject().getURIGenerator().generateURI(stServiceContext, xRole, args);
+			ARTURIResource resource = stServiceContext.getProject().getURIGenerator()
+					.generateURI(stServiceContext, xRole, RDF4JMigrationUtils.convert2art(args));
+			return RDF4JMigrationUtils.convert2rdf4j(resource);
 		} catch (URIGenerationException e) {
 			throw new ConverterException(e);
 		}
@@ -53,10 +58,11 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	 * , java.lang.String, java.lang.String)
 	 */
 	@Override
-	public ARTURIResource produceURI(CODAContext ctx, String value, String xRole) throws ConverterException {
+	public IRI produceURI(CODAContext ctx, String value, String xRole) throws ConverterException {
 		try {
-			return stServiceContext.getProject().getURIGenerator()
+			ARTURIResource resource = stServiceContext.getProject().getURIGenerator()
 					.generateURI(stServiceContext, xRole, Collections.<String, ARTNode> emptyMap());
+			return RDF4JMigrationUtils.convert2rdf4j(resource);
 		} catch (URIGenerationException e) {
 			throw new ConverterException(e);
 		}
@@ -70,10 +76,11 @@ public class STSpecificRandomIDGenerator implements RandomIdGenerator {
 	 * , java.lang.String)
 	 */
 	@Override
-	public ARTURIResource produceURI(CODAContext ctx, String value) throws ConverterException {
+	public IRI produceURI(CODAContext ctx, String value) throws ConverterException {
 		try {
-			return stServiceContext.getProject().getURIGenerator()
-					.generateURI(stServiceContext, "undetermined", Collections.<String, ARTNode> emptyMap());
+			ARTURIResource resource =  stServiceContext.getProject().getURIGenerator().generateURI(stServiceContext,
+					"undetermined", Collections.<String, ARTNode> emptyMap());
+			return RDF4JMigrationUtils.convert2rdf4j(resource);
 		} catch (URIGenerationException e) {
 			throw new ConverterException(e);
 		}
