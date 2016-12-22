@@ -23,6 +23,7 @@
 package it.uniroma2.art.semanticturkey.servlet.main;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,17 +47,21 @@ import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.filter.ConceptsInSchemePredicate;
 import it.uniroma2.art.owlart.filter.RootConceptsPredicate;
+import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
+import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.query.BooleanQuery;
+import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
@@ -1164,17 +1169,85 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, graphs);
-			if (RDFIterators.getFirst(
-					skosModel.listNarrowerConcepts(concept, false, true, getUserNamedGraphs())) != null) {
+			
+			// TODO: note that user named graphs are not considered
+
+			BooleanQuery checkQuery = skosModel.createBooleanQuery(
+				// @formatter:off
+					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					"ASK {                                                                              \n" +
+					"	[] skos:broader|^skos:narrower ?concept                                         \n" +
+					"}                                                                                  \n"
+				// @formatter:on
+				);
+			checkQuery.setBinding("concept", concept);
+			
+			if (checkQuery.evaluate(true)) {
 				return createReplyFAIL(
 						"concept: " + conceptName + " has narrower concepts; delete them before");
 			}
-			skosModel.deleteConcept(concept, getWorkingGraph());
+			
+			GraphQuery tripleQuery = skosModel.createGraphQuery(
+					// @formatter:off
+					"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                                 \n" +
+					"DESCRIBE ?x {                                                                       \n" +
+					"	{ BIND(?concept as ?x) } UNION { ?concept skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?x } \n "+
+					"}                                                                                   \n"
+					// @formatter:on
+					);
+			tripleQuery.setBinding("concept", concept);
+			
+			StringBuilder sb;
+			Map<String, ARTNode> var2node;
+			ARTStatementIterator triplesIt = tripleQuery.evaluate(false);
+			try {
+				sb = new StringBuilder();
+				var2node = new HashMap<>();
+				
+				sb.append("DELETE { GRAPH ?wg {\n");
+				int varCount = 0;
+				while (triplesIt.streamOpen()) {
+					ARTStatement stmt = triplesIt.getNext();
+					for (ARTNode term : Arrays.asList(stmt.getSubject(), stmt.getPredicate(), stmt.getObject())) {
+						if (term.isBlank()) {
+							String varName = "v" + varCount++;
+							sb.append("?").append(varName).append(" ");
+							var2node.put(varName, term);
+						} else {
+							sb.append(RDFNodeSerializer.toNT(term)).append(" ");
+						}
+					}
+					sb.append(" .\n");
+				}
+				sb.append("}} WHERE {\n");
+				sb.append("}\n");
+			} finally {
+				triplesIt.close();
+			}
+			
+			var2node.put("wg", getWorkingGraph());
+			
+			String updateString = sb.toString();
+			
+			logger.debug("update (begin)");
+			logger.debug(updateString);
+			logger.debug(var2node.toString());
+			logger.debug("update (end)");
+
+			Update update = skosModel.createUpdateQuery(updateString);
+			for (Map.Entry<String, ARTNode> entry : var2node.entrySet()) {
+				update.setBinding(entry.getKey(), entry.getValue());
+			}
+			update.evaluate(false);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
-		} catch (ModelUpdateException e) {
-			return logAndSendException(e);
 		} catch (NonExistingRDFResourceException e) {
+			return logAndSendException(e);
+		} catch (UnsupportedQueryLanguageException e) {
+			return logAndSendException(e);
+		} catch (MalformedQueryException e) {
+			return logAndSendException(e);
+		} catch (QueryEvaluationException e) {
 			return logAndSendException(e);
 		}
 		return response;
