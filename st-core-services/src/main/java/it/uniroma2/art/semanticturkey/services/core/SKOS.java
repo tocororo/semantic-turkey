@@ -84,10 +84,9 @@ public class SKOS extends STServiceAdapter {
 					" SELECT ?resource ?attr_more WHERE {                                                \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
-					"     FILTER NOT EXISTS {[] skos:broader|^skos:narrower ?resource}                   \n" +
+					"     FILTER NOT EXISTS {?resource skos:broader|^skos:narrower []}                   \n" +
 					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource . } as ?attr_more ) \n" +
+					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
 					"     }                                                                              \n" +
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n"
