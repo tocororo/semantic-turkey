@@ -127,6 +127,12 @@ public class ResourceView2 extends STServiceAdapter {
 			}
 
 			Model retrievedStatements = retrieveStatements(resourcePosition, resource);
+
+			// A resource is editable iff it is a locally defined resource (i.e. it is the subject of at least
+			// one triple in the working graph)
+			boolean subjectResourceEditable = (resourcePosition instanceof LocalResourcePosition)
+					&& retrievedStatements.contains(resource, null, null, workingGraph);
+
 			QueryResults.stream(getManagedConnection().getNamespaces()).forEach(ns -> {
 				retrievedStatements.setNamespace(ns.getPrefix(), ns.getName());
 			});
@@ -140,6 +146,7 @@ public class ResourceView2 extends STServiceAdapter {
 
 			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<Resource>(resource);
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
+			annotatedResource.setAttribute("explicit", subjectResourceEditable);
 			AbstractStatementConsumer.addRole(annotatedResource, resource2attributes);
 
 			RDFResourceRolesEnum resourceRole = RDFResourceRolesEnum
