@@ -230,7 +230,7 @@ public class ResourceView2 extends STServiceAdapter {
 	}
 
 	// TODO place this method into a better place
-	private List<IRI> getLexicalizationPropertiesHelper(Resource resource,
+	public static List<IRI> getLexicalizationPropertiesHelper(Resource resource,
 			ResourcePosition resourcePosition) {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();

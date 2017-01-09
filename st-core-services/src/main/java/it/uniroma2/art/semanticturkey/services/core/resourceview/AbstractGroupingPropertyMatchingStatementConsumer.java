@@ -63,7 +63,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 		Set<Statement> newlyProcessedStatements = new HashSet<>();
 
-		Map<IRI, AnnotatedValue<IRI>> outerPropMap = new HashMap<>();
+		Map<IRI, AnnotatedValue<IRI>> outerPropMap = new LinkedHashMap<>();
 		Map<IRI, PredicateObjectsList> outerValueMultiMap = new HashMap<>();
 
 		for (IRI superProp : matchedProperties) {
@@ -115,6 +115,10 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 				}
 			}
 			
+			if (valueMultiMap.isEmpty() && !shouldRetainEmptyOuterGroup(superProp, resource, resourcePosition)) {
+				continue; // Skip irrelevant empty outer group
+			}
+			
 			PredicateObjectsList predObjsList = new PredicateObjectsList(propMap, valueMultiMap);
 			
 			AnnotatedValue<IRI> annotatedSuperProp = new AnnotatedValue<IRI>(superProp);
@@ -138,4 +142,8 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 		return rv;
 	}
 
+	protected boolean shouldRetainEmptyOuterGroup(IRI superProp, Resource resource,
+			ResourcePosition resourcePosition) {
+		return true;
+	}
 }
