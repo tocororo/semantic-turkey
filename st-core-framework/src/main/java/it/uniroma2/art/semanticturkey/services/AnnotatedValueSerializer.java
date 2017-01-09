@@ -54,13 +54,20 @@ public class AnnotatedValueSerializer extends JsonSerializer<AnnotatedValue<?>>{
 			String idValue;
 			
 			if (payloadValue instanceof BNode) {
-				idValue = "_:" + value.getStringValue();
+				idValue = "_:" + payloadValue.stringValue();
 			} else {
-				idValue = value.getStringValue();
+				idValue = payloadValue.stringValue();
 			}
 			gen.writeStringField(unwrapper.transform("@id"), idValue);
 		} else {
-			gen.writeStringField(unwrapper.transform("@value"), value.getStringValue());
+			Literal payloadLiteral = (Literal)payloadValue;
+			gen.writeStringField(unwrapper.transform("@value"), payloadLiteral.getLabel());
+			Optional<String> langHolder = payloadLiteral.getLanguage();
+			if (langHolder.isPresent()) {
+				gen.writeStringField(unwrapper.transform("@language"), langHolder.get());
+			} else {
+				gen.writeStringField(unwrapper.transform("@type"), payloadLiteral.getDatatype().stringValue());
+			}
 		}
 		
 		Map<String, Value> payloadAttributes = value.getAttributes();
