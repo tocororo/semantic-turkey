@@ -93,7 +93,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.CLASS, true)
 					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.CLASS, true)) {
 				Map<String, String> namespaceToprefixMap = QueryResults.stream(repoConn.getNamespaces())
-						.collect(toMap(Namespace::getName, Namespace::getPrefix));
+						.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 				String expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource, namespaceToprefixMap,
 						true, new Resource[0], null, true, repoConn);
 				if (expr != null && !expr.isEmpty()) {
