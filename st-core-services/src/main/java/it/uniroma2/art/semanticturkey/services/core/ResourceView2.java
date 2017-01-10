@@ -164,7 +164,11 @@ public class ResourceView2 extends STServiceAdapter {
 			Set<IRI> specialProperties = viewTemplate.stream().flatMap(c -> c.getMatchedProperties().stream())
 					.collect(toSet());
 
-			Model propertyModel = retrievePredicateInformation(resourcePosition, resourcePredicates,
+			
+			// Always consider special predicates, even if they are not mentioned, because it may be the case
+			// that they are shown anyway in the resource view
+			Set<IRI> predicatesToEnrich = Sets.union(resourcePredicates, specialProperties);
+			Model propertyModel = retrievePredicateInformation(resourcePosition, predicatesToEnrich ,
 					specialProperties, resource2attributes, retrievedStatements);
 
 			for (StatementConsumer aConsumer : viewTemplate) {
