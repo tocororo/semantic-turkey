@@ -163,7 +163,11 @@ public class QueryBuilder {
 		logger.debug(enrichedQueryString);
 
 		TupleQuery query = conn.prepareTupleQuery(enrichedQueryString);
+		query.setIncludeInferred(false);
+		
 		bindingSet.forEach(query::setBinding);
+
+		logger.debug("query binding set = {}", bindingSet);
 
 		List<String> bindingNames;
 		List<BindingSet> bindings;
@@ -174,6 +178,8 @@ public class QueryBuilder {
 					.filter(bs -> bs.getValue("resource") != null).collect(toList());
 		}
 
+		logger.debug("binding count = {}", bindings.size());
+		
 		List<String> initialQueryVariables = enrichedQuery.getInitialQueryVariables();
 
 		BiMap<String, String> projected2baseVarMapping = HashBiMap.create();
