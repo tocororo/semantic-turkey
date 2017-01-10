@@ -35,7 +35,13 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 	public PropertyFacetsStatementConsumer(CustomRangeProvider customRangeProvider) {
 		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(customRangeProvider, "inverseOf",
-				Collections.singleton(OWL.INVERSEOF));
+				Collections.singleton(OWL.INVERSEOF)) {
+			@Override
+			protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource,
+					ResourcePosition resourcePosition) {
+				return prop.equals(OWL.INVERSEOF); // only show empty group for owl:inverseOf
+			}
+		};
 	}
 
 	@Override

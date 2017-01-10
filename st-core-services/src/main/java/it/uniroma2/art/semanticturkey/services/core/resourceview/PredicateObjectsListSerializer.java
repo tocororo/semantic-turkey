@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
 
 import org.eclipse.rdf4j.model.IRI;
 
@@ -22,13 +24,14 @@ public class PredicateObjectsListSerializer extends JsonSerializer<PredicateObje
 			gen.writeStartObject();
 			gen.writeObjectField("predicate", aPredicate);
 			gen.writeArrayFieldStart("objects");
-			for (AnnotatedValue<?> annotatedObject : value.getValue(aPredicate.getValue())) {
+			for (AnnotatedValue<?> annotatedObject : Optional
+					.ofNullable(value.getValue(aPredicate.getValue())).orElse(Collections.emptyList())) {
 				gen.writeObject(annotatedObject);
 			}
 			gen.writeEndArray();
 			gen.writeEndObject();
 		}
-		
+
 		gen.writeEndArray();
 	}
 

@@ -25,6 +25,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import it.uniroma2.art.owlart.rdf4jimpl.model.ARTURIResourceRDF4JImpl;
 import it.uniroma2.art.owlart.vocabulary.RDF;
@@ -80,32 +81,28 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		Map<IRI, AnnotatedValue<IRI>> propMap = new HashMap<>();
 		Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
 
-		Set<IRI> relevantProperties = matchedProperties.stream()
-				.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
-				.map(stmt -> (IRI) stmt.getSubject()).collect(toSet());
+		Set<IRI> relevantProperties;
+		LinkedHashModel pendingDirectKnowledge;
 
-		LinkedHashModel pendingDirectKnowledge = new LinkedHashModel(
-				statements.filter(resource, null, null).stream()
-						.filter(stmt -> !processedStatements.contains(stmt) && (matchedProperties.isEmpty()
-								|| matchedProperties.contains(stmt.getPredicate())
-								|| relevantProperties.contains(stmt.getPredicate())))
-						.collect(toList()));
+		if (matchedProperties.isEmpty()) {
+			pendingDirectKnowledge = new LinkedHashModel(statements.filter(resource, null, null).stream()
+					.filter(stmt -> !processedStatements.contains(stmt)).collect(toList()));
+			relevantProperties = pendingDirectKnowledge.predicates();
+		} else {
+			relevantProperties = Sets.union(matchedProperties.stream()
+					.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
+					.map(stmt -> (IRI) stmt.getSubject()).collect(toSet()), matchedProperties);
+			pendingDirectKnowledge = new LinkedHashModel(statements.filter(resource, null, null).stream()
+					.filter(stmt -> !processedStatements.contains(stmt)
+							&& relevantProperties.contains(stmt.getPredicate()))
+					.collect(toList()));
+		}
 
-		for (IRI predicate : pendingDirectKnowledge.predicates()) {
+		for (IRI predicate : relevantProperties) {
 			if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
 					project.getOntologyManager())) {
 				continue;
 			}
-
-			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
-
-			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
-			addRole(annotatedPredicate, resource2attributes);
-			addShowOrRenderXLabel(annotatedPredicate, resource2attributes, statements);
-			annotatedPredicate.setAttribute("hasCustomRange",
-					customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
-
-			propMap.put(predicate, annotatedPredicate);
 
 			Map<Value, List<Statement>> statementsByObject = pendingDirectKnowledge
 					.filter(resource, predicate, null).stream().collect(groupingBy(Statement::getObject));
@@ -118,7 +115,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 				if (object instanceof Resource) {
 					if (collectionBehavior == CollectionBehavior.ALWAYS_ASSUME_COLLECTION) {
-						AnnotatedResourceWithMembers<Resource,Value> annotatedObjectWithMembers = new AnnotatedResourceWithMembers<>(
+						AnnotatedResourceWithMembers<Resource, Value> annotatedObjectWithMembers = new AnnotatedResourceWithMembers<>(
 								(Resource) object);
 						annotatedObject = annotatedObjectWithMembers;
 
@@ -151,18 +148,19 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 								Set<Resource> graphs1 = new HashSet<>();
 								graphs1.addAll(firstElementAndGraphs.getValue());
 								graphs1.addAll(cumulativeGraphs);
-								
+
 								AnnotatedValue<? extends Value> annotatedMember = new AnnotatedValue<Value>(
 										firstElement);
 
 								if (firstElement instanceof Resource) {
-									addRole((AnnotatedValue<Resource>)annotatedMember, resource2attributes);
-									addShowOrRenderXLabel((AnnotatedValue<Resource>)annotatedMember,
+									addRole((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
+									addShowOrRenderXLabel((AnnotatedValue<Resource>) annotatedMember,
 											resource2attributes, statements);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
 								annotatedMember.setAttribute("index", topContext.getIndex() + 1);
-								annotatedObjectWithMembers.getMembers().add((AnnotatedValue<Value>)annotatedMember);
+								annotatedObjectWithMembers.getMembers()
+										.add((AnnotatedValue<Value>) annotatedMember);
 							}
 
 							Map<Value, Set<Resource>> nextCollection2graphs = statements
@@ -202,6 +200,21 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 				processedStatements.addAll(entry.getValue());
 			}
+			
+			if (valueMultiMap.isEmpty() && !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
+				continue; // Skip irrelevant empty outer group
+			}
+			
+			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
+
+			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
+			addRole(annotatedPredicate, resource2attributes);
+			addShowOrRenderXLabel(annotatedPredicate, resource2attributes, statements);
+			annotatedPredicate.setAttribute("hasCustomRange",
+					customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
+
+			propMap.put(predicate, annotatedPredicate);
+
 		}
 
 		PredicateObjectsList predicateObjectsList = new PredicateObjectsList(propMap, valueMultiMap);
@@ -211,6 +224,9 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		return rv;
 	}
 
+	protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource, ResourcePosition resourcePosition) {
+		return false;
+	}
 }
 
 class NodeContext {
