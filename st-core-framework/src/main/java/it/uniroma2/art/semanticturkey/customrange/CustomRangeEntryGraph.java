@@ -117,7 +117,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		for (String prId : prRuleIds){
 			ProjectionRule projRule = prRuleMap.get(prId);
 			//get the graph section
-			Collection<GraphElement> graphList = projRule.getGraphList();
+			Collection<GraphElement> graphList = projRule.getInsertGraphList();
 			//it's supposed that the graph entry is the subject of the first graphElement (that is not optional)
 			String graphEntry = graphList.iterator().next().asGraphStruct().getSubject().getValueAsString();
 			for (GraphElement g : graphList) {
@@ -238,7 +238,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
 		if (prRulesIt.hasNext()){
 			ProjectionRule projRule = prRulesIt.next();
-			Iterator<GraphElement> graphListIt = projRule.getGraphList().iterator();
+			Iterator<GraphElement> graphListIt = projRule.getInsertGraphList().iterator();
 			if (graphListIt.hasNext()) {
 				entryPoint = graphListIt.next().asGraphStruct().getSubject().getValueAsString();
 			}
@@ -268,7 +268,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
 			if (prRulesIt.hasNext()){
 				ProjectionRule projRule = prRulesIt.next();
-				serializeGraphList(projRule.getGraphList(), sb, optional);
+				serializeGraphList(projRule.getInsertGraphList(), sb, optional);
 			}
 			return sb.toString();
 		 
@@ -357,7 +357,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 																								// triples of
 																								// rilevant
 																								// annotations
-					triples = suggOntCoda.getAllARTTriple();
+					triples = suggOntCoda.getAllInsertARTTriple();
 				}
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException
