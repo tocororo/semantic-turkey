@@ -59,6 +59,10 @@
 					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JResourceConverter" />
 				<bean id="StringToRDF4JValueConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter" />
+					
+				<bean id="StringToPluginSpecificationConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter" />
+
 			</list>
 		</property>
 	</bean>

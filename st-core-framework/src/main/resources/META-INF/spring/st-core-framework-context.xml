@@ -78,6 +78,18 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
+	
+	<!-- Publishes the SPARQL-based implementation of the extension point ExportFilter -->
+	<bean id="SPARQLExportFilterFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.SPARQLExportFilterFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="SPARQLExportFilterFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter" />
+		</osgi:service-properties>
+	</osgi:service>
 
 	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->
 	<bean id="datasetMetadataRepository"
