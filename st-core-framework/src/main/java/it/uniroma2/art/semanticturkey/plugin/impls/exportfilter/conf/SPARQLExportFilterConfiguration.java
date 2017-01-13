@@ -17,4 +17,7 @@ public class SPARQLExportFilterConfiguration extends AbstractPluginConfiguration
 	@PluginConfigurationParameter(description="SPARQL Update implementing the filter")
 	@RequiredConfigurationParameter
 	public String filter;
+	
+	@PluginConfigurationParameter(description="Executes the SPARQL query on each graph separately")
+	public boolean sliced = true;
 }

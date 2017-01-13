@@ -1,7 +1,7 @@
 package it.uniroma2.art.semanticturkey.plugin.extpts;
 
 import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 /**
@@ -18,10 +18,10 @@ public interface ExportFilter {
 	 *            a connection to the source (unmodified) repository
 	 * @param workingRepositoryConnection
 	 *            a connection to the working of repository
-	 * @param workingGraph
-	 *            the graph containing the core data (other graphs will usually contain imported data)
+	 * @param graphs
+	 *            graphs to filter
 	 * @throws RDF4JException
 	 */
 	void filter(RepositoryConnection sourceRepositoryConnection,
-			RepositoryConnection workingRepositoryConnection, Resource workingGraph) throws RDF4JException;
+			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException;
 }

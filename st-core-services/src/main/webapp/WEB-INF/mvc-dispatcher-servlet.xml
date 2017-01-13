@@ -62,6 +62,11 @@
 					
 				<bean id="StringToPluginSpecificationConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter" />
+				<bean id="StringToFilteringStepConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToFilteringStepConverter" />
+
+				<bean id="StringToRDF4JRDFormatConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JRDFormatConverter" />
 
 			</list>
 		</property>

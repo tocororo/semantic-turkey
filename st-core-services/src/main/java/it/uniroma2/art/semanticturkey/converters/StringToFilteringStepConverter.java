@@ -6,26 +6,25 @@ import org.springframework.core.convert.converter.Converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.uniroma2.art.semanticturkey.services.core.PluginSpecification;
+import it.uniroma2.art.semanticturkey.services.core.export.FilteringStep;
 
 /**
- * Converts a string to a {@link PluginSpecification}, containing a plugin factoryId and its configuration
- * parameter
+ * Converts a string to a {@link FilteringStep}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class StringToPluginSpecificationConverter implements Converter<String, PluginSpecification> {
+public class StringToFilteringStepConverter implements Converter<String, FilteringStep> {
 
 	private final ObjectMapper mapper;
 
-	public StringToPluginSpecificationConverter() {
+	public StringToFilteringStepConverter() {
 		this.mapper = new ObjectMapper();
 	}
 
 	@Override
-	public PluginSpecification convert(String source) {
+	public FilteringStep convert(String source) {
 		try {
-			return mapper.readValue(source, PluginSpecification.class);
+			return mapper.readValue(source, FilteringStep.class);
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);
 		}

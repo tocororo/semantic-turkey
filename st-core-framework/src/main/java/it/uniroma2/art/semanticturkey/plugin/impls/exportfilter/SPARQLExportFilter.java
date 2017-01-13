@@ -12,6 +12,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.SPARQLExpor
 public class SPARQLExportFilter extends AbstractSPARQLExportFilter {
 
 	private String sparqlUpdate;
+	private boolean sliced;
 
 	/**
 	 * Constructs a filter utilizing the supplied configuration object
@@ -20,11 +21,17 @@ public class SPARQLExportFilter extends AbstractSPARQLExportFilter {
 	 */
 	public SPARQLExportFilter(SPARQLExportFilterConfiguration config) {
 		this.sparqlUpdate = config.filter;
+		this.sliced = config.sliced;
 	}
 
 	@Override
 	protected String getSPARQLUpdate() {
 		return sparqlUpdate;
+	}
+
+	@Override
+	protected boolean isSliced() {
+		return sliced;
 	}
 
 }

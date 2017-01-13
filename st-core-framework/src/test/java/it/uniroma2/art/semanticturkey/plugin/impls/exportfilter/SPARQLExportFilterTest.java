@@ -5,7 +5,9 @@ import static org.junit.Assert.assertTrue;
 import java.util.Objects;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -16,6 +18,8 @@ import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,11 +28,13 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.tx.ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor;
 
 /**
-  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
-  */
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ */
 public class SPARQLExportFilterTest {
 
 	public static final String BASE_URI = "http://example.org/";
+
+	private static ValueFactory vf = SimpleValueFactory.getInstance();
 
 	private SPARQLExportFilterFactory factory;
 
@@ -63,6 +69,7 @@ public class SPARQLExportFilterTest {
 	 * Executes a test identified by caller method name. The test will try to find within the resources the
 	 * following files:
 	 * <ul>
+	 * <li><i>{testname}-settings.json</i>: settings of the test</li>
 	 * <li><i>{testname}-data.trig</i>: input data in TriG format (base URI is {@value #BASE_URI})</li>
 	 * <li><i>{testname}-filter.txt</i>: a SPARQL update implementing the filter</li>
 	 * <li><i>{testname}-expected.trig</i>: the expected model in TriG format</li>
@@ -74,6 +81,17 @@ public class SPARQLExportFilterTest {
 		try (RepositoryConnection sourceRepositoryConnection = sourceRepository.getConnection()) {
 			try (RepositoryConnection workingRepositoryConnection = workingRepository.getConnection()) {
 				String testName = Thread.currentThread().getStackTrace()[2].getMethodName();
+
+				// Retrieves the settings
+				JSONObject settings = new JSONObject(IOUtils.toString(Objects.requireNonNull(
+						this.getClass().getResourceAsStream(testName + "-settings.json"),
+						"missing settings for test " + testName)));
+				boolean sliced = settings.getBoolean("sliced");
+				JSONArray settingsArray = settings.getJSONArray("graphs");
+				IRI[] graphs = new IRI[settingsArray.length()];
+				for (int i = 0; i < graphs.length; i++) {
+					graphs[i] = vf.createIRI(settingsArray.getString(i));
+				}
 
 				// Feed the source repository
 				sourceRepositoryConnection.add(
@@ -103,21 +121,24 @@ public class SPARQLExportFilterTest {
 				// Instantiate a configured export filter
 				PluginConfiguration pluginConfiguration = factory.createDefaultPluginConfiguration();
 				pluginConfiguration.setParameter("filter", filter);
+				pluginConfiguration.setParameter("sliced", sliced);
 
 				SPARQLExportFilter exportFilter = factory.createInstance(pluginConfiguration);
 
 				// Execute the export (the fact that we pass a read-only wrapper around the source repository
 				// should detect any attempt by the filter to modify the source repository)
-				exportFilter.filter(readOnlySourceRepositoryConnection, workingRepositoryConnection,
-						SimpleValueFactory.getInstance().createIRI(BASE_URI));
+				exportFilter.filter(readOnlySourceRepositoryConnection, workingRepositoryConnection, graphs);
 
-				// // Uncomment the following lines to print the working repo after the filter
-				// System.out.println("Test name: " + testName);
-				// RDFWriter writer = Rio.createWriter(RDFFormat.TRIG, System.out);
-				// workingRepositoryConnection.export(writer);
+				// Uncomment the following lines to print the working repo after the filter
+
+//				System.out.println("Test name: " + testName);
+//				RDFWriter writer = Rio.createWriter(RDFFormat.TRIG, System.out);
+//				workingRepositoryConnection.export(writer);
+//				System.out.println();
+//				System.out.println();
 
 				// Asserts that the working repository matches the expected model
-				
+
 				assertTrue(Models.isomorphic(expectedModel,
 						QueryResults.asModel(workingRepositoryConnection.getStatements(null, null, null))));
 			}
@@ -129,4 +150,13 @@ public class SPARQLExportFilterTest {
 		executeTest();
 	}
 
+	@Test
+	public void testSPARQLExport2() throws Exception {
+		executeTest();
+	}
+	
+	@Test
+	public void testSPARQLExport3() throws Exception {
+		executeTest();
+	}
 }
