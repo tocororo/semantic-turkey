@@ -55,6 +55,7 @@ public class ${generatedClassSimpleName}
 #*
 	Add the annotation @RequestParam(...) to the method signature
 *###
+#if ($tools.isMappedParameter($parameter))
 #set( $arguments = "${arguments}" + '@RequestParam(value = "' + $parameter.simpleName + '"')
 #*
 	Process annotations on the service parameter
@@ -68,7 +69,8 @@ public class ${generatedClassSimpleName}
 #set( $arguments = "${arguments}" + ', defaultValue=' + $tools.getDefaultLiteralValue($parameter))
 #end
 #end
-#set( $arguments = "${arguments}" + ')' )#*
+#set( $arguments = "${arguments}" + ')' )
+#end#*
 	Add the parameter name to the signature
 *###
 #set( $arguments = "${arguments} $type $parameter.simpleName" )
@@ -89,12 +91,17 @@ public class ${generatedClassSimpleName}
 #end
 
     @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = $tools.getRequestMethodAsSource($method), produces = "application/json;charset=UTF-8")
-	public HttpEntity<#if($tools.isVoidMethod($method))
+	public #if ($tools.isMappedToVoid($method)) void #else HttpEntity<#if($tools.isVoidMethod($method))
 String
 #else
 Response<${method.returnType}>
-#end>  ${method.simpleName}Published(${arguments}) $throwsDeclaration
+#end> #end  ${method.simpleName}Published(${arguments}) $throwsDeclaration
 	{
+	
+#if($tools.isMappedToVoid($method))
+		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		fun.${method.simpleName}(${subarg});
+#else
 #if($tools.isVoidMethod($method))
 		String body;
 
@@ -112,7 +119,8 @@ Response<${method.returnType}>
   		return new HttpEntity<>(body, responseHeaders);	 
 #else
 	return new HttpEntity<>(new Response<>(body), responseHeaders);	
-#end		
+#end
+#end	
     }
 #end
 }

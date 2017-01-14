@@ -2,8 +2,17 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collection;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -52,12 +61,12 @@ public class Export extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	public void export(@Optional(defaultValue = "") org.eclipse.rdf4j.model.IRI[] graphs,
-			FilteringStep[] filteringSteps, @Optional(defaultValue = "TRIG") RDFFormat outputFormat)
-					throws Exception {
+	public void export(HttpServletResponse oRes,
+			@Optional(defaultValue = "") org.eclipse.rdf4j.model.IRI[] graphs, FilteringStep[] filteringSteps,
+			@Optional(defaultValue = "TRIG") RDFFormat outputFormat) throws Exception {
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy
-			dumpRepository(getManagedConnection(), graphs, outputFormat);
+			dumpRepository(oRes, getManagedConnection(), graphs, outputFormat);
 		} else {
 			// Translates numeric graph references to graph names
 			IRI[][] step2graphs = computeGraphsForStep(graphs, filteringSteps);
@@ -75,15 +84,16 @@ public class Export extends STServiceAdapter {
 					sourceRepositoryConnection.export(new RDFInserter(workingRepositoryConnection), graphs);
 
 					// Applies each filter
-					for (int i = 0 ; i < filteringSteps.length ; i++) {
+					for (int i = 0; i < filteringSteps.length; i++) {
 						FilteringStep filteringStep = filteringSteps[i];
 						PluginSpecification filterSpec = filteringStep.getFilter();
 						ExportFilter exportFilter = (ExportFilter) filterSpec.instatiatePlugin();
-						exportFilter.filter(sourceRepositoryConnection, workingRepositoryConnection,step2graphs[i]);
+						exportFilter.filter(sourceRepositoryConnection, workingRepositoryConnection,
+								step2graphs[i]);
 					}
 
 					// Dumps the working repository (i.e. the filtered repository)
-					dumpRepository(workingRepositoryConnection, graphs, outputFormat);
+					dumpRepository(oRes, workingRepositoryConnection, graphs, outputFormat);
 				}
 			} finally {
 				workingRepository.shutDown();
@@ -106,17 +116,34 @@ public class Export extends STServiceAdapter {
 					throw new IllegalArgumentException(
 							"Graph reference " + ref + " in filtering step " + i + " is not valid");
 				}
-				
+
 				step2graphs[i][j] = graphs[ref];
 			}
 		}
-		
+
 		return step2graphs;
 	}
 
-	private void dumpRepository(RepositoryConnection filteredRepositoryConnection, Resource[] graphs,
-			RDFFormat outputFormat) {
-		// TODO: currently, only dump the data to the console. Actual download must be implemented!!!!
-		filteredRepositoryConnection.export(Rio.createWriter(outputFormat, System.out), graphs);
+	private void dumpRepository(HttpServletResponse oRes, RepositoryConnection filteredRepositoryConnection,
+			Resource[] graphs, RDFFormat outputFormat) throws IOException {
+		File tempServerFile = File.createTempFile("save", "." + outputFormat.getDefaultFileExtension());
+		try {
+			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
+				filteredRepositoryConnection.export(Rio.createWriter(outputFormat, tempServerFileStream),
+						graphs);
+			}
+
+			oRes.setHeader("Content-Disposition",
+					"attachment; filename=save." + outputFormat.getDefaultFileExtension());
+			oRes.setContentType(outputFormat.getDefaultMIMEType());
+			oRes.setContentLength((int) tempServerFile.length());
+			
+			try (InputStream is = new FileInputStream(tempServerFile)) {
+				IOUtils.copy(is, oRes.getOutputStream());
+			}
+			oRes.flushBuffer();
+		} finally {
+			tempServerFile.delete();
+		}
 	}
 };

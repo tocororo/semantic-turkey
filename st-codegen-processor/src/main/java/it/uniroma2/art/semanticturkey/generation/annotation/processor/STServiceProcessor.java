@@ -27,6 +27,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
 
@@ -57,6 +59,8 @@ public class STServiceProcessor extends AbstractProcessor {
 	}
 	
 	private Map<String, String> options;
+	private Types typeUtils;
+	private Elements elementUtils;
 	
 	@Override
 	public Set<String> getSupportedOptions() {
@@ -66,6 +70,9 @@ public class STServiceProcessor extends AbstractProcessor {
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
 		super.init(processingEnv);
+		
+		typeUtils = processingEnv.getTypeUtils();
+		elementUtils = processingEnv.getElementUtils();
 		
 		Map<String, String> providedOptions = processingEnv.getOptions();
 		
@@ -151,7 +158,7 @@ public class STServiceProcessor extends AbstractProcessor {
 					vc.put("packageName", packageName);
 					vc.put("fields", fields);
 					vc.put("methods", methods);
-					vc.put("tools", new VelocitySupportTools());
+					vc.put("tools", new VelocitySupportTools(typeUtils, elementUtils));
 
 					vc.put("generatedPackageName", generatedPackageName);
 					vc.put("generatedClassSimpleName", generatedClassSimpleName);
