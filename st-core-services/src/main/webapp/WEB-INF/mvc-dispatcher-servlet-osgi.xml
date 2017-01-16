@@ -35,7 +35,7 @@
 	<osgi:service ref="stSpecificRandomIDGenerator"
 		interface="it.uniroma2.art.coda.interfaces.Converter">
 		<osgi:service-properties>
-			<entry key="it.uniroma2.art.coda.contract" value="http://art.uniroma2.it/coda/contracts/randIdGen" />
+			<entry key="it.uniroma2.art.coda.contractInterface" value="it.uniroma2.art.coda.converters.contracts.RandomIdGenerator" />
 			<entry key="it.uniroma2.art.coda.converter">
 				<util:constant
 					static-field="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator.CONVERTER_URI" />
