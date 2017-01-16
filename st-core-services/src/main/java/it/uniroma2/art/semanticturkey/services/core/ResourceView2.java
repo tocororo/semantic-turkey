@@ -195,7 +195,7 @@ public class ResourceView2 extends STServiceAdapter {
 		}
 
 		Map<String, String> ns2prefixMap = QueryResults.stream(getManagedConnection().getNamespaces())
-				.collect(toMap(Namespace::getName, Namespace::getPrefix));
+				.collect(toMap(Namespace::getName, Namespace::getPrefix, (x,y)->x));
 
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -206,7 +206,7 @@ public class ResourceView2 extends STServiceAdapter {
 		HashSet<IRI> objectProps = Sets.newHashSet(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
 
 		for (IRI pred : getLexicalizationPropertiesHelper(resource, resourcePosition)) {
-			AnnotatedValue<IRI> annotatedPred = new AnnotatedValue<IRI>(RDFS.LABEL);
+			AnnotatedValue<IRI> annotatedPred = new AnnotatedValue<IRI>(pred);
 			Map<String, Value> predAttrs = annotatedPred.getAttributes();
 
 			String prefix = ns2prefixMap.get(pred.getNamespace());
