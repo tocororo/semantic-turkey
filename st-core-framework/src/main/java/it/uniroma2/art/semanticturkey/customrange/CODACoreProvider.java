@@ -11,6 +11,8 @@ import it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory;
 public class CODACoreProvider {
 	
 	private CODACore codaCore;
+	private CODAOSGiFactory codaFactory;
+	private BundleContext context;
 	
 	protected CODACoreProvider() {
 		// This constructor is only required for the generation of a CGLIB proxy
@@ -18,12 +20,14 @@ public class CODACoreProvider {
 	
 	@Autowired
 	public CODACoreProvider(CODAOSGiFactory codaFactory, BundleContext context){
-		this.codaCore = codaFactory.getInstance(context);
-		this.codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen",
-				"http://semanticturkey.uniroma2.it/coda/converters/randIdGen");
+		this.codaFactory = codaFactory;
+		this.context = context;
 	}
 
 	public CODACore getCODACore(){
-		return this.codaCore;
+		codaCore = codaFactory.getInstance(context);
+		codaCore.setGlobalContractBinding("http://art.uniroma2.it/coda/contracts/randIdGen",
+				"http://semanticturkey.uniroma2.it/coda/converters/randIdGen");
+		return codaCore;
 	}
 }
