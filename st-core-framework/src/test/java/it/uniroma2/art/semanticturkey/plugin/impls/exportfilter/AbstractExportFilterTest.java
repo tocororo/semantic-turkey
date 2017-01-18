@@ -162,7 +162,7 @@ public abstract class AbstractExportFilterTest {
 						}
 					}
 				}
-
+				
 				// Feed the source repository
 				sourceRepositoryConnection.add(
 						Objects.requireNonNull(
@@ -208,7 +208,7 @@ public abstract class AbstractExportFilterTest {
 	private void printWorkingRepository(String testName, RepositoryConnection workingRepositoryConnection) {
 		if (isPrintEnabled(testName)) {
 			System.out.println("Test name: " + testName);
-			RDFWriter writer = Rio.createWriter(RDFFormat.TRIG, System.out);
+			RDFWriter writer = Rio.createWriter(RDFFormat.NQUADS, System.out);
 			workingRepositoryConnection.export(writer);
 			System.out.println();
 			System.out.println();

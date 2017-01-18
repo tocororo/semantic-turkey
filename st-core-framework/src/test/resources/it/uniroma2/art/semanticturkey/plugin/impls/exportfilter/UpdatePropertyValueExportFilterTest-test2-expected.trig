@@ -1,0 +1,43 @@
+@prefix : <http://example.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+graph <http://example.org/> {
+	:aConcept
+		a skos:Concept ;
+#		skos:prefLabel "a concept"@en ;
+		skos:prefLabel "un concetto"@it ;
+		skos:prefLabel "A CONCEPT"@en
+		.
+		
+	:anotherConcept
+		a skos:Concept ;
+		skos:prefLabel "another concept"@en ;
+		skos:prefLabel "un altro concetto"@it
+		.
+}
+
+graph <http://another-example.org/> {
+	:aConcept
+		a skos:Concept ;
+		skos:prefLabel "a concept"@en ;
+		skos:prefLabel "un concetto"@it
+		.
+		
+	:anotherConcept
+		a skos:Concept ;
+		skos:prefLabel "another concept"@en ;
+		skos:prefLabel "un altro concetto"@it
+		.
+}
+
+:aConcept
+	a skos:Concept ;
+	skos:prefLabel "a concept"@en ;
+	skos:prefLabel "un concetto"@it
+	.
+	
+:anotherConcept
+	a skos:Concept ;
+	skos:prefLabel "another concept"@en ;
+	skos:prefLabel "un altro concetto"@it
+	.

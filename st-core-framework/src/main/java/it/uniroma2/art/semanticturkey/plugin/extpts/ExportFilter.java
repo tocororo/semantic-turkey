@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
  * Extension point for the export filters. Different export filters are subsequently invoked on a <i>working
  * copy</i> (in memory, without inference) of the <i>repository to be exported</i>.
  *
-  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public interface ExportFilter {
 	/**
@@ -19,7 +19,8 @@ public interface ExportFilter {
 	 * @param workingRepositoryConnection
 	 *            a connection to the working of repository
 	 * @param graphs
-	 *            graphs to filter
+	 *            graphs to filter. An empty array indicates that every graph (the name of which is an IRI) in
+	 *            the <code>workingRepository</code> is filtered
 	 * @throws RDF4JException
 	 */
 	void filter(RepositoryConnection sourceRepositoryConnection,

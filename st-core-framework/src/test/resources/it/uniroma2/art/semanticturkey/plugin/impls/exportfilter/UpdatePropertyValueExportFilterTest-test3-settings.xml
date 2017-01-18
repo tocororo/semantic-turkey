@@ -1,0 +1,14 @@
+<TestCase>
+	<BaseURI>http://exampple.org/</BaseURI>
+	<Graphs /> <!-- Empty graph array -->
+	<FactoryID>it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.UpdatePropertyValueExportFilterFactory</FactoryID>
+	<Config>
+		<ConfigType>it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration</ConfigType>
+		<Params>
+			<resource>&lt;http://example.org/aConcept&gt;</resource>
+			<property>&lt;http://www.w3.org/2004/02/skos/core#prefLabel&gt;</property>
+			<oldValue>"a concept"@en</oldValue>
+			<value>"A CONCEPT"@en</value>
+		</Params>
+	</Config>
+</TestCase>
