@@ -1,0 +1,77 @@
+<TestCase>
+	<BaseURI>http://example.org/</BaseURI>
+	<LexicalizationModel>http://www.w3.org/2008/05/skos-xl</LexicalizationModel>
+	<InputDataset>
+		<![CDATA[
+		@prefix owl: <http://www.w3.org/2002/07/owl#> .
+		@prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> .
+		@prefix : <http://example.org/> .
+		
+		<http://example.org/> {
+			:class1 a owl:Class ;
+				skosxl:prefLabel :class1_en_pref_label ;
+				skosxl:altLabel :class1_en_alt_label1 ;
+				skosxl:prefLabel :class1_it_pref_label
+				.
+				
+			:class1_en_pref_label a skosxl:Label ;
+				skosxl:literalForm "Class One"@en
+				.
+
+			:class1_en_alt_label1 a skosxl:Label ;
+				skosxl:literalForm "Class First"@en
+				.
+
+			:class1_it_pref_label a skosxl:Label ;
+				skosxl:literalForm "Classe Numero Uno"@it
+				.
+
+			:class2 a owl:Class ;
+				skosxl:prefLabel :class2_en_pref_label ;
+				skosxl:altLabel "Class Second"@en ;
+				.	
+				
+			:class2_en_pref_label a skosxl:Label ;
+				skosxl:literalForm :class2_en_alt_label1
+				.
+
+			:class2_en_alt_label1 a skosxl:Label ;
+				skosxl:literalForm "Class Second"@en
+				.			
+		}
+		]]>
+	</InputDataset>
+	<ExpectedStatistics>
+	<![CDATA[
+		@prefix void: <http://rdfs.org/ns/void#> .
+		@prefix lime: <http://www.w3.org/ns/lemon/lime#> .
+		@prefix ontolex: <http://www.w3.org/ns/lemon/ontolex#> .
+		@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+		@prefix dcterms: <http://purl.org/dc/terms/> .
+		
+		<http://example.org/void.ttl#Dataset> a void:Dataset ;
+			void:entities "2"^^xsd:integer
+			.
+			
+		<http://example.org/void.ttl#Dataset_en_rdfs_lexicalizationSet> a ontolex:LexicalizationSet ;
+			lime:referenceDataset <http://example.org/void.ttl#Dataset> ;
+			lime:language "en" ;
+			dcterms:language <http://www.lexvo.org/id/iso639-3/eng>, <http://id.loc.gov/vocabulary/iso639-1/en> ;
+			lime:lexicalizations "4"^^xsd:integer ;
+			lime:references "2"^^xsd:integer ;
+			lime:avgNumOfLexicalizations "2"^^xsd:decimal ;
+			lime:percentage "1"^^xsd:decimal
+			.
+			
+		<http://example.org/void.ttl#Dataset_it_rdfs_lexicalizationSet> a ontolex:LexicalizationSet ;
+			lime:referenceDataset <http://example.org/void.ttl#Dataset> ;
+			lime:language "it" ;
+			dcterms:language <http://www.lexvo.org/id/iso639-3/ita>, <http://id.loc.gov/vocabulary/iso639-1/it> ;
+			lime:lexicalizations "1"^^xsd:integer ;
+			lime:references "1"^^xsd:integer ;
+			lime:avgNumOfLexicalizations "0.5"^^xsd:decimal ;
+			lime:percentage "0.5"^^xsd:decimal
+			.
+	]]>
+	</ExpectedStatistics>
+</TestCase>
