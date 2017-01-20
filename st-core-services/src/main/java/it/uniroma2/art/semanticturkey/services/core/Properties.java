@@ -37,7 +37,10 @@ public class Properties extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Properties.class);
 
-	
+	/**
+	 * returns all root properties
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getTopProperties() {
@@ -65,6 +68,10 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * returns all root RDF properties
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getTopRDFProperties() {
@@ -87,6 +94,10 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * returns all root Object properties
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> geTopObjectProperties() {
@@ -110,6 +121,10 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * returns all root Datatype properties
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getTopDatatypeProperties() {
@@ -133,6 +148,10 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * returns all root Annotation properties
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getTopAnnotationProperties() {
@@ -156,6 +175,10 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * returns all root Ontology properties
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getTopOntologyProperties() {
@@ -179,6 +202,12 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * takes a list of Properties and return their description as if they were roots for a tree
+	 * (so more, role, explicit etc...)
+	 * @param propList
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getPropertiesInfo(IRI[] propList) {
@@ -253,6 +282,13 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Retrieves all types of res, then all properties having their domain on any of the types for res.
+	 * Note that it provides only root properties (e.g. if both rdfs:label and skos:prefLabel,
+	 * which is a subProperty of rdfs:label, have domain = one of the types of res, then only rdfs:label is returned)
+	 * @param res
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForResource(@LocallyDefined Resource res) {
@@ -265,7 +301,7 @@ public class Properties extends STServiceAdapter {
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
 				"     ?res 	rdf:type	?type		 .									\n" +
-				"     ?resource 	rdf:domain	?type		 .							\n" +
+				"     ?resource 	rdfs:domain	?type		 .							\n" +
 				"     {?resource 	rdf:type	?typeOfProp  .							\n" + 
 				"		FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp})}	\n" + 
 				"		UNION															\n" + 
@@ -281,6 +317,13 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Retrieves all properties having their domain on cls.
+	 * Note that it has to provide only root properties (e.g. if both rdfs:label and skos:prefLabel,
+	 * which is a subProperty of rdfs:label, have domain = cls, then only rdfs:label is returned)
+	 * @param classUri
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForClass(@LocallyDefined Resource classUri) {
@@ -308,6 +351,13 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * it takes any named class which is relevant in the domain of prop.
+	 * Relevant means that if the domain of prop is (A or B) or (A and B) in any case the relevant domain classes
+	 * are provided by a list with A and B.
+	 * @param propeperty
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantDomainClasses(@LocallyDefined Resource propeperty) {
@@ -330,6 +380,13 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * it takes any named class which is relevant in the range of prop.
+	 * Relevant means that if the range of prop is (A or B) or (A and B) in any case the relevant domain classes
+	 * are provided by a list with A and B.
+	 * @param propeperty
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource propeperty) {
