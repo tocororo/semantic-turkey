@@ -45,6 +45,9 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * graphs, while an empty set of excluded graphs is equivalent to not rejecting any graph. The resource
  * {@link SESAME#NIL} represents the <code>null</code> context, while {@link SESAME#WILDCARD} is another
  * mechanism to specify all graphs.
+ * <p>
+ * By default, the history ignores the <code>null</code> context and includes other contexts. Excluding the
+ * <code>null</code> context is a simple mechanism to ignore inferred triples.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
