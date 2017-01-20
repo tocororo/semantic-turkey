@@ -2,19 +2,30 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 
 /**
  * This class provides services for reading the Properties.
@@ -33,21 +44,22 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdf:type	?propertyType	.						\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+                "																			\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdf:type	?propertyType	.							\n" +
 				"     FILTER (?propertyType = rdf:Property || " +
 				"				?propertyType = owl:ObjectProperty ||" +
 				"				?propertyType = owl:DatatypeProperty ||" +
 				"				?propertyType = owl:AnnotationProperty ||" +
-				"				?propertyType = owl:OntologyProperty  )					\n" +
-				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})		\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				"				?propertyType = owl:OntologyProperty  )						\n" +
+				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -59,16 +71,17 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdf:type	rdf:Property	.						\n" +
-				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})		\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+                "																			\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdf:type	rdf:Property	.							\n" +
+				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -80,17 +93,18 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdf:type	owl:ObjectProperty	.					\n" +
-				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 	\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+                "																			\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdf:type	owl:ObjectProperty	.						\n" +
+				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -102,17 +116,18 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdf:type	owl:DatatypeProperty .					\n" +
-				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 	\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+                "																			\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdf:type	owl:DatatypeProperty .						\n" +
+				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -124,17 +139,18 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdf:type	owl:AnnotationProperty  .				\n" +
-				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 	\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+                "																			\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdf:type	owl:AnnotationProperty  .					\n" +
+				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -146,17 +162,18 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdf:type	owl:OntologyProperty .					\n" +
-				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 	\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+                "																			\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdf:type	owl:OntologyProperty .						\n" +
+				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -184,6 +201,7 @@ public class Properties extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb = createQueryBuilder(sb.toString());
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
@@ -195,16 +213,17 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
-                "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
-				"     ?resource 	rdfs:subPropertyOf	?superProperty .				\n" +
-				" }																		\n" +
-				" GROUP BY ?resource													\n"
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +
+                "																						\n" +
+				" SELECT ?resource WHERE {													\n" +
+				"     ?resource 	rdfs:subPropertyOf	?superProperty .								\n" +
+				" }																						\n" +
+				" GROUP BY ?resource															\n"
 				// @formatter:on
 		);
+		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		qb.setBinding("superProperty", superProperty);
@@ -335,3 +354,37 @@ public class Properties extends STServiceAdapter {
 	
 	
 }
+
+
+class PropertiesMoreProcessor implements QueryBuilderProcessor {
+
+	public static final PropertiesMoreProcessor INSTANCE = new PropertiesMoreProcessor();
+	private GraphPattern graphPattern;
+
+	private PropertiesMoreProcessor() {
+		this.graphPattern = GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE)
+				.prefix("rdfs", RDFS.NAMESPACE)
+				.projection(ProjectionElementBuilder.variable("attr_more"))
+				.pattern("BIND( EXISTS {?aSubProperty rdfs:subPropertyOf ?resource . } AS ?attr_more )  \n").graphPattern();
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return false;
+	}
+
+	@Override
+	public String getBindingVariable() {
+		return "resource";
+	}
+
+	@Override
+	public GraphPattern getGraphPattern() {
+		return graphPattern;
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+		return null;
+	}
+};
