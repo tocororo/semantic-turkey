@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.eclipse.rdf4j.common.io.FileUtil;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
@@ -22,9 +23,11 @@ import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -165,6 +168,8 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 				assertTrue(Models.isomorphic(expectedAdditions, actualAdditions));
 				assertTrue(Models.isomorphic(expectedRemovals, actualRemovals));
+
+				strategy.checkCommit(conn, tip);
 			});
 		}
 	}
@@ -180,6 +185,9 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 		public abstract boolean shouldIncreaseHistory();
 
 		public abstract boolean shouldIncreaseData();
+
+		public void checkCommit(RepositoryConnection historyConn, Resource commit) {
+		}
 	}
 
 	@Test
@@ -595,6 +603,98 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 				conn.add(socrates, RDF.TYPE, FOAF.PERSON);
 				conn.add(socrates, RDF.TYPE, FOAF.PERSON, graphA);
+			}
+		});
+	}
+
+	@Test
+	public void testCommitMetadata1() {
+		testSkeleton(new TestCommitStrategy() {
+
+			@Override
+			public boolean shouldIncreaseHistory() {
+				return true;
+			}
+
+			@Override
+			public boolean shouldIncreaseData() {
+				return true;
+			}
+
+			@Override
+			public Model expectedAdditions() {
+				return new ModelBuilder().namedGraph(graphA).add(socrates, RDF.TYPE, FOAF.PERSON).build();
+			}
+
+			@Override
+			public Model expectedRemovals() {
+				return new LinkedHashModel();
+			}
+
+			@Override
+			public void doUpdate(RepositoryConnection conn) {
+				conn.add(CHANGETRACKER.COMMIT_METADATA, DCTERMS.CREATOR,
+						SimpleValueFactory.getInstance().createIRI("http://example.org/Someone"),
+						CHANGETRACKER.COMMIT_METADATA);
+				conn.add(socrates, RDF.TYPE, FOAF.PERSON, graphA);
+			}
+
+			@Override
+			public void checkCommit(RepositoryConnection historyConn, Resource commit) {
+				assertTrue(historyConn.hasStatement(commit, DCTERMS.CREATOR,
+						SimpleValueFactory.getInstance().createIRI("http://example.org/Someone"), false,
+						HISTORY_GRAPH));
+
+				assertTrue(Models
+						.objectLiteral(QueryResults.asModel(historyConn.getStatements(commit, DCTERMS.CREATED,
+								null, false, HISTORY_GRAPH)))
+						.filter(l -> l.getDatatype().equals(XMLSchema.DATETIME)).isPresent());
+
+			}
+		});
+	}
+
+	@Test
+	public void testCommitMetadata2() {
+		Literal CREATION_DATE = SimpleValueFactory.getInstance().createLiteral("2000-01-01T00:00:00",
+				XMLSchema.DATETIME);
+
+		testSkeleton(new TestCommitStrategy() {
+
+			@Override
+			public boolean shouldIncreaseHistory() {
+				return true;
+			}
+
+			@Override
+			public boolean shouldIncreaseData() {
+				return true;
+			}
+
+			@Override
+			public Model expectedAdditions() {
+				return new ModelBuilder().namedGraph(graphA).add(socrates, RDF.TYPE, FOAF.PERSON).build();
+			}
+
+			@Override
+			public Model expectedRemovals() {
+				return new LinkedHashModel();
+			}
+
+			@Override
+			public void doUpdate(RepositoryConnection conn) {
+				conn.add(CHANGETRACKER.COMMIT_METADATA, DCTERMS.CREATED, CREATION_DATE,
+						CHANGETRACKER.COMMIT_METADATA);
+				conn.add(socrates, RDF.TYPE, FOAF.PERSON, graphA);
+			}
+
+			@Override
+			public void checkCommit(RepositoryConnection historyConn, Resource commit) {
+				Set<Value> creationDates = QueryResults.asModel(
+						historyConn.getStatements(commit, DCTERMS.CREATED, null, false, HISTORY_GRAPH))
+						.objects();
+				assertTrue(creationDates.size() == 1);
+				assertTrue(creationDates.stream().allMatch(v -> v.equals(CREATION_DATE)));
 			}
 		});
 	}

@@ -19,13 +19,13 @@ public abstract class CHANGETRACKER {
 	 */
 	public static final String PREFIX = "ct";
 
-	/** ct:stagedAdditions */
+	/** ct:staged-additions */
 	public static final IRI STAGED_ADDITIONS;
 	
-	/** ct:stagedRemovals */
+	/** ct:staged-removals */
 	public static final IRI STAGED_REMOVALS;
 
-	/** ct:graphManagement */
+	/** ct:graph-management */
 	public static final IRI GRAPH_MANAGEMENT;
 	
 	/** ct:includeGraph */
@@ -33,6 +33,9 @@ public abstract class CHANGETRACKER {
 	
 	/** ct:excludeGraph */
 	public static final IRI EXCLUDE_GRAPH;
+
+	/** ct:commit-metadata */
+	public static final IRI COMMIT_METADATA;
 
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
@@ -43,5 +46,7 @@ public abstract class CHANGETRACKER {
 		GRAPH_MANAGEMENT = vf.createIRI(NAMESPACE, "graph-management");
 		INCLUDE_GRAPH = vf.createIRI(NAMESPACE, "includeGraph");
 		EXCLUDE_GRAPH = vf.createIRI(NAMESPACE, "excludeGraph");
+		
+		COMMIT_METADATA = vf.createIRI(NAMESPACE, "commit-metadata");
 	}
 }

@@ -5,6 +5,7 @@ import java.util.Set;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.sail.NotifyingSail;
@@ -48,6 +49,14 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * <p>
  * By default, the history ignores the <code>null</code> context and includes other contexts. Excluding the
  * <code>null</code> context is a simple mechanism to ignore inferred triples.
+ * <p>
+ * Each commit in the history is associated by default to its creation date via the property
+ * {@link DCTERMS#CREATED}. It is possible to write additional metadata through the context
+ * {@link CHANGETRACKER#COMMIT_METADATA}. Since the client doesn't know which resource will represent the
+ * commit in the history repository, the client may identify the commit via the IRI
+ * {@link CHANGETRACKER#COMMIT_METADATA}: when the commit metadata is written into the history, this
+ * identifier will be replace with the actual identifier of the commit. If the client specify a value for the
+ * property {@link DCTERMS#CREATED}, then its value won't be computed automatically.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */

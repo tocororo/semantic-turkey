@@ -25,6 +25,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
@@ -115,6 +116,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			// Commits the metadata
 			IRI commitIRI;
 			Resource previousTip = null;
+			Model commitMetadataModel = new LinkedHashModel();
 
 			try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
 				ValueFactory vf = metaRepoConn.getValueFactory();
@@ -153,16 +155,40 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 				commitIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
 
+				stagingArea.getCommitMetadataModel().stream().map(st -> {
+					Resource s = st.getSubject();
+					IRI p = st.getPredicate();
+					Value o = st.getObject();
+					
+					boolean refactorS = s.equals(CHANGETRACKER.COMMIT_METADATA);
+					boolean refactorP = p.equals(CHANGETRACKER.COMMIT_METADATA);
+					boolean refactorO = o.equals(CHANGETRACKER.COMMIT_METADATA);
+
+					if (refactorS || refactorP || refactorO) {
+						return SimpleValueFactory.getInstance().createStatement(refactorS ? commitIRI : s, refactorP ? commitIRI : p, refactorO ? commitIRI : o);
+					} else {
+						return st;
+					}
+				}).forEach(commitMetadataModel::add);
+				
+				
 				metaRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.metadataGraph);
-				GregorianCalendar calendar = new GregorianCalendar();
-				XMLGregorianCalendar currentDateTimeXML;
-				try {
-					currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
-				} catch (DatatypeConfigurationException e) {
-					throw new SailException(e);
+				
+				if (!commitMetadataModel.isEmpty()) {
+					metaRepoConn.add(commitMetadataModel, sail.metadataGraph);
 				}
-				Literal commitDatetime = vf.createLiteral(currentDateTimeXML);
-				metaRepoConn.add(commitIRI, DCTERMS.CREATED, commitDatetime, sail.metadataGraph);
+				
+				if (!commitMetadataModel.contains(commitIRI, DCTERMS.CREATED, null)) {				
+					GregorianCalendar calendar = new GregorianCalendar();
+					XMLGregorianCalendar currentDateTimeXML;
+					try {
+						currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
+					} catch (DatatypeConfigurationException e) {
+						throw new SailException(e);
+					}
+					Literal commitDatetime = vf.createLiteral(currentDateTimeXML);
+					metaRepoConn.add(commitIRI, DCTERMS.CREATED, commitDatetime, sail.metadataGraph);
+				}
 
 				Function<IRI, Consumer<? super Statement>> consumer = predicate -> stmt -> {
 					Resource stmtRes = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
@@ -205,6 +231,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					metaRepoConn.begin();
 
 					metaRepoConn.remove(commitIRI, null, null, sail.metadataGraph);
+
+					if (!commitMetadataModel.isEmpty()) {
+						metaRepoConn.remove(commitMetadataModel, sail.metadataGraph);
+					}
 					metaRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, sail.metadataGraph);
 
 					if (previousTip != null) {
@@ -262,6 +292,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			iterations.add(new CollectionIteration<>(getGraphManagementModel().filter(subj, pred, obj)));
 			contextList.remove(CHANGETRACKER.GRAPH_MANAGEMENT);
 		}
+		if (contextList.contains(CHANGETRACKER.COMMIT_METADATA)) {
+			iterations.add(new CollectionIteration<>(getCommitMetadataModel().filter(subj, pred, obj)));
+			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
+		}
 		if (contextList.size() > 0 || iterations.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
 			iterations.add(super.getStatements(subj, pred, obj, includeInferred, newContexts));
@@ -277,6 +311,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		if (contextList.contains(CHANGETRACKER.GRAPH_MANAGEMENT)) {
 			addToGraphManagementModel(subj, pred, obj);
 			contextList.remove(CHANGETRACKER.GRAPH_MANAGEMENT);
+		}
+		if (contextList.contains(CHANGETRACKER.COMMIT_METADATA)) {
+			addToCommitMetadataModel(subj, pred, obj);
+			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
 		}
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
@@ -295,6 +333,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			addToGraphManagementModel(subj, pred, obj);
 			contextList.remove(CHANGETRACKER.GRAPH_MANAGEMENT);
 		}
+		if (contextList.contains(CHANGETRACKER.COMMIT_METADATA)) {
+			addToCommitMetadataModel(subj, pred, obj);
+			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
+		}
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
@@ -312,6 +354,11 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			removeFromGraphManagementModel(subj, pred, obj);
 			contextList.remove(CHANGETRACKER.GRAPH_MANAGEMENT);
 		}
+		if (contextList.contains(CHANGETRACKER.COMMIT_METADATA)) {
+			removeFromCommitMetadataModel(subj, pred, obj);
+			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
+		}
+
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
@@ -328,6 +375,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		if (contextList.contains(CHANGETRACKER.GRAPH_MANAGEMENT)) {
 			removeFromGraphManagementModel(subj, pred, obj);
 			contextList.remove(CHANGETRACKER.GRAPH_MANAGEMENT);
+		}
+		if (contextList.contains(CHANGETRACKER.COMMIT_METADATA)) {
+			removeFromCommitMetadataModel(subj, pred, obj);
+			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
 		}
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
@@ -386,5 +437,18 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		}
 
 		return false;
+	}
+	
+	
+	private Model getCommitMetadataModel() {
+		return stagingArea.getCommitMetadataModel();
+	}
+	
+	private void addToCommitMetadataModel(Resource subj, IRI pred, Value obj) {
+		stagingArea.getCommitMetadataModel().add(subj, pred, obj);	
+	}
+
+	private void removeFromCommitMetadataModel(Resource subj, IRI pred, Value obj) {
+		stagingArea.getCommitMetadataModel().remove(subj, pred, obj);	
 	}
 }
