@@ -685,20 +685,44 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * Deletes the CustomRangeEntry with the given id. Removes also the CRE on cascade from the CR
 	 * that contain it. 
 	 * @param id
+	 * @param deleteEmptyCr if true deletes CustomRange that are left empty after the deletion
 	 * @return
 	 */
 	@GenerateSTServiceController
-	public Response deleteCustomRangeEntry(String id){
+	public Response deleteCustomRangeEntry(String id, @Optional (defaultValue = "false") boolean deleteEmptyCr){
 		crProvider.removeCustomRangeEntry(id);
-		//remove the entry from the CustomRange that use it
+		//remove the entry from the CustomRange(s) that use it
 		Collection<CustomRange> crColl = crProvider.getAllCustomRanges();
 		for (CustomRange cr : crColl){
 			if (cr.containsEntry(id)){
 				cr.removeEntry(id);
-				cr.saveXML();
+				cr.saveXML(); //TODO set saveXML as private, and call it in removeEntry and all the methods that make changes
+				if (cr.getEntries().isEmpty()) {
+					crProvider.removeCustomRange(cr.getId());
+					//remove the CustomRangeConfigEntry(es) with that CustomRange
+					CustomRangeConfig crConf = crProvider.getCustomRangeConfig();
+					crConf.removeConfigEntryWithCrId(cr.getId());
+					crConf.saveXML();
+				}
 			}
 		}
 		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
+	 * Given the id of a CustomRangeEntry tells if it belong to a CustomRange
+	 * @param id
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response isEntryLinkedToCustomRange(String id) {
+		Collection<CustomRange> crColl = crProvider.getAllCustomRanges();
+		for (CustomRange cr: crColl) {
+			if (cr.getEntriesId().contains(id)) {
+				return createBooleanResponse(true);
+			}
+		}
+		return createBooleanResponse(false);
 	}
 	
 	/**
