@@ -66,6 +66,7 @@
 						<!-- <_wab>src/main/webapp</_wab> could also use src/main/resources 
 							if you like -->
 						<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+						<Fragment-Host>org.eclipse.rdf4j</Fragment-Host>
 					</instructions>
 				</configuration>
 			</plugin>
