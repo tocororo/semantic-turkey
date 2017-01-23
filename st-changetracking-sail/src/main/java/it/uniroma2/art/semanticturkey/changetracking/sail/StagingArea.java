@@ -2,27 +2,34 @@ package it.uniroma2.art.semanticturkey.changetracking.sail;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 
 /**
- * A data structure keeping track of quadruples effectively added or removed.
+ * A data structure keeping track of quadruples effectively added or removed, as well as of the commit
+ * metadata.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class StagingArea {
 	private final Set<Statement> addedStatements;
 	private final Set<Statement> removedStatements;
-
+	private final Model commitMetadata;
+	
 	public StagingArea() {
 		addedStatements = new HashSet<>();
 		removedStatements = new HashSet<>();
+		commitMetadata = new LinkedHashModel();
 	}
 
 	public void clear() {
 		addedStatements.clear();
 		removedStatements.clear();
+		commitMetadata.clear();
 	}
 
 	public void stageAddition(Statement st) {
@@ -51,5 +58,9 @@ public class StagingArea {
 
 	public boolean isEmpty() {
 		return addedStatements.isEmpty() && removedStatements.isEmpty();
+	}
+	
+	public Model getCommitMetadataModel() {
+		return commitMetadata;
 	}
 }

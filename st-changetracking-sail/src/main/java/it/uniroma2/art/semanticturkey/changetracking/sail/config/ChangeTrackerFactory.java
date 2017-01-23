@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 
+import java.util.Set;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -47,15 +49,16 @@ public class ChangeTrackerFactory implements SailFactory {
 		String metadataRepoId = config2.getHistoryRepositoryID();
 		String metadataNS = config2.getHistoryNS();
 		IRI metadataGraph = config2.getHistoryGraph();
-		
-		Repository metadataRepo = RepositoryRegistry.getInstance()
-				.getRepository(metadataRepoId);
+		Set<IRI> includeGraph = config2.getIncludeGraph();
+		Set<IRI> excludeGraph = config2.getExcludeGraph();
+
+		Repository metadataRepo = RepositoryRegistry.getInstance().getRepository(metadataRepoId);
 
 		logger.debug(
-				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {}",
-				metadataRepoId, metadataRepo, metadataNS, metadataGraph);
+				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {}",
+				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph);
 
-		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph);
+		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph);
 	}
 
 }
