@@ -49,16 +49,12 @@ import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.rdf4jimpl.models.RDFModelRDF4J;
-import it.uniroma2.art.owlart.rdf4jimpl.models.RDFModelRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
@@ -83,7 +79,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -147,9 +142,9 @@ public class CustomRanges extends STServiceAdapterOLD {
 //		for (Entry<String, String> e : userPromptMap.entrySet()){
 //			System.out.println("userPrompt: " + e.getKey() + " = " + e.getValue());
 //		}
+		RDFModel rdfModel = getOWLModel();
+		CODACore codaCore = getInitializedCodaCore(rdfModel);
 		try {
-			RDFModel rdfModel = getOWLModel();
-			CODACore codaCore = getInitializedCodaCore(rdfModel);
 			CustomRangeEntry crEntry = crProvider.getCustomRangeEntryById(crEntryId);
 			if (crEntry.isTypeGraph()){
 				CustomRangeEntryGraph creGraph = crEntry.asCustomRangeEntryGraph();
@@ -168,6 +163,8 @@ public class CustomRanges extends STServiceAdapterOLD {
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException e){
 			throw new CODAException(e);
+		} finally {
+			shutDownCodaCore(codaCore);
 		}
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		return response;
@@ -291,6 +288,8 @@ public class CustomRanges extends STServiceAdapterOLD {
 			STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
 					resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
 			RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
+		} finally {
+			shutDownCodaCore(codaCore);
 		}
 		return response;
 	}
@@ -343,6 +342,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 			Update update = model.createUpdateQuery(queryBuilder.toString());
 			update.evaluate(false);
 		}
+		shutDownCodaCore(codaCore);
 		return response;
 	}
 	
@@ -412,6 +412,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 		} else {
 			result = codaCore.executeURIConverter(converter).stringValue();
 		}
+		shutDownCodaCore(codaCore);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element valueElement = XMLHelp.newElement(dataElement, "value");
@@ -429,6 +430,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 		if (lang != null && lang.equals(""))
 			lang = null;
 		String result = codaCore.executeLiteralConverter(converter, value, datatype, lang).stringValue();
+		shutDownCodaCore(codaCore);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element valueElement = XMLHelp.newElement(dataElement, "value");
@@ -573,6 +575,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 			
 			CODACore codaCore = getInitializedCodaCore(getOWLModel());
 			Collection<UserPromptStruct> form = crEntry.getForm(codaCore);
+			shutDownCodaCore(codaCore);
 			if (!form.isEmpty()){
 				for (UserPromptStruct formEntry : form){
 					Element formEntryElem = XMLHelp.newElement(formElem, "formEntry");
@@ -853,21 +856,22 @@ public class CustomRanges extends STServiceAdapterOLD {
 				//parser didn't throw exception, so pearl is valid
 				return createReplyResponse(RepliesStatus.ok);
 			} catch (RecognitionException e) {
-				System.out.println(e.getMessage());
 				return createReplyFAIL("Invalid projection operator");
 			} catch (AntlrParserRuntimeException e) {
-				System.out.println(e.getMsg() + " - " + e.getMessage());
 				return createReplyFAIL("Invalid projection operator: " + e.getMsg());
 			}
 		}
 	}
 	
 	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
-		ModelFactory<ModelConfiguration> ontFact = PluginManager.getOntManagerImpl(
-				getProject().getOntologyManagerImplID()).createModelFactory();
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(RDF4JMigrationUtils.extractRDF4JConnection(rdfModel));
 		return codaCore;
+	}
+	
+	private void shutDownCodaCore(CODACore codaCore) {
+		codaCore.setRepositoryConnection(null);
+		codaCore.stopAndClose();
 	}
 
 }
