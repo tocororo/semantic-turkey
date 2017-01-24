@@ -2,14 +2,15 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> .
 
-# put here a dataset as test case
-
+# put here the expected output of the filter
 
 graph <http://test.it/> {
 	:aConcept2
 		a skos:Concept ;
 		skosxl:prefLabel :aConcept2_prefxlLabel1en ;
-		skosxl:prefLabel :aConcept2_prefxlLabel1it 
+		skosxl:prefLabel :aConcept2_prefxlLabel1it ;
+		skos:prefLabel "a concept"@en ;
+		skos:prefLabel "un concetto"@it 
 		.
 	
 	:aConcept2_prefxlLabel1en a skosxl:Label ;
@@ -24,9 +25,11 @@ graph <http://test.it/> {
 	:anotherConcept2
 		a skos:Concept ;
 		skosxl:prefLabel :anotherConcept2_prefxlLabel1en ;
-		skosxl:prefLabel :anotherConcept2_prefxlLabel1it 
+		skosxl:prefLabel :anotherConcept2_prefxlLabel1it ;
+		skos:prefLabel "another concept"@en;
+		skos:prefLabel "un altro concetto"@it
 		.
-	
+		
 	:anotherConcept2_prefxlLabel1en a skosxl:Label ;
 		skosxl:literalForm "another concept"@en
 		.

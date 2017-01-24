@@ -7,7 +7,7 @@
 	<Config>
 		<ConfigType>it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XLabelDereificationExportFilterConfiguration</ConfigType>
 		<Params>
-			<preserveReifiedLabels>false</preserveReifiedLabels>
+			<preserveReifiedLabels>true</preserveReifiedLabels>
 		</Params>
 	</Config>
 </TestCase>

@@ -24,31 +24,15 @@ graph <http://test.it/> {
 graph <http://example.org/> {
 	:aConcept
 		a skos:Concept ;
-		skosxl:prefLabel :aConcept_prefxlLabel1en ;
-		skosxl:prefLabel :aConcept_prefxlLabel1it 
-		.
-	
-	:aConcept_prefxlLabel1en a skosxl:Label ;
-		skosxl:literalForm "a concept"@en
-		.
-		
-	:aConcept_prefxlLabel1it a skosxl:Label ;
-		skosxl:literalForm "un concetto"@it
+		skos:prefLabel "a concept"@en ;
+		skos:prefLabel "un concetto"@it 
 		.
 		
 		
 	:anotherConcept
 		a skos:Concept ;
-		skosxl:prefLabel :anotherConcept_prefxlLabel1en ;
-		skosxl:prefLabel :anotherConcept_prefxlLabel1it 
-		.
-	
-	:anotherConcept_prefxlLabel1en a skosxl:Label ;
-		skosxl:literalForm "another concept"@en
-		.
-		
-	:anotherConcept_prefxlLabel1it a skosxl:Label ;
-		skosxl:literalForm "un altro concetto"@it
+		skos:prefLabel "another concept"@en;
+		skos:prefLabel "un altro concetto"@it
 		.		
 }
 

@@ -62,7 +62,7 @@ public class Export extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public void export(HttpServletResponse oRes,
-			@Optional(defaultValue = "") org.eclipse.rdf4j.model.IRI[] graphs, FilteringStep[] filteringSteps,
+			@Optional(defaultValue = "") IRI[] graphs, FilteringStep[] filteringSteps,
 			@Optional(defaultValue = "TRIG") RDFFormat outputFormat) throws Exception {
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy

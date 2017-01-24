@@ -8,5 +8,32 @@ public class XLabelDereificationExportFilterTest extends AbstractExportFilterTes
 	public void test1() throws Exception {
 		executeTest();
 	}
+	
+	@Test
+	public void test2() throws Exception {
+		executeTest();
+	}
+	
+	@Test
+	public void test3() throws Exception {
+		executeTest();
+	}
 
+	@Test
+	public void test4() throws Exception {
+		executeTest();
+	}
+	
+	@Test
+	public void test5() throws Exception {
+		executeTest();
+	}
+
+	
+	@Override
+	protected boolean isPrintEnabled(String testName) {
+		// TODO Auto-generated method stub
+		//return super.isPrintEnabled(testName);
+		return false;
+	}
 }
