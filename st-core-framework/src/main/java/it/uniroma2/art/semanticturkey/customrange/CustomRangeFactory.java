@@ -32,10 +32,6 @@ public class CustomRangeFactory {
 		return new CustomRange(crReader.getId(), loadEntries(crReader, creMap));
 	}
 	
-	public static CustomRange createEmptyCustomRange(String id){
-		return new CustomRange(id);
-	}
-	
 	private static ArrayList<CustomRangeEntry> loadEntries(CustomRangeXMLReader crReader, Map<String, CustomRangeEntry> creMap) {
 		ArrayList<CustomRangeEntry> entries = new ArrayList<CustomRangeEntry>();
 		Collection<String> creIdList = crReader.getCustomRangeEntries();

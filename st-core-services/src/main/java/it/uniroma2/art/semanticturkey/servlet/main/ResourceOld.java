@@ -37,7 +37,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -90,7 +89,6 @@ import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
-import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
@@ -129,8 +127,6 @@ public class ResourceOld extends ServiceAdapter {
 
 	protected ArrayList<ARTURIResource> bannedPredicatesForResourceDescription;
 	
-	@Autowired
-	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 	@Autowired
 	private CustomRangeProvider crProvider;
 
@@ -1543,22 +1539,24 @@ public class ResourceOld extends ServiceAdapter {
 	}
 	
 	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
-		CustomRange cr = crProvider.getCustomRangeForProperty(property.getURI());
-		if (cr == null){//there is no custom range for the given property 
+		Collection<CustomRange> crColl = crProvider.getCustomRangesForProperty(property.getURI());
+		if (crColl.isEmpty()){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
-		Element crElem = XMLHelp.newElement(treeElement, "customRanges");
-		crElem.setAttribute("property", property.getURI());
-		crElem.setAttribute("id", cr.getId());
-				
-		Collection<CustomRangeEntry> crEntries = cr.getEntries();
-		for (CustomRangeEntry crEntry : crEntries){
-			Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
-			crEntryElem.setAttribute("id", crEntry.getId());
-			crEntryElem.setAttribute("name", crEntry.getName());
-			crEntryElem.setAttribute("type", crEntry.getType());
-			Element descElem = XMLHelp.newElement(crEntryElem, "description");
-			descElem.setTextContent(crEntry.getDescription());
+		Element customRangesElem = XMLHelp.newElement(treeElement, "customRanges");
+		for (CustomRange cr : crColl) {
+			Element crElem = XMLHelp.newElement(customRangesElem, "customRange");
+			crElem.setAttribute("property", property.getURI());
+			crElem.setAttribute("id", cr.getId());
+			Collection<CustomRangeEntry> crEntries = cr.getEntries();
+			for (CustomRangeEntry crEntry : crEntries){
+				Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
+				crEntryElem.setAttribute("id", crEntry.getId());
+				crEntryElem.setAttribute("name", crEntry.getName());
+				crEntryElem.setAttribute("type", crEntry.getType());
+				Element descElem = XMLHelp.newElement(crEntryElem, "description");
+				descElem.setTextContent(crEntry.getDescription());
+			}
 		}
 	}
 	

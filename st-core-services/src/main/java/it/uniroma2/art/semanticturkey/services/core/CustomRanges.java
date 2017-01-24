@@ -58,17 +58,14 @@ import it.uniroma2.art.owlart.query.Update;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfig;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfigEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryGraph;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryParseUtils;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeFactory;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.customrange.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
+import it.uniroma2.art.semanticturkey.exceptions.CustomRangeException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
@@ -115,14 +112,14 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @throws ProjectInconsistentException 
 	 * @throws UnavailableResourceException 
 	 * @throws ModelUpdateException 
-	 * @throws CustomRangeInitializationException 
+	 * @throws CustomRangeException 
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
 	 */
 	@SuppressWarnings("unchecked")
 	@GenerateSTServiceController
 	public Response runCoda(ARTResource subject, ARTURIResource predicate, String crEntryId) throws FileNotFoundException, CODAException, 
-			UnavailableResourceException, ProjectInconsistentException, ModelUpdateException, CustomRangeInitializationException,  
+			UnavailableResourceException, ProjectInconsistentException, ModelUpdateException, CustomRangeException,  
 			ProjectionRuleModelNotSet, UnassignableFeaturePathException {
 		//get the parameters to put in the userPromptMap from the request
 		Map<String, String[]> parMap = request.getParameterMap();//the others params (form key and values) are dynamic, get it directly from request
@@ -207,7 +204,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException 
 	 * @throws MalformedQueryException 
 	 * @throws UnsupportedQueryLanguageException 
-	 * @throws CustomRangeInitializationException 
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
 	public Response getReifiedResourceDescription(ARTResource resource, ARTURIResource predicate) 
@@ -482,17 +479,11 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * Creates an empty CustomRange (a CR without CREntries related)
 	 * @param id
 	 * @return
-	 * @throws CustomRangeInitializationException 
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response createCustomRange(String id) throws CustomRangeInitializationException{
-		if (crProvider.getCustomRangeById(id) != null) {
-			throw new CustomRangeInitializationException("Impossible to create a CustomRange with "
-					+ "ID '" + id + "'. A CustomRange with the same ID already exists");
-		}
-		CustomRange cr = CustomRangeFactory.createEmptyCustomRange(id);
-		cr.saveXML();
-		crProvider.addCustomRange(cr);
+	public Response createCustomRange(String id) throws CustomRangeException{
+		crProvider.createCustomRange(id);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -500,14 +491,11 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * Deletes the CustomRange with the given id
 	 * @param id
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response deleteCustomRange(String id){
-		crProvider.removeCustomRange(id);
-		//remove the CustomRangeConfigEntry(es) with that CustomRange
-		CustomRangeConfig crConf = crProvider.getCustomRangeConfig();
-		crConf.removeConfigEntryWithCrId(id);
-		crConf.saveXML();
+	public Response deleteCustomRange(String id) throws CustomRangeException{
+		crProvider.deleteCustomRange(id);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -657,27 +645,13 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @param ref
 	 * @param showProp Useful only if type is "graph"
 	 * @return
-	 * @throws CustomRangeInitializationException 
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
 	public Response createCustomRangeEntry(String type, String id, String name, String description, String ref, @Optional String showProp)
-			throws CustomRangeInitializationException {
-		if (crProvider.getCustomRangeEntryById(id) != null){
-			throw new CustomRangeInitializationException("Impossible to create a CustomRangeEntry with "
-					+ "ID '" + id + "'. A CustomRangeEntry with the same ID already exists");
-		}
+			throws CustomRangeException {
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
-		ref = ref.replace("\r", "");
-		CustomRangeEntry cre = null;
-		if (type.equalsIgnoreCase(CustomRangeEntry.Types.node.toString())){
-			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.node, id, name, description, ref);
-		} else {
-			cre = CustomRangeEntryFactory.createCustomRangeEntry(CustomRangeEntry.Types.graph, id, name, description, ref);
-			if (showProp != null && !showProp.equals(""))
-				cre.asCustomRangeEntryGraph().setShowProperty(showProp);
-		}
-		cre.saveXML();
-		crProvider.addCustomRangeEntries(cre);
+		crProvider.createCustomRangeEntry(type, id, name, description, ref, showProp);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -687,25 +661,11 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @param id
 	 * @param deleteEmptyCr if true deletes CustomRange that are left empty after the deletion
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response deleteCustomRangeEntry(String id, @Optional (defaultValue = "false") boolean deleteEmptyCr){
-		crProvider.removeCustomRangeEntry(id);
-		//remove the entry from the CustomRange(s) that use it
-		Collection<CustomRange> crColl = crProvider.getAllCustomRanges();
-		for (CustomRange cr : crColl){
-			if (cr.containsEntry(id)){
-				cr.removeEntry(id);
-				cr.saveXML(); //TODO set saveXML as private, and call it in removeEntry and all the methods that make changes
-				if (cr.getEntries().isEmpty()) {
-					crProvider.removeCustomRange(cr.getId());
-					//remove the CustomRangeConfigEntry(es) with that CustomRange
-					CustomRangeConfig crConf = crProvider.getCustomRangeConfig();
-					crConf.removeConfigEntryWithCrId(cr.getId());
-					crConf.saveXML();
-				}
-			}
-		}
+	public Response deleteCustomRangeEntry(String id, @Optional (defaultValue = "false") boolean deleteEmptyCr) throws CustomRangeException{
+		crProvider.deleteCustomRangeEntry(id, deleteEmptyCr);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -735,24 +695,14 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @param ref
 	 * @param showProp
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp){
+	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp) throws CustomRangeException{
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
 		ref = ref.replace("\r", "");
-		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(id);
-		if (cre != null){
-			cre.setName(name);
-			cre.setDescription(description);
-			cre.setRef(ref);
-			if (showProp != null){
-				cre.asCustomRangeEntryGraph().setShowProperty(showProp);
-			}
-			cre.saveXML();
-			return createReplyResponse(RepliesStatus.ok);
-		} else {
-			return createReplyFAIL("CustomRangeEntry with id " + id + " not found");
-		}
+		crProvider.updateCustomRangeEntry(id, name, description, ref, showProp);
+		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
@@ -760,17 +710,11 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @param customRangeId
 	 * @param customRangeEntryId
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response addEntryToCustomRange(String customRangeId, String customRangeEntryId){
-		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
-		CustomRangeEntry cre = crProvider.getCustomRangeEntryById(customRangeEntryId);
-		if (cr == null)
-			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
-		if (cre == null)
-			return createReplyFAIL("CustomRangeEntry with id " + customRangeEntryId + " not found");
-		if (cr.addEntry(cre))
-			cr.saveXML();
+	public Response addEntryToCustomRange(String customRangeId, String customRangeEntryId) throws CustomRangeException{
+		crProvider.addEntryToCustomRange(customRangeId, customRangeEntryId);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -779,24 +723,21 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @param customRangeId
 	 * @param customRangeEntryId
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response removeEntryFromCustomRange(String customRangeId, String customRangeEntryId){
-		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
-		if (cr == null)
-			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
-		cr.removeEntry(customRangeEntryId);
-		cr.saveXML();
+	public Response removeEntryFromCustomRange(String customRangeId, String customRangeEntryId) throws CustomRangeException{
+		crProvider.removeEntryFromCustomRange(customRangeId, customRangeEntryId);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
 	 * Returns all the property-CustomRange pairs defined in the CustomRange configuration
 	 * @return
-	 * @throws CustomRangeInitializationException 
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response getCustomRangeConfigMap() throws CustomRangeInitializationException{
+	public Response getCustomRangeConfigMap() throws CustomRangeException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
 		Element crcElem = XMLHelp.newElement(dataElem, "customRangeConfig");
@@ -816,15 +757,11 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @param customRangeId
 	 * @param replaceRanges
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response addCustomRangeToProperty(String customRangeId, ARTURIResource property, @Optional (defaultValue = "false") boolean replaceRanges){
-		CustomRange cr = crProvider.getCustomRangeById(customRangeId);
-		if (cr == null)
-			return createReplyFAIL("CustomRange with id " + customRangeId + " not found");
-		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
-		if (crConfig.addEntry(new CustomRangeConfigEntry(property.getURI(), cr, replaceRanges)))
-				crConfig.saveXML();
+	public Response addCustomRangeToProperty(String customRangeId, ARTURIResource property, @Optional (defaultValue = "false") boolean replaceRanges) throws CustomRangeException{
+		crProvider.addCustomRangeToProperty(customRangeId, property, replaceRanges);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -832,17 +769,15 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * Remove the CustomRange of the given property
 	 * @param property
 	 * @return
+	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response removeCustomRangeFromProperty(ARTURIResource property){
-		CustomRangeConfig crConfig = crProvider.getCustomRangeConfig();
-		crConfig.removeConfigEntryFromProperty(property.getURI());
-		crConfig.saveXML();
+	public Response removeCustomRangeFromProperty(String customRangeId, ARTURIResource property) throws CustomRangeException{
+		crProvider.removeCustomRangeFromProperty(customRangeId, property);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
 	/**
-	 * TODO: use CustomRangeEntryParseUtils
 	 * Tries to validate a pearl code.
 	 * @param pearl rule to be parsed, it should be a whole pearl rule if the CRE is a graph entry
      * or a converter if the CRE is a node entry

@@ -57,12 +57,14 @@ public class CustomRangeConfig {
 	 * @param propertyUri
 	 * @return
 	 */
-	public CustomRange getCustomRangeForProperty(String propertyUri) {
+	public Collection<CustomRange> getCustomRangesForProperty(String propertyUri) {
+		ArrayList<CustomRange> crColl = new ArrayList<CustomRange>();
 		for (CustomRangeConfigEntry crcEntry : crConfEntries){
-			if (crcEntry.getProperty().equals(propertyUri))
-				return crcEntry.getCutomRange();
+			if (crcEntry.getProperty().equals(propertyUri)) {
+				crColl.add(crcEntry.getCutomRange());
+			}
 		}
-		return null;
+		return crColl;
 	}
 	
 	/**
@@ -82,17 +84,19 @@ public class CustomRangeConfig {
 	}
 	
 	/**
-	 * Remove property-CustomRange pair with the given property
+	 * Remove property-CustomRange
 	 * @param propertyUri
-	 * @param cr
+	 * @param crId
+	 * @return true if the entry is removed, false if an entry with the prop-CR pair doesn't exist
 	 */
-	public void removeConfigEntryFromProperty(String propertyUri){
+	public boolean removeConfigEntryFromProperty(String crId, String propertyUri){
 		for (CustomRangeConfigEntry e : crConfEntries){
-			if (e.getProperty().equals(propertyUri)){
+			if (e.getProperty().equals(propertyUri) && e.getCutomRange().getId().equals(crId)) {
 				crConfEntries.remove(e);
-				return;
+				return true;
 			}
 		}
+		return false;
 	}
 	
 	/**

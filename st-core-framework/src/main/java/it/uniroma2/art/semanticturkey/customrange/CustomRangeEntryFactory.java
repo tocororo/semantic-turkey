@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.semanticturkey.exceptions.CustomRangeInitializationException;
+import it.uniroma2.art.semanticturkey.exceptions.CustomRangeException;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +16,7 @@ import org.xml.sax.SAXException;
 
 public class CustomRangeEntryFactory {
 	
-	public static CustomRangeEntry loadCustomRangeEntry(File creFile) throws CustomRangeInitializationException{
+	public static CustomRangeEntry loadCustomRangeEntry(File creFile) throws CustomRangeException{
 		CustomRangeEntryXMLReader creReader = new CustomRangeEntryXMLReader(creFile);
 		String id = creReader.getId();
 		String name = creReader.getName();
@@ -30,16 +30,8 @@ public class CustomRangeEntryFactory {
 		} else if (type.equals(CustomRangeEntry.Types.node.toString())){
 			return new CustomRangeEntryNode(id, name, description, ref);
 		} else {
-			throw new CustomRangeInitializationException("Invalid type '" + type + "' in "
+			throw new CustomRangeException("Invalid type '" + type + "' in "
 					+ "CustomRangeEntry file '" + creFile.getName() + "'");
-		}
-	}
-	
-	public static CustomRangeEntry createCustomRangeEntry(CustomRangeEntry.Types type, String id, String name, String description, String ref){
-		if (type.equals(CustomRangeEntry.Types.graph)){
-			return new CustomRangeEntryGraph(id, name, description, ref);
-		} else { //type.equals(CustomRangeEntry.EntryType.node)
-			return new CustomRangeEntryNode(id, name, description, ref);
 		}
 	}
 	
