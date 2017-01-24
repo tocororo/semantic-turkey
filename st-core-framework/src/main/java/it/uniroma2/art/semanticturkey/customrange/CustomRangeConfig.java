@@ -57,46 +57,35 @@ public class CustomRangeConfig {
 	 * @param propertyUri
 	 * @return
 	 */
-	public Collection<CustomRange> getCustomRangesForProperty(String propertyUri) {
-		ArrayList<CustomRange> crColl = new ArrayList<CustomRange>();
+	public CustomRange getCustomRangeForProperty(String propertyUri) {
 		for (CustomRangeConfigEntry crcEntry : crConfEntries){
 			if (crcEntry.getProperty().equals(propertyUri)) {
-				crColl.add(crcEntry.getCutomRange());
+				return crcEntry.getCutomRange();
 			}
 		}
-		return crColl;
+		return null;
 	}
 	
 	/**
 	 * Adds an entry (property-CustomRange-override)
 	 * @param crConfEntry
-	 * @return true if the entry is added to the conf, false if an entry with the same prop-CR pair 
-	 * already exists
 	 */
-	public boolean addEntry(CustomRangeConfigEntry crConfEntry){
-		for (CustomRangeConfigEntry e : crConfEntries){
-			if (e.getProperty().equals(crConfEntry.getProperty()) && 
-					e.getCutomRange().getId().equals(crConfEntry.getCutomRange().getId()))
-				return false;
-		}
+	public void addEntry(CustomRangeConfigEntry crConfEntry){
 		crConfEntries.add(crConfEntry);
-		return true;
 	}
 	
 	/**
 	 * Remove property-CustomRange
 	 * @param propertyUri
-	 * @param crId
-	 * @return true if the entry is removed, false if an entry with the prop-CR pair doesn't exist
 	 */
-	public boolean removeConfigEntryFromProperty(String crId, String propertyUri){
-		for (CustomRangeConfigEntry e : crConfEntries){
-			if (e.getProperty().equals(propertyUri) && e.getCutomRange().getId().equals(crId)) {
-				crConfEntries.remove(e);
-				return true;
+	public void removeConfigEntryFromProperty(String propertyUri){
+		Iterator<CustomRangeConfigEntry> it = crConfEntries.iterator();
+		while (it.hasNext()){
+			CustomRangeConfigEntry crcEntry = it.next();
+			if (crcEntry.getProperty().equals(propertyUri)){
+				it.remove();
 			}
 		}
-		return false;
 	}
 	
 	/**
@@ -134,10 +123,20 @@ public class CustomRangeConfig {
 	 */
 	public boolean getReplaceRanges(String propertyUri){
 		for (CustomRangeConfigEntry crcEntry : crConfEntries){
-			if (crcEntry.getProperty().equals(propertyUri))
+			if (crcEntry.getProperty().equals(propertyUri)) {
 				return crcEntry.getReplaceRange();
+			}
 		}
 		return false;
+	}
+	
+	public void setReplaceRanges(String propertyUri, boolean replaceRanges) {
+		for (CustomRangeConfigEntry crcEntry : crConfEntries){
+			if (crcEntry.getProperty().equals(propertyUri)) {
+				crcEntry.setReplaceRange(replaceRanges);
+				return;
+			}
+		}
 	}
 	
 	/**

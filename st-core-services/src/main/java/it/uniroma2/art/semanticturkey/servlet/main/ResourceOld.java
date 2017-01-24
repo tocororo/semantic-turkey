@@ -1539,24 +1539,21 @@ public class ResourceOld extends ServiceAdapter {
 	}
 	
 	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
-		Collection<CustomRange> crColl = crProvider.getCustomRangesForProperty(property.getURI());
-		if (crColl.isEmpty()){//there is no custom range for the given property 
+		CustomRange cr = crProvider.getCustomRangeForProperty(property.getURI());
+		if (cr == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
-		Element customRangesElem = XMLHelp.newElement(treeElement, "customRanges");
-		for (CustomRange cr : crColl) {
-			Element crElem = XMLHelp.newElement(customRangesElem, "customRange");
-			crElem.setAttribute("property", property.getURI());
-			crElem.setAttribute("id", cr.getId());
-			Collection<CustomRangeEntry> crEntries = cr.getEntries();
-			for (CustomRangeEntry crEntry : crEntries){
-				Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
-				crEntryElem.setAttribute("id", crEntry.getId());
-				crEntryElem.setAttribute("name", crEntry.getName());
-				crEntryElem.setAttribute("type", crEntry.getType());
-				Element descElem = XMLHelp.newElement(crEntryElem, "description");
-				descElem.setTextContent(crEntry.getDescription());
-			}
+		Element crElem = XMLHelp.newElement(treeElement, "customRanges");
+		crElem.setAttribute("property", property.getURI());
+		crElem.setAttribute("id", cr.getId());
+		Collection<CustomRangeEntry> crEntries = cr.getEntries();
+		for (CustomRangeEntry crEntry : crEntries){
+			Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
+			crEntryElem.setAttribute("id", crEntry.getId());
+			crEntryElem.setAttribute("name", crEntry.getName());
+			crEntryElem.setAttribute("type", crEntry.getType());
+			Element descElem = XMLHelp.newElement(crEntryElem, "description");
+			descElem.setTextContent(crEntry.getDescription());
 		}
 	}
 	

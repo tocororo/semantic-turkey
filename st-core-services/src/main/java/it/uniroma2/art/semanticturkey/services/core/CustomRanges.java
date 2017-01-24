@@ -760,7 +760,8 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response addCustomRangeToProperty(String customRangeId, ARTURIResource property, @Optional (defaultValue = "false") boolean replaceRanges) throws CustomRangeException{
+	public Response addCustomRangeToProperty(String customRangeId, ARTURIResource property,
+			@Optional (defaultValue = "false") boolean replaceRanges) throws CustomRangeException{
 		crProvider.addCustomRangeToProperty(customRangeId, property, replaceRanges);
 		return createReplyResponse(RepliesStatus.ok);
 	}
@@ -772,8 +773,8 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController
-	public Response removeCustomRangeFromProperty(String customRangeId, ARTURIResource property) throws CustomRangeException{
-		crProvider.removeCustomRangeFromProperty(customRangeId, property);
+	public Response removeCustomRangeFromProperty(ARTURIResource property) throws CustomRangeException{
+		crProvider.removeCustomRangeFromProperty(property);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	

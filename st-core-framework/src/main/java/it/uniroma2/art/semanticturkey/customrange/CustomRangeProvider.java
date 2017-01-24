@@ -93,8 +93,8 @@ public class CustomRangeProvider {
 	 * @param propertyUri
 	 * @return
 	 */
-	public Collection<CustomRange> getCustomRangesForProperty(String propertyUri) {
-		return crConfig.getCustomRangesForProperty(propertyUri);
+	public CustomRange getCustomRangeForProperty(String propertyUri) {
+		return crConfig.getCustomRangeForProperty(propertyUri);
 	}
 	
 	/**
@@ -141,24 +141,11 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public Collection<CustomRangeEntry> getCustomRangeEntriesForProperty(String propertyUri){
-		Collection<CustomRangeEntry> creColl = new ArrayList<CustomRangeEntry>();
-		for (CustomRange cr : getCustomRangesForProperty(propertyUri)) { //iterate over the CR of the given property
-			for (CustomRangeEntry cre : cr.getEntries()) { //iterate over the CRE of a single CR
-				//check if the entry is already added in the collection to return
-				boolean alreadyIn = false;
-				for (CustomRangeEntry e : creColl) {
-					if (e.getId().equals(cre.getId())) {
-						alreadyIn = true;
-						break;
-					}
-				}
-				//add the entry only if is not already added (eventually from another CR)
-				if (!alreadyIn) {
-					creColl.add(cre);
-				}
-			}
+		CustomRange cr = getCustomRangeForProperty(propertyUri);
+		if (cr != null){
+			return cr.getEntries();	
 		}
-		return creColl;
+		else return new ArrayList<CustomRangeEntry>();
 	}
 	
 	/**
@@ -167,27 +154,16 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public Collection<CustomRangeEntryGraph> getCustomRangeEntriesGraphForProperty(String propertyUri){
-		Collection<CustomRangeEntryGraph> creColl = new ArrayList<CustomRangeEntryGraph>();
-		for (CustomRange cr : getCustomRangesForProperty(propertyUri)) { //iterate over the CR of the given property
-			for (CustomRangeEntry cre : cr.getEntries()) { //iterate over the CRE of a single CR
+		Collection<CustomRangeEntryGraph> creGraph = new ArrayList<CustomRangeEntryGraph>();
+		CustomRange cr = getCustomRangeForProperty(propertyUri);
+		if (cr != null){
+			for (CustomRangeEntry cre : cr.getEntries()){
 				if (cre.isTypeGraph()) {
-					//check if the entry is already added in the collection to return
-					boolean alreadyIn = false;
-					for (CustomRangeEntryGraph e : creColl) {
-						if (e.getId().equals(cre.getId())) {
-							alreadyIn = true;
-							break;
-						}
-					}
-					//add the entry only if is not already added (eventually from another CR)
-					if (!alreadyIn) {
-						creColl.add(cre.asCustomRangeEntryGraph());
-					}
+					creGraph.add(cre.asCustomRangeEntryGraph());
 				}
 			}
 		}
-		return creColl;
-		
+		return creGraph;
 	}
 	
 	/**
@@ -196,26 +172,14 @@ public class CustomRangeProvider {
 	 * @return
 	 */
 	public Collection<CustomRangeEntryNode> getCustomRangeEntriesNodeForProperty(String propertyUri){
-		Collection<CustomRangeEntryNode> creColl = new ArrayList<CustomRangeEntryNode>();
-		for (CustomRange cr : getCustomRangesForProperty(propertyUri)) { //iterate over the CR of the given property
-			for (CustomRangeEntry cre : cr.getEntries()) { //iterate over the CRE of a single CR
-				if (cre.isTypeNode()) {
-					//check if the entry is already added in the collection to return
-					boolean alreadyIn = false;
-					for (CustomRangeEntryNode e : creColl) {
-						if (e.getId().equals(cre.getId())) {
-							alreadyIn = true;
-							break;
-						}
-					}
-					//add the entry only if is not already added (eventually from another CR)
-					if (!alreadyIn) {
-						creColl.add(cre.asCustomRangeEntryNode());
-					}
-				}
+		Collection<CustomRangeEntryNode> creNode = new ArrayList<CustomRangeEntryNode>();
+		CustomRange cr = getCustomRangeForProperty(propertyUri);
+		for (CustomRangeEntry cre : cr.getEntries()){
+			if (cre.isTypeNode()) {
+				creNode.add(cre.asCustomRangeEntryNode());
 			}
 		}
-		return creColl;
+		return creNode;
 	}
 	
 	/**
@@ -276,25 +240,27 @@ public class CustomRangeProvider {
 	// CUSTOM RANGE
 	
 	public void addCustomRangeToProperty(String crId, ARTURIResource property, boolean replaceRanges) throws CustomRangeException {
-		CustomRange cr = this.getCustomRangeById(crId);
+		//check if the property has already a CR
+		CustomRange cr = crConfig.getCustomRangeForProperty(property.getURI());
+		if (cr != null) {
+			throw new CustomRangeException(property.getURI() + " has already a CustomRange assigned (" + 
+					cr.getId() + ")");
+		}
+		//check if the given CR exists
+		cr = this.getCustomRangeById(crId);
 		if (cr == null) {
 			throw new CustomRangeException("CustomRange with ID " + crId + " doesn't exist");
 		}
+		
 		CustomRangeConfigEntry crcEntry = new CustomRangeConfigEntry(property.getURI(), cr, replaceRanges);
-		if (crConfig.addEntry(crcEntry)) {
-			crConfig.saveXML(); //save crConfig file only if the entry did not exist already
-		}
+		crConfig.addEntry(crcEntry);
+		crConfig.saveXML();
 	}
 	
-	public void removeCustomRangeFromProperty(String crId, ARTURIResource property) throws CustomRangeException {
-		if (this.getCustomRangeById(crId) == null) {
-			throw new CustomRangeException("CustomRange with ID " + crId + " doesn't exist");
-		}
-		if (crConfig.removeConfigEntryFromProperty(crId, property.getURI())) {
-			crConfig.saveXML(); //save crConfig file only if the entry exists and is removed
-		}
+	public void removeCustomRangeFromProperty(ARTURIResource property) throws CustomRangeException {
+		crConfig.removeConfigEntryFromProperty(property.getURI());
+		crConfig.saveXML();
 	}
-	
 	
 	/**
 	 * Removes a CustomRange from the CR collection and its file from file-system
