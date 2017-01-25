@@ -779,6 +779,18 @@ public class CustomRanges extends STServiceAdapterOLD {
 	}
 	
 	/**
+	 * Update the replaceRanges attribute of a property-CR mapping for the given property
+	 * @param property
+	 * @param replaceRanges
+	 * @return
+	 */
+	@GenerateSTServiceController
+	public Response updateReplaceRanges(ARTURIResource property, boolean replaceRanges) {
+		crProvider.setReplaceRanges(property, replaceRanges);
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
 	 * Tries to validate a pearl code.
 	 * @param pearl rule to be parsed, it should be a whole pearl rule if the CRE is a graph entry
      * or a converter if the CRE is a node entry

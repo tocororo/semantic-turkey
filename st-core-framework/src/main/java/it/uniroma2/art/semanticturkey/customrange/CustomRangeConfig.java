@@ -130,6 +130,11 @@ public class CustomRangeConfig {
 		return false;
 	}
 	
+	/**
+	 * Set the replaceRanges parameter for the CustomRange linked to the given property 
+	 * @param propertyUri
+	 * @param replaceRanges
+	 */
 	public void setReplaceRanges(String propertyUri, boolean replaceRanges) {
 		for (CustomRangeConfigEntry crcEntry : crConfEntries){
 			if (crcEntry.getProperty().equals(propertyUri)) {

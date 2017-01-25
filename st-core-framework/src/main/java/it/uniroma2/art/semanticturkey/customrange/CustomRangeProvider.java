@@ -237,6 +237,11 @@ public class CustomRangeProvider {
 	 * ##### UPDATE #####
 	 * ################## */
 	
+	public void setReplaceRanges(ARTURIResource property, boolean replaceRanges) {
+		crConfig.setReplaceRanges(property.getURI(), replaceRanges);
+		crConfig.saveXML();
+	}
+	
 	// CUSTOM RANGE
 	
 	public void addCustomRangeToProperty(String crId, ARTURIResource property, boolean replaceRanges) throws CustomRangeException {

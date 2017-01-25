@@ -1543,7 +1543,7 @@ public class ResourceOld extends ServiceAdapter {
 		if (cr == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
-		Element crElem = XMLHelp.newElement(treeElement, "customRanges");
+		Element crElem = XMLHelp.newElement(treeElement, "customRange");
 		crElem.setAttribute("property", property.getURI());
 		crElem.setAttribute("id", cr.getId());
 		Collection<CustomRangeEntry> crEntries = cr.getEntries();
