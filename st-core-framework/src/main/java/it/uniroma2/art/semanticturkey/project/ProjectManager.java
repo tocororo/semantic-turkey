@@ -39,6 +39,7 @@ import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.models.conf.PersistenceModelConfiguration;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -51,6 +52,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -79,6 +81,14 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.impl.TreeModel;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1665,4 +1675,145 @@ public class ProjectManager {
 		return project;
 	}
 
+	public static Project<? extends RDFModel> createProject2(ProjectConsumer consumer, String projectName,
+			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
+			boolean validationEnabled, PluginSpecification uriGeneratorSpecification,
+			PluginSpecification renderingEngineSpecification)
+					throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+					ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException {
+
+		// Currently, only continuous editing projects
+		ProjectType projType = ProjectType.continuosEditing;
+
+		// Currently, only projects in the default location
+		File projectDir = resolveProjectNameToDir(projectName);
+
+		// Currently, only guess the namespace from the base uri
+		String defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
+
+		// Currently, only local projects
+
+		RepositoryConfig coreRepositoryConfig = new RepositoryConfig(projectName + "-core");
+		SailRepositoryConfig coreSailRepoConfig = new SailRepositoryConfig();
+		SailImplConfig coreSailConfig = new NativeStoreConfig();
+
+		if (historyEnabled) {
+			ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(coreSailConfig);
+			changeTrackerSailConfig.setHistoryRepositoryID(projectName + "-support");
+			changeTrackerSailConfig.setHistoryGraph(
+					SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
+			changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+
+			coreSailConfig = changeTrackerSailConfig;
+		}
+
+		coreSailRepoConfig.setSailImplConfig(coreSailConfig);
+		coreRepositoryConfig.setRepositoryImplConfig(coreSailRepoConfig);
+
+		RepositoryConfig supportRepositoryConfig = new RepositoryConfig(projectName + "-support");
+		SailRepositoryConfig supportSailRepoConfig = new SailRepositoryConfig();
+		SailImplConfig supportSailConfig = new NativeStoreConfig();
+		supportSailRepoConfig.setSailImplConfig(supportSailConfig);
+		supportRepositoryConfig.setRepositoryImplConfig(supportSailRepoConfig);
+
+		prepareProjectFiles2(consumer, projectName, modelType, projType, projectDir, baseURI, defaultNamespace,
+				coreRepositoryConfig, supportRepositoryConfig, uriGeneratorSpecification, renderingEngineSpecification);
+
+		Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
+				LockLevel.NO);
+		// TODO this has to be removed, once all references to currentProject have been removed from ST
+		// (filters etc..)
+		// setCurrentProject(project);
+		return project;
+	}
+	
+	private static <MODELTYPE extends RDFModel>  void prepareProjectFiles2(ProjectConsumer consumer, String projectName,
+			Class<MODELTYPE> modelType, ProjectType type, File projectDir, String baseURI, String defaultNamespace,
+			RepositoryConfig coreRepoConfig, RepositoryConfig supportRepoConfig, PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
+					throws DuplicatedResourceException, ProjectCreationException {
+		if (projectDir.exists())
+			throw new DuplicatedResourceException("project: " + projectName
+					+ "already exists; choose a different project name for a new project");
+		projectDir.mkdir();
+		File coreRepoDir = new File(projectDir, Project.PROJECT_COREREPO_DIR_NAME);
+		coreRepoDir.mkdir();
+		File supportRepoDir = new File(projectDir, Project.PROJECT_SUPPORTREPO_DIR_NAME);
+		supportRepoDir.mkdir();
+		File info_stp = new File(projectDir, Project.INFOFILENAME);
+
+		try {
+			// STP file containing properties for the loaded project
+			logger.debug("creating project info file: " + info_stp);
+			info_stp.createNewFile();
+			logger.debug("project info file: " + info_stp + " created");
+			// here we write directly on the file; once the project is loaded, it will be handled internally
+			// as a property file
+			BufferedWriter out = new BufferedWriter(new FileWriter(info_stp));
+//			out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
+//			out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
+			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorSpecification.getFactoryId()) + "\n");
+			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGeneratorSpecification.getConfigType())
+					+ "\n");
+			out.write(
+					Project.RENDERING_ENGINE_FACTORY_ID_PROP + "=" + escape(renderingEngineSpecification.getFactoryId()) + "\n");
+			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "="
+					+ escape(renderingEngineSpecification.getConfigType()) + "\n");
+			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
+			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
+			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
+			out.write(Project.PROJECT_MODEL_TYPE + "=" + modelType.getName() + "\n");
+			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
+			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
+			out.write(ProjectACL.ACL + "="
+					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
+			out.close();
+
+			logger.debug("project creation: all project properties have been stored");
+
+			// Prefix Mapping file creation
+			File prefixMappingFile = new File(projectDir, NSPrefixMappings.prefixMappingFileName);
+			prefixMappingFile.createNewFile();
+
+			// Core Repository Configuration file creation
+			File coreRepoConfigurationFile = new File(projectDir, Project.COREREPOCONFIG_FILENAME);
+			coreRepoConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(coreRepoConfigurationFile)) {
+				Model model = new TreeModel();
+				coreRepoConfig.export(model);
+				Rio.write(model, fw, org.eclipse.rdf4j.rio.RDFFormat.TURTLE);
+			}
+			
+			// Support Repository Configuration file creation
+			File supportRepoConfigurationFile = new File(projectDir, Project.SUPPORTREPOCONFIG_FILENAME);
+			supportRepoConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(supportRepoConfigurationFile)) {
+				Model model = new TreeModel();
+				supportRepoConfig.export(model);
+				Rio.write(model, fw, org.eclipse.rdf4j.rio.RDFFormat.TURTLE);
+			}
+
+
+			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
+			uriGenConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)) {
+				uriGeneratorSpecification.getProperties().store(fw,
+						"uri generator configuration, initialized from project initialization");
+			}
+
+			File renderingEngineConfigurationFile = new File(projectDir,
+					Project.RENDERING_ENGINE_CONFIG_FILENAME);
+			renderingEngineConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(renderingEngineConfigurationFile)) {
+				renderingEngineSpecification.getProperties().store(fw,
+						"rendering engine configuration, initialized from project initialization");
+			}
+
+			logger.debug("all project info have been built");
+
+		} catch (IOException e) {
+			Utilities.deleteDir(projectDir); // if something fails, deletes everything
+			logger.debug("directory: " + info_stp + " deleted due to project creation fail");
+			throw new ProjectCreationException(e);
+		}
+	}
 }

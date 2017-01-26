@@ -39,7 +39,6 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {

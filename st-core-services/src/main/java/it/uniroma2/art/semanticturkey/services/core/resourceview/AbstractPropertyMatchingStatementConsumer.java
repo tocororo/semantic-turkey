@@ -100,7 +100,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 		for (IRI predicate : relevantProperties) {
 			if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
-					project.getOntologyManager())) {
+					project.getNewOntologyManager())) {
 				continue;
 			}
 

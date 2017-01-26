@@ -26,13 +26,18 @@
   */
 package it.uniroma2.art.semanticturkey.project;
 
-import it.uniroma2.art.owlart.exceptions.ModelCreationException;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
-import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+
+import it.uniroma2.art.owlart.exceptions.ModelCreationException;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 
 public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<MODELTYPE> {
 
@@ -48,9 +53,23 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 	@Override
 	protected void loadTriples() throws ModelCreationException {
 		logger.debug("loading triples");
-		ontManager.startOntModel(getBaseURI(), getProjectStoreDir(), modelConfiguration);
+		if (ontManager != null) {
+			ontManager.startOntModel(getBaseURI(), getProjectStoreDir(), modelConfiguration);
+		} else {
+			supportOntManager.startOntModel("http://example.org/history", getProjectSupportRepoDir(), supportRepoConfig);
+			Repository supportRepo = supportOntManager.getRepository();
+			RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepo);
+			newOntManager.startOntModel(getBaseURI(), getProjectCoreRepoDir(), coreRepoConfig);
+			
+			try(RepositoryConnection conn = newOntManager.getRepository().getConnection()){
+				conn.clear(conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
+				try {
+					conn.add(this.getClass().getResourceAsStream("/it/uniroma2/art/semanticturkey/owl.rdfs"), "http://www.w3.org/2002/07/owl", RDFFormat.RDFXML, conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
+				} catch (Exception e) {
+					throw new ModelCreationException(e);
+				}
+			}
+		}
 	}
-	
-	
 
 }

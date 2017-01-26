@@ -262,10 +262,23 @@ public class Projects extends STServiceAdapterOLD {
 				Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
 				try {
 					projElem.setAttribute(XMLNames.ontoTypeAttr, ((Project<?>) proj).getModelType().getName());
-					String ontMgr = ((Project<?>) proj).getOntologyManagerImplID();
+					String ontMgr;
+					try {
+						ontMgr = ((Project<?>) proj).getOntologyManagerImplID();
+					} catch (ProjectInconsistentException e) {
+						ontMgr = "";
+					}
 					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
-					String mConfID = ((Project<?>) proj).getModelConfigurationID();
+					
+					String mConfID;
+					try {
+						mConfID = ((Project<?>) proj).getModelConfigurationID();
+					} catch (ProjectInconsistentException e) {
+						mConfID = "";
+					}
+					
 					projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
+					
 					projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
 
 					projElem.setAttribute(XMLNames.statusAttr, "ok");

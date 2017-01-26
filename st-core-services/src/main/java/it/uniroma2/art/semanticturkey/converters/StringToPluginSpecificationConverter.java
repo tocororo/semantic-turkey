@@ -6,7 +6,7 @@ import org.springframework.core.convert.converter.Converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.uniroma2.art.semanticturkey.services.core.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 
 /**
  * Converts a string to a {@link PluginSpecification}, containing a plugin factoryId and its configuration

@@ -26,8 +26,12 @@
   */
 package it.uniroma2.art.semanticturkey.vocabulary;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 
@@ -38,7 +42,7 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 public class STVocabUtilities {
 	
 	
-	public static boolean isHiddenResource(ARTResource res, STOntologyManager<?> ontManager) {		
+	public static boolean isHiddenResource(Resource res, OntologyManager ontManager) {		
 		return isHiddenResource(ontManager, res);
 	}
 	
@@ -46,10 +50,22 @@ public class STVocabUtilities {
 	 * @param res
 	 * @return
 	 */
-	public static boolean isHiddenResource(STOntologyManager<? extends RDFModel> ontMgr, ARTResource res) {
+	@Deprecated
+	public static boolean isHiddenResource(ARTResource res, OntologyManager ontMgr) {
 	    if (!res.isURIResource())
 	        return false;
 	    String ns = res.asURIResource().getNamespace();
+		if (ontMgr.isSupportOntNamespace(ns))
+			return true;
+		if (!Config.isAdminStatus() && ontMgr.isApplicationOntNamespace(ns))
+			return true;
+	    return false;		
+	}
+
+	public static boolean isHiddenResource(OntologyManager ontMgr, Resource res) {
+	    if (res instanceof IRI)
+	        return false;
+	    String ns = ((IRI)res).getNamespace();
 		if (ontMgr.isSupportOntNamespace(ns))
 			return true;
 		if (!Config.isAdminStatus() && ontMgr.isApplicationOntNamespace(ns))

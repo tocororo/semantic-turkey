@@ -39,7 +39,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.SESAME;
+import org.eclipse.rdf4j.model.vocabulary.SESAMEQNAME;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigSchema;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositoryFactory;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.config.SailRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +77,10 @@ import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
 import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
 import it.uniroma2.art.owlart.models.conf.BadConfigurationException;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
+import it.uniroma2.art.owlart.rdf4jimpl.models.BaseRDFModelRDF4JImpl;
+import it.uniroma2.art.owlart.rdf4jimpl.models.OWLModelRDF4JImpl;
+import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSModelRDF4JImpl;
+import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSXLModelRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
@@ -68,8 +92,11 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerCompatibilityImpl;
+import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
@@ -92,11 +119,17 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	protected File uriGenConfigFile;
 
 	protected STOntologyManager<MODELTYPE> ontManager;
+	protected OntologyManager newOntManager;
+	protected OntologyManagerImpl supportOntManager;
+
 	Class<? extends ModelConfiguration> modelConfigClass;
 	ModelConfiguration modelConfiguration;
 
 	public static final String INFOFILENAME = "project.info";
 	public static final String MODELCONFIG_FILENAME = "model.config";
+	public static final String COREREPOCONFIG_FILENAME = "core-repo.ttl";
+	public static final String SUPPORTREPOCONFIG_FILENAME = "support-repo.ttl";
+
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
 	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
 
@@ -109,6 +142,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String PROJECT_TYPE = "ProjectType";
 	public static final String PROJECT_MODEL_TYPE = "ModelType";
 	public static final String PROJECT_STORE_DIR_NAME = "store";
+	public static final String PROJECT_COREREPO_DIR_NAME = "core";
+	public static final String PROJECT_SUPPORTREPO_DIR_NAME = "support";
+
 	public static final String PLUGINS_PROP = "plugins";
 
 	// Constants concerning project plugins
@@ -159,9 +195,12 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private URIGenerator uriGenerator;
 	private RenderingEngine renderingEngine;
 	
+	private MODELTYPE primordialOntModel;
 	private final ThreadLocal<MODELTYPE> modelHolder;
 	private RDF4JRepositoryTransactionManager repositoryTransactionManager;
-	
+	protected RepositoryConfig coreRepoConfig;
+	protected RepositoryConfig supportRepoConfig;
+
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
@@ -185,7 +224,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		uriGenConfigFile = new File(projectDir, URI_GENERATOR_CONFIG_FILENAME);
 		renderingConfigFile = new File(projectDir, RENDERING_ENGINE_CONFIG_FILENAME);
 		modelHolder = new ThreadLocal<>();
-		
+
 		stp_properties = new Properties();
 		try {
 			FileInputStream propFileInStream = new FileInputStream(infoSTPFile);
@@ -201,23 +240,57 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			ProjectUpdateException, UnavailableResourceException, UnsupportedModelConfigurationException,
 			UnloadableModelConfigurationException, ProjectAccessException {
 		try {
-			OntologyManagerFactory<ModelConfiguration> ontMgrFact = PluginManager
-					.getOntManagerImpl(getOntologyManagerImplID());
-			ontManager = ontMgrFact.createOntologyManager(this);
-			if (ontManager == null)
-				throw new ProjectIncompatibleException(
-						"there is no OSGi bundle loaded in Semantic Turkey for the required OntologyManager: "
-								+ getOntologyManagerImplID());
+			String ontMgrFactId = getProperty(ONTOLOGY_MANAGER_ID_PROP);
 
-			try {
-				modelConfiguration = ontMgrFact.createModelConfigurationObject(getModelConfigurationID());
-				modelConfiguration.loadParameters(modelConfigFile);
-			} catch (ClassNotFoundException e) {
-				throw new ProjectAccessException(e);
-			} catch (BadConfigurationException e) {
-				throw new ProjectAccessException(e);
-			} catch (IOException e) {
-				throw new ProjectAccessException(e);
+			if (ontMgrFactId != null) {
+				OntologyManagerFactory<ModelConfiguration> ontMgrFact = PluginManager
+						.getOntManagerImpl(ontMgrFactId);
+				ontManager = ontMgrFact.createOntologyManager(this);
+				if (ontManager == null)
+					throw new ProjectIncompatibleException(
+							"there is no OSGi bundle loaded in Semantic Turkey for the required OntologyManager: "
+									+ getOntologyManagerImplID());
+
+				newOntManager = new OntologyManagerCompatibilityImpl(ontManager);
+
+				try {
+					modelConfiguration = ontMgrFact.createModelConfigurationObject(getModelConfigurationID());
+					modelConfiguration.loadParameters(modelConfigFile);
+				} catch (ClassNotFoundException e) {
+					throw new ProjectAccessException(e);
+				} catch (BadConfigurationException e) {
+					throw new ProjectAccessException(e);
+				} catch (IOException e) {
+					throw new ProjectAccessException(e);
+				}
+
+			} else {
+				try {
+					File coreRepoConfigFile = new File(_projectDir, COREREPOCONFIG_FILENAME);
+					Model coreRepoConfigModel = Rio.parse(new FileInputStream(coreRepoConfigFile),
+							coreRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
+					Resource coreRepoRes = Models
+							.subject(coreRepoConfigModel.filter(null, RDF.TYPE,
+									RepositoryConfigSchema.REPOSITORY))
+							.orElseThrow(() -> new ProjectAccessException(
+									"Could not find the repository resource in its configuration"));
+					coreRepoConfig = RepositoryConfig.create(coreRepoConfigModel, coreRepoRes);
+
+					File supportRepoConfigFile = new File(_projectDir, SUPPORTREPOCONFIG_FILENAME);
+					Model supportRepoConfigModel = Rio.parse(new FileInputStream(supportRepoConfigFile),
+							supportRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
+					Resource supportRepoRes = Models
+							.subject(supportRepoConfigModel.filter(null, RDF.TYPE,
+									RepositoryConfigSchema.REPOSITORY))
+							.orElseThrow(() -> new ProjectAccessException(
+									"Could not find the repository resource in its configuration"));
+					supportRepoConfig = RepositoryConfig.create(supportRepoConfigModel, supportRepoRes);
+
+					newOntManager = new OntologyManagerImpl();
+					supportOntManager = new OntologyManagerImpl();
+				} catch (RDFParseException | UnsupportedRDFormatException | IOException e) {
+					throw new ProjectAccessException(e);
+				}
 			}
 
 			String baseURI = getBaseURI();
@@ -295,14 +368,30 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			// activates the ontModel loads the triples (implementation depends on project type)
 			loadTriples();
 			logger.debug("activation of project: " + getName() + ": all triples loaded");
-			
+
 			Repository rdf4jRepo = null;
 			try {
 				rdf4jRepo = getRepository();
-			} catch(IllegalStateException e) {
+			} catch (IllegalStateException e) {
 				// not an RDF4J repostory
 			}
-			
+
+			if (ontManager != null) {
+				primordialOntModel = ontManager.getOntModel();
+			} else {
+				String modelType = getProperty(PROJECT_MODEL_TYPE);
+
+				if (OWLModel.class.getName().equals(modelType)) {
+					primordialOntModel = (MODELTYPE) new OWLModelRDF4JImpl(new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+				} else if (SKOSModel.class.getName().equals(modelType)) {
+					primordialOntModel = (MODELTYPE) new SKOSModelRDF4JImpl(new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+				} else if (SKOSXLModel.class.getName().equals(modelType)) {
+					primordialOntModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+				} else {
+					throw new ProjectAccessException("Unsupport model type: " + modelType);
+				}
+			}
+
 			if (rdf4jRepo != null) {
 				repositoryTransactionManager = new RDF4JRepositoryTransactionManager(rdf4jRepo);
 			}
@@ -323,6 +412,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				getPrimordialOntModel().setDefaultNamespace(defaultNamespace);
 				logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
 						+ defaultNamespace);
+				logger.info("activation of project: " + getName() + ": defaultnamespace set to@@@@ : "
+						+ getPrimordialOntModel().getDefaultNamespace());
 				// it may seem strange that ST is reporting the msg:
 				// "a mapping already exists for" <def namespace here of the current project>
 				// this is due to a non-properly managed def namespace in owlart sesame implementation
@@ -335,11 +426,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				// the "" prefix, and no redundanc should be present
 			}
 
-			ontManager.declareApplicationOntology(getPrimordialOntModel().createURIResource(SemAnnotVocab.NAMESPACE),
-					false, true);
+			newOntManager.declareApplicationOntology(SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.NAMESPACE), false, true);
 
 			// nsPrefixMappingsPersistence must have been already created by constructor of Project subclasses
-			ontManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
+			newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
 
 			SemanticTurkey.initializeVocabularies(getPrimordialOntModel());
 			logger.info("defaultnamespace set to: " + defaultNamespace);
@@ -638,7 +728,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 
 	public MODELTYPE getPrimordialOntModel() {
-		return this.ontManager.getOntModel();
+		return primordialOntModel;
 	}
 
 	public RDFModel unbindModelFromThread() throws ModelUpdateException {
@@ -695,15 +785,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 
 	public Repository getRepository() {
-		RDFModel model = getOntologyManager().getOntModel();
-
-		try {
-			Method m = model.getClass().getMethod("getRDF4JRepository");
-			return (Repository) m.invoke(model);
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException e) {
-			throw new IllegalStateException("Cannot retrieve an RDF4J Repository for the project", e);
-		}
+		return newOntManager.getRepository();
 	}
 	
 	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager() {
@@ -718,6 +800,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public File getProjectStoreDir() {
 		return new File(_projectDir, PROJECT_STORE_DIR_NAME);
 	}
+	
+	public File getProjectCoreRepoDir() {
+		return new File(_projectDir, PROJECT_COREREPO_DIR_NAME);
+	}
+	
+	public File getProjectSupportRepoDir() {
+		return new File(_projectDir, PROJECT_SUPPORTREPO_DIR_NAME);
+	}
+
 
 	public String toString() {
 		return "proj:" + getName() + "|defNS:" + getDefaultNamespace() + "|TS:" + getTimeStamp();
@@ -745,6 +836,59 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public ARTResource getMetadataGraph(String extensionPathComponent) {
 		return VocabUtilities.nodeFactory.createURIResource(AUXILIARY_METADATA_GRAPH_NAME_BASE
 				+ extensionPathComponent + AUXILIARY_METADATA_GRAPH_SUFFIX);
+	}
+
+	public OntologyManager getNewOntologyManager() {
+		return newOntManager;
+	}
+}
+
+class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
+	private NonClosingBaseRDFModelRDF4JImpl delegate;
+
+	public NonClosingBaseRDFModelRDF4JImpl(Repository repo, boolean rdfsReasoning,
+			boolean directTypeReasoning) throws SailException, RepositoryException, ModelCreationException {
+		super(repo, rdfsReasoning, directTypeReasoning);
+	}
+
+	public NonClosingBaseRDFModelRDF4JImpl(Repository repo, boolean rdfsReasoning,
+			boolean directTypeReasoning, NonClosingBaseRDFModelRDF4JImpl delegate)
+					throws SailException, RepositoryException, ModelCreationException {
+		super(repo, rdfsReasoning, directTypeReasoning);
+		this.delegate = delegate;
+	}
+
+	@Override
+	public void close() throws ModelUpdateException {
+		repConn.close();
+	}
+
+	@Override
+	public BaseRDFModelRDF4JImpl forkModel() throws ModelCreationException {
+		if (this.getClass() != NonClosingBaseRDFModelRDF4JImpl.class) {
+			throw new IllegalStateException("The model class '" + this.getClass().getName()
+					+ "' seems not properly override forkModel()");
+		}
+
+		return new NonClosingBaseRDFModelRDF4JImpl(localrepository, rdfsReasoning, directTypeReasoning, this);
+	}
+
+	@Override
+	public void setDefaultNamespace(String namespace) throws ModelUpdateException {
+		if (delegate != null) {
+			delegate.setDefaultNamespace(namespace);
+		} else {
+			super.setDefaultNamespace(namespace);
+		}
+	}
+
+	@Override
+	public String getDefaultNamespace() {
+		if (delegate != null) {
+			return delegate.getDefaultNamespace();
+		} else {
+			return super.getDefaultNamespace();
+		}
 	}
 
 }

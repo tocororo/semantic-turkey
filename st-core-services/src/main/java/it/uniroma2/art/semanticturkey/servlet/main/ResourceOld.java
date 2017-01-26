@@ -37,6 +37,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -89,6 +90,7 @@ import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
+import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
@@ -127,6 +129,8 @@ public class ResourceOld extends ServiceAdapter {
 
 	protected ArrayList<ARTURIResource> bannedPredicatesForResourceDescription;
 	
+	@Autowired
+	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 	@Autowired
 	private CustomRangeProvider crProvider;
 
@@ -1327,7 +1331,7 @@ public class ResourceOld extends ServiceAdapter {
 			ARTURIResource valuedProperty = st.getPredicate();
 
 			if (!bannedPredicatesForResourceDescription.contains(valuedProperty)
-					&& !STVocabUtilities.isHiddenResource(valuedProperty, getProject().getOntologyManager())) {
+					&& !STVocabUtilities.isHiddenResource(valuedProperty, getProject().getNewOntologyManager())) {
 
 				ARTNode value = st.getObject();
 

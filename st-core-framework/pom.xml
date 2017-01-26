@@ -187,5 +187,10 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-changetracking-sail</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 </project>

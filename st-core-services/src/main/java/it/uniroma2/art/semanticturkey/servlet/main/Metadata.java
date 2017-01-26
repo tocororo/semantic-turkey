@@ -40,6 +40,7 @@ import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
@@ -487,7 +488,7 @@ public class Metadata extends ResourceOld {
 
 		String request = getNSPrefixMappingsRequest;
 
-		STOntologyManager<? extends RDFModel> ontManager = getProject().getOntologyManager();
+		OntologyManager ontManager = getProject().getNewOntologyManager();
 
 		Map<String, String> innerPrefixMap;
 		try {
@@ -520,7 +521,7 @@ public class Metadata extends ResourceOld {
 		ServletUtilities servletUtilities = new ServletUtilities();
 		ResponseREPLY response = ServletUtilities.getService().createReplyResponse(request, RepliesStatus.ok);
 
-		STOntologyManager<? extends RDFModel> ontManager = getProject().getOntologyManager();
+		OntologyManager ontManager = getProject().getNewOntologyManager();
 
 		try {
 			ontManager.setNSPrefixMapping(prefix, namespace);
@@ -561,7 +562,7 @@ public class Metadata extends ResourceOld {
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
-		STOntologyManager<? extends RDFModel> ontManager = getProject().getOntologyManager();
+		OntologyManager ontManager = getProject().getNewOntologyManager();
 
 		try {
 			ontManager.removeNSPrefixMapping(namespace);
@@ -622,7 +623,7 @@ public class Metadata extends ResourceOld {
 		HashSet<String> importsBranch = new HashSet<String>();
 
 		OWLModel ontModel = getOWLModel();
-		STOntologyManager<? extends RDFModel> repMgr = getProject().getOntologyManager();
+		OntologyManager repMgr = getProject().getNewOntologyManager();
 
 		try {
 			logger.debug("listing ontology imports");
@@ -634,7 +635,7 @@ public class Metadata extends ResourceOld {
 		return response;
 	}
 
-	private void buildImportXMLTree(OWLModel ontModel, STOntologyManager<? extends RDFModel> repMgr,
+	private void buildImportXMLTree(OWLModel ontModel, OntologyManager repMgr,
 			Element xmlElem, String uri, HashSet<String> importsBranch) throws ModelAccessException {
 		ARTURIResource ont = ontModel.createURIResource(uri);
 		ARTURIResourceIterator imports = ontModel.listOntologyImports(ont);
@@ -682,7 +683,7 @@ public class Metadata extends ResourceOld {
 	public Response removeOntImport(String uri) {
 		String request = removeImportRequest;
 		ServletUtilities servletUtilities = new ServletUtilities();
-		STOntologyManager<? extends RDFModel> repMgr = getProject().getOntologyManager();
+		OntologyManager repMgr = getProject().getNewOntologyManager();
 		try {
 			repMgr.removeOntologyImport(uri);
 		} catch (IOException e) {
@@ -728,7 +729,7 @@ public class Metadata extends ResourceOld {
 		ServletUtilities servletUtilities = new ServletUtilities();
 		String msg = null;
 		String oldCache;
-		STOntologyManager<? extends RDFModel> ontMgr = getProject().getOntologyManager();
+		OntologyManager ontMgr = getProject().getNewOntologyManager();
 
 		// CHECKS THAT THE ONTOLOGY IS NOT ALREADY IMPORTED
 		// previously used ImportMem, now deprecated
@@ -851,7 +852,7 @@ public class Metadata extends ResourceOld {
 	public Response getImportedOntology(int method, String baseURI, String altURL, String fromLocalFilePath,
 			String toLocalFile) {
 		ServletUtilities servletUtilities = new ServletUtilities();
-		STOntologyManager<? extends RDFModel> repMgr = getProject().getOntologyManager();
+		OntologyManager repMgr = getProject().getNewOntologyManager();
 		String request = null;
 		try {
 			if (method == fromWebToMirror) {

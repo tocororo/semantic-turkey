@@ -63,7 +63,7 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 
 			ARTURIResource pred = stmt.getPredicate();
 
-			if (STVocabUtilities.isHiddenResource(pred, project.getOntologyManager())) {
+			if (STVocabUtilities.isHiddenResource(pred, project.getNewOntologyManager())) {
 				continue;
 			}
 

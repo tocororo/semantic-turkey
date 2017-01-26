@@ -80,7 +80,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 			
 			for (IRI predicate : relevantDirectKnowledge.predicates()) {
 				if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
-						project.getOntologyManager())) {
+						project.getNewOntologyManager())) {
 					continue;
 				}
 

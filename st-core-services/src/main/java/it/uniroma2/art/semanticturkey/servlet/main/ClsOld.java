@@ -55,7 +55,9 @@ import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedExcepti
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
 import it.uniroma2.art.semanticturkey.filter.DomainResourcePredicate;
 import it.uniroma2.art.semanticturkey.filter.STRootClassesResourcePredicate;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerCompatibilityImpl;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
@@ -493,12 +495,12 @@ public class ClsOld extends ResourceOld {
 
 			RDFIterator<? extends ARTResource> subClassesIterator;
 
-			STOntologyManager<?> ontManager = getProject().getOntologyManager();
+			OntologyManager ontManager = getProject().getNewOntologyManager();
 
 			// creating subclasses iterator
 			// URI filter and other complex operations for tree show
 			if (forTree){
-				subClassesIterator = new SubClassesForTreeIterator(ontManager, cls, graphs);
+				subClassesIterator = new SubClassesForTreeIterator(ontModel, ontManager, cls, graphs);
 			} else {
 				// simple listDirectSubClasses for standard method
 				//subClassesIterator = ((DirectReasoning) ontModel).listDirectSubClasses(cls, graphs);
@@ -512,7 +514,7 @@ public class ClsOld extends ResourceOld {
 						ModelUtilities.getResourceRole(subClass, ontModel),
 						servletUtilities.checkWritable(ontModel, subClass, wgraph), false);
 				if (forTree)
-					ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
+					ClsOld.decorateForTreeView(ontModel, ontManager, stClass, getUserNamedGraphs());
 				if (instNum) {
 					ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 				}
@@ -632,10 +634,10 @@ public class ClsOld extends ResourceOld {
 		subClass.setRendering(rendering);
 	}
 
-	public static void decorateForTreeView(STOntologyManager<?> ontManager, STRDFResource subClass,
+	public static void decorateForTreeView(RDFSModel ontModel, OntologyManager ontManager, STRDFResource subClass,
 			ARTResource[] graphs) throws ModelAccessException, NonExistingRDFResourceException {
 
-		RDFIterator<ARTURIResource> subSubClassesIterator = new SubClassesForTreeIterator(ontManager,
+		RDFIterator<ARTURIResource> subSubClassesIterator = new SubClassesForTreeIterator(ontModel, ontManager,
 				subClass.getARTNode().asURIResource(), graphs);
 		if (subSubClassesIterator.hasNext())
 			subClass.setInfo("more", "1"); // the subclass has further subclasses
@@ -682,8 +684,8 @@ public class ClsOld extends ResourceOld {
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 
 			if (hasSubClassesRequest) {
-				STOntologyManager<?> ontManager = getProject().getOntologyManager();
-				ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
+				OntologyManager ontManager = getProject().getNewOntologyManager();
+				ClsOld.decorateForTreeView(ontModel, ontManager, stClass, getUserNamedGraphs());
 			}
 			RDFXMLHelp.addRDFNode(classElement, stClass);
 
@@ -918,9 +920,9 @@ public class ClsOld extends ResourceOld {
 		RDFIterator<? extends ARTResource> subClassesIterator;
 		Iterator<? extends ARTResource> finalIterator;
 
-		SubClassesForTreeIterator(STOntologyManager<?> ontManager, ARTResource superCls,
+		SubClassesForTreeIterator(RDFSModel ontModel, OntologyManager ontManager, ARTResource superCls,
 				ARTResource... graphs) throws ModelAccessException {
-			RDFSModel ontModel = ontManager.getOWLModel();
+//			RDFSModel ontModel = ontManager.getOWLModel();
 			// to check that even with a non-owl reasoning triple-store, root classes are computed as children
 			// of owl:Thing
 			if (superCls.equals(OWL.Res.THING)) {
@@ -1007,9 +1009,9 @@ public class ClsOld extends ResourceOld {
 						servletUtilities.checkWritable(ontModel, cls, wgraph), false);
 				setRendering(ontModel, stClass, null, null, graphs);
 
-				STOntologyManager<?> ontManager = getProject().getOntologyManager();
+				OntologyManager ontManager = getProject().getNewOntologyManager();
 
-				ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
+				ClsOld.decorateForTreeView(ontModel, ontManager, stClass, getUserNamedGraphs());
 				if (instNumBool)
 					ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 
@@ -1203,9 +1205,9 @@ public class ClsOld extends ResourceOld {
 					servletUtilities.checkWritable(ontModel, classRes, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stClass, graphs);
 
-			STOntologyManager<?> ontManager = getProject().getOntologyManager();
+			OntologyManager ontManager = getProject().getNewOntologyManager();
 
-			ClsOld.decorateForTreeView(ontManager, stClass, getUserNamedGraphs());
+			ClsOld.decorateForTreeView(ontModel, ontManager, stClass, getUserNamedGraphs());
 			setRendering(ontModel, stClass, null, null, graphs);
 			RDFXMLHelp.addRDFNode(clsElement, stClass);
 
@@ -1215,7 +1217,7 @@ public class ClsOld extends ResourceOld {
 					servletUtilities.checkWritable(ontModel, superClassResource, wgraph), false);
 			ClsOld.decorateWithNumberOfIstances(ontModel, stSuperClass, graphs);
 			setRendering(ontModel, stSuperClass, null, null, graphs);
-			ClsOld.decorateForTreeView(ontManager, stSuperClass, getUserNamedGraphs());
+			ClsOld.decorateForTreeView(ontModel, ontManager, stSuperClass, getUserNamedGraphs());
 			RDFXMLHelp.addRDFNode(superClsElement, stSuperClass);
 
 			return response;

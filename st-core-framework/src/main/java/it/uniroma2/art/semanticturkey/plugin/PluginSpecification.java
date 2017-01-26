@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core;
+package it.uniroma2.art.semanticturkey.plugin;
 
 import java.util.Optional;
 import java.util.Properties;
@@ -62,6 +62,21 @@ public class PluginSpecification {
 		}
 
 		return pluginFactory.createInstance(config);
+	}
+
+	public void expandDefaults() throws ClassNotFoundException, BadConfigurationException,
+			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException {
+		PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(factoryId);
+
+		if (!configTypeHolder.isPresent()) {
+			configTypeHolder = Optional
+					.of(pluginFactory.createDefaultPluginConfiguration().getClass().getName());
+		}
+
+		if (properties == null || properties.isEmpty()) {
+			properties = new Properties();
+			pluginFactory.createPluginConfiguration(configTypeHolder.get()).storeParameters(properties);
+		}
 	}
 
 }

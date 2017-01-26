@@ -29,6 +29,7 @@ package it.uniroma2.art.semanticturkey.filter;
 import com.google.common.base.Predicate;
 
 import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
@@ -40,18 +41,18 @@ import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
  */
 public class NoSystemResourcePredicate implements Predicate<ARTResource> {
 
-	private STOntologyManager<?> ontManager;
+	private OntologyManager ontManager;
 	
-	private NoSystemResourcePredicate(STOntologyManager<?> ontManager) {
+	private NoSystemResourcePredicate(OntologyManager ontManager) {
 		this.ontManager = ontManager;
 	}
 	
-	public static NoSystemResourcePredicate getPredicate(STOntologyManager<?> ontManager) {
+	public static NoSystemResourcePredicate getPredicate(OntologyManager ontManager) {
 		return new NoSystemResourcePredicate(ontManager);
 	}
 	
 	public static NoSystemResourcePredicate getPredicate(Project<?> project) {
-		return getPredicate(project.getOntologyManager());
+		return getPredicate(project.getNewOntologyManager());
 	}
 	
 

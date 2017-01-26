@@ -30,6 +30,7 @@ import com.google.common.base.Predicate;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
@@ -43,18 +44,18 @@ public class DomainResourcePredicate implements Predicate<ARTResource> {
 
 	// public static final DomainResourcePredicate domResPredicate = new DomainResourcePredicate();
 	
-	private STOntologyManager<?> ontManager;
+	private OntologyManager ontManager;
 	
-	private DomainResourcePredicate(STOntologyManager<?> ontManager) {
+	private DomainResourcePredicate(OntologyManager ontManager) {
 		this.ontManager = ontManager;
 	}
 	
-	public static DomainResourcePredicate getPredicate(STOntologyManager<?> ontManager) {
+	public static DomainResourcePredicate getPredicate(OntologyManager ontManager) {
 		return new DomainResourcePredicate(ontManager);
 	}
 	
 	public static DomainResourcePredicate getPredicate(Project<?> project) {
-		return getPredicate(project.getOntologyManager());
+		return getPredicate(project.getNewOntologyManager());
 	}
 
 	public boolean apply(ARTResource res) {
