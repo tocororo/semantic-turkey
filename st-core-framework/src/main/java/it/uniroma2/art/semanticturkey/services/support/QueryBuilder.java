@@ -50,6 +50,8 @@ public class QueryBuilder {
 	private final String resourceQuery;
 	private RenderingEngine renderingEngine;
 	private RoleRecognitionOrchestrator roleRecognitionOrchestrator;
+	private QueryBuilderProcessor qnameProcessor;
+
 	private final Set<QueryBuilderProcessor> attachedProcessors;
 	private final BiMap<QueryBuilderProcessor, GraphPatternBinding> attachedProcessorsGraphPatternBinding;
 	private final Map<String, Value> bindingSet;
@@ -65,7 +67,9 @@ public class QueryBuilder {
 		this.resourceQuery = resourceQuery;
 		this.attachedProcessors = new HashSet<>();
 		this.bindingSet = new HashMap<>();
+		this.renderingEngine = null;
 		this.roleRecognitionOrchestrator = null;
+		this.qnameProcessor = null;
 		this.attachedProcessorsGraphPatternBinding = HashBiMap.create();
 	}
 
@@ -93,6 +97,20 @@ public class QueryBuilder {
 		}
 		roleRecognitionOrchestrator = RoleRecognitionOrchestrator.getInstance();
 		process(roleRecognitionOrchestrator, "resource", "attr_role");
+	}
+
+	/**
+	 * Attaches the qname retrieval of the retrieved (IRI) resources.
+	 * 
+	 * @throws QueryBuilderException
+	 */
+	public void processQName() throws QueryBuilderException {
+		if (qnameProcessor != null) {
+			throw new QueryBuilderException("QName recognizer already configured");
+		}
+		qnameProcessor = new QNameQueryBuilderProcessor();
+		process(qnameProcessor, "resource", "attr_qname");
+		
 	}
 
 	/**
@@ -320,7 +338,6 @@ public class QueryBuilder {
 
 		return rv;
 	}
-
 }
 
 class GraphPatternBinding {
