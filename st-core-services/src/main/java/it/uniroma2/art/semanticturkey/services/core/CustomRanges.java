@@ -656,6 +656,37 @@ public class CustomRanges extends STServiceAdapterOLD {
 	}
 	
 	/**
+	 * Creates a new CRE cloning an existing CRE
+	 * @param sourceId id of the CRE to clone
+	 * @param targetId id of the CRE to create
+	 * @return
+	 * @throws CustomRangeException 
+	 */
+	@GenerateSTServiceController
+	public Response cloneCustomRangeEntry(String sourceId, String targetId) throws CustomRangeException {
+		CustomRangeEntry sourceCRE = crProvider.getCustomRangeEntryById(sourceId);
+		if (sourceCRE == null) {
+			throw new CustomRangeException("Impossible to clone '" + sourceId + 
+					"'. A CustomRangeEntry with this ID doesn't exists");
+		}
+		if (sourceCRE.isTypeGraph()) {
+			String ref = sourceCRE.getRef();
+			//replace in pearl rule the namespace
+			ref = ref.replace(sourceId, targetId);
+			//and the rule ID
+			String sourceRuleId = sourceId.replace(CustomRangeEntry.PREFIX, "id:");
+			String targetRuleId = targetId.replace(CustomRangeEntry.PREFIX, "id:");
+			ref = ref.replace(sourceRuleId, targetRuleId);
+			crProvider.createCustomRangeEntry(sourceCRE.getType(), targetId, sourceCRE.getName(), sourceCRE.getDescription(),
+					ref, sourceCRE.asCustomRangeEntryGraph().getShowProperty());
+		} else { //type "node"
+			crProvider.createCustomRangeEntry(sourceCRE.getType(), targetId, sourceCRE.getName(), sourceCRE.getDescription(),
+					sourceCRE.getRef(), null);
+		}
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	/**
 	 * Deletes the CustomRangeEntry with the given id. Removes also the CRE on cascade from the CR
 	 * that contain it. 
 	 * @param id
@@ -842,8 +873,8 @@ public class CustomRanges extends STServiceAdapterOLD {
 	}
 	
 	private void shutDownCodaCore(CODACore codaCore) {
-		codaCore.setRepositoryConnection(null);
-		codaCore.stopAndClose();
+//		codaCore.setRepositoryConnection(null);
+//		codaCore.stopAndClose();
 	}
 
 }

@@ -13,6 +13,8 @@ import java.util.Collection;
 
 public abstract class CustomRangeEntry {
 	
+	public static String PREFIX = "it.uniroma2.art.semanticturkey.entry.";
+	
 	public enum Types {
 		node, graph;
 	}
