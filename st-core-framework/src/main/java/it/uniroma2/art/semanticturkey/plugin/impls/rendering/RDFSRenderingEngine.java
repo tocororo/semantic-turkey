@@ -52,7 +52,7 @@ public class RDFSRenderingEngine extends BaseRenderingEngine implements Renderin
 					.map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"").collect(joining(", "))));
 		}
 		gp.append(
-				"BIND(CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\") AS ?labelInternal2)       \n");
+				"BIND(IF(LANG(?labelInternal) != \"\", CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\"), STR(?labelInternal)) AS ?labelInternal2)       \n");
 		return GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
 				.projection(ProjectionElementBuilder.groupConcat("labelInternal2", "label"))
 				.pattern(gp.toString()).graphPattern();

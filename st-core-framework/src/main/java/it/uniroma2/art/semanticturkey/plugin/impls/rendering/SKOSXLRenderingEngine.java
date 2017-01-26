@@ -50,7 +50,7 @@ public class SKOSXLRenderingEngine extends BaseRenderingEngine implements Render
 					.map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"").collect(joining(", "))));
 		}
 		gp.append(
-				"BIND(CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\") AS ?labelInternal2)\n");
+				"BIND(IF(LANG(?labelInternal) != \"\", CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\"), STR(?labelInternal)) AS ?labelInternal2)       \n");
 		return GraphPatternBuilder.create().prefix("skosxl", SKOSXL.NAMESPACE)
 				.projection(ProjectionElementBuilder.groupConcat("labelInternal2", "label"))
 				.pattern(gp.toString()).graphPattern();

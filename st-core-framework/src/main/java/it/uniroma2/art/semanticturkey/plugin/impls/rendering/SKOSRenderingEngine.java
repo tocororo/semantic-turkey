@@ -32,9 +32,9 @@ public class SKOSRenderingEngine extends BaseRenderingEngine implements Renderin
 	@Override
 	public String getGraphPatternForDescribe(ResourcePosition resourcePosition,
 			ARTResource resourceToBeRendered, String varPrefix) {
-		return String
-				.format("{{?object <http://www.w3.org/2004/02/skos/core#prefLabel> ?%1$s_object_label .} union {?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?%1$s_indirectObject . ?%1$s_indirectObject <http://www.w3.org/2004/02/skos/core#prefLabel> ?%1$s_indirectObject_label .} union {?resource <http://www.w3.org/2004/02/skos/core#prefLabel> ?%1$s_subject_label .} union {}}",
-						varPrefix);
+		return String.format(
+				"{{?object <http://www.w3.org/2004/02/skos/core#prefLabel> ?%1$s_object_label .} union {?object <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?%1$s_indirectObject . ?%1$s_indirectObject <http://www.w3.org/2004/02/skos/core#prefLabel> ?%1$s_indirectObject_label .} union {?resource <http://www.w3.org/2004/02/skos/core#prefLabel> ?%1$s_subject_label .} union {}}",
+				varPrefix);
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class SKOSRenderingEngine extends BaseRenderingEngine implements Renderin
 					.map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"").collect(joining(", "))));
 		}
 		gp.append(
-				"BIND(CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\") AS ?labelInternal2)       \n");
+				"BIND(IF(LANG(?labelInternal) != \"\", CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\"), STR(?labelInternal)) AS ?labelInternal2)       \n");
 		return GraphPatternBuilder.create().prefix("skos", org.eclipse.rdf4j.model.vocabulary.SKOS.NAMESPACE)
 				.projection(ProjectionElementBuilder.groupConcat("labelInternal2", "label"))
 				.pattern(gp.toString()).graphPattern();
