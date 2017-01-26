@@ -65,6 +65,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -91,6 +92,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -118,6 +120,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -145,6 +148,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -172,6 +176,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -199,6 +204,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -233,6 +239,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
@@ -255,6 +262,7 @@ public class Properties extends STServiceAdapter {
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		qb.setBinding("superProperty", superProperty);
 		return qb.runQuery();
 	}
@@ -278,6 +286,7 @@ public class Properties extends STServiceAdapter {
 		);
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		qb.setBinding("subProperty", subProperty);
 		return qb.runQuery();
 	}
@@ -313,6 +322,7 @@ public class Properties extends STServiceAdapter {
 		);
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		qb.setBinding("res", res);
 		return qb.runQuery();
 	}
@@ -347,6 +357,7 @@ public class Properties extends STServiceAdapter {
 		);
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		qb.setBinding("classUri", classUri);
 		return qb.runQuery();
 	}
@@ -376,6 +387,7 @@ public class Properties extends STServiceAdapter {
 		);
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		qb.setBinding("propeperty", propeperty);
 		return qb.runQuery();
 	}
@@ -405,6 +417,7 @@ public class Properties extends STServiceAdapter {
 		);
 		qb.processRole();
 		qb.processRendering();
+		qb.processQName();
 		qb.setBinding("propeperty", propeperty);
 		return qb.runQuery();
 	}
