@@ -7,7 +7,7 @@
 	<Config>
 		<ConfigType>it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XNoteDereificationExportFilterConfiguration</ConfigType>
 		<Params>
-			<preserveReifiedNotes>true</preserveReifiedNotes>
+			<preserveReifiedNotes>false</preserveReifiedNotes>
 		</Params>
 	</Config>
 </TestCase>

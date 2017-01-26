@@ -2,12 +2,13 @@
 	<BaseURI>http://test.it/</BaseURI>
 	<Graphs>
 		<Graph>http://test.it/</Graph>
+		<Graph>http://example.org/</Graph>
 	</Graphs>
 	<FactoryID>it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.XNoteDereificationExportFilterFactory</FactoryID>
 	<Config>
 		<ConfigType>it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XNoteDereificationExportFilterConfiguration</ConfigType>
 		<Params>
-			<preserveReifiedNotes>true</preserveReifiedNotes>
+			<preserveReifiedNotes>false</preserveReifiedNotes>
 		</Params>
 	</Config>
 </TestCase>

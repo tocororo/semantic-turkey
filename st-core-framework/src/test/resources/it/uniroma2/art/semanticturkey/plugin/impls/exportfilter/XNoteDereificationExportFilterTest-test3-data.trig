@@ -21,7 +21,7 @@ graph <http://test.it/> {
 graph <http://example.org/> {
 	:aConcept
 		a skos:Concept ;
-		skos:note :aConcept_note1en ;
+		skos:note :aConcept_noteen ;
 		skos:note "a note" 
 		.
 	

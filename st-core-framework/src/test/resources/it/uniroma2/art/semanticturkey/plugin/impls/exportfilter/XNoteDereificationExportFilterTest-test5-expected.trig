@@ -1,0 +1,22 @@
+@prefix : <http://example.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+
+# put here the expected output of the filter
+
+graph <http://test.it/> {
+	:aConcept2
+		a skos:Concept ;
+		skos:note "a concept"@en ;
+		skos:definition "un concetto"@it ;
+		skos:note "una semplice nota"@it
+		.
+
+		
+}
+
+graph <http://www.w3.org/2004/02/skos/core> {
+	skos:definition rdfs:subPropertyOf skos:note .
+}
