@@ -207,6 +207,21 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			throw e;
 		}
 	}
+	
+	public IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
+		try {
+			Map<String, Value> artValueMapping = valueMapping.entrySet().stream().collect(Collectors
+					.toMap(Map.Entry::getKey, (entry) -> entry.getValue()));
+
+			IRI iriRes = getProject().getURIGenerator().generateIRI(stServiceContext, xRole,
+					artValueMapping);
+
+			return sesVf.createIRI(iriRes.stringValue());
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
+	}
 
 	// Semi-deprecated
 

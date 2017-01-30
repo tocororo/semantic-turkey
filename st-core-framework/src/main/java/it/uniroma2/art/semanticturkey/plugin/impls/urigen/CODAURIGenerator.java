@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
@@ -86,6 +87,52 @@ public class CODAURIGenerator implements URIGenerator {
 	
 				IRI resource = codaCore.executeURIConverter(converterMention);
 				return RDF4JMigrationUtils.convert2art(resource);
+			} finally {
+				RDF4JRepositoryUtils.releaseConnection(conn, repo);
+			}
+		} catch (ComponentProvisioningException | ConverterException | ConfParameterNotFoundException e) {
+			logger.debug("An exceprtion occuring during the generation of a URI", e);
+			throw new URIGenerationException(e);
+		} finally {
+			codaCore.setRepositoryConnection(null); // necessary because connection handling is external to CODA
+			codaCore.stopAndClose();
+		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator#generateURI(it.uniroma2.art.semanticturkey.services.STServiceContext, java.lang.String, java.util.Map)
+	 */
+	@Override
+	public IRI generateIRI(STServiceContext stServiceContext, String xRole, Map<String, Value> args)
+			throws URIGenerationException {
+		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
+		String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
+		
+		if (config instanceof CODAAnyURIGeneratorConfiguration) {
+			 converter = CODAAnyURIGeneratorConfiguration.class.cast(config).converter;
+		}
+		codaCore.setGlobalContractBinding(CODA_RANDOM_ID_GENERATOR_CONTRACT, converter);
+		try {
+			Properties converterProperties = new Properties();
+			for (String par : config.getConfigurationParameters()) {
+				converterProperties.setProperty(par, config.getParameterValue(par).toString());
+			}
+			
+			codaCore.setConverterProperties(converter, converterProperties);
+			
+			Repository repo = stServiceContext.getProject().getRepository();
+			RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
+			try {
+				codaCore.initialize(conn);
+				ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
+						Arrays.<ConverterArgumentExpression> asList(ConverterRDFLiteralArgument.fromString(xRole),
+								ConverterMapArgument.fromNodesMap(args)));
+	
+				logger.debug("Going to execute a CODA converter");
+	
+				IRI resource = codaCore.executeURIConverter(converterMention);
+				return resource;
 			} finally {
 				RDF4JRepositoryUtils.releaseConnection(conn, repo);
 			}

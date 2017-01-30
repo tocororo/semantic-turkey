@@ -6,6 +6,9 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
+
 /**
  * Extension point for the generation of URIs. Such a generation is performed, when it is not possible or
  * desired to generate a URI based on a provided local name.
@@ -97,5 +100,8 @@ public interface URIGenerator {
 	 * @throws URIGenerationException
 	 */
 	ARTURIResource generateURI(STServiceContext stServiceContext, String xRole, Map<String, ARTNode> args)
+			throws URIGenerationException;
+	
+	IRI generateIRI(STServiceContext stServiceContext, String xRole, Map<String, Value> args)
 			throws URIGenerationException;
 }
