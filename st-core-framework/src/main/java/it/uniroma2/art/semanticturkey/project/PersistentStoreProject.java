@@ -29,15 +29,22 @@ package it.uniroma2.art.semanticturkey.project;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.SKOSModel;
+import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 
 public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<MODELTYPE> {
 
@@ -56,16 +63,49 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 		if (ontManager != null) {
 			ontManager.startOntModel(getBaseURI(), getProjectStoreDir(), modelConfiguration);
 		} else {
-			supportOntManager.startOntModel("http://example.org/history", getProjectSupportRepoDir(), supportRepoConfig);
+			supportOntManager.startOntModel("http://example.org/history", getProjectSupportRepoDir(),
+					supportRepoConfig);
 			Repository supportRepo = supportOntManager.getRepository();
 			RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepo);
 			newOntManager.startOntModel(getBaseURI(), getProjectCoreRepoDir(), coreRepoConfig);
-			
-			try(RepositoryConnection conn = newOntManager.getRepository().getConnection()){
-				conn.clear(conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
+
+			try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
+				ValueFactory vf = conn.getValueFactory();
+
+				IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
+				IRI rdfsBaseURI = vf.createIRI("http://www.w3.org/2000/01/rdf-schema");
+				IRI owlBaseURI = vf.createIRI("http://www.w3.org/2002/07/owl");
+				IRI skosBaseURI = vf.createIRI("http://www.w3.org/2004/02/skos/core");
+				IRI skosxlBaseURI = vf.createIRI("http://www.w3.org/2008/05/skos-xl");
+
 				try {
-					conn.add(this.getClass().getResourceAsStream("/it/uniroma2/art/semanticturkey/owl.rdfs"), "http://www.w3.org/2002/07/owl", RDFFormat.RDFXML, conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
-				} catch (Exception e) {
+					if (!conn.hasStatement(null, null, null, false, rdfBaseURI)) {
+						conn.add(OntologyManager.class.getResourceAsStream("rdf.rdf"),
+								rdfBaseURI.stringValue(), RDFFormat.RDFXML, rdfBaseURI);
+					}
+					
+					if (!conn.hasStatement(null, null, null, false, rdfsBaseURI)) {
+						conn.add(OntologyManager.class.getResourceAsStream("rdf-schema.rdf"),
+								rdfsBaseURI.stringValue(), RDFFormat.RDFXML, rdfsBaseURI);
+					}
+					
+					if (!conn.hasStatement(null, null, null, false, owlBaseURI)) {
+						conn.add(OntologyManager.class.getResourceAsStream("owl.rdf"),
+								owlBaseURI.stringValue(), RDFFormat.RDFXML, owlBaseURI);
+					}
+					
+					if (SKOSModel.class.isAssignableFrom(getModelType())) {
+						conn.add(OntologyManager.class.getResourceAsStream("skos.rdf"),
+								skosBaseURI.stringValue(), RDFFormat.RDFXML, skosBaseURI);
+					}
+					
+					if (SKOSXLModel.class.isAssignableFrom(getModelType())) {
+						conn.add(OntologyManager.class.getResourceAsStream("skos-xl.rdf"),
+								skosxlBaseURI.stringValue(), RDFFormat.RDFXML, skosxlBaseURI);
+					}
+				} catch (RepositoryException | IOException e) {
+					throw new ModelCreationException(e);
+				} catch (ProjectInconsistentException e) {
 					throw new ModelCreationException(e);
 				}
 			}

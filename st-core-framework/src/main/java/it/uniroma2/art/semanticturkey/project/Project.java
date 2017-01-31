@@ -453,6 +453,22 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			return RDFSRenderingEngineFactory.class.getName();
 		}
 	}
+	
+	public void deactivate() throws ModelUpdateException {
+		try {
+			getPrimordialOntModel().close();
+		} finally {
+			try {
+				if (newOntManager != null) {
+					newOntManager.getRepository().shutDown();
+				}
+			} finally {
+				if (supportOntManager != null) {
+					supportOntManager.getRepository().shutDown();
+				}
+			}
+		}
+	}
 
 	/**
 	 * this initializes the {@link #model} field with a newly created {@link OWLModel} for this project

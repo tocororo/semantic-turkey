@@ -13,9 +13,6 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
-import org.eclipse.rdf4j.repository.config.RepositoryFactory;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryFactory;
 import org.eclipse.rdf4j.repository.util.Repositories;
 

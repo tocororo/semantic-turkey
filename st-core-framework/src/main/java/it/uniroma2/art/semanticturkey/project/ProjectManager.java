@@ -1300,7 +1300,7 @@ public class ProjectManager {
 
 	private static void tearDownProject(Project<?> project) throws ModelUpdateException {
 		logger.debug("closing project: " + project);
-		project.getPrimordialOntModel().close();
+		project.deactivate();
 		openProjects.removeProject(project);
 	}
 	
