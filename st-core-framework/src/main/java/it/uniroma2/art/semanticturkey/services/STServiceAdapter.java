@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,16 +20,13 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -183,7 +179,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	}
 	
 	/**
-	 * Returns a new URI for a resource. The parameter {@code xRole} holds the nature of the resource that
+	 * Returns a new IRI for a resource. The parameter {@code xRole} holds the nature of the resource that
 	 * will be identified with the given URI. Depending on the value of the parameter {@code xRole}, a
 	 * conforming converter may generate differently shaped URIs, possibly using specific arguments passed via
 	 * the map {@code args}.
@@ -193,21 +189,6 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateURI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
-		try {
-			Map<String, ARTNode> artValueMapping = valueMapping.entrySet().stream().collect(Collectors
-					.toMap(Map.Entry::getKey, (entry) -> rdf4j2artFact.rdf4jValue2ARTNode(entry.getValue())));
-
-			ARTURIResource artURIRes = getProject().getURIGenerator().generateURI(stServiceContext, xRole,
-					artValueMapping);
-
-			return sesVf.createIRI(artURIRes.getURI());
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
-		}
-	}
-	
 	public IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
 		try {
 			Map<String, Value> artValueMapping = valueMapping.entrySet().stream().collect(Collectors

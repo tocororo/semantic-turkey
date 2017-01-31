@@ -19,8 +19,6 @@ import it.uniroma2.art.coda.pearl.model.ConverterMapArgument;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -29,7 +27,6 @@ import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGenerat
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * Implementation of the {@link URIGenerator} extension point that delegates to a CODA converter. 
@@ -51,52 +48,6 @@ public class CODAURIGenerator implements URIGenerator {
 			ObjectFactory<CODACoreProvider> codaCoreProviderFactory) {
 		this.config = config;
 		this.codaCoreProviderFactory = codaCoreProviderFactory;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator#generateURI(it.uniroma2.art.semanticturkey.services.STServiceContext, java.lang.String, java.util.Map)
-	 */
-	@Override
-	public ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
-			Map<String, ARTNode> args) throws URIGenerationException {
-		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-		String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
-		
-		if (config instanceof CODAAnyURIGeneratorConfiguration) {
-			 converter = CODAAnyURIGeneratorConfiguration.class.cast(config).converter;
-		}
-		codaCore.setGlobalContractBinding(CODA_RANDOM_ID_GENERATOR_CONTRACT, converter);
-		try {
-			Properties converterProperties = new Properties();
-			for (String par : config.getConfigurationParameters()) {
-				converterProperties.setProperty(par, config.getParameterValue(par).toString());
-			}
-			
-			codaCore.setConverterProperties(converter, converterProperties);
-			
-			Repository repo = stServiceContext.getProject().getRepository();
-			RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
-			try {
-				codaCore.initialize(conn);
-				ConverterMention converterMention = new ConverterMention(CODA_RANDOM_ID_GENERATOR_CONTRACT,
-						Arrays.<ConverterArgumentExpression> asList(ConverterRDFLiteralArgument.fromString(xRole),
-								ConverterMapArgument.fromNodesMap(RDF4JMigrationUtils.convert2rdf4j(args))));
-	
-				logger.debug("Going to execute a CODA converter");
-	
-				IRI resource = codaCore.executeURIConverter(converterMention);
-				return RDF4JMigrationUtils.convert2art(resource);
-			} finally {
-				RDF4JRepositoryUtils.releaseConnection(conn, repo);
-			}
-		} catch (ComponentProvisioningException | ConverterException | ConfParameterNotFoundException e) {
-			logger.debug("An exceprtion occuring during the generation of a URI", e);
-			throw new URIGenerationException(e);
-		} finally {
-			codaCore.setRepositoryConnection(null); // necessary because connection handling is external to CODA
-			codaCore.stopAndClose();
-		}
 	}
 	
 	/*

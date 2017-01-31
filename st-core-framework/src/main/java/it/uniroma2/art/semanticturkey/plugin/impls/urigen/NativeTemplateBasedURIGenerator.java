@@ -13,8 +13,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import it.uniroma2.art.coda.converters.impl.TemplateBasedRandomIdGenerator;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -23,7 +21,6 @@ import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBas
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * Implementation of the {@link URIGenerator} extension point based on templates.
@@ -44,43 +41,6 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 
 		propsMap = new HashMap<>();
 		propsMap.put(TemplateBasedRandomIdGenerator.CONVERTER_URI, convProps);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator#generateURI(it.uniroma2.art.semanticturkey.
-	 * services.STServiceContext, java.lang.String, java.util.Map)
-	 */
-	@Override
-	public ARTURIResource generateURI(STServiceContext stServiceContext, String xRole,
-			Map<String, ARTNode> args) throws URIGenerationException {
-		try {
-			String randomCode = ProjectManager.getProjectProperty(stServiceContext.getProject().getName(),
-					TemplateBasedRandomIdGenerator.PARAM_URI_RND_CODE_GENERATOR);
-
-			if (randomCode != null) {
-				convProps.setProperty(TemplateBasedRandomIdGenerator.PARAM_URI_RND_CODE_GENERATOR,
-						randomCode);
-			}
-		} catch (IOException | InvalidProjectNameException | ProjectInexistentException e) {
-		}
-		Repository repo = stServiceContext.getProject().getRepository();
-		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
-		try {
-
-			CODAContext ctx = new CODAContext(conn, propsMap);
-			try {
-				IRI resource = converter.produceURI(ctx, null, xRole,
-						RDF4JMigrationUtils.convert2rdf4j(args));
-				return RDF4JMigrationUtils.convert2art(resource);
-			} catch (ConverterException e) {
-				throw new URIGenerationException(e);
-			}
-		} finally {
-			RDF4JRepositoryUtils.releaseConnection(conn, repo);
-		}
 	}
 
 	@Override

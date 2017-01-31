@@ -281,7 +281,7 @@ public class SKOS extends STServiceAdapter {
 		Model quadAdditions = new LinkedHashModel();
 		Model quadRemovals = new LinkedHashModel();
 
-		IRI newConceptIRI = generateConceptURI(newConcept, conceptScheme);
+		IRI newConceptIRI = generateConceptIRI(newConcept, conceptScheme);
 
 		quadAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
 
@@ -320,7 +320,7 @@ public class SKOS extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateConceptURI(Literal label, IRI scheme) throws URIGenerationException {
+	public IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 
 		if (label != null) {
@@ -331,7 +331,7 @@ public class SKOS extends STServiceAdapter {
 			args.put(URIGenerator.Parameters.scheme, scheme);
 		}
 
-		return generateURI(URIGenerator.Roles.concept, args);
+		return generateIRI(URIGenerator.Roles.concept, args);
 	}
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {

@@ -39,6 +39,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
@@ -66,6 +67,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * @author Armando Stellato
@@ -484,12 +486,16 @@ public abstract class ServiceAdapter implements ServiceInterface {
 	 * @param xRole
 	 * @param valueMapping
 	 * @return
-	 * @throws URIGenerationException
+	 * @throws URIGenerationExceptionv
+	 * @deprecated new services must use the RDF4J-based API
 	 */
+	@Deprecated
 	protected ARTURIResource generateURI(String xRole, Map<String, ARTNode> valueMapping)
 			throws URIGenerationException {
 		try {
-			return getProject().getURIGenerator().generateURI(serviceContext, xRole, valueMapping);
+			IRI generatedIRI = getProject().getURIGenerator().generateIRI(serviceContext, xRole,
+					RDF4JMigrationUtils.convert2rdf4j(valueMapping));
+			return RDF4JMigrationUtils.convert2art(generatedIRI);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw e;

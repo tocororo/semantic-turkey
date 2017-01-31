@@ -1,13 +1,11 @@
 package it.uniroma2.art.semanticturkey.plugin.extpts;
 
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
+
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 /**
  * Extension point for the generation of URIs. Such a generation is performed, when it is not possible or
@@ -99,9 +97,6 @@ public interface URIGenerator {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	ARTURIResource generateURI(STServiceContext stServiceContext, String xRole, Map<String, ARTNode> args)
-			throws URIGenerationException;
-	
 	IRI generateIRI(STServiceContext stServiceContext, String xRole, Map<String, Value> args)
 			throws URIGenerationException;
 }
