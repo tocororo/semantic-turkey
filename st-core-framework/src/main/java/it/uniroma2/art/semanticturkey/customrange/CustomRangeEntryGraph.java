@@ -258,17 +258,12 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 						//add the phId and userPrompt (eventual placeholder used as argument of langString will be removed later)
 						phPromptMap.put(phId, featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1));
 						
-						System.out.println("Adding to map " + phId + " " + featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1));
-						
 						ConverterMention converter = placeHolderStruct.getConverterList().get(0);
 						//if langString is used, remove the placeholder argument from the placeholder to return;
 						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
 							//there's no control of the proper use of coda:langString, is take for granted that it is used properly (coda:langString[$lang])
 							//otherwise it can throw an unchecked exception
 							String convArgPhId = ((ConverterPlaceholderArgument) converter.getAdditionalArguments().get(0)).getPlaceholderId();
-							
-							System.out.println("removing placeholder used as argument " + convArgPhId);
-							
 							phPromptMap.remove(convArgPhId);
 						}
 					}
