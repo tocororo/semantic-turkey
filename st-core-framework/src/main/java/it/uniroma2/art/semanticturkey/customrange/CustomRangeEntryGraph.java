@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -227,6 +228,54 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			}
 		}
 		return formMap.values();
+	}
+	
+	/**
+	 * Returns a map placeholderId-userPrompt used in the node section to identify userPrompt fields.
+	 * Returns only those placeholder not used as argument of some converter (as for langString argument) 
+	 * @param codaCore
+	 * @return
+	 * @throws PRParserException 
+	 */
+	public Map<String, String> getRelevantFormPlaceholders(CODACore codaCore) throws PRParserException {
+		Map<String, String> phPromptMap = new HashMap<String, String>(); //placeholderId-userPrompt
+		//crete the PEARL model
+		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
+		Set<String> prRuleIds = prRuleMap.keySet();
+		//here iterate over the rules of the pearl. This is not necessary since a CRE has only one rule (I could get directly the first ruleId)
+		for (String prId : prRuleIds){ 
+			ProjectionRule projRule = prRuleMap.get(prId);
+			//get the nodes section
+			Map<String, PlaceholderStruct> plHolderMap = projRule.getPlaceholderMap();
+			Set<String> pHoldIds = plHolderMap.keySet();
+			for (String phId : pHoldIds){ //iterate over the placeholder structs (placeholder-converter-featPath) of the node section
+				PlaceholderStruct placeHolderStruct = plHolderMap.get(phId);
+				if (placeHolderStruct.hasFeaturePath()){
+					String featurePath = placeHolderStruct.getFeaturePath();
+					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
+						//add the phId and userPrompt (eventual placeholder used as argument of langString will be removed later)
+						phPromptMap.put(phId, featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1));
+						
+						System.out.println("Adding to map " + phId + " " + featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1));
+						
+						ConverterMention converter = placeHolderStruct.getConverterList().get(0);
+						//if langString is used, remove the placeholder argument from the placeholder to return;
+						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
+							//there's no control of the proper use of coda:langString, is take for granted that it is used properly (coda:langString[$lang])
+							//otherwise it can throw an unchecked exception
+							String convArgPhId = ((ConverterPlaceholderArgument) converter.getAdditionalArguments().get(0)).getPlaceholderId();
+							
+							System.out.println("removing placeholder used as argument " + convArgPhId);
+							
+							phPromptMap.remove(convArgPhId);
+						}
+					}
+				}
+			}
+		}
+		return phPromptMap;
 	}
 	
 	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, 
