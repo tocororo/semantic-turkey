@@ -30,9 +30,9 @@ public class XNoteDereificationExportFilter implements ExportFilter {
 		
 		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
 		
+		if (expandedGraphs.length == 0) return;
+		
 		List<Resource> contextList = QueryResults.asList(workingRepositoryConnection.getContextIDs());
-		
-		
 		
 		// consider the skos:Note and all its subproperties for the derification.
 		// these properties can have both IRI/Bnode or Literal value, consider just the concepts having a URI

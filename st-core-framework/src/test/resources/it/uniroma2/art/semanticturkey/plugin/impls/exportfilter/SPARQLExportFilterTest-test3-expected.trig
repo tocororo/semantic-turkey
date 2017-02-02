@@ -26,6 +26,5 @@ graph <http://another-example.org/> {
 
 :aControlConcept
 	a skos:Concept ;
-	rdfs:label "a control concept"@en ;
 	skos:prefLabel "a control concept"@en
 	.

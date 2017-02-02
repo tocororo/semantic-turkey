@@ -9,13 +9,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -49,7 +53,7 @@ public class Export extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getGraphNames() throws Exception {
+	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getNamedGraphs() throws Exception {
 		return Iterations.stream(getManagedConnection().getContextIDs())
 				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toList());
 	}
@@ -60,11 +64,50 @@ public class Export extends STServiceAdapter {
 		return RDFWriterRegistry.getInstance().getKeys();
 	}
 
+	/**
+	 * Exports the content of the currently used project.
+	 * 
+	 * @param oRes
+	 * @param graphs
+	 *            the graphs to be exported. An empty array means all graphs the name of which is an IRI
+	 * @param filteringSteps
+	 *            a sequence of filters to be applied. Each filter is applied to a subset of the exported
+	 *            graphs. No graph means every exported graph
+	 * @param outputFormat
+	 *            the output format. If it does not support graphs, the exported graph are merged into a
+	 *            single graph
+	 * @param force
+	 *            <code>true</code> tells the service to proceed despite the presence of triples in the null
+	 *            context or in graphs named by blank nodes. Otherwise, under this conditions the service
+	 *            would fail, so that available information is not silently ignored
+	 * @throws Exception
+	 */
 	@STServiceOperation
 	@Read
-	public void export(HttpServletResponse oRes,
-			@Optional(defaultValue = "") IRI[] graphs, FilteringStep[] filteringSteps,
-			@Optional(defaultValue = "TRIG") RDFFormat outputFormat) throws Exception {
+	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
+			FilteringStep[] filteringSteps, @Optional(defaultValue = "TRIG") RDFFormat outputFormat,
+			@Optional(defaultValue = "false") boolean force) throws Exception {
+
+		Set<Resource> sourceGraphs = QueryResults.asSet(getManagedConnection().getContextIDs());
+
+		if (!force) {
+			if (getManagedConnection().size((Resource) null) != 0) {
+				throw new IllegalArgumentException(
+						"The null graph contains triples that will not be exported. You can force the export, to ignore this issue.");
+			}
+
+			if (sourceGraphs.stream().anyMatch(BNode.class::isInstance)) {
+				throw new IllegalArgumentException(
+						"Some graphs that are associated with bnodes will not be exported. You can force the export, to ignore this issue.");
+			}
+		}
+
+		// if no graph is provided, then export of graphs the name of which is a URI
+		if (graphs.length == 0) {
+			graphs = sourceGraphs.stream().filter(IRI.class::isInstance).map(IRI.class::cast)
+					.toArray(IRI[]::new);
+		}
+
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy
 			dumpRepository(oRes, getManagedConnection(), graphs, outputFormat);
@@ -81,18 +124,18 @@ public class Export extends STServiceAdapter {
 				workingRepository.initialize();
 
 				try (RepositoryConnection workingRepositoryConnection = workingRepository.getConnection()) {
-					// Copies the relevant graphs from the source repository to the working repository
-					sourceRepositoryConnection.export(new RDFInserter(workingRepositoryConnection), graphs);
+					// Copies all graphs from the source repository to the working repository
+					sourceRepositoryConnection.export(new RDFInserter(workingRepositoryConnection));
 
 					// Applies each filter
 					for (int i = 0; i < filteringSteps.length; i++) {
+						IRI[] stepGraphs = step2graphs[i];
 						FilteringStep filteringStep = filteringSteps[i];
 						PluginSpecification filterSpec = filteringStep.getFilter();
 						ExportFilter exportFilter = (ExportFilter) filterSpec.instatiatePlugin();
 						exportFilter.filter(sourceRepositoryConnection, workingRepositoryConnection,
-								step2graphs[i]);
+								stepGraphs);
 					}
-
 					// Dumps the working repository (i.e. the filtered repository)
 					dumpRepository(oRes, workingRepositoryConnection, graphs, outputFormat);
 				}
@@ -102,43 +145,69 @@ public class Export extends STServiceAdapter {
 		}
 	}
 
+	/**
+	 * Returns the graph upon which a filter should operate.
+	 * @param graphs
+	 * @param filteringSteps
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
 	private IRI[][] computeGraphsForStep(IRI[] graphs, FilteringStep[] filteringSteps)
 			throws IllegalArgumentException {
 		IRI[][] step2graphs = new IRI[filteringSteps.length][];
 		for (int i = 0; i < filteringSteps.length; i++) {
 			int[] graphRefs = filteringSteps[i].getGraphs();
 
-			step2graphs[i] = new IRI[graphRefs.length];
+			if (graphRefs.length == 0) {
+				step2graphs[i] = new IRI[graphs.length];
+				System.arraycopy(graphs, 0, step2graphs[i], 0, graphs.length);
+			} else {
+				step2graphs[i] = new IRI[graphRefs.length];
 
-			for (int j = 0; j < graphRefs.length; j++) {
-				int ref = graphRefs[j];
+				for (int j = 0; j < graphRefs.length; j++) {
+					int ref = graphRefs[j];
 
-				if (ref < 0 || ref >= graphs.length) {
-					throw new IllegalArgumentException(
-							"Graph reference " + ref + " in filtering step " + i + " is not valid");
+					if (ref < 0 || ref >= graphs.length) {
+						throw new IllegalArgumentException(
+								"Graph reference " + ref + " in filtering step " + i + " is not valid");
+					}
+
+					step2graphs[i][j] = graphs[ref];
 				}
-
-				step2graphs[i][j] = graphs[ref];
 			}
 		}
 
 		return step2graphs;
 	}
 
+	/**
+	 * Dumps the provided graphs to the servlet response. It is assumed that the array of graphs has already
+	 * been expanded, so an empty array is interpreted as a <i>no graph</i>.
+	 * 
+	 * @param oRes
+	 * @param filteredRepositoryConnection
+	 * @param expandedGraphs
+	 * @param outputFormat
+	 * @throws IOException
+	 */
 	private void dumpRepository(HttpServletResponse oRes, RepositoryConnection filteredRepositoryConnection,
-			Resource[] graphs, RDFFormat outputFormat) throws IOException {
+			Resource[] expandedGraphs, RDFFormat outputFormat) throws IOException {
 		File tempServerFile = File.createTempFile("save", "." + outputFormat.getDefaultFileExtension());
 		try {
-			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
-				filteredRepositoryConnection.export(Rio.createWriter(outputFormat, tempServerFileStream),
-						graphs);
+			if (expandedGraphs.length != 0) {
+				try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
+					filteredRepositoryConnection.export(Rio.createWriter(outputFormat, tempServerFileStream),
+							expandedGraphs);
+				}
+			} else {
+				Rio.write(new LinkedHashModel(), new FileOutputStream(tempServerFile), outputFormat);
 			}
 
 			oRes.setHeader("Content-Disposition",
 					"attachment; filename=save." + outputFormat.getDefaultFileExtension());
 			oRes.setContentType(outputFormat.getDefaultMIMEType());
 			oRes.setContentLength((int) tempServerFile.length());
-			
+
 			try (InputStream is = new FileInputStream(tempServerFile)) {
 				IOUtils.copy(is, oRes.getOutputStream());
 			}

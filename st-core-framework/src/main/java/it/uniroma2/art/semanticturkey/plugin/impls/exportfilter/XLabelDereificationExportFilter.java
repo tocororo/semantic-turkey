@@ -27,6 +27,8 @@ public class XLabelDereificationExportFilter implements ExportFilter {
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException {
 		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
 		
+		if (expandedGraphs.length == 0) return;
+		
 		//add the triples regarding the prefLabel/altLabel/hiddenLabel
 		// @formatter:off
 		String queryUpdate = 

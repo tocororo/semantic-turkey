@@ -21,11 +21,16 @@ public abstract class AbstractSPARQLExportFilter implements ExportFilter {
 	@Override
 	public void filter(RepositoryConnection sourceRepositoryConnection,
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException {
+		
+		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
+		
+		if (expandedGraphs.length == 0) return;
+		
 		Update update = workingRepositoryConnection.prepareUpdate(getSPARQLUpdate());
 		if (isSliced()) {
-			for (IRI g : graphs) {
+			for (IRI g : expandedGraphs) {
 				SimpleDataset dataset = new SimpleDataset();
-				Arrays.stream(graphs).forEach(g2 -> {
+				Arrays.stream(expandedGraphs).forEach(g2 -> {
 					dataset.addNamedGraph(g2);
 				});
 				dataset.addDefaultGraph(g);
@@ -37,11 +42,10 @@ public abstract class AbstractSPARQLExportFilter implements ExportFilter {
 			}
 		} else {
 			SimpleDataset dataset = new SimpleDataset();
-			Arrays.stream(graphs).forEach(g -> {
+			Arrays.stream(expandedGraphs).forEach(g -> {
 				dataset.addNamedGraph(g);
 				dataset.addDefaultGraph(g);
 			});
-			dataset.addDefaultGraph(null);
 
 			update.setDataset(dataset);
 			update.execute();

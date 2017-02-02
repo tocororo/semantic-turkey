@@ -30,4 +30,5 @@ public class SPARQLExportFilterTest extends AbstractExportFilterTest {
 	public void test4() throws Exception {
 		executeTest();
 	}
+
 }

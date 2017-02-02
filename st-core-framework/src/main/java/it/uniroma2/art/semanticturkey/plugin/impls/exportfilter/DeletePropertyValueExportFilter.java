@@ -38,8 +38,12 @@ public class DeletePropertyValueExportFilter implements ExportFilter {
 	@Override
 	public void filter(RepositoryConnection sourceRepositoryConnection,
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException {
-		workingRepositoryConnection.remove(resource, property, value,
-				FilterUtils.expandGraphs(workingRepositoryConnection, graphs));
+		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
+
+		if (expandedGraphs.length == 0)
+			return;
+
+		workingRepositoryConnection.remove(resource, property, value, expandedGraphs);
 	}
 
 }

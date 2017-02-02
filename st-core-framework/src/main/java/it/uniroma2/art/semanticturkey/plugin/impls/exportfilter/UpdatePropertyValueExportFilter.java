@@ -45,6 +45,8 @@ public class UpdatePropertyValueExportFilter implements ExportFilter {
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException {
 		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
 		
+		if (expandedGraphs.length == 0) return;
+		
 		workingRepositoryConnection.remove(resource,  property, oldValue, expandedGraphs);
 		workingRepositoryConnection.add(resource,  property, value, expandedGraphs);
 	}
