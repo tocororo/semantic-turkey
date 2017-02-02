@@ -49,6 +49,7 @@ public class CODAURIGenerator implements URIGenerator {
 		this.config = config;
 		this.codaCoreProviderFactory = codaCoreProviderFactory;
 	}
+
 	
 	/*
 	 * (non-Javadoc)

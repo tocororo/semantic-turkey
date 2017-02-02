@@ -10,7 +10,6 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -18,13 +17,13 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 
@@ -34,6 +33,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
  */
 
+@STService
 public class Refactor2 extends STServiceAdapter  {
 	
 	private static Logger logger = LoggerFactory.getLogger(Refactor2.class);
@@ -44,6 +44,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 * @throws URIGenerationException 
 	 */
 	@STServiceOperation
+	@Write
 	public void SKOStoSKOSXL() throws URIGenerationException{
 		logger.info("request to refactor SKOS data to SKOSXL");
 		
@@ -71,14 +72,17 @@ public class Refactor2 extends STServiceAdapter  {
 		SimpleDataset dataset = new SimpleDataset();
 		
 		List<Resource> contextList = QueryResults.asList(getManagedConnection().getContextIDs());
-		for(Resource iri : contextList){
+		/*for(Resource iri : contextList){
 			if(iri instanceof IRI){
 				//add the defaults graphs (used outside the GRAPH sections of the query)
 				dataset.addDefaultGraph((IRI) iri);
 				//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
 				dataset.addNamedGraph((IRI) iri);
 			}
-		}
+		}*/
+		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
+		dataset.addNamedGraph((IRI)getWorkingGraph());
+		
 		select.setDataset(dataset);
 		
 		//execute the query
@@ -105,7 +109,6 @@ public class Refactor2 extends STServiceAdapter  {
 				"WHERE {\n" +
 				"?propNote rdfs:subPropertyOf* skos:note . \n" + 
 				"GRAPH ?graph {?concept ?propNote ?value . }" +
-				"}" +
 				"}";
 		select = getManagedConnection().prepareTupleQuery(selectQuery);
 		
@@ -117,9 +120,11 @@ public class Refactor2 extends STServiceAdapter  {
 				//add the defaults graphs (used outside the GRAPH sections of the query)
 				dataset.addDefaultGraph((IRI) iri);
 				//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-				dataset.addNamedGraph((IRI) iri);
+				//dataset.addNamedGraph((IRI) iri);
 			}
 		}
+		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
+		dataset.addNamedGraph((IRI)getWorkingGraph());
 		select.setDataset(dataset);
 		
 		//execute the query
@@ -163,7 +168,7 @@ public class Refactor2 extends STServiceAdapter  {
 			String skoxlLabelTypeString = "<"+skosxlLabelType.stringValue()+">";
 			String valueString = "\""+value.stringValue()+"\"";
 			if(value.getLanguage().isPresent()){
-				valueString += "@"+value.getLanguage();
+				valueString += "@"+value.getLanguage().get();
 			} else if(value.getDatatype()!= null){
 				valueString += "^^<"+value.getDatatype().stringValue()+">";
 			}
@@ -171,28 +176,31 @@ public class Refactor2 extends STServiceAdapter  {
 			updateQuery =
 					"DELETE DATA {\n" +
 					"GRAPH "+graphString+" {"+conceptString+" "+labelTypeString+" "+valueString+" }" +
-					"}\n" +
+					"}; \n" +
 					"INSERT DATA {\n" +
-					graphString+" { \n" +
+					"GRAPH "+graphString+" { \n" +
 					conceptString+" "+skoxlLabelTypeString+" "+newIRIForLabelString+" .\n" +
 					newIRIForLabelString+" <"+SKOSXL.LITERAL_FORM.stringValue()+"> "+valueString+" . \n" +
 					"}\n" +
 					"}";
-			
 			Update update = getManagedConnection().prepareUpdate(updateQuery);
 			
 			dataset = new SimpleDataset();
 			
 			contextList = QueryResults.asList(getManagedConnection().getContextIDs());
-			for(Resource iri : contextList){
+			/*for(Resource iri : contextList){
 				if(iri instanceof IRI){
 					//add the defaults graphs (used outside the GRAPH sections of the query)
 					dataset.addDefaultGraph((IRI) iri);
 					//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
 					dataset.addNamedGraph((IRI) iri);
 				}
-			}
+			}*/
+			//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
+			dataset.addNamedGraph((IRI)getWorkingGraph());
 			update.setDataset(dataset);
+			//execute the UPDATE
+			update.execute();
 			
 		}
 		
@@ -206,7 +214,6 @@ public class Refactor2 extends STServiceAdapter  {
 			Map<String, Value> valueMapping = new HashMap<String, Value>();
 			valueMapping.put(URIGenerator.Parameters.lexicalForm, value);
 			valueMapping.put(URIGenerator.Parameters.lexicalizedResource, concept);
-			Value skosxlLabelType = null;
 			valueMapping.put(URIGenerator.Parameters.type, noteType);
 			IRI newIRIForNote = generateIRI(URIGenerator.Roles.xNote, valueMapping );
 			//now add the new xNote and remove the old data regarding SKOS
@@ -215,36 +222,39 @@ public class Refactor2 extends STServiceAdapter  {
 			String noteTypeString = "<"+noteType.stringValue()+">";
 			String valueString = "\""+value.stringValue()+"\"";
 			if(value.getLanguage().isPresent()){
-				valueString += "@"+value.getLanguage();
+				valueString += "@"+value.getLanguage().get();
 			} else if(value.getDatatype()!= null){
 				valueString += "^^<"+value.getDatatype().stringValue()+">";
 			}
 			String newIRIForNoteString = "<"+newIRIForNote.stringValue()+">";
 			updateQuery =
 					"DELETE DATA {\n" +
-					"GRAPH "+graphString+" {"+conceptString+" "+noteType+" "+valueString+" }" +
-					"}\n" +
+					"GRAPH "+graphString+" {"+conceptString+" "+noteTypeString+" "+valueString+" }" +
+					"}; \n" +
 					"INSERT DATA {\n" +
-					graphString+" { \n" +
-					conceptString+" "+noteType+" "+newIRIForNoteString+" .\n" +
+					"GRAPH "+graphString+" { \n" +
+					conceptString+" "+noteTypeString+" "+newIRIForNoteString+" .\n" +
 					newIRIForNoteString+" <"+RDF.VALUE.stringValue()+"> "+valueString+" . \n" +
 					"}\n" +
 					"}";
-			
 			Update update = getManagedConnection().prepareUpdate(updateQuery);
 			
 			dataset = new SimpleDataset();
 			
 			contextList = QueryResults.asList(getManagedConnection().getContextIDs());
-			for(Resource iri : contextList){
+			/*for(Resource iri : contextList){
 				if(iri instanceof IRI){
 					//add the defaults graphs (used outside the GRAPH sections of the query)
 					dataset.addDefaultGraph((IRI) iri);
 					//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
 					dataset.addNamedGraph((IRI) iri);
 				}
-			}
+			}*/
+			//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
+			dataset.addNamedGraph((IRI)getWorkingGraph());
 			update.setDataset(dataset);
+			//execute the UPDATE
+			update.execute();
 		}
 		
 		
@@ -267,12 +277,16 @@ public class Refactor2 extends STServiceAdapter  {
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" + 
 				//remove the SKOSXL data
 				"DELETE { \n"+
-				"GRAPH ?g4 {?reifiedNote ?prop1 ?value . \n" +
-				"?subj ?prop2 ?reifiedNote . } \n" +
+				//the part relative to skos:note (and its sub properties)
+				"GRAPH ?g4 {?concept ?propNote ?reifiedNote . \n" +
+				"?reifiedNote rdf:value ?value . } \n" +
+				//the part relative to skosxl:prefLabel
 				"GRAPH ?g1{?concept skosxl:prefLabel ?prefLabel . \n" +
 				"?prefLabel skosxl:literalForm ?prefLabelLitForm . }\n" +
+				//the part relative to skosxl:altLabel
 				"GRAPH ?g2{?concept skosxl:altLabel ?altLabel . \n" +
 				"?altLabel skosxl:literalForm ?altLabelLitForm . }\n" +
+				//the part relative to skosxl:hiddenLabel
 				"GRAPH ?g3{?concept skosxl:hiddenLabel ?hiddenLabel . \n" +
 				"?hiddenLabel skosxl:literalForm ?hiddenLabelLitForm . }\n" +
 				
@@ -299,7 +313,7 @@ public class Refactor2 extends STServiceAdapter  {
 
 				//the notes (and its sub properties) part
 				"UNION \n"+
-				"?propNote rdfs:subPropertyOf* skos:note . \n" + 
+				"{?propNote rdfs:subPropertyOf* skos:note . \n" + 
 				"GRAPH ?g4{?concept ?propNote ?reifiedNote . \n" + 
 				"?reifiedNote rdf:value ?value .} \n" +
 				"} \n" +
@@ -317,9 +331,11 @@ public class Refactor2 extends STServiceAdapter  {
 				//add the defaults graphs (used outside the GRAPH sections of the query)
 				dataset.addDefaultGraph((IRI) iri);
 				//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-				dataset.addNamedGraph((IRI) iri);
+				//dataset.addNamedGraph((IRI) iri);
 			}
 		}
+		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
+		dataset.addNamedGraph((IRI)getWorkingGraph());
 		update.setDataset(dataset);
 		
 		//execute the query
