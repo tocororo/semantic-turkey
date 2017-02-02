@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.uniroma2.art.semanticturkey.services.core.export.FilteringStep;
 
 /**
- * Converts a string to a {@link FilteringStep}.
+ * Converts a (JSON) string to a {@link FilteringStep}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
