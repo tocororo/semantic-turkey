@@ -42,6 +42,14 @@ public class Classes extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Classes.class);
 
+	/**
+	 * Returns the (explicit) subclasses of the class <code>superClass</code>. If <code>numInst</code> is set to
+	 * <code>true</code>, then the description of each class will contain the number of (explicit) instances.
+	 * 
+	 * @param superClass
+	 * @param numInst
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getSubClasses(@LocallyDefined IRI superClass,
@@ -114,7 +122,6 @@ public class Classes extends STServiceAdapter {
 				" GROUP BY ?resource ?attr_color             		                           \n "
 				// @formatter:on
 			);
-
 		}
 		qb.process(ClassesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
@@ -128,6 +135,15 @@ public class Classes extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	/**
+	 * Returns the description of the classes in the given <code>classList</code>. If <code>numInst</code> is
+	 * set to <code>true</code>, then the description of each class will contain the number of (explicit)
+	 * instances.
+	 * 
+	 * @param classList
+	 * @param numInst
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getClassesInfo(IRI[] classList,
@@ -157,6 +173,29 @@ public class Classes extends STServiceAdapter {
 
 	}
 
+	/**
+	 * Returns the (explicit) instances of the class <code>cls</code>.
+	 * 
+	 * @param cls
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getInstances(@LocallyDefined IRI cls) {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" SELECT ?resource ?attr_color WHERE {                                         \n " +                                                                              
+				"    ?resource a ?cls .                                                        \n " +
+				" }                                                                            \n " +
+				" GROUP BY ?resource ?attr_color             		                           \n "
+				// @formatter:on
+		);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		qb.setBinding("cls", cls);
+		return qb.runQuery();
+	}
 }
 
 class ClassesMoreProcessor implements QueryBuilderProcessor {
