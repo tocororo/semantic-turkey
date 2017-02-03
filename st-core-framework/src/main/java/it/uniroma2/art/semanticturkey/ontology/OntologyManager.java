@@ -9,11 +9,12 @@ import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
+import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerException;
 
 /**
  * Ontology manager.
@@ -21,54 +22,56 @@ import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
  */
 public interface OntologyManager {
 
-	boolean isSupportOntNamespace(String ns);
+	void addOntologyImportFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile)
+			throws MalformedURLException, RDF4JException, ModelUpdateException, OntologyManagerException;
 
-	boolean isApplicationOntNamespace(String ns);
-
-	ImportStatus getImportStatus(String baseURI);
-
-	void addOntologyImportFromWebToMirror(String baseUriToBeImported, String url, String destLocalFile,
-			RDFFormat rdfFormat) throws MalformedURLException, ModelUpdateException;
+	void addOntologyImportFromMirror(String baseURI, String mirFileString)
+			throws MalformedURLException, ModelUpdateException, RDF4JException, OntologyManagerException;
 
 	void addOntologyImportFromWeb(String baseUriToBeImported, String url, RDFFormat rdfFormat)
-			throws MalformedURLException, ModelUpdateException;
+			throws MalformedURLException, ModelUpdateException, RDF4JException, OntologyManagerException;
 
-	void addOntologyImportFromLocalFile(String baseUriToBeImported, String sourceForImport,
-			String destLocalFile) throws MalformedURLException, ModelUpdateException;
+	void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
+			RDFFormat rdfFormat) throws MalformedURLException, ModelUpdateException, RDF4JException,
+					OntologyManagerException;
 
-	void addOntologyImportFromMirror(String baseUriToBeImported, String destLocalFile)
-			throws MalformedURLException, ModelUpdateException;
-
-	void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile)
-			throws ModelUpdateException, ImportManagementException;
+	void declareApplicationOntology(IRI iri, boolean b, boolean c);
 
 	void downloadImportedOntologyFromWeb(String baseURI, String altURL)
 			throws MalformedURLException, ModelUpdateException, ImportManagementException;
 
+	void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile)
+			throws ModelUpdateException, ImportManagementException;
+
+	String getBaseURI();
+
 	void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile)
 			throws MalformedURLException, ModelUpdateException, ImportManagementException;
 
-	void mirrorOntology(String baseURI, String toLocalFile)
-			throws ImportManagementException, ModelUpdateException;
+	ImportStatus getImportStatus(String baseURI);
 
 	Map<String, String> getNSPrefixMappings(boolean explicit) throws ModelAccessException;
+
+	Repository getRepository();
+
+	void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappingsPersistence)
+			throws ModelUpdateException, ModelAccessException;
+
+	boolean isApplicationOntNamespace(String ns);
+
+	boolean isSupportOntNamespace(String ns);
+
+	void mirrorOntology(String baseURI, String toLocalFile)
+			throws ImportManagementException, ModelUpdateException;
 
 	void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException, ModelUpdateException;
 
 	void removeOntologyImport(String uri) throws IOException, ModelUpdateException, ModelAccessException;
 
+	void setBaseURI(String baseURI);
+
 	void setNSPrefixMapping(String prefix, String namespace)
 			throws NSPrefixMappingUpdateException, ModelUpdateException;
 
-	Repository getRepository();
-
 	void startOntModel(String baseURI, File repoDir, RepositoryConfig repoConfig) throws RDF4JException;
-
-	void declareApplicationOntology(IRI iri, boolean b, boolean c);
-
-	void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappingsPersistence) throws ModelUpdateException, ModelAccessException;
-
-	void setBaseURI(String baseURI);
-
-	String getBaseURI();
 }

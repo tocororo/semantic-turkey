@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
@@ -59,6 +61,10 @@ public abstract class RDF4JMigrationUtils {
 
 	public static RepositoryConnection extractRDF4JConnection(RDFModel rdfModel) {
 		return ((RDFModelRDF4J)rdfModel).getRDF4JRepositoryConnection();
+	}
+
+	public static it.uniroma2.art.owlart.io.RDFFormat convert2art(RDFFormat rdfFormat) {
+		return it.uniroma2.art.owlart.io.RDFFormat.guessRDFFormatFromFile(new File("temp." + rdfFormat.getDefaultFileExtension()));
 	}
 
 

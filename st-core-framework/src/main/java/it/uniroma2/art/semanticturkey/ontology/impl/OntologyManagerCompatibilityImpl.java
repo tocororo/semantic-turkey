@@ -11,11 +11,12 @@ import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.rdf4jimpl.io.RDFFormatConverter;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
@@ -23,6 +24,7 @@ import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * Compatibility implementation of {@link OntologyManager} based on {@link STOntologyManager}.
@@ -53,13 +55,13 @@ public class OntologyManagerCompatibilityImpl implements OntologyManager {
 	@Override
 	public void addOntologyImportFromWebToMirror(String baseUriToBeImported, String url, String destLocalFile,
 			RDFFormat rdfFormat) throws MalformedURLException, ModelUpdateException {
-		stOntManager.addOntologyImportFromWebToMirror(baseUriToBeImported, url, destLocalFile, rdfFormat);
+		stOntManager.addOntologyImportFromWebToMirror(baseUriToBeImported, url, destLocalFile, RDF4JMigrationUtils.convert2art(rdfFormat));
 	}
 
 	@Override
 	public void addOntologyImportFromWeb(String baseUriToBeImported, String url, RDFFormat rdfFormat)
 			throws MalformedURLException, ModelUpdateException {
-		stOntManager.addOntologyImportFromWeb(baseUriToBeImported, url, rdfFormat);
+		stOntManager.addOntologyImportFromWeb(baseUriToBeImported, url, RDF4JMigrationUtils.convert2art(rdfFormat));
 	}
 
 	@Override
