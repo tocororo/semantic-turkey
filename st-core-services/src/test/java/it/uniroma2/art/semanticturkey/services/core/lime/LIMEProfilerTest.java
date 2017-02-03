@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.services.core.lime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 
 import javax.xml.parsers.DocumentBuilder;
