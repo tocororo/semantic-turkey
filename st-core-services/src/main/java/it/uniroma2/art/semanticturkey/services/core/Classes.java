@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -43,7 +44,8 @@ public class Classes extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getSubClasses(@LocallyDefined IRI superClass) {
+	public Collection<AnnotatedValue<Resource>> getSubClasses(@LocallyDefined IRI superClass,
+			@Optional(defaultValue = "true") boolean numInst) {
 		QueryBuilder qb;
 
 		if (OWL.THING.equals(superClass)) {
@@ -53,7 +55,7 @@ public class Classes extends STServiceAdapter {
 					" prefix owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
 					" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
 					"                                                                             \n" +                                      
-					" SELECT ?resource ?attr_color ?attr_more WHERE {                             \n" +                                                    
+					" SELECT ?resource ?attr_color WHERE {                                        \n" +                                                    
 					" 	?resource a ?metaClass .                                                  \n" +
 					"     FILTER EXISTS {                                                         \n" +
 					"      ?metaClass rdfs:subClassOf* owl:Class .                                \n" +
@@ -67,7 +69,7 @@ public class Classes extends STServiceAdapter {
 					"         ?metaClass2 rdfs:subClassOf* rdfs:Class .                           \n" +
 					"     }                                                                       \n" +
 					" }                                                                           \n" +
-					" GROUP BY ?resource ?attr_color ?attr_more                                   \n"                             
+					" GROUP BY ?resource ?attr_color                                              \n"                             
 					// @formatter:on
 			);
 		} else if (RDFS.RESOURCE.equals(superClass)) {
@@ -77,7 +79,7 @@ public class Classes extends STServiceAdapter {
 					" prefix owl: <http://www.w3.org/2002/07/owl#>                                    \n" +                          
 					" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                            \n" +                          
 					"                                                                                 \n" +                          
-					" SELECT ?resource ?attr_color ?attr_more WHERE {                                 \n" +
+					" SELECT ?resource ?attr_color WHERE {                                            \n" +
 					" 	{                                                                             \n" +
 					" 		BIND(owl:Thing as ?resource)                                              \n" +
 					" 	} UNION {                                                                     \n" +
@@ -99,25 +101,28 @@ public class Classes extends STServiceAdapter {
 					"		}                                                                         \n" +
 					" 	}                                                                             \n" +
 					" }                                                                               \n" +
-					" GROUP BY ?resource ?attr_color ?attr_more                                       \n"
+					" GROUP BY ?resource ?attr_color                                                  \n"
 					// @formatter:on
 			);
 		} else {
 			qb = createQueryBuilder(
 				// @formatter:off
-				" SELECT ?resource ?attr_color ?attr_more WHERE {                              \n " +                                                                              
+				" SELECT ?resource ?attr_color WHERE {                                         \n " +                                                                              
 				"    ?resource rdfs:subClassOf " + RenderUtils.toSPARQL(superClass) + "      . \n " +
 				"    FILTER(isIRI(?resource))                                                  \n " +
 				" }                                                                            \n " +
-				" GROUP BY ?resource ?attr_color ?attr_more    		                           \n "
+				" GROUP BY ?resource ?attr_color             		                           \n "
 				// @formatter:on
 			);
 
 		}
-		qb.process(MoreProcessor.INSTANCE, "resource", "attr_more");
+		qb.process(ClassesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
+		if (numInst) {
+			qb.process(ClassesNumInstProcessor.INSTANCE, "resource", "attr_numInst");
+		}
 		// qb.setBinding("superClass", superClass);
 		qb.setBinding("workingGraph", getWorkingGraph());
 		return qb.runQuery();
@@ -125,7 +130,8 @@ public class Classes extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getClassesInfo(IRI[] classList) {
+	public Collection<AnnotatedValue<Resource>> getClassesInfo(IRI[] classList,
+			@Optional(defaultValue = "true") boolean numInst) {
 
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
@@ -140,22 +146,25 @@ public class Classes extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb = createQueryBuilder(sb.toString());
-		qb.process(MoreProcessor.INSTANCE, "resource", "attr_more");
+		qb.process(ClassesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
+		if (numInst) {
+			qb.process(ClassesNumInstProcessor.INSTANCE, "resource", "attr_numInst");
+		}
 		return qb.runQuery();
 
 	}
 
 }
 
-class MoreProcessor implements QueryBuilderProcessor {
+class ClassesMoreProcessor implements QueryBuilderProcessor {
 
-	public static final MoreProcessor INSTANCE = new MoreProcessor();
+	public static final ClassesMoreProcessor INSTANCE = new ClassesMoreProcessor();
 	private GraphPattern graphPattern;
 
-	private MoreProcessor() {
+	private ClassesMoreProcessor() {
 		this.graphPattern = GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
 				.prefix("owl", OWL.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_more"))
 				.pattern(
@@ -166,6 +175,38 @@ class MoreProcessor implements QueryBuilderProcessor {
 	@Override
 	public boolean introducesDuplicates() {
 		return false;
+	}
+
+	@Override
+	public String getBindingVariable() {
+		return "resource";
+	}
+
+	@Override
+	public GraphPattern getGraphPattern() {
+		return graphPattern;
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+		return null;
+	}
+};
+
+class ClassesNumInstProcessor implements QueryBuilderProcessor {
+
+	public static final ClassesNumInstProcessor INSTANCE = new ClassesNumInstProcessor();
+	private GraphPattern graphPattern;
+
+	private ClassesNumInstProcessor() {
+		this.graphPattern = GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
+				.projection(ProjectionElementBuilder.count("anInstance", "attr_more"))
+				.pattern("?anInstance a ?resource .").graphPattern();
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return true;
 	}
 
 	@Override

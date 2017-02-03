@@ -6,7 +6,7 @@ import com.google.common.collect.BiMap;
 public class ProjectionElement {
 
 	public static enum Types {
-		GROUP_CONCAT, COPY
+		GROUP_CONCAT, COPY, COUNT
 	}
 
 	private Types type;
@@ -23,6 +23,8 @@ public class ProjectionElement {
 		switch (type) {
 		case GROUP_CONCAT:
 			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + ") AS ?" + targetVariable + ")";
+		case COUNT:
+			return "(COUNT(DISTINCT ?" + sourceVariable + ") AS ?" + targetVariable + ")";
 		case COPY:
 			return sourceVariable.equals(targetVariable) ? "?" + sourceVariable
 					: "(?" + sourceVariable + " AS ?" + targetVariable + ")";
