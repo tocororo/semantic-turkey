@@ -23,6 +23,20 @@
 
 package it.uniroma2.art.semanticturkey.servlet.main;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.w3c.dom.Element;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
@@ -43,7 +57,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -52,23 +65,8 @@ import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.w3c.dom.Element;
 
 /**
  * @author Armando Stellato <stellato@info.uniroma2.it>
