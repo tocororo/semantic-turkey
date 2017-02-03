@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.joining;
+
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +122,33 @@ public class Classes extends STServiceAdapter {
 		qb.setBinding("workingGraph", getWorkingGraph());
 		return qb.runQuery();
 	}
+
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getClassesInfo(IRI[] classList) {
+		logger.info("request to get the Propery info, given a property List");
+
+		QueryBuilder qb;
+		StringBuilder sb = new StringBuilder();
+		sb.append(
+				// @formatter:off
+				" SELECT ?resource WHERE {												\n" +
+				"     VALUES(?resource) {");
+		sb.append(Arrays.stream(classList).map(iri -> "(" + RenderUtils.toSPARQL(iri) + ")").collect(joining()));
+		sb.append("}													 				\n" +
+				"} 																		\n" +
+				" GROUP BY ?resource													\n"
+				// @formatter:on
+		);
+		qb = createQueryBuilder(sb.toString());
+		qb.process(MoreProcessor.INSTANCE, "resource", "attr_more");
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+
+	}
+
 }
 
 class MoreProcessor implements QueryBuilderProcessor {
