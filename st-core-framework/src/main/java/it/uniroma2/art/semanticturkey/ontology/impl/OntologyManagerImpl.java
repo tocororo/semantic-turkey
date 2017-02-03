@@ -1,15 +1,17 @@
 package it.uniroma2.art.semanticturkey.ontology.impl;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.util.Namespaces;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
@@ -104,14 +106,35 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	@Override
 	public Map<String, String> getNSPrefixMappings(boolean explicit) throws ModelAccessException {
-		return Collections.emptyMap();
+		try {
+			if (explicit) {
+				return nsPrefixMappings.getNSPrefixMappingTable();
+			} else {
+				return Repositories.get(repository, conn -> {
+					return Namespaces.asMap(QueryResults.asSet(conn.getNamespaces()));
+				});
+			}
+		} catch (RDF4JException e) {
+			throw new OntologyManagerException(e);
+		}
 	}
 
 	@Override
 	public void removeNSPrefixMapping(String namespace)
 			throws NSPrefixMappingUpdateException, ModelUpdateException {
-		// TODO Auto-generated method stub
-
+		try {
+			nsPrefixMappings.removeNSPrefixMapping(namespace);
+			Repositories.consume(repository, conn -> {
+				Set<String> prefixesToDelete = QueryResults.stream(conn.getNamespaces())
+						.filter(ns -> ns.getName().equals(namespace)).map(Namespace::getPrefix)
+						.collect(toSet());
+				for (String prefix : prefixesToDelete) {
+					conn.removeNamespace(prefix);
+				}
+			});
+		} catch (RDF4JException e) {
+			throw new NSPrefixMappingUpdateException(e);
+		}
 	}
 
 	@Override
