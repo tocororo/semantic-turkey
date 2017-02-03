@@ -126,7 +126,6 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getClassesInfo(IRI[] classList) {
-		logger.info("request to get the Propery info, given a property List");
 
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
