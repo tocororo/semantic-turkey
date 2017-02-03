@@ -279,7 +279,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 					STRDFURI stPred = STRDFNodeFactory.createSTRDFURI(predResource, null, true, promptValue.getKey());
 					
 					art2STRDFPredicates.put(predResource, stPred);
-					STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(rdfModel, promptValue.getValue(), false, true, true);
+					STRDFNode stNode = STRDFNodeFactory.createSTRDFNode(rdfModel, promptValue.getValue(), true, true, true);
 					resultPredicateObjectValues.put(predResource, stNode);
 				}
 				if (!promptValuesMap.isEmpty()) {
