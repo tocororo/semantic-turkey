@@ -13,7 +13,6 @@ import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.io.RDFFormat;
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 
 /**
@@ -68,4 +67,8 @@ public interface OntologyManager {
 	void declareApplicationOntology(IRI iri, boolean b, boolean c);
 
 	void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappingsPersistence) throws ModelUpdateException, ModelAccessException;
+
+	void setBaseURI(String baseURI);
+
+	String getBaseURI();
 }

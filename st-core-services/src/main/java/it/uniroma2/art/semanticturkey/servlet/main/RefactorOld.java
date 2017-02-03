@@ -32,9 +32,7 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.TransactionBasedModel;
 import it.uniroma2.art.owlart.utilities.DataRefactoring;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
@@ -175,7 +173,7 @@ public class RefactorOld extends ServiceAdapter {
 			if(sourceBaseURI!=null && sourceBaseURI.length()>0){
 				DataRefactoring.replaceBaseuri(ontModel, sourceBaseURI, targetBaseURI, graphs);
 			} else{
-				sourceBaseURI = ontModel.getBaseURI();
+				sourceBaseURI = getProject().getNewOntologyManager().getBaseURI();
 				DataRefactoring.replaceBaseuri(ontModel, targetBaseURI, graphs);
 			}
 		} catch (ModelAccessException | ModelUpdateException e) {

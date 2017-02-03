@@ -151,4 +151,18 @@ public class OntologyManagerCompatibilityImpl implements OntologyManager {
 			throws ModelUpdateException, ModelAccessException {
 		stOntManager.initializeMappingsPersistence(nsPrefixMappings);
 	}
+
+	@Override
+	public void setBaseURI(String baseURI) throws OntologyManagerException {
+		try {
+			stOntManager.getOntModel().setBaseURI(baseURI);
+		} catch (ModelUpdateException e) {
+			throw new OntologyManagerException(e);
+		}
+	}
+
+	@Override
+	public String getBaseURI() {
+		return stOntManager.getOntModel().getBaseURI();
+	}
 }

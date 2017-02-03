@@ -30,8 +30,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -44,22 +42,15 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.SESAME;
-import org.eclipse.rdf4j.model.vocabulary.SESAMEQNAME;
 import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigSchema;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
-import org.eclipse.rdf4j.repository.sail.config.SailRepositoryFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.sail.SailException;
-import org.eclipse.rdf4j.sail.config.SailRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -390,6 +381,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				} else {
 					throw new ProjectAccessException("Unsupport model type: " + modelType);
 				}
+				
+				primordialOntModel.setBaseURI(baseURI);
 			}
 
 			if (rdf4jRepo != null) {
@@ -603,6 +596,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public void setBaseURI(String baseURI) throws ProjectUpdateException {
 		try {
 			getOntModel().setBaseURI(baseURI);
+			newOntManager.setBaseURI(baseURI);
 			stp_properties.setProperty(BASEURI_PROP, baseURI);
 			updateProjectProperties();
 		} catch (Exception e) {
@@ -890,6 +884,24 @@ class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
 	}
 
 	@Override
+	public void setBaseURI(String uri) throws ModelUpdateException {
+		if (delegate != null) {
+			delegate.setBaseURI(uri);
+		} else {
+			super.setBaseURI(uri);
+		}
+	}
+	
+	@Override
+	public String getBaseURI() {
+		if (delegate != null) {
+			return delegate.getBaseURI();
+		} else {
+			return super.getBaseURI();
+		}
+	}
+	
+	@Override
 	public void setDefaultNamespace(String namespace) throws ModelUpdateException {
 		if (delegate != null) {
 			delegate.setDefaultNamespace(namespace);
@@ -906,5 +918,4 @@ class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
 			return super.getDefaultNamespace();
 		}
 	}
-
 }

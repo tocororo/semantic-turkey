@@ -30,6 +30,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	private Repository repository;
 	private NSPrefixMappings nsPrefixMappings;
+	private volatile String baseURI;
 
 	@Override
 	public boolean isSupportOntNamespace(String ns) {
@@ -49,56 +50,56 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void addOntologyImportFromWebToMirror(String baseUriToBeImported, String url, String destLocalFile,
 			RDFFormat rdfFormat) throws MalformedURLException, ModelUpdateException {
-		
+
 	}
 
 	@Override
 	public void addOntologyImportFromWeb(String baseUriToBeImported, String url, RDFFormat rdfFormat)
 			throws MalformedURLException, ModelUpdateException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void addOntologyImportFromLocalFile(String baseUriToBeImported, String sourceForImport,
 			String destLocalFile) throws MalformedURLException, ModelUpdateException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void addOntologyImportFromMirror(String baseUriToBeImported, String destLocalFile)
 			throws MalformedURLException, ModelUpdateException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile)
 			throws ModelUpdateException, ImportManagementException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void downloadImportedOntologyFromWeb(String baseURI, String altURL)
 			throws MalformedURLException, ModelUpdateException, ImportManagementException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile)
 			throws MalformedURLException, ModelUpdateException, ImportManagementException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void mirrorOntology(String baseURI, String toLocalFile)
 			throws ImportManagementException, ModelUpdateException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -110,14 +111,14 @@ public class OntologyManagerImpl implements OntologyManager {
 	public void removeNSPrefixMapping(String namespace)
 			throws NSPrefixMappingUpdateException, ModelUpdateException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void removeOntologyImport(String uri)
 			throws IOException, ModelUpdateException, ModelAccessException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	// TODO Pay attention this is not being invoked by any method! check metadata ones!
@@ -126,7 +127,7 @@ public class OntologyManagerImpl implements OntologyManager {
 		Repositories.consume(repository, conn -> conn.setNamespace(prefix, namespace));
 		nsPrefixMappings.setNSPrefixMapping(namespace, prefix);
 	}
-	
+
 	/**
 	 * a wrapper around OWLART {@link PrefixMapping} with an additional <code>overwrite</code> parameter
 	 * which, if false, makes the method ignore calls if the namespace-prefix mapping already exists. If true,
@@ -156,11 +157,17 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void startOntModel(String baseURI, File repoDir, RepositoryConfig supportRepoConfig) throws RDF4JException {
-		SailRepositoryFactory repoFactory = new SailRepositoryFactory();
-		repository = repoFactory.getRepository(supportRepoConfig.getRepositoryImplConfig());
-		repository.setDataDir(repoDir);
-		repository.initialize();
+	public void startOntModel(String baseURI, File repoDir, RepositoryConfig supportRepoConfig)
+			throws OntologyManagerException {
+		try {
+			SailRepositoryFactory repoFactory = new SailRepositoryFactory();
+			repository = repoFactory.getRepository(supportRepoConfig.getRepositoryImplConfig());
+			repository.setDataDir(repoDir);
+			this.baseURI = baseURI;
+			repository.initialize();
+		} catch (RDF4JException e) {
+			throw new OntologyManagerException(e);
+		}
 	}
 
 	@Override
@@ -177,7 +184,17 @@ public class OntologyManagerImpl implements OntologyManager {
 		for (Map.Entry<String, String> entry : mapEntries) {
 			setNsPrefix(entry.getValue(), entry.getKey(), true);
 		}
-		
+
 	}
-	
+
+	@Override
+	public void setBaseURI(String baseURI) {
+		this.baseURI = baseURI;
+	}
+
+	@Override
+	public String getBaseURI() {
+		return baseURI;
+	}
+
 }

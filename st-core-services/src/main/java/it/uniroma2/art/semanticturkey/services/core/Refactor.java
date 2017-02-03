@@ -235,8 +235,8 @@ public class Refactor extends STServiceAdapterOLD {
 			if (sourceBaseURI != null && sourceBaseURI.length() > 0) {
 				DataRefactoring.replaceBaseuri(ontModel, sourceBaseURI, targetBaseURI, graphs);
 			} else {
-				sourceBaseURI = ontModel.getBaseURI();
-				DataRefactoring.replaceBaseuri(ontModel, targetBaseURI, graphs);
+				sourceBaseURI = getProject().getNewOntologyManager().getBaseURI();
+				DataRefactoring.replaceBaseuri(ontModel, sourceBaseURI, targetBaseURI, graphs);
 				getProject().setBaseURI(targetBaseURI);
 			}
 		} catch (ModelAccessException e) {

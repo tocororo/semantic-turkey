@@ -267,10 +267,11 @@ public class Alignment extends STServiceAdapterOLD {
 		String token = stServiceContext.getSessionToken();
 		modelsMap.put(token, alignModel);
 		
-		OWLModel model = getOWLModel();
 		//check that one of the two aligned ontologies matches the current project ontology
-		if (!model.getBaseURI().equals(alignModel.getOnto1())){
-			if (model.getBaseURI().equals(alignModel.getOnto2())){
+		String baseURI = getProject().getNewOntologyManager().getBaseURI();
+		
+		if (!baseURI.equals(alignModel.getOnto1())){
+			if (baseURI.equals(alignModel.getOnto2())){
 				alignModel.reverse();
 			} else {
 				return createReplyFAIL("Failed to open and validate the given alignment file. "

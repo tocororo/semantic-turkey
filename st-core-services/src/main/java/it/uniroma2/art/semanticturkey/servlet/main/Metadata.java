@@ -289,7 +289,7 @@ public class Metadata extends ResourceOld {
 		OWLModel model = getOWLModel();
 		String ontQName;
 		try {
-			ontQName = model.getQName(model.getBaseURI());
+			ontQName = model.getQName(getProject().getNewOntologyManager().getBaseURI());
 			return getResourceDescription(ontQName, RDFResourceRolesEnum.ontology, templateandvalued);
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
@@ -409,10 +409,10 @@ public class Metadata extends ResourceOld {
 				RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
-		RDFModel ontModel = getOntModel();
+		String baseURI = getProject().getNewOntologyManager().getBaseURI();
 
 		Element baseuri = XMLHelp.newElement(dataElement, baseuriTag);
-		baseuri.setAttribute("uri", ontModel.getBaseURI());
+		baseuri.setAttribute("uri", baseURI);
 
 		return response;
 	}

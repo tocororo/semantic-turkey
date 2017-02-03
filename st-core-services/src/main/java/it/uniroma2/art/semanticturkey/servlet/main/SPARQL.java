@@ -164,7 +164,8 @@ public class SPARQL extends ServiceAdapter {
 						XMLHelp.newElement(dataElement, "result", Boolean.toString(result));
 					}
 				} else { // an update
-					Update update = owlModel.createUpdate(ql, queryString, owlModel.getBaseURI());
+					Update update = owlModel.createUpdate(ql, queryString,
+							getProject().getNewOntologyManager().getBaseURI());
 					update.evaluate(infer);
 					// Nothing to return in case of a successful update
 				}
@@ -201,7 +202,8 @@ public class SPARQL extends ServiceAdapter {
 	
 						logger.debug("JSON data: \n" + data.toString(3));
 					} else {  // an update
-						Update update = owlModel.createUpdate(ql, queryString, owlModel.getBaseURI());
+						Update update = owlModel.createUpdate(ql, queryString,
+								getProject().getNewOntologyManager().getBaseURI());
 						update.evaluate(infer);
 						// Nothing to return in case of a successful update
 					}

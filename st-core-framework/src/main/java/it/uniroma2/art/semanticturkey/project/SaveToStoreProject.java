@@ -62,12 +62,14 @@ public class SaveToStoreProject<MODELTYPE extends RDFModel> extends Project<MODE
 	public void save() throws ProjectUpdateException {
 		try {
 			RDFModel model = getOntModel();
-			model.writeRDF(triplesFile, RDFFormat.NTRIPLES, model.createURIResource(model.getBaseURI()));
+			model.writeRDF(triplesFile, RDFFormat.NTRIPLES,
+					model.createURIResource(getNewOntologyManager().getBaseURI()));
 			nsPrefixMappingsPersistence.updatePrefixMappingRegistry();
 		} catch (IOException e) {
 			throw new ProjectUpdateException("unable to write to the project file");
 		} catch (ModelAccessException e) {
-			throw new ProjectUpdateException("unable to save the project; failing to access the triple store");
+			throw new ProjectUpdateException(
+					"unable to save the project; failing to access the triple store");
 		} catch (UnsupportedRDFFormatException e) {
 			throw new IllegalStateException(
 					"ntriples format is not accepted, though it is obligatory for ST Ontology Managers");
