@@ -393,8 +393,8 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getRelevantDomainClasses(@LocallyDefined Resource propeperty) {
-		logger.info("request to get any named class which is relevant in the domain of "+propeperty.stringValue());
+	public Collection<AnnotatedValue<Resource>> getRelevantDomainClasses(@LocallyDefined Resource property) {
+		logger.info("request to get any named class which is relevant in the domain of "+property.stringValue());
 		
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -412,7 +412,7 @@ public class Properties extends STServiceAdapter {
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
-		qb.setBinding("propeperty", propeperty);
+		qb.setBinding("propeperty", property);
 		return qb.runQuery();
 	}
 	
