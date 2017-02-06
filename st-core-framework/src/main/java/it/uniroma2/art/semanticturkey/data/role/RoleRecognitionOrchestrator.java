@@ -1,5 +1,14 @@
 package it.uniroma2.art.semanticturkey.data.role;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.query.BindingSet;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTStatement;
@@ -19,20 +28,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.BindingSet;
-
-import com.google.common.collect.Sets;
 
 public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 
@@ -206,7 +202,8 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 														"IF(EXISTS {?resource a [rdfs:subClassOf* owl:ObjectProperty]}, \"objectProperty\", " +
 															"IF(EXISTS {?resource a [rdfs:subClassOf* owl:DataRange]}, \"dataRange\", " +
 																"IF(EXISTS {?resource a [rdfs:subClassOf* rdf:Property]}, \"property\", " +
-							"\"individual\")))))))))))) as ?attr_role)"		
+																	"IF(EXISTS {?resource a [rdfs:subClassOf* owl:Ontology]}, \"ontology\", " +
+							"\"individual\"))))))))))))) as ?attr_role)"		
 				// @formatter:on
 		).graphPattern();
 	}
