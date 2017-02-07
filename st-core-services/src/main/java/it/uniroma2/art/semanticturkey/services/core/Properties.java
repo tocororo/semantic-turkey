@@ -388,7 +388,7 @@ public class Properties extends STServiceAdapter {
 	 * it takes any named class which is relevant in the domain of prop.
 	 * Relevant means that if the domain of prop is (A or B) or (A and B) in any case the relevant domain classes
 	 * are provided by a list with A and B.
-	 * @param propeperty
+	 * @param property
 	 * @return
 	 */
 	@STServiceOperation
@@ -404,7 +404,7 @@ public class Properties extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
-				"     ?propeperty 	rdfs:domain		?resource	.						\n" +
+				"     ?property 	rdfs:domain		?resource	.						\n" +
 				" }																		\n" +
 				" GROUP BY ?resource													\n"
 				// @formatter:on
@@ -412,7 +412,7 @@ public class Properties extends STServiceAdapter {
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
-		qb.setBinding("propeperty", property);
+		qb.setBinding("property", property);
 		return qb.runQuery();
 	}
 	
@@ -420,13 +420,13 @@ public class Properties extends STServiceAdapter {
 	 * it takes any named class which is relevant in the range of prop.
 	 * Relevant means that if the range of prop is (A or B) or (A and B) in any case the relevant domain classes
 	 * are provided by a list with A and B.
-	 * @param propeperty
+	 * @param property
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource propeperty) {
-		logger.info("request to get any named class which is relevant in the range of "+propeperty.stringValue());
+	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource property) {
+		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
 		
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -436,7 +436,7 @@ public class Properties extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
-				"     ?propeperty 	rdfs:range	?resource	.							\n" +
+				"     ?property 	rdfs:range	?resource	.							\n" +
 				" }																		\n" +
 				" GROUP BY ?resource													\n"
 				// @formatter:on
@@ -444,7 +444,7 @@ public class Properties extends STServiceAdapter {
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
-		qb.setBinding("propeperty", propeperty);
+		qb.setBinding("property", property);
 		return qb.runQuery();
 	}
 	

@@ -26,6 +26,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 
 /**
  * This class provides services to convert SKOS to SKOSXL data and SKOSXL to SKOS.
@@ -72,14 +73,6 @@ public class Refactor2 extends STServiceAdapter  {
 		SimpleDataset dataset = new SimpleDataset();
 		
 		List<Resource> contextList = QueryResults.asList(getManagedConnection().getContextIDs());
-		/*for(Resource iri : contextList){
-			if(iri instanceof IRI){
-				//add the defaults graphs (used outside the GRAPH sections of the query)
-				dataset.addDefaultGraph((IRI) iri);
-				//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-				dataset.addNamedGraph((IRI) iri);
-			}
-		}*/
 		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
 		dataset.addNamedGraph((IRI)getWorkingGraph());
 		
@@ -119,8 +112,6 @@ public class Refactor2 extends STServiceAdapter  {
 			if(iri instanceof IRI){
 				//add the defaults graphs (used outside the GRAPH sections of the query)
 				dataset.addDefaultGraph((IRI) iri);
-				//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-				//dataset.addNamedGraph((IRI) iri);
 			}
 		}
 		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
@@ -162,17 +153,13 @@ public class Refactor2 extends STServiceAdapter  {
 			valueMapping.put(URIGenerator.Parameters.type, skosxlLabelType);
 			IRI newIRIForLabel = generateIRI(URIGenerator.Roles.xLabel, valueMapping );
 			//now add the new xlabel and remove the old data regarding SKOS
-			String graphString = "<"+graph.stringValue()+">";
-			String conceptString = "<"+concept.stringValue()+">";
-			String labelTypeString = "<"+labelType.stringValue()+">";
-			String skoxlLabelTypeString = "<"+skosxlLabelType.stringValue()+">";
-			String valueString = "\""+value.stringValue()+"\"";
-			if(value.getLanguage().isPresent()){
-				valueString += "@"+value.getLanguage().get();
-			} else if(value.getDatatype()!= null){
-				valueString += "^^<"+value.getDatatype().stringValue()+">";
-			}
-			String newIRIForLabelString = "<"+newIRIForLabel.stringValue()+">";
+			String graphString = SPARQLHelp.toSPARQL(graph); 
+			String conceptString = SPARQLHelp.toSPARQL(concept);
+			String labelTypeString = SPARQLHelp.toSPARQL(labelType);
+			String skoxlLabelTypeString = SPARQLHelp.toSPARQL(skosxlLabelType);
+			String valueString = SPARQLHelp.toSPARQL(value);
+					
+			String newIRIForLabelString = SPARQLHelp.toSPARQL(newIRIForLabel);//"<"+newIRIForLabel.stringValue()+">";
 			updateQuery =
 					"DELETE DATA {\n" +
 					"GRAPH "+graphString+" {"+conceptString+" "+labelTypeString+" "+valueString+" }" +
@@ -188,14 +175,6 @@ public class Refactor2 extends STServiceAdapter  {
 			dataset = new SimpleDataset();
 			
 			contextList = QueryResults.asList(getManagedConnection().getContextIDs());
-			/*for(Resource iri : contextList){
-				if(iri instanceof IRI){
-					//add the defaults graphs (used outside the GRAPH sections of the query)
-					dataset.addDefaultGraph((IRI) iri);
-					//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-					dataset.addNamedGraph((IRI) iri);
-				}
-			}*/
 			//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
 			dataset.addNamedGraph((IRI)getWorkingGraph());
 			update.setDataset(dataset);
@@ -217,16 +196,12 @@ public class Refactor2 extends STServiceAdapter  {
 			valueMapping.put(URIGenerator.Parameters.type, noteType);
 			IRI newIRIForNote = generateIRI(URIGenerator.Roles.xNote, valueMapping );
 			//now add the new xNote and remove the old data regarding SKOS
-			String graphString = "<"+graph.stringValue()+">";
-			String conceptString = "<"+concept.stringValue()+">";
-			String noteTypeString = "<"+noteType.stringValue()+">";
-			String valueString = "\""+value.stringValue()+"\"";
-			if(value.getLanguage().isPresent()){
-				valueString += "@"+value.getLanguage().get();
-			} else if(value.getDatatype()!= null){
-				valueString += "^^<"+value.getDatatype().stringValue()+">";
-			}
-			String newIRIForNoteString = "<"+newIRIForNote.stringValue()+">";
+			String graphString = SPARQLHelp.toSPARQL(graph); 
+			String conceptString = SPARQLHelp.toSPARQL(concept);
+			String noteTypeString = SPARQLHelp.toSPARQL(noteType);
+			String valueString = SPARQLHelp.toSPARQL(value); 
+					
+			String newIRIForNoteString = SPARQLHelp.toSPARQL(newIRIForNote); 
 			updateQuery =
 					"DELETE DATA {\n" +
 					"GRAPH "+graphString+" {"+conceptString+" "+noteTypeString+" "+valueString+" }" +
@@ -242,14 +217,6 @@ public class Refactor2 extends STServiceAdapter  {
 			dataset = new SimpleDataset();
 			
 			contextList = QueryResults.asList(getManagedConnection().getContextIDs());
-			/*for(Resource iri : contextList){
-				if(iri instanceof IRI){
-					//add the defaults graphs (used outside the GRAPH sections of the query)
-					dataset.addDefaultGraph((IRI) iri);
-					//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-					dataset.addNamedGraph((IRI) iri);
-				}
-			}*/
 			//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
 			dataset.addNamedGraph((IRI)getWorkingGraph());
 			update.setDataset(dataset);
