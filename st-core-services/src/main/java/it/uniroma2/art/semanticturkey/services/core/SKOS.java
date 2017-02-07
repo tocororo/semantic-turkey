@@ -43,6 +43,7 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
  * This class provides services for manipulating SKOS constructs.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
  */
 @STService
 public class SKOS extends STServiceAdapter {
@@ -240,15 +241,17 @@ public class SKOS extends STServiceAdapter {
                 "                                                                            \n" +
                 " SELECT ?resource (COUNT(DISTINCT ?mid) AS ?index) WHERE {                  \n" +
 				"   {                                                                        \n" +
+                //for the skos:Collection
 				" 	  FILTER NOT EXISTS {?container skos:memberList [] }                     \n" +
 				" 	  ?container skos:member ?resource .                                     \n" +
 				"   } UNION {                                                                \n" +
+				//for the skos:OrderedCollection 
 				" 	  ?container skos:memberList ?memberList .                               \n" +
 				" 	  ?memberList rdf:rest* ?mid .                                           \n" +
 				" 	  ?mid rdf:rest* ?node .                                                 \n" +
 				" 	  ?node rdf:first ?resource .                                            \n" +
 				"   }                                                                        \n" +
-				" 	FILTER EXISTS { ?resource rdf:type/rdfs:subClassOf skos:Collection . }   \n" +
+				" 	FILTER EXISTS { ?resource rdf:type/rdfs:subClassOf* skos:Collection . }  \n" +
 				" }                                                                          \n" +
 				" GROUP BY ?resource                                                         \n" +
 				" ORDER BY ?index                                                            \n"
