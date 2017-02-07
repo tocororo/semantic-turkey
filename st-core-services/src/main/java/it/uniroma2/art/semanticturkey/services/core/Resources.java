@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
+//import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 
 
 @STService
@@ -27,6 +28,14 @@ public class Resources extends STServiceAdapter {
 	public void updateTriple(Resource resource, IRI property, Value value, Value newValue){
 		logger.info("request to update a triple");
 		
+		
+		getManagedConnection().remove(resource, property, value);
+		getManagedConnection().add(resource, property, newValue);
+		
+		
+		
+		//OLD version, using SPARQL, so the Bnodes should not be used
+		/*
 		if(resource instanceof BNode){
 			//TODO check if this is the right exception
 			throw new InvalidParameterException("the resource parameter must be a URI");
@@ -61,6 +70,7 @@ public class Resources extends STServiceAdapter {
 		
 		Update update = getManagedConnection().prepareUpdate(updateQuery);
 		update.execute();
+		*/
 	}
 
 }
