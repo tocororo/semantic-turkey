@@ -10,12 +10,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.servlet.ServletRequest;
 
 import org.antlr.runtime.RecognitionException;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +39,6 @@ import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -879,48 +876,6 @@ public class CustomRanges extends STServiceAdapterOLD {
 		}
 	}
 	
-	/**
-	 * Returns a list of ConverterContractDescription
-	 * @return
-	 * @throws UnavailableResourceException
-	 * @throws ProjectInconsistentException
-	 */
-	@GenerateSTServiceController
-	public Response listConverterContracts() throws UnavailableResourceException, ProjectInconsistentException {
-		CODACore codaCore = getInitializedCodaCore(getOWLModel());
-		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = resp.getDataElement();
-		Element collElem = XMLHelp.newElement(dataElem, "collection");
-		
-		for (ConverterContractDescription aDescr : codaCore.listConverterContracts()) {
-			Element contractElem = XMLHelp.newElement(collElem, "converterContract");
-			contractElem.setAttribute("uri", aDescr.getContractURI());
-			contractElem.setAttribute("name", aDescr.getContractName());
-			contractElem.setAttribute("description", aDescr.getContractDescription());
-			contractElem.setAttribute("rdfCapability", aDescr.getRDFCapability().toString()); //typedLiteral/node/literal/uri
-			Element datatypesElem = XMLHelp.newElement(contractElem, "datatypes");
-			Set<IRI> datatypes = aDescr.getDatatypes();
-			for (IRI dt : datatypes) {
-				Element dtElem = XMLHelp.newElement(datatypesElem, "uri");
-				dtElem.setTextContent(dt.stringValue());
-				dtElem.setAttribute("show", dt.getLocalName());
-			}
-			
-//			System.out.println("signature of " + aDescr.getContractURI());
-//			Collection<SignatureDescription> signatureDescriptions = aDescr.getSignatureDescriptions();
-//			for (SignatureDescription sd : signatureDescriptions) {
-//				List<ParameterDescription> paramDescriptions = sd.getParameterDescriptions();
-//				for (ParameterDescription pd : paramDescriptions) {
-//					System.out.println("param name " + pd.getName());
-//					System.out.println("param type descr " + pd.getTypeDescription().getName());
-//				}
-//			}
-		}
-		shutDownCodaCore(codaCore);
-		
-		return resp;
-	}
-	
 	private CODACore getInitializedCodaCore(RDFModel rdfModel) throws UnavailableResourceException, ProjectInconsistentException{
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(RDF4JMigrationUtils.extractRDF4JConnection(rdfModel));
@@ -928,8 +883,8 @@ public class CustomRanges extends STServiceAdapterOLD {
 	}
 	
 	private void shutDownCodaCore(CODACore codaCore) {
-//		codaCore.setRepositoryConnection(null);
-//		codaCore.stopAndClose();
+		codaCore.setRepositoryConnection(null);
+		codaCore.stopAndClose();
 	}
 
 }

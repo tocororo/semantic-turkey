@@ -75,10 +75,6 @@ public class Projects2 extends STServiceAdapter {
 		// createProject)
 		puBindingMgr.createPUBindingsOfProject(projectName);
 
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		XMLHelp.newElement(dataElement, "type", proj.getType());
-
 		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
 		objectNode.set("type", JsonNodeFactory.instance.textNode(proj.getType()));
 
