@@ -1,29 +1,5 @@
 package it.uniroma2.art.semanticturkey.customrange;
 
-import it.uniroma2.art.coda.converters.contracts.ContractConstants;
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.ConverterException;
-import it.uniroma2.art.coda.exception.DependencyException;
-import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
-import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
-import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.pearl.model.ConverterMention;
-import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
-import it.uniroma2.art.coda.pearl.model.GraphElement;
-import it.uniroma2.art.coda.pearl.model.GraphStruct;
-import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
-import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
-import it.uniroma2.art.coda.pearl.model.ProjectionRule;
-import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
-import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.ARTTriple;
-import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -63,32 +39,58 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.metadata.FeatureDescription;
 import org.apache.uima.resource.metadata.TypeDescription;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
+import org.eclipse.rdf4j.model.IRI;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import it.uniroma2.art.coda.converters.contracts.ContractConstants;
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ConverterException;
+import it.uniroma2.art.coda.exception.DependencyException;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
+import it.uniroma2.art.coda.pearl.model.ProjectionRule;
+import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
+import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.coda.structures.SuggOntologyCoda;
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 public class CustomRangeEntryGraph extends CustomRangeEntry {
 	
 	private static final String USER_PROMPT_FEATURE_NAME = "userPrompt";
 	private static final String USER_PROMPT_TYPE_PATH = "it.uniroma2.art.semanticturkey.userPromptFS";
 	private String annotationTypeName;//UIMA type taken from pearl rule (rule ....)
-	private String showProp;
+	private List<IRI> showPropertyChain;
 	
-	CustomRangeEntryGraph(String id, String name, String description, String ref) {
+	CustomRangeEntryGraph(String id, String name, String description, String ref, List<IRI> showPropChain) {
 		super(id, name, description, ref);
+		showPropertyChain = showPropChain;
 	}
 	
 	/**
-	 * Returns the property that suggests which of the property in the pearl determines the value to
+	 * Returns the property chain that suggests which of the property in the pearl determines the value to
 	 * show instead of the URL
 	 * @return
 	 */
-	public String getShowProperty(){
-		return this.showProp;
+	public List<IRI> getShowPropertyChain(){
+		return this.showPropertyChain;
 	}
 	
-	public void setShowProperty(String property){
-		this.showProp = property;
+	public void setShowPropertyChain(List<IRI> propertyChain){
+		this.showPropertyChain = propertyChain;
 	}
 	
 	/**
@@ -412,6 +414,22 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	/**
+	 * Returns the property chain serialized as list of URIs separated by a comma.
+	 * Return an empty string if the chain is empty
+	 * @return
+	 */
+	public String serializePropertyChain() {
+		String serializedPropChain = "";
+		if (this.showPropertyChain.size() > 0){
+			for (int i = 0; i < showPropertyChain.size(); i++) {
+				serializedPropChain += showPropertyChain.get(i).stringValue() + ",";
+			}
+			serializedPropChain = serializedPropChain.substring(0, serializedPropChain.length()-1); //remove last ","
+		}
+		return serializedPropChain;
+	}
+	
+	/**
 	 * Creates a TypeSystemDescription based on the CODA rule contained in the <code>ref</code> tag.
 	 * The TypeSystemDescription returned contains a top feature structure named <code>userPrompt</code>
 	 * structured following the node section of the CODA rule.
@@ -479,9 +497,12 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			Element refElement = doc.createElement("ref"); 
 			CDATASection cdata = doc.createCDATASection(this.getRef());
 			refElement.appendChild(cdata);
-			if (this.showProp != ""){
-				refElement.setAttribute("showProperty", showProp);
+			
+			String propChain = serializePropertyChain();
+			if (!propChain.isEmpty()) {
+				refElement.setAttribute("showPropertyChain", propChain);
 			}
+			
 			creElement.appendChild(refElement);
 			
 			// write the content into xml file

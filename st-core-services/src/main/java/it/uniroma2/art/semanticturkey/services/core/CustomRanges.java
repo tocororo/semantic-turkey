@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import javax.servlet.ServletRequest;
 
 import org.antlr.runtime.RecognitionException;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,6 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.query.GraphQuery;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.TupleBindings;
@@ -226,22 +226,22 @@ public class CustomRanges extends STServiceAdapterOLD {
 			if (creGraph != null){
 				//Resource Element
 				//compute the show for the entry resource of the graph
-				String showProp = creGraph.getShowProperty();
-				String show;
-				if (showProp == null || showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
-					show = resource.getNominalValue();
-				} else { //if the showProperty is specified, look for its value
-					showProp = rdfModel.expandQName(creGraph.getShowProperty());
-					ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
-					if (itShow.hasNext()){//if the value is found is set as show attribute
-						ARTNode showNode = itShow.next();
-						show = showNode.getNominalValue();
-					} else { //otherwise set the same resource ID as show attribute
-						show = resource.getNominalValue();
-					}
-				}
+//				String showProp = creGraph.getShowPropertyChain();
+//				String show;
+//				if (showProp == null || showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
+//					show = resource.getNominalValue();
+//				} else { //if the showProperty is specified, look for its value
+//					showProp = rdfModel.expandQName(creGraph.getShowPropertyChain());
+//					ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
+//					if (itShow.hasNext()){//if the value is found is set as show attribute
+//						ARTNode showNode = itShow.next();
+//						show = showNode.getNominalValue();
+//					} else { //otherwise set the same resource ID as show attribute
+//						show = resource.getNominalValue();
+//					}
+//				}
 				STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
-						resource, ModelUtilities.getResourceRole(resource, rdfModel), true, show);
+						resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
 				RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
 				
 				//predicate-object list Element (although this is not a pred-obj list, but a "userPrompt"-value, exploit the POList structure)
@@ -544,7 +544,10 @@ public class CustomRanges extends STServiceAdapterOLD {
 			Element refElem = XMLHelp.newElement(creElem, "ref");
 			refElem.setTextContent(crEntry.getRef());
 			if (crEntry.isTypeGraph()){
-				refElem.setAttribute("showProperty", crEntry.asCustomRangeEntryGraph().getShowProperty());
+				String propertyChain = crEntry.asCustomRangeEntryGraph().serializePropertyChain();
+				if (!propertyChain.isEmpty()) {
+					refElem.setAttribute("showPropertyChain", propertyChain);
+				}
 			}
 			return response;
 		} else {
@@ -658,10 +661,10 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response createCustomRangeEntry(String type, String id, String name, String description, String ref, @Optional String showProp)
+	public Response createCustomRangeEntry(String type, String id, String name, String description, String ref, @Optional List<IRI> showPropChain)
 			throws CustomRangeException {
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
-		crProvider.createCustomRangeEntry(type, id, name, description, ref, showProp);
+		crProvider.createCustomRangeEntry(type, id, name, description, ref, showPropChain);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -688,7 +691,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 			String targetRuleId = targetId.replace(CustomRangeEntry.PREFIX, "id:");
 			ref = ref.replace(sourceRuleId, targetRuleId);
 			crProvider.createCustomRangeEntry(sourceCRE.getType(), targetId, sourceCRE.getName(), sourceCRE.getDescription(),
-					ref, sourceCRE.asCustomRangeEntryGraph().getShowProperty());
+					ref, sourceCRE.asCustomRangeEntryGraph().getShowPropertyChain());
 		} else { //type "node"
 			crProvider.createCustomRangeEntry(sourceCRE.getType(), targetId, sourceCRE.getName(), sourceCRE.getDescription(),
 					sourceCRE.getRef(), null);
@@ -739,10 +742,10 @@ public class CustomRanges extends STServiceAdapterOLD {
 	 * @throws CustomRangeException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
-	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp) throws CustomRangeException{
+	public Response updateCustomRangeEntry(String id, String name, String description, String ref, @Optional List<IRI> showPropChain) throws CustomRangeException{
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
 		ref = ref.replace("\r", "");
-		crProvider.updateCustomRangeEntry(id, name, description, ref, showProp);
+		crProvider.updateCustomRangeEntry(id, name, description, ref, showPropChain);
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	

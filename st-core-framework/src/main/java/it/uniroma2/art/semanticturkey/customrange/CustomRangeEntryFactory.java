@@ -4,11 +4,15 @@ import it.uniroma2.art.semanticturkey.exceptions.CustomRangeException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -24,8 +28,7 @@ public class CustomRangeEntryFactory {
 		String ref = creReader.getRef();
 		String type = creReader.getType();
 		if (type.equals(CustomRangeEntry.Types.graph.toString())){
-			CustomRangeEntryGraph cre = new CustomRangeEntryGraph(id, name, description, ref);
-			cre.setShowProperty(creReader.getShowProperty());
+			CustomRangeEntryGraph cre = new CustomRangeEntryGraph(id, name, description, ref, creReader.getShowPropertyChain());
 			return cre;
 		} else if (type.equals(CustomRangeEntry.Types.node.toString())){
 			return new CustomRangeEntryNode(id, name, description, ref);
@@ -111,19 +114,35 @@ public class CustomRangeEntryFactory {
 		}
 		
 		/**
-		 * Return the <code>show</code> attribute of the <code>ref</code> tag contained in the 
+		 * Return the <code>showPropertyChain</code> attribute of the <code>ref</code> tag contained in the 
 		 * custom range entry xml file. N.B. the <code>showPredicate</code> attribute is available
 		 * only if the type of the entry is <code>graph</code>
 		 * @return
 		 */
-		public String getShowProperty(){
-			String showProp = "";
+		public List<IRI> getShowPropertyChain(){
+			List<IRI> showPropChain = new ArrayList<IRI>();
 			Node refNode = doc.getElementsByTagName("ref").item(0);
 			if (refNode.getNodeType() == Node.ELEMENT_NODE) {
 				Element refElement = (Element) refNode;
-				showProp = refElement.getAttribute("showProperty");
+				String showPropChainString = refElement.getAttribute("showPropertyChain");
+				//deserialize from string to List<IRI>
+				if (!showPropChainString.isEmpty()) {
+					String[] splittedChain = showPropChainString.split(">/<");
+					SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
+					for (int i = 0; i < splittedChain.length; i++) {
+						//remove < and > from serialization
+						String iri = splittedChain[i];
+						if (iri.startsWith("<")) {
+							iri = iri.substring(1, iri.length());  
+						}
+						if (splittedChain[i].endsWith(">")) {
+							iri = iri.substring(0, iri.length()-1);  
+						} 
+						showPropChain.add(valueFactory.createIRI(iri));
+					}
+				}
 			}
-			return showProp;
+			return showPropChain;
 		}
 	}
 }

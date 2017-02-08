@@ -4,8 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Component;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.exceptions.CustomRangeException;
 import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 
 /*
  * This class should be used as Autowired (singleton scoped) component, because its initialization 
@@ -212,7 +213,8 @@ public class CustomRangeProvider {
 	
 	// CUSTOM RANGE ENTRY
 	
-	public CustomRangeEntry createCustomRangeEntry(String type, String id, String name, String description, String ref, String showProp) throws CustomRangeException {
+	public CustomRangeEntry createCustomRangeEntry(String type, String id, String name, String description, String ref, List<IRI> showPropChain)
+			throws CustomRangeException {
 		//if already exists throw an exception
 		if (this.getCustomRangeEntryById(id) != null){
 			throw new CustomRangeException("Impossible to create a CustomRangeEntry with "
@@ -222,10 +224,7 @@ public class CustomRangeProvider {
 			if (type.equalsIgnoreCase(CustomRangeEntry.Types.node.toString())){
 				cre = new CustomRangeEntryNode(id, name, description, ref);
 			} else {
-				cre = new CustomRangeEntryGraph(id, name, description, ref);
-				if (showProp != null && !showProp.equals("")) {
-					cre.asCustomRangeEntryGraph().setShowProperty(showProp);
-				}
+				cre = new CustomRangeEntryGraph(id, name, description, ref, showPropChain);
 			}
 			cre.saveXML(); //serialize it
 			creMap.put(id, cre); //and add it to the map
@@ -293,7 +292,7 @@ public class CustomRangeProvider {
 	
 	// CUSTOM RANGE ENTRY
 	
-	public void updateCustomRangeEntry(String id, String name, String description, String ref, @Optional String showProp) throws CustomRangeException{
+	public void updateCustomRangeEntry(String id, String name, String description, String ref, List<IRI> showPropChain) throws CustomRangeException{
 		CustomRangeEntry cre = this.getCustomRangeEntryById(id);
 		if (cre == null) {
 			throw new CustomRangeException("CustomRangeEntry with ID " + id + " doesn't exist");
@@ -301,8 +300,8 @@ public class CustomRangeProvider {
 			cre.setName(name);
 			cre.setDescription(description);
 			cre.setRef(ref);
-			if (showProp != null){
-				cre.asCustomRangeEntryGraph().setShowProperty(showProp);
+			if (showPropChain != null){
+				cre.asCustomRangeEntryGraph().setShowPropertyChain(showPropChain);
 			}
 			cre.saveXML();
 		}
