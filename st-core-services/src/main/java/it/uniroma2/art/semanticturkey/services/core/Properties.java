@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -8,13 +9,25 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.customrange.CustomRange;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -37,6 +50,9 @@ public class Properties extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Properties.class);
 
+	@Autowired
+	private CustomRangeProvider crProvider;
+	
 	/**
 	 * returns all root properties
 	 * @return
@@ -427,7 +443,6 @@ public class Properties extends STServiceAdapter {
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource property) {
 		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
-		
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -447,10 +462,145 @@ public class Properties extends STServiceAdapter {
 		qb.setBinding("property", property);
 		return qb.runQuery();
 	}
+
 	
+	@STServiceOperation
+	@Read
+	public JsonNode getRange(@LocallyDefined IRI property) {
+		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
+		
+		ObjectNode response = JsonNodeFactory.instance.objectNode();
+		
+		//first of all, check if there is a custom range that replace the standard range(s)
+		boolean replace = crProvider.getCustomRangeConfig().getReplaceRanges(property.stringValue());
+		if(!replace) {
+			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
+			
+			ObjectNode rangesObjectNode = JsonNodeFactory.instance.objectNode();
+			rangesObjectNode.set("type", JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
+		
+			ArrayNode rangeArrayNode = JsonNodeFactory.instance.arrayNode();
+			for(String range : typesAndRanges.getRangesList()){
+				rangeArrayNode.add(JsonNodeFactory.instance.textNode(range));
+			}
+			if(!typesAndRanges.getRangesList().isEmpty()){
+				rangesObjectNode.set("rangeCollection", rangeArrayNode);
+			}
+			response.set("ranges", rangesObjectNode);
+		}
+		
+		//now add the part relative to the customRanges
+		CustomRange cr = crProvider.getCustomRangeForProperty(property.stringValue());
+		ObjectNode customRanges = JsonNodeFactory.instance.objectNode();
+		customRanges.set("id", JsonNodeFactory.instance.textNode(cr.getId()));
+		customRanges.set("property", JsonNodeFactory.instance.textNode(property.stringValue()));
+		
+		ArrayNode crArrayNode = JsonNodeFactory.instance.arrayNode();
+		Collection<CustomRangeEntry> crList = cr.getEntries();
+		for(CustomRangeEntry customRangeEntry : crList){
+			ObjectNode customRangeObjectNode = JsonNodeFactory.instance.objectNode();
+			customRangeObjectNode.set("id", JsonNodeFactory.instance.textNode(customRangeEntry.getId()));
+			customRangeObjectNode.set("name", JsonNodeFactory.instance.textNode(customRangeEntry.getName()));
+			customRangeObjectNode.set("description", JsonNodeFactory.instance.textNode(customRangeEntry.getDescription()));
+			crArrayNode.add(customRangeObjectNode);
+			
+		}
+		customRanges.set("crEntries", crArrayNode);
+		response.set("customRanges", customRanges);
+		
+			
+		return response;
+	}
+	
+	
+	
+	protected TypesAndRanges getRangeOnlyClasses(IRI property){
+		
+		String selectQuery =
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+	            "SELECT ?type ?range \n " +
+				"WHERE {\n" +
+	            "<"+property.stringValue()+"> rdf:type ?type . \n" +
+				"<"+property.stringValue()+"> rdfs:subPropertyOf* ?superProperty  \n" +
+	            "OPTIONAL { \n " +
+	            "?superProperty  rdfs:range ?range \n" +
+	            "} \n " +
+				"}";
+		TupleQuery select = getManagedConnection().prepareTupleQuery(selectQuery);
+		select.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = select.evaluate();
+		TypesAndRanges typesAndRanges = new TypesAndRanges();
+		while(tupleQueryResult.hasNext()){
+			BindingSet bindingSet = tupleQueryResult.next();
+			Value valueType = bindingSet.getBinding("type").getValue();
+			if(valueType instanceof IRI){
+				typesAndRanges.addType(valueType.stringValue());
+			}
+			if(bindingSet.hasBinding("range")){
+				Value valueRange = bindingSet.getBinding("range").getValue();
+				if(valueRange instanceof IRI){
+					typesAndRanges.addRange(valueRange.stringValue());
+				}
+			}
+		}
+		tupleQueryResult.close();
+		return typesAndRanges;
+		
+	}
 	
 }
 
+class TypesAndRanges {
+	private List <String> typesList;
+	private List <String> rangesList;
+
+	public TypesAndRanges() {
+		typesList = new ArrayList<String >();
+		rangesList = new ArrayList<String>();
+	}
+	
+	public void addType(String type){
+		if(!typesList.contains(type)){
+			typesList.add(type);
+		}
+	}
+	
+	public void addRange(String range){
+		if(!rangesList.contains(range)){
+			rangesList.add(range);
+		}
+	}
+	
+	public List<String> getTypesList(){
+		return typesList;
+	}
+	
+	public String getTypeNormalized(){
+		if(typesList.contains(OWL.OBJECTPROPERTY.stringValue())){
+			return "resource";
+		} else if(typesList.contains(OWL.DATATYPEPROPERTY.stringValue())){
+			if(rangesList.isEmpty()){
+				return "literal";
+			} else{
+				return "typedLiteral";
+			}
+		} else {
+			if(rangesList.isEmpty()){
+				return "undetermined";
+			} else{
+				return "resource";
+			}
+		}
+	}
+	
+	public List<String> getRangesList() {
+		return rangesList;
+	}
+	
+	 
+}
 
 class PropertiesMoreProcessor implements QueryBuilderProcessor {
 
