@@ -491,23 +491,25 @@ public class Properties extends STServiceAdapter {
 		
 		//now add the part relative to the customRanges
 		CustomRange cr = crProvider.getCustomRangeForProperty(property.stringValue());
-		ObjectNode customRanges = JsonNodeFactory.instance.objectNode();
-		customRanges.set("id", JsonNodeFactory.instance.textNode(cr.getId()));
-		customRanges.set("property", JsonNodeFactory.instance.textNode(property.stringValue()));
-		
-		ArrayNode crArrayNode = JsonNodeFactory.instance.arrayNode();
-		Collection<CustomRangeEntry> crList = cr.getEntries();
-		for(CustomRangeEntry customRangeEntry : crList){
-			ObjectNode customRangeObjectNode = JsonNodeFactory.instance.objectNode();
-			customRangeObjectNode.set("id", JsonNodeFactory.instance.textNode(customRangeEntry.getId()));
-			customRangeObjectNode.set("name", JsonNodeFactory.instance.textNode(customRangeEntry.getName()));
-			customRangeObjectNode.set("description", JsonNodeFactory.instance.textNode(customRangeEntry.getDescription()));
-			crArrayNode.add(customRangeObjectNode);
+		if( cr != null) {
+			ObjectNode customRanges = JsonNodeFactory.instance.objectNode();
+			customRanges.set("id", JsonNodeFactory.instance.textNode(cr.getId()));
+			customRanges.set("property", JsonNodeFactory.instance.textNode(property.stringValue()));
 			
+			ArrayNode crArrayNode = JsonNodeFactory.instance.arrayNode();
+			Collection<CustomRangeEntry> crList = cr.getEntries();
+			for(CustomRangeEntry customRangeEntry : crList){
+				ObjectNode customRangeObjectNode = JsonNodeFactory.instance.objectNode();
+				customRangeObjectNode.set("id", JsonNodeFactory.instance.textNode(customRangeEntry.getId()));
+				customRangeObjectNode.set("name", JsonNodeFactory.instance.textNode(customRangeEntry.getName()));
+				customRangeObjectNode.set("type", JsonNodeFactory.instance.textNode(customRangeEntry.getType()));
+				customRangeObjectNode.set("description", JsonNodeFactory.instance.textNode(customRangeEntry.getDescription()));
+				crArrayNode.add(customRangeObjectNode);
+				
+			}
+			customRanges.set("crEntries", crArrayNode);
+			response.set("customRanges", customRanges);
 		}
-		customRanges.set("crEntries", crArrayNode);
-		response.set("customRanges", customRanges);
-		
 			
 		return response;
 	}
