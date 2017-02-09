@@ -555,8 +555,8 @@ public class Property extends ResourceOld {
 		OWLModel ontModel = getOWLModel();
 		ARTURIResource property;
 		try {
-			property = ontModel.retrieveURIResource(ontModel.expandQName(propQName));
-			if (property == null)
+			property = ontModel.createURIResource(ontModel.expandQName(propQName));
+			if (!ontModel.isLocallyDefined(property))
 				return servletUtilities.createExceptionResponse(request, "there is no resource with name: "
 						+ propQName);
 			injectPropertyRangeXML(ontModel, property, dataElement, boolVis, minimize);
