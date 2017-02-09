@@ -88,7 +88,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 				annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
 				addRole(annotatedPredicate, resource2attributes);
-				addShowOrRenderXLabel(annotatedPredicate, resource2attributes, statements);
+				addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, statements);
 				annotatedPredicate.setAttribute("hasCustomRange",
 						customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
 
@@ -106,7 +106,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 					if (object instanceof Resource) {
 						addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
-						addShowOrRenderXLabel((AnnotatedValue<Resource>) annotatedObject, resource2attributes,
+						addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject, resource2attributes,
 								statements);
 					}
 					annotatedObject.setAttribute("graphs", computeGraphs(graphs));
@@ -125,7 +125,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 			annotatedSuperProp.setAttribute("role", RDFResourceRolesEnum.property.toString());
 			addRole(annotatedSuperProp, resource2attributes);
-			addShowOrRenderXLabel(annotatedSuperProp, resource2attributes, statements);
+			addShowOrRenderXLabelOrCRE(annotatedSuperProp, resource2attributes, statements);
 			annotatedSuperProp.setAttribute("hasCustomRange",
 					customRangeProvider.existsCustomRangeEntryGraphForProperty(superProp.stringValue()));
 

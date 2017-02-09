@@ -154,7 +154,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 								if (firstElement instanceof Resource) {
 									addRole((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
-									addShowOrRenderXLabel((AnnotatedValue<Resource>) annotatedMember,
+									addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedMember,
 											resource2attributes, statements);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
@@ -184,7 +184,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 						annotatedObject = new AnnotatedValue<>(object);
 					}
 					addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
-					addShowOrRenderXLabel((AnnotatedValue<Resource>) annotatedObject, resource2attributes,
+					addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject, resource2attributes,
 							statements);
 				}
 
@@ -209,7 +209,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
 			addRole(annotatedPredicate, resource2attributes);
-			addShowOrRenderXLabel(annotatedPredicate, resource2attributes, statements);
+			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
 

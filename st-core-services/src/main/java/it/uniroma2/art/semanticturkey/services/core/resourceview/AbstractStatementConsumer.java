@@ -47,21 +47,20 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	public static String computeDefaultShow(Resource resource) {
 		return computeDefaultShow(resource, Collections.emptyMap());
 	}
-	
+
 	public static String computeDefaultShow(Resource resource, Map<String, String> ns2prefixMapping) {
 		if (resource instanceof BNode) {
 			return "_:" + resource.stringValue();
 		} else {
-			String prefix = ns2prefixMapping.get(((IRI)resource).getLocalName());
-			
+			String prefix = ns2prefixMapping.get(((IRI) resource).getLocalName());
+
 			if (prefix == null) {
 				return resource.stringValue();
 			} else {
-				return prefix + ":" + ((IRI)resource).getLocalName();
+				return prefix + ":" + ((IRI) resource).getLocalName();
 			}
 		}
 	}
-
 
 	public static String computeGraphs(Set<Resource> graphs) {
 		return graphs.stream().map(g -> g == null ? "MAINGRAPH" : g.toString()).collect(joining(","));
@@ -93,9 +92,10 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.CLASS, true)
 					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.CLASS, true)) {
 				Map<String, String> namespaceToprefixMap = QueryResults.stream(repoConn.getNamespaces())
-						.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
-				String expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource, namespaceToprefixMap,
-						true, new Resource[0], null, true, repoConn);
+						.collect(toMap(Namespace::getName, Namespace::getPrefix,
+								(v1, v2) -> v1 != null ? v1 : v2));
+				String expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource,
+						namespaceToprefixMap, true, new Resource[0], null, true, repoConn);
 				if (expr != null && !expr.isEmpty()) {
 					return expr;
 				}
@@ -123,16 +123,18 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			}
 		}
 
-		Map<String, String> ns2prefixMap = QueryResults.stream(repoConn.getNamespaces()).collect(toMap(Namespace::getName, Namespace::getPrefix, (x,y)->x));
-		
+		Map<String, String> ns2prefixMap = QueryResults.stream(repoConn.getNamespaces())
+				.collect(toMap(Namespace::getName, Namespace::getPrefix, (x, y) -> x));
+
 		return computeDefaultShow(resource, ns2prefixMap);
 	}
 
-	public static void addShowOrRenderXLabel(AnnotatedValue<? extends Resource> annotatedResource,
+	public static void addShowOrRenderXLabelOrCRE(AnnotatedValue<? extends Resource> annotatedResource,
 			Map<Resource, Map<String, Value>> resource2attributes, Model statements) {
 		Resource resource = annotatedResource.getValue();
 
 		Map<String, Value> resourceAttributes = resource2attributes.get(resource);
+
 		if (resourceAttributes != null) {
 			Value literalForm = resourceAttributes.get("literalForm");
 			if (literalForm != null) {
@@ -140,6 +142,15 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				annotatedResource.setAttribute("show", literalFormAsLiteral.getLabel());
 				literalFormAsLiteral.getLanguage().ifPresent(v -> annotatedResource.setAttribute("lang", v));
 				return;
+			} else {
+				Value creShow = resourceAttributes.get("creShow");
+				if (creShow != null) {
+					Literal creShowAsLiteral = (Literal) creShow;
+					annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
+					creShowAsLiteral.getLanguage()
+							.ifPresent(v -> annotatedResource.setAttribute("lang", v));
+					return;
+				}
 			}
 		}
 		annotatedResource.setAttribute("show", computeShow(resource, resource2attributes, statements));

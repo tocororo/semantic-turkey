@@ -58,12 +58,15 @@ import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -71,6 +74,8 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryGraph;
+import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -112,6 +117,9 @@ public class ResourceView2 extends STServiceAdapter {
 	@Autowired
 	private StatementConsumerProvider statementConsumerProvider;
 
+	@Autowired
+	private CustomRangeProvider customRangeProvider;
+
 	@STServiceOperation
 	@Read
 	public Map<String, ResourceViewSection> getResourceView(Resource resource,
@@ -137,8 +145,10 @@ public class ResourceView2 extends STServiceAdapter {
 				retrievedStatements.setNamespace(ns.getPrefix(), ns.getName());
 			});
 
+			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
+
 			Map<Resource, Map<String, Value>> resource2attributes = retrieveSubjectAndObjectsAddtionalInformation(
-					resourcePosition, resource);
+					resourcePosition, resource, resourcePredicates);
 
 			Set<Statement> processedStatements = new HashSet<>();
 
@@ -152,7 +162,7 @@ public class ResourceView2 extends STServiceAdapter {
 			RDFResourceRolesEnum resourceRole = RDFResourceRolesEnum
 					.valueOf(annotatedResource.getAttributes().get("role").stringValue());
 
-			AbstractStatementConsumer.addShowOrRenderXLabel(annotatedResource, resource2attributes,
+			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
 					retrievedStatements);
 
 			description.put("resource", new ResourceSection(annotatedResource));
@@ -160,15 +170,13 @@ public class ResourceView2 extends STServiceAdapter {
 			List<StatementConsumer> viewTemplate = statementConsumerProvider
 					.getTemplateForResourceRole(resourceRole);
 
-			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
 			Set<IRI> specialProperties = viewTemplate.stream().flatMap(c -> c.getMatchedProperties().stream())
 					.collect(toSet());
 
-			
 			// Always consider special predicates, even if they are not mentioned, because it may be the case
 			// that they are shown anyway in the resource view
 			Set<IRI> predicatesToEnrich = Sets.union(resourcePredicates, specialProperties);
-			Model propertyModel = retrievePredicateInformation(resourcePosition, predicatesToEnrich ,
+			Model propertyModel = retrievePredicateInformation(resourcePosition, predicatesToEnrich,
 					specialProperties, resource2attributes, retrievedStatements);
 
 			for (StatementConsumer aConsumer : viewTemplate) {
@@ -195,7 +203,7 @@ public class ResourceView2 extends STServiceAdapter {
 		}
 
 		Map<String, String> ns2prefixMap = QueryResults.stream(getManagedConnection().getNamespaces())
-				.collect(toMap(Namespace::getName, Namespace::getPrefix, (x,y)->x));
+				.collect(toMap(Namespace::getName, Namespace::getPrefix, (x, y) -> x));
 
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -284,8 +292,7 @@ public class ResourceView2 extends STServiceAdapter {
 					" 	}                                                                             \n" +
 					" 	GROUP BY ?resource                                                            \n"
 				// @formatter:on
-							,
-					predicatesValuesFrag, specialPredicatesValuesFrag));
+					, predicatesValuesFrag, specialPredicatesValuesFrag));
 			qb.processRole();
 			Model propertyModel = new LinkedHashModel();
 			qb.runQuery(acquireManagedConnection).stream().forEach(annotatedPredicate -> {
@@ -328,15 +335,50 @@ public class ResourceView2 extends STServiceAdapter {
 	}
 
 	private Map<Resource, Map<String, Value>> retrieveSubjectAndObjectsAddtionalInformation(
-			ResourcePosition resourcePosition, Resource resource) {
+			ResourcePosition resourcePosition, Resource resource, Set<IRI> resourcePredicates) {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
-			QueryBuilder qb = createQueryBuilder(
+			StringBuilder sb = new StringBuilder();
+			sb.append(
 				// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +
-				" SELECT ?resource WHERE {                                                    \n" +
+				" SELECT ?resource (MAX(?attr_creShowTemp) AS ?attr_creShow) WHERE {         \n" +
 				"   {                                                                         \n" +
-				"     ?subjectResource ?predicate ?tempResource .                             \n" +
+				"     ?subjectResource ?predicate ?tempResource .                             \n"
+				// @formatter:on
+			);
+
+			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
+
+			for (IRI pred : resourcePredicates) {
+				customRangeProvider.getCustomRangeEntriesForProperty(pred.stringValue()).stream()
+						.filter(CustomRangeEntryGraph.class::isInstance)
+						.map(CustomRangeEntryGraph.class::cast).forEach(cre -> {
+							List<IRI> chain = cre.getShowPropertyChain();
+							
+							if (chain == null || chain.isEmpty()) return;
+							
+							chain2pred.put(chain, pred);
+						});
+			}
+
+			for (List<IRI> chain : chain2pred.keySet()) {
+				String selectorChain = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL).collect(joining("|"));
+				
+				String creChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
+
+				sb.append(
+					// @formatter:off
+					"     OPTIONAL {                                                          \n" +
+					"        ?subjectResource " +  selectorChain + " ?resource .              \n" +
+					"        ?resource " +  creChain + " ?attr_creShowTemp .                  \n" +
+					"     }                                                                   \n"
+					// @formatter:on
+					);
+			}
+			
+			sb.append(
+				// @formatter:off
 				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                          \n" +
 				"   } UNION {                                                                 \n" +
 				"     bind(?subjectResource as ?resource)                                     \n" +
@@ -346,6 +388,8 @@ public class ResourceView2 extends STServiceAdapter {
 				" GROUP BY ?resource                                                          \n"
 				// @formatter:on
 			);
+			
+			QueryBuilder qb = createQueryBuilder(sb.toString());
 			qb.processRendering();
 			qb.processRole();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
