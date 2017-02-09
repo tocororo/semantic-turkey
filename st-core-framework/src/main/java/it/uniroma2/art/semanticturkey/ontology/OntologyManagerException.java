@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.ontology.impl;
+package it.uniroma2.art.semanticturkey.ontology;
 
 /**
  * 

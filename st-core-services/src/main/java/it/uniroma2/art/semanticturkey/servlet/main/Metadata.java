@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.rdf4j.RDF4JException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -72,7 +74,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
  * @author Armando Stellato <stellato@info.uniroma2.it>
  * @author Andrea Turbati <turbati@info.uniroma2.it>
  */
-@Component
+@Component(value="MetadataOLD")
 public class Metadata extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(Metadata.class);
@@ -505,8 +507,8 @@ public class Metadata extends ResourceOld {
 				nsPrefMapElement
 						.setAttribute("explicit", Boolean.toString(explicitPrefixes.contains(prefix)));
 			}
-		} catch (ModelAccessException e) {
-			return ServletUtilities.getService().createExceptionResponse(request, e);
+		} catch (OntologyManagerException e) {
+			return ServletUtilities.getService().createExceptionResponse(request, e.getMessage());
 		}
 
 		return response;
@@ -876,6 +878,12 @@ public class Metadata extends ResourceOld {
 			logger.debug(Utilities.printStackTrace(e));
 			return servletUtilities.createExceptionResponse(request, "problems in updating the ontModel");
 		} catch (ImportManagementException e) {
+			logger.debug(Utilities.printStackTrace(e));
+			return servletUtilities.createExceptionResponse(request, e.getMessage());
+		} catch (RDF4JException e) {
+			logger.debug(Utilities.printStackTrace(e));
+			return servletUtilities.createExceptionResponse(request, e.getMessage());
+		} catch (IOException e) {
 			logger.debug(Utilities.printStackTrace(e));
 			return servletUtilities.createExceptionResponse(request, e.getMessage());
 		}

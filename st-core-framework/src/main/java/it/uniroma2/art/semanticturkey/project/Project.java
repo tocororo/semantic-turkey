@@ -43,6 +43,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigSchema;
@@ -100,6 +101,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
@@ -615,7 +617,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public void setDefaultNamespace(String defaultNamespace) throws ProjectUpdateException {
 		try {
-			getOntModel().setDefaultNamespace(defaultNamespace);
+			try(RepositoryConnection conn = getRepository().getConnection()) {
+				conn.setNamespace("", defaultNamespace);
+			}
 			stp_properties.setProperty(DEF_NS_PROP, defaultNamespace);
 			updateProjectProperties();
 		} catch (Exception e) {
@@ -911,11 +915,11 @@ class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
 	}
 
 	@Override
-	public String getDefaultNamespace() {
-		if (delegate != null) {
-			return delegate.getDefaultNamespace();
-		} else {
-			return super.getDefaultNamespace();
+	public String getDefaultNamespace() throws RuntimeException {
+		try {
+			return getNSForPrefix("");
+		} catch (ModelAccessException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

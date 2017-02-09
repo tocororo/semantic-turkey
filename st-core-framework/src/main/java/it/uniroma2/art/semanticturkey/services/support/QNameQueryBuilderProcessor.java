@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
@@ -59,7 +60,7 @@ public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 						}
 					});
 
-		} catch (ModelAccessException e) {
+		} catch (OntologyManagerException e) {
 			// nothing to do
 		}
 
