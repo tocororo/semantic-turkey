@@ -750,6 +750,18 @@ public class CustomRanges extends STServiceAdapterOLD {
 	}
 	
 	/**
+	 * Used to check if a property chain (manually created by the user client-side) is correct.
+	 * This service doesn't do anything, it's enough to know if it can parse the input IRI list   
+	 * @param propChain
+	 * @return
+	 */
+	@GenerateSTServiceController (method = RequestMethod.POST)
+	public Response checkShowPropertyChain(List<IRI> propChain) {
+		return createReplyResponse(RepliesStatus.ok);
+	}
+	
+	
+	/**
 	 * Adds an existing CustomRangeEntry to an existing CustomRange entry
 	 * @param customRangeId
 	 * @param customRangeEntryId
