@@ -51,7 +51,7 @@
 		<bundle dependency="true">mvn:javax.persistence/com.springsource.javax.persistence/2.0.0</bundle>
 	
 		<!-- Support for RDF4J -->
-		<bundle dependency="true">mvn:org.eclipse.rdf4j/rdf4j-runtime-osgi/2.1.2</bundle>
+		<bundle dependency="true">mvn:org.eclipse.rdf4j/rdf4j-runtime-osgi/2.2</bundle>
 		<bundle dependency="true">mvn:ch.qos.logback/logback-classic/1.1.2</bundle>
 		<bundle dependency="true">mvn:ch.qos.logback/logback-core/1.1.2</bundle>
 		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.8.2</bundle>
