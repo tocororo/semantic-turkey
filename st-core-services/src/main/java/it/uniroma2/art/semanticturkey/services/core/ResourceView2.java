@@ -342,12 +342,17 @@ public class ResourceView2 extends STServiceAdapter {
 			sb.append(
 				// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +
-				" SELECT ?resource (MAX(?attr_creShowTemp) AS ?attr_creShow) WHERE {         \n" +
+				" SELECT ?resource (MAX(?attr_creShowTemp) AS ?attr_creShow) WHERE {          \n" +
 				"   {                                                                         \n" +
-				"     ?subjectResource ?predicate ?tempResource .                             \n"
+				"     ?subjectResource ?predicate ?tempResource .                             \n" +
+				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                          \n" +
+				"   } UNION {                                                                 \n" +
+				"     bind(?subjectResource as ?resource)                                     \n" +
+				"   }                                                                         \n" +
+				"   FILTER(!isLITERAL(?resource))                                             \n"
 				// @formatter:on
 			);
-
+			
 			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
 
 			for (IRI pred : resourcePredicates) {
@@ -379,15 +384,11 @@ public class ResourceView2 extends STServiceAdapter {
 			
 			sb.append(
 				// @formatter:off
-				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                          \n" +
-				"   } UNION {                                                                 \n" +
-				"     bind(?subjectResource as ?resource)                                     \n" +
-				"   }                                                                         \n" +
-				"   FILTER(!isLITERAL(?resource))                                             \n" +
 				" }                                                                           \n" +
 				" GROUP BY ?resource                                                          \n"
 				// @formatter:on
 			);
+			System.out.println(sb.toString());
 			
 			QueryBuilder qb = createQueryBuilder(sb.toString());
 			qb.processRendering();
