@@ -388,7 +388,6 @@ public class ResourceView2 extends STServiceAdapter {
 				" GROUP BY ?resource                                                          \n"
 				// @formatter:on
 			);
-			System.out.println(sb.toString());
 			
 			QueryBuilder qb = createQueryBuilder(sb.toString());
 			qb.processRendering();
