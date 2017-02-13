@@ -58,7 +58,6 @@ import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customrange.CustomRange;
 import it.uniroma2.art.semanticturkey.customrange.CustomRangeConfigEntry;
@@ -85,6 +84,7 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
+import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 @GenerateSTServiceController
@@ -150,9 +150,9 @@ public class CustomRanges extends STServiceAdapterOLD {
 				CustomRangeEntryGraph creGraph = crEntry.asCustomRangeEntryGraph();
 				List<ARTTriple> triples = creGraph.executePearl(codaCore, userPromptMap);
 				rdfModel.addTriple(subject, predicate, detectGraphEntry(triples), getWorkingGraph());
-				for (ARTTriple triple : triples){
-					rdfModel.addTriple(RDF4JMigrationUtils.convert2art(triple.getSubject()), RDF4JMigrationUtils.convert2art(triple.getPredicate()), RDF4JMigrationUtils.convert2art(triple.getObject()), getWorkingGraph());
-				}
+				String query = createInsertQuery(triples);
+				Update uq = rdfModel.createUpdateQuery(query);
+				uq.evaluate(false);
 			} else if (crEntry.isTypeNode()){
 				String value = userPromptMap.entrySet().iterator().next().getValue();//get the only value
 				ProjectionOperator projOperator = CustomRangeEntryParseUtils.getProjectionOperator(codaCore, crEntry.getRef());
@@ -160,13 +160,26 @@ public class CustomRanges extends STServiceAdapterOLD {
 				ARTNode artNode = RDF4JMigrationUtils.convert2art(rdf4jNode);
 				rdfModel.addTriple(subject, predicate, artNode, getWorkingGraph());
 			}
-		} catch (PRParserException | ComponentProvisioningException | ConverterException e){
+		} catch (PRParserException | ComponentProvisioningException | ConverterException | UnsupportedQueryLanguageException | 
+				ModelAccessException | MalformedQueryException | QueryEvaluationException e){
 			throw new CODAException(e);
 		} finally {
 			shutDownCodaCore(codaCore);
 		}
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		return response;
+	}
+	
+	private String createInsertQuery(List<ARTTriple> triples) {
+		String query = "INSERT DATA { \n"
+				+ "GRAPH " + SPARQLHelp.toSPARQL(RDF4JMigrationUtils.convert2rdf4j(getWorkingGraph().asURIResource())) + " {\n";
+		for (ARTTriple triple : triples){
+			query += SPARQLHelp.toSPARQL(triple.getSubject()) + " " + 
+					SPARQLHelp.toSPARQL(triple.getPredicate()) + " " + 
+					SPARQLHelp.toSPARQL(triple.getObject()) + " .\n";
+		}
+		query += "}\n}";
+		return query;
 	}
 	
 	/**
@@ -212,11 +225,10 @@ public class CustomRanges extends STServiceAdapterOLD {
 	public Response getGraphObjectDescription(ARTResource resource, ARTURIResource predicate) 
 			throws UnavailableResourceException, ProjectInconsistentException, ModelAccessException, 
 			RDFModelNotSetException, UnsupportedQueryLanguageException, MalformedQueryException, 
-			QueryEvaluationException {
+			QueryEvaluationException, PRParserException {
 		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		Element resourceElem = XMLHelp.newElement(dataElement, "resource");
 		
 		RDFModel rdfModel = getOWLModel();
 		CODACore codaCore = getInitializedCodaCore(rdfModel);
@@ -224,26 +236,6 @@ public class CustomRanges extends STServiceAdapterOLD {
 			//try to identify the CRE which has generated the graph
 			CustomRangeEntryGraph creGraph = getCREGraphSeed(resource, predicate, codaCore);
 			if (creGraph != null){
-				//Resource Element
-				//compute the show for the entry resource of the graph
-//				String showProp = creGraph.getShowPropertyChain();
-//				String show;
-//				if (showProp == null || showProp.equals("")){//if the showProperty is not specified, then show is the same resource ID (uri or bnode)
-//					show = resource.getNominalValue();
-//				} else { //if the showProperty is specified, look for its value
-//					showProp = rdfModel.expandQName(creGraph.getShowPropertyChain());
-//					ARTNodeIterator itShow = rdfModel.listValuesOfSubjPredPair(resource, rdfModel.createURIResource(showProp), false, getWorkingGraph());
-//					if (itShow.hasNext()){//if the value is found is set as show attribute
-//						ARTNode showNode = itShow.next();
-//						show = showNode.getNominalValue();
-//					} else { //otherwise set the same resource ID as show attribute
-//						show = resource.getNominalValue();
-//					}
-//				}
-				STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
-						resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
-				RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
-				
 				//predicate-object list Element (although this is not a pred-obj list, but a "userPrompt"-value, exploit the POList structure)
 				Map<ARTURIResource, STRDFResource> art2STRDFPredicates = new LinkedHashMap<ARTURIResource, STRDFResource>();
 				Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues = HashMultimap.create();
@@ -286,15 +278,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 					Element propertiesElem = XMLHelp.newElement(dataElement, "properties");
 					RDFXMLHelp.addPredicateObjectList(propertiesElem, predicateObjectsList);
 				}
-			} else { //if a CRE of type Graph is not found, simply return the resource (without description)
-				STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
-						resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
-				RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
 			}
-		} catch (PRParserException e) { //if there's some error in the GRE, return the sole resource (without description)
-			STRDFResource stRdfRes = STRDFNodeFactory.createSTRDFResource(
-					resource, ModelUtilities.getResourceRole(resource, rdfModel), true, resource.getNominalValue());
-			RDFXMLHelp.addRDFResource(resourceElem, stRdfRes);
 		} finally {
 			shutDownCodaCore(codaCore);
 		}
