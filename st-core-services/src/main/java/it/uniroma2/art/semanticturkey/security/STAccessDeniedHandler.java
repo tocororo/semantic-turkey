@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
  * (Referenced in WEB-INF/spring-security.xml)
  *
  */
-@Component
 public class STAccessDeniedHandler implements AccessDeniedHandler {
 
 	public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException)

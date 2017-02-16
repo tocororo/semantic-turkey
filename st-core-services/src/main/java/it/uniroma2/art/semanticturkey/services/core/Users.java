@@ -19,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,27 +33,22 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
-import it.uniroma2.art.semanticturkey.security.UsersManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @Validated
 @Controller
 public class Users extends STServiceAdapter {
 	
-	@Autowired
-	UsersManager usersMgr;
-	
-	@Autowired
-	ProjectUserBindingManager puBindingMgr;
 	
 	/**
 	 * Returns response containing a json representation of the logged user.
@@ -87,7 +81,7 @@ public class Users extends STServiceAdapter {
 	public String listUsers() throws JSONException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("listUsers", RepliesStatus.ok, SerializationType.json);
-		Collection<STUser> users = usersMgr.listUsers();
+		Collection<STUser> users = UsersManager.listUsers();
 		JSONArray usersJson = new JSONArray();
 		for (STUser user : users) {
 			usersJson.put(user.getAsJSONObject());
@@ -108,11 +102,11 @@ public class Users extends STServiceAdapter {
 	public String listUsersBoundToProject(@RequestParam("projectName") String projectName) throws JSONException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("listUsersBoundToProject", RepliesStatus.ok, SerializationType.json);
-		Collection<ProjectUserBinding> puBindings = puBindingMgr.listPUBindingsOfProject(projectName);
+		Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(projectName);
 		JSONArray usersJson = new JSONArray();
 		for (ProjectUserBinding pub : puBindings) {
 			if (!pub.getRolesName().isEmpty()) {
-				usersJson.put(usersMgr.getUserByEmail(pub.getUserEmail()).getAsJSONObject());
+				usersJson.put(UsersManager.getUserByEmail(pub.getUserEmail()).getAsJSONObject());
 			}
 		}
 		jsonResp.getDataElement().put("users", usersJson);
@@ -189,8 +183,8 @@ public class Users extends STServiceAdapter {
 			if (phone != null) {
 				user.setPhone(phone);
 			}
-			usersMgr.registerUser(user);
-			puBindingMgr.createPUBindingsOfUser(email);
+			UsersManager.registerUser(user);
+			ProjectUserBindingsManager.createPUBindingsOfUser(email);
 			
 			//TODO to enable when AccessControl role-base is completed (so the admin can set a valid admin email config) 
 //			EmailSender.sendRegistrationMail(email, firstName, lastName);
@@ -219,8 +213,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserFirstName(@RequestParam("email") String email, @RequestParam("firstName") String firstName) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserFirstName(user, firstName);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserFirstName(user, firstName);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -241,8 +235,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserLastName(@RequestParam("email") String email, @RequestParam("lastName") String lastName) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserLastName(user, lastName);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserLastName(user, lastName);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -263,8 +257,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserPhone(@RequestParam("email") String email, @RequestParam("phone") String phone) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserPhone(user, phone);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -286,8 +280,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws JSONException, IOException, ParseException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserBirthday(user, birthday);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserBirthday(user, birthday);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -308,8 +302,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserGender(@RequestParam("email") String email, @RequestParam("gender") String gender) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserGender(user, gender);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserGender(user, gender);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -330,8 +324,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserCountry(@RequestParam("email") String email, @RequestParam("country") String country) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserCountry(user, country);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserCountry(user, country);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -352,8 +346,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserAddress(@RequestParam("email") String email, @RequestParam("address") String address) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserAddress(user, address);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -374,8 +368,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserAffiliation(@RequestParam("email") String email, @RequestParam("affiliation") String affiliation) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserAffiliation(user, affiliation);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -396,8 +390,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String updateUserUrl(@RequestParam("email") String email, @RequestParam("url") String url) throws JSONException, IOException {
-		STUser user = usersMgr.getUserByEmail(email);
-		user = usersMgr.updateUserUrl(user, url);
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserUrl(user, url);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -419,11 +413,11 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled) throws IOException, JSONException  {
-		STUser user = usersMgr.getUserByEmail(email);
+		STUser user = UsersManager.getUserByEmail(email);
 		if (enabled) {
-			user = usersMgr.updateUserStatus(user, UserStatus.ENABLED);
+			user = UsersManager.updateUserStatus(user, UserStatus.ENABLED);
 		} else {
-			user = usersMgr.updateUserStatus(user, UserStatus.DISABLED);
+			user = UsersManager.updateUserStatus(user, UserStatus.DISABLED);
 		}
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("enableUser", RepliesStatus.ok, SerializationType.json);
@@ -441,8 +435,8 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String deleteUser(@RequestParam("email") String email) throws IOException {
-		usersMgr.deleteUser(email);
-		puBindingMgr.deletePUBindingsOfUser(email);
+		UsersManager.deleteUser(email);
+		ProjectUserBindingsManager.deletePUBindingsOfUser(email);
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("deleteUser", RepliesStatus.ok, SerializationType.json);
 		return jsonResp.toString();

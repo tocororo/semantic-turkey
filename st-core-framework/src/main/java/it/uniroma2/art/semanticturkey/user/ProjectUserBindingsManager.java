@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.security;
+package it.uniroma2.art.semanticturkey.user;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,39 +9,24 @@ import java.util.Iterator;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsRepoHelper;
-import it.uniroma2.art.semanticturkey.user.STUser;
 
-@Component("puBindingMgr")
-@DependsOn("usersMgr")
-public class ProjectUserBindingManager {
+public class ProjectUserBindingsManager {
 	
-	@Autowired
-	private UsersManager usersMgr;
-	
-	private Collection<ProjectUserBinding> puBindingList;
-	
-	public ProjectUserBindingManager() {
-		puBindingList = new ArrayList<>();
-	}
+	private static Collection<ProjectUserBinding> puBindingList = new ArrayList<>();
 	
 	/**
 	 * Loads all the bindings into the repository
+	 * Protected since the load should be done just once by AccessControlManager during its initialization
 	 * @throws IOException 
 	 * @throws RepositoryException 
 	 * @throws RDFParseException 
 	 */
-	public void loadPUBindings() throws RDFParseException, RepositoryException, IOException {
+	public static void loadPUBindings() throws RDFParseException, RepositoryException, IOException {
 		ProjectUserBindingsRepoHelper repoHelper = new ProjectUserBindingsRepoHelper();
 		Collection<File> bindingsFolders = AccessContolUtils.getAllPUBindingFiles();
 		for (File f : bindingsFolders) {
@@ -49,14 +34,21 @@ public class ProjectUserBindingManager {
 		}
 		puBindingList = repoHelper.listPUBindings();
 		repoHelper.shutDownRepository();
+		
+		//For debug
+		System.out.println("Project-User Bindings");
+		for (ProjectUserBinding pub : puBindingList) {
+			System.out.println(pub.getProjectName() + "-" + pub.getUserEmail());
+			System.out.println("\troles: " + String.join(", ", pub.getRolesName()));
+		}
 	}
 	
 	/**
 	 * Returns all the project-user bindings
 	 * @return
 	 */
-	public Collection<ProjectUserBinding> listPUBindings() {
-		return this.puBindingList;
+	public static Collection<ProjectUserBinding> listPUBindings() {
+		return puBindingList;
 	}
 	
 	/**
@@ -64,7 +56,7 @@ public class ProjectUserBindingManager {
 	 * @param puBinding
 	 * @throws IOException 
 	 */
-	public void createPUBinding(ProjectUserBinding puBinding) throws IOException {
+	public static void createPUBinding(ProjectUserBinding puBinding) throws IOException {
 		puBindingList.add(puBinding);
 		createOrUpdatePUBindingFolder(puBinding);
 	}
@@ -75,9 +67,11 @@ public class ProjectUserBindingManager {
 	 * @param projectName
 	 * @return
 	 */
-	public ProjectUserBinding getPUBinding(STUser user, String projectName) {
+	public static ProjectUserBinding getPUBinding(STUser user, String projectName) {
+		System.out.println("getPub for " + user.getEmail() + " " + projectName);
 		ProjectUserBinding puBinding = null;
 		for (ProjectUserBinding pub : puBindingList) {
+			System.out.println("pub.getUserEmail() " + pub.getUserEmail() + ", pub.getProjectName()" + pub.getProjectName());
 			if (pub.getUserEmail().equals(user.getEmail()) && pub.getProjectName().equals(projectName)) {
 				puBinding = pub;
 			}
@@ -90,7 +84,7 @@ public class ProjectUserBindingManager {
 	 * @param projectName
 	 * @return
 	 */
-	public Collection<ProjectUserBinding> listPUBindingsOfProject(String projectName) {
+	public static Collection<ProjectUserBinding> listPUBindingsOfProject(String projectName) {
 		Collection<ProjectUserBinding> pubList = new ArrayList<>();
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getProjectName().equals(projectName)) {
@@ -105,7 +99,7 @@ public class ProjectUserBindingManager {
 	 * @param projectName
 	 * @return
 	 */
-	public boolean existsPUBindingsOfProject(String projectName) {
+	public static boolean existsPUBindingsOfProject(String projectName) {
 		return !AccessContolUtils.getProjBindingsFolder(projectName).exists();
 	}
 	
@@ -116,8 +110,8 @@ public class ProjectUserBindingManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public void createPUBindingsOfProject(String projectName) throws IOException {
-		Collection<STUser> users = usersMgr.listUsers();
+	public static void createPUBindingsOfProject(String projectName) throws IOException {
+		Collection<STUser> users = UsersManager.listUsers();
 		//for each user creates the binding with the given project
 		for (STUser u : users) {
 			createPUBinding(new ProjectUserBinding(projectName, u.getEmail()));
@@ -129,7 +123,7 @@ public class ProjectUserBindingManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public void deletePUBindingsOfProject(String projectName) throws IOException {
+	public static void deletePUBindingsOfProject(String projectName) throws IOException {
 		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
 		while (itPUB.hasNext()) {
 			if (itPUB.next().getProjectName().equals(projectName)) {
@@ -148,7 +142,7 @@ public class ProjectUserBindingManager {
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
-	public void createPUBindingsOfUser(String userEmail) throws ProjectAccessException, IOException {
+	public static void createPUBindingsOfUser(String userEmail) throws ProjectAccessException, IOException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
@@ -163,7 +157,7 @@ public class ProjectUserBindingManager {
 	 * @param userEmail
 	 * @throws IOException 
 	 */
-	public void deletePUBindingsOfUser(String userEmail) throws IOException {
+	public static void deletePUBindingsOfUser(String userEmail) throws IOException {
 		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
 		while (itPUB.hasNext()) {
 			if (itPUB.next().getUserEmail().equals(userEmail)) {
@@ -183,7 +177,7 @@ public class ProjectUserBindingManager {
 	 * @param roles
 	 * @throws IOException
 	 */
-	public void addRolesToPUBinding(String userEmail, String projectName, Collection<String> roles) throws IOException {
+	public static void addRolesToPUBinding(String userEmail, String projectName, Collection<String> roles) throws IOException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
 				for (String r : roles) {
@@ -202,7 +196,7 @@ public class ProjectUserBindingManager {
 	 * @param role
 	 * @throws IOException
 	 */
-	public void removeRoleFromPUBinding(String userEmail, String projectName, String role) throws IOException {
+	public static void removeRoleFromPUBinding(String userEmail, String projectName, String role) throws IOException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
 				Collection<String> roles = pub.getRolesName();
@@ -219,7 +213,7 @@ public class ProjectUserBindingManager {
 	 * @param role
 	 * @throws IOException
 	 */
-	public void removeRoleFromAllPUBindings(String role) throws IOException {
+	public static void removeRoleFromAllPUBindings(String role) throws IOException {
 		for (ProjectUserBinding pub : puBindingList) {
 			Collection<String> roles = pub.getRolesName();
 			roles.remove(role);
@@ -233,7 +227,7 @@ public class ProjectUserBindingManager {
 	 * If the folder is already created, simply update the info in the details file.
 	 * @throws IOException 
 	 */
-	private void createOrUpdatePUBindingFolder(ProjectUserBinding puBinding) throws IOException {
+	private static void createOrUpdatePUBindingFolder(ProjectUserBinding puBinding) throws IOException {
 		ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 		tempPUBindingsRepoHelper.insertBinding(puBinding);
 		tempPUBindingsRepoHelper.saveBindingDetailsFile(AccessContolUtils.getPUBindingDetailsFile(puBinding));

@@ -7,7 +7,6 @@ import java.util.Collection;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,33 +15,23 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
-import it.uniroma2.art.semanticturkey.security.RolesManager;
-import it.uniroma2.art.semanticturkey.security.UsersManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
+import it.uniroma2.art.semanticturkey.user.RolesManager;
 import it.uniroma2.art.semanticturkey.user.STRole;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @Validated
 @Controller
 public class Administration extends STServiceAdapter {
-	
-	@Autowired
-	UsersManager usersMgr;
-	
-	@Autowired
-	RolesManager rolesMgr;
-	
-	@Autowired
-	ProjectUserBindingManager puBindingMgr;
-	
 	
 	/**
 	 * Gets the administration config: a map with key value of configuration parameters
@@ -111,11 +100,11 @@ public class Administration extends STServiceAdapter {
 			@RequestParam("email") String email) throws Exception {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("addRoleToUserInProject", RepliesStatus.ok, SerializationType.json);
-		STUser user = usersMgr.getUserByEmail(email);
+		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new Exception("No user found with email " + email); //TODO create a valid exception
 		}
-		ProjectUserBinding puBinding = puBindingMgr.getPUBinding(user, projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
 		if (puBinding == null) {
 			throw new Exception("No binding found for user with email " + email + " and project " + projectName); //TODO create a valid exception
 		}
@@ -134,17 +123,17 @@ public class Administration extends STServiceAdapter {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("addProjectUserBinding", RepliesStatus.ok, SerializationType.json);
 		
-		STUser user = usersMgr.getUserByEmail(email);
+		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new Exception("No user found with email " + email); //TODO create a valid exception
 		}
 
-		ProjectUserBinding puBinding = puBindingMgr.getPUBinding(user, projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
 		if (puBinding == null) {
 			throw new Exception("No binding found for user with email " + email + " and project " + projectName); //TODO create a valid exception
 		}
 		
-		puBindingMgr.addRolesToPUBinding(email, projectName, Arrays.asList(roles));
+		ProjectUserBindingsManager.addRolesToPUBinding(email, projectName, Arrays.asList(roles));
 		
 		return jsonResp.toString();
 	}
@@ -159,15 +148,15 @@ public class Administration extends STServiceAdapter {
 			@RequestParam("email") String email, @RequestParam("role") String role) throws Exception {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("addRoleToUserInProject", RepliesStatus.ok, SerializationType.json);
-		STUser user = usersMgr.getUserByEmail(email);
+		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new Exception("No user found with email " + email); //TODO create a valid exception
 		}
-		ProjectUserBinding puBinding = puBindingMgr.getPUBinding(user, projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
 		if (puBinding == null) {
 			throw new Exception("No binding found for user with email " + email + " and project " + projectName); //TODO create a valid exception
 		}
-		puBindingMgr.addRolesToPUBinding(email, projectName, Arrays.asList(new String[]{role}));
+		ProjectUserBindingsManager.addRolesToPUBinding(email, projectName, Arrays.asList(new String[]{role}));
 		return jsonResp.toString();
 	}
 	
@@ -181,15 +170,15 @@ public class Administration extends STServiceAdapter {
 			@RequestParam("email") String email, @RequestParam("role") String role) throws Exception {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("addRoleToUserInProject", RepliesStatus.ok, SerializationType.json);
-		STUser user = usersMgr.getUserByEmail(email);
+		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new Exception("No user found with email " + email); //TODO create a valid exception
 		}
-		ProjectUserBinding puBinding = puBindingMgr.getPUBinding(user, projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
 		if (puBinding == null) {
 			throw new Exception("No binding found for user with email " + email + " and project " + projectName); //TODO create a valid exception
 		}
-		puBindingMgr.removeRoleFromPUBinding(email, projectName, role);
+		ProjectUserBindingsManager.removeRoleFromPUBinding(email, projectName, role);
 		return jsonResp.toString();
 	}
 	
@@ -206,7 +195,7 @@ public class Administration extends STServiceAdapter {
 	public String listRoles() throws JSONException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("listRoles", RepliesStatus.ok, SerializationType.json);
-		Collection<STRole> roles = rolesMgr.listRoles();
+		Collection<STRole> roles = RolesManager.listRoles();
 		JSONArray rolesJson = new JSONArray();
 		for (STRole r : roles) {
 			rolesJson.put(r.getAsJSONObject());
@@ -228,7 +217,7 @@ public class Administration extends STServiceAdapter {
 	public String createRole(@RequestParam("roleName") String roleName) throws RoleCreationException, IOException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("createRole", RepliesStatus.ok, SerializationType.json);
-		rolesMgr.createRole(new STRole(roleName));
+		RolesManager.createRole(new STRole(roleName));
 		return jsonResp.toString();
 	}
 	
@@ -244,8 +233,8 @@ public class Administration extends STServiceAdapter {
 	public String deleteRole(@RequestParam("roleName") String roleName) throws IOException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("deleteRole", RepliesStatus.ok, SerializationType.json);
-		rolesMgr.deleteRole(roleName);
-		puBindingMgr.removeRoleFromAllPUBindings(roleName);
+		RolesManager.deleteRole(roleName);
+		ProjectUserBindingsManager.removeRoleFromAllPUBindings(roleName);
 		return jsonResp.toString();
 	}
 	
@@ -286,11 +275,11 @@ public class Administration extends STServiceAdapter {
 				.createReplyResponse("addCapabilityToRole", RepliesStatus.ok, SerializationType.json);
 		
 		UserCapabilitiesEnum capEnum = UserCapabilitiesEnum.valueOf(capability);
-		STRole stRole = rolesMgr.searchRole(role);
+		STRole stRole = RolesManager.searchRole(role);
 		if (stRole == null) {
 			throw new Exception("No role found with name " + role); //TODO create a valid exception
 		}
-		rolesMgr.addCapability(stRole, capEnum);
+		RolesManager.addCapability(stRole, capEnum);
 		return jsonResp.toString();
 	}
 
@@ -309,14 +298,12 @@ public class Administration extends STServiceAdapter {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("removeCapabilityFromRole", RepliesStatus.ok, SerializationType.json);
 		UserCapabilitiesEnum capEnum = UserCapabilitiesEnum.valueOf(capability);
-		STRole stRole = rolesMgr.searchRole(role);
+		STRole stRole = RolesManager.searchRole(role);
 		if (stRole == null) {
 			throw new Exception("No role found with name " + role); //TODO create a valid exception
 		}
-		rolesMgr.removeCapability(stRole, capEnum);
+		RolesManager.removeCapability(stRole, capEnum);
 		return jsonResp.toString();
 	}
-	
-	
 	
 }

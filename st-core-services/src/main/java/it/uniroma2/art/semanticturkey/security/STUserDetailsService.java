@@ -1,11 +1,11 @@
 package it.uniroma2.art.semanticturkey.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 /**
  * @author Tiziano
@@ -15,14 +15,17 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  * (Referenced in WEB-INF/spring-security.xml)
  */
 public class STUserDetailsService implements UserDetailsService {
-
-	@Autowired
-	UsersManager userMgr;
+	
+	//TODO this component seems to be initialized twice (PostCostruct is called twice). Why? this is declared just in spring-security.xml
+//	@PostConstruct
+//	public void postCostr() {
+//		System.out.println("@PostConstruct STUserDetailsService");
+//	}
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		STUser user;
-		user = userMgr.getUserByEmail(username);
+		user = UsersManager.getUserByEmail(username);
 		if (user != null) {
 			return user;
 		} else {

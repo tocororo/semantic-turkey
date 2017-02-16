@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.security;
+package it.uniroma2.art.semanticturkey.user;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,36 +11,25 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Component;
 
-import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UserCreationException;
-import it.uniroma2.art.semanticturkey.user.UserStatus;
-import it.uniroma2.art.semanticturkey.user.UsersRepoHelper;
-
-@Component("usersMgr")
 public class UsersManager {
 	
-	private Collection<STUser> userList;
-	
-	public UsersManager() {
-		userList = new ArrayList<>();
-	}
+	private static Collection<STUser> userList = new ArrayList<>();
 	
 	/**
 	 * Loads all the users into the repository
+	 * Protected since the load should be done just once by AccessControlManager during its initialization
 	 * @throws RDFParseException
 	 * @throws RepositoryException
 	 * @throws IOException
 	 */
-	public void loadUsers() throws RDFParseException, RepositoryException, IOException {
+	public static void loadUsers() throws RDFParseException, RepositoryException, IOException {
 		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
 		Collection<File> userDetailsFolders = AccessContolUtils.getAllUserDetailsFiles();
 		for (File f : userDetailsFolders) {
 			userRepoHelper.loadUserDetails(f);
 		}
-		this.userList = userRepoHelper.listUsers();
+		userList = userRepoHelper.listUsers();
 		userRepoHelper.shutDownRepository();
 	}
 	
@@ -53,7 +42,7 @@ public class UsersManager {
 	 * @throws UserCreationException
 	 * @throws IOException 
 	 */
-	public void registerUser(STUser user) throws UserCreationException, IOException {
+	public static void registerUser(STUser user) throws UserCreationException, IOException {
 		if (getUserByEmail(user.getEmail()) != null) {
 			throw new UserCreationException("E-mail address " + user.getEmail() + " already used by another user");
 		} else {
@@ -68,8 +57,8 @@ public class UsersManager {
 	 * Returns a list of all the registered users
 	 * @return
 	 */
-	public Collection<STUser> listUsers() {
-		return this.userList;
+	public static Collection<STUser> listUsers() {
+		return userList;
 	}
 	
 	/**
@@ -77,9 +66,9 @@ public class UsersManager {
 	 * @param email
 	 * @return
 	 */
-	public STUser getUserByEmail(String email) {
+	public static STUser getUserByEmail(String email) {
 		STUser user = null;
-		for (STUser u : this.userList) {
+		for (STUser u : userList) {
 			if (u.getEmail().equals(email)) {
 				user = u;
 			}
@@ -92,7 +81,7 @@ public class UsersManager {
 	 * @param email
 	 * @throws IOException 
 	 */
-	public void deleteUser(String email) throws IOException {
+	public static void deleteUser(String email) throws IOException {
 		userList.remove(getUserByEmail(email));
 		//delete its folder from server data
 		FileUtils.deleteDirectory(AccessContolUtils.getUserFolder(email));
@@ -105,7 +94,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserFirstName(STUser user, String newValue) throws IOException {
+	public static STUser updateUserFirstName(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setFirstName(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -119,7 +108,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserLastName(STUser user, String newValue) throws IOException {
+	public static STUser updateUserLastName(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setLastName(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -133,7 +122,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserPhone(STUser user, String newValue) throws IOException {
+	public static STUser updateUserPhone(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setPhone(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -148,7 +137,7 @@ public class UsersManager {
 	 * @throws IOException 
 	 * @throws ParseException 
 	 */
-	public STUser updateUserBirthday(STUser user, String newValue) throws IOException, ParseException {
+	public static STUser updateUserBirthday(STUser user, String newValue) throws IOException, ParseException {
 		user = getUserByEmail(user.getEmail());
 		user.setBirthday(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -162,7 +151,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserGender(STUser user, String newValue) throws IOException {
+	public static STUser updateUserGender(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setGender(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -176,7 +165,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserCountry(STUser user, String newValue) throws IOException {
+	public static STUser updateUserCountry(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setCountry(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -190,7 +179,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserAddress(STUser user, String newValue) throws IOException {
+	public static STUser updateUserAddress(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setAddress(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -204,7 +193,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserAffiliation(STUser user, String newValue) throws IOException {
+	public static STUser updateUserAffiliation(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setAffiliation(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -218,7 +207,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STUser updateUserUrl(STUser user, String newValue) throws IOException {
+	public static STUser updateUserUrl(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setUrl(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -232,7 +221,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public STUser updateUserStatus(STUser user, UserStatus newValue) throws IOException {
+	public static STUser updateUserStatus(STUser user, UserStatus newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
 		user.setStatus(newValue);
 		createOrUpdateUserDetailsFolder(user);
@@ -245,7 +234,7 @@ public class UsersManager {
 	 * @param user
 	 * @throws IOException 
 	 */
-	private void createOrUpdateUserDetailsFolder(STUser user) throws IOException {
+	private static void createOrUpdateUserDetailsFolder(STUser user) throws IOException {
 		//creates a temporary not persistent repository
 		UsersRepoHelper tempUserRepoHelper = new UsersRepoHelper();
 		tempUserRepoHelper.insertUser(user);

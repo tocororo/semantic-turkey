@@ -5,8 +5,6 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.w3c.dom.Element;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -27,23 +25,17 @@ import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 
 @STService
 public class Projects2 extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Projects2.class);
-
-	@Autowired
-	private ProjectUserBindingManager puBindingMgr;
-
+	
 	// TODO understand how to specify remote repository / different sail configurations
 	@STServiceOperation
 	public JsonNode createProject(ProjectConsumer consumer, String projectName,
@@ -73,7 +65,7 @@ public class Projects2 extends STServiceAdapter {
 		// create the folders for the bindings between project and users
 		// this is required (is not enough in accessProject, cause accessProject is not invoked after
 		// createProject)
-		puBindingMgr.createPUBindingsOfProject(projectName);
+		ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
 
 		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
 		objectNode.set("type", JsonNodeFactory.instance.textNode(proj.getType()));

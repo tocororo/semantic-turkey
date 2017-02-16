@@ -9,8 +9,6 @@ import javax.annotation.PostConstruct;
 
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -19,40 +17,21 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
+import it.uniroma2.art.semanticturkey.user.RolesManager;
 import it.uniroma2.art.semanticturkey.user.STRole;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @Component
-@DependsOn({"usersMgr", "rolesMgr", "puBindingMgr"})
 public class AccessControlManager {
 	
-	/*
-	 * TODO here there are some managers autowired. All of them work with repositories,
-	 * so serialize in an RDF format.
-	 * If we want to provide an alternative serialization (e.g. property file), then we can
-	 * create Manager interfaces (that expose the method to interact with properties)
-	 * and transform this autowired components in implementations of the above interfaces.
-	 * In this scenario, we will autowire the interfaces and specify which implementation use in an
-	 * XML configuration file.
-	 */
-	
-	@Autowired
-	private UsersManager usersMgr;
-	
-	@Autowired
-	private RolesManager rolesMgr;
-	
-	@Autowired
-	private ProjectUserBindingManager puBindingMgr;
-	
-	public AccessControlManager() {}
-	
 	@PostConstruct
-	public void init() throws UserCreationException, RDFParseException, RepositoryException, 
+	public void init() throws UserCreationException, RDFParseException, RepositoryException,
 		IOException, ProjectAccessException, RoleCreationException {
 		
 		//Check if users files structure is already initialized
@@ -61,14 +40,15 @@ public class AccessControlManager {
 			initializeUserFileStructure();
 		}
 		//init users and roles manager so they load users and roles from ST data
-		usersMgr.loadUsers();
-		rolesMgr.loadRoles();
+		UsersManager.loadUsers();
+		RolesManager.loadRoles();
 		
 		if (!AccessContolUtils.getPUBindingsFolder().exists()) {
 			initializePUBindingFileStructure();
 		}
 		//init project-user binding manager so it loads bindings from ST data
-		puBindingMgr.loadPUBindings();
+		//Note: this should be initialized strictly after UsersManager since ProjectUserBingingManager uses it
+		ProjectUserBindingsManager.loadPUBindings();
 	}
 	
 	/**
@@ -80,10 +60,10 @@ public class AccessControlManager {
 	 */
 	public Collection<UserCapabilitiesEnum> getCapabilities(STUser user, String projectName) {
 		Collection<UserCapabilitiesEnum> capabilities = new ArrayList<>();
-		ProjectUserBinding puBinding = puBindingMgr.getPUBinding(user, projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
 		Collection<String> rolesName = puBinding.getRolesName();
 		for (String r : rolesName) {
-			STRole role = rolesMgr.searchRole(r);
+			STRole role = RolesManager.searchRole(r);
 			for (UserCapabilitiesEnum p : role.getCapabilities()) {
 				capabilities.add(p);
 			}
@@ -108,15 +88,15 @@ public class AccessControlManager {
 		// create default admin and user roles
 		STRole roleAdmin = new STRole("Administrator");
 		roleAdmin.setCapabilities(Arrays.asList(UserCapabilitiesEnum.values())); //all capabilities for administrator
-		rolesMgr.createRole(roleAdmin);
+		RolesManager.createRole(roleAdmin);
 		STRole roleUser = new STRole("User");
 		roleUser.addCapability(UserCapabilitiesEnum.CAPABILITY_USER);
-		rolesMgr.createRole(roleUser);
+		RolesManager.createRole(roleUser);
 
 		// create and register admin user
 		STUser admin = new STUser("admin@vocbench.com", "admin", "Admin", "Admin");
 		admin.setStatus(UserStatus.ENABLED);
-		usersMgr.registerUser(admin);
+		UsersManager.registerUser(admin);
 	}
 	
 	/**
@@ -134,13 +114,13 @@ public class AccessControlManager {
 		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
 			if (abstrProj instanceof Project<?>) {
 				String projName = abstrProj.getName();
-				for (STUser user : usersMgr.listUsers()) {
+				for (STUser user : UsersManager.listUsers()) {
 					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail());
 //					if (user.getEmail().equals("admin@vocbench.com")) {
 //						puBinding.addRole(UserRolesEnum.ROLE_ADMIN.name());
 //					}
 //					puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
-					puBindingMgr.createPUBinding(puBinding);
+					ProjectUserBindingsManager.createPUBinding(puBinding);
 				}
 			}
 		}

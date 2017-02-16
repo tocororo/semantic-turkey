@@ -19,12 +19,10 @@ import org.springframework.stereotype.Component;
  *
  * Used in SecurityConfig.configure() in order to apply the CORS policy headers to all the responses
  */
-@Component
 public class CORSFilter implements Filter {
 	
 	@Override
-	public void init(FilterConfig filterConfig) {
-	}
+	public void init(FilterConfig filterConfig) { }
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)

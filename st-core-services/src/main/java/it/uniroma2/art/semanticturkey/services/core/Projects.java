@@ -1,5 +1,27 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
@@ -32,36 +54,13 @@ import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
-import it.uniroma2.art.semanticturkey.security.ProjectUserBindingManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Element;
 
 /**
  * 
@@ -78,9 +77,6 @@ import org.w3c.dom.Element;
 public class Projects extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
-	
-	@Autowired
-	private ProjectUserBindingManager puBindingMgr;
 	
 	public static class XMLNames {
 		// response tags and attributes
@@ -182,7 +178,7 @@ public class Projects extends STServiceAdapterOLD {
 		
 		//create the folders for the bindings between project and users
 		//this is required (is not enough in accessProject, cause accessProject is not invoked after createProject)
-		puBindingMgr.createPUBindingsOfProject(projectName);
+		ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
 		
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -194,7 +190,7 @@ public class Projects extends STServiceAdapterOLD {
 	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException, IOException {
 		ProjectManager.deleteProject(projectName);
 		//delete the folder about project-user bindings
-		puBindingMgr.deletePUBindingsOfProject(projectName);
+		ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
 	}
 
 	/**
@@ -222,8 +218,8 @@ public class Projects extends STServiceAdapterOLD {
 		//if there aren't the folders for the project-user bindings of the current project, create them
 		//this scenario could happen when the project is imported
 		//(by means the import function or the copy of a project folder in SemanticTurkeyData/projects) 
-		if (puBindingMgr.existsPUBindingsOfProject(projectName)) {
-			puBindingMgr.createPUBindingsOfProject(projectName);
+		if (ProjectUserBindingsManager.existsPUBindingsOfProject(projectName)) {
+			ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
 		}
 	}
 

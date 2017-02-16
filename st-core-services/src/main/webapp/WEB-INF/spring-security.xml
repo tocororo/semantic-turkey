@@ -8,8 +8,6 @@
 	http://www.springframework.org/schema/security
 	http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 	
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security"/>
-
 	<!--
 	Overrides the default entry point of authentication. As default Spring-Security redirects to login page 
 	 -->
@@ -62,6 +60,8 @@
 	
 	<global-method-security pre-post-annotations="enabled"></global-method-security>
 	
+	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security"/>
+	
 	<beans:bean id="corsFilter" class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
 	<beans:bean id="stUserDetailsService" class="it.uniroma2.art.semanticturkey.security.STUserDetailsService"/>
 	<beans:bean id="authEntryPoint" class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint"/>
@@ -69,6 +69,7 @@
 	<beans:bean id="authFailHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler"/>
 	<beans:bean id="accessDeniedHandler" class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler"/>
 	<beans:bean id="logoutSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler"/>
+	
 	<beans:bean id='bCryptPasswordEncoder' class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder'/>
 	
 </beans:beans>

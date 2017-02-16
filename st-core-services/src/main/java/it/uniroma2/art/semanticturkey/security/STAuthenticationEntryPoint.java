@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
  * In our case we need just a https status 401 and a json response.
  * (Referenced in WEB-INF/spring-security.xml)
  */
-@Component
 public class STAuthenticationEntryPoint implements AuthenticationEntryPoint {
 	
 	public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)

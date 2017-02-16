@@ -20,6 +20,8 @@ public class AccessContolUtils {
 	
 	//Users folders utility methods
 	
+	//TODO move under UserManager?
+	
 	public static File getUsersFolder(){
 		return new File(Config.getDataDir() + File.separator + USERS_FOLDER_NAME);
 	}
@@ -38,6 +40,15 @@ public class AccessContolUtils {
 	
 	public static Collection<File> getAllUserDetailsFiles() {
 		Collection<File> userDetailsFolders = new ArrayList<>(); 
+		Collection<File> userFolders = getAllUserFolders();
+		for (File f : userFolders) {
+			userDetailsFolders.add(new File(f + File.separator + USERS_DETAILS_FILE_NAME));
+		}
+		return userDetailsFolders;
+	}
+	
+	public static Collection<File> getAllUserFolders() {
+		Collection<File> userFolders = new ArrayList<>(); 
 		File usersFolder = getUsersFolder();
 		//get all subfolder of "users" folder (one subfolder for each user)		
 		String[] userDirectories = usersFolder.list(new FilenameFilter() {
@@ -46,10 +57,9 @@ public class AccessContolUtils {
 			}
 		});
 		for (int i = 0; i < userDirectories.length; i++) {
-			userDetailsFolders.add(new File(usersFolder + File.separator
-					+ userDirectories[i] + File.separator + USERS_DETAILS_FILE_NAME));
+			userFolders.add(new File(usersFolder + File.separator + userDirectories[i]));
 		}
-		return userDetailsFolders;
+		return userFolders;
 	}
 	
 	private static String getUserFolderName(String email) {
@@ -59,6 +69,7 @@ public class AccessContolUtils {
 	}
 	
 	//Roles file utility method
+	//TODO move under RolesManager?
 	
 	public static File getRolesDefinitionFile() {
 		File usersFolder = getUsersFolder();
@@ -69,6 +80,7 @@ public class AccessContolUtils {
 	}
 	
 	//Project-User bindings files utility methods
+	//TODO move under ProjectUserBindingsManager?
 	
 	public static Collection<File> getAllPUBindingFiles() {
 		Collection<File> puBindingDetailsFolders = new ArrayList<>(); 

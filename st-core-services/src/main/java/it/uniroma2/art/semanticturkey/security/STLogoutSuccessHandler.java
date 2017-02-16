@@ -9,7 +9,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -24,7 +23,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
  * (Referenced in WEB-INF/spring-security.xml)
  * 
  */
-@Component
 public class STLogoutSuccessHandler implements LogoutSuccessHandler {
 
 	@Override

@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.stereotype.Component;
 
 /**
  * 
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
  * (Referenced in WEB-INF/spring-security.xml)
  *
  */
-@Component
 public class STAuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
 	@Override

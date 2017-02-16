@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.security;
+package it.uniroma2.art.semanticturkey.user;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,32 +7,20 @@ import java.util.Collection;
 
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.springframework.stereotype.Component;
 
-import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
-import it.uniroma2.art.semanticturkey.user.RoleCreationException;
-import it.uniroma2.art.semanticturkey.user.RolesRepoHelper;
-import it.uniroma2.art.semanticturkey.user.STRole;
-import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
-import it.uniroma2.art.semanticturkey.user.UserCreationException;
-
-@Component("rolesMgr")
 public class RolesManager {
 	
-	private Collection<STRole> roleList;
-	
-	public RolesManager() {
-		roleList = new ArrayList<>();
-	}
+	private static Collection<STRole> roleList = new ArrayList<>();
 	
 	/**
 	 * Loads all the roles into the repository
+	 * Protected since the load should be done just once by AccessControlManager during its initialization
 	 * @throws IOException 
 	 * @throws RepositoryException 
 	 * @throws RDFParseException 
 	 * @throws UserCreationException
 	 */
-	public void loadRoles() throws RDFParseException, RepositoryException, IOException {
+	public static void loadRoles() throws RDFParseException, RepositoryException, IOException {
 		RolesRepoHelper repoHelper = new RolesRepoHelper();
 		File rolesFile = AccessContolUtils.getRolesDefinitionFile();
 		repoHelper.loadRolesDefinition(rolesFile);
@@ -46,7 +34,7 @@ public class RolesManager {
 	 * @throws RoleCreationException 
 	 * @throws IOException 
 	 */
-	public void createRole(STRole role) throws RoleCreationException, IOException {
+	public static void createRole(STRole role) throws RoleCreationException, IOException {
 		if (searchRole(role.getName()) != null) {
 			throw new RoleCreationException("Role with name " + role.getName() + " already exists");
 		} else {
@@ -59,7 +47,7 @@ public class RolesManager {
 	 * Returns a list of all the defined roles
 	 * @return
 	 */
-	public Collection<STRole> listRoles() {
+	public static Collection<STRole> listRoles() {
 		return roleList;
 	}
 	
@@ -68,7 +56,7 @@ public class RolesManager {
 	 * @param name 
 	 * @return
 	 */
-	public STRole searchRole(String roleName) {
+	public static STRole searchRole(String roleName) {
 		STRole role = null;
 		for (STRole r : roleList) {
 			if (r.getName().equals(roleName)) {
@@ -85,7 +73,7 @@ public class RolesManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STRole addCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
+	public static STRole addCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
 		role.addCapability(capability);
 		createOrUpdateRolesDefinitionFile();
 		return role;
@@ -98,7 +86,7 @@ public class RolesManager {
 	 * @return
 	 * @throws IOException 
 	 */
-	public STRole removeCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
+	public static STRole removeCapability(STRole role, UserCapabilitiesEnum capability) throws IOException {
 		role.removeCapability(capability);
 		createOrUpdateRolesDefinitionFile();
 		return role;
@@ -109,7 +97,7 @@ public class RolesManager {
 	 * @param user
 	 * @throws IOException 
 	 */
-	public void deleteRole(String roleName) throws IOException {
+	public static void deleteRole(String roleName) throws IOException {
 		roleList.remove(searchRole(roleName));
 		//save role definition file
 		createOrUpdateRolesDefinitionFile();
@@ -121,7 +109,7 @@ public class RolesManager {
 	 * @param user
 	 * @throws IOException 
 	 */
-	private void createOrUpdateRolesDefinitionFile() throws IOException {
+	private static void createOrUpdateRolesDefinitionFile() throws IOException {
 		RolesRepoHelper repoHelper = new RolesRepoHelper();
 		for (STRole r : roleList) {
 			repoHelper.insertRole(r);
