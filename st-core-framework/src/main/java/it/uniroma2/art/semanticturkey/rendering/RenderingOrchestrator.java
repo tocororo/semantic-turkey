@@ -226,8 +226,8 @@ public class RenderingOrchestrator implements RenderingEngine {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern() {
-		return baseRenderingEngine.getGraphPattern();
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
+		return baseRenderingEngine.getGraphPattern(currentProject);
 	}
 
 	@Override

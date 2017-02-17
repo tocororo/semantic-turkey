@@ -233,7 +233,7 @@ public class QueryBuilder {
 
 			} else {
 
-				String targetVariable = proc.getGraphPattern().getProjectionElement().getTargetVariable();
+				String targetVariable = proc.getGraphPattern(serviceContext.getProject()).getProjectionElement().getTargetVariable();
 				String outputVariable = graphPatternBinding.getProjectedOutputVariable();
 
 				for (BindingSet projectedResultsEntry : projectedResults) {
@@ -281,7 +281,7 @@ public class QueryBuilder {
 		int counter = 0;
 		for (QueryBuilderProcessor proc : attachedProcessors) {
 			GraphPatternBinding graphPatternBinding = this.attachedProcessorsGraphPatternBinding.get(proc);
-			GraphPattern gp = proc.getGraphPattern();
+			GraphPattern gp = proc.getGraphPattern(serviceContext.getProject());
 
 			counter++;
 			final int tCounter = counter;

@@ -17,7 +17,7 @@ public class GraphPattern {
 	private final String pattern;
 	private final ProjectionElement projectionElement;
 
-	private static final Pattern QNAME_PATTERN = Pattern.compile("([a-zA-Z]+):([a-zA-Z]*)");
+	private static final Pattern URIorQNAME_PATTERN = Pattern.compile("(\\<.*?\\>)|([a-zA-Z]+):([a-zA-Z]*)");
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\?([a-zA-Z_]+)");
 
 	public GraphPattern(Map<String, IRI> prefixMapping, ProjectionElement projectionElement, String pattern) {
@@ -25,42 +25,57 @@ public class GraphPattern {
 		this.projectionElement = projectionElement;
 		this.pattern = pattern;
 	}
-	
+
 	public ProjectionElement getProjectionElement() {
 		return projectionElement;
 	}
-	
+
 	public String getSPARQLPattern() throws IllegalStateException {
-		Matcher matcher = QNAME_PATTERN.matcher(pattern);
+		Matcher matcher = URIorQNAME_PATTERN.matcher(pattern);
 		StringBuffer sb = new StringBuffer();
 		ValueFactory vf = SimpleValueFactory.getInstance();
-		
+
 		while (matcher.find()) {
-			String prefix = matcher.group(1);
-			String localName = matcher.group(2);
-			
-			IRI namespace = prefixMapping.get(prefix);
-			
-			if (namespace == null) {
-				throw new IllegalStateException("Prefix '" + prefix + "' is not bound to a namespace");
+			String uriTurtle = matcher.group(1);
+
+			String substitution;
+
+			if (uriTurtle != null) {
+				substitution = uriTurtle;
+			} else {
+				String prefix = matcher.group(2);
+				String localName = matcher.group(3);
+
+				IRI namespace = prefixMapping.get(prefix);
+
+				if (prefix.equals("http")) {
+					matcher.appendReplacement(sb, prefix + ":" + localName);
+				}
+
+				if (namespace == null) {
+					throw new IllegalStateException("Prefix '" + prefix + "' is not bound to a namespace");
+				}
+
+				substitution = NTriplesUtil
+						.toNTriplesString(vf.createIRI(namespace.stringValue(), localName));
 			}
-			
-			matcher.appendReplacement(sb, NTriplesUtil.toNTriplesString(vf.createIRI(namespace.stringValue(), localName)));
+			matcher.appendReplacement(sb, substitution);
 		}
-		
+
 		matcher.appendTail(sb);
-		
+
 		return sb.toString();
 	}
-	
-	public GraphPattern renamed(Function<String, String> renamingFunction, BiMap<String, String> projected2baseVariableMapping) {
+
+	public GraphPattern renamed(Function<String, String> renamingFunction,
+			BiMap<String, String> projected2baseVariableMapping) {
 		Matcher matcher = VARIABLE_PATTERN.matcher(pattern);
 		StringBuffer sb = new StringBuffer();
 
 		while (matcher.find()) {
 			String variableName = matcher.group(1);
 			String newVariableName = projected2baseVariableMapping.inverse().get(variableName);
-			
+
 			if (newVariableName == null) {
 				newVariableName = renamingFunction.apply(variableName);
 				projected2baseVariableMapping.put(newVariableName, variableName);
@@ -68,7 +83,8 @@ public class GraphPattern {
 			matcher.appendReplacement(sb, "?" + newVariableName);
 		}
 		matcher.appendTail(sb);
-		
-		return new GraphPattern(prefixMapping, projectionElement.renamed(renamingFunction, projected2baseVariableMapping), sb.toString());
+
+		return new GraphPattern(prefixMapping,
+				projectionElement.renamed(renamingFunction, projected2baseVariableMapping), sb.toString());
 	}
 }

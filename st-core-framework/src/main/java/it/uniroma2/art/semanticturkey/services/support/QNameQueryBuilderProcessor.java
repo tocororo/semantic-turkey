@@ -11,7 +11,6 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -30,7 +29,7 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 
 	@Override
-	public GraphPattern getGraphPattern() {
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
 		return GraphPatternBuilder.create().projection(ProjectionElementBuilder.variable("dummy")).pattern("")
 				.graphPattern();
 	}

@@ -627,7 +627,7 @@ class PropertiesMoreProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern() {
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
 		return graphPattern;
 	}
 

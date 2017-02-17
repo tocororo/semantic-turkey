@@ -185,7 +185,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern() {
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
 		return GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE).prefix("rdfs", RDFS.NAMESPACE).prefix("owl", OWL.NAMESPACE)
 				.prefix("skos", SKOS.NAMESPACE).prefix("skosxl", SKOSXL.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_role"))
 				.pattern(

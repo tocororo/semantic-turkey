@@ -222,7 +222,7 @@ class ClassesMoreProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern() {
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
 		return graphPattern;
 	}
 
@@ -254,7 +254,7 @@ class ClassesNumInstProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern() {
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
 		return graphPattern;
 	}
 

@@ -492,7 +492,7 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 	public static final QueryBuilderProcessor INSTANCE = new XLabelLiteralFormQueryProcessor();
 
 	@Override
-	public GraphPattern getGraphPattern() {
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
 		return GraphPatternBuilder.create().prefix("skosxl", SKOSXL.NAMESPACE)
 				.pattern("?resource skosxl:literalForm ?literalForm . FILTER(isLITERAL(?literalForm))")
 				.projection(ProjectionElementBuilder.variable("literalForm")).graphPattern();
