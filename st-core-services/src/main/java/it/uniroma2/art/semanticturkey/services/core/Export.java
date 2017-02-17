@@ -8,7 +8,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
@@ -37,8 +39,10 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.export.FilteringPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.FilteringStep;
 
 /**
@@ -71,8 +75,8 @@ public class Export extends STServiceAdapter {
 	 * @param graphs
 	 *            the graphs to be exported. An empty array means all graphs the name of which is an IRI
 	 * @param filteringSteps
-	 *            a sequence of filters to be applied. Each filter is applied to a subset of the exported
-	 *            graphs. No graph means every exported graph
+	 *            a JSON string representing an array of {@link FilteringStep}. Each filter is applied to a
+	 *            subset of the exported graphs. No graph means every exported graph
 	 * @param outputFormat
 	 *            the output format. If it does not support graphs, the exported graph are merged into a
 	 *            single graph
@@ -82,10 +86,11 @@ public class Export extends STServiceAdapter {
 	 *            would fail, so that available information is not silently ignored
 	 * @throws Exception
 	 */
-	@STServiceOperation
+	@STServiceOperation(method=RequestMethod.POST)
 	@Read
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
-			FilteringStep[] filteringSteps, @Optional(defaultValue = "TRIG") RDFFormat outputFormat,
+			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
+			@Optional(defaultValue = "TRIG") RDFFormat outputFormat,
 			@Optional(defaultValue = "false") boolean force) throws Exception {
 
 		Set<Resource> sourceGraphs = QueryResults.asSet(getManagedConnection().getContextIDs());
@@ -107,6 +112,8 @@ public class Export extends STServiceAdapter {
 			graphs = sourceGraphs.stream().filter(IRI.class::isInstance).map(IRI.class::cast)
 					.toArray(IRI[]::new);
 		}
+
+		FilteringStep[] filteringSteps = filteringPipeline.getSteps();
 
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy
@@ -147,6 +154,7 @@ public class Export extends STServiceAdapter {
 
 	/**
 	 * Returns the graph upon which a filter should operate.
+	 * 
 	 * @param graphs
 	 * @param filteringSteps
 	 * @return
@@ -154,25 +162,28 @@ public class Export extends STServiceAdapter {
 	 */
 	private IRI[][] computeGraphsForStep(IRI[] graphs, FilteringStep[] filteringSteps)
 			throws IllegalArgumentException {
+		Set<IRI> exportedGraphs = new HashSet<>();
+		exportedGraphs.addAll(Arrays.asList(graphs));
+
 		IRI[][] step2graphs = new IRI[filteringSteps.length][];
 		for (int i = 0; i < filteringSteps.length; i++) {
-			int[] graphRefs = filteringSteps[i].getGraphs();
+			IRI[] stepGraphs = filteringSteps[i].getGraphs();
 
-			if (graphRefs.length == 0) {
+			if (stepGraphs == null || stepGraphs.length == 0) {
 				step2graphs[i] = new IRI[graphs.length];
 				System.arraycopy(graphs, 0, step2graphs[i], 0, graphs.length);
 			} else {
-				step2graphs[i] = new IRI[graphRefs.length];
+				step2graphs[i] = new IRI[stepGraphs.length];
 
-				for (int j = 0; j < graphRefs.length; j++) {
-					int ref = graphRefs[j];
+				for (int j = 0; j < stepGraphs.length; j++) {
+					IRI g = stepGraphs[j];
 
-					if (ref < 0 || ref >= graphs.length) {
+					if (!exportedGraphs.contains(g)) {
 						throw new IllegalArgumentException(
-								"Graph reference " + ref + " in filtering step " + i + " is not valid");
+								"Filtered graph " + g + " was not exported");
 					}
 
-					step2graphs[i][j] = graphs[ref];
+					step2graphs[i][j] = g;
 				}
 			}
 		}
