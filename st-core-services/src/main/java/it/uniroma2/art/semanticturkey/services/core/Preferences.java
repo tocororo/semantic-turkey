@@ -3,10 +3,6 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 import it.uniroma2.art.semanticturkey.properties.PropertyLevel;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -14,7 +10,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
@@ -37,7 +32,7 @@ public class Preferences extends STServiceAdapter {
 	@STServiceOperation
 	public void setLanguages(Collection<String> languages, PropertyLevel level)
 			throws STPropertyUpdateException, STPropertyAccessException {
-		String value = "";
+		String value = "*";
 		if (languages.size() == 1) {
 			value = languages.iterator().next();
 		} else {

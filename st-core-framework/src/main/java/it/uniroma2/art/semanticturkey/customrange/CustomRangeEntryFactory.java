@@ -127,18 +127,10 @@ public class CustomRangeEntryFactory {
 				String showPropChainString = refElement.getAttribute("showPropertyChain");
 				//deserialize from string to List<IRI>
 				if (!showPropChainString.isEmpty()) {
-					String[] splittedChain = showPropChainString.split(">/<");
+					String[] splittedChain = showPropChainString.split(",");
 					SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
 					for (int i = 0; i < splittedChain.length; i++) {
-						//remove < and > from serialization
-						String iri = splittedChain[i];
-						if (iri.startsWith("<")) {
-							iri = iri.substring(1, iri.length());  
-						}
-						if (splittedChain[i].endsWith(">")) {
-							iri = iri.substring(0, iri.length()-1);  
-						} 
-						showPropChain.add(valueFactory.createIRI(iri));
+						showPropChain.add(valueFactory.createIRI(splittedChain[i]));
 					}
 				}
 			}
