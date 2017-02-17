@@ -36,11 +36,11 @@ public class ProjectUserBindingsManager {
 		repoHelper.shutDownRepository();
 		
 		//For debug
-		System.out.println("Project-User Bindings");
-		for (ProjectUserBinding pub : puBindingList) {
-			System.out.println(pub.getProjectName() + "-" + pub.getUserEmail());
-			System.out.println("\troles: " + String.join(", ", pub.getRolesName()));
-		}
+//		System.out.println("Project-User Bindings");
+//		for (ProjectUserBinding pub : puBindingList) {
+//			System.out.println(pub.getProjectName() + "-" + pub.getUserEmail());
+//			System.out.println("\troles: " + String.join(", ", pub.getRolesName()));
+//		}
 	}
 	
 	/**

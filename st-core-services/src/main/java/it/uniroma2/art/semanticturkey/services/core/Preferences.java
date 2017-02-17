@@ -45,6 +45,25 @@ public class Preferences extends STServiceAdapter {
 	}
 	
 	
+	@STServiceOperation
+	public String getResourceViewMode(PropertyLevel level) throws STPropertyAccessException, STPropertyUpdateException {
+		String value = getPropertyValue(STPropertiesManager.PROP_RES_VIEW_MODE, level);
+		if (value == null || (value != "splitted" && value != "tabbed")) { //if not set or not a valid value
+			value = "tabbed"; //default
+			setPropertyValue(STPropertiesManager.PROP_RES_VIEW_MODE, value, level);
+		}
+		return value;
+	}
+	
+	@STServiceOperation
+	public void setResourceViewMode(String resViewMode, PropertyLevel level) throws STPropertyUpdateException, STPropertyAccessException {
+		if (resViewMode != "splitted" && resViewMode != "tabbed") {
+			resViewMode = "tabbed"; //default
+		}
+		setPropertyValue(STPropertiesManager.PROP_RES_VIEW_MODE, resViewMode, level);
+	}
+	
+	
 	//utility methods
 	
 	/**
@@ -92,12 +111,7 @@ public class Preferences extends STServiceAdapter {
 	 * @throws STPropertyAccessException 
 	 */
 	private String getUserPropertyValue(String property) throws STPropertyAccessException {
-		String value;
-		value = STPropertiesManager.getUserProperty(getLoggedUser(), property);
-		if (value == null) {
-			value = getProjectPropertyValue(property);
-		}
-		return value;
+		return STPropertiesManager.getUserPropertyWithFallback(getLoggedUser(), property, getProject().getName());
 	}
 	
 	/**
@@ -107,12 +121,7 @@ public class Preferences extends STServiceAdapter {
 	 * @throws STPropertyAccessException 
 	 */
 	private String getProjectPropertyValue(String property) throws STPropertyAccessException {
-		String value;
-		value = STPropertiesManager.getProjectProperty(getProject().getName(), property);
-		if (value == null) {
-			value = getSystemPropertyValue(property);
-		}
-		return value;
+		return STPropertiesManager.getProjectProperty(getProject().getName(), property, true);
 	}
 	
 	private String getSystemPropertyValue(String property) throws STPropertyAccessException {
