@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.script.Bindings;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -53,6 +55,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -94,6 +97,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsum
 import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumerProvider;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
@@ -147,8 +151,11 @@ public class ResourceView2 extends STServiceAdapter {
 
 			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
 
-			Map<Resource, Map<String, Value>> resource2attributes = retrieveSubjectAndObjectsAddtionalInformation(
+			SubjectAndObjectsInfos subjectAndObjectsAddtionalInfo = retrieveSubjectAndObjectsAddtionalInformation(
 					resourcePosition, resource, resourcePredicates);
+
+			Map<Resource, Map<String, Value>> resource2attributes = subjectAndObjectsAddtionalInfo.resource2attributes;
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = subjectAndObjectsAddtionalInfo.predicate2resourceCreShow;
 
 			Set<Statement> processedStatements = new HashSet<>();
 
@@ -163,7 +170,7 @@ public class ResourceView2 extends STServiceAdapter {
 					.valueOf(annotatedResource.getAttributes().get("role").stringValue());
 
 			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
-					retrievedStatements);
+					predicate2resourceCreShow, null, retrievedStatements);
 
 			description.put("resource", new ResourceSection(annotatedResource));
 
@@ -182,7 +189,7 @@ public class ResourceView2 extends STServiceAdapter {
 			for (StatementConsumer aConsumer : viewTemplate) {
 				Map<String, ResourceViewSection> producedSections = aConsumer.consumeStatements(project,
 						resourcePosition, resource, retrievedStatements, processedStatements, workingGraph,
-						resource2attributes, propertyModel);
+						resource2attributes, predicate2resourceCreShow, propertyModel);
 				description.putAll(producedSections);
 			}
 
@@ -334,25 +341,25 @@ public class ResourceView2 extends STServiceAdapter {
 		}
 	}
 
-	private Map<Resource, Map<String, Value>> retrieveSubjectAndObjectsAddtionalInformation(
+	private SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 			ResourcePosition resourcePosition, Resource resource, Set<IRI> resourcePredicates) {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 			StringBuilder sb = new StringBuilder();
 			sb.append(
 				// @formatter:off
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +
-				" SELECT ?resource (MAX(?attr_creShowTemp) AS ?attr_creShow) WHERE {          \n" +
-				"   {                                                                         \n" +
-				"     ?subjectResource ?predicate ?tempResource .                             \n" +
-				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                          \n" +
-				"   } UNION {                                                                 \n" +
-				"     bind(?subjectResource as ?resource)                                     \n" +
-				"   }                                                                         \n" +
-				"   FILTER(!isLITERAL(?resource))                                             \n"
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
+				" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) WHERE { \n" +
+				"   {                                                                               \n" +
+				"     ?subjectResource ?predicate ?tempResource .                                   \n" +
+				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
+				"   } UNION {                                                                       \n" +
+				"     bind(?subjectResource as ?resource)                                           \n" +
+				"   }                                                                               \n" +
+				"   FILTER(!isLITERAL(?resource))                                                   \n"
 				// @formatter:on
 			);
-			
+
 			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
 
 			for (IRI pred : resourcePredicates) {
@@ -360,53 +367,122 @@ public class ResourceView2 extends STServiceAdapter {
 						.filter(CustomRangeEntryGraph.class::isInstance)
 						.map(CustomRangeEntryGraph.class::cast).forEach(cre -> {
 							List<IRI> chain = cre.getShowPropertyChain();
-							
-							if (chain == null || chain.isEmpty()) return;
-							
+
+							if (chain == null || chain.isEmpty())
+								return;
+
 							chain2pred.put(chain, pred);
 						});
 			}
 
+			int i = 0;
+
 			for (List<IRI> chain : chain2pred.keySet()) {
-				String selectorChain = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL).collect(joining("|"));
-				
-				String creChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
+				String selectorCollection = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL)
+						.collect(joining(",", "(", ")"));
+
+				String showChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
 
 				sb.append(
 					// @formatter:off
 					"     OPTIONAL {                                                          \n" +
-					"        ?subjectResource " +  selectorChain + " ?resource .              \n" +
-					"        ?resource " +  creChain + " ?attr_creShowTemp .                  \n" +
+					"        ?subjectResource ?predicate ?resource .                          \n" +
+					"        FILTER(?predicate IN " + selectorCollection + ")                 \n" + 	
+					"        ?resource " +  showChain + " ?attr_creShowTemp" + (i++) + " .    \n" +
 					"     }                                                                   \n"
 					// @formatter:on
-					);
+				);
 			}
-			
+
+			if (i != 0) {
+				sb.append("     BIND(COALESCE(\n");
+
+				for (int j = 0; j < i; j++) {
+					sb.append("       ?attr_creShowTemp" + j);
+					if (j + 1 != i) {
+						sb.append(", ");
+					}
+					sb.append("\n");
+				}
+
+				sb.append("     ) AS ?attr_creShowTemp) \n");
+			}
+
 			sb.append(
 				// @formatter:off
 				" }                                                                           \n" +
-				" GROUP BY ?resource                                                          \n"
+				" GROUP BY ?resource ?predicate                                               \n"
 				// @formatter:on
 			);
-			
+
 			QueryBuilder qb = createQueryBuilder(sb.toString());
 			qb.processRendering();
 			qb.processRole();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
 			qb.setBinding("subjectResource", resource);
-			Collection<AnnotatedValue<Resource>> annotatedResources = qb
-					.runQuery(acquireManagedConnectionToProject(localResourcePosition.getProject()));
+
+			Collection<BindingSet> bindingSets = qb.runQuery(
+					acquireManagedConnectionToProject(localResourcePosition.getProject()),
+					QueryResultsProcessors.toBindingSets());
+
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = new HashMap<>();
 			Map<Resource, Map<String, Value>> resource2attributes = new HashMap<>();
-			for (AnnotatedValue<Resource> annotatedValue : annotatedResources) {
-				Resource res = annotatedValue.getValue();
-				Map<String, Value> resAttributes = annotatedValue.getAttributes();
-				resource2attributes.put(res, resAttributes);
+
+			for (BindingSet bs : bindingSets) {
+				IRI predicate = (IRI) bs.getValue("predicate");
+
+				Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow.computeIfAbsent(predicate,
+						key -> new HashMap<>());
+
+				Value resourceValue = bs.getValue("resource");
+
+				if (!(resourceValue instanceof Resource))
+					continue;
+
+				Resource resourceResource = (Resource) resourceValue;
+
+				Map<String, Value> attributes = resource2attributes.computeIfAbsent(resourceResource,
+						key -> new HashMap<>());
+
+				for (Binding b : bs) {
+					String bindingName = b.getName();
+					Value bindingValue = b.getValue();
+
+					if (bindingValue == null)
+						continue;
+
+					if (bindingName.startsWith("attr_")) {
+						attributes.put(bindingName.substring("attr_".length()), bindingValue);
+					}
+
+					if (bindingName.equals("predattr_creShow")) {
+						Literal bindingValueAsLiteral = (Literal) bindingValue;
+
+						if (bindingValueAsLiteral.getLabel().isEmpty())
+							continue;
+
+						resource2CreShow.put(resourceResource, bindingValueAsLiteral);
+					}
+				}
+
 			}
 
-			return resource2attributes;
+			return new SubjectAndObjectsInfos(resource2attributes, predicate2resourceCreShow);
 		} else {
 			throw new IllegalArgumentException("Resource position not supported yet: " + resourcePosition);
 		}
+	}
+
+	private static class SubjectAndObjectsInfos {
+
+		public SubjectAndObjectsInfos(Map<Resource, Map<String, Value>> resource2attributes,
+				Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow) {
+			this.resource2attributes = resource2attributes;
+			this.predicate2resourceCreShow = predicate2resourceCreShow;
+		}
+
+		public final Map<Resource, Map<String, Value>> resource2attributes;
+		public final Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow;
 	}
 
 	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource) {
@@ -505,10 +581,9 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 
 	@Override
 	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
-		return resultTable.stream().filter(bs -> bs.getValue("literalForm") != null)
-				.collect(groupingBy(bs -> bs.getValue("resource"),
-						mapping(bs -> (Literal) bs.getValue("literalForm"),
-								reducing(null, (v1, v2) -> v1 != null ? v1 : v2))));
+		return resultTable.stream().filter(bs -> bs.getValue("literalForm") != null).collect(
+				groupingBy(bs -> bs.getValue("resource"), mapping(bs -> (Literal) bs.getValue("literalForm"),
+						reducing(null, (v1, v2) -> v1 != null ? v1 : v2))));
 	}
 
 	@Override

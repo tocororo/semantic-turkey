@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -53,7 +54,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 	public Map<String, ResourceViewSection> consumeStatements(Project<?> project,
 			ResourcePosition resourcePosition, Resource resource, Model statements,
 			Set<Statement> processedStatements, Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes, Model propertyModel) {
+			Map<Resource, Map<String, Value>> resource2attributes,
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -114,7 +116,7 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 		Map<String, ResourceViewSection> nestedConsumer = inverseOfMatcher.consumeStatements(project,
 				resourcePosition, resource, statements, processedStatements, workingGraph,
-				resource2attributes, propertyModel);
+				resource2attributes, predicate2resourceCreShow, propertyModel);
 
 		PredicateObjectsListSection inverseOf = (PredicateObjectsListSection) nestedConsumer.get("inverseOf");
 

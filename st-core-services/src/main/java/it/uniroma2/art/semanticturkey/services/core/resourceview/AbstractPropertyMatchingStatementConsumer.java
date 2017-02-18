@@ -16,6 +16,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -71,7 +72,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 	public Map<String, ResourceViewSection> consumeStatements(Project<?> project,
 			ResourcePosition resourcePosition, Resource resource, Model statements,
 			Set<Statement> processedStatements, Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes, Model propertyModel) {
+			Map<Resource, Map<String, Value>> resource2attributes,
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -155,7 +157,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 								if (firstElement instanceof Resource) {
 									addRole((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 									addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedMember,
-											resource2attributes, statements);
+											resource2attributes, predicate2resourceCreShow, null, statements);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
 								annotatedMember.setAttribute("index", topContext.getIndex() + 1);
@@ -184,8 +186,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 						annotatedObject = new AnnotatedValue<>(object);
 					}
 					addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
-					addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject, resource2attributes,
-							statements);
+					addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject,
+							resource2attributes, predicate2resourceCreShow, predicate, statements);
 				}
 
 				if (annotatedObject == null) {
@@ -200,16 +202,17 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 				processedStatements.addAll(entry.getValue());
 			}
-			
+
 			if (valueMultiMap.isEmpty() && !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
 				continue; // Skip irrelevant empty outer group
 			}
-			
+
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
 
 			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
 			addRole(annotatedPredicate, resource2attributes);
-			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, statements);
+			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
+					null, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
 

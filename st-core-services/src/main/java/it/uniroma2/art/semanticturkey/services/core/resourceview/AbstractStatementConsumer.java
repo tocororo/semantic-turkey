@@ -130,7 +130,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	}
 
 	public static void addShowOrRenderXLabelOrCRE(AnnotatedValue<? extends Resource> annotatedResource,
-			Map<Resource, Map<String, Value>> resource2attributes, Model statements) {
+			Map<Resource, Map<String, Value>> resource2attributes,
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, IRI predicate, Model statements) {
 		Resource resource = annotatedResource.getValue();
 
 		Map<String, Value> resourceAttributes = resource2attributes.get(resource);
@@ -143,13 +144,18 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				literalFormAsLiteral.getLanguage().ifPresent(v -> annotatedResource.setAttribute("lang", v));
 				return;
 			} else {
-				Value creShow = resourceAttributes.get("creShow");
-				if (creShow != null) {
-					Literal creShowAsLiteral = (Literal) creShow;
-					annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
-					creShowAsLiteral.getLanguage()
-							.ifPresent(v -> annotatedResource.setAttribute("lang", v));
-					return;
+				if (predicate != null) {
+					Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow
+							.getOrDefault(predicate, Collections.emptyMap());
+					Literal creShow = resource2CreShow.get(resource);
+
+					if (creShow != null) {
+						Literal creShowAsLiteral = (Literal) creShow;
+						annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
+						creShowAsLiteral.getLanguage()
+								.ifPresent(v -> annotatedResource.setAttribute("lang", v));
+						return;
+					}
 				}
 			}
 		}

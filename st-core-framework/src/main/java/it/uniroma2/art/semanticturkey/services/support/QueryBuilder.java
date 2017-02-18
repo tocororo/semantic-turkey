@@ -110,7 +110,7 @@ public class QueryBuilder {
 		}
 		qnameProcessor = new QNameQueryBuilderProcessor();
 		process(qnameProcessor, "resource", "attr_qname");
-		
+
 	}
 
 	/**
@@ -165,6 +165,23 @@ public class QueryBuilder {
 	}
 
 	/**
+	 * Evaluates the (possibly enriched) query and returns the processed results.
+	 * 
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public <T> T runQuery(QueryResultsProcessor<T> resultsProcessor)
+			throws QueryBuilderException, QueryEvaluationException {
+		Repository repo = serviceContext.getProject().getRepository();
+		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
+		try {
+			return runQuery(conn, resultsProcessor);
+		} finally {
+			RDF4JRepositoryUtils.releaseConnection(conn, repo);
+		}
+	}
+
+	/**
 	 * Evaluates the (possibly enriched) query on the given repository connection and returns the retrieved
 	 * resources.
 	 * 
@@ -172,6 +189,21 @@ public class QueryBuilder {
 	 * @throws QueryEvaluationException
 	 */
 	public Collection<AnnotatedValue<Resource>> runQuery(RepositoryConnection conn) {
+		return runQuery(conn, QueryResultsProcessors.toAnnotatedResources());
+	}
+
+	/**
+	 * Evaluates the (possibly enriched) query on the given repository connection and returns the processed
+	 * results.
+	 * 
+	 * @param conn
+	 *            a {@link RepositoryConnection} to evaluate the query
+	 * @param resultsProcessor
+	 *            a {@link QueryResultsProcessor} used to generate the final results
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public <T> T runQuery(RepositoryConnection conn, QueryResultsProcessor<T> resultsProcessor) {
 		QueryBuildOutput queryBuildOutput = computeEnrichedQuery();
 		TupleQueryShallowModel enrichedQuery = queryBuildOutput.queryModel;
 
@@ -182,7 +214,7 @@ public class QueryBuilder {
 
 		TupleQuery query = conn.prepareTupleQuery(enrichedQueryString);
 		query.setIncludeInferred(false);
-		
+
 		bindingSet.forEach(query::setBinding);
 
 		logger.debug("query binding set = {}", bindingSet);
@@ -197,7 +229,7 @@ public class QueryBuilder {
 		}
 
 		logger.debug("binding count = {}", bindings.size());
-		
+
 		List<String> initialQueryVariables = enrichedQuery.getInitialQueryVariables();
 
 		BiMap<String, String> projected2baseVarMapping = HashBiMap.create();
@@ -233,7 +265,8 @@ public class QueryBuilder {
 
 			} else {
 
-				String targetVariable = proc.getGraphPattern(serviceContext.getProject()).getProjectionElement().getTargetVariable();
+				String targetVariable = proc.getGraphPattern(serviceContext.getProject())
+						.getProjectionElement().getTargetVariable();
 				String outputVariable = graphPatternBinding.getProjectedOutputVariable();
 
 				for (BindingSet projectedResultsEntry : projectedResults) {
@@ -256,16 +289,15 @@ public class QueryBuilder {
 
 		}
 
-		return QueryResults.stream(projectedOverallResults)
-				.map(bs -> bindingSet2annotatedResource(bs, additionalColumns)).collect(toList());
+		return resultsProcessor.process(projectedOverallResults, additionalColumns);
 	}
 
 	private static TupleQueryResult projectResults(List<BindingSet> queryResults,
 			BiMap<String, String> projected2baseVarMapping) {
-		return QueryResults.distinctResults(
-				new IteratingTupleQueryResult(new ArrayList<String>(projected2baseVarMapping.values()),
-						queryResults.stream().map(
-								bindingSet -> new ProjectedBindingSet(bindingSet, projected2baseVarMapping))
+		return QueryResults.distinctResults(new IteratingTupleQueryResult(
+				new ArrayList<String>(projected2baseVarMapping.values()),
+				queryResults.stream()
+						.map(bindingSet -> new ProjectedBindingSet(bindingSet, projected2baseVarMapping))
 						.collect(toList())));
 	}
 
@@ -305,38 +337,6 @@ public class QueryBuilder {
 		}
 
 		return out;
-	}
-
-	private static AnnotatedValue<Resource> bindingSet2annotatedResource(BindingSet bindingSet,
-			Map<Value, Map<String, Literal>> additionalColumns) throws QueryBuilderException {
-		Value resource = bindingSet.getValue("resource");
-
-		if (resource == null) {
-			throw new QueryBuilderException("Variable ?resource is unbound in binding set: " + bindingSet);
-		}
-
-		if (!(resource instanceof Resource)) {
-			throw new QueryBuilderException("The value bound to ?resource is not a Resource: " + resource);
-		}
-
-		Map<String, Value> attributes = new HashMap<>();
-		StreamSupport.stream(bindingSet.spliterator(), false)
-				.filter(binding -> binding.getName().startsWith("attr_"))
-				.forEach(binding -> attributes.put(binding.getName().substring(5), binding.getValue()));
-
-		Map<String, Literal> row = additionalColumns.get(resource);
-
-		if (row != null) {
-			row.forEach((varName, boundValue) -> {
-				if (varName.startsWith("attr_")) {
-					attributes.put(varName.substring(5), boundValue);
-				}
-			});
-		}
-
-		AnnotatedValue<Resource> rv = new AnnotatedValue<Resource>((Resource) resource, attributes);
-
-		return rv;
 	}
 }
 

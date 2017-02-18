@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -54,7 +55,8 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 	public Map<String, ResourceViewSection> consumeStatements(Project<?> project,
 			ResourcePosition resourcePosition, Resource resource, Model statements,
 			Set<Statement> processedStatements, Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes, Model propertyModel) {
+			Map<Resource, Map<String, Value>> resource2attributes,
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -75,9 +77,9 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 							.filter(stmt -> !processedStatements.contains(stmt)
 									&& (stmt.getPredicate().equals(superProp) || propertyModel
 											.contains(stmt.getPredicate(), RDFS.SUBPROPERTYOF, superProp)))
-					.collect(toList()));
+							.collect(toList()));
 			newlyProcessedStatements.addAll(relevantDirectKnowledge);
-			
+
 			for (IRI predicate : relevantDirectKnowledge.predicates()) {
 				if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
 						project.getNewOntologyManager())) {
@@ -88,7 +90,8 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 				annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
 				addRole(annotatedPredicate, resource2attributes);
-				addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, statements);
+				addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
+						null, statements);
 				annotatedPredicate.setAttribute("hasCustomRange",
 						customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
 
@@ -99,33 +102,36 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 				for (Map.Entry<Value, List<Statement>> entry : statementsByObject.entrySet()) {
 					Value object = entry.getKey();
-					Set<Resource> graphs = entry.getValue().stream().map(Statement::getContext).collect(toSet());
+					Set<Resource> graphs = entry.getValue().stream().map(Statement::getContext)
+							.collect(toSet());
 
 					AnnotatedValue<?> annotatedObject = new AnnotatedValue<Value>(object);
 					annotatedObject.setAttribute("explicit", currentProject && graphs.contains(workingGraph));
 
 					if (object instanceof Resource) {
 						addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
-						addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject, resource2attributes,
-								statements);
+						addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject,
+								resource2attributes, predicate2resourceCreShow, predicate, statements);
 					}
 					annotatedObject.setAttribute("graphs", computeGraphs(graphs));
 
 					valueMultiMap.put(predicate, annotatedObject);
 				}
 			}
-			
-			if (valueMultiMap.isEmpty() && !shouldRetainEmptyOuterGroup(superProp, resource, resourcePosition)) {
+
+			if (valueMultiMap.isEmpty()
+					&& !shouldRetainEmptyOuterGroup(superProp, resource, resourcePosition)) {
 				continue; // Skip irrelevant empty outer group
 			}
-			
+
 			PredicateObjectsList predObjsList = new PredicateObjectsList(propMap, valueMultiMap);
-			
+
 			AnnotatedValue<IRI> annotatedSuperProp = new AnnotatedValue<IRI>(superProp);
 
 			annotatedSuperProp.setAttribute("role", RDFResourceRolesEnum.property.toString());
 			addRole(annotatedSuperProp, resource2attributes);
-			addShowOrRenderXLabelOrCRE(annotatedSuperProp, resource2attributes, statements);
+			addShowOrRenderXLabelOrCRE(annotatedSuperProp, resource2attributes, predicate2resourceCreShow,
+					null, statements);
 			annotatedSuperProp.setAttribute("hasCustomRange",
 					customRangeProvider.existsCustomRangeEntryGraphForProperty(superProp.stringValue()));
 
@@ -135,7 +141,8 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 		processedStatements.addAll(newlyProcessedStatements);
 
-		PredicateValueList<PredicateObjectsList> outerPredicateValueList = new PredicateValueList<>(outerPropMap, outerValueMultiMap);
+		PredicateValueList<PredicateObjectsList> outerPredicateValueList = new PredicateValueList<>(
+				outerPropMap, outerValueMultiMap);
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
 		rv.put(sectionName, new PredicateValueListSection<PredicateObjectsList>(outerPredicateValueList));
 
