@@ -251,6 +251,7 @@ public class CustomRanges extends STServiceAdapterOLD {
 				}
 				String query = "SELECT " + bindings + " WHERE { " + graphSection + " }";
 				TupleQuery tupleQuery = rdfModel.createTupleQuery(query);
+				tupleQuery.setBinding(creGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
 				TupleBindingsIterator tupleBindings = tupleQuery.evaluate(false);
 				//iterate over the results and create a map <userPrompt, value>
 				while (tupleBindings.streamOpen()) {
@@ -327,10 +328,10 @@ public class CustomRanges extends STServiceAdapterOLD {
 			queryBuilder.append("delete { ");
 			queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));
 			queryBuilder.append(" } where { ");
-			queryBuilder.append("bind(<" + resource.getURI() + "> as " + cre.getEntryPointPlaceholder(codaCore) + ") ");
 			queryBuilder.append(cre.getGraphSectionAsString(codaCore, true));
 			queryBuilder.append(" }");
 			Update update = model.createUpdateQuery(queryBuilder.toString());
+			update.setBinding(cre.getEntryPointPlaceholder(codaCore).substring(1), resource);
 			update.evaluate(false);
 		}
 		shutDownCodaCore(codaCore);
@@ -373,11 +374,11 @@ public class CustomRanges extends STServiceAdapterOLD {
 					queryBuilder.append("construct { ");
 					queryBuilder.append(cre.getGraphSectionAsString(codaCore, false));
 					queryBuilder.append(" } where { ");
-					queryBuilder.append("bind(<" + resource.getNominalValue() + "> as " + cre.getEntryPointPlaceholder(codaCore) + ") ");
 					queryBuilder.append(cre.getGraphSectionAsString(codaCore, true));
 					queryBuilder.append(" }");
 					String query = queryBuilder.toString();
 					GraphQuery gq = model.createGraphQuery(query);
+					gq.setBinding(cre.getEntryPointPlaceholder(codaCore).substring(1), resource);
 					int nStats = Iterators.size(gq.evaluate(false));
 					if (nStats > maxStats) {
 						maxStats = nStats;
