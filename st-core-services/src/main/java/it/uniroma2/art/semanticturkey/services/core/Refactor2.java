@@ -52,6 +52,9 @@ public class Refactor2 extends STServiceAdapter  {
 		List<ConceptLabelValueGraph> conceptLabelValueGraphList = new ArrayList<ConceptLabelValueGraph>();
 		List<ConceptNoteValueGraph> conceptNoteValueGraphList = new ArrayList<ConceptNoteValueGraph>();
 		
+		IRI workingGraph = (IRI)getWorkingGraph();
+		String workingGraphString = SPARQLHelp.toSPARQL(workingGraph);
+		
 		//first of all, take the SKOS data you need to refactor
 		
 		//get all the info regarding the labels(pref/alt/hidden)
@@ -63,7 +66,7 @@ public class Refactor2 extends STServiceAdapter  {
 				
 				"SELECT ?concept ?propLabel ?value ?graph\n" +
 				"WHERE {\n" +
-				"GRAPH ?graph {?concept ?propLabel ?value . " +
+				"GRAPH "+workingGraphString+" {?concept ?propLabel ?value . " +
 				"FILTER(?propLabel = skos:prefLabel || ?propLabel = skos:altLabel || ?propLabel = skos:hiddenLabel) \n" +
 				"}" +
 				"}";
@@ -74,7 +77,7 @@ public class Refactor2 extends STServiceAdapter  {
 		
 		List<Resource> contextList = QueryResults.asList(getManagedConnection().getContextIDs());
 		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-		dataset.addNamedGraph((IRI)getWorkingGraph());
+		dataset.addNamedGraph(workingGraph);
 		
 		select.setDataset(dataset);
 		
@@ -85,8 +88,8 @@ public class Refactor2 extends STServiceAdapter  {
 			IRI concept = (IRI) bindingSet.getBinding("concept").getValue();
 			IRI labelType = (IRI) bindingSet.getBinding("propLabel").getValue();
 			Literal value = (Literal) bindingSet.getBinding("value").getValue();
-			IRI graph = (IRI) bindingSet.getBinding("graph").getValue();
-			conceptLabelValueGraphList.add(new ConceptLabelValueGraph(concept, labelType, value, graph));
+			//IRI graph = (IRI) bindingSet.getBinding("graph").getValue();
+			conceptLabelValueGraphList.add(new ConceptLabelValueGraph(concept, labelType, value, workingGraph));
 			
 		}
 		tupleQueryResult.close();
@@ -101,7 +104,7 @@ public class Refactor2 extends STServiceAdapter  {
 				"SELECT ?concept ?propNote ?value ?graph\n" +
 				"WHERE {\n" +
 				"?propNote rdfs:subPropertyOf* skos:note . \n" + 
-				"GRAPH ?graph {?concept ?propNote ?value . }" +
+				"GRAPH "+workingGraphString+" {?concept ?propNote ?value . }" +
 				"}";
 		select = getManagedConnection().prepareTupleQuery(selectQuery);
 		
@@ -115,7 +118,7 @@ public class Refactor2 extends STServiceAdapter  {
 			}
 		}
 		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-		dataset.addNamedGraph((IRI)getWorkingGraph());
+		dataset.addNamedGraph(workingGraph);
 		select.setDataset(dataset);
 		
 		//execute the query
@@ -125,8 +128,8 @@ public class Refactor2 extends STServiceAdapter  {
 			IRI concept = (IRI) bindingSet.getBinding("concept").getValue();
 			IRI noteType = (IRI) bindingSet.getBinding("propNote").getValue();
 			Literal value = (Literal) bindingSet.getBinding("value").getValue();
-			IRI graph = (IRI) bindingSet.getBinding("graph").getValue();
-			conceptNoteValueGraphList.add(new ConceptNoteValueGraph(concept, noteType, value, graph));
+			//IRI graph = (IRI) bindingSet.getBinding("graph").getValue();
+			conceptNoteValueGraphList.add(new ConceptNoteValueGraph(concept, noteType, value, workingGraph));
 		}
 		tupleQueryResult.close();
 		
@@ -167,6 +170,7 @@ public class Refactor2 extends STServiceAdapter  {
 					"INSERT DATA {\n" +
 					"GRAPH "+graphString+" { \n" +
 					conceptString+" "+skoxlLabelTypeString+" "+newIRIForLabelString+" .\n" +
+					newIRIForLabelString +" <"+RDF.TYPE.stringValue()+"> <"+SKOSXL.LABEL.stringValue()+"> .\n" + 
 					newIRIForLabelString+" <"+SKOSXL.LITERAL_FORM.stringValue()+"> "+valueString+" . \n" +
 					"}\n" +
 					"}";
@@ -176,7 +180,7 @@ public class Refactor2 extends STServiceAdapter  {
 			
 			contextList = QueryResults.asList(getManagedConnection().getContextIDs());
 			//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-			dataset.addNamedGraph((IRI)getWorkingGraph());
+			dataset.addNamedGraph(workingGraph);
 			update.setDataset(dataset);
 			//execute the UPDATE
 			update.execute();
@@ -218,13 +222,11 @@ public class Refactor2 extends STServiceAdapter  {
 			
 			contextList = QueryResults.asList(getManagedConnection().getContextIDs());
 			//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-			dataset.addNamedGraph((IRI)getWorkingGraph());
+			dataset.addNamedGraph(workingGraph);
 			update.setDataset(dataset);
 			//execute the UPDATE
 			update.execute();
 		}
-		
-		
 	}
 	
 	/**
@@ -236,6 +238,9 @@ public class Refactor2 extends STServiceAdapter  {
 	public void SKOSXLtoSKOS(){
 		logger.info("request to refactor SKOSXL data to SKOS");
 		
+		IRI workingGraph = (IRI) getWorkingGraph();
+		String workingGraphString = SPARQLHelp.toSPARQL(workingGraph);
+		
 		// @formatter:off
 		String queryUpdate = 
 				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> \n" + 
@@ -245,9 +250,28 @@ public class Refactor2 extends STServiceAdapter  {
 				//remove the SKOSXL data
 				"DELETE { \n"+
 				//the part relative to skos:note (and its sub properties)
-				"GRAPH ?g4 {?concept ?propNote ?reifiedNote . \n" +
+				"GRAPH "+workingGraphString+" {?concept ?propNote ?reifiedNote . \n" +
 				"?reifiedNote rdf:value ?value . } \n" +
-				//the part relative to skosxl:prefLabel
+				
+				
+				"GRAPH "+workingGraphString+" {?genericSubj ?genericProp1 ?label . \n " +
+				"label ?genericProp2 ?genericObj . }\n" +
+				"} \n " +
+				
+				//OLD
+				/*//the part relative to skosxl:prefLabel
+				"GRAPH ?g1{?genericSubjPref ?genericPropPref1 ?prefLabel . \n" +
+				"?prefLabel ?genericPropPref2 ?genericObjPref . }\n" +
+				//the part relative to skosxl:altLabel
+				"GRAPH ?g2{?genericSubjAlt ?genericPropAlt1 ?altLabel . \n" +
+				"?altLabel ?genericPropAlt2 ?genericObjAlt . }\n" +
+				//the part relative to skosxl:hiddenLabel
+				"GRAPH ?g3{?genericSubjHidden ?genericPropHidden1 ?hiddenLabel . \n" +
+				"?hiddenLabel ?genericPropHidden2 ?genericObjHidden . }\n" +
+				 */
+				
+				//OLD
+				/*//the part relative to skosxl:prefLabel
 				"GRAPH ?g1{?concept skosxl:prefLabel ?prefLabel . \n" +
 				"?prefLabel skosxl:literalForm ?prefLabelLitForm . }\n" +
 				//the part relative to skosxl:altLabel
@@ -256,32 +280,43 @@ public class Refactor2 extends STServiceAdapter  {
 				//the part relative to skosxl:hiddenLabel
 				"GRAPH ?g3{?concept skosxl:hiddenLabel ?hiddenLabel . \n" +
 				"?hiddenLabel skosxl:literalForm ?hiddenLabelLitForm . }\n" +
+				*/
 				
 				"} \n" +
 				//insert the SKOS data
 				"INSERT { \n" +
-				"GRAPH ?g1{?concept skos:prefLabel ?prefLabelLitForm . } \n " +
-				"GRAPH ?g2{?concept skos:altLabel ?altLabelLitForm . } \n" +
-				"GRAPH ?g3{?concept skos:hiddenLabel ?hiddenLabelLitForm . } \n" +
-				"GRAPH ?g4{?concept ?propNote ?value .} \n" +
+				"GRAPH "+workingGraphString+"{?concept skos:prefLabel ?prefLabelLitForm . } \n " +
+				"GRAPH "+workingGraphString+"{?concept skos:altLabel ?altLabelLitForm . } \n" +
+				"GRAPH "+workingGraphString+"{?concept skos:hiddenLabel ?hiddenLabelLitForm . } \n" +
+				"GRAPH "+workingGraphString+"{?concept ?propNote ?value .} \n" +
 				"} \n" +
 				//get the data in SKOSXL to be transformed in SKOS
 				"WHERE {\n" +
 			
 				//the labels part (prefLabel, altLabel, hiddenLabel)
-				"{ GRAPH ?g1{?concept skosxl:prefLabel ?prefLabel . \n" +
-				"?prefLabel skosxl:literalForm ?prefLabelLitForm . } }\n" +
+				"{ GRAPH "+workingGraphString+"{?concept skosxl:prefLabel ?label . \n" +
+				"?label skosxl:literalForm ?prefLabelLitForm . \n" +
+				"?genericSubj ?genericProp1 ?label . \n" +
+				"?label ?genericProp2 ?genericObj . } \n" +
+				"}\n" +
 				"UNION \n" +
-				"{ GRAPH ?g2{?concept skosxl:altLabel ?altLabel . \n" +
-				"?altLabel skosxl:literalForm ?altLabelLitForm . }}\n" +
+				"{ GRAPH "+workingGraphString+"{?concept skosxl:altLabel ?label . \n" +
+				"?label skosxl:literalForm ?altLabelLitForm . \n" +
+				"?genericSubj ?genericProp1 ?label . \n" +
+				"?label ?genericProp2 ?genericObj . } \n" +
+				" }\n" +
 				"UNION \n" +
-				"{ GRAPH ?g3{?concept skosxl:hiddenLabel ?hiddenLabel . \n" +
-				"?hiddenLabel skosxl:literalForm ?hiddenLabelLitForm . }}\n" +
+				"{ GRAPH "+workingGraphString+"{?concept skosxl:hiddenLabel ?label . \n" +
+				"?label skosxl:literalForm ?hiddenLabelLitForm . }}\n" +
+				"?genericSubj ?genericProp1 ?label . \n" +
+				"?label ?genericProp2 ?genericObj . } \n" +
+				" }\n" +
+				
 
 				//the notes (and its sub properties) part
 				"UNION \n"+
 				"{?propNote rdfs:subPropertyOf* skos:note . \n" + 
-				"GRAPH ?g4{?concept ?propNote ?reifiedNote . \n" + 
+				"GRAPH "+workingGraphString+"{?concept ?propNote ?reifiedNote . \n" + 
 				"?reifiedNote rdf:value ?value .} \n" +
 				"} \n" +
 				
@@ -302,7 +337,7 @@ public class Refactor2 extends STServiceAdapter  {
 			}
 		}
 		//add the named graphs (used in the GRAPH sections of the query: WHERE and INSERT
-		dataset.addNamedGraph((IRI)getWorkingGraph());
+		dataset.addNamedGraph(workingGraph);
 		update.setDataset(dataset);
 		
 		//execute the query
