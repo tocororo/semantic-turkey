@@ -253,36 +253,12 @@ public class Refactor2 extends STServiceAdapter  {
 				"GRAPH "+workingGraphString+" {?concept ?propNote ?reifiedNote . \n" +
 				"?reifiedNote rdf:value ?value . } \n" +
 				
-				
+				///the related to the labels (Pref, Alt and Hidden)
 				"GRAPH "+workingGraphString+" {?genericSubj ?genericProp1 ?label . \n " +
-				"label ?genericProp2 ?genericObj . }\n" +
+				"?label ?genericProp2 ?genericObj . }\n" +
+				
 				"} \n " +
 				
-				//OLD
-				/*//the part relative to skosxl:prefLabel
-				"GRAPH ?g1{?genericSubjPref ?genericPropPref1 ?prefLabel . \n" +
-				"?prefLabel ?genericPropPref2 ?genericObjPref . }\n" +
-				//the part relative to skosxl:altLabel
-				"GRAPH ?g2{?genericSubjAlt ?genericPropAlt1 ?altLabel . \n" +
-				"?altLabel ?genericPropAlt2 ?genericObjAlt . }\n" +
-				//the part relative to skosxl:hiddenLabel
-				"GRAPH ?g3{?genericSubjHidden ?genericPropHidden1 ?hiddenLabel . \n" +
-				"?hiddenLabel ?genericPropHidden2 ?genericObjHidden . }\n" +
-				 */
-				
-				//OLD
-				/*//the part relative to skosxl:prefLabel
-				"GRAPH ?g1{?concept skosxl:prefLabel ?prefLabel . \n" +
-				"?prefLabel skosxl:literalForm ?prefLabelLitForm . }\n" +
-				//the part relative to skosxl:altLabel
-				"GRAPH ?g2{?concept skosxl:altLabel ?altLabel . \n" +
-				"?altLabel skosxl:literalForm ?altLabelLitForm . }\n" +
-				//the part relative to skosxl:hiddenLabel
-				"GRAPH ?g3{?concept skosxl:hiddenLabel ?hiddenLabel . \n" +
-				"?hiddenLabel skosxl:literalForm ?hiddenLabelLitForm . }\n" +
-				*/
-				
-				"} \n" +
 				//insert the SKOS data
 				"INSERT { \n" +
 				"GRAPH "+workingGraphString+"{?concept skos:prefLabel ?prefLabelLitForm . } \n " +
@@ -304,14 +280,13 @@ public class Refactor2 extends STServiceAdapter  {
 				"?label skosxl:literalForm ?altLabelLitForm . \n" +
 				"?genericSubj ?genericProp1 ?label . \n" +
 				"?label ?genericProp2 ?genericObj . } \n" +
-				" }\n" +
+				"}\n" +
 				"UNION \n" +
 				"{ GRAPH "+workingGraphString+"{?concept skosxl:hiddenLabel ?label . \n" +
-				"?label skosxl:literalForm ?hiddenLabelLitForm . }}\n" +
+				"?label skosxl:literalForm ?hiddenLabelLitForm . \n" +
 				"?genericSubj ?genericProp1 ?label . \n" +
 				"?label ?genericProp2 ?genericObj . } \n" +
-				" }\n" +
-				
+				"}\n" +
 
 				//the notes (and its sub properties) part
 				"UNION \n"+
