@@ -26,13 +26,29 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.RoleCreationException;
+import it.uniroma2.art.semanticturkey.user.RolesManager;
+import it.uniroma2.art.semanticturkey.user.STRole;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
+import it.uniroma2.art.semanticturkey.user.UserCreationException;
+import it.uniroma2.art.semanticturkey.user.UserStatus;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.hibernate.validator.util.privilegedactions.GetClassLoader;
@@ -51,6 +67,9 @@ public class Resources {
 	private static final String _ontTempDirLocalName = "ont-temp";
 	private static final String _ontMirrorDirDefaultLocationLocalName = "ontologiesMirror";
 	private static final String _projectsDirName = "projects";
+	private static final String _systemDirName = "system";
+	private static final String _usersDirName = "users";
+	private static final String _projectUserBindingsDirName = "pu_bindings";
 
 	/* new */
 	private static final String _karafEtcDir = "/etc";
@@ -75,6 +94,9 @@ public class Resources {
 	private static File owlDefinitionFile;
 	private static File ontologiesMirrorFile;
 	private static File projectsDir;
+	private static File systemDir;
+	private static File projectUserBindingsDir;
+	private static File usersDir;
 
 	protected static Logger logger = LoggerFactory.getLogger(Resources.class);
 
@@ -132,6 +154,9 @@ public class Resources {
 		annotOntologyFile = new File(ontLibraryDir, "annotation.owl");
 		ontologiesMirrorFile = new File(userDirectory, "OntologiesMirror.xml");
 		projectsDir = new File(userDirectory, _projectsDirName);
+		systemDir = new File(userDirectory, _systemDirName);
+		usersDir = new File(userDirectory, _usersDirName);
+		projectUserBindingsDir = new File(userDirectory, _projectUserBindingsDirName);
 
 		if (!userDirectory.exists()) {
 			try {
@@ -153,6 +178,27 @@ public class Resources {
 			
 			// TODO: the current UpdateRoutines are wrong, see comments in UpdateRoutines
 			// UpdateRoutines.startUpdatesCheckAndRepair();
+			
+			//update routine: older ST didn't have "system", "users" and "pu_pindings" folders.
+			//Here check them and eventually create the folders. TODO in the future versions this could be removed
+			if (!systemDir.exists()) {
+				systemDir.mkdirs();
+			}
+			if (!usersDir.exists()) {
+				try {
+					initializeUserFileStructure();
+				} catch (UserCreationException | ProjectAccessException | RoleCreationException e) {
+					throw new STInitializationException(e);
+				}
+			}
+			if (!projectUserBindingsDir.exists()) {
+				try {
+					initializePUBindingFileStructure();
+				} catch (ProjectAccessException | PUBindingCreationException e) {
+					throw new STInitializationException(e);
+				}
+			}
+			
 		}
 
 		try {
@@ -224,6 +270,16 @@ public class Resources {
 	public static File getProjectsDir() {
 		return projectsDir;
 	}
+	
+	public static File getSystemDir() {
+		return systemDir;
+	}
+	public static File getUsersDir() {
+		return usersDir;
+	}
+	public static File getProjectUserBindingsDir() {
+		return projectUserBindingsDir;
+	}
 
 	/**
 	 * this method is used to get the path of a new temp file to be used for whatever reason (the file is
@@ -250,9 +306,13 @@ public class Resources {
 			STInitializationException {
 		if (userDir.mkdirs()) {
 			String usrPath = userDir.getAbsolutePath();
-			if (!new File(usrPath + "/ont-temp").mkdirs() || !new File(usrPath + "/ontlibrary").mkdirs()
-					|| !new File(usrPath + "/ontologiesMirror").mkdirs()
-					|| !new File(usrPath + "/projects").mkdirs()
+			if (!new File(usrPath, _ontTempDirLocalName).mkdirs()
+					|| !new File(usrPath, _ontLibraryDirLocalName).mkdirs()
+					|| !new File(usrPath, _ontMirrorDirDefaultLocationLocalName).mkdirs()
+					|| !new File(usrPath, _projectsDirName).mkdirs()
+					|| !new File(usrPath, _systemDirName).mkdirs()
+					|| !new File(usrPath, _usersDirName).mkdirs()
+					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
 					|| !new File(usrPath + "/OntologiesMirror.xml").createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			Utilities.copy(
@@ -263,12 +323,74 @@ public class Resources {
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/owl.rdfs"), new File(usrPath
 							+ "/ontlibrary/owl.rdfs"));
+			
+			try {
+				initializeUserFileStructure();
+				initializePUBindingFileStructure();
+			} catch (UserCreationException | ProjectAccessException | RoleCreationException | PUBindingCreationException e) {
+				throw new STInitializationException(e);
+			}
+			
 		} else
 			throw new STInitializationException("Unable to create the main data folder");
 	}
 
 	public static File getOSGiPath() {
 		return OSGiPath;
+	}
+	
+	
+	/**
+	 * Initializes a folders structure with a users/ folder containing
+	 * - roles.ttl: file that defines two default roles: ADMIN and USER 
+	 * - a folder for a default admin user containing its user details file.
+	 * @throws UserCreationException
+	 * @throws ProjectAccessException 
+	 * @throws RoleCreationException 
+	 * @throws IOException 
+	 */
+	private static void initializeUserFileStructure() throws UserCreationException, ProjectAccessException, RoleCreationException {
+		usersDir.mkdir();
+		
+		// create default admin and user roles
+		STRole roleAdmin = new STRole("Administrator");
+		roleAdmin.setCapabilities(Arrays.asList(UserCapabilitiesEnum.values())); //all capabilities for administrator
+		RolesManager.createRole(roleAdmin);
+		STRole roleUser = new STRole("User");
+		roleUser.addCapability(UserCapabilitiesEnum.CAPABILITY_USER);
+		RolesManager.createRole(roleUser);
+
+		// create and register admin user
+		STUser admin = new STUser("admin@vocbench.com", "admin", "Admin", "Admin");
+		admin.setStatus(UserStatus.ENABLED);
+		UsersManager.registerUser(admin);
+	}
+	
+	/**
+	 * Initializes a folders structure with a pu_binding folder containing 
+	 * - a folder per project
+	 * 		- which in turn contains a folder for user
+	 * 			- which in turn contains a property file that describe relations between project and user
+	 * @throws ProjectAccessException
+	 * @throws IOException 
+	 */
+	private static void initializePUBindingFileStructure() throws ProjectAccessException, PUBindingCreationException {
+		// create project-user bindings
+		projectUserBindingsDir.mkdir();
+
+		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
+			if (abstrProj instanceof Project<?>) {
+				String projName = abstrProj.getName();
+				for (STUser user : UsersManager.listUsers()) {
+					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail());
+//					if (user.getEmail().equals("admin@vocbench.com")) {
+//						puBinding.addRole(UserRolesEnum.ROLE_ADMIN.name());
+//					}
+//					puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
+					ProjectUserBindingsManager.createPUBinding(puBinding);
+				}
+			}
+		}
 	}
 
 }

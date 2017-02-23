@@ -227,5 +227,16 @@ public class STUser implements UserDetails {
 		s += "\n";
 		return s;
 	}
+	
+	/**
+	 * Processes the user's email and returns a string to use as name of the user folder
+	 * @param userEmail
+	 * @return
+	 */
+	public static String getUserFolderName(String userEmail) {
+		String folderName = userEmail.replace("@", "AT");
+		folderName = folderName.replace(".", "_");
+		return folderName;
+	}
 
 }

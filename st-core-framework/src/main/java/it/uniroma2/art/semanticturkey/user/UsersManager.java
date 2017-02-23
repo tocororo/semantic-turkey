@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.user;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -15,7 +16,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import it.uniroma2.art.semanticturkey.resources.Resources;
+
 public class UsersManager {
+	
+	private static final String USERS_DETAILS_FILE_NAME = "details.ttl";
 
 	private static Collection<STUser> userList = new ArrayList<>();
 
@@ -29,7 +34,7 @@ public class UsersManager {
 	 */
 	public static void loadUsers() throws RDFParseException, RepositoryException, IOException {
 		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
-		Collection<File> userDetailsFolders = AccessContolUtils.getAllUserDetailsFiles();
+		Collection<File> userDetailsFolders = getAllUserDetailsFiles();
 		for (File f : userDetailsFolders) {
 			userRepoHelper.loadUserDetails(f);
 		}
@@ -47,15 +52,19 @@ public class UsersManager {
 	 * @throws UserCreationException
 	 * @throws IOException
 	 */
-	public static void registerUser(STUser user) throws UserCreationException, IOException {
+	public static void registerUser(STUser user) throws UserCreationException {
 		if (getUserByEmail(user.getEmail()) != null) {
 			throw new UserCreationException(
 					"E-mail address " + user.getEmail() + " already used by another user");
 		} else {
 			user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
 			user.setRegistrationDate(new Date());
-			userList.add(user);
-			createOrUpdateUserDetailsFolder(user); // serialize user detials
+			try {
+				userList.add(user);
+				createOrUpdateUserDetailsFolder(user); // serialize user detials
+			} catch (IOException e) {
+				throw new UserCreationException(e);
+			}
 		}
 	}
 
@@ -93,7 +102,7 @@ public class UsersManager {
 	public static void deleteUser(String email) throws IOException {
 		userList.remove(getUserByEmail(email));
 		// delete its folder from server data
-		FileUtils.deleteDirectory(AccessContolUtils.getUserFolder(email));
+		FileUtils.deleteDirectory(getUserFolder(email));
 	}
 
 	/**
@@ -258,7 +267,7 @@ public class UsersManager {
 		// creates a temporary not persistent repository
 		UsersRepoHelper tempUserRepoHelper = new UsersRepoHelper();
 		tempUserRepoHelper.insertUser(user);
-		tempUserRepoHelper.saveUserDetailsFile(AccessContolUtils.getUserDetailsFile(user.getEmail()));
+		tempUserRepoHelper.saveUserDetailsFile(getUserDetailsFile(user.getEmail()));
 		tempUserRepoHelper.shutDownRepository();
 	}
 
@@ -278,5 +287,59 @@ public class UsersManager {
 
 		throw new IllegalStateException("No user is logged in");
 	}
-
+	
+	/**
+	 * Returns the user folder under <STData>/users/ for the given user
+	 * @param userEmail
+	 * @return
+	 */
+	public static File getUserFolder(String userEmail) {
+		return new File(Resources.getUsersDir() + STUser.getUserFolderName(userEmail));
+	}
+	
+	/**
+	 * Returns all the user folders under <STData>/users/
+	 * @return
+	 */
+	public static Collection<File> getAllUserFolders() {
+		Collection<File> userFolders = new ArrayList<>(); 
+		File usersFolder = Resources.getUsersDir();
+		//get all subfolder of "users" folder (one subfolder for each user)		
+		String[] userDirectories = usersFolder.list(new FilenameFilter() {
+			public boolean accept(File current, String name) {
+				return new File(current, name).isDirectory();
+			}
+		});
+		for (int i = 0; i < userDirectories.length; i++) {
+			userFolders.add(new File(usersFolder + File.separator + userDirectories[i]));
+		}
+		return userFolders;
+	}
+	
+	/**
+	 * Returns the user details file for the given user
+	 * @param userEmail
+	 * @return
+	 */
+	private static File getUserDetailsFile(String userEmail) {
+		File userFolder = new File(Resources.getUsersDir() + File.separator + STUser.getUserFolderName(userEmail));
+		if (!userFolder.exists()) {
+			userFolder.mkdir();
+		}
+		return new File(userFolder + File.separator + USERS_DETAILS_FILE_NAME);
+	}
+	
+	/**
+	 * Returns the user details files for all the users
+	 * @return
+	 */
+	private static Collection<File> getAllUserDetailsFiles() {
+		Collection<File> userDetailsFolders = new ArrayList<>(); 
+		Collection<File> userFolders = getAllUserFolders();
+		for (File f : userFolders) {
+			userDetailsFolders.add(new File(f + File.separator + USERS_DETAILS_FILE_NAME));
+		}
+		return userDetailsFolders;
+	}
+	
 }

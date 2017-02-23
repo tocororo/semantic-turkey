@@ -8,26 +8,500 @@ import java.util.Properties;
 
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.user.AccessContolUtils;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
-/**
- * Note: this is a class with static method to read and write user/project/system properties.
- * It uses UsersManager which loadUsers method load the users in a in-memory structure. This method is called
- * (so UsersManager is initialized) in PostConstructor of it.uniroma2.art.semanticturkey.user.AccessControlManager
- * that is a spring Component. So, UsersManager is initialized during the SemanticTukery startup.
- * If there is another Component which uses UsersManager (or RolesManager or ProjectUserBindingsManager,
- * initialized by AccessControlManager as well) in its PostConstructor, it is not guaranteed that it is initialized
- * 
- * @author Tiziano
- *
- */
 public class STPropertiesManager {
 	
+	//TODO remove PropertyLevel enum
+	
+	private static final String CORE_PLUGIN_ID = "it.uniroma2.art.semanticturkey";
+	
+	private static final String SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME = "system-preferences-defaults.cfg";
+	private static final String SYSTEM_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.cfg";
+	private static final String SYSTEM_PROJECT_SETTINGS_DEFAULTS_FILE_NAME = "project-settings-defaults.cfg";
+	private static final String SYSTEM_SETTINGS_FILE_NAME = "settings.cfg";
+	
+	private static final String PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "preferences-defaults.cfg";
+	private static final String PROJECT_SETTINGS_FILE_NAME = "settings.cfg";
+	
+	private static final String PU_BINDING_PREFERENCES_FILE_NAME = "preferences.cfg";
+	
+	private static final String USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.cfg";
+	private static final String USER_SYSTEM_PREFERENCES_FILE_NAME = "system-preferences.cfg";
+	
+	/**
+	 * Returns the value of a system preference for the given user.
+	 * If the preference has no value for the user, it returns the value at system level.
+	 * @param user
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getSystemPreference(STUser user, String propName) throws STPropertyAccessException {
+		return getSystemPreference(user, propName, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Returns the value of a system preference about a plugin for the given user.
+	 * If the preference has no value for the user, it returns the value at system level.
+	 * @param pluginID
+	 * @param user
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getSystemPreference(STUser user, String propName, String pluginID) throws STPropertyAccessException {
+		// SP: system-preference: user --> default(sp,system)
+		String value;
+		value = loadProperties(getUserSystemPreferencesFile(user, pluginID)).getProperty(propName);
+		if (value == null) {
+			value = loadProperties(getSystemPreferencesDefaultsFile(pluginID)).getProperty(propName);
+		}
+		return value;
+	}
+	
+	/**
+	 * Sets the value of a system preference for the given user
+	 * @param user
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setSystemPreference(STUser user, String propName, String propValue) throws STPropertyUpdateException {
+		setSystemPreference(user, propName, propValue, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Sets the value of a system preference for the given user
+	 * @param user
+	 * @param propName
+	 * @param propValue
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setSystemPreference(STUser user, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+		try {
+			loadProperties(getUserSystemPreferencesFile(user, pluginID)).setProperty(propName, propValue);
+		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+	
+	/**
+	 * Returns the value of a project preference for the given user.
+	 * If the preference has no value for the user, it looks for the value in the following order:
+	 * - the default value at project level
+	 * - the default value at user level
+	 * - the default value at system level
+	 * @param project
+	 * @param user
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getProjectPreference(Project<?> project, STUser user, String propName) throws STPropertyAccessException {
+		return getProjectPreference(project, user, propName, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Returns the value of a project preference about a plugin for the given user.
+	 * If the preference has no value for the user, it looks for the value in the following order:
+	 * - the default value at project level
+	 * - the default value at user level
+	 * - the default value at system level
+	 * @param pluginID
+	 * @param project
+	 * @param user
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getProjectPreference(Project<?> project, STUser user, String propName, String pluginID) throws STPropertyAccessException {
+		// PP: project-preference: user-project --> default(pp,project) --> default(pp,user) -->
+		// default(pp,system)
+		String value;
+		value = loadProperties(getPUBindingsPreferencesFile(project, user, pluginID)).getProperty(propName);
+		if (value == null) {
+			value = loadProperties(getProjectPreferencesDefaultsFile(project, pluginID)).getProperty(propName);
+			if (value == null) {
+				value = loadProperties(getUserProjectPreferencesDefaultsFile(user, pluginID)).getProperty(propName);
+				if (value == null) {
+					value = loadProperties(getSystemProjectPreferencesDefaultsFile(pluginID)).getProperty(propName);
+				}
+			}
+		}
+		return value;
+	}
+	
+	/**
+	 * Sets the value of a project preference for the given user
+	 * @param project
+	 * @param user
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setProjectPreference(Project<?> project, STUser user, String propName, String propValue) throws STPropertyUpdateException {
+		setProjectPreference(project, user, propName, propValue, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Sets the value of a project preference for the given user
+	 * @param pluginID
+	 * @param project
+	 * @param user
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setProjectPreference(Project<?> project, STUser user, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+		try {
+			loadProperties(getPUBindingsPreferencesFile(project, user, pluginID)).setProperty(propName, propValue);
+		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+	
+	/**
+	 * Returns the value of a system setting.
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getSystemSetting(String propName) throws STPropertyAccessException {
+		return getSystemSetting(propName, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Returns the value of a system setting about a plugin.
+	 * @param pluginID
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getSystemSetting(String propName, String pluginID) throws STPropertyAccessException {
+		//SS: system-settings: system
+		return loadProperties(getSystemSettingsFile(pluginID)).getProperty(propName);
+	}
+	
+	/**
+	 * Sets the value of a system setting
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setSystemSetting(String propName, String propValue) throws STPropertyUpdateException {
+		setSystemSetting(propName, propValue, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Sets the value of a system setting
+	 * @param propName
+	 * @param propValue
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setSystemSetting(String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+		try {
+			loadProperties(getSystemSettingsFile(pluginID)).setProperty(propName, propValue);
+		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+	
+	/**
+	 * Returns the value of a project setting.
+	 * If the setting has no value for the project, it returns the default value at system level.
+	 * @param project
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getProjectSetting(Project<?> project, String propName) throws STPropertyAccessException {
+		return getProjectSetting(project, propName, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Returns the value of a project setting about a plugin.
+	 * If the setting has no value for the project, it returns the default value at system level.
+	 * @param pluginID
+	 * @param project
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getProjectSetting(Project<?> project, String propName, String pluginID) throws STPropertyAccessException {
+		//PS: project-settings: project --> default(ps, system)
+		String value;
+		value = loadProperties(getProjectSettingsFile(project, pluginID)).getProperty(propName);
+		if (value == null) {
+			value = loadProperties(getSystemProjectSettingsDefaultsFile(pluginID)).getProperty(propName);
+		}
+		return "";
+	}
+	
+	/**
+	 * Sets the value of a project setting
+	 * @param project
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setProjectSetting(Project<?> project, String propName, String propValue) throws STPropertyUpdateException {
+		setProjectSetting(project, propName, propValue, CORE_PLUGIN_ID);
+	}
+	/**
+	 * Sets the value of a project setting
+	 * @param project
+	 * @param propName
+	 * @param propValue
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setProjectSetting(Project<?> project, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+		try {
+			loadProperties(getProjectSettingsFile(project, pluginID)).setProperty(propName, propValue);
+		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+	
+	
+	/**
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/system-preferences-defaults.cfg
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getSystemPreferencesDefaultsFile(String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getSystemPreferenceFolder(pluginID) + File.separator + SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/project-preferences-defaults.cfg
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getSystemProjectPreferencesDefaultsFile(String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getSystemPreferenceFolder(pluginID) + File.separator + SYSTEM_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/project-settings-defaults.cfg
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getSystemProjectSettingsDefaultsFile(String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getSystemPreferenceFolder(pluginID) + File.separator + SYSTEM_PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/settings.cfg
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getSystemSettingsFile(String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getSystemPreferenceFolder(pluginID) + File.separator + SYSTEM_SETTINGS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/projects/<projName>/plugins/<plugin>/preferences-defaults.cfg
+	 * @param project
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getProjectPreferencesDefaultsFile(Project<?> project, String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getProjectPreferenceFolder(project, pluginID) + File.separator + PROJECT_PREFERENCES_DEFAULTS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/projects/<projName>/plugins/<plugin>/settings.cfg
+	 * @param project
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getProjectSettingsFile(Project<?> project, String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getProjectPreferenceFolder(project, pluginID) + File.separator + PROJECT_SETTINGS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/pu_bindings/<projName>/<userEmail>/plugins/<plugin>/preferences.cfg
+	 * @param project
+	 * @param user
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getPUBindingsPreferencesFile(Project<?> project, STUser user, String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getPUBindingPreferenceFolder(project, user, pluginID) + File.separator + PU_BINDING_PREFERENCES_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/users/<userEmail>/plugins/<plugin>/project-preferences-defaults.cfg
+	 * @param user
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getUserProjectPreferencesDefaultsFile(STUser user, String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getUserPreferenceFolder(user, pluginID) + File.separator + USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	/**
+	 * Returns the Properties file <STData>/users/<userEmail>/plugins/<plugin>/system-preferences.cfg
+	 * @param user
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getUserSystemPreferencesFile(STUser user, String pluginID) throws STPropertyAccessException {
+		try {
+			File propFile = new File(getUserPreferenceFolder(user, pluginID) + File.separator + USER_SYSTEM_PREFERENCES_FILE_NAME);
+			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	
+	//TODO this folders should be initialized here or in Resources?
+	/**
+	 * 
+	 * @param pluginID
+	 * @return
+	 */
+	private static File getSystemPreferenceFolder(String pluginID) {
+		File prefFolder = new File(Resources.getSystemDir() + File.separator
+				+ "plugins" + File.separator
+				+ pluginID);
+		if (!prefFolder.exists()) {
+			prefFolder.mkdirs();
+		}
+		return prefFolder;
+	}
+	/**
+	 * Returns the folder <STData>/projects/<projectName>/plugins/<plugin>/
+	 * @param project
+	 * @param pluginID
+	 * @return
+	 */
+	private static File getProjectPreferenceFolder(Project<?> project, String pluginID) {
+		File prefFolder = new File(Resources.getProjectsDir() + File.separator
+				+ project.getName() + File.separator
+				+ "plugins" + File.separator
+				+ pluginID);
+		if (!prefFolder.exists()) {
+			prefFolder.mkdirs();
+		}
+		return prefFolder;
+	}
+	/**
+	 * Returns the folder <STData>/users/<userEmail>/plugins/<plugin>/
+	 * @param user
+	 * @param pluginID
+	 * @return
+	 */
+	private static File getUserPreferenceFolder(STUser user, String pluginID) {
+		File prefFolder = new File(Resources.getUsersDir() + File.separator
+				+ STUser.getUserFolderName(user.getEmail()) + File.separator
+				+ "plugins" + File.separator
+				+ pluginID);
+		if (!prefFolder.exists()) {
+			prefFolder.mkdirs();
+		}
+		return prefFolder;
+	}
+	/**
+	 * Returns the folder <STData>/pu_bindings/<projectName>/<userEmail>/plugins/<plugin>/
+	 * @param project
+	 * @param user
+	 * @param pluginID
+	 * @return
+	 */
+	private static File getPUBindingPreferenceFolder(Project<?> project, STUser user, String pluginID) {
+		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator
+				+ project.getName() + File.separator
+				+ STUser.getUserFolderName(user.getEmail()) + File.separator
+				+ "plugins" + File.separator
+				+ pluginID);
+		if (!prefFolder.exists()) {
+			prefFolder.mkdirs();
+		}
+		return prefFolder;
+	}
+	
+	// ======================= OLD =================================
+	
 	public static final String PROP_LANGUAGES = "languages";
-	public static final String PROP_RES_VIEW_MODE = "resource_view_mode";
 	
 	private static final String SYSTEM_PROP_FILE_NAME = "st_system.properties";
 	private static final String PROJECT_PROP_FILE_NAME = "project.properties";
@@ -174,7 +648,7 @@ public class STPropertiesManager {
 	
 	private static File getSystemPropertyFile() throws STPropertyAccessException {
 		try {
-			File sysPropFile = new File(Config.getDataDir() + File.separator + SYSTEM_PROP_FILE_NAME);
+			File sysPropFile = new File(Resources.getSystemDir() + File.separator + SYSTEM_PROP_FILE_NAME);
 			if (!sysPropFile.exists()) { //if .properties file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, sysPropFile);
@@ -202,7 +676,7 @@ public class STPropertiesManager {
 	private static File getUserPropertyFile(STUser user) throws STPropertyAccessException {
 		try {
 			File userPropFile = new File(
-					AccessContolUtils.getUserFolder(user.getEmail()) + File.separator + USER_PROP_FILE_NAME);
+					UsersManager.getUserFolder(user.getEmail()) + File.separator + USER_PROP_FILE_NAME);
 			if (!userPropFile.exists()) { // if .properties file doesn't exist, create and initialize it
 				Properties properties = new Properties();
 				updatePropertyFile(properties, userPropFile);

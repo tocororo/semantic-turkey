@@ -17,6 +17,19 @@ public class Preferences extends STServiceAdapter {
 
 	@STServiceOperation
 	public Collection<String> getLanguages(PropertyLevel level) throws STPropertyAccessException {
+		//Future properties manager use
+//		Collection<String> languages = new ArrayList<>();
+//		String value = STPropertiesManager.getProjectPreference(getProject(), UsersManager.getLoggedUser(),
+//				"languages", "it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
+//		if (value != null) {
+//			value.replaceAll(" ", ""); // remove all spaces
+//			String[] splitted = value.split(",");
+//			for (int i = 0; i < splitted.length; i++) {
+//				languages.add(splitted[i]);
+//			}
+//		}
+//		return languages;
+		
 		Collection<String> languages = new ArrayList<>();
 		String value = getPropertyValue(STPropertiesManager.PROP_LANGUAGES, level);
 		if (value != null) {
@@ -39,26 +52,6 @@ public class Preferences extends STServiceAdapter {
 			value = String.join(",", languages);
 		}
 		setPropertyValue(STPropertiesManager.PROP_LANGUAGES, value, level);
-	}
-
-	@STServiceOperation
-	public String getResourceViewMode(PropertyLevel level)
-			throws STPropertyAccessException, STPropertyUpdateException {
-		String value = getPropertyValue(STPropertiesManager.PROP_RES_VIEW_MODE, level);
-		if (value == null || (value != "splitted" && value != "tabbed")) { // if not set or not a valid value
-			value = "tabbed"; // default
-			setPropertyValue(STPropertiesManager.PROP_RES_VIEW_MODE, value, level);
-		}
-		return value;
-	}
-
-	@STServiceOperation
-	public void setResourceViewMode(String resViewMode, PropertyLevel level)
-			throws STPropertyUpdateException, STPropertyAccessException {
-		if (resViewMode != "splitted" && resViewMode != "tabbed") {
-			resViewMode = "tabbed"; // default
-		}
-		setPropertyValue(STPropertiesManager.PROP_RES_VIEW_MODE, resViewMode, level);
 	}
 
 	// utility methods

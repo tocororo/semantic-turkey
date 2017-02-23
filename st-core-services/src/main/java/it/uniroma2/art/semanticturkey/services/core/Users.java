@@ -38,6 +38,7 @@ import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -141,11 +142,11 @@ public class Users extends STServiceAdapter {
 	 * @param url
 	 * @param phone
 	 * @return
-	 * @throws IOException 
 	 * @throws MessagingException 
 	 * @throws ProjectAccessException 
 	 * @throws UserCreationException 
 	 * @throws ParseException 
+	 * @throws PUBindingCreationException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser", 
 			method = RequestMethod.POST, produces = "application/json")
@@ -159,7 +160,8 @@ public class Users extends STServiceAdapter {
 			@RequestParam(value = "address", required = false) String address,
 			@RequestParam(value = "affiliation", required = false) String affiliation,
 			@RequestParam(value = "url", required = false) String url,
-			@RequestParam(value = "phone", required = false) String phone) throws IOException, MessagingException, ProjectAccessException, UserCreationException, ParseException {
+			@RequestParam(value = "phone", required = false) String phone) throws MessagingException, ProjectAccessException,
+		UserCreationException, ParseException, PUBindingCreationException {
 		try {
 			STUser user = new STUser(email, password, firstName, lastName);
 			if (birthday != null) {

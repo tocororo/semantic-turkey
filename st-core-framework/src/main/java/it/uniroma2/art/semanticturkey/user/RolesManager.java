@@ -8,7 +8,11 @@ import java.util.Collection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 
+import it.uniroma2.art.semanticturkey.resources.Resources;
+
 public class RolesManager {
+	
+	private static final String ROLES_DEFINITION_FILE_NAME = "roles.ttl";
 	
 	private static Collection<STRole> roleList = new ArrayList<>();
 	
@@ -22,7 +26,7 @@ public class RolesManager {
 	 */
 	public static void loadRoles() throws RDFParseException, RepositoryException, IOException {
 		RolesRepoHelper repoHelper = new RolesRepoHelper();
-		File rolesFile = AccessContolUtils.getRolesDefinitionFile();
+		File rolesFile = getRolesDefinitionFile();
 		repoHelper.loadRolesDefinition(rolesFile);
 		roleList = repoHelper.listRoles();
 		repoHelper.shutDownRepository();
@@ -34,12 +38,16 @@ public class RolesManager {
 	 * @throws RoleCreationException 
 	 * @throws IOException 
 	 */
-	public static void createRole(STRole role) throws RoleCreationException, IOException {
+	public static void createRole(STRole role) throws RoleCreationException {
 		if (searchRole(role.getName()) != null) {
 			throw new RoleCreationException("Role with name " + role.getName() + " already exists");
 		} else {
-			roleList.add(role);
-			createOrUpdateRolesDefinitionFile();
+			try {
+				roleList.add(role);
+				createOrUpdateRolesDefinitionFile();
+			} catch (IOException e) {
+				throw new RoleCreationException(e);
+			}
 		}
 	}
 	
@@ -114,7 +122,19 @@ public class RolesManager {
 		for (STRole r : roleList) {
 			repoHelper.insertRole(r);
 		}
-		repoHelper.saveRoleCapabilityFile(AccessContolUtils.getRolesDefinitionFile());
+		repoHelper.saveRoleCapabilityFile(getRolesDefinitionFile());
+	}
+	
+	/**
+	 * Returns the roles.ttl file under <STData>/users/
+	 * @return
+	 */
+	private static File getRolesDefinitionFile() {
+		File usersFolder = Resources.getUsersDir();
+		if (!usersFolder.exists()) {
+			usersFolder.mkdir();
+		}
+		return new File(usersFolder	+ File.separator + ROLES_DEFINITION_FILE_NAME);
 	}
 	
 }

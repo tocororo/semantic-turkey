@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.user;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,8 +15,11 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 
 public class ProjectUserBindingsManager {
+	
+	private static final String PU_BINDING_DETAILS_FILE_NAME = "binding.ttl";
 	
 	private static Collection<ProjectUserBinding> puBindingList = new ArrayList<>();
 	
@@ -28,7 +32,7 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void loadPUBindings() throws RDFParseException, RepositoryException, IOException {
 		ProjectUserBindingsRepoHelper repoHelper = new ProjectUserBindingsRepoHelper();
-		Collection<File> bindingsFolders = AccessContolUtils.getAllPUBindingFiles();
+		Collection<File> bindingsFolders = getAllPUBindingFiles();
 		for (File f : bindingsFolders) {
 			repoHelper.loadBindingDetails(f);
 		}
@@ -56,9 +60,13 @@ public class ProjectUserBindingsManager {
 	 * @param puBinding
 	 * @throws IOException 
 	 */
-	public static void createPUBinding(ProjectUserBinding puBinding) throws IOException {
-		puBindingList.add(puBinding);
-		createOrUpdatePUBindingFolder(puBinding);
+	public static void createPUBinding(ProjectUserBinding puBinding) throws PUBindingCreationException {
+		try {
+			puBindingList.add(puBinding);
+			createOrUpdatePUBindingFolder(puBinding);
+		} catch (IOException e) {
+			throw new PUBindingCreationException(e);
+		}
 	}
 	
 	/**
@@ -100,7 +108,7 @@ public class ProjectUserBindingsManager {
 	 * @return
 	 */
 	public static boolean existsPUBindingsOfProject(String projectName) {
-		return !AccessContolUtils.getProjBindingsFolder(projectName).exists();
+		return !getProjBindingsFolder(projectName).exists();
 	}
 	
 	/**
@@ -110,7 +118,7 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfProject(String projectName) throws IOException {
+	public static void createPUBindingsOfProject(String projectName) throws PUBindingCreationException {
 		Collection<STUser> users = UsersManager.listUsers();
 		//for each user creates the binding with the given project
 		for (STUser u : users) {
@@ -131,7 +139,7 @@ public class ProjectUserBindingsManager {
 			}
 		}
 		//delete folder about the project's bindings
-		FileUtils.deleteDirectory(AccessContolUtils.getProjBindingsFolder(projectName));
+		FileUtils.deleteDirectory(getProjBindingsFolder(projectName));
 	}
 	
 	/**
@@ -142,7 +150,7 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfUser(String userEmail) throws ProjectAccessException, IOException {
+	public static void createPUBindingsOfUser(String userEmail) throws ProjectAccessException, PUBindingCreationException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
@@ -165,7 +173,7 @@ public class ProjectUserBindingsManager {
 			}
 		}
 		//delete folders about the user's bindings
-		for (File userBindingFolder : AccessContolUtils.getUserBindingsFolders(userEmail)) {
+		for (File userBindingFolder : getUserBindingsFolders(userEmail)) {
 			FileUtils.deleteDirectory(userBindingFolder);
 		}
 	}
@@ -230,8 +238,98 @@ public class ProjectUserBindingsManager {
 	private static void createOrUpdatePUBindingFolder(ProjectUserBinding puBinding) throws IOException {
 		ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 		tempPUBindingsRepoHelper.insertBinding(puBinding);
-		tempPUBindingsRepoHelper.saveBindingDetailsFile(AccessContolUtils.getPUBindingDetailsFile(puBinding));
+		tempPUBindingsRepoHelper.saveBindingDetailsFile(getPUBindingDetailsFile(puBinding));
 		tempPUBindingsRepoHelper.shutDownRepository();
+	}
+	
+	/**
+	 * Returns the folder about the given project under <STData>/pu_bindings/
+	 * @param projectName
+	 * @return
+	 */
+	public static File getProjBindingsFolder(String projectName) {
+		return new File(Resources.getProjectUserBindingsDir() + File.separator + projectName);
+	}
+	
+	/**
+	 * Returns all the projects folder under <STData>/pu_bindings/
+	 * @return
+	 */
+	private static Collection<File> getAllProjBindingsFolders() {
+		Collection<File> projBindingsFolders = new ArrayList<>();
+		File puBindingFolder = Resources.getProjectUserBindingsDir();
+		//get all subfolder of "pu_binding" folder (one subfolder for each project)		
+		String[] projDirectories = puBindingFolder.list(new FilenameFilter() {
+			public boolean accept(File current, String name) {
+				return new File(current, name).isDirectory();
+			}
+		});
+		//get all subfolder of "pu_binding/<projectName>" folder (one subfolder for each user)
+		for (String prDir : projDirectories) {
+			projBindingsFolders.add(new File(puBindingFolder, prDir));
+		}
+		return projBindingsFolders;
+	}
+	
+	/**
+	 * Returns the user folders under <STData>/pu_bindings/<projectName>/ for the given project-user pair
+	 * @param projectName
+	 * @param userEmail
+	 * @return
+	 */
+	public static File getPUBindingsFolder(String projectName, String userEmail) {
+		return new File(getProjBindingsFolder(projectName) + File.separator + STUser.getUserFolderName(userEmail));
+	}
+	
+	/**
+	 * Returns the user folders under all the <STData>/pu_bindings/<projName>/ folders
+	 * @param userEmail
+	 * @return
+	 */
+	public static Collection<File> getUserBindingsFolders(String userEmail) {
+		Collection<File> userBindingsFolders = new ArrayList<>();
+		Collection<File> projBindFolders = getAllProjBindingsFolders();
+		//get all subfolder of "pu_binding/<projectName>" folder (one subfolder for each user)
+		for (File projFolder : projBindFolders) {
+			userBindingsFolders.add(new File(projFolder, STUser.getUserFolderName(userEmail)));
+		}
+		return userBindingsFolders;
+	}
+	
+	/**
+	 * Returns the binding.tts file of the given puBinding
+	 * @param puBinding
+	 * @return
+	 */
+	private static File getPUBindingDetailsFile(ProjectUserBinding puBinding) {
+		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + puBinding.getProjectName() 
+			+ File.separator + STUser.getUserFolderName(puBinding.getUserEmail()));
+		if (!bindingFolder.exists()) {
+			bindingFolder.mkdirs();
+		}
+		return new File(bindingFolder + File.separator + PU_BINDING_DETAILS_FILE_NAME);
+	}
+	
+	/**
+	 * Returns all the binding.ttl files for every project-user bindings
+	 * @return
+	 */
+	private static Collection<File> getAllPUBindingFiles() {
+		Collection<File> puBindingDetailsFolders = new ArrayList<>(); 
+		Collection<File> projBindFolders = getAllProjBindingsFolders();
+		//get all subfolder of "pu_binding/<projectName>" folder (one subfolder for each user)
+		for (File projFolder : projBindFolders) {
+			String[] userDirectories = projFolder.list(new FilenameFilter() {
+				public boolean accept(File current, String name) {
+					return new File(current, name).isDirectory();
+				}
+			});
+			for (String userDir : userDirectories) {
+				puBindingDetailsFolders.add(new File(projFolder + File.separator + userDir 
+						+ File.separator + PU_BINDING_DETAILS_FILE_NAME));
+			}
+		}
+		return puBindingDetailsFolders;
 	}
 	
 }

@@ -59,6 +59,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
@@ -104,7 +105,7 @@ public class Projects extends STServiceAdapterOLD {
 			@Optional String renderingEngineFactoryID, @Optional String renderingEngineConfigurationClass,
 			@Optional Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException, IOException {
+			ProjectInconsistentException, ProjectUpdateException, PUBindingCreationException {
 		
 		// Handles the default values for the configuration of URI generators
 		{
@@ -207,12 +208,13 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
 	 * @throws IOException 
+	 * @throws PUBindingCreationException 
 	 */
 	@GenerateSTServiceController
 	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, IOException {
+			ForbiddenProjectAccessException, PUBindingCreationException {
 
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 		//if there aren't the folders for the project-user bindings of the current project, create them
