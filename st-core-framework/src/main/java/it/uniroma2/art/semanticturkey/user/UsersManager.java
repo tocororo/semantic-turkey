@@ -294,7 +294,7 @@ public class UsersManager {
 	 * @return
 	 */
 	public static File getUserFolder(String userEmail) {
-		return new File(Resources.getUsersDir() + STUser.getUserFolderName(userEmail));
+		return new File(Resources.getUsersDir() + File.separator + STUser.getUserFolderName(userEmail));
 	}
 	
 	/**
