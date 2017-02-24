@@ -46,7 +46,7 @@ public class STPropertiesManager {
 	 * 
 	 * PS: project-settings: project --> default(ps, system)
 	 * getProjectSetting(prop, project, pluginID)				projects/<projectname>/plugins/<plugin>/settings.cfg
-	 * getProjectSettingsDefault(prop, pluginID)				system/plugins/<plugin>/project-settings-defaults.cfg
+	 * getProjectSettingDefault(prop, pluginID)					system/plugins/<plugin>/project-settings-defaults.cfg
 	 * 
 	 * SS: system-settings: system
 	 * getSystemSetting(prop, pluginID)							system/plugins/<plugin>/settings.cfg	
@@ -436,7 +436,7 @@ public class STPropertiesManager {
 		String value;
 		value = loadProperties(getProjectSettingsFile(project, pluginID)).getProperty(propName);
 		if (value == null) {
-			value = getProjectSettingsDefault(propName, pluginID);
+			value = getProjectSettingDefault(propName, pluginID);
 		}
 		return value;
 	}
@@ -478,8 +478,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectSettingsDefault(String propName) throws STPropertyAccessException {
-		return getProjectSettingsDefault(propName, CORE_PLUGIN_ID);
+	public static String getProjectSettingDefault(String propName) throws STPropertyAccessException {
+		return getProjectSettingDefault(propName, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Returns the value of a default project setting about a plugin at system level
@@ -489,7 +489,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectSettingsDefault(String propName, String pluginID) throws STPropertyAccessException {
+	public static String getProjectSettingDefault(String propName, String pluginID) throws STPropertyAccessException {
 		return loadProperties(getSystemProjectSettingsDefaultsFile(pluginID)).getProperty(propName);
 	}
 	
