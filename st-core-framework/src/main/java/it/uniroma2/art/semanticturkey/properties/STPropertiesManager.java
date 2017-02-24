@@ -256,8 +256,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreferenceDefault(Project<?> project, String propName) throws STPropertyAccessException {
-		return getProjectPreferenceDefault(project, propName, CORE_PLUGIN_ID);
+	public static String getProjectPreferenceDefault(String propName, Project<?> project) throws STPropertyAccessException {
+		return getProjectPreferenceDefault(propName, project, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Returns the value of a default project preference about a plugin.
@@ -267,7 +267,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreferenceDefault(Project<?> project, String propName, String pluginID) throws STPropertyAccessException {
+	public static String getProjectPreferenceDefault(String propName, Project<?> project, String pluginID) throws STPropertyAccessException {
 		return loadProperties(getProjectPreferencesDefaultsFile(project, pluginID)).getProperty(propName);
 	}
 	
@@ -277,8 +277,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreferenceDefault(Project<?> project, String propName, String propValue) throws STPropertyUpdateException {
-		setProjectPreferenceDefault(project, propName, propValue, CORE_PLUGIN_ID);
+	public static void setProjectPreferenceDefault(String propName, String propValue, Project<?> project) throws STPropertyUpdateException {
+		setProjectPreferenceDefault(propName, propValue, project, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Sets the value of a default project preference
@@ -287,7 +287,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreferenceDefault(Project<?> project, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+	public static void setProjectPreferenceDefault(String propName, String propValue, Project<?> project, String pluginID) throws STPropertyUpdateException {
 		try {
 			loadProperties(getProjectPreferencesDefaultsFile(project, pluginID)).setProperty(propName, propValue);
 		} catch (STPropertyAccessException e) {
@@ -308,8 +308,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectSetting(Project<?> project, String propName) throws STPropertyAccessException {
-		return getProjectSetting(project, propName, CORE_PLUGIN_ID);
+	public static String getProjectSetting(String propName, Project<?> project) throws STPropertyAccessException {
+		return getProjectSetting(propName, project, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Returns the value of a project setting about a plugin.
@@ -321,7 +321,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectSetting(Project<?> project, String propName, String pluginID) throws STPropertyAccessException {
+	public static String getProjectSetting(String propName, Project<?> project, String pluginID) throws STPropertyAccessException {
 		//PS: project-settings: project -> default(ps, system)
 		String value;
 		value = loadProperties(getProjectSettingsFile(project, pluginID)).getProperty(propName);
@@ -338,8 +338,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectSetting(Project<?> project, String propName, String propValue) throws STPropertyUpdateException {
-		setProjectSetting(project, propName, propValue, CORE_PLUGIN_ID);
+	public static void setProjectSetting(String propName, String propValue, Project<?> project) throws STPropertyUpdateException {
+		setProjectSetting(propName, propValue, project, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Sets the value of a project setting
@@ -349,7 +349,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectSetting(Project<?> project, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+	public static void setProjectSetting(String propName, String propValue, Project<?> project, String pluginID) throws STPropertyUpdateException {
 		try {
 			loadProperties(getProjectSettingsFile(project, pluginID)).setProperty(propName, propValue);
 		} catch (STPropertyAccessException e) {
@@ -367,8 +367,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getUserProjectPreferenceDefault(STUser user, String propName) throws STPropertyAccessException {
-		return getUserProjectPreferenceDefault(user, propName, CORE_PLUGIN_ID);
+	public static String getUserProjectPreferenceDefault(String propName, STUser user) throws STPropertyAccessException {
+		return getUserProjectPreferenceDefault(propName, user, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Returns the value of a project setting at user level.
@@ -378,7 +378,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getUserProjectPreferenceDefault(STUser user, String propName, String pluginID) throws STPropertyAccessException {
+	public static String getUserProjectPreferenceDefault(String propName, STUser user, String pluginID) throws STPropertyAccessException {
 		return loadProperties(getUserProjectPreferencesDefaultsFile(user, pluginID)).getProperty(propName);
 	}
 	
@@ -389,8 +389,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setUserProjectPreferenceDefault(STUser user, String propName, String propValue) throws STPropertyUpdateException {
-		setUserProjectPreferenceDefault(user, propName, propValue, CORE_PLUGIN_ID);
+	public static void setUserProjectPreferenceDefault(String propName, String propValue, STUser user) throws STPropertyUpdateException {
+		setUserProjectPreferenceDefault(propName, propValue, user, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Sets the value of a project setting at user level.
@@ -400,7 +400,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setUserProjectPreferenceDefault(STUser user, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+	public static void setUserProjectPreferenceDefault(String propName, String propValue, STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
 			loadProperties(getUserProjectPreferencesDefaultsFile(user, pluginID)).setProperty(propName, propValue);
 		} catch (STPropertyAccessException e) {
@@ -421,8 +421,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getSystemPreference(STUser user, String propName) throws STPropertyAccessException {
-		return getSystemPreference(user, propName, CORE_PLUGIN_ID);
+	public static String getSystemPreference(String propName, STUser user) throws STPropertyAccessException {
+		return getSystemPreference(propName, user, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Returns the value of a system preference about a plugin for the given user.
@@ -434,7 +434,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getSystemPreference(STUser user, String propName, String pluginID) throws STPropertyAccessException {
+	public static String getSystemPreference(String propName, STUser user, String pluginID) throws STPropertyAccessException {
 		// SP: system-preference: user -> default(sp,system)
 		String value;
 		value = loadProperties(getUserSystemPreferencesFile(user, pluginID)).getProperty(propName);
@@ -451,8 +451,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setSystemPreference(STUser user, String propName, String propValue) throws STPropertyUpdateException {
-		setSystemPreference(user, propName, propValue, CORE_PLUGIN_ID);
+	public static void setSystemPreference(String propName, String propValue, STUser user) throws STPropertyUpdateException {
+		setSystemPreference(propName, propValue, user, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Sets the value of a system preference for the given user
@@ -462,7 +462,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setSystemPreference(STUser user, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+	public static void setSystemPreference(String propName, String propValue, STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
 			loadProperties(getUserSystemPreferencesFile(user, pluginID)).setProperty(propName, propValue);
 		} catch (STPropertyAccessException e) {
@@ -487,8 +487,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreference(Project<?> project, STUser user, String propName) throws STPropertyAccessException {
-		return getProjectPreference(project, user, propName, CORE_PLUGIN_ID);
+	public static String getProjectPreference(String propName, Project<?> project, STUser user) throws STPropertyAccessException {
+		return getProjectPreference(propName, project, user, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Returns the value of a project preference about a plugin for the given user.
@@ -504,14 +504,14 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreference(Project<?> project, STUser user, String propName, String pluginID) throws STPropertyAccessException {
+	public static String getProjectPreference(String propName, Project<?> project, STUser user, String pluginID) throws STPropertyAccessException {
 		// PP: project-preference: user-project -> default(pp,project) -> default(pp,user) -> default(pp,system)
 		String value;
 		value = loadProperties(getPUBindingsPreferencesFile(project, user, pluginID)).getProperty(propName);
 		if (value == null) {
-			value = getProjectPreferenceDefault(project, propName, pluginID);
+			value = getProjectPreferenceDefault(propName, project, pluginID);
 			if (value == null) {
-				value = getUserProjectPreferenceDefault(user, propName, pluginID);
+				value = getUserProjectPreferenceDefault(propName, user, pluginID);
 				if (value == null) {
 					value = getSystemProjectPreferenceDefault(propName, pluginID);
 				}
@@ -528,8 +528,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreference(Project<?> project, STUser user, String propName, String propValue) throws STPropertyUpdateException {
-		setProjectPreference(project, user, propName, propValue, CORE_PLUGIN_ID);
+	public static void setProjectPreference(String propName, String propValue, Project<?> project, STUser user) throws STPropertyUpdateException {
+		setProjectPreference(propName, propValue, project, user, CORE_PLUGIN_ID);
 	}
 	/**
 	 * Sets the value of a project preference for the given user
@@ -540,7 +540,7 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreference(Project<?> project, STUser user, String propName, String propValue, String pluginID) throws STPropertyUpdateException {
+	public static void setProjectPreference(String propName, String propValue, Project<?> project, STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
 			loadProperties(getPUBindingsPreferencesFile(project, user, pluginID)).setProperty(propName, propValue);
 		} catch (STPropertyAccessException e) {
