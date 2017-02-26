@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -60,6 +62,7 @@ import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
 import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
 import it.uniroma2.art.coda.pearl.model.ProjectionRule;
 import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
@@ -331,21 +334,48 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * Serializes (recursively) a GraphElement collection
 	 */
 	private void serializeGraphList(Collection<GraphElement> graphList, StringBuilder sb, boolean opt) {
+		Set<String> bnodeVariables = opt ? new HashSet<>() : null;
 		for (GraphElement graphElem : graphList) {
 			if (!graphElem.isOptionalGraphStruct()) {
 				GraphStruct gs = graphElem.asGraphStruct();
-				sb.append(gs.getSubject().getValueAsString() + " " + 
-						gs.getPredicate().getValueAsString() + " " + 
-						gs.getObject().getValueAsString() + " . ");
-			} else { //Optional
+				sb.append(getSingleValueAsString(gs.getSubject(), bnodeVariables) + " "
+						+ getSingleValueAsString(gs.getPredicate(), bnodeVariables) + " "
+						+ getSingleValueAsString(gs.getObject(), bnodeVariables) + " . ");
+			} else { // Optional
 				if (opt)
 					sb.append("OPTIONAL { ");
 				OptionalGraphStruct optGS = graphElem.asOptionalGraphStruct();
-				//call serializeGraphList recursively
+				// call serializeGraphList recursively
 				serializeGraphList(optGS.getOptionalTriples(), sb, opt);
 				if (opt)
 					sb.append("} ");
 			}
+		}
+		if (bnodeVariables != null && !bnodeVariables.isEmpty()) {
+			sb.append("FILTER(");
+			sb.append(bnodeVariables.stream().map(v -> "isBLANK(" + v + ")").collect(Collectors.joining(" && ")));
+			sb.append(")");
+		}
+	}
+
+	/**
+	 * Returns the serialization of a {@link GraphSingleElement}. If the given element is a
+	 * {@link GraphSingleElemBNode}, then adds the corresponding variabile to <code>bnodeVariables</code> (if
+	 * not <code>null</code>)
+	 * 
+	 * @param elem
+	 * @param bnodeVariables
+	 * @return
+	 */
+	private String getSingleValueAsString(GraphSingleElement elem, Set<String> bnodeVariables) {
+		if (elem instanceof GraphSingleElemBNode) {
+			String genVar = "?bnodeVar_" + ((GraphSingleElemBNode) elem).getBnodeIdentifier();
+			if (bnodeVariables != null) {
+				bnodeVariables.add(genVar);
+			}
+			return genVar;
+		} else {
+			return elem.getValueAsString();
 		}
 	}
 
