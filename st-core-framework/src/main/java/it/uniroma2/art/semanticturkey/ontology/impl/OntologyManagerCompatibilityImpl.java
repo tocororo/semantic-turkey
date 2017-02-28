@@ -1,20 +1,25 @@
 package it.uniroma2.art.semanticturkey.ontology.impl;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
@@ -24,6 +29,7 @@ import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
@@ -55,13 +61,15 @@ public class OntologyManagerCompatibilityImpl implements OntologyManager {
 
 	@Override
 	public void addOntologyImportFromWebToMirror(String baseUriToBeImported, String url, String destLocalFile,
-			RDFFormat rdfFormat) throws MalformedURLException, ModelUpdateException {
+			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws MalformedURLException, ModelUpdateException {
 		stOntManager.addOntologyImportFromWebToMirror(baseUriToBeImported, url, destLocalFile,
 				RDF4JMigrationUtils.convert2art(rdfFormat));
 	}
 
 	@Override
-	public void addOntologyImportFromWeb(String baseUriToBeImported, String url, RDFFormat rdfFormat)
+	public void addOntologyImportFromWeb(String baseUriToBeImported, String url, RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, ModelUpdateException {
 		stOntManager.addOntologyImportFromWeb(baseUriToBeImported, url,
 				RDF4JMigrationUtils.convert2art(rdfFormat));
@@ -69,30 +77,35 @@ public class OntologyManagerCompatibilityImpl implements OntologyManager {
 
 	@Override
 	public void addOntologyImportFromLocalFile(String baseUriToBeImported, String sourceForImport,
-			String destLocalFile) throws MalformedURLException, ModelUpdateException {
+			String destLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws MalformedURLException, ModelUpdateException {
 		stOntManager.addOntologyImportFromLocalFile(baseUriToBeImported, sourceForImport, destLocalFile);
 	}
 
 	@Override
-	public void addOntologyImportFromMirror(String baseUriToBeImported, String destLocalFile)
+	public void addOntologyImportFromMirror(String baseUriToBeImported, String destLocalFile,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, ModelUpdateException {
 		stOntManager.addOntologyImportFromMirror(baseUriToBeImported, destLocalFile);
 	}
 
 	@Override
-	public void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile)
+	public void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ModelUpdateException, ImportManagementException {
 		stOntManager.downloadImportedOntologyFromWebToMirror(baseURI, altURL, toLocalFile);
 	}
 
 	@Override
-	public void downloadImportedOntologyFromWeb(String baseURI, String altURL)
+	public void downloadImportedOntologyFromWeb(String baseURI, String altURL,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, ModelUpdateException, ImportManagementException {
 		stOntManager.downloadImportedOntologyFromWeb(baseURI, altURL);
 	}
 
 	@Override
-	public void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile)
+	public void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, ModelUpdateException, ImportManagementException {
 		stOntManager.getImportedOntologyFromLocalFile(baseURI, fromLocalFilePath, toLocalFile);
 	}
@@ -173,5 +186,15 @@ public class OntologyManagerCompatibilityImpl implements OntologyManager {
 	@Override
 	public String getBaseURI() {
 		return stOntManager.getOntModel().getBaseURI();
+	}
+
+	@Override
+	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph)
+			throws FileNotFoundException, IOException, RDF4JException {
+		try {
+			stOntManager.loadOntologyData(inputFile, baseURI, RDF4JMigrationUtils.convert2art(format));
+		} catch (ModelAccessException | ModelUpdateException | UnsupportedRDFFormatException e) {
+			throw new RepositoryException(e);
+		}
 	}
 }

@@ -59,6 +59,7 @@ import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -74,7 +75,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
  * @author Armando Stellato <stellato@info.uniroma2.it>
  * @author Andrea Turbati <turbati@info.uniroma2.it>
  */
-@Component(value="MetadataOLD")
+@Component(value = "MetadataOLD")
 public class Metadata extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(Metadata.class);
@@ -149,20 +150,19 @@ public class Metadata extends ResourceOld {
 			String namespace = setHttpPar(namespacePar);
 			checkRequestParametersAllNotNull(namespacePar);
 			return setDefaultNamespace(namespace);
-		} else if (request.equals(getDefaultNamespaceRequest)){
+		} else if (request.equals(getDefaultNamespaceRequest)) {
 			return getDefaultNamespace();
-		}/*else if (request.equals(setBaseuriRequest)) {
-			String baseuri = setHttpPar(baseuriPar);
-			checkRequestParametersAllNotNull(baseuriPar);
-			return setBaseURI(baseuri);
-		}*/ else if (request.equals(getBaseuriRequest)){
+		} /*
+			 * else if (request.equals(setBaseuriRequest)) { String baseuri = setHttpPar(baseuriPar);
+			 * checkRequestParametersAllNotNull(baseuriPar); return setBaseURI(baseuri); }
+			 */ else if (request.equals(getBaseuriRequest)) {
 			return getBaseURI();
-		}/*else if (request.equals(setBaseuriDefNamespaceRequest)) {
-			String baseURI = setHttpPar(baseuriPar);
-			String defaultNamespace = setHttpPar(namespacePar);
-			checkRequestParametersAllNotNull(baseuriPar, namespacePar);
-			return setBaseURIAndDefaultNamespace(baseURI, defaultNamespace);
-		}*/ else if (request.equals(getNSPrefixMappingsRequest)) {
+		} /*
+			 * else if (request.equals(setBaseuriDefNamespaceRequest)) { String baseURI =
+			 * setHttpPar(baseuriPar); String defaultNamespace = setHttpPar(namespacePar);
+			 * checkRequestParametersAllNotNull(baseuriPar, namespacePar); return
+			 * setBaseURIAndDefaultNamespace(baseURI, defaultNamespace); }
+			 */ else if (request.equals(getNSPrefixMappingsRequest)) {
 			return getNamespaceMappings();
 		} else if (request.equals(setNSPrefixMappingRequest)) {
 			String namespace = setHttpPar(namespacePar);
@@ -219,9 +219,9 @@ public class Metadata extends ResourceOld {
 		// ontology mirror location
 		else if (request.equals(addFromLocalFileRequest)) {
 			String baseuri = setHttpPar(baseuriPar);
-			
+
 			File sourceFile = setHttpMultipartFilePar(localFilePar);
-			if (sourceFile == null) //in case of missing multipart file in POST request
+			if (sourceFile == null) // in case of missing multipart file in POST request
 				throw new HTTPParameterUnspecifiedException(localFilePar);
 			String localFilePath = sourceFile.getAbsolutePath();
 			String mirrorFile = setHttpPar(mirrorFilePar);
@@ -259,7 +259,7 @@ public class Metadata extends ResourceOld {
 			String altURL = setHttpPar(alturlPar);
 			checkRequestParametersAllNotNull(baseuriPar);
 			return getImportedOntology(fromWeb, baseURI, altURL, null, null);
-		} 
+		}
 		// downloads an imported ontology from a local file; caching it into a local file in the ontology
 		// mirror location
 		else if (request.equals(getFromLocalFileRequest)) {
@@ -333,8 +333,8 @@ public class Metadata extends ResourceOld {
 	 * @return
 	 */
 	public Response setDefaultNamespace(String namespace) {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
-				setDefaultNamespaceRequest, RepliesStatus.ok);
+		XMLResponseREPLY response = ServletUtilities.getService()
+				.createReplyResponse(setDefaultNamespaceRequest, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
 		Project<? extends RDFModel> currProj = getProject();
@@ -360,8 +360,8 @@ public class Metadata extends ResourceOld {
 	 * 
 	 */
 	public Response getDefaultNamespace() {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
-				getDefaultNamespaceRequest, RepliesStatus.ok);
+		XMLResponseREPLY response = ServletUtilities.getService()
+				.createReplyResponse(getDefaultNamespaceRequest, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
 		RDFModel ontModel = getOntModel();
@@ -378,28 +378,23 @@ public class Metadata extends ResourceOld {
 	 * failed updated)
 	 * 
 	 */
-	//Method moved to the service ModifyName
-	/*public Response setBaseURI(String uri) {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(setBaseuriRequest,
-				RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-
-		Project<? extends RDFModel> currProj = getProject();
-
-		try {
-			currProj.setBaseURI(uri);
-			// the status is already ok
-		} catch (ProjectUpdateException e) {
-			e.printStackTrace();
-			response.setReplyStatus(RepliesStatus.fail);
-			response.setReplyMessage("not able to set BaseURI\n" + e.getMessage());
-		}
-
-		Element baseURI = XMLHelp.newElement(dataElement, baseuriTag);
-		baseURI.setAttribute("uri", currProj.getBaseURI());
-
-		return response;
-	}*/
+	// Method moved to the service ModifyName
+	/*
+	 * public Response setBaseURI(String uri) { XMLResponseREPLY response =
+	 * ServletUtilities.getService().createReplyResponse(setBaseuriRequest, RepliesStatus.ok); Element
+	 * dataElement = response.getDataElement();
+	 * 
+	 * Project<? extends RDFModel> currProj = getProject();
+	 * 
+	 * try { currProj.setBaseURI(uri); // the status is already ok } catch (ProjectUpdateException e) {
+	 * e.printStackTrace(); response.setReplyStatus(RepliesStatus.fail);
+	 * response.setReplyMessage("not able to set BaseURI\n" + e.getMessage()); }
+	 * 
+	 * Element baseURI = XMLHelp.newElement(dataElement, baseuriTag); baseURI.setAttribute("uri",
+	 * currProj.getBaseURI());
+	 * 
+	 * return response; }
+	 */
 
 	/**
 	 * gets the baseuri for the loaded ontology
@@ -425,68 +420,55 @@ public class Metadata extends ResourceOld {
 	 * attribute of the baseuri tag should always be inspected by the client (expecially if the ack is a
 	 * failed updated)
 	 * 
-	 * <Tree type="setBaseURIAndDefaultNamespace"> <Ack msg="ok"/> (OR <Ack msg="failed"
-	 * reason="put in a alert the text in this attribute"/> <BaseURI
-	 * uri="http://art.info.uniroma2.it/ontologies/st"/> <DefaultNamespace
-	 * ns="http://art.info.uniroma2.it/ontologies/st#"/> </Tree>
+	 * <Tree type="setBaseURIAndDefaultNamespace"> <Ack msg="ok"/> (OR
+	 * <Ack msg="failed" reason="put in a alert the text in this attribute"/>
+	 * <BaseURI uri="http://art.info.uniroma2.it/ontologies/st"/>
+	 * <DefaultNamespace ns="http://art.info.uniroma2.it/ontologies/st#"/> </Tree>
 	 * 
 	 */
-	//Method moved to the service ModifyName, or at least the setBaseURI, the setDefaultNamespace is still here
-	/*public Response setBaseURIAndDefaultNamespace(String uri, String namespace) {
-
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
-				setBaseuriDefNamespaceRequest, RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-
-		Project<? extends RDFModel> currProj = getProject();
-
-		String oldDefNS = currProj.getDefaultNamespace();
-
-		try {
-			currProj.setDefaultNamespace(namespace);
-			// status already ok
-		} catch (ProjectUpdateException e) {
-			e.printStackTrace();
-			response.setReplyStatus(RepliesStatus.fail);
-			response.setReplyMessage("defaultNamespace update failed:\n" + e.getMessage());
-		}
-		try {
-			currProj.setBaseURI(uri);
-			// status already ok
-		} catch (ProjectUpdateException e) {
-			try {
-				currProj.setDefaultNamespace(oldDefNS);
-			} catch (ProjectUpdateException e1) {
-				String errMsg = "when trying to update both baseuri and defaultnamespace, the defautnamespace has been changed, the baseuri update failed, then tried to roll back to the old defaultNameSpace and it failed too";
-				logger.debug(errMsg, e1);
-				e1.printStackTrace();
-				response.setReplyStatus(RepliesStatus.fail);
-				response.setReplyMessage(errMsg + "\n" + e.getMessage());
-			} // TODO with transactions this method would be cleaner and more simple
-			e.printStackTrace();
-			response.setReplyStatus(RepliesStatus.fail);
-			response.setReplyMessage("baseURI update failed:\n" + e.getMessage());
-		}
-
-		Element baseURIElement = XMLHelp.newElement(dataElement, baseuriTag);
-		baseURIElement.setAttribute("uri", currProj.getBaseURI());
-		Element defaultNamespaceElement = XMLHelp.newElement(dataElement, "DefaultNamespace");
-		defaultNamespaceElement.setAttribute("ns", currProj.getDefaultNamespace());
-
-		return response;
-	}*/
+	// Method moved to the service ModifyName, or at least the setBaseURI, the setDefaultNamespace is still
+	// here
+	/*
+	 * public Response setBaseURIAndDefaultNamespace(String uri, String namespace) {
+	 * 
+	 * XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
+	 * setBaseuriDefNamespaceRequest, RepliesStatus.ok); Element dataElement = response.getDataElement();
+	 * 
+	 * Project<? extends RDFModel> currProj = getProject();
+	 * 
+	 * String oldDefNS = currProj.getDefaultNamespace();
+	 * 
+	 * try { currProj.setDefaultNamespace(namespace); // status already ok } catch (ProjectUpdateException e)
+	 * { e.printStackTrace(); response.setReplyStatus(RepliesStatus.fail);
+	 * response.setReplyMessage("defaultNamespace update failed:\n" + e.getMessage()); } try {
+	 * currProj.setBaseURI(uri); // status already ok } catch (ProjectUpdateException e) { try {
+	 * currProj.setDefaultNamespace(oldDefNS); } catch (ProjectUpdateException e1) { String errMsg =
+	 * "when trying to update both baseuri and defaultnamespace, the defautnamespace has been changed, the baseuri update failed, then tried to roll back to the old defaultNameSpace and it failed too"
+	 * ; logger.debug(errMsg, e1); e1.printStackTrace(); response.setReplyStatus(RepliesStatus.fail);
+	 * response.setReplyMessage(errMsg + "\n" + e.getMessage()); } // TODO with transactions this method would
+	 * be cleaner and more simple e.printStackTrace(); response.setReplyStatus(RepliesStatus.fail);
+	 * response.setReplyMessage("baseURI update failed:\n" + e.getMessage()); }
+	 * 
+	 * Element baseURIElement = XMLHelp.newElement(dataElement, baseuriTag);
+	 * baseURIElement.setAttribute("uri", currProj.getBaseURI()); Element defaultNamespaceElement =
+	 * XMLHelp.newElement(dataElement, "DefaultNamespace"); defaultNamespaceElement.setAttribute("ns",
+	 * currProj.getDefaultNamespace());
+	 * 
+	 * return response; }
+	 */
 
 	/**
 	 * gets the namespace mapping for the loaded ontology
 	 * 
-	 * <Tree type="getNSPrefixMapping"> <Mapping ns="http://www.w3.org.2002/07/owl#" prefix="owl"
-	 * explicit="false"/> <Mapping ns="http://sweet.jpl.nasa.gov/ontology/earthrealm.owl#" prefix="earthrealm"
-	 * explicit="true"/> </Tree>
+	 * <Tree type="getNSPrefixMapping">
+	 * <Mapping ns="http://www.w3.org.2002/07/owl#" prefix="owl" explicit="false"/>
+	 * <Mapping ns="http://sweet.jpl.nasa.gov/ontology/earthrealm.owl#" prefix="earthrealm" explicit="true"/>
+	 * </Tree>
 	 * 
 	 */
 	public Response getNamespaceMappings() {
-		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(
-				getNSPrefixMappingsRequest, RepliesStatus.ok);
+		XMLResponseREPLY response = ServletUtilities.getService()
+				.createReplyResponse(getNSPrefixMappingsRequest, RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 
 		String request = getNSPrefixMappingsRequest;
@@ -504,8 +486,8 @@ public class Metadata extends ResourceOld {
 				Element nsPrefMapElement = XMLHelp.newElement(dataElement, "Mapping");
 				nsPrefMapElement.setAttribute(prefixPar, prefix);
 				nsPrefMapElement.setAttribute("ns", namespace);
-				nsPrefMapElement
-						.setAttribute("explicit", Boolean.toString(explicitPrefixes.contains(prefix)));
+				nsPrefMapElement.setAttribute("explicit",
+						Boolean.toString(explicitPrefixes.contains(prefix)));
 			}
 		} catch (OntologyManagerException e) {
 			return ServletUtilities.getService().createExceptionResponse(request, e.getMessage());
@@ -571,8 +553,7 @@ public class Metadata extends ResourceOld {
 			ontManager.removeNSPrefixMapping(namespace);
 		} catch (ModelUpdateException e) {
 			e.printStackTrace();
-			return servletUtilities.createExceptionResponse(
-					request,
+			return servletUtilities.createExceptionResponse(request,
 					"prefix-namespace mapping update failed on the loaded ontology!\n\nreason: "
 							+ e.getMessage());
 		} catch (NSPrefixMappingUpdateException e) {
@@ -585,13 +566,14 @@ public class Metadata extends ResourceOld {
 
 		return response;
 	}
-	
+
 	/**
 	 * Expands the given qname and returns the URI
+	 * 
 	 * @param qname
 	 * @return
 	 */
-	public Response expandQName(String qname){
+	public Response expandQName(String qname) {
 		String request = expandQNameRequest;
 		ServletUtilities servletUtilities = new ServletUtilities();
 		XMLResponseREPLY response = ServletUtilities.getService().createReplyResponse(request,
@@ -601,14 +583,14 @@ public class Metadata extends ResourceOld {
 		String uri = null;
 		try {
 			uri = ontModel.expandQName(qname);
-		} catch (ModelAccessException e){
+		} catch (ModelAccessException e) {
 			e.printStackTrace();
 			return servletUtilities.createExceptionResponse(request, e.getMessage());
 		}
 		Element uriElem = XMLHelp.newElement(dataElement, "uri");
 		uriElem.setAttribute("qname", qname);
 		uriElem.setTextContent(uri);
-		
+
 		return response;
 	}
 
@@ -638,8 +620,8 @@ public class Metadata extends ResourceOld {
 		return response;
 	}
 
-	private void buildImportXMLTree(OWLModel ontModel, OntologyManager repMgr,
-			Element xmlElem, String uri, HashSet<String> importsBranch) throws ModelAccessException {
+	private void buildImportXMLTree(OWLModel ontModel, OntologyManager repMgr, Element xmlElem, String uri,
+			HashSet<String> importsBranch) throws ModelAccessException {
 		ARTURIResource ont = ontModel.createURIResource(uri);
 		ARTURIResourceIterator imports = ontModel.listOntologyImports(ont);
 		while (imports.streamOpen()) {
@@ -654,8 +636,8 @@ public class Metadata extends ResourceOld {
 				if (importStatus != null) {
 					ImportStatus.Values statusValue = importStatus.getValue();
 					if (statusValue == ImportStatus.Values.LOCAL) {
-						importedOntologyElem.setAttribute("localfile", importStatus.getCacheFile()
-								.getLocalName());
+						importedOntologyElem.setAttribute("localfile",
+								importStatus.getCacheFile().getLocalName());
 					}
 					importedOntologyElem.setAttribute("status", statusValue.toString());
 
@@ -677,8 +659,8 @@ public class Metadata extends ResourceOld {
 	 * answers with an ack on the result of the import deletion. The application, upon receving this ack,
 	 * should request an update of the imports and namespace mappings panels
 	 * 
-	 * <Tree type="removeImport"> (or addFromWeb, addFromLocalFile, addFromOntologyMirror) <result
-	 * level="ok"/> //oppure "failed" <msg content="bla bla bla"/> </Tree>
+	 * <Tree type="removeImport"> (or addFromWeb, addFromLocalFile, addFromOntologyMirror)
+	 * <result level="ok"/> //oppure "failed" <msg content="bla bla bla"/> </Tree>
 	 * 
 	 * @param uri
 	 * @return
@@ -713,8 +695,8 @@ public class Metadata extends ResourceOld {
 	 * answers with an ack on the result of the import. Th application, upon receving this ack, should request
 	 * an update of the imports and namespace mappings panels
 	 * 
-	 * <Tree type="addFromWebToMirror"> (or addFromWeb, addFromLocalFile, addFromOntologyMirror) <result
-	 * level="ok"/> //oppure "failed" <msg content="bla bla bla"/> </Tree>
+	 * <Tree type="addFromWebToMirror"> (or addFromWeb, addFromLocalFile, addFromOntologyMirror)
+	 * <result level="ok"/> //oppure "failed" <msg content="bla bla bla"/> </Tree>
 	 * 
 	 * 
 	 * HINT for CLIENT: always launch a getNamespaceMappings, getOntologyImports after a setOntologyImports
@@ -757,7 +739,8 @@ public class Metadata extends ResourceOld {
 		String request = null;
 		try {
 			logger.debug("rdf format specified by user as: " + rdfFormatName);
-			org.eclipse.rdf4j.rio.RDFFormat rdfFormat = (rdfFormatName != null) ? RDFFormatConverter.convert(RDFFormat.parseFormat(rdfFormatName)) : null;
+			org.eclipse.rdf4j.rio.RDFFormat rdfFormat = (rdfFormatName != null)
+					? RDFFormatConverter.convert(RDFFormat.parseFormat(rdfFormatName)) : null;
 			logger.debug("selected rdf format: " + rdfFormat);
 
 			if (method == fromWebToMirror) {
@@ -767,7 +750,8 @@ public class Metadata extends ResourceOld {
 					url = sourceForImport;
 				else
 					url = baseUriToBeImported;
-				ontMgr.addOntologyImportFromWebToMirror(baseUriToBeImported, url, destLocalFile, rdfFormat);
+				ontMgr.addOntologyImportFromWebToMirror(baseUriToBeImported, url, destLocalFile, rdfFormat,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else if (method == fromWeb) {
 				request = addFromWebRequest;
 				String url;
@@ -775,13 +759,16 @@ public class Metadata extends ResourceOld {
 					url = sourceForImport;
 				else
 					url = baseUriToBeImported;
-				ontMgr.addOntologyImportFromWeb(baseUriToBeImported, url, rdfFormat);
+				ontMgr.addOntologyImportFromWeb(baseUriToBeImported, url, rdfFormat,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else if (method == fromLocalFile) {
 				request = addFromLocalFileRequest;
-				ontMgr.addOntologyImportFromLocalFile(baseUriToBeImported, sourceForImport, destLocalFile);
+				ontMgr.addOntologyImportFromLocalFile(baseUriToBeImported, sourceForImport, destLocalFile,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else if (method == fromOntologyMirror) {
 				request = addFromOntologyMirrorRequest;
-				ontMgr.addOntologyImportFromMirror(baseUriToBeImported, destLocalFile);
+				ontMgr.addOntologyImportFromMirror(baseUriToBeImported, destLocalFile,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else
 				request = "noCorrectRequestGiven!!!"; // we should never incur into it because it is filtered
 			// by the getResponse switch method
@@ -805,10 +792,7 @@ public class Metadata extends ResourceOld {
 					String namespace = entry.getKey();
 					String newPrefix = ModelUtilities.guessPrefix(namespace);
 					try {
-						logger.info("prefix "
-								+ prefix
-								+ "for: "
-								+ namespace
+						logger.info("prefix " + prefix + "for: " + namespace
 								+ " is probably assigned by the triple store; replacing it with a guessed prefix: "
 								+ newPrefix);
 						model.setNsPrefix(newPrefix, namespace);
@@ -844,8 +828,8 @@ public class Metadata extends ResourceOld {
 	 * answers with an ack on the result of the import. Th application, upon receving this ack, should request
 	 * an update of the imports and namespace mappings panels
 	 * 
-	 * <Tree type="getFromWebToMirror"> (or ....) <result level="ok"/> //oppure "failed" <msg
-	 * content="bla bla bla"/> </Tree>
+	 * <Tree type="getFromWebToMirror"> (or ....) <result level="ok"/> //oppure "failed"
+	 * <msg content="bla bla bla"/> </Tree>
 	 * 
 	 * 
 	 * HINT for CLIENT: always launch a getNamespaceMappings, getOntologyImports after a setOntologyImports
@@ -860,13 +844,16 @@ public class Metadata extends ResourceOld {
 		try {
 			if (method == fromWebToMirror) {
 				request = "getFromWebToMirror";
-				repMgr.downloadImportedOntologyFromWebToMirror(baseURI, altURL, toLocalFile);
+				repMgr.downloadImportedOntologyFromWebToMirror(baseURI, altURL, toLocalFile,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else if (method == fromWeb) {
 				request = "getFromWeb";
-				repMgr.downloadImportedOntologyFromWeb(baseURI, altURL);
+				repMgr.downloadImportedOntologyFromWeb(baseURI, altURL,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else if (method == fromLocalFile) {
 				request = "getFromLocalFile";
-				repMgr.getImportedOntologyFromLocalFile(baseURI, fromLocalFilePath, toLocalFile);
+				repMgr.getImportedOntologyFromLocalFile(baseURI, fromLocalFilePath, toLocalFile,
+						TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 			} else if (method == toOntologyMirror) {
 				request = "getToOntologyMirror";
 				repMgr.mirrorOntology(baseURI, toLocalFile);

@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class realizes a File-persisted manager for namespace-prefix mappings, adopted inside Semantic Turkey
@@ -44,22 +45,23 @@ import java.util.Set;
  * mappings held inside an OWLART model. This latter sync is managed by the {@link {@link STOntologyManager}
  * 
  * @author Armando Stellato
- *
+ * @author Manuel Fiorelli
  */
 public class NSPrefixMappings {
+	public static final String prefixMappingFileName = "PrefixMappings.xml";
 
-	private Properties namespacePrefixMap;
-	private HashMap<String, String> prefixNamespaceMap;
-	private File nsPrefixMappingFile;
-	public final static String prefixMappingFileName = "PrefixMappings.xml";
-	private boolean persistMode;
+	private final Properties namespacePrefixMap;
+	private final Map<String, String> prefixNamespaceMap;
+	private final File nsPrefixMappingFile;
+	private final boolean persistMode;
+	private final ReentrantReadWriteLock rwLock;
 
 	// protected static Logger logger = LoggerFactory.getLogger(NSPrefixMappings.class);
 
 	public NSPrefixMappings(File persistenceDirectory, boolean persistMode) throws IOException {
 		this.persistMode = persistMode;
 		namespacePrefixMap = new Properties();
-		prefixNamespaceMap = new HashMap<String, String>();
+		prefixNamespaceMap = new HashMap<>();
 		nsPrefixMappingFile = new File(persistenceDirectory, "/" + prefixMappingFileName);
 		try {
 			FileInputStream input = new FileInputStream(nsPrefixMappingFile);
@@ -71,69 +73,101 @@ public class NSPrefixMappings {
 		} catch (FileNotFoundException e1) {
 			nsPrefixMappingFile.createNewFile();
 		}
-		/*
-		 * logger.debug("prefix mapping initialized:\n" + "namespacePrefixMap:\n" + namespacePrefixMap +
-		 * "\n\n" + "prefixNamespaceMap:\n" + prefixNamespaceMap );
-		 */
+		rwLock = new ReentrantReadWriteLock(true);
 	}
 
 	public void updatePrefixMappingRegistry() throws NSPrefixMappingUpdateException {
-		FileOutputStream os;
+		rwLock.writeLock().lock();
 		try {
-			os = new FileOutputStream(nsPrefixMappingFile);
-			// properties.storeToXML(os, "local cache references for mirroring remote ontologies");
-			namespacePrefixMap.store(os, "local cache references mappings between prefixes and namespace");
-			os.close();
-		} catch (FileNotFoundException e) {
-			throw new NSPrefixMappingUpdateException(
-					"synchronization with persistent namespace-prefix mapping repository failed; mappings may result different upon reloading the ontology");
-		} catch (IOException e) {
-			throw new NSPrefixMappingUpdateException(
-					"synchronization with persistent namespace-prefix mapping repository failed; mappings may result different upon reloading the ontology");
+			FileOutputStream os;
+			try {
+				os = new FileOutputStream(nsPrefixMappingFile);
+				// properties.storeToXML(os, "local cache references for mirroring remote ontologies");
+				namespacePrefixMap.store(os,
+						"local cache references mappings between prefixes and namespace");
+				os.close();
+			} catch (FileNotFoundException e) {
+				throw new NSPrefixMappingUpdateException(
+						"synchronization with persistent namespace-prefix mapping repository failed; mappings may result different upon reloading the ontology");
+			} catch (IOException e) {
+				throw new NSPrefixMappingUpdateException(
+						"synchronization with persistent namespace-prefix mapping repository failed; mappings may result different upon reloading the ontology");
+			}
+		} finally {
+			rwLock.writeLock().unlock();
 		}
-
 	}
 
 	public void setNSPrefixMapping(String namespace, String newPrefix) throws NSPrefixMappingUpdateException {
-		String oldPrefix = namespacePrefixMap.getProperty(namespace);
-		if (oldPrefix != null)
-			prefixNamespaceMap.remove(oldPrefix);
-		namespacePrefixMap.setProperty(namespace, newPrefix);
-		prefixNamespaceMap.put(newPrefix, namespace);
-		if (persistMode)
-			updatePrefixMappingRegistry();
+		rwLock.writeLock().lock();
+		try {
+			String oldPrefix = namespacePrefixMap.getProperty(namespace);
+			if (oldPrefix != null)
+				prefixNamespaceMap.remove(oldPrefix);
+			namespacePrefixMap.setProperty(namespace, newPrefix);
+			prefixNamespaceMap.put(newPrefix, namespace);
+			if (persistMode)
+				updatePrefixMappingRegistry();
+		} finally {
+			rwLock.writeLock().unlock();
+		}
 	}
 
 	public void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException {
-		String prefix = namespacePrefixMap.getProperty(namespace);
-		if (prefix == null)
-			throw new NSPrefixMappingUpdateException(
-					"inconsistency error: prefix-mapping table does not contain this namespace");
-		namespacePrefixMap.remove(namespace);
-		prefixNamespaceMap.remove(prefix);
-		if (persistMode)
-			updatePrefixMappingRegistry();
+		rwLock.writeLock().lock();
+		try {
+			String prefix = namespacePrefixMap.getProperty(namespace);
+			if (prefix == null)
+				throw new NSPrefixMappingUpdateException(
+						"inconsistency error: prefix-mapping table does not contain this namespace");
+			namespacePrefixMap.remove(namespace);
+			prefixNamespaceMap.remove(prefix);
+			if (persistMode)
+				updatePrefixMappingRegistry();
+		} finally {
+			rwLock.writeLock().unlock();
+		}
 	}
 
 	public String getNamespaceFromPrefix(String prefix) {
-		return (String) prefixNamespaceMap.get(prefix);
+		rwLock.readLock().lock();
+		try {
+			return (String) prefixNamespaceMap.get(prefix);
+		} finally {
+			rwLock.readLock().unlock();
+		}
 	}
 
 	public String getPrefixFromNamespace(String namespace) {
-		return (String) namespacePrefixMap.get(namespace);
+		rwLock.readLock().lock();
+		try {
+			return (String) namespacePrefixMap.get(namespace);
+		} finally {
+			rwLock.readLock().unlock();
+		}
 	}
 
 	/**
-	 * @return a <code>map</code> with prefixes as keys and namespaces as values
+	 * @return a freshly created <code>map</code> with prefixes as keys and namespaces as values
 	 */
 	public Map<String, String> getNSPrefixMappingTable() {
-		return prefixNamespaceMap;
+		rwLock.readLock().lock();
+		try {
+			return new HashMap<>(prefixNamespaceMap);
+		} finally {
+			rwLock.readLock().unlock();
+		}
 	}
 
 	public void clearNSPrefixMappings() throws NSPrefixMappingUpdateException {
-		prefixNamespaceMap.clear();
-		if (persistMode)
-			updatePrefixMappingRegistry();
+		rwLock.writeLock().lock();
+		try {
+			prefixNamespaceMap.clear();
+			if (persistMode)
+				updatePrefixMappingRegistry();
+		} finally {
+			rwLock.writeLock().unlock();
+		}
 	}
 
 	/**

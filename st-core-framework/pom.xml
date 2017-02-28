@@ -67,6 +67,16 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.eclipse.rdf4j</groupId>
+			<artifactId>rdf4j-repository-api</artifactId>
+			<version>${rdf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.rdf4j</groupId>
+			<artifactId>rdf4j-queryrender</artifactId>
+			<version>${rdf4j.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>it.uniroma2.art.owlart</groupId>
 			<artifactId>owlart-api</artifactId>
 			<version>${owlart-api.version}</version>
@@ -82,16 +92,6 @@
 			<artifactId>rdf4j-model</artifactId>
 			<version>${rdf4j.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.eclipse.rdf4j</groupId>
-			<artifactId>rdf4j-repository-api</artifactId>
-			<version>${rdf4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.rdf4j</groupId>
-			<artifactId>rdf4j-queryrender</artifactId>
-			<version>${rdf4j.version}</version>
-		</dependency>		
 
 		<dependency>
 			<groupId>org.apache.felix</groupId>
@@ -152,10 +152,10 @@
 		</dependency>
 		<!-- Needed to handle AccessDeniedException in CatchAllExceptionHandlerControllerAdvice -->
 		<dependency>
-	    	<groupId>org.springframework.security</groupId>
-	    	<artifactId>spring-security-web</artifactId>
-	    	<version>${spring-security.version}</version>
-	    </dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-web</artifactId>
+			<version>${spring-security.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.coda</groupId>
 			<artifactId>coda-osgi-bundle</artifactId>
