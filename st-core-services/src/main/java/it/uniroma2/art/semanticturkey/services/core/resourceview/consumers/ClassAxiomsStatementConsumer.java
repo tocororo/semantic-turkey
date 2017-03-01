@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractGroupingPropertyMatchingStatementConsumer;
 
 public class ClassAxiomsStatementConsumer extends AbstractGroupingPropertyMatchingStatementConsumer {
@@ -25,8 +25,8 @@ public class ClassAxiomsStatementConsumer extends AbstractGroupingPropertyMatchi
 			OWL.UNIONOF
 		};
 
-	public ClassAxiomsStatementConsumer(CustomRangeProvider customRangeProvider) {
-		super(customRangeProvider, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)));
+	public ClassAxiomsStatementConsumer(CustomFormManager customFormManager) {
+		super(customFormManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)));
 	}
 
 }

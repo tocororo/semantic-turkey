@@ -25,7 +25,7 @@ import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.owlart.rdf4jimpl.model.ARTURIResourceRDF4JImpl;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -34,13 +34,13 @@ import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
 public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractStatementConsumer {
 
-	private CustomRangeProvider customRangeProvider;
+	private CustomFormManager customFormManager;
 	private String sectionName;
 	private Set<IRI> matchedProperties;
 
-	public AbstractGroupingPropertyMatchingStatementConsumer(CustomRangeProvider customRangeProvider,
+	public AbstractGroupingPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
 			String sectionName, Set<IRI> matchedProperties) {
-		this.customRangeProvider = customRangeProvider;
+		this.customFormManager = customFormManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
 	}
@@ -93,7 +93,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 				addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
 						null, statements);
 				annotatedPredicate.setAttribute("hasCustomRange",
-						customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
+						customFormManager.existsCustomFormGraphForResource(predicate.stringValue()));
 
 				propMap.put(predicate, annotatedPredicate);
 
@@ -133,7 +133,7 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 			addShowOrRenderXLabelOrCRE(annotatedSuperProp, resource2attributes, predicate2resourceCreShow,
 					null, statements);
 			annotatedSuperProp.setAttribute("hasCustomRange",
-					customRangeProvider.existsCustomRangeEntryGraphForProperty(superProp.stringValue()));
+					customFormManager.existsCustomFormGraphForResource(superProp.stringValue()));
 
 			outerPropMap.put(superProp, annotatedSuperProp);
 			outerValueMultiMap.put(superProp, predObjsList);

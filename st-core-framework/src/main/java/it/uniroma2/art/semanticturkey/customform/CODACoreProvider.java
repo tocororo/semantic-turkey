@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.customrange;
+package it.uniroma2.art.semanticturkey.customform;
 
 import org.osgi.framework.BundleContext;
 import org.springframework.beans.factory.annotation.Autowired;

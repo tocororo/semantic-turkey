@@ -14,14 +14,13 @@
 		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
 
 	<!-- Imports the custom range provider from the service registry -->
-	<osgi:reference id="customRangeProvider"
-		interface="it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider" />
+	<osgi:reference id="customFormManager"
+		interface="it.uniroma2.art.semanticturkey.customform.CustomFormManager" />
 
 	<!-- Imports the CODA-core provider from the service registry -->
 	<osgi:reference id="CODACoreProvider"
-		interface="it.uniroma2.art.semanticturkey.customrange.CODACoreProvider" />
-
-
+		interface="it.uniroma2.art.semanticturkey.customform.CODACoreProvider" />
+		
 	<osgi:service ref="conversionService"
 		interface="org.springframework.core.convert.ConversionService" />
 

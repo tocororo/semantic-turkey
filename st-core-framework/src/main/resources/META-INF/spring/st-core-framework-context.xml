@@ -157,17 +157,18 @@
 		ref="resourceLocator">
 	</osgi:service>
 
-	<!-- Publishes CustomRangeProvider as an OSGi service (bean instance generated 
+	<!-- Publishes CustomFormManager as an OSGi service (bean instance generated 
 		based on annotations) -->
 	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider"
-		ref="customRangeProvider">
+		interface="it.uniroma2.art.semanticturkey.customform.CustomFormManager"
+		ref="customFormManager">
 	</osgi:service>
 	
 	<!-- Publishes CODACoreProvider as an OSGi service (bean instance generated 
 		based on annotations) -->
 	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.customrange.CODACoreProvider"
+		interface="it.uniroma2.art.semanticturkey.customform.CODACoreProvider"
 		ref="CODACoreProvider">
 	</osgi:service>
+	
 </beans>

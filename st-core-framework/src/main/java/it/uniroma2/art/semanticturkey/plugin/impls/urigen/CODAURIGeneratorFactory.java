@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 
-import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
+import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;

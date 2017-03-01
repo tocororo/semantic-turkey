@@ -21,7 +21,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -34,8 +34,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 	private AbstractPropertyMatchingStatementConsumer inverseOfMatcher;
 
-	public PropertyFacetsStatementConsumer(CustomRangeProvider customRangeProvider) {
-		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(customRangeProvider, "inverseOf",
+	public PropertyFacetsStatementConsumer(CustomFormManager customFormManager) {
+		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(customFormManager, "inverseOf",
 				Collections.singleton(OWL.INVERSEOF)) {
 			@Override
 			protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource,

@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.customrange;
+package it.uniroma2.art.semanticturkey.customform;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +21,7 @@ import it.uniroma2.art.coda.pearl.model.ProjectionOperator.NodeType;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrLexer;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParser;
 
-public class CustomRangeEntryParseUtils {
+public class CustomFormParseUtils {
 	
 	/**
 	 * Parses and creates a tree of a pearl unit.
@@ -43,7 +43,7 @@ public class CustomRangeEntryParseUtils {
 	
 	/**
 	 * Parses and creates a tree of a projection operator.
-	 * This method is useful to check if a CustomRangeEntryNode ref is valid.
+	 * This method is useful to check if a {@link CustomFormNode} ref is valid.
 	 * @param ref
 	 * @return
 	 * @throws RecognitionException
@@ -56,7 +56,7 @@ public class CustomRangeEntryParseUtils {
 		return (Tree) parser.projectionOperator().getTree();
 	}
 	
-	public static UserPromptStruct createUserPromptForNodeEntry(String ref, CODACore codaCore) throws PRParserException {
+	public static UserPromptStruct createUserPromptForNodeForm(String ref, CODACore codaCore) throws PRParserException {
 		ref = ref.trim();
 		UserPromptStruct upStruct;
 		

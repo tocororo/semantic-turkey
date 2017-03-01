@@ -8,14 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 
 @Component(value="StatementConsumerProviderOLD")
 public class StatementConsumerProvider {
 	private HashMap<RDFResourceRolesEnum, List<StatementConsumer>> role2template;
 	
 	@Autowired
-	public StatementConsumerProvider(CustomRangeProvider customRangeProvider) {
+	public StatementConsumerProvider(CustomFormManager customFormManager) {
 		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer();
 		ClassAxiomsStatementConsumer classAxiomsStatementConsumer = new ClassAxiomsStatementConsumer();
 		
@@ -26,7 +26,7 @@ public class StatementConsumerProvider {
 		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer();
 		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer();
 		OntologyImportsStatementConsumer ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer();
-		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(customRangeProvider);
+		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(customFormManager);
 		TopConceptOfStatementConsumer topConceptOfStatementConsumer = new TopConceptOfStatementConsumer();
 		InSchemeStatementConsumer inSchemeStatementConsumer = new InSchemeStatementConsumer();
 		SKOSCollectionMemberStatementConsumer skosCollectionMemberStatementConsumer = new SKOSCollectionMemberStatementConsumer();

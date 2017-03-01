@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.customrange;
+package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -12,9 +12,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -68,17 +68,16 @@ import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
-public class CustomRangeEntryGraph extends CustomRangeEntry {
+public class CustomFormGraph extends CustomForm {
 	
 	private static final String USER_PROMPT_FEATURE_NAME = "userPrompt";
 	private static final String USER_PROMPT_TYPE_PATH = "it.uniroma2.art.semanticturkey.userPromptFS";
 	private String annotationTypeName;//UIMA type taken from pearl rule (rule ....)
 	private List<IRI> showPropertyChain;
 	
-	CustomRangeEntryGraph(String id, String name, String description, String ref, List<IRI> showPropChain) {
+	CustomFormGraph(String id, String name, String description, String ref, List<IRI> showPropChain) {
 		super(id, name, description, ref);
 		showPropertyChain = showPropChain;
 	}
@@ -97,7 +96,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	/**
-	 * Returns a list (without duplicates) of predicates contained in the pearl of the CustomRangeEntryGraph.
+	 * Returns a list (without duplicates) of predicates contained in the pearl of the {@link CustomFormGraph}.
 	 * @param codaCore an instance of CODACore already initialized, used to parse and retrieve
 	 * necessary information from PEARL code.
 	 * @param onlyMandatory <code>false</code> returns all the predicate; <code>true</code> returns
@@ -114,7 +113,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws ModelAccessException 
 	 */
 	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) 
-			throws PRParserException, RDFModelNotSetException, ModelAccessException {
+			throws PRParserException, RDFModelNotSetException {
 		Collection<String> predicates = new ArrayList<String>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -162,10 +161,13 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		}
 		return predicates;
 	}
-
+	
+	/**
+	 * Returns a Collection of {@link UserPromptStruct} that is used to render a form
+	 */
 	@Override
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, 
-			RDFModelNotSetException, ModelAccessException {
+			RDFModelNotSetException {
 		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
@@ -278,14 +280,20 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 		return phPromptMap;
 	}
 	
-	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, 
-			RDFModelNotSetException, ModelAccessException {
+	/**
+	 * Returns the placeholder of the entry point of the graph section
+	 * @param codaCore
+	 * @return
+	 * @throws PRParserException
+	 * @throws RDFModelNotSetException
+	 */
+	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
 		String entryPoint = "";
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
-		if (prRulesIt.hasNext()){
+		if (prRulesIt.hasNext()) {
 			ProjectionRule projRule = prRulesIt.next();
 			Iterator<GraphElement> graphListIt = projRule.getInsertGraphList().iterator();
 			if (graphListIt.hasNext()) {
@@ -296,7 +304,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	/**
-	 * Returns the serialization of the graph section of the PEARL in the current CustomRangeEntry.
+	 * Returns the serialization of the graph section of the PEARL in the current CustomForm.
 	 * @param codaCore
 	 * @param optional specify if the <code>OPTIONAL {}</code> has to be serialized. Note that
 	 * if is set to false, it doesn't mean that the content of the OPTIONAL is omitted, but only
@@ -304,34 +312,26 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @return
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
-	 * @throws ModelAccessException 
 	 */
-	public String getGraphSectionAsString(CODACore codaCore, boolean optional) 
-			throws PRParserException, RDFModelNotSetException, ModelAccessException {
-		//try {
-			StringBuilder sb = new StringBuilder();
-			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			
-			ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
-			Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
-			Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
-			if (prRulesIt.hasNext()){
-				ProjectionRule projRule = prRulesIt.next();
-				serializeGraphList(projRule.getInsertGraphList(), sb, optional);
-			}
-			return sb.toString();
-		 
-		
-		/* ANDREA: removed the try/catch
-		 * } catch (RuntimeException e) {
-			//sometimes if PEARL contains error, a runtime EarlyExitException is thrown,
-			// catch it and throw a PRParserException
-			throw new PRParserException(e);
-		} */
+	public String getGraphSectionAsString(CODACore codaCore, boolean optional) throws PRParserException, RDFModelNotSetException {
+		StringBuilder sb = new StringBuilder();
+		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
+
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
+		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
+		if (prRulesIt.hasNext()) {
+			ProjectionRule projRule = prRulesIt.next();
+			serializeGraphList(projRule.getInsertGraphList(), sb, optional);
+		}
+		return sb.toString();
 	}
 	
-	/*
+	/**
 	 * Serializes (recursively) a GraphElement collection
+	 * @param graphList
+	 * @param sb
+	 * @param opt
 	 */
 	private void serializeGraphList(Collection<GraphElement> graphList, StringBuilder sb, boolean opt) {
 		Set<String> bnodeVariables = opt ? new HashSet<>() : null;
@@ -357,7 +357,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			sb.append(")");
 		}
 	}
-
+	
 	/**
 	 * Returns the serialization of a {@link GraphSingleElement}. If the given element is a
 	 * {@link GraphSingleElemBNode}, then adds the corresponding variabile to <code>bnodeVariables</code> (if
@@ -378,7 +378,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			return elem.getValueAsString();
 		}
 	}
-
+	
 	/**
 	 * Fills a CAS with the value specified in the given userPromptMap, then executes CODA with the 
 	 * CAS, generates the triples and returns them.
@@ -429,15 +429,13 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
-				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {// get only
-																								// triples of
-																								// rilevant
-																								// annotations
+				// get only triples of relevant annotations (those triples that start with it.uniroma2.
+				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {
 					triples = suggOntCoda.getAllInsertARTTriple();
 				}
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException
-				| ModelAccessException | DependencyException | UIMAException | RDFModelNotSetException e) {
+				| DependencyException | UIMAException | RDFModelNotSetException e) {
 			throw new CODAException(e);
 		}
 		return triples;
@@ -470,8 +468,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	 * @throws ModelAccessException 
 	 */
 	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore) 
-			throws ResourceInitializationException, PRParserException, RDFModelNotSetException, 
-			ModelAccessException{
+			throws ResourceInitializationException, PRParserException, RDFModelNotSetException {
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		//init the projection rules model with the pearl
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
@@ -514,7 +511,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
 			Document doc = docBuilder.newDocument();
 			
-			Element creElement = doc.createElement("customRangeEntry");
+			Element creElement = doc.createElement("customForm");
 			doc.appendChild(creElement);
 			creElement.setAttribute("id", this.getId());
 			creElement.setAttribute("name", this.getName());
@@ -544,7 +541,7 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeEntryFolder(), this.getId() + ".xml"));
+			StreamResult result = new StreamResult(new File(CustomFormManager.getFormsFolder(), this.getId() + ".xml"));
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();
@@ -552,47 +549,47 @@ public class CustomRangeEntryGraph extends CustomRangeEntry {
 	}
 	
 	//For debug decomment in createTypeSystemDescription
-	@SuppressWarnings("unused")
-	private void describeTSD(TypeSystemDescription tsd){
-		System.out.println("================ TSD structure ================");
-		TypeDescription[] types = tsd.getTypes();
-		System.out.println("type list:");
-		for (int i=0; i<types.length; i++){
-			TypeDescription type = types[i];
-			if (type.getName().startsWith("it.uniroma2.art.semanticturkey")){
-				System.out.println("\nType: " + type.getName());
-				FeatureDescription[] features = type.getFeatures();
-				System.out.println("features:");
-				for (int j=0; j<features.length; j++){
-					FeatureDescription feature = features[j];
-					System.out.println("\t" + feature.getName() + "\t" + feature.getRangeTypeName());
+		@SuppressWarnings("unused")
+		private void describeTSD(TypeSystemDescription tsd){
+			System.out.println("================ TSD structure ================");
+			TypeDescription[] types = tsd.getTypes();
+			System.out.println("type list:");
+			for (int i=0; i<types.length; i++){
+				TypeDescription type = types[i];
+				if (type.getName().startsWith("it.uniroma2.art.semanticturkey")){
+					System.out.println("\nType: " + type.getName());
+					FeatureDescription[] features = type.getFeatures();
+					System.out.println("features:");
+					for (int j=0; j<features.length; j++){
+						FeatureDescription feature = features[j];
+						System.out.println("\t" + feature.getName() + "\t" + feature.getRangeTypeName());
+					}
 				}
 			}
+			System.out.println("===============================================");
 		}
-		System.out.println("===============================================");
-	}
 
-	//For debug decomment in executePearl
-	@SuppressWarnings("unused")
-	private void analyseCas(CAS aCAS){
-		System.out.println("======== CAS ==========");
-		AnnotationIndex<AnnotationFS> anIndex = aCAS.getAnnotationIndex();
-		for (AnnotationFS an : anIndex){
-			if (an.getType().getName().startsWith("it.uniroma")){//I want to explode only my annotation (ignore DocumentAnnotation)
-				System.out.println("Annotation: " + an.getType().getName());
-				Feature feature = an.getType().getFeatureByBaseName("userPrompt");
-				System.out.println("\tFeature: " + feature.getName());
-				FeatureStructure userPromptFS = an.getFeatureValue(feature);
-				Type userPromptType = userPromptFS.getType();
-				List<Feature> upFeatures = userPromptType.getFeatures();
-				for (Feature upF : upFeatures){
-					String upfValue = userPromptFS.getStringValue(upF);
-					System.out.println("\t\tFeature: " + upF.getShortName() + "; value: " + upfValue);
+		//For debug decomment in executePearl
+		@SuppressWarnings("unused")
+		private void analyseCas(CAS aCAS){
+			System.out.println("======== CAS ==========");
+			AnnotationIndex<AnnotationFS> anIndex = aCAS.getAnnotationIndex();
+			for (AnnotationFS an : anIndex){
+				if (an.getType().getName().startsWith("it.uniroma")){//I want to explode only my annotation (ignore DocumentAnnotation)
+					System.out.println("Annotation: " + an.getType().getName());
+					Feature feature = an.getType().getFeatureByBaseName("userPrompt");
+					System.out.println("\tFeature: " + feature.getName());
+					FeatureStructure userPromptFS = an.getFeatureValue(feature);
+					Type userPromptType = userPromptFS.getType();
+					List<Feature> upFeatures = userPromptType.getFeatures();
+					for (Feature upF : upFeatures){
+						String upfValue = userPromptFS.getStringValue(upF);
+						System.out.println("\t\tFeature: " + upF.getShortName() + "; value: " + upfValue);
+					}
+					
 				}
-				
 			}
+			System.out.println("=======================");
 		}
-		System.out.println("=======================");
-	}
 
 }

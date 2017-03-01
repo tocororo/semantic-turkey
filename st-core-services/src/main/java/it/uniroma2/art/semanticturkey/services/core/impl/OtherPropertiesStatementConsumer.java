@@ -1,5 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.core.impl;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.base.Joiner;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -9,7 +18,7 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
@@ -20,21 +29,12 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-
 public class OtherPropertiesStatementConsumer implements StatementConsumer {
 
-	private CustomRangeProvider customRangeProvider;
+	private CustomFormManager customFormManager;
 
-	public OtherPropertiesStatementConsumer(CustomRangeProvider customRangeProvider) {
-		this.customRangeProvider = customRangeProvider;
+	public OtherPropertiesStatementConsumer(CustomFormManager customFormManager) {
+		this.customFormManager = customFormManager;
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public class OtherPropertiesStatementConsumer implements StatementConsumer {
 										: RDFResourceRolesEnum.property,
 								true, ontModel.getQName(pred.getURI()));
 				stPred.setInfo("hasCustomRange", Boolean
-						.toString(customRangeProvider.existsCustomRangeEntryGraphForProperty(pred.getURI())));
+						.toString(customFormManager.existsCustomFormGraphForResource(pred.getURI())));
 				art2STRDFPredicates.put(pred, stPred);
 			}
 

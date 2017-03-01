@@ -89,9 +89,9 @@ import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.XmlSchema;
-import it.uniroma2.art.semanticturkey.customrange.CustomRange;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
@@ -128,7 +128,7 @@ public class ResourceOld extends ServiceAdapter {
 	protected ArrayList<ARTURIResource> bannedPredicatesForResourceDescription;
 	
 	@Autowired
-	private CustomRangeProvider crProvider;
+	private CustomFormManager cfManager;
 
 	@Autowired
 	public ResourceOld(@Value("Resource") String id) {
@@ -1539,27 +1539,27 @@ public class ResourceOld extends ServiceAdapter {
 	}
 	
 	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
-		CustomRange cr = crProvider.getCustomRangeForProperty(property.getURI());
-		if (cr == null){//there is no custom range for the given property 
+		FormCollection cf = cfManager.getFormCollectionForResource(property.getURI());
+		if (cf == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
 		Element crElem = XMLHelp.newElement(treeElement, "customRange");
 		crElem.setAttribute("property", property.getURI());
-		crElem.setAttribute("id", cr.getId());
-		Collection<CustomRangeEntry> crEntries = cr.getEntries();
-		for (CustomRangeEntry crEntry : crEntries){
-			Element crEntryElem = XMLHelp.newElement(crElem, "crEntry");
-			crEntryElem.setAttribute("id", crEntry.getId());
-			crEntryElem.setAttribute("name", crEntry.getName());
-			crEntryElem.setAttribute("type", crEntry.getType());
-			Element descElem = XMLHelp.newElement(crEntryElem, "description");
-			descElem.setTextContent(crEntry.getDescription());
+		crElem.setAttribute("id", cf.getId());
+		Collection<CustomForm> cForms = cf.getForms();
+		for (CustomForm cForm : cForms){
+			Element cFormElem = XMLHelp.newElement(crElem, "cForm");
+			cFormElem.setAttribute("id", cForm.getId());
+			cFormElem.setAttribute("name", cForm.getName());
+			cFormElem.setAttribute("type", cForm.getType());
+			Element descElem = XMLHelp.newElement(cFormElem, "description");
+			descElem.setTextContent(cForm.getDescription());
 		}
 	}
 	
 	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
 			boolean visualization, boolean minimize) throws ModelAccessException, NonExistingRDFResourceException {
-		boolean replace = crProvider.getCustomRangeConfig().getReplaceRanges(property.getURI());
+		boolean replace = cfManager.getCustomFormsConfig().getReplace(property.getURI());
 		if (replace){
 			injectCustomRangeXML(property, treeElement);
 		} else {

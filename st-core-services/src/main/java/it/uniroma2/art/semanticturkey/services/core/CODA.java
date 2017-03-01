@@ -21,7 +21,7 @@ import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
 import it.uniroma2.art.coda.provisioning.ParameterDescription;
 import it.uniroma2.art.coda.provisioning.SignatureDescription;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.semanticturkey.customrange.CODACoreProvider;
+import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;

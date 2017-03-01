@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.customrange;
+package it.uniroma2.art.semanticturkey.customform;
 
 import java.util.Iterator;
 
@@ -116,10 +116,6 @@ public class UserPromptStruct {
 	
 	public boolean hasLanguage(){
 		return literalLang != null;
-	}
-	
-	public boolean hasConverter(){
-		return converter != null;
 	}
 	
 	public String toString() {

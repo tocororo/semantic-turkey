@@ -40,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.script.Bindings;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -77,8 +75,8 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntryGraph;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -122,7 +120,7 @@ public class ResourceView2 extends STServiceAdapter {
 	private StatementConsumerProvider statementConsumerProvider;
 
 	@Autowired
-	private CustomRangeProvider customRangeProvider;
+	private CustomFormManager customFormManager;
 
 	@STServiceOperation
 	@Read
@@ -363,10 +361,10 @@ public class ResourceView2 extends STServiceAdapter {
 			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
 
 			for (IRI pred : resourcePredicates) {
-				customRangeProvider.getCustomRangeEntriesForProperty(pred.stringValue()).stream()
-						.filter(CustomRangeEntryGraph.class::isInstance)
-						.map(CustomRangeEntryGraph.class::cast).forEach(cre -> {
-							List<IRI> chain = cre.getShowPropertyChain();
+				customFormManager.getCustomFormForResource(pred.stringValue()).stream()
+						.filter(CustomFormGraph.class::isInstance)
+						.map(CustomFormGraph.class::cast).forEach(cf -> {
+							List<IRI> chain = cf.getShowPropertyChain();
 
 							if (chain == null || chain.isEmpty())
 								return;

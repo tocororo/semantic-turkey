@@ -4,13 +4,13 @@ import java.util.Collections;
 
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 
 public class SKOSNotesStatementConsumer extends AbstractPropertyMatchingStatementConsumer{
 
-	public SKOSNotesStatementConsumer(CustomRangeProvider customRangeProvider) {
-		super(customRangeProvider, "notes", Collections.singleton(SKOS.NOTE));
+	public SKOSNotesStatementConsumer(CustomFormManager customFormManager) {
+		super(customFormManager, "notes", Collections.singleton(SKOS.NOTE));
 	}
 
 }

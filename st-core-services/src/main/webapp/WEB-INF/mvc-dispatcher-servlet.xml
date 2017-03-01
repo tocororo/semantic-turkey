@@ -78,6 +78,8 @@
 		<context:exclude-filter type="regex"
 			expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*" />
 		<context:exclude-filter type="regex"
+			expression="it\.uniroma2\.art\.semanticturkey\.customform\..*" />
+		<context:exclude-filter type="regex"
 			expression="it\.uniroma2\.art\.semanticturkey\.security\..*" />
 	</context:component-scan>
 

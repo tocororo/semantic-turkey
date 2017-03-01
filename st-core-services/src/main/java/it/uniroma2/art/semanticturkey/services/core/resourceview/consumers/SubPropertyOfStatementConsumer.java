@@ -4,13 +4,13 @@ import java.util.Collections;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 
 public class SubPropertyOfStatementConsumer extends AbstractPropertyMatchingStatementConsumer{
 
-	public SubPropertyOfStatementConsumer(CustomRangeProvider customRangeProvider) {
-		super(customRangeProvider, "superproperties", Collections.singleton(RDFS.SUBPROPERTYOF));
+	public SubPropertyOfStatementConsumer(CustomFormManager customFormManager) {
+		super(customFormManager, "superproperties", Collections.singleton(RDFS.SUBPROPERTYOF));
 	}
 
 }

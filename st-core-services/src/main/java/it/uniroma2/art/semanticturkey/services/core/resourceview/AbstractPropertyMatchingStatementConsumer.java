@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 import it.uniroma2.art.owlart.rdf4jimpl.model.ARTURIResourceRDF4JImpl;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -44,22 +44,22 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		IGNORE, ALWAYS_ASSUME_COLLECTION
 	};
 
-	private CustomRangeProvider customRangeProvider;
+	private CustomFormManager customFormManager;
 	private String sectionName;
 	private Set<IRI> matchedProperties;
 	private CollectionBehavior collectionBehavior;
 
-	public AbstractPropertyMatchingStatementConsumer(CustomRangeProvider customRangeProvider,
+	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
 			String sectionName, Set<IRI> matchedProperties, CollectionBehavior collectionBehavior) {
-		this.customRangeProvider = customRangeProvider;
+		this.customFormManager = customFormManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
 		this.collectionBehavior = collectionBehavior;
 	}
 
-	public AbstractPropertyMatchingStatementConsumer(CustomRangeProvider customRangeProvider,
+	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
 			String sectionName, Set<IRI> matchedProperties) {
-		this(customRangeProvider, sectionName, matchedProperties, CollectionBehavior.IGNORE);
+		this(customFormManager, sectionName, matchedProperties, CollectionBehavior.IGNORE);
 	}
 
 	@Override
@@ -214,7 +214,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
 					null, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
-					customRangeProvider.existsCustomRangeEntryGraphForProperty(predicate.stringValue()));
+					customFormManager.existsCustomFormGraphForResource(predicate.stringValue()));
 
 			propMap.put(predicate, annotatedPredicate);
 

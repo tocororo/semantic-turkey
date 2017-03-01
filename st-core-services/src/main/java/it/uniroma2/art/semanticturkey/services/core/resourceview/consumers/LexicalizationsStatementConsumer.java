@@ -10,15 +10,15 @@ import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.services.core.ResourceView2;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractGroupingPropertyMatchingStatementConsumer;
 
 public class LexicalizationsStatementConsumer extends AbstractGroupingPropertyMatchingStatementConsumer {
 
-	public LexicalizationsStatementConsumer(CustomRangeProvider customRangeProvider) {
-		super(customRangeProvider, "lexicalizations",
+	public LexicalizationsStatementConsumer(CustomFormManager customFormManager) {
+		super(customFormManager, "lexicalizations",
 				Sets.newLinkedHashSet(Arrays.asList(RDFS.LABEL, SKOS.PREF_LABEL, SKOS.ALT_LABEL,
 						SKOS.HIDDEN_LABEL, SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL)));
 	}

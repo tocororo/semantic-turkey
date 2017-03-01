@@ -25,9 +25,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.customrange.CustomRange;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeEntry;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -51,7 +51,7 @@ public class Properties extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Properties.class);
 
 	@Autowired
-	private CustomRangeProvider crProvider;
+	private CustomFormManager cfProvider;
 	
 	/**
 	 * returns all root properties
@@ -472,7 +472,7 @@ public class Properties extends STServiceAdapter {
 		ObjectNode response = JsonNodeFactory.instance.objectNode();
 		
 		//first of all, check if there is a custom range that replace the standard range(s)
-		boolean replace = crProvider.getCustomRangeConfig().getReplaceRanges(property.stringValue());
+		boolean replace = cfProvider.getCustomFormsConfig().getReplace(property.stringValue());
 		if(!replace) {
 			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
 			
@@ -489,26 +489,26 @@ public class Properties extends STServiceAdapter {
 			response.set("ranges", rangesObjectNode);
 		}
 		
-		//now add the part relative to the customRanges
-		CustomRange cr = crProvider.getCustomRangeForProperty(property.stringValue());
-		if( cr != null) {
-			ObjectNode customRanges = JsonNodeFactory.instance.objectNode();
-			customRanges.set("id", JsonNodeFactory.instance.textNode(cr.getId()));
-			customRanges.set("property", JsonNodeFactory.instance.textNode(property.stringValue()));
+		//now add the part relative to the custom ranges
+		FormCollection formColl = cfProvider.getFormCollectionForResource(property.stringValue());
+		if( formColl != null) {
+			ObjectNode formCollNode = JsonNodeFactory.instance.objectNode();
+			formCollNode.set("id", JsonNodeFactory.instance.textNode(formColl.getId()));
+			formCollNode.set("property", JsonNodeFactory.instance.textNode(property.stringValue()));
 			
-			ArrayNode crArrayNode = JsonNodeFactory.instance.arrayNode();
-			Collection<CustomRangeEntry> crList = cr.getEntries();
-			for(CustomRangeEntry customRangeEntry : crList){
-				ObjectNode customRangeObjectNode = JsonNodeFactory.instance.objectNode();
-				customRangeObjectNode.set("id", JsonNodeFactory.instance.textNode(customRangeEntry.getId()));
-				customRangeObjectNode.set("name", JsonNodeFactory.instance.textNode(customRangeEntry.getName()));
-				customRangeObjectNode.set("type", JsonNodeFactory.instance.textNode(customRangeEntry.getType()));
-				customRangeObjectNode.set("description", JsonNodeFactory.instance.textNode(customRangeEntry.getDescription()));
-				crArrayNode.add(customRangeObjectNode);
+			ArrayNode formsArrayNode = JsonNodeFactory.instance.arrayNode();
+			Collection<CustomForm> cForms = formColl.getForms();
+			for(CustomForm customForm : cForms){
+				ObjectNode formObjectNode = JsonNodeFactory.instance.objectNode();
+				formObjectNode.set("id", JsonNodeFactory.instance.textNode(customForm.getId()));
+				formObjectNode.set("name", JsonNodeFactory.instance.textNode(customForm.getName()));
+				formObjectNode.set("type", JsonNodeFactory.instance.textNode(customForm.getType()));
+				formObjectNode.set("description", JsonNodeFactory.instance.textNode(customForm.getDescription()));
+				formsArrayNode.add(formObjectNode);
 				
 			}
-			customRanges.set("crEntries", crArrayNode);
-			response.set("customRanges", customRanges);
+			formCollNode.set("forms", formsArrayNode);
+			response.set("formCollection", formCollNode);
 		}
 			
 		return response;

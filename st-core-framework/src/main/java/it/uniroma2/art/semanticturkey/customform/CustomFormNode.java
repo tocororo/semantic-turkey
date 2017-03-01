@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.customrange;
+package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,9 +20,9 @@ import org.w3c.dom.Element;
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 
-public class CustomRangeEntryNode extends CustomRangeEntry {
+public class CustomFormNode extends CustomForm {
 	
-	CustomRangeEntryNode(String id, String name, String description, String ref) {
+	CustomFormNode(String id, String name, String description, String ref) {
 		super(id, name, description, ref);
 	}
 
@@ -30,7 +30,7 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException {
 		Collection<UserPromptStruct> form = new ArrayList<UserPromptStruct>();
 		String ref = getRef();
-		UserPromptStruct upStruct = CustomRangeEntryParseUtils.createUserPromptForNodeEntry(ref, codaCore);
+		UserPromptStruct upStruct = CustomFormParseUtils.createUserPromptForNodeForm(ref, codaCore);
 		form.add(upStruct);
 		return form;
 	}
@@ -42,7 +42,7 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
 			Document doc = docBuilder.newDocument();
 			
-			Element creElement = doc.createElement("customRangeEntry");
+			Element creElement = doc.createElement("customForm");
 			doc.appendChild(creElement);
 			creElement.setAttribute("id", this.getId());
 			creElement.setAttribute("name", this.getName());
@@ -65,12 +65,11 @@ public class CustomRangeEntryNode extends CustomRangeEntry {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File(CustomRangeProvider.getCustomRangeEntryFolder(), this.getId() + ".xml"));
+			StreamResult result = new StreamResult(new File(CustomFormManager.getFormsFolder(), this.getId() + ".xml"));
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();
 		}
 	}
-	
 
 }

@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
@@ -31,38 +31,38 @@ public class StatementConsumerProvider {
 	private HashMap<RDFResourceRolesEnum, List<StatementConsumer>> role2template;
 
 	@Autowired
-	public StatementConsumerProvider(CustomRangeProvider customRangeProvider) {
-		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer(customRangeProvider);
+	public StatementConsumerProvider(CustomFormManager customFormManager) {
+		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer(customFormManager);
 
 		ClassAxiomsStatementConsumer classAxiomsStatementConsumer = new ClassAxiomsStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 
 		LexicalizationsStatementConsumer lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		BroadersStatementConsumer broaderStatementConsumer = new BroadersStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		SubPropertyOfStatementConsumer subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		PropertyFacetsStatementConsumer propertyFactesStatementConsumer = new PropertyFacetsStatementConsumer(
-				customRangeProvider);
-		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer(customRangeProvider);
-		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer(customRangeProvider);
+				customFormManager);
+		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer(customFormManager);
+		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer(customFormManager);
 		OntologyImportsStatementConsumer ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		TopConceptOfStatementConsumer topConceptOfStatementConsumer = new TopConceptOfStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		InSchemeStatementConsumer inSchemeStatementConsumer = new InSchemeStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		SKOSCollectionMembersStatementConsumer skosCollectionMemberStatementConsumer = new SKOSCollectionMembersStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		SKOSOrderedCollectionMembersStatementConsumer skosOrderedCollectionMembersStatementConsumer = new SKOSOrderedCollectionMembersStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		LabelRelationsStatementConsumer labelRelationStatementConsumer = new LabelRelationsStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 		SKOSNotesStatementConsumer skosNotesStatementConsumer = new SKOSNotesStatementConsumer(
-				customRangeProvider);
+				customFormManager);
 
 		role2template = new HashMap<RDFResourceRolesEnum, List<StatementConsumer>>();
 		role2template.put(RDFResourceRolesEnum.cls,
