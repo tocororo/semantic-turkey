@@ -1,18 +1,19 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.xml.sax.SAXException;
 
 import it.uniroma2.art.semanticturkey.resources.Resources;
 
@@ -23,25 +24,26 @@ public class CustomFormManager {
 	private static final String FORM_COLLECTIONS_FOLDER_NAME = "formCollections";
 	private static final String FORMS_FOLDER_NAME = "forms";
 	
+	//TODO the followings will become map of <projectName, CustomFormsConfig/FormCollectionList/CustomFormList>
+	//where projectName is SYSTEM at SYSTEM level
+	//I will also provide method register/unregisterCustomFormStructure(projectName) that load/unload in memory the
+	//structure of a project when it's open/closed
 	private CustomFormsConfig cfConfig;
-	
-	//Map of id-FormCollection object pairs (contains all the {@link FormCollection}, also the ones that are not
-	//reachable from the config tree, namely the ones that are not associated to any property or class)
-	private Map<String, FormCollection> formCollMap = new HashMap<>();
-	//Map of id-CustomForm object pairs (contains all the {@link CustomForm}, also the ones that are not reachable
-	//from the config tree, namely the ones that are not contained in any {@link FormCollection})
-	private Map<String, CustomForm> formsMap = new HashMap<>();
+	private FormCollectionList formCollList;
+	private CustomFormList customFormList;
 	
 	private static Logger logger = LoggerFactory.getLogger(CustomFormManager.class);
 	
 	@PostConstruct
 	public void init() {
 		try {
+			formCollList = new FormCollectionList();
+			customFormList = new CustomFormList();
+			
 			// check existing of customForms folders hierarchy
 			File cfFolder = getCustomFormsFolder();
 			if (!cfFolder.exists()) {
-				//TODO here create CFC without a basic CFC file that is initalized in initializeCFBasicHierarchy
-				cfConfig = new CustomFormsConfig(formCollMap, formsMap);
+				cfConfig = new CustomFormsConfig(formCollList, customFormList);
 				initializeCFBasicHierarchy();
 			} else {
 				File formsFolder = getFormsFolder();
@@ -58,10 +60,17 @@ public class CustomFormManager {
 					if (f.getName().startsWith(CustomForm.PREFIX)) {
 						try {
 							CustomForm cf = CustomFormLoader.loadCustomForm(f);
-							formsMap.put(cf.getId(), cf);
-						} catch (CustomFormException e) {
+							customFormList.add(cf);
+						} catch (DuplicateIdException e) {
+							System.out.println("CustomForm from file " + f.getName() + " has duplicated ID. "
+								+ "It will be ignored.");
+						} catch (CustomFormInitializationException e) {
 							System.out.println("Failed to initialize CustomForm from file " + f.getName()
-									+ ". It may contain some errors.");
+								+ ", it may contain some errors. It will be ignored. " + e.getMessage());
+						} catch (ParserConfigurationException | SAXException | IOException e) {
+							System.out.println("Failed to initialize FormCollection from file " + f.getName()
+								+ ", it may contain some errors. It will be ignored.");
+							e.printStackTrace();
 						}
 					}
 				}
@@ -70,11 +79,20 @@ public class CustomFormManager {
 				File[] formCollFiles = formCollFolder.listFiles();
 				for (File f : formCollFiles) {
 					if (f.getName().startsWith(FormCollection.PREFIX)) {
-						FormCollection formColl = CustomFormLoader.loadFormCollection(f, formsMap);
-						formCollMap.put(formColl.getId(), formColl);
+						try {
+							FormCollection formColl = CustomFormLoader.loadFormCollection(f, customFormList);
+							formCollList.add(formColl);
+						} catch (DuplicateIdException e) {
+							System.out.println("FormCollection from file " + f.getName() + " has a duplicated ID. "
+								+ "It will be ignored.");
+						} catch (ParserConfigurationException | SAXException | IOException e) {
+							System.out.println("Failed to initialize FormCollection from file " + f.getName()
+								+ ", it may contain some errors. It will be ignored.");
+							e.printStackTrace();
+						}
 					}
 				}
-				cfConfig = new CustomFormsConfig(formCollMap, formsMap);
+				cfConfig = new CustomFormsConfig(formCollList, customFormList);
 			}
 		} catch (CustomFormInitializationException e) {
 			System.out.println("Custom Form mechanism has not been initialized due to an error in its configuration file");
@@ -97,7 +115,7 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<FormCollection> getAllFormCollections() {
-		return formCollMap.values();
+		return formCollList.getAllFormCollections();
 	}
 	
 	/**
@@ -116,7 +134,7 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getFormCollectionById(String formCollId){
-		return formCollMap.get(formCollId);
+		return formCollList.get(formCollId);
 	}
 	
 	// CUSTOM FORM
@@ -126,7 +144,7 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<CustomForm> getAllCustomForms() {
-		return formsMap.values();
+		return customFormList.getAllCustomForms();
 	}
 	
 	/**
@@ -135,7 +153,7 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public CustomForm getCustomFormById(String cfId){
-		return formsMap.get(cfId);
+		return customFormList.get(cfId);
 	}
 	
 	/**
@@ -203,38 +221,45 @@ public class CustomFormManager {
 	
 	// FORM COLLECTION
 	
-	public FormCollection createFormCollection(String id) throws CustomFormException {
-		//if already exists throw an exception
-		if (this.getFormCollectionById(id) != null) {
-			throw new CustomFormException("Impossible to create a FormCollection with  ID '"
-					+ id + "'. A FormCollection with the same ID already exists");
-		} else { //otherwise create the FormCollection
-			FormCollection formColl = new FormCollection(id);
-			formColl.saveXML(); //serialize it
-			formCollMap.put(id, formColl); //and add it to the map
-			return formColl;
-		}
+	/**
+	 * Creates and adds a FormCollection. If a {@link FormCollection} with the same ID exists, a 
+	 * {@link DuplicateIdException} is thrown
+	 * @param id
+	 * @return
+	 * @throws DuplicateIdException 
+	 */
+	public FormCollection createFormCollection(String id) throws DuplicateIdException {
+		FormCollection formColl = new FormCollection(id);
+		formCollList.add(formColl); // and add it to the map
+		formColl.saveXML(); // serialize it (only if add doesn't throw an exception)
+		return formColl;
 	}
 	
 	// CUSTOM FORM
 	
+	/**
+	 * Creates and adds a CustomForm. If a {@link CustomForm} with the same ID exists, a 
+	 * {@link DuplicateIdException} is thrown
+	 * @param type
+	 * @param id
+	 * @param name
+	 * @param description
+	 * @param ref
+	 * @param showPropChain
+	 * @return
+	 * @throws DuplicateIdException 
+	 */
 	public CustomForm createCustomForm(String type, String id, String name, String description, String ref, List<IRI> showPropChain)
-			throws CustomFormException {
-		//if already exists throw an exception
-		if (this.getCustomFormById(id) != null){
-			throw new CustomFormException("Impossible to create a CustomForm with ID '"
-					+ id + "'. A CustomForm with the same ID already exists");
-		} else { //otherwise create the CustomForm
-			CustomForm form = null;
-			if (type.equalsIgnoreCase(CustomForm.Types.node.toString())){
-				form = new CustomFormNode(id, name, description, ref);
-			} else {
-				form = new CustomFormGraph(id, name, description, ref, showPropChain);
-			}
-			form.saveXML(); //serialize it
-			formsMap.put(id, form); //and add it to the map
-			return form;
+			throws DuplicateIdException {
+		CustomForm form = null;
+		if (type.equalsIgnoreCase(CustomForm.Types.node.toString())) {
+			form = new CustomFormNode(id, name, description, ref);
+		} else {
+			form = new CustomFormGraph(id, name, description, ref, showPropChain);
 		}
+		customFormList.add(form); // and add it to the map
+		form.saveXML(); // serialize it (only if add doesn't throw an exception)
+		return form;
 	}
 	
 	/* ##################
@@ -269,7 +294,7 @@ public class CustomFormManager {
 	 * @param formCollId
 	 */
 	public void deleteFormCollection(String formCollId) {
-		formCollMap.remove(formCollId); // remove formColl from map
+		formCollList.remove(formCollId); // remove formColl from map
 		// delete the file
 		File[] formCollFiles = getFormCollectionsFolder().listFiles();
 		for (File f : formCollFiles) {// search for the formCollection file with the given id/name
@@ -311,7 +336,7 @@ public class CustomFormManager {
 		if (this.getCustomFormById(customFormId) == null) {
 			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
 		} else {
-			formsMap.remove(customFormId); // remove the custom form from the map
+			customFormList.remove(customFormId); // remove the custom form from the map
 			// delete the CF file
 			File[] cfFiles = getFormsFolder().listFiles();
 			for (File f : cfFiles) {// search for the custom form file with the given id/name

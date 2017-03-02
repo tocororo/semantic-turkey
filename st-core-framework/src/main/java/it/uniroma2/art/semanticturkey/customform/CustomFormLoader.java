@@ -24,21 +24,24 @@ public class CustomFormLoader {
 	/**
 	 * Given a {@link FormCollection} file loads its content
 	 * @param formCollFile
-	 * @param customFormMap
+	 * @param customForms
 	 * @return
+	 * @throws IOException 
+	 * @throws SAXException 
+	 * @throws ParserConfigurationException 
 	 */
-	public static FormCollection loadFormCollection(File formCollFile, Map<String, CustomForm> customFormMap) {
+	public static FormCollection loadFormCollection(File formCollFile, CustomFormList customForms) throws ParserConfigurationException, SAXException, IOException {
 		FormCollectionXMLReader formCollReader = new FormCollectionXMLReader(formCollFile);
 		//load forms listed in the form collection file
 		ArrayList<CustomForm> forms = new ArrayList<>();
 		Collection<String> formIdList = formCollReader.getCustomFormIds();
 		for (String formId : formIdList){
-			CustomForm cf = customFormMap.get(formId);
+			CustomForm cf = customForms.get(formId);
 			if (cf != null){
 				forms.add(cf);
 			} else {
-				System.out.println("The FormCollection '" + formCollReader.getId() + "' points to a not existing "
-						+ "CustomForm '" + formId + "'");
+				System.out.println("The FormCollection '" + formCollReader.getId()
+					+ "' points to a not existing CustomForm (ID: '" + formId + "')");
 			}
 		}
 		return new FormCollection(formCollReader.getId(), forms);
@@ -48,9 +51,12 @@ public class CustomFormLoader {
 	 * Given a {@link CustomForm} file loads its content
 	 * @param cfFile
 	 * @return
+	 * @throws IOException 
+	 * @throws SAXException 
+	 * @throws ParserConfigurationException 
 	 * @throws CustomFormException
 	 */
-	public static CustomForm loadCustomForm(File cfFile) throws CustomFormException {
+	public static CustomForm loadCustomForm(File cfFile) throws CustomFormInitializationException, ParserConfigurationException, SAXException, IOException {
 		CustomFormXMLReader cfReader = new CustomFormXMLReader(cfFile);
 		String id = cfReader.getId();
 		String name = cfReader.getName();
@@ -63,7 +69,7 @@ public class CustomFormLoader {
 		} else if (type.equals(CustomForm.Types.node.toString())){
 			return new CustomFormNode(id, name, description, ref);
 		} else {
-			throw new CustomFormException("Invalid type '" + type + "' in CustomForm file '" + cfFile.getName() + "'");
+			throw new CustomFormInitializationException("Invalid type '" + type + "' in CustomForm file '" + cfFile.getName() + "'");
 		}
 	}
 	
@@ -72,16 +78,13 @@ public class CustomFormLoader {
 		
 		private Document doc;
 		
-		public FormCollectionXMLReader(File formCollectionFile){
-			try {
-				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				if (formCollectionFile.exists()){ //TODO check is necessary?
-					doc = dBuilder.parse(formCollectionFile);
-					doc.getDocumentElement().normalize();
-				}
-			} catch (IOException | ParserConfigurationException | SAXException e) {
-				e.printStackTrace();
+		public FormCollectionXMLReader(File formCollectionFile)
+				throws ParserConfigurationException, SAXException, IOException {
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			if (formCollectionFile.exists()) { // TODO check is necessary?
+				doc = dBuilder.parse(formCollectionFile);
+				doc.getDocumentElement().normalize();
 			}
 		}
 		
@@ -125,16 +128,12 @@ public class CustomFormLoader {
 		
 		private Document doc;
 		
-		public CustomFormXMLReader(File customFormFile){
-			try {
-				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				if (customFormFile.exists()){ //TODO check is necessary?
-					doc = dBuilder.parse(customFormFile);
-					doc.getDocumentElement().normalize();
-				}
-			} catch (IOException | ParserConfigurationException | SAXException e) {
-				e.printStackTrace();
+		public CustomFormXMLReader(File customFormFile) throws ParserConfigurationException, SAXException, IOException {
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			if (customFormFile.exists()) { // TODO check is necessary?
+				doc = dBuilder.parse(customFormFile);
+				doc.getDocumentElement().normalize();
 			}
 		}
 		

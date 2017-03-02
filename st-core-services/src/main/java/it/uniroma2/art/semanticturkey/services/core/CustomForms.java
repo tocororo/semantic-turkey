@@ -57,6 +57,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormParseUtils;
+import it.uniroma2.art.semanticturkey.customform.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.FormCollectionMapping;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
@@ -470,10 +471,10 @@ public class CustomForms extends STServiceAdapter {
 	 * Creates an empty FormCollection (without CustomForms related)
 	 * @param id
 	 * @return
-	 * @throws CustomFormException 
+	 * @throws DuplicateIdException 
 	 */
 	@STServiceOperation
-	public void createFormCollection(String id) throws CustomFormException{
+	public void createFormCollection(String id) throws DuplicateIdException {
 		cfManager.createFormCollection(id);
 	}
 	
@@ -625,11 +626,11 @@ public class CustomForms extends STServiceAdapter {
 	 * @param ref
 	 * @param showProp Useful only if type is "graph"
 	 * @return
-	 * @throws CustomFormException 
+	 * @throws DuplicateIdException 
 	 */
 	@STServiceOperation (method = RequestMethod.POST)
 	public void createCustomForm(String type, String id, String name, String description, String ref, @Optional List<IRI> showPropChain)
-			throws CustomFormException {
+			throws DuplicateIdException {
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
 		cfManager.createCustomForm(type, id, name, description, ref, showPropChain);
 	}

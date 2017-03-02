@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -49,9 +48,9 @@ public class CustomFormsConfig {
 	 * @param creMap
 	 * @throws CustomFormInitializationException 
 	 */
-	public CustomFormsConfig(Map<String, FormCollection> formCollMap, Map<String, CustomForm> formMap) throws CustomFormInitializationException {
+	public CustomFormsConfig(FormCollectionList formCollections, CustomFormList customForms) throws CustomFormInitializationException {
 		cfConfXmlHelper = new CustomFormsConfigXMLHelper();
-		mappings = cfConfXmlHelper.getFormMappings(formCollMap, formMap);
+		mappings = cfConfXmlHelper.getFormMappings(formCollections, customForms);
 	}
 	
 	public List<FormCollectionMapping> getFormsMappings(){
@@ -179,7 +178,7 @@ public class CustomFormsConfig {
 			}
 		}
 		
-		public List<FormCollectionMapping> getFormMappings(Map<String, FormCollection> formCollMap, Map<String, CustomForm> formMap) throws CustomFormInitializationException {
+		public List<FormCollectionMapping> getFormMappings(FormCollectionList formCollections, CustomFormList customForms) throws CustomFormInitializationException {
 			try {
 				List<FormCollectionMapping> mappings = new ArrayList<FormCollectionMapping>();
 				if (cfConfigFile.exists()) { //parse the config file and retrieve the mappings only if the xml congif file exists
@@ -193,7 +192,7 @@ public class CustomFormsConfig {
 							String mapResource = mappingElement.getAttribute(RESOURCE_ATTR_TAG);
 							String formCollId = mappingElement.getAttribute(FORM_COLL_ATTR_TAG);
 							boolean replace = Boolean.parseBoolean(mappingElement.getAttribute(REPLACE_ATTR_TAG));
-							FormCollection formColl = formCollMap.get(formCollId);
+							FormCollection formColl = formCollections.get(formCollId);
 							if (formColl != null){
 								mappings.add(new FormCollectionMapping(mapResource, formColl, replace));
 							} else {
