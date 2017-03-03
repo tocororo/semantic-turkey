@@ -10,6 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.print.attribute.standard.JobOriginatingUserName;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -18,8 +21,11 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.TreeModel;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -65,92 +71,66 @@ public class AbstractGroupingPropertyMatchingStatementConsumer extends AbstractS
 
 		Set<Statement> newlyProcessedStatements = new HashSet<>();
 
-		Map<IRI, AnnotatedValue<IRI>> outerPropMap = new LinkedHashMap<>();
-		Map<IRI, PredicateObjectsList> outerValueMultiMap = new HashMap<>();
+		Model pendingStatements = new LinkedHashModel(statements);
+		pendingStatements.removeAll(processedStatements);
+		IRI lastPredicate = null;
 
-		for (IRI superProp : matchedProperties) {
-			Map<IRI, AnnotatedValue<IRI>> propMap = new HashMap<>();
-			Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
-
-			LinkedHashModel relevantDirectKnowledge = new LinkedHashModel(
-					statements.filter(resource, null, null).stream()
-							.filter(stmt -> !processedStatements.contains(stmt)
-									&& (stmt.getPredicate().equals(superProp) || propertyModel
-											.contains(stmt.getPredicate(), RDFS.SUBPROPERTYOF, superProp)))
-							.collect(toList()));
-			newlyProcessedStatements.addAll(relevantDirectKnowledge);
-
-			for (IRI predicate : relevantDirectKnowledge.predicates()) {
-				if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
-						project.getNewOntologyManager())) {
-					continue;
-				}
-
-				AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
-
-				annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
-				addRole(annotatedPredicate, resource2attributes);
-				addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
-						null, statements);
-				annotatedPredicate.setAttribute("hasCustomRange",
-						customFormManager.existsCustomFormGraphForResource(predicate.stringValue()));
-
-				propMap.put(predicate, annotatedPredicate);
-
-				Map<Value, List<Statement>> statementsByObject = relevantDirectKnowledge
-						.filter(resource, predicate, null).stream().collect(groupingBy(Statement::getObject));
-
-				for (Map.Entry<Value, List<Statement>> entry : statementsByObject.entrySet()) {
-					Value object = entry.getKey();
-					Set<Resource> graphs = entry.getValue().stream().map(Statement::getContext)
-							.collect(toSet());
-
-					AnnotatedValue<?> annotatedObject = new AnnotatedValue<Value>(object);
-					annotatedObject.setAttribute("explicit", currentProject && graphs.contains(workingGraph));
-
-					if (object instanceof Resource) {
-						addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
-						addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject,
-								resource2attributes, predicate2resourceCreShow, predicate, statements);
-					}
-					annotatedObject.setAttribute("graphs", computeGraphs(graphs));
-
-					valueMultiMap.put(predicate, annotatedObject);
-				}
+		Map<IRI, AnnotatedValue<IRI>> propMap = new HashMap<>();
+		Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
+		
+		PredicateObjectsList predObjsList = new PredicateObjectsList(propMap, valueMultiMap);
+		
+		for (IRI predicate : pendingStatements.predicates()) {			
+			if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
+					project.getNewOntologyManager())) {
+				continue;
 			}
+		
+			Set<IRI> rootProperties = matchedProperties.stream().filter(p->propertyModel.contains(predicate, RDFS.SUBPROPERTYOF, p)).collect(toSet());
+				
+			if (rootProperties.isEmpty()) continue;
+				
+			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
 
-			if (valueMultiMap.isEmpty()
-					&& !shouldRetainEmptyOuterGroup(superProp, resource, resourcePosition)) {
-				continue; // Skip irrelevant empty outer group
-			}
-
-			PredicateObjectsList predObjsList = new PredicateObjectsList(propMap, valueMultiMap);
-
-			AnnotatedValue<IRI> annotatedSuperProp = new AnnotatedValue<IRI>(superProp);
-
-			annotatedSuperProp.setAttribute("role", RDFResourceRolesEnum.property.toString());
-			addRole(annotatedSuperProp, resource2attributes);
-			addShowOrRenderXLabelOrCRE(annotatedSuperProp, resource2attributes, predicate2resourceCreShow,
+			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
+			addRole(annotatedPredicate, resource2attributes);
+			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
 					null, statements);
-			annotatedSuperProp.setAttribute("hasCustomRange",
-					customFormManager.existsCustomFormGraphForResource(superProp.stringValue()));
+			annotatedPredicate.setAttribute("hasCustomRange",
+					customFormManager.existsCustomFormGraphForResource(predicate.stringValue()));
+			annotatedPredicate.setAttribute("rootProperties",
+					rootProperties.stream().map(Value::stringValue).collect(Collectors.joining(",")));
+			propMap.put(predicate, annotatedPredicate);
+			
+			
+			newlyProcessedStatements.addAll(pendingStatements.filter(resource, predicate, null));
+			
+			Map<Value, List<Statement>> statementsByObject = pendingStatements
+					.filter(resource, predicate, null).stream().collect(groupingBy(Statement::getObject));
+			
+			for (Map.Entry<Value, List<Statement>> entry : statementsByObject.entrySet()) {
+				Value object = entry.getKey();
+				Set<Resource> graphs = entry.getValue().stream().map(Statement::getContext)
+						.collect(toSet());
 
-			outerPropMap.put(superProp, annotatedSuperProp);
-			outerValueMultiMap.put(superProp, predObjsList);
+				AnnotatedValue<?> annotatedObject = new AnnotatedValue<Value>(object);
+				annotatedObject.setAttribute("explicit", currentProject && graphs.contains(workingGraph));
+
+				if (object instanceof Resource) {
+					addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
+					addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject,
+							resource2attributes, predicate2resourceCreShow, predicate, statements);
+				}
+				annotatedObject.setAttribute("graphs", computeGraphs(graphs));
+
+				valueMultiMap.put(predicate, annotatedObject);
+			}			
 		}
 
 		processedStatements.addAll(newlyProcessedStatements);
-
-		PredicateValueList<PredicateObjectsList> outerPredicateValueList = new PredicateValueList<>(
-				outerPropMap, outerValueMultiMap);
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
-		rv.put(sectionName, new PredicateValueListSection<PredicateObjectsList>(outerPredicateValueList));
+		rv.put(sectionName, new PredicateObjectsListSection(predObjsList));
 
 		return rv;
-	}
-
-	protected boolean shouldRetainEmptyOuterGroup(IRI superProp, Resource resource,
-			ResourcePosition resourcePosition) {
-		return true;
 	}
 }
