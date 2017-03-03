@@ -9,24 +9,19 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractGroupingPropertyMatchingStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 
-public class ClassAxiomsStatementConsumer extends AbstractGroupingPropertyMatchingStatementConsumer {
+public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
-	private static final IRI[] relevantProperties = {
-			OWL.EQUIVALENTCLASS,
-			RDFS.SUBCLASSOF,
-			OWL.DISJOINTWITH,
+	private static final IRI[] relevantProperties = { OWL.EQUIVALENTCLASS, RDFS.SUBCLASSOF, OWL.DISJOINTWITH,
 			// OWL.Res.HASKEY,
-			OWL.COMPLEMENTOF,
-			OWL.INTERSECTIONOF,
-			//OWL.Res.DISJOINTUNIONOF,
-			OWL.ONEOF,
-			OWL.UNIONOF
-		};
+			OWL.COMPLEMENTOF, OWL.INTERSECTIONOF,
+			// OWL.Res.DISJOINTUNIONOF,
+			OWL.ONEOF, OWL.UNIONOF };
 
 	public ClassAxiomsStatementConsumer(CustomFormManager customFormManager) {
-		super(customFormManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)));
+		super(customFormManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
+				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE);
 	}
 
 }

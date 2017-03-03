@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.Queue;
 import java.util.Set;
 
@@ -44,22 +45,30 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		IGNORE, ALWAYS_ASSUME_COLLECTION
 	};
 
+	public enum RootProprertiesBehavior {
+		SHOW, SHOW_IF_INFORMATIVE, HIDE
+	}
+
 	private CustomFormManager customFormManager;
 	private String sectionName;
 	private Set<IRI> matchedProperties;
+	private RootProprertiesBehavior rootProprertiesBehavior;
 	private CollectionBehavior collectionBehavior;
 
-	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
-			String sectionName, Set<IRI> matchedProperties, CollectionBehavior collectionBehavior) {
+	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
+			Set<IRI> matchedProperties, RootProprertiesBehavior rootProprertiesBehavior,
+			CollectionBehavior collectionBehavior) {
 		this.customFormManager = customFormManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
+		this.rootProprertiesBehavior = rootProprertiesBehavior;
 		this.collectionBehavior = collectionBehavior;
 	}
 
-	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
-			String sectionName, Set<IRI> matchedProperties) {
-		this(customFormManager, sectionName, matchedProperties, CollectionBehavior.IGNORE);
+	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
+			Set<IRI> matchedProperties) {
+		this(customFormManager, sectionName, matchedProperties, RootProprertiesBehavior.HIDE,
+				CollectionBehavior.IGNORE);
 	}
 
 	@Override
@@ -215,6 +224,16 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					null, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customFormManager.existsCustomFormGraphForResource(predicate.stringValue()));
+
+			if (rootProprertiesBehavior == RootProprertiesBehavior.SHOW
+					|| (rootProprertiesBehavior == RootProprertiesBehavior.SHOW_IF_INFORMATIVE
+							&& matchedProperties.size() > 1)) {
+				Set<IRI> rootProperties = matchedProperties.stream()
+						.filter(p -> propertyModel.contains(predicate, RDFS.SUBPROPERTYOF, p))
+						.collect(toSet());
+				annotatedPredicate.setAttribute("rootProperties",
+						rootProperties.stream().map(Value::stringValue).collect(Collectors.joining(",")));
+			}
 
 			propMap.put(predicate, annotatedPredicate);
 

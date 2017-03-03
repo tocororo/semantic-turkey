@@ -7,10 +7,12 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 
-public class SKOSOrderedCollectionMembersStatementConsumer extends AbstractPropertyMatchingStatementConsumer{
+public class SKOSOrderedCollectionMembersStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
 	public SKOSOrderedCollectionMembersStatementConsumer(CustomFormManager customFormManager) {
-		super(customFormManager, "membersOrdered", Collections.singleton(SKOS.MEMBER_LIST), CollectionBehavior.ALWAYS_ASSUME_COLLECTION);
+		super(customFormManager, "membersOrdered", Collections.singleton(SKOS.MEMBER_LIST),
+				AbstractPropertyMatchingStatementConsumer.RootProprertiesBehavior.HIDE,
+				CollectionBehavior.ALWAYS_ASSUME_COLLECTION);
 	}
 
 }
