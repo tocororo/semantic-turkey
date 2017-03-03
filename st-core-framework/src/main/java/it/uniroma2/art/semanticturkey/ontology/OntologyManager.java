@@ -290,12 +290,20 @@ public interface OntologyManager {
 	 *            the baseURI to be used when importing relative names from loaded RDF data
 	 * @param format
 	 * @param graph
+	 * @param transitiveImportAllowance
+	 * @param failedImports
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 * @throws RDF4JException
 	 */
-	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph)
+	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException;
+
+	/**
+	 * Clear the managed ontology
+	 */
+	public void clearData() throws RDF4JException;
 
 	/**
 	 * Copies an ontology to the ontology mirror.

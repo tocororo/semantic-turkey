@@ -8,11 +8,13 @@ import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import java.io.File;
@@ -20,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -147,7 +150,7 @@ public class InputOutput extends STServiceAdapterOLD {
 		if (rdfFormat == null) {
 			return logAndSendException("rdf file format cannot be established neither from file extension nor from user preference (if it has been provided)");
 		}
-		getProject().getOntologyManager().loadOntologyData(inputServerFile, baseUri, rdfFormat, getWorkingGraph());
+		getProject().getNewOntologyManager().loadOntologyData(inputServerFile, baseUri, RDF4JMigrationUtils.convert2rdf4j(rdfFormat), RDF4JMigrationUtils.convert2rdf4j(getWorkingGraph()), TransitiveImportMethodAllowance.mirrorFallbackToWeb, new HashSet<>());
 
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();

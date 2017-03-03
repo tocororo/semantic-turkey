@@ -10,8 +10,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,13 +23,9 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
@@ -45,7 +39,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.Metadata.OntologyImport.Statuses;
+import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
+import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport.Statuses;
 
 /**
  * This class provides services for manipulating metadata associated with a project.
@@ -247,81 +242,6 @@ public class Metadata extends STServiceAdapter {
 		return getImportsHelper(conn, ont, importsBranch);
 	}
 
-	/**
-	 * Represents an individual ontology import
-	 *
-	 */
-	@JsonSerialize(using = OntologyImport.OntologyImportSerializer.class)
-	public static class OntologyImport {
-		public static enum Statuses {
-			OK, FAILED, LOOP
-		};
-
-		private IRI ontology;
-		private Statuses status;
-		private Collection<OntologyImport> imports;
-
-		public OntologyImport(IRI ontology, Statuses status, @Nullable Collection<OntologyImport> imports) {
-			this.ontology = ontology;
-			this.status = status;
-			this.imports = imports;
-		}
-
-		public IRI getOntology() {
-			return ontology;
-		}
-
-		public Statuses getStatus() {
-			return status;
-		}
-
-		public java.util.Optional<Collection<OntologyImport>> getImports() {
-			return java.util.Optional.ofNullable(imports);
-		}
-
-		public static class OntologyImportSerializer extends StdSerializer<OntologyImport> {
-
-			private static final long serialVersionUID = 1L;
-
-			public OntologyImportSerializer() {
-				this(null);
-			}
-
-			public OntologyImportSerializer(Class<OntologyImport> t) {
-				super(t);
-			}
-
-			@Override
-			public void serialize(OntologyImport value, JsonGenerator gen, SerializerProvider provider)
-					throws IOException {
-				gen.writeStartObject();
-
-				gen.writeStringField("@id", value.getOntology().stringValue());
-				gen.writeStringField("status", value.getStatus().toString());
-
-				if (value.getImports().isPresent()) {
-					Collection<OntologyImport> importsOfImports = value.getImports().get();
-
-					if (!importsOfImports.isEmpty()) {
-						gen.writeArrayFieldStart("imports");
-						for (OntologyImport recursiveImport : value.getImports().get()) {
-							gen.writeObject(recursiveImport);
-						}
-						gen.writeEndArray();
-					}
-				}
-
-				gen.writeEndObject();
-			}
-
-		}
-
-		public static Collection<OntologyImport> fromImportFailures(Set<IRI> failedImports) {
-			return failedImports.stream().map(iri -> new OntologyImport(iri, Statuses.FAILED, null))
-					.collect(toList());
-		}
-	}
-
 	private Collection<OntologyImport> getImportsHelper(RepositoryConnection conn, IRI ont,
 			Set<IRI> importsBranch) throws RepositoryException {
 		Collection<OntologyImport> rv = new ArrayList<>();
@@ -481,6 +401,91 @@ public class Metadata extends STServiceAdapter {
 	public void removeImport(String baseURI) throws RDF4JException, OntologyManagerException,
 			ModelUpdateException, IOException, ModelAccessException {
 		getOntologyManager().removeOntologyImport(baseURI);
+	}
+
+	// Failed imports recovery
+	
+	/**
+	 * Downloads an ontology that is a failed import from the web
+	 * 
+	 * @param baseURI
+	 * @param altUrl
+	 * @param transitiveImportAllowance
+	 * @return
+	 * @throws RDF4JException
+	 * @throws MalformedURLException
+	 * @throws ModelUpdateException
+	 * @throws ImportManagementException
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public Collection<OntologyImport> downloadFromWeb(String baseURI, @Optional String altUrl,
+			TransitiveImportMethodAllowance transitiveImportAllowance) throws RDF4JException,
+			MalformedURLException, ModelUpdateException, ImportManagementException, IOException {
+		String url = altUrl != null ? altUrl : baseURI;
+
+		Set<IRI> failedImports = new HashSet<>();
+
+		getOntologyManager().downloadImportedOntologyFromWeb(baseURI, url, transitiveImportAllowance,
+				failedImports);
+
+		return OntologyImport.fromImportFailures(failedImports);
+	}
+
+	/**
+	 * Downloads an ontology that is a failed import from the web to the ontology mirror
+	 * 
+	 * @param baseURI
+	 * @param altUrl
+	 * @param mirrorFile
+	 * @param transitiveImportAllowance
+	 * @return
+	 * @throws RDF4JException
+	 * @throws MalformedURLException
+	 * @throws ModelUpdateException
+	 * @throws ImportManagementException
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public Collection<OntologyImport> downloadFromWebToMirror(String baseURI, @Optional String altUrl,
+			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
+			throws RDF4JException, MalformedURLException, ModelUpdateException, ImportManagementException,
+			IOException {
+		String url = altUrl != null ? altUrl : baseURI;
+
+		Set<IRI> failedImports = new HashSet<>();
+
+		getOntologyManager().downloadImportedOntologyFromWebToMirror(baseURI, url, mirrorFile,
+				transitiveImportAllowance, failedImports);
+
+		return OntologyImport.fromImportFailures(failedImports);
+	}
+
+	/**
+	 * Retrieves an ontology that is a failed import from a local file and copies it to the ontology mirror
+	 * 
+	 * @param baseURI
+	 * @param localFile
+	 * @param mirrorFile
+	 * @param transitiveImportAllowance
+	 * @return
+	 * @throws RDF4JException
+	 * @throws MalformedURLException
+	 * @throws ModelUpdateException
+	 * @throws ImportManagementException
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public Collection<OntologyImport> getFromLocalFile(String baseURI, String localFile, String mirrorFile,
+			TransitiveImportMethodAllowance transitiveImportAllowance) throws RDF4JException,
+			MalformedURLException, ModelUpdateException, ImportManagementException, IOException {
+
+		Set<IRI> failedImports = new HashSet<>();
+
+		getOntologyManager().getImportedOntologyFromLocalFile(baseURI, localFile, mirrorFile,
+				transitiveImportAllowance, failedImports);
+
+		return OntologyImport.fromImportFailures(failedImports);
 	}
 
 	protected OntologyManager getOntologyManager() {

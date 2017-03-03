@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -189,11 +190,21 @@ public class OntologyManagerCompatibilityImpl implements OntologyManager {
 	}
 
 	@Override
-	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph)
+	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException {
 		try {
 			stOntManager.loadOntologyData(inputFile, baseURI, RDF4JMigrationUtils.convert2art(format));
 		} catch (ModelAccessException | ModelUpdateException | UnsupportedRDFFormatException e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	@Override
+	public void clearData() throws RDF4JException {
+		try {
+			stOntManager.clearData();
+		} catch (ModelCreationException | ModelUpdateException e) {
 			throw new RepositoryException(e);
 		}
 	}

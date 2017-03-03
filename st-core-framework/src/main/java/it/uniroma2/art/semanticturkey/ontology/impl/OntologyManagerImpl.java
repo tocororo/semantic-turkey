@@ -61,6 +61,7 @@ import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
 import it.uniroma2.art.semanticturkey.resources.OntFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 /**
@@ -678,6 +679,32 @@ public class OntologyManagerImpl implements OntologyManager {
 		getImportedOntology(toOntologyMirror, baseURI, baseURI, null, mirFile);
 	}
 
+	@Override
+	public void clearData() throws RDF4JException {
+		logger.debug("clearing RDF:\nontology dir = " + Resources.getSemTurkeyDataDir());
+		try {
+			logger.debug("clearing namespace prefixes");
+			if (nsPrefixMappings != null) {// this check is only needed because of the ugly
+											// startOntologyData()
+				// implementation in SaveToStoreProject.java which activates clearRepository to clean all
+				// eventually left persistence files when loading a save-to-store project
+				// in that case, nsPrefixMappings is still not loaded in the OntManager because it will be
+				// initialized once the loadTriples() method invocation will be concluded
+				nsPrefixMappings.clearNSPrefixMappings();
+			}
+		} catch (NSPrefixMappingUpdateException e) {
+			throw new RepositoryException(e);
+		}
+		if (repository == null) {
+			logger.debug("owlModel not active: no need to clear RDF data");
+		} else {
+			try (RepositoryConnection conn = repository.getConnection()) {
+				conn.clear();
+			}
+			logger.debug("RDF Data cleared");
+		}
+	}
+
 	private void getImportedOntology(ImportMethod method, String baseURI, String altURL,
 			String fromLocalFilePath, OntFile mirror_cacheFile)
 			throws OntologyManagerException, RDF4JException {
@@ -785,10 +812,13 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph)
+	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException {
-		// TODO Auto-generated method stub
-
+		try (RepositoryConnection conn = repository.getConnection()) {
+			conn.add(inputFile, baseURI, format, graph);
+			recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER, transitiveImportAllowance, failedImports);
+		}
 	}
 
 	@Override
