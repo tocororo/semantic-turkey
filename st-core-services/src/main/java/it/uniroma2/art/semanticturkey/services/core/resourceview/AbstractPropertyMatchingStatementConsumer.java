@@ -212,7 +212,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 				processedStatements.addAll(entry.getValue());
 			}
 
-			if (valueMultiMap.isEmpty() && !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
+			if (!valueMultiMap.containsKey(predicate) && !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
 				continue; // Skip irrelevant empty outer group
 			}
 
