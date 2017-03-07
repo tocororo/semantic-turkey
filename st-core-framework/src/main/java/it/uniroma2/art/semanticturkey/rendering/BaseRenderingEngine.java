@@ -4,14 +4,12 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,21 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTLiteral;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.query.TupleBindings;
-import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
-import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -103,103 +89,6 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		}
 	}
 
-	@Override
-	public Map<ARTResource, String> render(Project<?> project, ResourcePosition subjectPosition,
-			ARTResource subject, OWLModel statements, Collection<ARTResource> resources,
-			Collection<TupleBindings> bindings, String varPrefix)
-			throws ModelAccessException, DataAccessException {
-
-		Multimap<ARTResource, ARTLiteral> labelBuilding = HashMultimap.create();
-
-		// /////////////////////////////
-		// // Process subject statements
-
-		Set<ARTURIResource> plainURIs = getPlainURIs();
-
-		if (!plainURIs.isEmpty()) {
-			try (ARTStatementIterator it = statements.listStatements(NodeFilters.ANY, NodeFilters.ANY,
-					NodeFilters.ANY, false, NodeFilters.ANY)) {
-				while (it.streamOpen()) {
-					ARTStatement stmt = it.getNext();
-					if (resources.contains(stmt.getSubject()) && plainURIs.contains(stmt.getPredicate())) {
-						ARTNode resourceNode = stmt.getSubject();
-						ARTNode labelNode = stmt.getObject();
-
-						if (labelNode.isLiteral()) {
-							ARTLiteral labelLiteral = labelNode.asLiteral();
-
-							Set<String> acceptedLanguges = computeLanguages(project);
-
-							if (acceptedLanguges.isEmpty()
-									|| acceptedLanguges.contains(labelLiteral.getLanguage())) {
-								labelBuilding.put(resourceNode.asResource(), labelLiteral);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// /////////////////////////
-		// // Process tuple bindings
-
-		String objectLabelVar = varPrefix + "_object_label";
-		String indirectObjectLabelVar = varPrefix + "_indirectObject_label";
-		String subjectLabelVar = varPrefix + "_subject_label";
-
-		String objectVar = "object";
-		String indirectObjectVar = varPrefix + "_indirectObject";
-
-		for (TupleBindings aBinding : bindings) {
-			ARTResource res;
-			ARTLiteral label = null;
-
-			if (aBinding.hasBinding(objectLabelVar)) {
-				res = aBinding.getBoundValue(objectVar).asResource();
-				label = aBinding.getBoundValue(objectLabelVar).asLiteral();
-			} else if (aBinding.hasBinding(subjectLabelVar)) {
-				res = subject;
-				label = aBinding.getBoundValue(subjectLabelVar).asLiteral();
-			} else if (aBinding.hasBinding(indirectObjectLabelVar)) {
-				res = aBinding.getBoundValue(indirectObjectVar).asResource();
-				label = aBinding.getBoundValue(indirectObjectLabelVar).asLiteral();
-			} else {
-				continue;
-			}
-
-			Set<String> acceptedLanguges = computeLanguages(project);
-
-			if (acceptedLanguges.isEmpty() || acceptedLanguges.contains(label.getLanguage())) {
-				labelBuilding.put(res, label);
-			}
-		}
-
-		Map<ARTResource, String> resource2rendering = new HashMap<ARTResource, String>();
-
-		for (ARTResource key : labelBuilding.keySet()) {
-			StringBuilder sb = new StringBuilder();
-
-			Set<ARTLiteral> sortedLabels = new TreeSet<ARTLiteral>(LabelComparator.INSTANCE);
-			sortedLabels.addAll(labelBuilding.get(key));
-
-			for (ARTLiteral label : sortedLabels) {
-				if (sb.length() != 0) {
-					sb.append(", ");
-				}
-
-				sb.append(label.getLabel());
-
-				if (label.getLanguage() != null) {
-					sb.append(" (").append(label.getLanguage()).append(")");
-				}
-			}
-
-			resource2rendering.put(key, sb.toString());
-		}
-
-		return resource2rendering;
-	}
-
 	private static final Pattern propPattern = Pattern
 			.compile("\\$\\{" + Pattern.quote(STPropertiesManager.PROP_LANGUAGES) + "\\}");
 
@@ -237,8 +126,6 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			return Arrays.stream(interpolatedLanguages.split(",")).map(String::trim).collect(toSet());
 		}
 	}
-
-	protected abstract Set<ARTURIResource> getPlainURIs();
 
 	@Override
 	public GraphPattern getGraphPattern(Project<?> currentProject) {
