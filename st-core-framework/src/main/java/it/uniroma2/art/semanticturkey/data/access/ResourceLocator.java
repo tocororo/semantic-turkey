@@ -19,7 +19,10 @@ import it.uniroma2.art.owlart.rdf4jimpl.model.ARTResourceRDF4JImpl;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
@@ -46,9 +49,9 @@ public class ResourceLocator {
 	 * or <code>resource</code> is defined in any graph of <code>project</code> (see
 	 * {@link RDFModel#isLocallyDefined(ARTResource, ARTResource...)}, then assumes that <code>resource</code>
 	 * belongs to <code>project</code></li>
-	 * <li>for each open project <code>p</code>, if the namespace of <code>resource</code> is equal to the
-	 * default namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs to
-	 * <code>p</code></li>
+	 * <li>for each open and accessible project <code>p</code>, if the namespace of <code>resource</code> is
+	 * equal to the default namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs
+	 * to <code>p</code></li>
 	 * <li>attempt to locate <code>resource</code> in a remote dataset (see
 	 * {@link DatasetMetadataRepositoryImpl#findDatasetForResource(ARTURIResource)}</li>
 	 * <li>otherwise; states that the position is unknown</li>
@@ -60,25 +63,29 @@ public class ResourceLocator {
 	 *            the current project
 	 * @param resource
 	 *            the resource to be located
+	 * @param requestedAccessLevel
+	 * @param requestedLockLevel
 	 * @return
 	 * @throws ModelAccessException
 	 * @throws ProjectAccessException
 	 */
-	public ResourcePosition locateResource(Project<?> project, Resource resource)
+	public ResourcePosition locateResource(Project<?> project, Resource resource,
+			AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
 			throws ModelAccessException, ProjectAccessException {
 		if (resource instanceof BNode) {
 			return new LocalResourcePosition(project); // TODO: implement a better condition
 		}
 
-		IRI iriResource = (IRI)resource;
+		IRI iriResource = (IRI) resource;
 
 		Repository repo = project.getRepository();
 		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
-			if (Objects.equals(repoConn.getNamespace(""), iriResource.getNamespace()) || repoConn.hasStatement(iriResource, null, null, false)) {
+			if (Objects.equals(repoConn.getNamespace(""), iriResource.getNamespace())
+					|| repoConn.hasStatement(iriResource, null, null, false)) {
 				return new LocalResourcePosition(project);
 			}
-	
+
 		} finally {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
 		}
@@ -88,6 +95,12 @@ public class ResourceLocator {
 				continue;
 
 			Project<?> proj = ProjectManager.getProject(abstrProj.getName());
+
+			AccessResponse accessResponse = ProjectManager.checkAccessibility(project, proj,
+					requestedAccessLevel, requestedLockLevel);
+
+			if (!accessResponse.isAffirmative())
+				continue;
 
 			String ns = proj.getDefaultNamespace();
 
@@ -103,6 +116,21 @@ public class ResourceLocator {
 		} else {
 			return UNKNOWN_RESOURCE_POSITION;
 		}
+	}
+
+	/**
+	 * An overload of {@link #locateResource(Project, Resource, AccessLevel, LockLevel)}, with the last two
+	 * parameters set to {@link AccessLevel#R} and {@link LockLevel#NO}, respectively.
+	 * 
+	 * @param project
+	 * @param resource
+	 * @return
+	 * @throws ProjectAccessException
+	 * @throws ModelAccessException
+	 */
+	public ResourcePosition locateResource(Project<?> project, Resource resource)
+			throws ModelAccessException, ProjectAccessException {
+		return locateResource(project, resource, AccessLevel.R, LockLevel.NO);
 	}
 
 	@Deprecated

@@ -22,7 +22,7 @@ public class ProjectionElement {
 	public String getSPARQLFragment() {
 		switch (type) {
 		case GROUP_CONCAT:
-			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + ") AS ?" + targetVariable + ")";
+			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + "; separator=\",\") AS ?" + targetVariable + ")";
 		case COUNT:
 			return "(COUNT(DISTINCT ?" + sourceVariable + ") AS ?" + targetVariable + ")";
 		case COPY:

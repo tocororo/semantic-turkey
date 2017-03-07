@@ -30,9 +30,12 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -60,7 +64,13 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.rio.ParserConfig;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,10 +88,16 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -99,6 +115,7 @@ import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -121,6 +138,9 @@ public class ResourceView2 extends STServiceAdapter {
 
 	@Autowired
 	private CustomFormManager customFormManager;
+
+	private ThreadLocal<Map<Project<?>, RepositoryConnection>> projectConnectionHolder = ThreadLocal
+			.withInitial(HashMap::new);
 
 	@STServiceOperation
 	@Read
@@ -192,9 +212,15 @@ public class ResourceView2 extends STServiceAdapter {
 			}
 
 			return description;
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
+		} finally {
+			for (RepositoryConnection otherConn : projectConnectionHolder.get().values()) {
+				try {
+					otherConn.close();
+				} catch (RepositoryException e) {
+					logger.debug("Exception closing additional project", e);
+				}
+			}
+			projectConnectionHolder.remove();
 		}
 	}
 
@@ -267,7 +293,7 @@ public class ResourceView2 extends STServiceAdapter {
 
 	private Model retrievePredicateInformation(ResourcePosition resourcePosition, Set<IRI> resourcePredicates,
 			Set<IRI> specialProperties, Map<Resource, Map<String, Value>> resource2attributes,
-			Model statements) {
+			Model statements) throws ProjectAccessException {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
 		String predicatesValuesFrag = Sets.union(resourcePredicates, specialProperties).stream()
@@ -276,7 +302,7 @@ public class ResourceView2 extends STServiceAdapter {
 				.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
 
 		if (resourcePosition instanceof LocalResourcePosition) {
-			RepositoryConnection acquireManagedConnection = acquireManagedConnectionToProject(
+			RepositoryConnection acquireManagedConnection = acquireManagedConnectionToProject(getProject(),
 					((LocalResourcePosition) resourcePosition).getProject());
 
 			QueryBuilder qb = createQueryBuilder(String.format(
@@ -334,13 +360,16 @@ public class ResourceView2 extends STServiceAdapter {
 			}
 
 			return propertyModel;
-		} else {
-			throw new IllegalArgumentException("Resource position not supported yet: " + resourcePosition);
 		}
+
+		Model propertiesModel = new LinkedHashModel();
+		specialProperties.stream().forEach(p -> propertiesModel.add(p, RDFS.SUBPROPERTYOF, p));
+		return propertiesModel;
 	}
 
 	private SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
-			ResourcePosition resourcePosition, Resource resource, Set<IRI> resourcePredicates) {
+			ResourcePosition resourcePosition, Resource resource, Set<IRI> resourcePredicates)
+			throws ProjectAccessException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 			StringBuilder sb = new StringBuilder();
@@ -362,8 +391,8 @@ public class ResourceView2 extends STServiceAdapter {
 
 			for (IRI pred : resourcePredicates) {
 				customFormManager.getCustomFormForResource(pred.stringValue()).stream()
-						.filter(CustomFormGraph.class::isInstance)
-						.map(CustomFormGraph.class::cast).forEach(cf -> {
+						.filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
+						.forEach(cf -> {
 							List<IRI> chain = cf.getShowPropertyChain();
 
 							if (chain == null || chain.isEmpty())
@@ -420,7 +449,7 @@ public class ResourceView2 extends STServiceAdapter {
 			qb.setBinding("subjectResource", resource);
 
 			Collection<BindingSet> bindingSets = qb.runQuery(
-					acquireManagedConnectionToProject(localResourcePosition.getProject()),
+					acquireManagedConnectionToProject(getProject(), localResourcePosition.getProject()),
 					QueryResultsProcessors.toBindingSets());
 
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = new HashMap<>();
@@ -466,9 +495,9 @@ public class ResourceView2 extends STServiceAdapter {
 			}
 
 			return new SubjectAndObjectsInfos(resource2attributes, predicate2resourceCreShow);
-		} else {
-			throw new IllegalArgumentException("Resource position not supported yet: " + resourcePosition);
 		}
+
+		return new SubjectAndObjectsInfos(Collections.emptyMap(), Collections.emptyMap());
 	}
 
 	private static class SubjectAndObjectsInfos {
@@ -483,15 +512,17 @@ public class ResourceView2 extends STServiceAdapter {
 		public final Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow;
 	}
 
-	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource) {
-		Model retrievedStatements = new LinkedHashModel();
+	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource)
+			throws ProjectAccessException, RDF4JException, IOException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 
 			Project<?> resourceHoldingProject = localResourcePosition.getProject();
 
-			RepositoryConnection managedConnection = acquireManagedConnectionToProject(
+			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
 					resourceHoldingProject);
+
+			Model retrievedStatements = new LinkedHashModel();
 
 			TupleQuery tupleQuery = managedConnection.prepareTupleQuery(
 					// @formatter:off
@@ -545,19 +576,115 @@ public class ResourceView2 extends STServiceAdapter {
 
 				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
 			});
-		} else {
-			throw new IllegalArgumentException("Unknown resource position: " + resourcePosition);
+
+			return retrievedStatements;
 		}
 
+		if (!(resource instanceof IRI)) {
+			throw new IllegalArgumentException(
+					"Could not retrieve the description of a blank node from a remote dataset");
+		}
+
+		if (resourcePosition instanceof RemoteResourcePosition) {
+			Model retrievedStatements = new LinkedHashModel();
+
+			RemoteResourcePosition remotePosition = (RemoteResourcePosition) resourcePosition;
+			String sparqlEndpoint = remotePosition.getDatasetMetadata().getSparqlEndpoint();
+
+			if (sparqlEndpoint != null) {
+				Repository sparqlRepository = new SPARQLRepository(sparqlEndpoint);
+				sparqlRepository.initialize();
+				try {
+					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
+						TupleQuery tupleQuery = conn.prepareTupleQuery(
+							// @formatter:off
+							" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
+							" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
+							"     ?s ?p ?o .                                                         \n" +
+							"     OPTIONAL {                                                         \n" +
+							"     	GRAPH ?g {                                                       \n" +
+							"     	  ?s ?p ?o .                                                     \n" +
+							"    	 }                                                               \n" +
+							"     }                                                                  \n" +
+//							"     OPTIONAL {                                                         \n" +
+//							"       ?o rdf:rest* ?s2                                                 \n" +
+//							"       FILTER(isBLANK(?o))                                              \n" +
+//							"       GRAPH ?g2 {                                                      \n" +
+//							"         ?s2 ?p2 ?o2 .                                                  \n" +
+//							"       }                                                                \n" +
+//							"     }                                                                  \n" +
+							" }	                                                                     \n"
+							// @formatter:on
+						);
+						tupleQuery.setBinding("s", resource);
+						try (TupleQueryResult result = tupleQuery.evaluate()) {
+							while (result.hasNext()) {
+								BindingSet bindingSet = result.next();
+								Resource g = (Resource) bindingSet.getValue("g");
+								Resource s = (Resource) bindingSet.getValue("s");
+								IRI p = (IRI) bindingSet.getValue("p");
+								Value o = bindingSet.getValue("o");
+								if (g != null) {
+									retrievedStatements.add(s, p, o, g);
+								} else {
+									retrievedStatements.add(s, p, o);
+								}
+
+								if (bindingSet.hasBinding("g2")) {
+									Resource g2 = (Resource) bindingSet.getValue("g2");
+									Resource s2 = (Resource) bindingSet.getValue("s2");
+									IRI p2 = (IRI) bindingSet.getValue("p2");
+									Value o2 = bindingSet.getValue("o2");
+
+									retrievedStatements.add(s2, p2, o2, g2);
+								}
+							}
+						}
+
+						GraphQuery describeQuery = conn
+								.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
+						describeQuery.setBinding("y", resource);
+						QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
+							Resource subject = stmt.getSubject();
+							IRI predicate = stmt.getPredicate();
+							Value object = stmt.getObject();
+							if (retrievedStatements.contains(subject, predicate, object))
+								return;
+
+							retrievedStatements.add(subject, predicate, object);
+						});
+					}
+				} finally {
+					sparqlRepository.shutDown();
+				}
+			} else if (!remotePosition.getDatasetMetadata().isDereferenceable()) {
+				throw new IllegalArgumentException(
+						"Could not dereference dataset:" + remotePosition.getDatasetMetadata().getBaseURI());
+			}
+		}
+
+		Model retrievedStatements = new LinkedHashModel();
+		RDFLoader rdfLoader = new RDFLoader(new ParserConfig(), SimpleValueFactory.getInstance());
+		StatementCollector statementCollector = new StatementCollector(retrievedStatements);
+		rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
 		return retrievedStatements;
 	}
 
-	private RepositoryConnection acquireManagedConnectionToProject(Project<?> resourceHoldingProject) {
-		if (!resourceHoldingProject.getName().equals(getProject().getName())) {
-			throw new IllegalArgumentException("Cross-project RV not supported yet");
-		}
+	private RepositoryConnection acquireManagedConnectionToProject(ProjectConsumer consumer,
+			Project<?> resourceHoldingProject) throws ProjectAccessException {
+		if (consumer.equals(resourceHoldingProject)) {
+			return getManagedConnection();
+		} else {
+			AccessResponse accessResponse = ProjectManager.checkAccessibility(consumer,
+					resourceHoldingProject, AccessLevel.R, LockLevel.NO);
 
-		return getManagedConnection();
+			if (!accessResponse.isAffirmative()) {
+				throw new ProjectAccessException(accessResponse.getMsg());
+			}
+
+			return projectConnectionHolder.get().computeIfAbsent(resourceHoldingProject,
+					p -> RDF4JRepositoryUtils.wrapReadOnlyConnection(p.getRepository().getConnection()));
+		}
 	}
 }
 

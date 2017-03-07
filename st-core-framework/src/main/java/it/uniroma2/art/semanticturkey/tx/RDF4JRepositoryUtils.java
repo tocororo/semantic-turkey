@@ -117,17 +117,20 @@ public class RDF4JRepositoryUtils {
 	private static RepositoryConnection wrapConnection(RepositoryConnection connection) {
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			if (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-				@SuppressWarnings("resource")
-				InterceptingRepositoryConnectionWrapper wrappedConnection = new InterceptingRepositoryConnectionWrapper(
-						connection.getRepository(), connection);
-				wrappedConnection.addRepositoryConnectionInterceptor(
-						new ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor());
-				connection = wrappedConnection;
+				connection = wrapReadOnlyConnection(connection);
 			}
 
 			connection = new TransactionAwareRDF4JRepostoryConnection(connection.getRepository(), connection);
 		}
 		return connection;
+	}
+	
+	public static RepositoryConnection wrapReadOnlyConnection(RepositoryConnection connection) {
+		InterceptingRepositoryConnectionWrapper wrappedConnection = new InterceptingRepositoryConnectionWrapper(
+				connection.getRepository(), connection);
+		wrappedConnection.addRepositoryConnectionInterceptor(
+				new ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor());
+		return wrappedConnection;
 	}
 
 	private static class ConnectionSynchronization implements TransactionSynchronization {
