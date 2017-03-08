@@ -40,6 +40,7 @@ import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.models.conf.PersistenceModelConfiguration;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -137,7 +138,7 @@ public class ProjectManager {
 	protected static Logger logger = LoggerFactory.getLogger(ProjectManager.class);
 
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
-
+	
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
 	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain
@@ -500,6 +501,9 @@ public class ProjectManager {
 			logger.debug("project " + projectName + " initialized as a " + proj.getType() + " project");
 
 			proj.activate();
+			
+			CustomFormManager.getInstance().registerCustomFormModelOfProject(proj);
+			
 			logger.debug("project " + projectName + " activated");
 
 			logger.debug("project : " + projectName + " created");
@@ -1301,6 +1305,7 @@ public class ProjectManager {
 	private static void tearDownProject(Project<?> project) throws ModelUpdateException {
 		logger.debug("closing project: " + project);
 		project.deactivate();
+		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
 		openProjects.removeProject(project);
 	}
 	

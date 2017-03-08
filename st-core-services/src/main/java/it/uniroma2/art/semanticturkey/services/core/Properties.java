@@ -51,7 +51,7 @@ public class Properties extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Properties.class);
 
 	@Autowired
-	private CustomFormManager cfProvider;
+	private CustomFormManager cfManager;
 	
 	/**
 	 * returns all root properties
@@ -471,8 +471,8 @@ public class Properties extends STServiceAdapter {
 		
 		ObjectNode response = JsonNodeFactory.instance.objectNode();
 		
-		//first of all, check if there is a custom range that replace the standard range(s)
-		boolean replace = cfProvider.getCustomFormsConfig().getReplace(property.stringValue());
+		//first of all, check if there is a form collection that replace the standard range(s)
+		boolean replace = cfManager.getReplace(getProject(), property, true);
 		if(!replace) {
 			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
 			
@@ -490,7 +490,7 @@ public class Properties extends STServiceAdapter {
 		}
 		
 		//now add the part relative to the custom ranges
-		FormCollection formColl = cfProvider.getFormCollectionForResource(property.stringValue());
+		FormCollection formColl = cfManager.getFormCollection(getProject(), property);
 		if( formColl != null) {
 			ObjectNode formCollNode = JsonNodeFactory.instance.objectNode();
 			formCollNode.set("id", JsonNodeFactory.instance.textNode(formColl.getId()));

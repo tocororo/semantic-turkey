@@ -1,245 +1,400 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.xml.sax.SAXException;
 
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 
 @Component
 public class CustomFormManager {
 	
+	private static final String SYSTEM_LEVEL_ID = "SYSTEM";
 	private static final String CUSTOM_FORMS_FOLDER_NAME = "customForms";
 	private static final String FORM_COLLECTIONS_FOLDER_NAME = "formCollections";
 	private static final String FORMS_FOLDER_NAME = "forms";
 	
-	//TODO the followings will become map of <projectName, CustomFormsConfig/FormCollectionList/CustomFormList>
-	//where projectName is SYSTEM at SYSTEM level
-	//I will also provide method register/unregisterCustomFormStructure(projectName) that load/unload in memory the
-	//structure of a project when it's open/closed
-	private CustomFormsConfig cfConfig;
-	private FormCollectionList formCollList;
-	private CustomFormList customFormList;
+	//map projectName-CustomFormModel
+	private Map<String, CustomFormModel> cfModelMap;
 	
-	private static Logger logger = LoggerFactory.getLogger(CustomFormManager.class);
+	//Workaround see getInstance() method
+	private static CustomFormManager staticInstance; 
 	
 	@PostConstruct
 	public void init() {
+		/* at ST startup, initialize the structure only at system level. At project level will be initialized
+		 * only when a project is opened and it will be terminated when the project is closed */
+		cfModelMap = new HashMap<>();
+		//init CustomFormModel at system level
 		try {
-			formCollList = new FormCollectionList();
-			customFormList = new CustomFormList();
-			
-			// check existing of customForms folders hierarchy
-			File cfFolder = getCustomFormsFolder();
-			if (!cfFolder.exists()) {
-				cfConfig = new CustomFormsConfig(formCollList, customFormList);
-				initializeCFBasicHierarchy();
-			} else {
-				File formsFolder = getFormsFolder();
-				if (!formsFolder.exists()) {
-					formsFolder.mkdir();
-				}
-				File formCollFolder = getFormCollectionsFolder();
-				if (!formCollFolder.exists()) {
-					formCollFolder.mkdir();
-				}
-				// initialize CustomForm list (load files from forms/ folder) and store them in the forms map
-				File[] formFiles = formsFolder.listFiles();
-				for (File f : formFiles) {
-					if (f.getName().startsWith(CustomForm.PREFIX)) {
-						try {
-							CustomForm cf = CustomFormLoader.loadCustomForm(f);
-							customFormList.add(cf);
-						} catch (DuplicateIdException e) {
-							System.out.println("CustomForm from file " + f.getName() + " has duplicated ID. "
-								+ "It will be ignored.");
-						} catch (CustomFormInitializationException e) {
-							System.out.println("Failed to initialize CustomForm from file " + f.getName()
-								+ ", it may contain some errors. It will be ignored. " + e.getMessage());
-						} catch (ParserConfigurationException | SAXException | IOException e) {
-							System.out.println("Failed to initialize FormCollection from file " + f.getName()
-								+ ", it may contain some errors. It will be ignored.");
-							e.printStackTrace();
-						}
-					}
-				}
-				// initialize FormCollection list (load files from formCollections/ folder) and store them in the
-				// formColl map
-				File[] formCollFiles = formCollFolder.listFiles();
-				for (File f : formCollFiles) {
-					if (f.getName().startsWith(FormCollection.PREFIX)) {
-						try {
-							FormCollection formColl = CustomFormLoader.loadFormCollection(f, customFormList);
-							formCollList.add(formColl);
-						} catch (DuplicateIdException e) {
-							System.out.println("FormCollection from file " + f.getName() + " has a duplicated ID. "
-								+ "It will be ignored.");
-						} catch (ParserConfigurationException | SAXException | IOException e) {
-							System.out.println("Failed to initialize FormCollection from file " + f.getName()
-								+ ", it may contain some errors. It will be ignored.");
-							e.printStackTrace();
-						}
-					}
-				}
-				cfConfig = new CustomFormsConfig(formCollList, customFormList);
-			}
+			CustomFormModel cfModel = new CustomFormModel();
+			cfModelMap.put(SYSTEM_LEVEL_ID, cfModel);
 		} catch (CustomFormInitializationException e) {
-			System.out.println("Custom Form mechanism has not been initialized due to an error in its configuration file");
+			System.out.println("Custom Form mechanism has not been initialized due to an error in its system configuration file");
+			e.printStackTrace();
+		}
+		staticInstance = this;
+	}
+	
+	/**
+	 * Return an instance of CustomFormManager.
+	 * This is a workaround to use this Component as class with static methods in ProjectManager
+	 * (ProjectManager is not a Component so CustomFormManager cannot be Autowired in it)
+	 * @return
+	 */
+	public static CustomFormManager getInstance() {
+		if (staticInstance == null) {
+			throw new IllegalStateException("CustomFormManager is not yet initialized");
+		}
+		return staticInstance;
+	}
+	
+	/**
+	 * Initializes and registers the CustomForm structure for the given project (<code>projectName SYSTEM</code> to
+	 * initialize at system level)
+	 * @param projectName
+	 */
+	public void registerCustomFormModelOfProject(Project<?> project) {
+		try {
+			CustomFormModel cfModel = new CustomFormModel(project, cfModelMap.get(SYSTEM_LEVEL_ID));
+			cfModelMap.put(project.getName(), cfModel);
+		} catch (CustomFormInitializationException e) {
+			System.out.println("Custom Form model for " + project.getName() 
+					+ " has not been initialized due to an error in its configuration file");
 			e.printStackTrace();
 		}
 	}
 	
-	public CustomFormsConfig getCustomFormsConfig(){
-		return cfConfig;
+	/**
+	 * Deregisters the CustomForm structure for the given project
+	 * @param projectName
+	 */
+	public void unregisterCustomFormModelOfProject(Project<?> project) {
+		cfModelMap.remove(project.getName());
 	}
+	
 	
 	/* ##################
 	 * ###### READ ######
 	 * ################## */
 	
+	// FORM MAPPING
+	
+	/**
+	 * Returns the {@link FormsMapping} of the given project.
+	 * @param project
+	 * @return
+	 */
+	public Collection<FormsMapping> getProjectFormMappings(Project<?> project) {
+		return cfModelMap.get(project.getName()).getFormMappings();
+	}
+	
+	/**
+	 * Returns the {@link FormsMapping} at system level
+	 * @return
+	 */
+	public Collection<FormsMapping> getSystemFormMappings() {
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormMappings();
+	}
+	
+	/**
+	 * Returns the replace attribute of the {@link FormsMapping} of the given resource in the given project.
+	 * If no FormsMapping is defined for the resource, and the fallback parameter is true, looks for FormsMapping at 
+	 * system level.
+	 * If no FormsMapping is defined at all for the resource return <code>false</code>.
+	 * @param resource
+	 * @param project
+	 * @param fallback
+	 * @return
+	 */
+	public boolean getReplace(Project<?> project, IRI resource, boolean fallback) {
+		boolean replace = false;
+		FormsMapping mapping = cfModelMap.get(project.getName()).getFormMapping(resource);
+		if (mapping != null) {
+			replace = mapping.getReplace();
+		} else { //mapping not defined (null) at project level
+			if (fallback) { //look at system level
+				mapping = cfModelMap.get(SYSTEM_LEVEL_ID).getFormMapping(resource);
+				if (mapping != null) {
+					mapping.getReplace();
+				}
+			}
+		}
+		return replace;
+	}
+	
 	// FORM COLLECTION
 	
 	/**
-	 * Returns all the {@link FormCollection} available into the customForms/formCollections folder
+	 * Returns all the {@link FormCollection}s at system and project level
 	 * @return
 	 */
-	public Collection<FormCollection> getAllFormCollections() {
-		return formCollList.getAllFormCollections();
+	public Collection<FormCollection> getFormCollections(Project<?> project) {
+		Collection<FormCollection> formCollections = new ArrayList<>();
+		formCollections.addAll(cfModelMap.get(project.getName()).getFormCollections());
+		formCollections.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollections());
+		return formCollections;
 	}
 	
 	/**
-	 * Given a resource URI (property or class) returns the {@link FormCollection} linked to that resource.
+	 * Given a resource (property or class) returns the {@link FormCollection} linked to that resource.
+	 * It looks first at project level, then at system level.
 	 * <code>null</code> if no FormCollection is linked to the resource.
-	 * @param resourceUri
+	 * @param resource
 	 * @return
 	 */
-	public FormCollection getFormCollectionForResource(String resourceUri) {
-		return cfConfig.getFormCollectionForResource(resourceUri);
+	public FormCollection getFormCollection(Project<?> project, IRI resource) {
+		FormCollection fc = cfModelMap.get(project.getName()).getFormCollectionForResource(resource);
+		if (fc == null) {
+			fc = cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionForResource(resource); 
+		}
+		return fc;
 	}
 	
 	/**
-	 * Returns the {@link FormCollection} with the given ID. <code>null</code> if there is no FC with that id.
+	 * Returns the {@link FormCollection} with the given ID. It looks first at project level, then at system level.
+	 * <code>null</code> if there is no FC with that id.
 	 * @param formCollId
 	 * @return
 	 */
-	public FormCollection getFormCollectionById(String formCollId){
-		return formCollList.get(formCollId);
+	public FormCollection getFormCollection(Project<?> project, String formCollId){
+		FormCollection fc = cfModelMap.get(project.getName()).getFormCollectionById(formCollId);
+		if (fc == null) {
+			fc = cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(formCollId);
+		}
+		return fc;
+	}
+	
+	/**
+	 * Returns all the {@link FormCollection}s at system level
+	 * @return
+	 */
+	public Collection<FormCollection> getSystemFormCollections() {
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollections();
+	}
+	
+	/**
+	 * Given a resource (property or class) returns the {@link FormCollection} linked to that resource at system level.
+	 * <code>null</code> if no FormCollection is linked to the resource.
+	 * @param resource
+	 * @return
+	 */
+	public FormCollection getSystemFormCollection(IRI resource) {
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionForResource(resource);
+	}
+	
+	/**
+	 * Returns the {@link FormCollection} with the given ID at system level. <code>null</code> if there is no FC with that id.
+	 * @param formCollId
+	 * @return
+	 */
+	public FormCollection getSystemFormCollection(String formCollId){
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(formCollId);
+	}
+	
+	/**
+	 * Returns all the {@link FormCollection}s in the given project
+	 * @return
+	 */
+	public Collection<FormCollection> getProjectFormCollections(Project<?> project) {
+		return cfModelMap.get(project.getName()).getFormCollections();
+	}
+	
+	/**
+	 * Given a resource (property or class) returns the {@link FormCollection} linked to that resource in the given project.
+	 * <code>null</code> if no FormCollection is linked to the resource.
+	 * @param resource
+	 * @return
+	 */
+	public FormCollection getProjectFormCollection(Project<?> project, IRI resource) {
+		return cfModelMap.get(project.getName()).getFormCollectionForResource(resource);
+	}
+	
+	/**
+	 * Returns the {@link FormCollection} with the given ID in the given project.
+	 * <code>null</code> if there is no FC with that id.
+	 * @param formCollId
+	 * @return
+	 */
+	public FormCollection getProjectFormCollection(Project<?> project, String formCollId){
+		return cfModelMap.get(project.getName()).getFormCollectionById(formCollId);
 	}
 	
 	// CUSTOM FORM
 	
 	/**
-	 * Returns all the {@link CustomForm} available into the forms/ folder
+	 * Returns all the {@link CustomForm}s at system and project level
 	 * @return
 	 */
-	public Collection<CustomForm> getAllCustomForms() {
-		return customFormList.getAllCustomForms();
+	public Collection<CustomForm> getCustomForms(Project<?> project) {
+		Collection<CustomForm> customForms = new ArrayList<>();
+		customForms.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getCustomForms());
+		customForms.addAll(cfModelMap.get(project.getName()).getCustomForms());
+		return customForms;
 	}
 	
 	/**
-	 * Returns the {@link CustomForm} with the given ID
-	 * @param cfId
+	 * Returns the {@link CustomForm} with the given ID. It looks first at project level, then at system level.
+	 * @param project
+	 * @param customFormId
 	 * @return
 	 */
-	public CustomForm getCustomFormById(String cfId){
-		return customFormList.get(cfId);
-	}
-	
-	/**
-	 * Returns all the {@link CustomForm} for the given resource. If the resource has not a {@link FormCollection}
-	 * linked, then returns an empty collection 
-	 * @param resourceUri
-	 * @return
-	 */
-	public Collection<CustomForm> getCustomFormForResource(String resourceUri){
-		FormCollection fc = getFormCollectionForResource(resourceUri);
-		if (fc != null){
-			return fc.getForms();	
+	public CustomForm getCustomForm(Project<?> project, String customFormId){
+		CustomForm cf = cfModelMap.get(project.getName()).getCustomFormById(customFormId);
+		if (cf == null) {
+			cf = cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(customFormId);
 		}
-		else return new ArrayList<CustomForm>();
+		return cf;
 	}
 	
 	/**
-	 * Returns all the {@link CustomFormGraph} for the given resource
-	 * @param resourceUri
+	 * Returns the {@link CustomForm} for the given resource. It looks at project level and system level
+	 * If the resource has not a {@link FormCollection} linked, then returns an empty collection.
+	 * @param project 
+	 * @param resource
 	 * @return
 	 */
-	public Collection<CustomFormGraph> getCustomFormGraphForResource(String resourceUri){
+	public Collection<CustomForm> getCustomForms(Project<?> project, IRI resource){
+		Collection<CustomForm> customForms = new ArrayList<>();
+		customForms.addAll(cfModelMap.get(project.getName()).getCustomFormForResource(resource));
+		customForms.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormForResource(resource));
+		return customForms;
+	}
+	
+	/**
+	 * Returns all the {@link CustomForm}s at system level
+	 * @return
+	 */
+	public Collection<CustomForm> getSystemCustomForms() {
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getCustomForms();
+	}
+	
+	/**
+	 * Returns the {@link CustomForm} with the given ID at system level
+	 * @param project
+	 * @param customFormId
+	 * @return
+	 */
+	public CustomForm getSystemCustomForm(String customFormId){
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(customFormId);
+	}
+	
+	/**
+	 * Returns all the {@link CustomForm} for the given resource at system level.
+	 * If the resource has not a {@link FormCollection} linked, then returns an empty collection 
+	 * @param resource
+	 * @return
+	 */
+	public Collection<CustomForm> getSystemCustomForms(IRI resource){
+		return cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormForResource(resource);
+	}
+	
+	/**
+	 * Returns all the {@link CustomForm}s for the given project
+	 * @return
+	 */
+	public Collection<CustomForm> getProjectCustomForms(Project<?> project) {
+		return cfModelMap.get(project.getName()).getCustomForms();
+	}
+	
+	/**
+	 * Returns all the {@link CustomForm} for the given resource of the given project.
+	 * If the resource has not a {@link FormCollection} linked, then returns an empty collection.
+	 * @param project 
+	 * @param resource
+	 * @return
+	 */
+	public Collection<CustomForm> getProjectCustomForms(Project<?> project, IRI resource){
+		return cfModelMap.get(project.getName()).getCustomFormForResource(resource);
+	}
+	
+	/**
+	 * Returns the {@link CustomForm} with the given ID of the given project
+	 * @param project
+	 * @param customFormId
+	 * @return
+	 */
+	public CustomForm getProjectCustomForm(Project<?> project, String customFormId){
+		return cfModelMap.get(project.getName()).getCustomFormById(customFormId);
+	}
+	
+	/**
+	 * Returns all the {@link CustomFormGraph} for the given resource (at project and stystem level)
+	 * @param resource
+	 * @return
+	 */
+	public Collection<CustomFormGraph> getAllCustomFormGraphs(Project<?> project, IRI resource){
 		Collection<CustomFormGraph> cFormsGraph = new ArrayList<>();
-		FormCollection fc = getFormCollectionForResource(resourceUri);
-		if (fc != null){
-			for (CustomForm form : fc.getForms()){
-				if (form.isTypeGraph()) {
-					cFormsGraph.add(form.asCustomFormGraph());
-				}
-			}
-		}
+		//look for CF at project level...
+		cFormsGraph.addAll(cfModelMap.get(project.getName()).getCustomFormGraphForResource(resource));
+		//...and at system level
+		cFormsGraph.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormGraphForResource(resource));
 		return cFormsGraph;
 	}
 	
 	/**
-	 * Returns all the {@link CustomFormNode} for the given property
-	 * @param resourceUri
-	 * @return
-	 */
-	public Collection<CustomFormNode> getCustomFormNodeForResource(String resourceUri){
-		Collection<CustomFormNode> cFormsNode = new ArrayList<>();
-		FormCollection fc = getFormCollectionForResource(resourceUri);
-		if (fc != null){
-			for (CustomForm form : fc.getForms()){
-				if (form.isTypeNode()) {
-					cFormsNode.add(form.asCustomFormNode());
-				}
-			}
-		}
-		return cFormsNode;
-	}
-	
-	/**
 	 * Tells whether a resource has or not a {@link CustomForm} of type graph 
-	 * @param resourceUri
+	 * @param resource
 	 * @return
 	 */
-	public boolean existsCustomFormGraphForResource(String resourceUri){
-		return (!getCustomFormGraphForResource(resourceUri).isEmpty());
+	public boolean existsCustomFormGraphForResource(Project<?> project, IRI resource){
+		return (!getAllCustomFormGraphs(project, resource).isEmpty());
 	}
 	
 	/* ##################
 	 * ##### CREATE #####
 	 * ################## */
 	
+	// FORM MAPPING
+	
+	/**
+	 * Adds a {@link FormsMapping} (mapping between resource and {@link FormCollection}) to the configuration
+	 * of the given project.
+	 * If a {@link FormCollection} is already assigned to the given resource, throws a {@link CustomFormException}.
+	 * @param resource
+	 * @param formColl
+	 * @param replace
+	 * @param project
+	 * @return 
+	 * @throws CustomFormException
+	 */
+	public FormsMapping addFormsMapping(Project<?> project, IRI resource, FormCollection formColl, boolean replace) throws CustomFormException {
+		FormsMapping formMapping = cfModelMap.get(project.getName()).addFormsMapping(resource, formColl, replace);
+		return formMapping;
+	}
+	
 	// FORM COLLECTION
 	
 	/**
-	 * Creates and adds a FormCollection. If a {@link FormCollection} with the same ID exists, a 
-	 * {@link DuplicateIdException} is thrown
+	 * Creates and adds a FormCollection in the given project. If in the project, a {@link FormCollection}
+	 * with the same ID exists, a {@link DuplicateIdException} is thrown
 	 * @param id
 	 * @return
 	 * @throws DuplicateIdException 
 	 */
-	public FormCollection createFormCollection(String id) throws DuplicateIdException {
-		FormCollection formColl = new FormCollection(id);
-		formCollList.add(formColl); // and add it to the map
-		formColl.saveXML(); // serialize it (only if add doesn't throw an exception)
+	public FormCollection createFormCollection(Project<?> project, String id) throws DuplicateIdException {
+		//check if a FormCollection with the same ID already exists at system level
+		if (cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(id) != null) {
+			throw new DuplicateIdException("A FormCollection with id '" + id + "' already exists at system level");
+		}
+		FormCollection formColl = cfModelMap.get(project.getName()).createFormCollection(id);
 		return formColl;
 	}
 	
 	// CUSTOM FORM
 	
 	/**
-	 * Creates and adds a CustomForm. If a {@link CustomForm} with the same ID exists, a 
-	 * {@link DuplicateIdException} is thrown
+	 * Creates and adds a CustomForm in the given project. If in the project, a {@link CustomForm}
+	 * with the same ID exists, a {@link DuplicateIdException} is thrown
 	 * @param type
 	 * @param id
 	 * @param name
@@ -249,16 +404,13 @@ public class CustomFormManager {
 	 * @return
 	 * @throws DuplicateIdException 
 	 */
-	public CustomForm createCustomForm(String type, String id, String name, String description, String ref, List<IRI> showPropChain)
+	public CustomForm createCustomForm(Project<?> project, String type, String id, String name, String description, String ref, List<IRI> showPropChain)
 			throws DuplicateIdException {
-		CustomForm form = null;
-		if (type.equalsIgnoreCase(CustomForm.Types.node.toString())) {
-			form = new CustomFormNode(id, name, description, ref);
-		} else {
-			form = new CustomFormGraph(id, name, description, ref, showPropChain);
+		//check if a FormCollection with the same ID already exists at system level
+		if (cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(id) != null) {
+			throw new DuplicateIdException("A CustomForm with id '" + id + "' already exists at system level");
 		}
-		customFormList.add(form); // and add it to the map
-		form.saveXML(); // serialize it (only if add doesn't throw an exception)
+		CustomForm form = cfModelMap.get(project.getName()).createCustomForm(type, id, name, description, ref, showPropChain);
 		return form;
 	}
 	
@@ -266,109 +418,57 @@ public class CustomFormManager {
 	 * ##### UPDATE #####
 	 * ################## */
 	
-	public void setReplace(IRI resource, boolean replace) {
-		cfConfig.setReplace(resource.stringValue(), replace);
-		cfConfig.saveXML();
+	// FORM MAPPING
+	
+	public void setReplace(Project<?> project, IRI resource, boolean replace) throws CustomFormException {
+		cfModelMap.get(project.getName()).setReplace(resource, replace);
+	}
+	
+	/**
+	 * Removes a {@link FormsMapping} (mapping between resource and {@link FormCollection}) from the configuration
+	 * of the given project.
+	 * @param resource
+	 * @param project
+	 */
+	public void removeFormsMapping(Project<?> project, IRI resource) {
+		cfModelMap.get(project.getName()).removeFormsMapping(resource);
 	}
 	
 	// FORM COLLECTION
 	
-	public void addFormsMapping(IRI resource, FormCollection formColl, boolean replace) throws CustomFormException {
-		//check if the resource has already a FormCollection linked
-		if (cfConfig.getFormCollectionForResource(resource.stringValue()) != null) {
-			throw new CustomFormException(resource.stringValue() + " has already a FormCollection assigned ("
-					+ formColl.getId() + ")");
-		}
-		FormCollectionMapping formMapping = new FormCollectionMapping(resource.stringValue(), formColl, replace);
-		cfConfig.addFormsMapping(formMapping);
-		cfConfig.saveXML();
-	}
-	
-	public void removeFormCollectionOfResource(IRI resource) throws CustomFormException {
-		cfConfig.removeMappingOfResource(resource.stringValue());
-		cfConfig.saveXML();
-	}
-	
 	/**
-	 * Removes a {@link FormCollection} from the configuration and its file from file-system
+	 * Removes a {@link FormCollection} from the configuration of the given project and its file from file-system
 	 * @param formCollId
 	 */
-	public void deleteFormCollection(String formCollId) {
-		formCollList.remove(formCollId); // remove formColl from map
-		// delete the file
-		File[] formCollFiles = getFormCollectionsFolder().listFiles();
-		for (File f : formCollFiles) {// search for the formCollection file with the given id/name
-			if (f.getName().equals(formCollId + ".xml")) {
-				f.delete();
-				break;
-			}
-		}
-		// remove FormsMapping about the given FormCollection
-		cfConfig.removeMappingOfFormCollection(formCollId);
-		cfConfig.saveXML();
+	public void deleteFormCollection(Project<?> project, FormCollection formColl) {
+		cfModelMap.get(project.getName()).deleteFormCollection(formColl);
 	}
 	
 	// CUSTOM FORM
 	
-	public void updateCustomForm(String id, String name, String description, String ref, List<IRI> showPropChain)
-			throws CustomFormException {
-		CustomForm cf = this.getCustomFormById(id);
-		if (cf == null) {
-			throw new CustomFormException("CustomForm with ID " + id + " doesn't exist");
-		} else {
-			cf.setName(name);
-			cf.setDescription(description);
-			cf.setRef(ref);
-			if (showPropChain != null) {
-				cf.asCustomFormGraph().setShowPropertyChain(showPropChain);
-			}
-			cf.saveXML();
-		}
+	public void updateCustomForm(Project<?> project, CustomForm customForm, String name, String description, String ref, List<IRI> showPropChain) {
+		cfModelMap.get(project.getName()).updateCustomForm(customForm, name, description, ref, showPropChain);
 	}
 	
 	/**
-	 * Removes a CustomForm from the form collection and its file from file-system
+	 * Removes a CustomForm from the form collection of a project
 	 * @param customForm
 	 * @param deleteEmptyColl if true deletes FormCollection that are left empty after the deletion
-	 * @throws CustomFormException 
 	 */
-	public void deleteCustomForm(String customFormId, boolean deleteEmptyColl) throws CustomFormException {
-		if (this.getCustomFormById(customFormId) == null) {
-			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
-		} else {
-			customFormList.remove(customFormId); // remove the custom form from the map
-			// delete the CF file
-			File[] cfFiles = getFormsFolder().listFiles();
-			for (File f : cfFiles) {// search for the custom form file with the given id/name
-				if (f.getName().equals(customFormId + ".xml")) {
-					f.delete();
-					break;
-				}
-			}
-			// remove the entry from the FormCollection(s) that use it
-			Collection<FormCollection> formCollections = this.getAllFormCollections();
-			for (FormCollection formColl : formCollections) {
-				if (formColl.containsForm(customFormId)) {
-					formColl.removeForm(customFormId);
-					// if deleteEmptyColl is true and collection is left empty, delete it
-					if (deleteEmptyColl && formColl.getForms().isEmpty()) {
-						this.deleteFormCollection(formColl.getId());
-					} else { // otherwise save it
-						formColl.saveXML();
-					}
-				}
-			}
-		}
+	public void deleteCustomForm(Project<?> project, CustomForm customForm, boolean deleteEmptyColl)  {
+		cfModelMap.get(project.getName()).deleteCustomForm(customForm, deleteEmptyColl);
 	}
 	
-	public void addFormToCollection(FormCollection formColl, CustomForm customForm) {
-		formColl.addForm(customForm);
-		formColl.saveXML();
+	public void addFormToCollection(Project<?> project, FormCollection formColl, CustomForm customForm) {
+		cfModelMap.get(project.getName()).addFormToCollection(formColl, customForm);
 	}
 	
-	public void removeFormFromCollection(FormCollection formColl, CustomForm customForm) {
-		formColl.removeForm(customForm.getId());
-		formColl.saveXML();
+	public void addFormsToCollection(Project<?> project, FormCollection formColl, Collection<CustomForm> customForms) {
+		cfModelMap.get(project.getName()).addFormsToCollection(formColl, customForms);
+	}
+	
+	public void removeFormFromCollection(Project<?> project, FormCollection formColl, CustomForm customForm) {
+		cfModelMap.get(project.getName()).removeFormFromCollection(formColl, customForm);
 	}
 	
 	
@@ -377,53 +477,31 @@ public class CustomFormManager {
 	 * ############################################*/
 	
 	/**
-	 * Returns the customForms folder, located under SemanticTurkeyData/ folder
+	 * Returns the customForms folder for the given project, or at system level if projectName is <code>null</code>
 	 * @return
 	 */
-	protected static File getCustomFormsFolder(){
-		return new File(Resources.getSemTurkeyDataDir() + File.separator + CUSTOM_FORMS_FOLDER_NAME);
+	public static File getCustomFormsFolder(Project<?> project){
+		if (project == null) {
+			return new File(Resources.getSystemDir() + File.separator + CUSTOM_FORMS_FOLDER_NAME); 
+		} else {
+			return new File(Resources.getProjectsDir() + File.separator + project.getName() + File.separator + CUSTOM_FORMS_FOLDER_NAME);
+		}
 	}
 	
 	/**
-	 * Returns the formCollections folder, located under SemanticTurkeyData/customForms/ folder
+	 * Returns the formCollections folder for the given project, or at system level if projectName is <code>null</code>
 	 * @return
 	 */
-	protected static File getFormCollectionsFolder(){
-		return new File(getCustomFormsFolder() + File.separator + FORM_COLLECTIONS_FOLDER_NAME);
+	public static File getFormCollectionsFolder(Project<?> project){
+		return new File(getCustomFormsFolder(project) + File.separator + FORM_COLLECTIONS_FOLDER_NAME);
 	}
 	
 	/**
-	 * Returns the forms folder, located under SemanticTurkeyData/customForms/ folder
+	 * Returns the forms folder for the given project, or at system level if projectName is <code>null</code>
 	 * @return
 	 */
-	protected static File getFormsFolder(){
-		return new File(getCustomFormsFolder() + File.separator + FORMS_FOLDER_NAME);
+	public static File getFormsFolder(Project<?> project){
+		return new File(getCustomFormsFolder(project) + File.separator + FORMS_FOLDER_NAME);
 	}
 	
-	/**
-	 * Creates the following hierarchy in SemanticTurkeyData folder:
-	 * <ul>
-	 *  <li>SemanticTurkeyData</li>
-	 *   <ul>
-	 *    <li>customForms</li>
-	 *     <ul>
-	 *      <li>customFormConfig.xml</li>
-	 *      <li>forms/</li>
-	 *      <li>formCollections</li>
-	 *     </ul>
-	 *   </ul>
-	 * </ul>
-	 * Where customFormConfig.xml is a sample config file.
-	 * This is invoked only at the first start of SemanticTurkey server if the hierarchy is not ready
-	 */
-	private void initializeCFBasicHierarchy(){
-		File cfFolder = getCustomFormsFolder();
-		File formsFolder = getFormsFolder();
-		File formCollFolder = getFormCollectionsFolder();
-		cfFolder.mkdir();
-		formsFolder.mkdir();
-		formCollFolder.mkdir();
-		cfConfig.createBasicCustomFormsConfig();
-	}
-
 }

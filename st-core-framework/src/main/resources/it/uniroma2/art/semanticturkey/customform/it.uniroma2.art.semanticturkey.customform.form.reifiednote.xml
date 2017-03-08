@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customForm id="it.uniroma2.art.semanticturkey.customform.form.reifiednote" name="Reified note" type="graph">
+	<description>A reified note, described by an RDF Resource linked through rdf:value to its lexical representation and to other metadata</description>
+	<ref showPropertyChain="http://www.w3.org/1999/02/22-rdf-syntax-ns#value">
+		<![CDATA[prefix	xsd: 	<http://www.w3.org/2001/XMLSchema#>
+			prefix	rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+			prefix	dc:		<http://purl.org/dc/terms/>
+			prefix	coda: 	<http://art.uniroma2.it/coda/contracts/>
+			prefix	codaImpl: 	<http://art.uniroma2.it/coda/converters/>
+			
+			rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
+				nodes = {
+			 		reifNoteId uri(coda:randIdGen("note", {})) .
+					noteLit literal userPrompt/note .
+					source literal userPrompt/source .
+					related uri userPrompt/related .
+					modified literal^^xsd:datetime userPrompt/modified .
+					created literal(coda:date()) .
+				}
+				graph = {
+					$reifNoteId rdf:value $noteLit .
+					OPTIONAL { $reifNoteId dc:related $related . }
+					OPTIONAL { $reifNoteId dc:source $source . }
+					OPTIONAL { $reifNoteId dc:modified $modified . }
+					$reifNoteId dc:created $created.
+				}
+			}
+		]]>
+	</ref>
+</customForm>

@@ -390,7 +390,7 @@ public class ResourceView2 extends STServiceAdapter {
 			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
 
 			for (IRI pred : resourcePredicates) {
-				customFormManager.getCustomFormForResource(pred.stringValue()).stream()
+				customFormManager.getCustomForms(getProject(), pred).stream()
 						.filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
 						.forEach(cf -> {
 							List<IRI> chain = cf.getShowPropertyChain();

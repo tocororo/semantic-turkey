@@ -2,7 +2,7 @@ package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -24,19 +24,22 @@ import org.w3c.dom.Element;
  */
 public class FormCollection {
 	
-	public static String PREFIX = "it.uniroma2.art.semanticturkey.forms.";
+	public static String PREFIX = "it.uniroma2.art.semanticturkey.customform.collection.";
 
 	private String id;
-	private List<CustomForm> forms;
+	private Collection<CustomForm> forms;
+	private CustomFormLevel level;
 	
-	FormCollection(String id, List<CustomForm> forms){
+	FormCollection(String id, Collection<CustomForm> forms){
 		this.id = id;
 		this.forms = forms;
+		this.level = CustomFormLevel.project;
 	}
 	
 	FormCollection(String id){
 		this.id = id;
 		this.forms = new ArrayList<CustomForm>();
+		this.level = CustomFormLevel.project;
 	}
 	
 	/**
@@ -51,7 +54,7 @@ public class FormCollection {
 	 * Returns the {@link CustomForm}s contained in this collection
 	 * @return
 	 */
-	public List<CustomForm> getForms(){
+	public Collection<CustomForm> getForms(){
 		return forms;
 	}
 	
@@ -97,6 +100,14 @@ public class FormCollection {
 	}
 	
 	/**
+	 * Removes the given {@link CustomForm} from this collection
+	 * @param formId
+	 */
+	public void removeForm(CustomForm customForm){
+		removeForm(customForm.getId());
+	}
+	
+	/**
 	 * Returns true if the collection contains a {@link CustomForm} with the given ID
 	 * @param formId
 	 * @return
@@ -111,22 +122,39 @@ public class FormCollection {
 	}
 	
 	/**
+	 * Returns true if the collection contains a {@link CustomForm} with the given ID
+	 * @param formId
+	 * @return
+	 */
+	public boolean containsForm(CustomForm customForm){
+		return containsForm(customForm.getId());
+	}
+	
+	/**
 	 * Returns all the id of the forms contained in the collection
 	 * @return
 	 */
-	public List<String> getFormsId(){
-		List<String> ids = new ArrayList<String>();
+	public Collection<String> getFormsId(){
+		Collection<String> ids = new ArrayList<String>();
 		for (CustomForm f : forms){
 			ids.add(f.getId());
 		}
 		return ids;
 	}
 	
+	public CustomFormLevel getLevel() {
+		return level;
+	}
+	
+	public void setLevel(CustomFormLevel level) {
+		this.level = level;
+	}
+	
 	/**
 	 * Serialize the {@link FormCollection} on a xml file.
 	 * @throws ParserConfigurationException 
 	 */
-	public void saveXML(){
+	public void saveXML(File file){
 		try {
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
@@ -150,7 +178,7 @@ public class FormCollection {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File(CustomFormManager.getFormCollectionsFolder(), this.getId() + ".xml"));
+			StreamResult result = new StreamResult(file);
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();

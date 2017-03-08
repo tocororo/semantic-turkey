@@ -36,7 +36,7 @@ public class CustomFormNode extends CustomForm {
 	}
 	
 	@Override
-	public void saveXML(){
+	public void saveXML(File file){
 		try {
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
@@ -65,7 +65,8 @@ public class CustomFormNode extends CustomForm {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File(CustomFormManager.getFormsFolder(), this.getId() + ".xml"));
+//			StreamResult result = new StreamResult(new File(CustomFormManager.getFormsFolder(), this.getId() + ".xml"));
+			StreamResult result = new StreamResult(file);
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();

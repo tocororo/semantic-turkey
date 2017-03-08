@@ -113,6 +113,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.main.filters.StatementWithSubPropertyPredicate_Predicate;
 import it.uniroma2.art.semanticturkey.utilities.PropertyShowOrderComparator;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
@@ -1539,7 +1540,7 @@ public class ResourceOld extends ServiceAdapter {
 	}
 	
 	private void injectCustomRangeXML(ARTURIResource property, Element treeElement) {
-		FormCollection cf = cfManager.getFormCollectionForResource(property.getURI());
+		FormCollection cf = cfManager.getFormCollection(getProject(), RDF4JMigrationUtils.convert2rdf4j(property));
 		if (cf == null){//there is no custom range for the given property 
 			return;//doesn't inject the custom range 
 		}
@@ -1559,7 +1560,7 @@ public class ResourceOld extends ServiceAdapter {
 	
 	protected void injectPropertyRangeXML(OWLModel ontModel, ARTURIResource property, Element treeElement,
 			boolean visualization, boolean minimize) throws ModelAccessException, NonExistingRDFResourceException {
-		boolean replace = cfManager.getCustomFormsConfig().getReplace(property.getURI());
+		boolean replace = cfManager.getReplace(getProject(), RDF4JMigrationUtils.convert2rdf4j(property), true);
 		if (replace){
 			injectCustomRangeXML(property, treeElement);
 		} else {

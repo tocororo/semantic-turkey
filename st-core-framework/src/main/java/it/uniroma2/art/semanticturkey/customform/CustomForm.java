@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.customform;
 
+import java.io.File;
 import java.util.Collection;
 
 import it.uniroma2.art.coda.core.CODACore;
@@ -8,7 +9,7 @@ import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 
 public abstract class CustomForm {
 	
-	public static String PREFIX = "it.uniroma2.art.semanticturkey.form.";
+	public static String PREFIX = "it.uniroma2.art.semanticturkey.customform.form.";
 	
 	public enum Types {
 		node, graph;
@@ -18,6 +19,7 @@ public abstract class CustomForm {
 	private String name = "";
 	private String description = "";
 	private String ref = "";
+	private CustomFormLevel level;
 	
 	/**
 	 * @param id
@@ -30,6 +32,7 @@ public abstract class CustomForm {
 		this.name = name;
 		this.description = description;
 		this.ref = ref;
+		this.level = CustomFormLevel.project;
 	}
 	
 	/**
@@ -112,6 +115,14 @@ public abstract class CustomForm {
 		return (CustomFormGraph) this;
 	}
 	
+	public CustomFormLevel getLevel() {
+		return level;
+	}
+	
+	public void setLevel(CustomFormLevel level) {
+		this.level = level;
+	}
+	
 	/**
 	 * Parse the CODA rule contained in the <code>ref</code> tag and build a map of &ltuserPrompt, 
 	 * type&gt pairs, where <code>userPrompt</code> is a field of the <code>userPrompt/</code>
@@ -125,8 +136,8 @@ public abstract class CustomForm {
 	public abstract Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, RDFModelNotSetException;
 	
 	/**
-	 * Serialize the {@link CustomForm} on a xml file.
+	 * Serialize the {@link CustomForm} as xml on the given file.
 	 */
-	public abstract void saveXML();
+	public abstract void saveXML(File file);
 
 }

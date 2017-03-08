@@ -223,7 +223,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
 					null, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
-					customFormManager.existsCustomFormGraphForResource(predicate.stringValue()));
+					customFormManager.existsCustomFormGraphForResource(project, predicate));
 
 			if (rootProprertiesBehavior == RootProprertiesBehavior.SHOW
 					|| (rootProprertiesBehavior == RootProprertiesBehavior.SHOW_IF_INFORMATIVE

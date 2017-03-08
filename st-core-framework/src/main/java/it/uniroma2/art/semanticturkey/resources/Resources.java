@@ -26,6 +26,7 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
@@ -186,7 +187,7 @@ public class Resources {
 			}
 			if (!usersDir.exists()) {
 				try {
-					initializeUserFileStructure();
+					initializeUsersFileStructure();
 				} catch (UserCreationException | ProjectAccessException | RoleCreationException e) {
 					throw new STInitializationException(e);
 				}
@@ -195,6 +196,13 @@ public class Resources {
 				try {
 					initializePUBindingFileStructure();
 				} catch (ProjectAccessException | PUBindingCreationException e) {
+					throw new STInitializationException(e);
+				}
+			}
+			if (!CustomFormManager.getCustomFormsFolder(null).exists()) {
+				try {
+					initializeCustomFormFileStructure();
+				} catch (IOException e) {
 					throw new STInitializationException(e);
 				}
 			}
@@ -324,8 +332,10 @@ public class Resources {
 							"/it/uniroma2/art/semanticturkey/owl.rdfs"), new File(usrPath
 							+ "/ontlibrary/owl.rdfs"));
 			
+			initializeCustomFormFileStructure();
+						
 			try {
-				initializeUserFileStructure();
+				initializeUsersFileStructure();
 				initializePUBindingFileStructure();
 			} catch (UserCreationException | ProjectAccessException | RoleCreationException | PUBindingCreationException e) {
 				throw new STInitializationException(e);
@@ -349,7 +359,7 @@ public class Resources {
 	 * @throws RoleCreationException 
 	 * @throws IOException 
 	 */
-	private static void initializeUserFileStructure() throws UserCreationException, ProjectAccessException, RoleCreationException {
+	private static void initializeUsersFileStructure() throws UserCreationException, ProjectAccessException, RoleCreationException {
 		usersDir.mkdir();
 		
 		// create default admin and user roles
@@ -391,6 +401,45 @@ public class Resources {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * Initializes a folders structure in <code>STData/system/customForms</code>:
+	 * <ul>
+	 * 	<li>customFormConfig.xml</li>
+	 * 	<li>Forms/</li>
+	 * 	<ul>
+	 * 		<li>example.of.customform.xml</li>
+	 * 	</ul>
+	 * 	<li>FormCollections</li>
+	 * 	<ul>
+	 * 		<li>example.of.formcollection.xml</li>
+	 * 	</ul> 
+	 * </ul> 
+	 * @throws IOException 
+	 */
+	private static void initializeCustomFormFileStructure() throws IOException {
+		File customFormsFolder = CustomFormManager.getCustomFormsFolder(null);
+		customFormsFolder.mkdir();
+		File formCollFolder = CustomFormManager.getFormCollectionsFolder(null);
+		formCollFolder.mkdir();
+		File formsFolder = CustomFormManager.getFormsFolder(null);
+		formsFolder.mkdir();
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/customFormConfig.xml"),
+				new File(customFormsFolder, "customFormConfig.xml")
+		);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.collection.note.xml"),
+				new File(formCollFolder, "it.uniroma2.art.semanticturkey.customform.collection.note.xml")
+		);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
+				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
+		);
 	}
 
 }

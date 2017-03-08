@@ -27,8 +27,6 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -50,6 +48,9 @@ import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
@@ -59,7 +60,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormParseUtils;
 import it.uniroma2.art.semanticturkey.customform.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
-import it.uniroma2.art.semanticturkey.customform.FormCollectionMapping;
+import it.uniroma2.art.semanticturkey.customform.FormsMapping;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
@@ -85,8 +86,6 @@ public class CustomForms extends STServiceAdapter {
 	private CustomFormManager cfManager;
 	@Autowired
 	private ServletRequest request;
-	
-	protected static Logger logger = LoggerFactory.getLogger(CustomForms.class);
 	
 	/**
 	 * This service get as parameters a custom form id and a set of userPrompt key-value pairs
@@ -128,11 +127,10 @@ public class CustomForms extends STServiceAdapter {
 //		for (Entry<String, String> e : userPromptMap.entrySet()){
 //			System.out.println("userPrompt: " + e.getKey() + " = " + e.getValue());
 //		}
-		
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
 		try {
-			CustomForm cForm = cfManager.getCustomFormById(customFormId);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
 			if (cForm.isTypeGraph()){
 				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
 				List<ARTTriple> triples = cfGraph.executePearl(codaCore, userPromptMap);
@@ -202,9 +200,6 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws ProjectInconsistentException
 	 * @throws ModelAccessException
 	 * @throws RDFModelNotSetException
-	 * @throws UnsupportedQueryLanguageException
-	 * @throws MalformedQueryException
-	 * @throws QueryEvaluationException
 	 * @throws PRParserException
 	 */
 	@STServiceOperation
@@ -289,12 +284,6 @@ public class CustomForms extends STServiceAdapter {
 	 * @param predicate
 	 * @param resource
 	 * @return
-	 * @throws ModelUpdateException
-	 * @throws UnsupportedQueryLanguageException
-	 * @throws ModelAccessException
-	 * @throws MalformedQueryException
-	 * @throws QueryEvaluationException
-	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
@@ -303,7 +292,6 @@ public class CustomForms extends STServiceAdapter {
 	@Write
 	public void removeReifiedResource(IRI subject, IRI predicate, IRI resource)
 			throws ProjectInconsistentException, PRParserException, RDFModelNotSetException {
-		logger.debug("deleting reified resource " + resource.stringValue());
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		//remove resource as object in the triple <s, p, o> for the given subject and predicate
@@ -347,16 +335,11 @@ public class CustomForms extends STServiceAdapter {
 	 * @param predicate
 	 * @param codaCore
 	 * @return
-	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
-	 * @throws UnsupportedQueryLanguageException
-	 * @throws ModelAccessException
-	 * @throws MalformedQueryException
-	 * @throws QueryEvaluationException
 	 */
 	private CustomFormGraph getCustomFormGraphSeed(Resource resource, IRI predicate, CODACore codaCore)
 			throws RDFModelNotSetException {
-		Collection<CustomFormGraph> cForms = cfManager.getCustomFormGraphForResource(predicate.stringValue());
+		Collection<CustomFormGraph> cForms = cfManager.getAllCustomFormGraphs(getProject(), predicate);
 		if (cForms.isEmpty()){
 			return null;
 		} else if (cForms.size() == 1){
@@ -426,6 +409,12 @@ public class CustomForms extends STServiceAdapter {
 		return JsonNodeFactory.instance.textNode(result);
 	}
 	
+	/*
+	 * Custom Form mechanism management services
+	 */
+
+	//========== Form Collection =================
+	
 	/**
 	 * Returns the serialization of the FormCollection with the given id
 	 * This serialization doesn't contain the effective forms, it contains just the id(s) of the forms.
@@ -437,13 +426,15 @@ public class CustomForms extends STServiceAdapter {
 	public JsonNode getFormCollection(String id) throws CustomFormException{
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode formCollNode = jsonFactory.objectNode();
-		
-		FormCollection formColl = cfManager.getFormCollectionById(id);
-		if (formColl != null){
+		FormCollection formColl = cfManager.getFormCollection(getProject(), id);
+		if (formColl != null) {
 			formCollNode.set("id", jsonFactory.textNode(formColl.getId()));
 			ArrayNode formsColl = jsonFactory.arrayNode();
-			for (String formId : formColl.getFormsId()) {
-				formsColl.add(jsonFactory.textNode(formId));
+			for (CustomForm form : formColl.getForms()) {
+				ObjectNode formNode = jsonFactory.objectNode();
+				formNode.set("id", jsonFactory.textNode(form.getId()));
+				formNode.set("level", jsonFactory.textNode(form.getLevel().toString()));
+				formsColl.add(formNode);
 			}
 			formCollNode.set("forms", formsColl);
 			return formCollNode;
@@ -453,18 +444,22 @@ public class CustomForms extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns all the FormCollections IDs available
+	 * Returns all the FormCollections IDs available at system and (current) project level
 	 * @return
 	 */
 	@STServiceOperation
 	public JsonNode getAllFormCollections(){
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ArrayNode formCollArrayNode = jsonFactory.arrayNode();
-		Collection<FormCollection> formCollections = cfManager.getAllFormCollections();
+		ArrayNode formCollArray = jsonFactory.arrayNode();
+		Collection<FormCollection> formCollections = cfManager.getFormCollections(getProject());
+		//form collections at system level
 		for (FormCollection formColl : formCollections){
-			formCollArrayNode.add(jsonFactory.textNode(formColl.getId()));
+			ObjectNode formCollNode = jsonFactory.objectNode();
+			formCollNode.set("id", jsonFactory.textNode(formColl.getId()));
+			formCollNode.set("level", jsonFactory.textNode(formColl.getLevel().toString()));
+			formCollArray.add(formCollNode);
 		}
-		return formCollArrayNode;
+		return formCollArray;
 	}
 	
 	/**
@@ -475,18 +470,83 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public void createFormCollection(String id) throws DuplicateIdException {
-		cfManager.createFormCollection(id);
+		cfManager.createFormCollection(getProject(), id);
+	}
+	
+	/**
+	 * Creates a new FormCollection cloning an existing one
+	 * @param sourceId id of the FC to clone
+	 * @param targetId id of the FC to create
+	 * @return
+	 * @throws CustomFormException 
+	 */
+	@STServiceOperation
+	public void cloneFormCollection(String sourceId, String targetId) throws CustomFormException {
+		//look for FC at project level
+		FormCollection sourceFC = cfManager.getFormCollection(getProject(), sourceId);
+		if (sourceFC == null) { //if doesn't exist, look for it at system level
+			throw new CustomFormException("Impossible to clone '" + sourceId + "'. A CustomForm with this ID doesn't exists");
+		}
+		FormCollection newFC = cfManager.createFormCollection(getProject(), targetId);
+		cfManager.addFormsToCollection(getProject(), newFC, sourceFC.getForms());
 	}
 	
 	/**
 	 * Deletes the FormCollection with the given id
 	 * @param id
 	 * @return
+	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
-	public void deleteFormCollection(String id) {
-		cfManager.deleteFormCollection(id);
+	public void deleteFormCollection(String id) throws CustomFormException {
+		FormCollection formColl = cfManager.getProjectFormCollection(getProject(),id);
+		if (formColl == null) {
+			throw new CustomFormException("FormCollection with ID '" + id + "' doesn't exist.");
+		} 
+		cfManager.deleteFormCollection(getProject(), formColl);
 	}
+	
+	/**
+	 * Adds an existing CustomForm to an existing FormCollection
+	 * @param formCollectionId
+	 * @param customFormId
+	 * @return
+	 * @throws CustomFormException
+	 */
+	@STServiceOperation
+	public void addFormToCollection(String formCollectionId, String customFormId) throws CustomFormException{
+		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
+		if (formColl == null) {
+			throw new CustomFormException("FormCollection with ID " + formCollectionId + " doesn't exist");
+		}
+		CustomForm cf = cfManager.getCustomForm(getProject(), customFormId);
+		if (cf == null) {
+			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
+		}
+		cfManager.addFormToCollection(getProject(), formColl, cf);
+	}
+	
+	/**
+	 * Removes a CustomForm from an existing FormCollection
+	 * @param formCollectionId
+	 * @param customFormId
+	 * @return
+	 * @throws CustomFormException
+	 */
+	@STServiceOperation
+	public void removeFormFromCollection(String formCollectionId, String customFormId) throws CustomFormException {
+		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
+		if (formColl == null) {
+			throw new CustomFormException("FormCollection with ID " + formCollectionId + " doesn't exist");
+		}
+		CustomForm cf = cfManager.getCustomForm(getProject(), customFormId);
+		if (cf == null) {
+			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
+		}
+		cfManager.removeFormFromCollection(getProject(), formColl, cf);
+	}
+	
+	//========== Custom Form =================
 	
 	/**
 	 * Returns all the CustomForms available
@@ -494,11 +554,14 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public JsonNode getAllCustomForms(){
-		Collection<CustomForm> cForms = cfManager.getAllCustomForms();
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode customFormArrayNode = jsonFactory.arrayNode();
+		Collection<CustomForm> cForms = cfManager.getCustomForms(getProject());
 		for (CustomForm cf : cForms){
-			customFormArrayNode.add(jsonFactory.textNode(cf.getId()));
+			ObjectNode customFormNode = jsonFactory.objectNode();
+			customFormNode.set("id", jsonFactory.textNode(cf.getId()));
+			customFormNode.set("level", jsonFactory.textNode(cf.getLevel().toString()));
+			customFormArrayNode.add(customFormNode);
 		}
 		return customFormArrayNode;
 	}
@@ -511,7 +574,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public JsonNode getCustomForm(String id) throws CustomFormException{
-		CustomForm cf = cfManager.getCustomFormById(id);
+		CustomForm cf = cfManager.getCustomForm(getProject(), id); //at project level
 		if (cf != null){
 			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 			
@@ -529,7 +592,7 @@ public class CustomForms extends STServiceAdapter {
 			}
 			return customFormNode;
 		} else {
-			throw new CustomFormException("CurtomForm with id " + id + " not found");
+			throw new CustomFormException("CurtomForm with id " + id + " not found in project " + getProject().getName());
 		}
 	}
 	
@@ -548,7 +611,7 @@ public class CustomForms extends STServiceAdapter {
 	@Read
 	public JsonNode getCustomFormRepresentation(String id) throws 
 			ProjectInconsistentException, PRParserException, RDFModelNotSetException,  CustomFormException {
-		CustomForm cForm = cfManager.getCustomFormById(id);
+		CustomForm cForm = cfManager.getCustomForm(getProject(), id);
 		
 		if (cForm != null) {
 			CODACore codaCore = getInitializedCodaCore(getManagedConnection());
@@ -611,7 +674,7 @@ public class CustomForms extends STServiceAdapter {
 			}
 			
 		} else {
-			throw new CustomFormException("CustomForm with id " + id + " not found");
+			throw new CustomFormException("CustomForm with id " + id + " not found in project " + getProject().getName());
 		}
 	}
 	
@@ -632,7 +695,7 @@ public class CustomForms extends STServiceAdapter {
 	public void createCustomForm(String type, String id, String name, String description, String ref, @Optional List<IRI> showPropChain)
 			throws DuplicateIdException {
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
-		cfManager.createCustomForm(type, id, name, description, ref, showPropChain);
+		cfManager.createCustomForm(getProject(), type, id, name, description, ref, showPropChain);
 	}
 	
 	/**
@@ -644,7 +707,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public void cloneCustomForm(String sourceId, String targetId) throws CustomFormException {
-		CustomForm sourceCF = cfManager.getCustomFormById(sourceId);
+		CustomForm sourceCF = cfManager.getCustomForm(getProject(), sourceId);
 		if (sourceCF == null) {
 			throw new CustomFormException("Impossible to clone '" + sourceId + "'. A CustomForm with this ID doesn't exists");
 		}
@@ -656,10 +719,10 @@ public class CustomForms extends STServiceAdapter {
 			String sourceRuleId = sourceId.replace(CustomForm.PREFIX, "id:");
 			String targetRuleId = targetId.replace(CustomForm.PREFIX, "id:");
 			ref = ref.replace(sourceRuleId, targetRuleId);
-			cfManager.createCustomForm(sourceCF.getType(), targetId, sourceCF.getName(), sourceCF.getDescription(),
+			cfManager.createCustomForm(getProject(), sourceCF.getType(), targetId, sourceCF.getName(), sourceCF.getDescription(),
 					ref, sourceCF.asCustomFormGraph().getShowPropertyChain());
 		} else { //type "node"
-			cfManager.createCustomForm(sourceCF.getType(), targetId, sourceCF.getName(), sourceCF.getDescription(),
+			cfManager.createCustomForm(getProject(), sourceCF.getType(), targetId, sourceCF.getName(), sourceCF.getDescription(),
 					sourceCF.getRef(), null);
 		}
 	}
@@ -673,18 +736,24 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
-	public void deleteCustomForm(String id, @Optional (defaultValue = "false") boolean deleteEmptyColl) throws CustomFormException{
-		cfManager.deleteCustomForm(id, deleteEmptyColl);
+	public void deleteCustomForm(String id, @Optional (defaultValue = "false") boolean deleteEmptyColl) throws CustomFormException {
+		CustomForm cf = cfManager.getProjectCustomForm(getProject(), id);
+		if (cf == null) {
+			throw new CustomFormException("CustomForm with id " + id + " not found in project " + getProject().getName());
+		}
+		cfManager.deleteCustomForm(getProject(), cf, deleteEmptyColl);
 	}
 	
 	/**
-	 * Given the id of a CustomForm tells if it belong to a FormCollection
+	 * Given the id of a CustomForm tells if it belong to a FormCollection. Useful as pre-check when it's deleting
+	 * a CustomForm
 	 * @param id
 	 * @return
 	 */
 	@STServiceOperation
 	public JsonNode isFormLinkedToCollection(String id) {
-		Collection<FormCollection> formCollections = cfManager.getAllFormCollections();
+		//Since this is used before to delete a CustomForm, look only at project level, since is not possible to delete at system level
+		Collection<FormCollection> formCollections = cfManager.getProjectFormCollections(getProject());
 		for (FormCollection formColl: formCollections) {
 			if (formColl.getFormsId().contains(id)) {
 				return JsonNodeFactory.instance.booleanNode(true);
@@ -707,32 +776,14 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation (method = RequestMethod.POST)
 	public void updateCustomForm(String id, String name, String description, String ref, @Optional List<IRI> showPropChain) throws CustomFormException {
+		CustomForm cf = cfManager.getProjectCustomForm(getProject(), id);
+		if (cf == null) {
+			throw new CustomFormException("CustomForm with id " + id + " not found in project " + getProject().getName());
+		}
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
 		ref = ref.replace("\r", "");
-		cfManager.updateCustomForm(id, name, description, ref, showPropChain);
+		cfManager.updateCustomForm(getProject(), cf, name, description, ref, showPropChain);
 	}
-	
-//	/**
-//	 * Used to check if a property chain (manually created by the user client-side) is correct.
-//	 * This service doesn't do anything, it's enough to know if it can parse the input IRI list.
-//	 * If the propChain is not valid, the service throws an exception since it cannot parse the input parameter.   
-//	 * @param propChain
-//	 * @return
-//	 * @throws CustomFormException 
-//	 */
-//	@STServiceOperation
-//	public void validateShowPropertyChain(IRI[] propChain) throws CustomFormException {
-//		for (IRI prop : propChain) {
-//			System.out.println("prop " + prop.stringValue());
-//			if (!URIUtil.isValidURIReference(prop.stringValue())) {
-//				throw new CustomFormException("<" + prop.stringValue() + "> is not a valid URI");
-//			}
-//			else {
-//				System.out.println("valid");
-//			}
-//		}
-//		
-//	}
 	
 	/**
 	 * Used to check if a property chain (manually created by the user client-side) is correct.
@@ -752,106 +803,6 @@ public class CustomForms extends STServiceAdapter {
 				System.out.println("valid");
 			}
 		}
-		
-	}
-	
-	/**
-	 * Adds an existing CustomForm to an existing FormCollection
-	 * @param formCollectionId
-	 * @param customFormId
-	 * @return
-	 * @throws CustomFormException
-	 */
-	@STServiceOperation
-	public void addFormToCollection(String formCollectionId, String customFormId) throws CustomFormException{
-		FormCollection formColl = cfManager.getFormCollectionById(formCollectionId);
-		if (formColl == null) {
-			throw new CustomFormException("FormCollection with ID " + formCollectionId + " doesn't exist");
-		}
-		CustomForm cf = cfManager.getCustomFormById(customFormId);
-		if (cf == null) {
-			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
-		}
-		cfManager.addFormToCollection(formColl, cf);
-	}
-	
-	/**
-	 * Removes a CustomForm from an existing FormCollection
-	 * @param formCollectionId
-	 * @param customFormId
-	 * @return
-	 * @throws CustomFormException
-	 */
-	@STServiceOperation
-	public void removeFormFromCollection(String formCollectionId, String customFormId) throws CustomFormException {
-		FormCollection formColl = cfManager.getFormCollectionById(formCollectionId);
-		if (formColl == null) {
-			throw new CustomFormException("FormCollection with ID " + formCollectionId + " doesn't exist");
-		}
-		CustomForm cf = cfManager.getCustomFormById(customFormId);
-		if (cf == null) {
-			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
-		}
-		cfManager.removeFormFromCollection(formColl, cf);
-	}
-	
-	/**
-	 * Returns all the resource-FormCollections mapping defined in the CustomForm configuration
-	 * @return
-	 */
-	@STServiceOperation
-	public JsonNode getCustomFormConfigMap() {
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ArrayNode cfcNode = jsonFactory.arrayNode();
-		Collection<FormCollectionMapping> formMappings = cfManager.getCustomFormsConfig().getFormsMappings();
-		for (FormCollectionMapping mapping : formMappings){
-			ObjectNode formMappingNode = jsonFactory.objectNode();
-			formMappingNode.set("resource", jsonFactory.textNode(mapping.getResource()));
-			formMappingNode.set("formCollection", jsonFactory.textNode(mapping.getFormCollection().getId()));
-			formMappingNode.set("replace", jsonFactory.booleanNode(mapping.getReplace()));
-			cfcNode.add(formMappingNode);
-		}
-		return cfcNode;
-	}
-	
-	/**
-	 * Adds a FormCollection to a resource, creating a FormMapping
-	 * @param resource
-	 * @param formCollId
-	 * @param replace
-	 * @return
-	 * @throws CustomFormException
-	 */
-	@STServiceOperation
-	public void addFormsMapping(IRI resource, String formCollId,
-			@Optional (defaultValue = "false") boolean replace) throws CustomFormException{
-		FormCollection formColl = cfManager.getFormCollectionById(formCollId);
-		if (formColl == null) {
-			throw new CustomFormException("FormCollection with ID " + formCollId + " doesn't exist");
-		}
-		cfManager.addFormsMapping(resource, formColl, replace);
-	}
-	
-	/**
-	 * Remove the mapping between the given resource and the FormCollection linked to it
-	 * @param resource
-	 * @return
-	 * @throws CustomFormException 
-	 */
-	@STServiceOperation
-	public void removeFormCollectionOfResource(IRI resource) throws CustomFormException{
-		cfManager.removeFormCollectionOfResource(resource);
-	}
-	
-	/**
-	 * Update the replace attribute of a FormCollectionMapping mapping for the given property
-	 * @param resource
-	 * @param replace
-	 * @return
-	 */
-	@STServiceOperation
-	public void updateReplace(IRI resource, boolean replace) {
-		cfManager.setReplace(resource, replace);
 	}
 	
 	/**
@@ -899,7 +850,72 @@ public class CustomForms extends STServiceAdapter {
 			}
 		}
 	}
-
+	
+	//============== Forms Mapping ===================
+	
+	/**
+	 * Returns all the resource-FormCollections mapping defined in the CustomForm configuration of the project
+	 * @return
+	 */
+	@STServiceOperation
+	public JsonNode getCustomFormConfigMap() {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode cfcArrayNode = jsonFactory.arrayNode();
+		Collection<FormsMapping> formMappings = cfManager.getProjectFormMappings(getProject());
+		for (FormsMapping mapping : formMappings) {
+			ObjectNode cfcNode = jsonFactory.objectNode();
+			cfcNode.set("resource", jsonFactory.textNode(mapping.getResource()));
+			cfcNode.set("formCollection", jsonFactory.textNode(mapping.getFormCollection().getId()));
+			cfcNode.set("replace", jsonFactory.booleanNode(mapping.getReplace()));
+			cfcArrayNode.add(cfcNode);
+		}
+		return cfcArrayNode;
+	}
+	
+	/**
+	 * Adds a FormCollection to a resource, creating a FormsMapping
+	 * @param resource
+	 * @param formCollId
+	 * @param replace
+	 * @return
+	 * @throws CustomFormException
+	 */
+	@STServiceOperation
+	public void addFormsMapping(IRI resource, String formCollId,
+			@Optional (defaultValue = "false") boolean replace) throws CustomFormException{
+		FormCollection formColl = cfManager.getFormCollection(getProject(), formCollId);
+		if (formColl == null) {
+			throw new CustomFormException("FormCollection with ID " + formCollId + " doesn't exist");
+		}
+		cfManager.addFormsMapping(getProject(), resource, formColl, replace);
+	}
+	
+	/**
+	 * Remove the mapping between the given resource and the FormCollection linked to it
+	 * @param resource
+	 * @return
+	 * @throws CustomFormException 
+	 */
+	@STServiceOperation
+	public void removeFormCollectionOfResource(IRI resource) throws CustomFormException{
+		cfManager.removeFormsMapping(getProject(), resource);
+	}
+	
+	/**
+	 * Update the replace attribute of a FormCollectionMapping mapping for the given property
+	 * @param resource
+	 * @param replace
+	 * @return
+	 * @throws CustomFormException 
+	 */
+	@STServiceOperation
+	public void updateReplace(IRI resource, boolean replace) throws CustomFormException {
+		cfManager.setReplace(getProject(), resource, replace);
+	}
+	
+	/*
+	 * Utilities
+	 */
 	
 	private CODACore getInitializedCodaCore(RepositoryConnection repoConnection) throws ProjectInconsistentException{
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();

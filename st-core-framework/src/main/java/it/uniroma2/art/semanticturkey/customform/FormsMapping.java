@@ -5,14 +5,14 @@ package it.uniroma2.art.semanticturkey.customform;
  * @author Tiziano
  *
  */
-public class FormCollectionMapping {
+public class FormsMapping {
 	
 	private String resourceURI; //prop or class. This cannot be an IRI since when CustomFormsConfig parses a mapping
 		//it cannot create the IRI object from the URI of the prop/class
 	private FormCollection formCollection;
 	private boolean replace;
 
-	public FormCollectionMapping(String resourceURI, FormCollection formCollection, boolean replace) {
+	public FormsMapping(String resourceURI, FormCollection formCollection, boolean replace) {
 		this.resourceURI = resourceURI;
 		this.formCollection = formCollection;
 		this.replace = replace;
