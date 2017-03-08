@@ -51,14 +51,15 @@ public class ChangeTrackerFactory implements SailFactory {
 		IRI metadataGraph = config2.getHistoryGraph();
 		Set<IRI> includeGraph = config2.getIncludeGraph();
 		Set<IRI> excludeGraph = config2.getExcludeGraph();
-
+		boolean interactiveNotifications = config2.isInteractiveNotifications();
+		
 		Repository metadataRepo = RepositoryRegistry.getInstance().getRepository(metadataRepoId);
 
 		logger.debug(
-				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {}",
-				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph);
+				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {} // interactiveNotifications = {}",
+				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph, interactiveNotifications);
 
-		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph);
+		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,interactiveNotifications);
 	}
 
 }

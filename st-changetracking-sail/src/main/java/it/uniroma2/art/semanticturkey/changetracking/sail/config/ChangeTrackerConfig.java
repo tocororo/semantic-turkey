@@ -5,6 +5,7 @@ import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTr
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_NS;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_REPOSITORY_ID;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	private IRI historyGraph;
 	private Set<IRI> includeGraph;
 	private Set<IRI> excludeGraph;
+	private boolean interactiveNotifications;
 
 	public ChangeTrackerConfig() {
 		this(null);
@@ -48,6 +50,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		historyGraph = null;
 		includeGraph = Collections.emptySet();
 		excludeGraph = Collections.singleton(SESAME.NIL);
+		interactiveNotifications = false;
 	}
 
 	public String getHistoryRepositoryID() {
@@ -90,6 +93,14 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		this.excludeGraph = new HashSet<>(excludeGraph);
 	}
 
+	public boolean isInteractiveNotifications() {
+		return interactiveNotifications;
+	}
+
+	public void setInteractiveNotifications(boolean interactiveNotifications) {
+		this.interactiveNotifications = interactiveNotifications;
+	}
+
 	@Override
 	public Resource export(Model graph) {
 		Resource implNode = super.export(graph);
@@ -113,11 +124,12 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		for (IRI g : includeGraph) {
 			graph.add(implNode, INCLUDE_GRAPH, g);
 		}
-		
+
 		for (IRI g : excludeGraph) {
 			graph.add(implNode, EXCLUDE_GRAPH, g);
 		}
 
+		graph.add(implNode, INTERACTIVE_NOTIFICATIONS, vf.createLiteral(interactiveNotifications));
 
 		return implNode;
 	}
@@ -135,20 +147,22 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		graph.filter(implNode, INCLUDE_GRAPH, null).stream().forEach(st -> {
 			Value obj = st.getObject();
 			if (obj instanceof IRI) {
-				newIncludeGraph.add((IRI)obj);
+				newIncludeGraph.add((IRI) obj);
 			}
 		});
 		includeGraph = newIncludeGraph;
-		
+
 		Set<IRI> newExcludeGraph = new HashSet<IRI>();
 		graph.filter(implNode, EXCLUDE_GRAPH, null).stream().forEach(st -> {
 			Value obj = st.getObject();
 			if (obj instanceof IRI) {
-				newExcludeGraph.add((IRI)obj);
+				newExcludeGraph.add((IRI) obj);
 			}
 		});
 		excludeGraph = newExcludeGraph;
 
+		interactiveNotifications = graph.filter(implNode, INTERACTIVE_NOTIFICATIONS,
+				SimpleValueFactory.getInstance().createLiteral(true)).isEmpty() ? false : true;
 	}
 
 	@Override
@@ -162,11 +176,11 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		if (historyNS == null) {
 			throw new SailConfigException("No history namespace set for " + getType() + " Sail.");
 		}
-		
+
 		if (includeGraph == null) {
 			throw new SailConfigException("Null include graph for " + getType() + " Sail.");
 		}
-		
+
 		if (excludeGraph == null) {
 			throw new SailConfigException("Null exclude graph for " + getType() + " Sail.");
 		}
