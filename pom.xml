@@ -94,6 +94,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<owlart-rdf4jimpl.version>1.5</owlart-rdf4jimpl.version>
 		<sesame.version>4.1.1</sesame.version>
 		<rdf4j.version>2.2</rdf4j.version>
+		<graphdb.version>8.0.4</graphdb.version>
 		<junit.version>4.12</junit.version>
 	</properties>
 
@@ -109,7 +110,6 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 	</issueManagement>
 
 	<modules>
-
 		<module>st-codegen-annotations</module>
 		<module>st-changetracking-sail</module>
 		<module>st-core-framework</module>
@@ -117,6 +117,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<module>st-core-services</module>
 		<module>st-sesame2-ontmanager</module>
 		<module>st-rdf4j-ontmanager</module>
+		<module>st-graphdb-rdf4j-bridge</module>
 		<module>st-console</module>
 		<module>st-builder</module>
 	</modules>

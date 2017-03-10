@@ -69,6 +69,26 @@
 <!-- 		<bundle dependency="true">mvn:commons-io/commons-io/2.4</bundle> -->
 		<bundle dependency="true">mvn:commons-codec/commons-codec/1.10</bundle>
 	
+	
+		<!-- Support for GraphDB Free -->
+		<bundle dependency="true">mvn:io.dropwizard.metrics/metrics-core/3.1.0</bundle>
+		<bundle dependency="true">mvn:io.dropwizard.metrics/metrics-jvm/3.1.0</bundle>
+		<bundle dependency="true">mvn:io.dropwizard.metrics/metrics-healthchecks/3.1.0</bundle>
+		<bundle dependency="true">wrap:mvn:org.iq80.snappy/snappy/0.4</bundle>
+		<bundle dependency="true">mvn:org.codehaus.janino/commons-compiler/2.7.8</bundle>
+		<bundle dependency="true">mvn:org.codehaus.janino/janino/2.7.8</bundle>
+		<bundle dependency="true">wrap:mvn:net.sf.trove4j/trove4j/2.0.2</bundle>
+		<bundle dependency="true">mvn:com.github.ben-manes.caffeine/caffeine/2.3.1</bundle>
+		<bundle dependency="true">mvn:commons-codec/commons-codec/1.4</bundle>
+		<bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
+		<bundle dependency="true">mvn:com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru/1.4.2</bundle>
+		<bundle dependency="true">wrap:mvn:com.ontotext.graphdb/graphdb-free-runtime/8.0.4$Bundle-Version=8.0.4&amp;Import-Package=org.apache.commons.codec.*;version="[1.4,2)",*</bundle>
+		<bundle dependency="true">mvn:it.uniroma2.art.semanticturkey/st-graphdb-rdf4j-bridge/${project.version}</bundle>
+	
+		<configfile finalname="GRAPHDB_LITE.license" override="true">
+<!-- 			jar:file:system/com/ontotext/graphdb/graphdb-free-runtime/8.0.4/graphdb-free-runtime-8.0.4.jar!/GRAPHDB_LITE.license -->
+			mvn:it.uniroma2.art.semanticturkey/st-graphdb-rdf4j-bridge/${project.version}/license/graphdbfree
+		</configfile>
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="true">

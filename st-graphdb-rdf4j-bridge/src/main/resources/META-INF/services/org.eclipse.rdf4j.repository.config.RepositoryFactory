@@ -1,0 +1,2 @@
+com.ontotext.trree.monitorRepository.MonitorRepositoryFactory
+com.ontotext.trree.free.GraphDBFreeRepositoryFactory

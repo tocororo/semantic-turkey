@@ -1,0 +1,4 @@
+com.ontotext.trree.config.OWLIMSailFactory
+com.ontotext.trree.config.OWLIMParentSailFactory
+com.ontotext.trree.config.OWLIMChildSailFactory
+com.ontotext.trree.free.GraphDBFreeSailFactory
