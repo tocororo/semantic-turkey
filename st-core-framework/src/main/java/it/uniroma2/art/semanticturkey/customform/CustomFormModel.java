@@ -1,13 +1,11 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +32,8 @@ public class CustomFormModel {
 		customForms = CustomFormXMLHelper.loadSystemCustomForms();
 		//FormCollection: load files from formCollections/ folder
 		formCollections = CustomFormXMLHelper.loadSystemFormCollections(customForms);
-		//initialize CustomFormConfig
-		logger.debug("Loading CustomFormConfig.");
-		cfConfig = new CustomFormsConfig(formCollections);
+		//CustomFormConfig: create config with mappings loaded from system customForms/customFormsConfig.xml file
+		cfConfig = new CustomFormsConfig(CustomFormXMLHelper.loadSysyemFormsMapping(formCollections));
 	}
 	
 	/**
@@ -58,9 +55,8 @@ public class CustomFormModel {
 			customForms = CustomFormXMLHelper.loadProjectCustomForms(project, systemCFModel.getCustomForms());
 			//FormCollection: load files from formCollections/ folder
 			formCollections = CustomFormXMLHelper.loadProjectFormCollections(project, customForms, systemCFModel.getCustomForms());
-			//initialize CustomFormConfig
-			logger.debug("Loading CustomFormConfig.");
-			cfConfig = new CustomFormsConfig(formCollections, systemCFModel.getFormCollections(), project);
+			//CustomFormConfig: create config with mappings loaded from project customForms/customFormsConfig.xml file
+			cfConfig = new CustomFormsConfig(CustomFormXMLHelper.loadProjectFormsMapping(project, formCollections, systemCFModel.getFormCollections()));
 		}
 	}
 	
@@ -202,7 +198,7 @@ public class CustomFormModel {
 		}
 		FormsMapping formMapping = new FormsMapping(resource.stringValue(), formColl, replace);
 		cfConfig.addFormsMapping(formMapping);
-		cfConfig.save();
+		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 		return formMapping;
 	}
 	
@@ -269,7 +265,7 @@ public class CustomFormModel {
 			throw new CustomFormException("No FormsMapping found for " + resource.stringValue() + " in project " + project.getName());
 		}
 		formsMapping.setReplace(replace);
-		cfConfig.save();
+		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 	}
 	
 	/**
@@ -278,7 +274,7 @@ public class CustomFormModel {
 	 */
 	public void removeFormsMapping(IRI resource) {
 		cfConfig.removeMappingOfResource(resource);
-		cfConfig.save();
+		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 	}
 	
 	// FORM COLLECTION
@@ -305,7 +301,7 @@ public class CustomFormModel {
 		}
 		// remove FormsMappings about the given FormCollection
 		cfConfig.removeMappingOfFormCollection(formColl);
-		cfConfig.save();
+		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 	}
 	
 	// CUSTOM FORM
@@ -393,27 +389,20 @@ public class CustomFormModel {
 	 * Where <code>customFormConfig.xml</code> is copied from the same at system level.
 	 * This is invoked when a project is accessed and this structure doesn't exist.
 	 * @param systemCFModel 
-	 * @throws CustomFormParseException 
-	 * @throws CustomFormInitializationException 
 	 */
-	private void initializeProjectCFBasicHierarchy(CustomFormModel systemCFModel) throws CustomFormParseException, CustomFormInitializationException{
-		try {
-			CustomFormManager.getCustomFormsFolder(project).mkdir();
-			CustomFormManager.getFormCollectionsFolder(project).mkdir();
-			CustomFormManager.getFormsFolder(project).mkdir();
+	private void initializeProjectCFBasicHierarchy(CustomFormModel systemCFModel) {
+		//creates folders
+		CustomFormManager.getCustomFormsFolder(project).mkdir();
+		CustomFormManager.getFormCollectionsFolder(project).mkdir();
+		CustomFormManager.getFormsFolder(project).mkdir();
 
-			File sysCustomFormConfigFile = new File(CustomFormManager.getCustomFormsFolder(null),
-					CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME);
-			File projCustomFormConfigFile = new File(CustomFormManager.getCustomFormsFolder(project),
-					CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME);
-			// copy the system level mappings into the project's folder
-			FileUtils.copyFile(sysCustomFormConfigFile, projCustomFormConfigFile);
-		} catch (IOException e) {
-			throw new CustomFormInitializationException(e);
-		}
+		//initialize customForms, formCollections and cfConfig
 		customForms = new ArrayList<>();
 		formCollections = new ArrayList<>();
-		cfConfig = new CustomFormsConfig(formCollections, systemCFModel.getFormCollections(), project);
+		// create a configuration that is a clone of the one at system level
+		cfConfig = new CustomFormsConfig(systemCFModel.getFormMappings());
+		// ...and save it
+		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 	}
 	
 }

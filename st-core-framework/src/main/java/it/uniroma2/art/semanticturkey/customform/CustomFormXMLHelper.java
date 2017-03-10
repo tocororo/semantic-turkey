@@ -31,6 +31,12 @@ import it.uniroma2.art.semanticturkey.project.Project;
 
 public class CustomFormXMLHelper {
 	
+	private static final String CUSTOM_FORMS_CONFIG_FILENAME = "customFormConfig.xml";
+	
+	//prefix of system FormCollection's ids referenced in project config file
+	//and of system CustomForm's ids referenced in project form collection file
+	private static final String SYSTEM_LEVEL_PREFIX = "sys://";  
+	
 	private static final String CUSTOM_FORM_ROOT_TAG = "customForm";
 	private static final String CUSTOM_FORM_ID_ATTR = "id";
 	private static final String CUSTOM_FORM_NAME_ATTR = "name";
@@ -71,7 +77,8 @@ public class CustomFormXMLHelper {
 				try {
 					CustomForm cf = parseAndCreateCustomForm(f);
 					cf.setLevel(CustomFormLevel.system);
-					if (retrieveCustomForm(customForms, cf.getId()) != null) {
+					//check existence of CustomForm with the same ID at system level
+					if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.system) != null) {
 						System.out.println("A CustomForm with ID " + cf.getId() + " already exists at system level. "
 								+ ". CustomForm from file " + f.getPath() + " will be ignored");
 					} else {
@@ -100,9 +107,10 @@ public class CustomFormXMLHelper {
 			if (f.getName().startsWith(FormCollection.PREFIX)) {
 				logger.debug("Loading FormCollection file " + f.getPath());
 				try {
-					FormCollection fc = CustomFormXMLHelper.parseAndCreateFormCollection(f, systemCustomForms);
+					FormCollection fc = CustomFormXMLHelper.parseAndCreateFormCollection(f, systemCustomForms, CustomFormLevel.system);
 					fc.setLevel(CustomFormLevel.system);
-					if (retrieveFormCollection(formCollections, fc.getId()) != null) {
+					//check existence of FormCollection with the same ID at system level
+					if (retrieveFormCollection(formCollections, fc.getId(), CustomFormLevel.system) != null) {
 						System.out.println("A FormCollection with ID " + fc.getId() + " already exists at system level. "
 								+ ". CustomForm from file " + f.getPath() + " will be ignored");
 					} else {
@@ -119,8 +127,8 @@ public class CustomFormXMLHelper {
 	}
 	
 	public static Collection<FormsMapping> loadSysyemFormsMapping(Collection<FormCollection> systemFormCollections) throws CustomFormParseException {
-		File cfConfigFile = new File(CustomFormManager.getCustomFormsFolder(null), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME);
-		return parseAndCreateCustomFormsConfig(cfConfigFile, systemFormCollections);
+		File cfConfigFile = new File(CustomFormManager.getCustomFormsFolder(null), CUSTOM_FORMS_CONFIG_FILENAME);
+		return parseAndCreateFormsMappingCollection(cfConfigFile, systemFormCollections, CustomFormLevel.system);
 	}
 	
 	/**
@@ -140,11 +148,9 @@ public class CustomFormXMLHelper {
 				try {
 					CustomForm cf = parseAndCreateCustomForm(f);
 					cf.setLevel(CustomFormLevel.project);
-					if (retrieveCustomForm(customForms, cf.getId()) != null) {
+					//check existence of CustomForm with the same ID in the same project
+					if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.project) != null) {
 						System.out.println("A CustomForm with ID " + cf.getId() + " already exists in project "
-								+ project.getName() + ". CustomForm from file " + f.getPath() + " will be ignored");
-					} else if (retrieveCustomForm(systemCustomForms, cf.getId()) != null) {
-						System.out.println("A CustomForm with ID " + cf.getId() + " already exists at project level "
 								+ project.getName() + ". CustomForm from file " + f.getPath() + " will be ignored");
 					} else {
 						customForms.add(cf);
@@ -179,9 +185,10 @@ public class CustomFormXMLHelper {
 			if (f.getName().startsWith(FormCollection.PREFIX)) {
 				logger.debug("Loading FormCollection file " + f.getPath());
 				try {
-					FormCollection fc = parseAndCreateFormCollection(f, mergedCustomForms);
+					FormCollection fc = parseAndCreateFormCollection(f, mergedCustomForms, CustomFormLevel.project);
 					fc.setLevel(CustomFormLevel.project);
-					if (retrieveFormCollection(formCollections, fc.getId()) != null) {
+					//check existence of FormCollection with the same ID in the same project
+					if (retrieveFormCollection(formCollections, fc.getId(), CustomFormLevel.project) != null) {
 						System.out.println("A FormCollection with ID " + fc.getId() + " already exists in project "
 								+ project.getName() + ". FormCollection from file " + f.getPath() + " will be ignored");
 					} else {
@@ -204,7 +211,7 @@ public class CustomFormXMLHelper {
 		Collection<FormCollection> mergedFormCollections = new ArrayList<>(); 
 		mergedFormCollections.addAll(projectFormCollections);
 		mergedFormCollections.addAll(systemFormCollections);
-		return parseAndCreateCustomFormsConfig(cfConfigFile, mergedFormCollections);
+		return parseAndCreateFormsMappingCollection(cfConfigFile, mergedFormCollections, CustomFormLevel.project);
 	}
 	
 	/* ==================================
@@ -218,7 +225,8 @@ public class CustomFormXMLHelper {
 	 * @return
 	 * @throws CustomFormParseException 
 	 */
-	public static FormCollection parseAndCreateFormCollection(File fcFile, Collection<CustomForm> customForms) throws CustomFormParseException {
+	public static FormCollection parseAndCreateFormCollection(File fcFile, Collection<CustomForm> customForms,
+			CustomFormLevel level) throws CustomFormParseException {
 		try {
 			String id = "";
 			ArrayList<CustomForm> forms = new ArrayList<>();
@@ -257,12 +265,28 @@ public class CustomFormXMLHelper {
 			}
 			
 			for (String formId : formIdsList){
-				CustomForm cf = retrieveCustomForm(customForms, formId);
+				CustomForm cf;
+				//if the formCollection file is at project level, check the prefix of the referenced customForm id
+				//(formCollection at project level could reference project and system level customForm)
+				if (level.equals(CustomFormLevel.project)) {
+					//only in project formCollection file there is distinction between system and project customForm 
+					if (formId.startsWith(SYSTEM_LEVEL_PREFIX)) {
+						//looks if the referenced customForm exists at system level
+						cf = retrieveCustomForm(customForms, formId.replace(SYSTEM_LEVEL_PREFIX, ""), CustomFormLevel.system);
+					} else {
+						//looks if the referenced customForm exists at project level
+						cf = retrieveCustomForm(customForms, formId, CustomFormLevel.project);
+					}
+				} else {
+					//if the formCollection file is at system level check if the referenced customForm exists at system level
+					cf = retrieveCustomForm(customForms, formId, CustomFormLevel.system);
+				}
+				
 				if (cf != null){
 					forms.add(cf);
 				} else {
 					System.out.println("The FormCollection '" +  fcFile.getAbsolutePath() + "' points to a not existing"
-							+ " CustomForm (ID: '" + formId + "'). The CustomForm has not be added to the FormCollection");
+							+ " CustomForm (ID: '" + formId + "'). The CustomForm has not been added to the FormCollection");
 				}
 			}
 			
@@ -373,8 +397,8 @@ public class CustomFormXMLHelper {
 	 * @return
 	 * @throws CustomFormParseException 
 	 */
-	public static Collection<FormsMapping> parseAndCreateCustomFormsConfig(File cfConfigFile, Collection<FormCollection> existingFormColls)
-			throws CustomFormParseException {
+	public static Collection<FormsMapping> parseAndCreateFormsMappingCollection(File cfConfigFile, 
+			Collection<FormCollection> existingFormColls, CustomFormLevel level) throws CustomFormParseException {
 		try {
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -394,14 +418,28 @@ public class CustomFormXMLHelper {
 				if (mappingNode.getNodeType() == Node.ELEMENT_NODE) {
 					Element mappingElement = (Element) mappingNode;
 					String mapResource = mappingElement.getAttribute(CONFIG_MAPPING_RESOURCE_ATTR);
-					String formCollId = mappingElement.getAttribute(CONFIG_MAPPING_COLLECTION_ATTR);
 					boolean replace = Boolean.parseBoolean(mappingElement.getAttribute(CONFIG_MAPPING_REPLACE_ATTR));
-					FormCollection formColl = retrieveFormCollection(existingFormColls, formCollId);
+					String formCollId = mappingElement.getAttribute(CONFIG_MAPPING_COLLECTION_ATTR);
+					//if the config file is at project level, check the prefix of the formCollection id
+					//(formsMapping at project level could reference project and system level formCollection)
+					FormCollection formColl;
+					if (level.equals(CustomFormLevel.project)) {
+						//only in project configuration file there is distinction between system and project FormCollection 
+						if (formCollId.startsWith(SYSTEM_LEVEL_PREFIX)) {
+							//looks if the referenced formCollection exists at system level
+							formColl = retrieveFormCollection(existingFormColls, formCollId.replace(SYSTEM_LEVEL_PREFIX, ""), CustomFormLevel.system);
+						} else {
+							//looks if the referenced formCollection exists at project level
+							formColl = retrieveFormCollection(existingFormColls, formCollId, CustomFormLevel.project);
+						}
+					} else { //if the config file is at system level check if the referenced formColl exists at system level
+						formColl = retrieveFormCollection(existingFormColls, formCollId, CustomFormLevel.system);
+					}
 					if (formColl != null) {
 						mappings.add(new FormsMapping(mapResource, formColl, replace));
 					} else {
 						System.out.println("CustomFormConfig initialization: Warning, a Forms mapping in "
-								+ cfConfigFile.getPath() + "points to a not existing FormCollection " + formCollId);
+								+ cfConfigFile.getPath() + " has a reference to a not existing FormCollection " + formCollId);
 					}
 				}
 			}
@@ -411,19 +449,33 @@ public class CustomFormXMLHelper {
 		}
 	}
 	
-	
-	private static CustomForm retrieveCustomForm(Collection<CustomForm> coll, String cfId) {
+	/**
+	 * Retrieve the CustomForm with the given ID from a CustomForm list. If level parameter is not null,
+	 * search only the CustomForm with the given level
+	 * @param coll
+	 * @param cfId
+	 * @param level
+	 * @return
+	 */
+	private static CustomForm retrieveCustomForm(Collection<CustomForm> coll, String cfId, CustomFormLevel level) {
 		for (CustomForm c : coll) {
-			if (c.getId().equals(cfId)) {
+			if (c.getId().equals(cfId) && c.getLevel().equals(level)) {
 				return c;
 			}
 		}
 		return null;
 	}
 	
-	private static FormCollection retrieveFormCollection(Collection<FormCollection> coll, String fcId) {
+	/**
+	 * Retrieve the FormCollection with the given ID from a FormCollection list at the given level
+	 * @param coll
+	 * @param fcId
+	 * @param level
+	 * @return
+	 */
+	private static FormCollection retrieveFormCollection(Collection<FormCollection> coll, String fcId, CustomFormLevel level) {
 		for (FormCollection c : coll) {
-			if (c.getId().equals(fcId)) {
+			if (c.getId().equals(fcId) && c.getLevel().equals(level)) {
 				return c;
 			}
 		}
@@ -446,7 +498,11 @@ public class CustomFormXMLHelper {
 				Element mappingElement = doc.createElement(CONFIG_MAPPING_TAG);
 				cfConfElement.appendChild(mappingElement);
 				mappingElement.setAttribute(CONFIG_MAPPING_RESOURCE_ATTR, m.getResource());
-				mappingElement.setAttribute(CONFIG_MAPPING_COLLECTION_ATTR, m.getFormCollection().getId());
+				String fcId = m.getFormCollection().getId();
+				if (m.getFormCollection().getLevel().equals(CustomFormLevel.system)) {
+					fcId = SYSTEM_LEVEL_PREFIX + fcId;
+				}
+				mappingElement.setAttribute(CONFIG_MAPPING_COLLECTION_ATTR, fcId);
 				mappingElement.setAttribute(CONFIG_MAPPING_REPLACE_ATTR, m.getReplace()+"");
 			}
 
@@ -479,7 +535,11 @@ public class CustomFormXMLHelper {
 			for (CustomForm f : formCollection.getForms()){
 				Element formElement = doc.createElement(FORM_COLLECTION_FORM_TAG);
 				collElement.appendChild(formElement);
-				formElement.setAttribute(FORM_COLLECTION_FORM_ID_ATTR, f.getId());
+				String cfId = f.getId();
+				if (f.getLevel().equals(CustomFormLevel.system)) {
+					cfId = SYSTEM_LEVEL_PREFIX + cfId;
+				}
+				formElement.setAttribute(FORM_COLLECTION_FORM_ID_ATTR, cfId);
 			}
 			// write the content into xml file
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();

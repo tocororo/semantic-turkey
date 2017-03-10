@@ -3,22 +3,8 @@ package it.uniroma2.art.semanticturkey.customform;
 import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Properties;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import it.uniroma2.art.semanticturkey.project.Project;
 
 /**
  * Collection of {@link FormsMapping}. This class represent a model in memory of <code>customFormsConfig.xml</code>
@@ -27,29 +13,12 @@ import it.uniroma2.art.semanticturkey.project.Project;
  */
 public class CustomFormsConfig {
 	
-	protected static final String CUSTOM_FORMS_CONFIG_FILENAME = "customFormConfig.xml";
-//	private CustomFormsConfigXMLHelper cfConfXmlHelper;
-	
-	private Project<?> project;
 	private Collection<FormsMapping> mappings;
 	
-	/**
-	 * Initialize the CustomForm configuration tree, a structure that links resources with
-	 * {@link FormCollection}s and in turn {@link FormCollection}s with {@link CustomForm}s.
-	 * The initialization need a map of all the {@link FormCollection}s and {@link CustomForm}s already initialized
-	 * and found respectively in the customForms/formCollections folder and customForms/forms folder.
-	 * @param crMap
-	 * @param creMap
-	 * @param project name of project 
-	 * @throws CustomFormParseException 
-	 */
-	public CustomFormsConfig(Collection<FormCollection> projFormCollections, Collection<FormCollection> sysFormCollections, Project<?> project) throws CustomFormParseException {
-		this.project = project;
-		mappings = CustomFormXMLHelper.loadProjectFormsMapping(project, projFormCollections, sysFormCollections);
-	}
+	protected static final String CUSTOM_FORMS_CONFIG_FILENAME = "customFormConfig.xml";
 	
-	public CustomFormsConfig(Collection<FormCollection> formCollections) throws CustomFormParseException {
-		mappings = CustomFormXMLHelper.loadSysyemFormsMapping(formCollections);
+	public CustomFormsConfig(Collection<FormsMapping> mappings) {
+		this.mappings = mappings;
 	}
 	
 	/**
@@ -138,37 +107,8 @@ public class CustomFormsConfig {
 	/**
 	 * Serialize the CustomFormsConfig on a xml file.
 	 */
-	public void save(){
-		CustomFormXMLHelper.serializeCustomFormsConfig(this, new File(CustomFormManager.getCustomFormsFolder(project), CUSTOM_FORMS_CONFIG_FILENAME));
-//		try {
-//			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-//			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
-//			Document doc = docBuilder.newDocument();
-//			Element cfConfElement = doc.createElement("customFormConfig");
-//			doc.appendChild(cfConfElement);
-//			
-//			for (FormsMapping m : mappings){
-//				Element mappingElement = doc.createElement("formsMapping");
-//				cfConfElement.appendChild(mappingElement);
-//				mappingElement.setAttribute("resource", m.getResource());
-//				mappingElement.setAttribute("formCollection", m.getFormCollection().getId());
-//				mappingElement.setAttribute("replace", m.getReplace()+"");
-//			}
-//
-//			// write the content into xml file
-//			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-//			Transformer transformer = transformerFactory.newTransformer();
-//			Properties outputProps = new Properties();
-//			outputProps.setProperty("encoding", "UTF-8");
-//			outputProps.setProperty("indent", "yes");
-//			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-//			transformer.setOutputProperties(outputProps);
-//			DOMSource source = new DOMSource(doc);
-//			StreamResult result = new StreamResult(new File(CustomFormManager.getCustomFormsFolder(project), CUSTOM_FORMS_CONFIG_FILENAME).getPath());
-//			transformer.transform(source, result);
-//		} catch (TransformerException | ParserConfigurationException e) {
-//			e.printStackTrace();
-//		}
+	public void save(File file){
+		CustomFormXMLHelper.serializeCustomFormsConfig(this, file);
 	}
 	
 }

@@ -62,6 +62,7 @@ import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormLevel;
 import it.uniroma2.art.semanticturkey.customform.CustomFormXMLHelper;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormParseException;
@@ -541,7 +542,8 @@ public class CustomForms extends STServiceAdapter {
 		try {
 			inputFile.transferTo(tempServerFile);
 			try {
-				FormCollection parsedFormColl = CustomFormXMLHelper.parseAndCreateFormCollection(tempServerFile, cfManager.getCustomForms(getProject()));
+				FormCollection parsedFormColl = CustomFormXMLHelper.parseAndCreateFormCollection(
+						tempServerFile, cfManager.getCustomForms(getProject()), CustomFormLevel.project);
 				String newFormCollId;
 				if (newId != null) {
 					if (!newId.startsWith(FormCollection.PREFIX) || newId.contains(" ") || newId.trim().isEmpty()) { //check if ID is valid
@@ -1018,7 +1020,12 @@ public class CustomForms extends STServiceAdapter {
 		for (FormsMapping mapping : formMappings) {
 			ObjectNode cfcNode = jsonFactory.objectNode();
 			cfcNode.set("resource", jsonFactory.textNode(mapping.getResource()));
-			cfcNode.set("formCollection", jsonFactory.textNode(mapping.getFormCollection().getId()));
+			
+			ObjectNode formCollNode = jsonFactory.objectNode();
+			formCollNode.set("id", jsonFactory.textNode(mapping.getFormCollection().getId()));
+			formCollNode.set("level", jsonFactory.textNode(mapping.getFormCollection().getLevel().toString()));
+			cfcNode.set("formCollection", formCollNode);
+
 			cfcNode.set("replace", jsonFactory.booleanNode(mapping.getReplace()));
 			cfcArrayNode.add(cfcNode);
 		}
