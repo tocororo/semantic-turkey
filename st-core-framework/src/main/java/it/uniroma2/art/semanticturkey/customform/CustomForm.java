@@ -138,6 +138,8 @@ public abstract class CustomForm {
 	/**
 	 * Serialize the {@link CustomForm} as xml on the given file.
 	 */
-	public abstract void saveXML(File file);
+	public void save(File file) {
+		CustomFormXMLHelper.serializeCustomForm(this, file);
+	}
 
 }

@@ -1,6 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -11,8 +14,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.antlr.runtime.RecognitionException;
+import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -29,6 +34,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -56,7 +62,9 @@ import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormXMLHelper;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormParseException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormParseUtils;
 import it.uniroma2.art.semanticturkey.customform.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
@@ -485,10 +493,73 @@ public class CustomForms extends STServiceAdapter {
 		//look for FC at project level
 		FormCollection sourceFC = cfManager.getFormCollection(getProject(), sourceId);
 		if (sourceFC == null) { //if doesn't exist, look for it at system level
-			throw new CustomFormException("Impossible to clone '" + sourceId + "'. A CustomForm with this ID doesn't exists");
+			throw new CustomFormException("Impossible to clone '" + sourceId + "'. A FormCollection with this ID doesn't exists");
 		}
 		FormCollection newFC = cfManager.createFormCollection(getProject(), targetId);
 		cfManager.addFormsToCollection(getProject(), newFC, sourceFC.getForms());
+	}
+	
+	/**
+	 * Exports the {@link FormCollection} with the given id
+	 * @param oRes
+	 * @param id
+	 * @throws CustomFormException
+	 * @throws IOException
+	 */
+	@STServiceOperation
+	public void exportFormCollection(HttpServletResponse oRes, String id) throws CustomFormException, IOException {
+		FormCollection formCollection = cfManager.getFormCollection(getProject(), id);
+		if (formCollection == null) {
+			throw new CustomFormException("Impossible to export '" + id + "'. A FormCollection with this ID doesn't exists");
+		}
+		File tempServerFile = File.createTempFile("cfExport", ".xml");
+		try {
+			formCollection.save(tempServerFile);
+			oRes.setHeader("Content-Disposition", "attachment; filename=" + id + ".xml");
+			oRes.setContentType("application/xml");
+			oRes.setContentLength((int) tempServerFile.length());
+			try (InputStream is = new FileInputStream(tempServerFile)) {
+				IOUtils.copy(is, oRes.getOutputStream());
+			}
+			oRes.flushBuffer();
+		} finally {
+			tempServerFile.delete();
+		}
+	}
+	
+	/**
+	 * Imports a {@link FormCollection}
+	 * @param newId id of the new FormCollection that will be created. If not provided, the created FC will have the same
+	 * ID of the loaded FC
+	 * @throws IOException 
+	 * @throws CustomFormException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void importFormCollection(MultipartFile inputFile, @Optional String newId) throws IOException, CustomFormException {
+		// create a temp file (in karaf data/temp folder) to copy the received file
+		File tempServerFile = File.createTempFile("cfImport", inputFile.getOriginalFilename());
+		try {
+			inputFile.transferTo(tempServerFile);
+			try {
+				FormCollection parsedFormColl = CustomFormXMLHelper.parseAndCreateFormCollection(tempServerFile, cfManager.getCustomForms(getProject()));
+				String newFormCollId;
+				if (newId != null) {
+					if (!newId.startsWith(FormCollection.PREFIX) || newId.contains(" ") || newId.trim().isEmpty()) { //check if ID is valid
+						throw new CustomFormException("The provided ID '" + newId + "' is not valid."
+								+ " It must begin with the prefix '" + FormCollection.PREFIX + "' and it must not contain whitespaces");
+					}
+					newFormCollId = newId;
+				} else {
+					newFormCollId = parsedFormColl.getId();
+				}
+				FormCollection newFormColl = cfManager.createFormCollection(getProject(), newFormCollId);
+				cfManager.addFormsToCollection(getProject(), newFormColl, parsedFormColl.getForms());
+			} catch (CustomFormParseException e) {
+				throw new CustomFormException("Failed to parse the input file, it may contain some errors.");
+			}
+		} finally {
+			tempServerFile.delete();
+		}
 	}
 	
 	/**
@@ -724,6 +795,88 @@ public class CustomForms extends STServiceAdapter {
 		} else { //type "node"
 			cfManager.createCustomForm(getProject(), sourceCF.getType(), targetId, sourceCF.getName(), sourceCF.getDescription(),
 					sourceCF.getRef(), null);
+		}
+	}
+	
+	/**
+	 * Exports the {@link CustomForm} with the given id
+	 * @param oRes
+	 * @param id
+	 * @throws CustomFormException
+	 * @throws IOException
+	 */
+	@STServiceOperation
+	public void exportCustomForm(HttpServletResponse oRes, String id) throws CustomFormException, IOException {
+		CustomForm customForm = cfManager.getCustomForm(getProject(), id);
+		if (customForm == null) {
+			throw new CustomFormException("Impossible to export '" + id + "'. A CustomForm with this ID doesn't exists");
+		}
+		File tempServerFile = File.createTempFile("cfExport", ".xml");
+		try {
+			customForm.save(tempServerFile);
+			oRes.setHeader("Content-Disposition", "attachment; filename=" + id + ".xml");
+			oRes.setContentType("application/xml");
+			oRes.setContentLength((int) tempServerFile.length());
+			try (InputStream is = new FileInputStream(tempServerFile)) {
+				IOUtils.copy(is, oRes.getOutputStream());
+			}
+			oRes.flushBuffer();
+		} finally {
+			tempServerFile.delete();
+		}
+	}
+	
+	/**
+	 * Imports a {@link CustomForm}
+	 * @param newId id of the new CustomForm that will be created. If not provided, the created CF will have the same
+	 * ID of the loaded CF
+	 * @throws IOException 
+	 * @throws CustomFormException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void importCustomForm(MultipartFile inputFile, @Optional String newId) throws IOException, CustomFormException {
+		// create a temp file (in karaf data/temp folder) to copy the received file
+		File tempServerFile = File.createTempFile("cfImport", inputFile.getOriginalFilename());
+		try {
+			inputFile.transferTo(tempServerFile);
+			try {
+				CustomForm parsedCustomForm = CustomFormXMLHelper.parseAndCreateCustomForm(tempServerFile);
+				String newCustomFormId;
+				String newRef;
+				if (newId != null) {
+					if (!newId.startsWith(CustomForm.PREFIX) || newId.contains(" ") || newId.trim().isEmpty()) { //check if ID is valid
+						throw new CustomFormException("The provided ID '" + newId + "' is not valid."
+								+ " It must begin with the prefix '" + CustomForm.PREFIX + "' and it must not contain whitespaces");
+					}
+					newCustomFormId = newId;
+					if (parsedCustomForm.isTypeGraph()) {
+						newRef = parsedCustomForm.getRef();
+						//replace in pearl rule the id
+						newRef = newRef.replace(parsedCustomForm.getId(), newCustomFormId);
+						//and the rule ID
+						String sourceRuleId = parsedCustomForm.getId().replace(CustomForm.PREFIX, "id:");
+						String targetRuleId = newCustomFormId.replace(CustomForm.PREFIX, "id:");
+						newRef = newRef.replace(sourceRuleId, targetRuleId);
+					} else { //node
+						newRef = parsedCustomForm.getRef();
+					}
+				} else { //keep the old id
+					newCustomFormId = parsedCustomForm.getId();
+					newRef = parsedCustomForm.getRef();
+				}
+				if (parsedCustomForm.isTypeGraph()) {
+					cfManager.createCustomForm(getProject(), parsedCustomForm.getType(), newCustomFormId,
+							parsedCustomForm.getName(), parsedCustomForm.getDescription(),
+							newRef, parsedCustomForm.asCustomFormGraph().getShowPropertyChain());
+				} else { //type "node"
+					cfManager.createCustomForm(getProject(), parsedCustomForm.getType(), newCustomFormId,
+							parsedCustomForm.getName(), parsedCustomForm.getDescription(), newRef, null);
+				}
+			} catch (CustomFormParseException e) {
+				throw new CustomFormException("Failed to parse the input file, it may contain some errors.");
+			}
+		} finally {
+			tempServerFile.delete();
 		}
 	}
 	

@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -12,19 +11,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
@@ -42,9 +31,6 @@ import org.apache.uima.resource.metadata.FeatureDescription;
 import org.apache.uima.resource.metadata.TypeDescription;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.eclipse.rdf4j.model.IRI;
-import org.w3c.dom.CDATASection;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import it.uniroma2.art.coda.converters.contracts.ContractConstants;
 import it.uniroma2.art.coda.core.CODACore;
@@ -68,6 +54,7 @@ import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 public class CustomFormGraph extends CustomForm {
@@ -502,51 +489,6 @@ public class CustomFormGraph extends CustomForm {
 		}
 //		describeTSD(tsd);
 		return tsd;
-	}
-	
-	@Override
-	public void saveXML(File file){
-		try {
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
-			Document doc = docBuilder.newDocument();
-			
-			Element creElement = doc.createElement("customForm");
-			doc.appendChild(creElement);
-			creElement.setAttribute("id", this.getId());
-			creElement.setAttribute("name", this.getName());
-			creElement.setAttribute("type", this.getType());
-			
-			Element descrElement = doc.createElement("description");
-			descrElement.setTextContent(this.getDescription());
-			creElement.appendChild(descrElement);
-			
-			Element refElement = doc.createElement("ref"); 
-			CDATASection cdata = doc.createCDATASection(this.getRef());
-			refElement.appendChild(cdata);
-			
-			String propChain = serializePropertyChain();
-			if (!propChain.isEmpty()) {
-				refElement.setAttribute("showPropertyChain", propChain);
-			}
-			
-			creElement.appendChild(refElement);
-			
-			// write the content into xml file
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			Properties outputProps = new Properties();
-			outputProps.setProperty("encoding", "UTF-8");
-			outputProps.setProperty("indent", "yes");
-			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-			transformer.setOutputProperties(outputProps);
-			DOMSource source = new DOMSource(doc);
-//			StreamResult result = new StreamResult(new File(CustomFormManager.getFormsFolder(), this.getId() + ".xml"));
-			StreamResult result = new StreamResult(file);
-			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException e) {
-			e.printStackTrace();
-		}
 	}
 	
 	//For debug decomment in createTypeSystemDescription

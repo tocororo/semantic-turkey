@@ -26,14 +26,14 @@ public class CustomFormModel {
 	
 	/**
 	 * Creates CustomFormModel at system level
-	 * @throws CustomFormInitializationException
+	 * @throws CustomFormParseException 
 	 */
-	public CustomFormModel() throws CustomFormInitializationException {
+	public CustomFormModel() throws CustomFormParseException {
 		logger.debug("Loading Custom Form architecture at system level");
 		//CustomForm: load files from forms/ folder and store them in the forms map
-		customForms = CustomFormLoader.loadSystemCustomForms();
+		customForms = CustomFormXMLHelper.loadSystemCustomForms();
 		//FormCollection: load files from formCollections/ folder
-		formCollections = CustomFormLoader.loadSystemFormCollections(customForms);
+		formCollections = CustomFormXMLHelper.loadSystemFormCollections(customForms);
 		//initialize CustomFormConfig
 		logger.debug("Loading CustomFormConfig.");
 		cfConfig = new CustomFormsConfig(formCollections);
@@ -41,9 +41,10 @@ public class CustomFormModel {
 	
 	/**
 	 * Creates CustomFormModel at project level
-	 * @throws CustomFormInitializationException
+	 * @throws CustomFormParseException
+	 * @throws CustomFormInitializationException 
 	 */
-	public CustomFormModel(Project<?> project, CustomFormModel systemCFModel) throws CustomFormInitializationException {
+	public CustomFormModel(Project<?> project, CustomFormModel systemCFModel) throws CustomFormParseException, CustomFormInitializationException {
 		
 		this.project = project;
 		
@@ -54,9 +55,9 @@ public class CustomFormModel {
 		} else {
 			logger.debug("CustomForm folders architecture for project " + project.getName() + " exists. Loading it.");
 			//CustomForm: load files from forms/ folder and store them in the forms map
-			customForms = CustomFormLoader.loadProjectCustomForms(project, systemCFModel.getCustomForms());
+			customForms = CustomFormXMLHelper.loadProjectCustomForms(project, systemCFModel.getCustomForms());
 			//FormCollection: load files from formCollections/ folder
-			formCollections = CustomFormLoader.loadProjectFormCollections(project, customForms, systemCFModel.getCustomForms());
+			formCollections = CustomFormXMLHelper.loadProjectFormCollections(project, customForms, systemCFModel.getCustomForms());
 			//initialize CustomFormConfig
 			logger.debug("Loading CustomFormConfig.");
 			cfConfig = new CustomFormsConfig(formCollections, systemCFModel.getFormCollections(), project);
@@ -201,7 +202,7 @@ public class CustomFormModel {
 		}
 		FormsMapping formMapping = new FormsMapping(resource.stringValue(), formColl, replace);
 		cfConfig.addFormsMapping(formMapping);
-		cfConfig.saveXML();
+		cfConfig.save();
 		return formMapping;
 	}
 	
@@ -221,7 +222,7 @@ public class CustomFormModel {
 		FormCollection formColl = new FormCollection(id);
 		formCollections.add(formColl);
 		// serialize the FormCollection
-		formColl.saveXML(new File(CustomFormManager.getFormCollectionsFolder(project), id + ".xml"));
+		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), id + ".xml"));
 		return formColl;
 	}
 	
@@ -252,7 +253,7 @@ public class CustomFormModel {
 		}
 		customForms.add(form);
 		// serialize the CustomForm (only if add() doesn't throw a DuplicateIdException)
-		form.saveXML(new File(CustomFormManager.getFormsFolder(project), id + ".xml"));
+		form.save(new File(CustomFormManager.getFormsFolder(project), id + ".xml"));
 		return form;
 	}
 	
@@ -268,7 +269,7 @@ public class CustomFormModel {
 			throw new CustomFormException("No FormsMapping found for " + resource.stringValue() + " in project " + project.getName());
 		}
 		formsMapping.setReplace(replace);
-		cfConfig.saveXML();
+		cfConfig.save();
 	}
 	
 	/**
@@ -277,7 +278,7 @@ public class CustomFormModel {
 	 */
 	public void removeFormsMapping(IRI resource) {
 		cfConfig.removeMappingOfResource(resource);
-		cfConfig.saveXML();
+		cfConfig.save();
 	}
 	
 	// FORM COLLECTION
@@ -304,7 +305,7 @@ public class CustomFormModel {
 		}
 		// remove FormsMappings about the given FormCollection
 		cfConfig.removeMappingOfFormCollection(formColl);
-		cfConfig.saveXML();
+		cfConfig.save();
 	}
 	
 	// CUSTOM FORM
@@ -316,7 +317,7 @@ public class CustomFormModel {
 		if (showPropChain != null) {
 			customForm.asCustomFormGraph().setShowPropertyChain(showPropChain);
 		}
-		customForm.saveXML(new File(CustomFormManager.getFormsFolder(project), customForm.getId() + ".xml"));
+		customForm.save(new File(CustomFormManager.getFormsFolder(project), customForm.getId() + ".xml"));
 	}
 	
 	/**
@@ -351,7 +352,7 @@ public class CustomFormModel {
 				if (deleteEmptyColl && formColl.getForms().isEmpty()) {
 					deleteFormCollection(formColl);
 				} else { // otherwise save it
-					formColl.saveXML(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
+					formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
 				}
 			}
 		}
@@ -359,19 +360,19 @@ public class CustomFormModel {
 	
 	public void addFormToCollection(FormCollection formColl, CustomForm customForm) {
 		formColl.addForm(customForm);
-		formColl.saveXML(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
+		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
 	}
 	
 	public void addFormsToCollection(FormCollection formColl, Collection<CustomForm> customForms) {
 		for (CustomForm cf : customForms) {
 			formColl.addForm(cf);
 		}
-		formColl.saveXML(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
+		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
 	}
 	
 	public void removeFormFromCollection(FormCollection formColl, CustomForm customForm) {
 		formColl.removeForm(customForm.getId());
-		formColl.saveXML(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
+		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
 	}
 	
 	
@@ -392,9 +393,10 @@ public class CustomFormModel {
 	 * Where <code>customFormConfig.xml</code> is copied from the same at system level.
 	 * This is invoked when a project is accessed and this structure doesn't exist.
 	 * @param systemCFModel 
+	 * @throws CustomFormParseException 
 	 * @throws CustomFormInitializationException 
 	 */
-	private void initializeProjectCFBasicHierarchy(CustomFormModel systemCFModel) throws CustomFormInitializationException{
+	private void initializeProjectCFBasicHierarchy(CustomFormModel systemCFModel) throws CustomFormParseException, CustomFormInitializationException{
 		try {
 			CustomFormManager.getCustomFormsFolder(project).mkdir();
 			CustomFormManager.getFormCollectionsFolder(project).mkdir();
