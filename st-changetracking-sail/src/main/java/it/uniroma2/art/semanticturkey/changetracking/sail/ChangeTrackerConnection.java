@@ -30,6 +30,7 @@ import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.algebra.evaluation.iterator.CollectionIteration;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -45,7 +46,7 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 
 /**
- * A {@link NotifyingSailConnection} which is returned by a {@link ChangeTracker}. 
+ * A {@link NotifyingSailConnection} which is returned by a {@link ChangeTracker}.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
@@ -57,6 +58,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private final ChangeTracker sail;
 	private final StagingArea stagingArea;
 	private Model connectionLocalGraphManagement;
+	private final UpdateHandler updateHandler;
 
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
 		super(wrappedCon);
@@ -82,18 +84,21 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		};
 		getWrappedConnection().addConnectionListener(connectionListener);
+		updateHandler = new FlagUpdateHandler();
 	}
 
 	@Override
 	public void begin(IsolationLevel level) throws SailException {
 		super.begin(level);
 		stagingArea.clear();
+		updateHandler.clearHandler();
 		logger.debug("Transaction Begin / Isolation Level = {}", level);
 	}
 
 	@Override
 	public void rollback() throws SailException {
 		try {
+			updateHandler.clearHandler();
 			stagingArea.clear();
 		} finally {
 			super.rollback();
@@ -103,11 +108,43 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	@Override
 	public void commit() throws SailException {
-		// Read-only transaction: no change to log
-		if (stagingArea.isEmpty()) {
+		Function<IRI, Function<RepositoryConnection, Function<IRI, Consumer<? super Statement>>>> consumer = commit -> conn -> predicate -> stmt -> {
+			Resource stmtRes = conn.getValueFactory().createIRI(sail.metadataNS,
+					UUID.randomUUID().toString());
+
+			conn.add(stmtRes, RDF.TYPE, CHANGELOG.QUADRUPLE, sail.metadataGraph);
+			conn.add(stmtRes, CHANGELOG.SUBJECT, stmt.getSubject(), sail.metadataGraph);
+			conn.add(stmtRes, CHANGELOG.PREDICATE, stmt.getPredicate(), sail.metadataGraph);
+			conn.add(stmtRes, CHANGELOG.OBJECT, stmt.getObject(), sail.metadataGraph);
+
+			Resource ctx = stmt.getContext();
+			if (ctx == null) {
+				ctx = SESAME.NIL;
+			}
+
+			conn.add(stmtRes, CHANGELOG.CONTEXT, ctx, sail.metadataGraph);
+			conn.add(commit, predicate, stmtRes, sail.metadataGraph);
+		};
+
+		// Some triple stores (e.g. GraphDB, at least version 8.0.4) notify triple additions/deletions only
+		// during the commit operation. Therefore, we can't be certain that an empty staging area means a
+		// read-only transaction.
+
+		// In a read-only connection, just execute the commit
+		if (updateHandler.isReadOnly()) {
 			super.commit();
 			return;
 		}
+
+		// If the underlying triple store sends interactive notifications, and the staging area is empty then
+		// we shuld commit and return
+		if (sail.interactiveNotifications && stagingArea.isEmpty()) {
+			super.commit();
+			return;
+		}
+
+		// However, if some triples have been staged or the triple triple store does not send interactive
+		// notifications, then we need to log the operations.
 
 		synchronized (sail) {
 			// Prepares data commit (in case of success, it is unlikely that a subsequent commit() fails)
@@ -117,6 +154,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			IRI commitIRI;
 			Resource previousTip = null;
 			Model commitMetadataModel = new LinkedHashModel();
+			boolean triplesUnknown = false;
 
 			try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
 				ValueFactory vf = metaRepoConn.getValueFactory();
@@ -159,26 +197,26 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					Resource s = st.getSubject();
 					IRI p = st.getPredicate();
 					Value o = st.getObject();
-					
+
 					boolean refactorS = s.equals(CHANGETRACKER.COMMIT_METADATA);
 					boolean refactorP = p.equals(CHANGETRACKER.COMMIT_METADATA);
 					boolean refactorO = o.equals(CHANGETRACKER.COMMIT_METADATA);
 
 					if (refactorS || refactorP || refactorO) {
-						return SimpleValueFactory.getInstance().createStatement(refactorS ? commitIRI : s, refactorP ? commitIRI : p, refactorO ? commitIRI : o);
+						return SimpleValueFactory.getInstance().createStatement(refactorS ? commitIRI : s,
+								refactorP ? commitIRI : p, refactorO ? commitIRI : o);
 					} else {
 						return st;
 					}
 				}).forEach(commitMetadataModel::add);
-				
-				
+
 				metaRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.metadataGraph);
-				
+
 				if (!commitMetadataModel.isEmpty()) {
 					metaRepoConn.add(commitMetadataModel, sail.metadataGraph);
 				}
-				
-				if (!commitMetadataModel.contains(commitIRI, DCTERMS.CREATED, null)) {				
+
+				if (!commitMetadataModel.contains(commitIRI, DCTERMS.CREATED, null)) {
 					GregorianCalendar calendar = new GregorianCalendar();
 					XMLGregorianCalendar currentDateTimeXML;
 					try {
@@ -190,24 +228,16 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					metaRepoConn.add(commitIRI, DCTERMS.CREATED, commitDatetime, sail.metadataGraph);
 				}
 
-				Function<IRI, Consumer<? super Statement>> consumer = predicate -> stmt -> {
-					Resource stmtRes = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
-
-					metaRepoConn.add(stmtRes, RDF.TYPE, CHANGELOG.QUADRUPLE, sail.metadataGraph);
-					metaRepoConn.add(stmtRes, CHANGELOG.SUBJECT, stmt.getSubject(), sail.metadataGraph);
-					metaRepoConn.add(stmtRes, CHANGELOG.PREDICATE, stmt.getPredicate(), sail.metadataGraph);
-					metaRepoConn.add(stmtRes, CHANGELOG.OBJECT, stmt.getObject(), sail.metadataGraph);
-
-					Resource ctx = stmt.getContext();
-					if (ctx == null) {
-						ctx = SESAME.NIL;
-					}
-
-					metaRepoConn.add(stmtRes, CHANGELOG.CONTEXT, ctx, sail.metadataGraph);
-					metaRepoConn.add(commitIRI, predicate, stmtRes, sail.metadataGraph);
-				};
-				stagingArea.getAddedStatements().forEach(consumer.apply(CHANGELOG.ADDED_STATEMENT));
-				stagingArea.getRemovedStatements().forEach(consumer.apply(CHANGELOG.REMOVED_STATEMENT));
+				if (stagingArea.isEmpty()) {
+					triplesUnknown = true;
+					metaRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("triples-unknown"),
+							sail.metadataGraph);
+				} else {
+					stagingArea.getAddedStatements().forEach(
+							consumer.apply(commitIRI).apply(metaRepoConn).apply(CHANGELOG.ADDED_STATEMENT));
+					stagingArea.getRemovedStatements().forEach(
+							consumer.apply(commitIRI).apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
+				}
 
 				if (previousTip != null) {
 					metaRepoConn.add(commitIRI, CHANGELOG.PARENT_COMMIT, previousTip, sail.metadataGraph);
@@ -217,7 +247,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 				metaRepoConn.commit();
 			} catch (RepositoryException e) {
-				// It may be the case that metadata have been committed, but for some reasoner (e.g.
+				// It may be the case that metadata have been committed, but for some reason (e.g.
 				// disconnection from a remote metadata repo) the transaction status cannot be reported back
 				throw new SailException(e);
 			}
@@ -227,50 +257,82 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				super.commit();
 			} catch (SailException e) {
 				// commit() has failed, so we should undo the history
-				try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
-					metaRepoConn.begin();
-
-					metaRepoConn.remove(commitIRI, null, null, sail.metadataGraph);
-
-					if (!commitMetadataModel.isEmpty()) {
-						metaRepoConn.remove(commitMetadataModel, sail.metadataGraph);
-					}
-					metaRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, sail.metadataGraph);
-
-					if (previousTip != null) {
-						metaRepoConn.add(CHANGELOG.MASTER, CHANGELOG.TIP, previousTip, sail.metadataGraph);
-					}
-
-					metaRepoConn.commit();
-				} catch (RepositoryException e2) {
-					// we might be unable to rollback the metadata. In this case, we could end up with a
-					// a commit (the status of which is not "committed" and without a commit in the data
-					throw new SailException(e2);
-				}
+				removeLastCommit(commitIRI, previousTip, commitMetadataModel, triplesUnknown);
 				throw e;
 			}
 
 			// Data has been committed. So, mark the MASTER commit as committed
 
-			try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
-				ValueFactory vf = metaRepoConn.getValueFactory();
+			// If triples were unknown when the commit was first logged, then add that information now
+			// (note that in the meantime the triple store should have sent the necessary notifications)
 
-				metaRepoConn.begin();
-				metaRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("committed"),
-						sail.metadataGraph);
-				metaRepoConn.commit();
-			} catch (RepositoryException e) {
-				// We would end up with data committed and metadata missing that information.
-				// Since we don't known if data have been committed or not, it is safest to make fail
-				// subsequent commit attempts.
-				throw new SailException(e);
+			if (triplesUnknown && stagingArea.isEmpty()) {
+				removeLastCommit(commitIRI, previousTip, commitMetadataModel, triplesUnknown);
+			} else {
+				try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
+					ValueFactory vf = metaRepoConn.getValueFactory();
+	
+					metaRepoConn.begin();
+	
+					// If triples were unknown when the commit was first logged, then add that information now
+					// (note that in the meantime the triple store should have sent the necessary notifications)
+	
+					if (triplesUnknown) {
+						stagingArea.getAddedStatements().forEach(consumer.apply(commitIRI).apply(metaRepoConn)
+								.apply(CHANGELOG.ADDED_STATEMENT));
+						stagingArea.getRemovedStatements().forEach(consumer.apply(commitIRI)
+								.apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
+					}
+					metaRepoConn.remove(commitIRI, CHANGELOG.STATUS, null, sail.metadataGraph);
+					metaRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("committed"),
+							sail.metadataGraph);
+					metaRepoConn.commit();
+				} catch (RepositoryException e) {
+					// We would end up with data committed and metadata missing that information.
+					// Since we don't known if data have been committed or not, it is safest to make fail
+					// subsequent commit attempts.
+					throw new SailException(e);
+				}
 			}
 
 			stagingArea.clear();
+			updateHandler.clearHandler();
 		}
 
 		// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or not
 		// the commit has been applied to the data repo
+	}
+
+	private void removeLastCommit(IRI commitIRI, Resource previousTip, Model commitMetadataModel,
+			boolean triplesUnknown) throws SailException {
+		try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
+			metaRepoConn.begin();
+
+			if (!triplesUnknown) {
+				Update triplesRemoveUpdate = metaRepoConn.prepareUpdate(
+						"REMOVE { ?quad ?p ?o . } WHERE {?commit <" + CHANGELOG.ADDED_STATEMENT
+								+ ">|<" + CHANGELOG.REMOVED_STATEMENT + "> ?quad . }");
+				triplesRemoveUpdate.setBinding("commit", commitIRI);
+				triplesRemoveUpdate.execute();
+			}
+
+			metaRepoConn.remove(commitIRI, null, null, sail.metadataGraph);
+
+			if (!commitMetadataModel.isEmpty()) {
+				metaRepoConn.remove(commitMetadataModel, sail.metadataGraph);
+			}
+			metaRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, sail.metadataGraph);
+
+			if (previousTip != null) {
+				metaRepoConn.add(CHANGELOG.MASTER, CHANGELOG.TIP, previousTip, sail.metadataGraph);
+			}
+
+			metaRepoConn.commit();
+		} catch (RepositoryException e2) {
+			// we might be unable to rollback the metadata. In this case, we could end up with a
+			// a commit (the status of which is not "committed" and without a commit in the data
+			throw new SailException(e2);
+		}
 	}
 
 	@Override
@@ -319,7 +381,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
-			super.addStatement(subj, pred, obj, newContexts);
+			try {
+				updateHandler.addStatement(subj, pred, obj, newContexts);
+				super.addStatement(subj, pred, obj, newContexts);
+			} catch (Exception e) {
+				updateHandler.recordCorruption();
+				throw e;
+			}
 		}
 	}
 
@@ -340,7 +408,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
-			super.addStatement(modify, subj, pred, obj, newContexts);
+			try {
+				updateHandler.addStatement(modify, subj, pred, obj, newContexts);
+				super.addStatement(modify, subj, pred, obj, newContexts);
+			} catch (Exception e) {
+				updateHandler.recordCorruption();
+				throw e;
+			}
 		}
 	}
 
@@ -359,10 +433,15 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
 		}
 
-
 		if (contexts.length == 0 || !contextList.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
-			super.removeStatements(subj, pred, obj, newContexts);
+			try {
+				updateHandler.removeStatements(subj, pred, obj, newContexts);
+				super.removeStatements(subj, pred, obj, newContexts);
+			} catch (Exception e) {
+				updateHandler.recordCorruption();
+				throw e;
+			}
 		}
 	}
 
@@ -383,7 +462,46 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		if (contexts.length == 0 || !contextList.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
-			super.removeStatement(modify, subj, pred, obj, newContexts);
+			try {
+				updateHandler.removeStatement(modify, subj, pred, obj, newContexts);
+				super.removeStatement(modify, subj, pred, obj, newContexts);
+			} catch (Exception e) {
+				updateHandler.recordCorruption();
+				throw e;
+			}
+		}
+	}
+
+	@Override
+	public void clear(Resource... contexts) throws SailException {
+		updateHandler.clear(contexts);
+		try {
+			super.clear(contexts);
+		} catch (Exception e) {
+			updateHandler.recordCorruption();
+			throw e;
+		}
+	}
+
+	@Override
+	public void clearNamespaces() throws SailException {
+		updateHandler.clearNamespaces();
+		try {
+			super.clearNamespaces();
+		} catch (Exception e) {
+			updateHandler.recordCorruption();
+			throw e;
+		}
+	}
+
+	@Override
+	public void removeNamespace(String prefix) throws SailException {
+		updateHandler.removeNamespace(prefix);
+		try {
+			super.removeNamespace(prefix);
+		} catch (Exception e) {
+			updateHandler.recordCorruption();
+			throw e;
 		}
 	}
 
@@ -438,17 +556,16 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		return false;
 	}
-	
-	
+
 	private Model getCommitMetadataModel() {
 		return stagingArea.getCommitMetadataModel();
 	}
-	
+
 	private void addToCommitMetadataModel(Resource subj, IRI pred, Value obj) {
-		stagingArea.getCommitMetadataModel().add(subj, pred, obj);	
+		stagingArea.getCommitMetadataModel().add(subj, pred, obj);
 	}
 
 	private void removeFromCommitMetadataModel(Resource subj, IRI pred, Value obj) {
-		stagingArea.getCommitMetadataModel().remove(subj, pred, obj);	
+		stagingArea.getCommitMetadataModel().remove(subj, pred, obj);
 	}
 }

@@ -70,8 +70,10 @@ public class ChangeTracker extends NotifyingSailWrapper {
 
 	final Model graphManagement;
 
+	final boolean interactiveNotifications;
+
 	public ChangeTracker(Repository metadataRepo, String metadataNS, IRI metadataGraph, Set<IRI> includeGraph,
-			Set<IRI> excludeGraph) {
+			Set<IRI> excludeGraph, boolean interactiveNotifications) {
 		this.metadataRepo = metadataRepo;
 		this.metadataNS = metadataNS;
 		this.metadataGraph = metadataGraph;
@@ -80,6 +82,7 @@ public class ChangeTracker extends NotifyingSailWrapper {
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH, g));
 		excludeGraph.forEach(
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.EXCLUDE_GRAPH, g));
+		this.interactiveNotifications = interactiveNotifications;
 	}
 
 	@Override
