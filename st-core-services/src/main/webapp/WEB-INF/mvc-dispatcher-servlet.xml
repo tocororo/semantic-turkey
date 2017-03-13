@@ -70,6 +70,9 @@
 				<bean id="StringToRDF4JRDFormatConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JRDFormatConverter" />
 
+				<bean id="StringToRepositoryAccessConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToRepositoryAccessConverter" />
+
 			</list>
 		</property>
 	</bean>

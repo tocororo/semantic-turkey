@@ -139,6 +139,18 @@
 		</osgi:service-properties>
 	</osgi:service>
 
+	<!-- Publishes the Predefined Sail Configurer implementation of the extension point SailConfigurer -->
+	<bean id="PredefinedSailConfigurerFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.PredefinedSailConfigurerFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="PredefinedSailConfigurerFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.SailConfigurer" />
+		</osgi:service-properties>
+	</osgi:service>
+	
 	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->
 	<bean id="datasetMetadataRepository"
 		class="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />

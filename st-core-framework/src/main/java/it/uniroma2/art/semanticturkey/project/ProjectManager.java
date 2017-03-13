@@ -26,39 +26,6 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelCreationException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.io.RDFFormat;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
-import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
-import it.uniroma2.art.owlart.models.conf.PersistenceModelConfiguration;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
-import it.uniroma2.art.semanticturkey.resources.Resources;
-import it.uniroma2.art.semanticturkey.utilities.Utilities;
-
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -93,6 +60,43 @@ import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelCreationException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
+import it.uniroma2.art.owlart.io.RDFFormat;
+import it.uniroma2.art.owlart.models.OWLModel;
+import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
+import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
+import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
+import it.uniroma2.art.owlart.models.conf.PersistenceModelConfiguration;
+import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.SailConfigurer;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
+
 /**
  * <p>
  * a manager/factory class for creating new projects, for retrieving existing ones or for accessing the loaded
@@ -105,8 +109,8 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * The ACL is described by the {@link ProjectACL} class, and provides information about which
- * {@link ProjectConsumer}s can access to this project, and which grants they have. Specifically,
- * for each project, it contains the following descriptions:
+ * {@link ProjectConsumer}s can access to this project, and which grants they have. Specifically, for each
+ * project, it contains the following descriptions:
  * <ul>
  * <li>a list of {@link ProjectConsumer}s, together with their access permissions {@link AccessLevel}.</li>
  * <li>a "lockable" property, telling if the project associated to this ACL, can be locked for use by a
@@ -117,7 +121,8 @@ import org.slf4j.LoggerFactory;
  * the online status of each project reports:
  * <ul>
  * <li>the list of its consumers, together with the {@link AccessLevel for each of them}</li>
- * <li>the {@link LockStatus}, which is represented by a &lt;{@link LockLevel}, {@link ProjectConsumer}&rt;</li>
+ * <li>the {@link LockStatus}, which is represented by a &lt;{@link LockLevel},
+ * {@link ProjectConsumer}&rt;</li>
  * </ul>
  * </p>
  * 
@@ -138,7 +143,7 @@ public class ProjectManager {
 	protected static Logger logger = LoggerFactory.getLogger(ProjectManager.class);
 
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
-	
+
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
 	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain
@@ -203,11 +208,11 @@ public class ProjectManager {
 		try {
 			projectDir = getProjectDir(projectName);
 		} catch (InvalidProjectNameException e) {
-			throw new ProjectDeletionException("project name: " + projectName
-					+ " is not a valid name; cannot delete that project");
+			throw new ProjectDeletionException(
+					"project name: " + projectName + " is not a valid name; cannot delete that project");
 		} catch (ProjectInexistentException e) {
-			throw new ProjectDeletionException("project: " + projectName
-					+ " does not exist; cannot delete it");
+			throw new ProjectDeletionException(
+					"project: " + projectName + " does not exist; cannot delete it");
 		}
 
 		if (isOpen(projectName))
@@ -249,9 +254,9 @@ public class ProjectManager {
 			ProjectInconsistentException, ProjectUpdateException {
 		return createProject(ProjectConsumer.SYSTEM, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
-				uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID,
-				renderingEngineConfigurationClass, renderingEngineConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass,
+				uriGenConfiguration, renderingEngineFactoryID, renderingEngineConfigurationClass,
+				renderingEngineConfiguration);
 	}
 
 	/**
@@ -282,14 +287,15 @@ public class ProjectManager {
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
 			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
+			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
+			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		return createProject(consumer, projectName, modelType, baseURI,
 				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
-				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
+				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass,
+				uriGenConfiguration, renderingEngineFactoryID, renderingEngineConfigurationClass,
+				renderingEngineConfiguration);
 	}
 
 	/**
@@ -324,29 +330,30 @@ public class ProjectManager {
 			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration,
 			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass,
+			Properties renderingEngineConfiguration)
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 
 		File projectDir = resolveProjectNameToDir(projectName);
 
 		return createProject(consumer, projectName, modelType, projectDir, baseURI, defaultNamespace,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration,
-				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
-				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
+				ontManagerFactoryID, modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
+				uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID,
+				renderingEngineConfigurationClass, renderingEngineConfiguration);
 	}
 
 	/**
 	 * This method sets up all the necessary files which characterize projects and then generates a new
 	 * instance on the initialized folder
 	 * <p>
-	 * <em>Note: by using directly this method you may create projects in any place in the file system, and 
+	 * <em>Note: by using directly this method you may create projects in any place in the file system, and
 	 * Semantic Turkey won't be able to localize them. For this reason, it should only be used by Semantic
-	 * Turkey extensions which are adopting a new project folder, providing also dedicated API to 
+	 * Turkey extensions which are adopting a new project folder, providing also dedicated API to
 	 * access/manage its projects.<br/>
 	 * use {@link #createProject(String, Class, String, String, String, Properties)} or
-	 * {@link #createProject(String, Class, String, String, String, String, Properties)}
-	 * to create a new project</em>
+	 * {@link #createProject(String, Class, String, String, String, String, Properties)} to create a new
+	 * project</em>
 	 * </p>
 	 * 
 	 * @param consumer
@@ -371,8 +378,8 @@ public class ProjectManager {
 			Class<? extends RDFModel> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration,
 			String uriGeneratorFactoryID, String uriGenConfigurationClassName, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
-			throws ProjectCreationException {
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass,
+			Properties renderingEngineConfiguration) throws ProjectCreationException {
 
 		try {
 			logger.debug("creating project: " + projectName);
@@ -421,9 +428,9 @@ public class ProjectManager {
 			Class<MODELTYPE> modelType, File projectDir, String baseURI, String defaultNamespace,
 			String ontManagerID, String modelConfigurationClass, Properties modelConfiguration,
 			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass, 
-			Properties renderingEngineConfiguration, ProjectType type, ProjectConsumer consumer) throws DuplicatedResourceException,
-			ProjectCreationException {
+			String renderingEngineFactoryID, String renderingEngineConfigurationClass,
+			Properties renderingEngineConfiguration, ProjectType type, ProjectConsumer consumer)
+			throws DuplicatedResourceException, ProjectCreationException {
 		if (projectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
 					+ "already exists; choose a different project name for a new project");
@@ -443,9 +450,12 @@ public class ProjectManager {
 			out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
 			out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
 			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorFactoryID) + "\n");
-			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGenConfigurationClass) + "\n");
-			out.write(Project.RENDERING_ENGINE_FACTORY_ID_PROP + "=" + escape(renderingEngineFactoryID) + "\n");
-			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "=" + escape(renderingEngineConfigurationClass) + "\n");
+			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGenConfigurationClass)
+					+ "\n");
+			out.write(
+					Project.RENDERING_ENGINE_FACTORY_ID_PROP + "=" + escape(renderingEngineFactoryID) + "\n");
+			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "="
+					+ escape(renderingEngineConfigurationClass) + "\n");
 			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
 			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
 			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
@@ -465,22 +475,24 @@ public class ProjectManager {
 			// Model COnfiguration file creation
 			File modelConfigurationFile = new File(projectDir, Project.MODELCONFIG_FILENAME);
 			modelConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(modelConfigurationFile)){
+			try (FileWriter fw = new FileWriter(modelConfigurationFile)) {
 				modelConfiguration.store(fw, "model configuration, initialized from project initialization");
 			}
-			
+
 			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
 			uriGenConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)){
-				uriGenConfiguration.store(fw, "uri generator configuration, initialized from project initialization");
-			}
-			
-			File renderingEngineConfigurationFile = new File(projectDir, Project.RENDERING_ENGINE_CONFIG_FILENAME);
-			renderingEngineConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(renderingEngineConfigurationFile)){
-				renderingEngineConfiguration.store(fw, "rendering engine configuration, initialized from project initialization");
+			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)) {
+				uriGenConfiguration.store(fw,
+						"uri generator configuration, initialized from project initialization");
 			}
 
+			File renderingEngineConfigurationFile = new File(projectDir,
+					Project.RENDERING_ENGINE_CONFIG_FILENAME);
+			renderingEngineConfigurationFile.createNewFile();
+			try (FileWriter fw = new FileWriter(renderingEngineConfigurationFile)) {
+				renderingEngineConfiguration.store(fw,
+						"rendering engine configuration, initialized from project initialization");
+			}
 
 			logger.debug("all project info have been built");
 
@@ -501,9 +513,9 @@ public class ProjectManager {
 			logger.debug("project " + projectName + " initialized as a " + proj.getType() + " project");
 
 			proj.activate();
-			
+
 			CustomFormManager.getInstance().registerCustomFormModelOfProject(proj);
-			
+
 			logger.debug("project " + projectName + " activated");
 
 			logger.debug("project : " + projectName + " created");
@@ -519,9 +531,8 @@ public class ProjectManager {
 			// surely good to not delete here. The lack of a proper OntologyManager is not something that
 			// would normally happen when creating a project. It usually happens on old projects which have
 			// been created with an ontology manager which is not present in the current installation
-			throw new ProjectCreationException(
-					"it is not possible to create a project with OntologyManager: " + "---"
-							+ "because no bundle with such ID has been loaded by OSGi");
+			throw new ProjectCreationException("it is not possible to create a project with OntologyManager: "
+					+ "---" + "because no bundle with such ID has been loaded by OSGi");
 		} catch (UnavailableResourceException e) {
 			throw new ProjectCreationException(e);
 		}
@@ -560,8 +571,8 @@ public class ProjectManager {
 		if (project != null)
 			return project;
 		else
-			throw new IllegalProjectStatusException(consumerName
-					+ " is not an open project, so cannot be a consumer");
+			throw new IllegalProjectStatusException(
+					consumerName + " is not an open project, so cannot be a consumer");
 
 	}
 
@@ -587,8 +598,8 @@ public class ProjectManager {
 			throw new InvalidProjectNameException(projectName);
 
 		if (isOpen(projectName)) {
-			throw new UnavailableResourceException("project: " + projectName
-					+ " is currently open, thus it cannot be cloned");
+			throw new UnavailableResourceException(
+					"project: " + projectName + " is currently open, thus it cannot be cloned");
 		}
 
 		File oldProjectDir = getProjectDir(projectName);
@@ -605,8 +616,10 @@ public class ProjectManager {
 	/**
 	 * This method:
 	 * <ul>
-	 * <li>invokes {@link #resolveProjectNameToDir(String)} and gets the project dir associated to that name</li>
-	 * <li>returns the directory if the project exists, otherwise throws a {@link ProjectInexistentException}</li>
+	 * <li>invokes {@link #resolveProjectNameToDir(String)} and gets the project dir associated to that
+	 * name</li>
+	 * <li>returns the directory if the project exists, otherwise throws a
+	 * {@link ProjectInexistentException}</li>
 	 * </ul>
 	 * 
 	 * @param projectName
@@ -614,8 +627,8 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 */
-	public static File getProjectDir(String projectName) throws InvalidProjectNameException,
-			ProjectInexistentException {
+	public static File getProjectDir(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException {
 		File projectDir = resolveProjectNameToDir(projectName);
 		if (!projectDir.exists())
 			throw new ProjectInexistentException("Project: " + " does not exist");
@@ -642,28 +655,28 @@ public class ProjectManager {
 			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
 
 		if (!isOpen(projectName)) {
-			throw new UnavailableResourceException("project " + projectName
-					+ " is not open, and thus cannot be exported");
+			throw new UnavailableResourceException(
+					"project " + projectName + " is not open, and thus cannot be exported");
 		}
 
 		Project<?> project = openProjects.getProject(projectName);
 
 		File tempDir = Resources.createTempDir();
 		Utilities.copy(project.infoSTPFile, new File(tempDir, project.infoSTPFile.getName()));
-		Utilities.copy(project.nsPrefixMappingsPersistence.getFile(), new File(tempDir,
-				project.nsPrefixMappingsPersistence.getFile().getName()));
+		Utilities.copy(project.nsPrefixMappingsPersistence.getFile(),
+				new File(tempDir, project.nsPrefixMappingsPersistence.getFile().getName()));
 		Utilities.copy(project.uriGenConfigFile, new File(tempDir, project.uriGenConfigFile.getName()));
 		Utilities.copy(project.renderingConfigFile, new File(tempDir, project.renderingConfigFile.getName()));
 		Utilities.copy(project.modelConfigFile, new File(tempDir, project.modelConfigFile.getName()));
 		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
-		Utilities
-				.createZipFile(tempDir, semTurkeyProjectFile, false, true, "Semantic Turkey Project Archive");
+		Utilities.createZipFile(tempDir, semTurkeyProjectFile, false, true,
+				"Semantic Turkey Project Archive");
 		tempDir.delete();
 		tempDir.deleteOnExit();
 	}
 
-	public static void importProject(File semTurkeyProjectFile, String name) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
+	public static void importProject(File semTurkeyProjectFile, String name)
+			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
 			ModelUpdateException, InvalidProjectNameException {
 		File tempDir = Resources.createTempDir();
@@ -689,14 +702,14 @@ public class ProjectManager {
 		// copying separate files from imported project into new one
 		// TODO why not first copying the whole temp directory and then make changes?
 		Utilities.copy(infoSTPFile, new File(newProjDir, infoSTPFile.getName()));
-		Utilities.copy(new File(tempDir, NSPrefixMappings.prefixMappingFileName), new File(newProjDir,
-				NSPrefixMappings.prefixMappingFileName));
-		Utilities.copy(new File(tempDir, Project.MODELCONFIG_FILENAME), new File(newProjDir,
-				Project.MODELCONFIG_FILENAME));
-		Utilities.copy(new File(tempDir, Project.URI_GENERATOR_CONFIG_FILENAME), new File(newProjDir,
-				Project.URI_GENERATOR_CONFIG_FILENAME));
-		Utilities.copy(new File(tempDir, Project.RENDERING_ENGINE_CONFIG_FILENAME), new File(newProjDir,
-				Project.RENDERING_ENGINE_CONFIG_FILENAME));
+		Utilities.copy(new File(tempDir, NSPrefixMappings.prefixMappingFileName),
+				new File(newProjDir, NSPrefixMappings.prefixMappingFileName));
+		Utilities.copy(new File(tempDir, Project.MODELCONFIG_FILENAME),
+				new File(newProjDir, Project.MODELCONFIG_FILENAME));
+		Utilities.copy(new File(tempDir, Project.URI_GENERATOR_CONFIG_FILENAME),
+				new File(newProjDir, Project.URI_GENERATOR_CONFIG_FILENAME));
+		Utilities.copy(new File(tempDir, Project.RENDERING_ENGINE_CONFIG_FILENAME),
+				new File(newProjDir, Project.RENDERING_ENGINE_CONFIG_FILENAME));
 
 		// ProjectType projectType = ProjectType.valueOf(stp_properties.getProperty(Project.PROJECT_TYPE));
 		// String ontManagerID = stp_properties.getProperty(Project.ONTOLOGY_MANAGER_ID_PROP);
@@ -712,7 +725,7 @@ public class ProjectManager {
 				newProj.setName(name);
 				newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
 						newProj.getBaseURI(), RDFFormat.NTRIPLES);
-	
+
 				tempDir.delete();
 				tempDir.deleteOnExit();
 			} finally {
@@ -795,8 +808,8 @@ public class ProjectManager {
 	public static void setProjectProperty(String projectName, String property, String propValue)
 			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 
-		logger.debug("setting property: " + property + " of project: " + projectName + " to value: "
-				+ propValue);
+		logger.debug(
+				"setting property: " + property + " of project: " + projectName + " to value: " + propValue);
 		File projectDir = getProjectDir(projectName);
 		logger.debug("projectDir: " + projectDir);
 		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
@@ -806,7 +819,8 @@ public class ProjectManager {
 		stp_properties.load(propFileInputStream);
 		propFileInputStream.close();
 		stp_properties.setProperty(property, propValue);
-		BufferedOutputStream propFileWriteStream = new BufferedOutputStream(new FileOutputStream(infoSTPFile));
+		BufferedOutputStream propFileWriteStream = new BufferedOutputStream(
+				new FileOutputStream(infoSTPFile));
 		stp_properties.store(propFileWriteStream, "");
 		propFileWriteStream.close();
 	}
@@ -826,8 +840,8 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 */
-	public static String getProjectProperty(String projectName, String property) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static String getProjectProperty(String projectName, String property)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		File projectDir = getProjectDir(projectName);
 		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
 		Properties stp_properties = new Properties();
@@ -846,8 +860,8 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 */
-	public static Map<String, String> getProjectPropertyMap(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static Map<String, String> getProjectPropertyMap(String projectName)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		File projectDir = getProjectDir(projectName);
 		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
 		Properties stp_properties = new Properties();
@@ -856,12 +870,12 @@ public class ProjectManager {
 		fis.close();
 		Map<String, String> map = new HashMap<String, String>();
 		Set<String> propList = stp_properties.stringPropertyNames();
-		for (String p : propList){
+		for (String p : propList) {
 			map.put(p, stp_properties.getProperty(p));
 		}
 		return map;
-	}	
-	
+	}
+
 	/**
 	 * gets the project.info file content for project with name <code>projectName</code>
 	 * 
@@ -871,11 +885,11 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 */
-	public static String getProjectPropertyFileContent(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static String getProjectPropertyFileContent(String projectName)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		File projectDir = getProjectDir(projectName);
 		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
-		
+
 		String content = "";
 		BufferedReader input = new BufferedReader(new FileReader(infoSTPFile));
 		StringBuffer buffer = new StringBuffer();
@@ -884,8 +898,8 @@ public class ProjectManager {
 		input.close();
 		content = buffer.toString();
 		return content;
-	}	
-	
+	}
+
 	/**
 	 * saves the project.info file content for project with name <code>projectName</code>
 	 * 
@@ -896,15 +910,15 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 */
-	public static void saveProjectPropertyFileContent(String projectName, String content) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static void saveProjectPropertyFileContent(String projectName, String content)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		File projectDir = getProjectDir(projectName);
 		File infoSTPFile = new File(projectDir, Project.INFOFILENAME);
 		PrintWriter pw = new PrintWriter(infoSTPFile);
 		pw.print(content);
 		pw.close();
-	}	
-	
+	}
+
 	/**
 	 * as for {@link #getProjectProperty(String, String) but throws a {@link ProjectInconsistentException} if
 	 * the property has a null value}
@@ -924,8 +938,8 @@ public class ProjectManager {
 		if (propValue != null)
 			return propValue;
 		else
-			throw new ProjectInconsistentException("missing required " + property
-					+ " value from description of project: " + projectName);
+			throw new ProjectInconsistentException(
+					"missing required " + property + " value from description of project: " + projectName);
 	}
 
 	/**
@@ -1014,8 +1028,8 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
 	 */
-	public static String getProjectBaseURI(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static String getProjectBaseURI(String projectName)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		return getProjectProperty(projectName, Project.BASEURI_PROP);
 	}
 
@@ -1028,8 +1042,8 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
 	 */
-	public static String getProjectDefaultNamespace(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static String getProjectDefaultNamespace(String projectName)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		return getProjectProperty(projectName, Project.DEF_NS_PROP);
 	}
 
@@ -1043,8 +1057,8 @@ public class ProjectManager {
 	 * @throws IOException
 	 * @throws IOException
 	 */
-	public static long getProjectTimeStamp(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public static long getProjectTimeStamp(String projectName)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		String propValue = getProjectProperty(projectName, Project.TIMESTAMP_PROP);
 		return Long.parseLong(propValue);
 	}
@@ -1169,9 +1183,10 @@ public class ProjectManager {
 
 		// statically checking accessibility to the project through the projects' ACL
 		if (!acl.isAccessibleFrom(consumer, requestedAccessLevel, requestedLockLevel))
-			return new AccessResponse(false, "the Access Control List of project " + project.getName()
-					+ " forbids access from consumer " + consumer.getName() + " with access level: "
-					+ requestedAccessLevel + " and lock level: " + requestedLockLevel);
+			return new AccessResponse(false,
+					"the Access Control List of project " + project.getName()
+							+ " forbids access from consumer " + consumer.getName() + " with access level: "
+							+ requestedAccessLevel + " and lock level: " + requestedLockLevel);
 
 		// only if project is already open, dynamically checks its runtime status and its accessibility
 		if (openProjects.isOpen(project)) {
@@ -1180,17 +1195,17 @@ public class ProjectManager {
 
 			// if already locked, it cannot be locked again
 			if (lockStatus != ProjectACL.LockLevel.NO && requestedLockLevel != ProjectACL.LockLevel.NO)
-				return new AccessResponse(false, "there is already a lock on project " + project
-						+ " so it cannot be locked again");
+				return new AccessResponse(false,
+						"there is already a lock on project " + project + " so it cannot be locked again");
 
 			// requestedAccess vs lock status
 			if (lockStatus == ProjectACL.LockLevel.R)
-				return new AccessResponse(false, "LockLevel " + ProjectACL.LockLevel.R
-						+ " forbids any access to project " + project);
+				return new AccessResponse(false,
+						"LockLevel " + ProjectACL.LockLevel.R + " forbids any access to project " + project);
 
 			if ((lockStatus == ProjectACL.LockLevel.W) && (requestedAccessLevel == ProjectACL.AccessLevel.RW))
-				return new AccessResponse(false, "LockLevel " + ProjectACL.LockLevel.W
-						+ " forbids RW access to project " + project);
+				return new AccessResponse(false,
+						"LockLevel " + ProjectACL.LockLevel.W + " forbids RW access to project " + project);
 
 			// requestedLock vs accessStatus
 			if (accessStatus == ProjectACL.AccessLevel.RW && requestedLockLevel != ProjectACL.LockLevel.NO)
@@ -1308,23 +1323,25 @@ public class ProjectManager {
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
 		openProjects.removeProject(project);
 	}
-	
+
 	/**
 	 * Return the access level with which the consumer is accessing the project. Null if the consumer does not
-	 * access the given project.  
+	 * access the given project.
+	 * 
 	 * @param project
 	 * @param consumer
 	 * @return
-	 * @throws ProjectAccessException 
-	 * @throws ProjectInexistentException 
-	 * @throws InvalidProjectNameException 
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
 	 */
 	public static AccessLevel getAccessedLevel(String projectName, ProjectConsumer consumer)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException{
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Project<RDFModel> project = getProjectDescription(projectName);
-		if (isOpen(project)){//look for the consumer only if the project is open
+		if (isOpen(project)) {// look for the consumer only if the project is open
 			AccessLevel accessLevel = openProjects.getAccessStatusMap(project).get(consumer);
-			if (accessLevel != null) { //accessLevel could be null because project could be open but not from the given consumer
+			if (accessLevel != null) { // accessLevel could be null because project could be open but not from
+										// the given consumer
 				return accessLevel;
 			} else {
 				return null;
@@ -1333,10 +1350,11 @@ public class ProjectManager {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Returns the ProjectConsumer that is locking the given project. <code>null</code> if the project is not
 	 * currently locked
+	 * 
 	 * @param projectName
 	 * @param consumer
 	 * @return
@@ -1345,17 +1363,18 @@ public class ProjectManager {
 	 * @throws ProjectAccessException
 	 */
 	public static ProjectConsumer getLockingConsumer(String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException{
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		if (isOpen(projectName)) {
 			return openProjects.getLockingConsumer(getProjectDescription(projectName));
 		} else {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Returns the LockLevel which with the project is locked by the consumer. <code>null</code> if the
 	 * project is not locked by the given consumer.
+	 * 
 	 * @param projectName
 	 * @param consumer
 	 * @return
@@ -1364,15 +1383,15 @@ public class ProjectManager {
 	 * @throws ProjectAccessException
 	 */
 	public static LockLevel getLockingLevel(String projectName, ProjectConsumer consumer)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException{
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Project<RDFModel> project = getProjectDescription(projectName);
-		if (openProjects.isLockedBy(project , consumer)){
+		if (openProjects.isLockedBy(project, consumer)) {
 			return openProjects.getLockLevel(project);
 		} else {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * <p>
 	 * This private class holds the information related to projects open at runtime <br/>
@@ -1407,7 +1426,7 @@ public class ProjectManager {
 		private Map<String, Project<? extends RDFModel>> projects = new HashMap<String, Project<?>>();
 		private Map<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>> projectsAccessStatus = new HashMap<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>>();
 		private Map<Project<?>, LockStatus> projectsLockStatus = new HashMap<Project<?>, LockStatus>();
-		
+
 		public Project<? extends RDFModel> getProject(String projectName) {
 			return projects.get(projectName);
 		}
@@ -1524,10 +1543,8 @@ public class ProjectManager {
 
 		public void removeConsumer(Project<?> project, ProjectConsumer consumer) {
 			if (!projects.containsKey(project.getName()))
-				throw new IllegalProjectStatusException(
-						"project "
-								+ project
-								+ " does not seem to be open, thus a consumer cannot be removed from it. Actually, there should be no consumer for it!");
+				throw new IllegalProjectStatusException("project " + project
+						+ " does not seem to be open, thus a consumer cannot be removed from it. Actually, there should be no consumer for it!");
 
 			if (isLockedBy(project, consumer))
 				unlock(project);
@@ -1537,9 +1554,9 @@ public class ProjectManager {
 			// consistency check: not possible to invoke a consumer remove if the project was not consumed by
 			// the given consumer
 			if (removedLevel == null)
-				throw new IllegalProjectStatusException("project " + project
-						+ " was not accessed by consumer " + consumer
-						+ ". Inconsistent request to remove this consumer");
+				throw new IllegalProjectStatusException(
+						"project " + project + " was not accessed by consumer " + consumer
+								+ ". Inconsistent request to remove this consumer");
 
 		}
 
@@ -1674,18 +1691,22 @@ public class ProjectManager {
 			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
 			ProjectInconsistentException, ProjectUpdateException {
 		Project<? extends RDFModel> project = createProject(projectName, modelType, baseURI,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration,
-				uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
+				ontManagerFactoryID, modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
+				uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID,
+				renderingEngineConfigurationClass, renderingEngineConfiguration);
 		setCurrentProject(project);
 		return project;
 	}
 
 	public static Project<? extends RDFModel> createProject2(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
-			boolean validationEnabled, PluginSpecification uriGeneratorSpecification,
-			PluginSpecification renderingEngineSpecification)
-					throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-					ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException {
+			boolean validationEnabled, PluginSpecification coreRepoSailConfigurerSpecification,
+			PluginSpecification supportRepoSailConfigurerSpecification,
+			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
+			ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, BadConfigurationException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continuosEditing;
@@ -1700,7 +1721,10 @@ public class ProjectManager {
 
 		RepositoryConfig coreRepositoryConfig = new RepositoryConfig(projectName + "-core");
 		SailRepositoryConfig coreSailRepoConfig = new SailRepositoryConfig();
-		SailImplConfig coreSailConfig = new NativeStoreConfig();
+
+		SailConfigurer coreRepoSailConfigurer = (SailConfigurer) coreRepoSailConfigurerSpecification
+				.instatiatePlugin();
+		SailImplConfig coreSailConfig = coreRepoSailConfigurer.buildSailConfig();
 
 		if (historyEnabled) {
 			ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(coreSailConfig);
@@ -1721,8 +1745,9 @@ public class ProjectManager {
 		supportSailRepoConfig.setSailImplConfig(supportSailConfig);
 		supportRepositoryConfig.setRepositoryImplConfig(supportSailRepoConfig);
 
-		prepareProjectFiles2(consumer, projectName, modelType, projType, projectDir, baseURI, defaultNamespace,
-				coreRepositoryConfig, supportRepositoryConfig, uriGeneratorSpecification, renderingEngineSpecification);
+		prepareProjectFiles2(consumer, projectName, modelType, projType, projectDir, baseURI,
+				defaultNamespace, coreRepositoryConfig, supportRepositoryConfig, uriGeneratorSpecification,
+				renderingEngineSpecification);
 
 		Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
 				LockLevel.NO);
@@ -1731,11 +1756,12 @@ public class ProjectManager {
 		// setCurrentProject(project);
 		return project;
 	}
-	
-	private static <MODELTYPE extends RDFModel>  void prepareProjectFiles2(ProjectConsumer consumer, String projectName,
-			Class<MODELTYPE> modelType, ProjectType type, File projectDir, String baseURI, String defaultNamespace,
-			RepositoryConfig coreRepoConfig, RepositoryConfig supportRepoConfig, PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
-					throws DuplicatedResourceException, ProjectCreationException {
+
+	private static <MODELTYPE extends RDFModel> void prepareProjectFiles2(ProjectConsumer consumer,
+			String projectName, Class<MODELTYPE> modelType, ProjectType type, File projectDir, String baseURI,
+			String defaultNamespace, RepositoryConfig coreRepoConfig, RepositoryConfig supportRepoConfig,
+			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
+			throws DuplicatedResourceException, ProjectCreationException {
 		if (projectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
 					+ "already exists; choose a different project name for a new project");
@@ -1754,13 +1780,14 @@ public class ProjectManager {
 			// here we write directly on the file; once the project is loaded, it will be handled internally
 			// as a property file
 			BufferedWriter out = new BufferedWriter(new FileWriter(info_stp));
-//			out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
-//			out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
-			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorSpecification.getFactoryId()) + "\n");
-			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGeneratorSpecification.getConfigType())
-					+ "\n");
-			out.write(
-					Project.RENDERING_ENGINE_FACTORY_ID_PROP + "=" + escape(renderingEngineSpecification.getFactoryId()) + "\n");
+			// out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
+			// out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
+			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "="
+					+ escape(uriGeneratorSpecification.getFactoryId()) + "\n");
+			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "="
+					+ escape(uriGeneratorSpecification.getConfigType()) + "\n");
+			out.write(Project.RENDERING_ENGINE_FACTORY_ID_PROP + "="
+					+ escape(renderingEngineSpecification.getFactoryId()) + "\n");
 			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "="
 					+ escape(renderingEngineSpecification.getConfigType()) + "\n");
 			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
@@ -1787,7 +1814,7 @@ public class ProjectManager {
 				coreRepoConfig.export(model);
 				Rio.write(model, fw, org.eclipse.rdf4j.rio.RDFFormat.TURTLE);
 			}
-			
+
 			// Support Repository Configuration file creation
 			File supportRepoConfigurationFile = new File(projectDir, Project.SUPPORTREPOCONFIG_FILENAME);
 			supportRepoConfigurationFile.createNewFile();
@@ -1796,7 +1823,6 @@ public class ProjectManager {
 				supportRepoConfig.export(model);
 				Rio.write(model, fw, org.eclipse.rdf4j.rio.RDFFormat.TURTLE);
 			}
-
 
 			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
 			uriGenConfigurationFile.createNewFile();
