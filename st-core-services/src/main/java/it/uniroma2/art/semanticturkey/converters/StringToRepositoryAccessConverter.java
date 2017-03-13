@@ -8,6 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositoryAccess;
 
+/**
+ * Converts a JSON string to a {@link RepositoryAccess} describing different access options.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ */
 public class StringToRepositoryAccessConverter implements Converter<String, RepositoryAccess> {
 
 	private final ObjectMapper mapper;

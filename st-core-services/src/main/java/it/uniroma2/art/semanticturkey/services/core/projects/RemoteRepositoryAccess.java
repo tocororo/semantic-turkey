@@ -4,6 +4,13 @@ import java.net.URL;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Abstract base class of concrete remote repository access options: {@link CreateRemote},
+ * {@link AccessExistingRemote}.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ *
+ */
 public abstract class RemoteRepositoryAccess extends RepositoryAccess {
 
 	private URL serverURL;
