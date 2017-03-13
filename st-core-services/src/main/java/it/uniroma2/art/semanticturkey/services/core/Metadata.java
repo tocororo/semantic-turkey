@@ -153,6 +153,18 @@ public class Metadata extends STServiceAdapter {
 	}
 
 	/**
+	 * Changes the namespace mapping for the loaded ontology. Since there is no evidence that any ontology API
+	 * will ever use this (there is typically only a setNamespaceMapping method) we have not included a
+	 * changeNamespaceMapping in the API and consequently we delegate here setNamespaceMapping. Should this
+	 * situation change, this method will require a proper implementation.
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void changeNSPrefixMapping(String prefix, String namespace)
+			throws NSPrefixMappingUpdateException, ModelUpdateException {
+		getOntologyManager().setNSPrefixMapping(prefix, namespace);
+	}
+
+	/**
 	 * Removes all prefix declarations for the supplied <code>namespace</code>
 	 * 
 	 * @param prefix
@@ -404,7 +416,7 @@ public class Metadata extends STServiceAdapter {
 	}
 
 	// Failed imports recovery
-	
+
 	/**
 	 * Downloads an ontology that is a failed import from the web
 	 * 
