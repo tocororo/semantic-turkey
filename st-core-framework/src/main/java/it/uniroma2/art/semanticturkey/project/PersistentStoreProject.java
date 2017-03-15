@@ -63,11 +63,8 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 		if (ontManager != null) {
 			ontManager.startOntModel(getBaseURI(), getProjectStoreDir(), modelConfiguration);
 		} else {
-			supportOntManager.startOntModel("http://example.org/history", getProjectSupportRepoDir(),
-					supportRepoConfig);
-			Repository supportRepo = supportOntManager.getRepository();
-			RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepo);
-			newOntManager.startOntModel(getBaseURI(), getProjectCoreRepoDir(), coreRepoConfig);
+			supportOntManager.startOntModel("http://example.org/history", null, null);
+			newOntManager.startOntModel(getBaseURI(), null, null);
 
 			try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 				ValueFactory vf = conn.getValueFactory();

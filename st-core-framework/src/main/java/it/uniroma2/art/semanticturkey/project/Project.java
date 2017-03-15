@@ -122,8 +122,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public static final String INFOFILENAME = "project.info";
 	public static final String MODELCONFIG_FILENAME = "model.config";
-	public static final String COREREPOCONFIG_FILENAME = "core-repo.ttl";
-	public static final String SUPPORTREPOCONFIG_FILENAME = "support-repo.ttl";
 
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
 	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
@@ -136,10 +134,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String PROJECT_TYPE = "ProjectType";
 	public static final String PROJECT_MODEL_TYPE = "ModelType";
-	public static final String REPOSITORIES_DIR_NAME = "repositories";
 	public static final String PROJECT_STORE_DIR_NAME = "store";
-	public static final String PROJECT_COREREPO_DIR_NAME = "core";
-	public static final String PROJECT_SUPPORTREPO_DIR_NAME = "support";
 
 	public static final String PLUGINS_PROP = "plugins";
 
@@ -295,7 +290,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 //				} catch (RDFParseException | UnsupportedRDFormatException | IOException e) {
 //					throw new ProjectAccessException(e);
 //				}
-				repositoryManager = new LocalRepositoryManager(new File(_projectDir,REPOSITORIES_DIR_NAME));
+				repositoryManager = new LocalRepositoryManager(_projectDir);
 				repositoryManager.initialize();
 				
 				Repository supportRepository = repositoryManager.getRepository("support");
@@ -845,14 +840,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public File getProjectStoreDir() {
 		return new File(_projectDir, PROJECT_STORE_DIR_NAME);
-	}
-
-	public File getProjectCoreRepoDir() {
-		return new File(_projectDir, PROJECT_COREREPO_DIR_NAME);
-	}
-
-	public File getProjectSupportRepoDir() {
-		return new File(_projectDir, PROJECT_SUPPORTREPO_DIR_NAME);
 	}
 
 	public String toString() {

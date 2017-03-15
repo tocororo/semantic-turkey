@@ -1857,11 +1857,9 @@ public class ProjectManager {
 		if (projectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
 					+ "already exists; choose a different project name for a new project");
+
 		projectDir.mkdir();
-		File coreRepoDir = new File(projectDir, Project.PROJECT_COREREPO_DIR_NAME);
-		coreRepoDir.mkdir();
-		File supportRepoDir = new File(projectDir, Project.PROJECT_SUPPORTREPO_DIR_NAME);
-		supportRepoDir.mkdir();
+		
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1935,8 +1933,7 @@ public class ProjectManager {
 
 			logger.debug("all project info have been built");
 
-			LocalRepositoryManager localRepoMgr = new LocalRepositoryManager(
-					new File(projectDir, Project.REPOSITORIES_DIR_NAME));
+			LocalRepositoryManager localRepoMgr = new LocalRepositoryManager(projectDir);
 			localRepoMgr.initialize();
 			try {
 				localRepoMgr.addRepositoryConfig(coreRepoConfig);
