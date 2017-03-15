@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.projects;
+package it.uniroma2.art.semanticturkey.project;
 
 /**
  * Describes the creation of new local repositories inside the project.
@@ -7,5 +7,15 @@ package it.uniroma2.art.semanticturkey.services.core.projects;
  *
  */
 public class CreateLocal extends RepositoryAccess {
+
+	@Override
+	public boolean isLocal() {
+		return true;
+	}
+
+	@Override
+	public boolean isRemote() {
+		return false;
+	}
 
 }

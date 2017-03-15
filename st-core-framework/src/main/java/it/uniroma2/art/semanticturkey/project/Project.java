@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 
+import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -47,6 +48,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigSchema;
+import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.Rio;
@@ -76,6 +78,7 @@ import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSXLModelRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
+import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
@@ -101,7 +104,6 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
@@ -134,11 +136,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String PROJECT_TYPE = "ProjectType";
 	public static final String PROJECT_MODEL_TYPE = "ModelType";
+	public static final String REPOSITORIES_DIR_NAME = "repositories";
 	public static final String PROJECT_STORE_DIR_NAME = "store";
 	public static final String PROJECT_COREREPO_DIR_NAME = "core";
 	public static final String PROJECT_SUPPORTREPO_DIR_NAME = "support";
 
 	public static final String PLUGINS_PROP = "plugins";
+
+	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
+	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
 
 	// Constants concerning project plugins
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
@@ -187,12 +193,13 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private ProjectACL acl;
 	private URIGenerator uriGenerator;
 	private RenderingEngine renderingEngine;
-	
+
 	private MODELTYPE primordialOntModel;
 	private final ThreadLocal<MODELTYPE> modelHolder;
 	private RDF4JRepositoryTransactionManager repositoryTransactionManager;
 	protected RepositoryConfig coreRepoConfig;
 	protected RepositoryConfig supportRepoConfig;
+	private LocalRepositoryManager repositoryManager;
 
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -258,34 +265,50 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				}
 
 			} else {
-				try {
-					File coreRepoConfigFile = new File(_projectDir, COREREPOCONFIG_FILENAME);
-					Model coreRepoConfigModel = Rio.parse(new FileInputStream(coreRepoConfigFile),
-							coreRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
-					Resource coreRepoRes = Models
-							.subject(coreRepoConfigModel.filter(null, RDF.TYPE,
-									RepositoryConfigSchema.REPOSITORY))
-							.orElseThrow(() -> new ProjectAccessException(
-									"Could not find the repository resource in its configuration"));
-					coreRepoConfig = RepositoryConfig.create(coreRepoConfigModel, coreRepoRes);
-
-					File supportRepoConfigFile = new File(_projectDir, SUPPORTREPOCONFIG_FILENAME);
-					Model supportRepoConfigModel = Rio.parse(new FileInputStream(supportRepoConfigFile),
-							supportRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
-					Resource supportRepoRes = Models
-							.subject(supportRepoConfigModel.filter(null, RDF.TYPE,
-									RepositoryConfigSchema.REPOSITORY))
-							.orElseThrow(() -> new ProjectAccessException(
-									"Could not find the repository resource in its configuration"));
-					supportRepoConfig = RepositoryConfig.create(supportRepoConfigModel, supportRepoRes);
-
-					newOntManager = new OntologyManagerImpl();
-					supportOntManager = new OntologyManagerImpl();
-				} catch (RDFParseException | UnsupportedRDFormatException | IOException e) {
-					throw new ProjectAccessException(e);
+//				try {
+//					File coreRepoConfigFile = new File(_projectDir, COREREPOCONFIG_FILENAME);
+//					Model coreRepoConfigModel = Rio.parse(new FileInputStream(coreRepoConfigFile),
+//							coreRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
+//					Resource coreRepoRes = Models
+//							.subject(coreRepoConfigModel.filter(null, RDF.TYPE,
+//									RepositoryConfigSchema.REPOSITORY))
+//							.orElseThrow(() -> new ProjectAccessException(
+//									"Could not find the repository resource in its configuration"));
+//					coreRepoConfig = RepositoryConfig.create(coreRepoConfigModel, coreRepoRes);
+//
+//					File supportRepoConfigFile = new File(_projectDir, SUPPORTREPOCONFIG_FILENAME);
+//					Model supportRepoConfigModel = Rio.parse(new FileInputStream(supportRepoConfigFile),
+//							supportRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
+//					Resource supportRepoRes = Models
+//							.subject(supportRepoConfigModel.filter(null, RDF.TYPE,
+//									RepositoryConfigSchema.REPOSITORY))
+//							.orElseThrow(() -> new ProjectAccessException(
+//									"Could not find the repository resource in its configuration"));
+//					supportRepoConfig = RepositoryConfig.create(supportRepoConfigModel, supportRepoRes);
+//
+//					newOntManager = new OntologyManagerImpl();
+//					supportOntManager = new OntologyManagerImpl();
+//
+//					repositoryManager = new LocalRepositoryManager(
+//							new File(_projectDir, REPOSITORIES_DIR_NAME));
+//					repositoryManager.initialize();
+//				} catch (RDFParseException | UnsupportedRDFormatException | IOException e) {
+//					throw new ProjectAccessException(e);
+//				}
+				repositoryManager = new LocalRepositoryManager(new File(_projectDir,REPOSITORIES_DIR_NAME));
+				repositoryManager.initialize();
+				
+				Repository supportRepository = repositoryManager.getRepository("support");
+				
+				if (supportRepository != null) {
+					RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepository);
+					supportOntManager = new OntologyManagerImpl(supportRepository);
 				}
-			}
 
+				Repository coreRepository = repositoryManager.getRepository("core");
+				newOntManager = new OntologyManagerImpl(coreRepository);
+			}
+				
 			String baseURI = getBaseURI();
 			if (baseURI == null)
 				throw new ProjectInconsistentException("baseURI is not specified");
@@ -375,15 +398,18 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				String modelType = getProperty(PROJECT_MODEL_TYPE);
 
 				if (OWLModel.class.getName().equals(modelType)) {
-					primordialOntModel = (MODELTYPE) new OWLModelRDF4JImpl(new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+					primordialOntModel = (MODELTYPE) new OWLModelRDF4JImpl(
+							new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
 				} else if (SKOSModel.class.getName().equals(modelType)) {
-					primordialOntModel = (MODELTYPE) new SKOSModelRDF4JImpl(new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+					primordialOntModel = (MODELTYPE) new SKOSModelRDF4JImpl(
+							new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
 				} else if (SKOSXLModel.class.getName().equals(modelType)) {
-					primordialOntModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+					primordialOntModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
+							new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
 				} else {
 					throw new ProjectAccessException("Unsupport model type: " + modelType);
 				}
-				
+
 				primordialOntModel.setBaseURI(baseURI);
 			}
 
@@ -421,18 +447,21 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				// the "" prefix, and no redundanc should be present
 			}
 
-			newOntManager.declareApplicationOntology(SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.NAMESPACE), false, true);
+			newOntManager.declareApplicationOntology(
+					SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.NAMESPACE), false, true);
 
 			// nsPrefixMappingsPersistence must have been already created by constructor of Project subclasses
 			newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
 
 			SemanticTurkey.initializeVocabularies(getPrimordialOntModel());
 			logger.info("defaultnamespace set to: " + defaultNamespace);
-		} catch (ModelAccessException e) {
+		} catch (RDF4JException e) {
 			throw new ProjectUpdateException(e);
 		} catch (ModelUpdateException e) {
 			throw new ProjectUpdateException(e);
 		} catch (VocabularyInitializationException e) {
+			throw new ProjectUpdateException(e);
+		} catch (ModelAccessException e) {
 			throw new ProjectUpdateException(e);
 		}
 
@@ -448,19 +477,23 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			return RDFSRenderingEngineFactory.class.getName();
 		}
 	}
-	
+
 	public void deactivate() throws ModelUpdateException {
 		try {
 			getPrimordialOntModel().close();
 		} finally {
 			try {
-				if (newOntManager != null) {
-					newOntManager.getRepository().shutDown();
-				}
+				repositoryManager.shutDown();
 			} finally {
-				if (supportOntManager != null) {
-					supportOntManager.getRepository().shutDown();
-				}
+//				try {
+//					if (newOntManager != null) {
+//						newOntManager.getRepository().shutDown();
+//					}
+//				} finally {
+//					if (supportOntManager != null) {
+//						supportOntManager.getRepository().shutDown();
+//					}
+//				}
 			}
 		}
 	}
@@ -617,7 +650,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public void setDefaultNamespace(String defaultNamespace) throws ProjectUpdateException {
 		try {
-			try(RepositoryConnection conn = getRepository().getConnection()) {
+			try (RepositoryConnection conn = getRepository().getConnection()) {
 				conn.setNamespace("", defaultNamespace);
 			}
 			stp_properties.setProperty(DEF_NS_PROP, defaultNamespace);
@@ -757,17 +790,16 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 		return oldModel;
 	}
-	
+
 	public boolean isModelBoundToThread() {
 		return modelHolder.get() != null;
 	}
 
-	
 	public void createModelAndBoundToThread() throws ModelCreationException {
 		if (isModelBoundToThread()) {
 			throw new IllegalStateException("Model already bound to thread");
 		}
-		MODELTYPE forkedModel = (MODELTYPE)getPrimordialOntModel().forkModel();
+		MODELTYPE forkedModel = (MODELTYPE) getPrimordialOntModel().forkModel();
 		modelHolder.set(forkedModel);
 		logger.debug("Fork model {} producing new model {}", getPrimordialOntModel(), forkedModel);
 	}
@@ -775,14 +807,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	@Deprecated
 	public MODELTYPE getOntModel() {
 		MODELTYPE model = modelHolder.get();
-		
+
 		if (model == null) {
-			if (0==0)throw new RuntimeException("Could not obtain thread-bound model");
+			if (0 == 0)
+				throw new RuntimeException("Could not obtain thread-bound model");
 			logger.warn("Implicit access to primordial model");
-//			throw new IllegalStateException("No model has been bound to the current thread");
+			// throw new IllegalStateException("No model has been bound to the current thread");
 			return getPrimordialOntModel();
 		}
-		
+
 		return model;
 	}
 
@@ -790,18 +823,18 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	// TODO this should really only be in OWLModel and SKOSModel Projects
 	public OWLModel getOWLModel() {
 		MODELTYPE model = getOntModel();
-		
+
 		if (model instanceof SKOSModel) {
-			return ((SKOSModel)model).getOWLModel();
+			return ((SKOSModel) model).getOWLModel();
 		}
-		
-		return (OWLModel)model;
+
+		return (OWLModel) model;
 	}
 
 	public Repository getRepository() {
 		return newOntManager.getRepository();
 	}
-	
+
 	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager() {
 		if (repositoryTransactionManager != null) {
 			return repositoryTransactionManager;
@@ -810,19 +843,17 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
-
 	public File getProjectStoreDir() {
 		return new File(_projectDir, PROJECT_STORE_DIR_NAME);
 	}
-	
+
 	public File getProjectCoreRepoDir() {
 		return new File(_projectDir, PROJECT_COREREPO_DIR_NAME);
 	}
-	
+
 	public File getProjectSupportRepoDir() {
 		return new File(_projectDir, PROJECT_SUPPORTREPO_DIR_NAME);
 	}
-
 
 	public String toString() {
 		return "proj:" + getName() + "|defNS:" + getDefaultNamespace() + "|TS:" + getTimeStamp();
@@ -867,7 +898,7 @@ class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
 
 	public NonClosingBaseRDFModelRDF4JImpl(Repository repo, boolean rdfsReasoning,
 			boolean directTypeReasoning, NonClosingBaseRDFModelRDF4JImpl delegate)
-					throws SailException, RepositoryException, ModelCreationException {
+			throws SailException, RepositoryException, ModelCreationException {
 		super(repo, rdfsReasoning, directTypeReasoning);
 		this.delegate = delegate;
 	}
@@ -895,7 +926,7 @@ class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
 			super.setBaseURI(uri);
 		}
 	}
-	
+
 	@Override
 	public String getBaseURI() {
 		if (delegate != null) {
@@ -904,7 +935,7 @@ class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
 			return super.getBaseURI();
 		}
 	}
-	
+
 	@Override
 	public void setDefaultNamespace(String namespace) throws ModelUpdateException {
 		if (delegate != null) {

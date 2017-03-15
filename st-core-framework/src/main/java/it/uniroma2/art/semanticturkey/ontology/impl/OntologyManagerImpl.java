@@ -86,7 +86,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	private final Set<IRI> supportOntologiesNG;
 	private final Set<String> supportOntologiesNamespace;
 
-	public OntologyManagerImpl() {
+	public OntologyManagerImpl(Repository repository) {
 		// initializes user, application and support ontology sets
 		applicationOntologiesNG = new HashSet<>();
 		applicationOntologiesNamespace = new ConcurrentSkipListSet<>();
@@ -96,6 +96,8 @@ public class OntologyManagerImpl implements OntologyManager {
 		importModalityMap = new HashMap<>();
 		importModalityMap.put(ImportModality.APPLICATION, applicationOntologiesNG);
 		importModalityMap.put(ImportModality.SUPPORT, supportOntologiesNG);
+		
+		this.repository = repository;
 	}
 
 	@Override
@@ -842,14 +844,14 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void startOntModel(String baseURI, File repoDir, RepositoryConfig supportRepoConfig)
 			throws OntologyManagerException {
-		try {
-			SailRepositoryFactory repoFactory = new SailRepositoryFactory();
-			repository = repoFactory.getRepository(supportRepoConfig.getRepositoryImplConfig());
-			repository.setDataDir(repoDir);
+//		try {
+//			SailRepositoryFactory repoFactory = new SailRepositoryFactory();
+//			repository = repoFactory.getRepository(supportRepoConfig.getRepositoryImplConfig());
+//			repository.setDataDir(repoDir);
 			this.baseURI = baseURI;
-			repository.initialize();
-		} catch (RDF4JException e) {
-			throw new OntologyManagerException(e);
-		}
+//			repository.initialize();
+//		} catch (RDF4JException e) {
+//			throw new OntologyManagerException(e);
+//		}
 	}
 }

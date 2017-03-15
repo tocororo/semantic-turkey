@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.projects;
+package it.uniroma2.art.semanticturkey.project;
 
 import java.net.URL;
 
@@ -48,4 +48,14 @@ public abstract class RemoteRepositoryAccess extends RepositoryAccess {
 		this.password = password;
 	}
 
+	
+	@Override
+	public boolean isLocal() {
+		return false;
+	}
+	
+	@Override
+	public boolean isRemote() {
+		return true;
+	}
 }

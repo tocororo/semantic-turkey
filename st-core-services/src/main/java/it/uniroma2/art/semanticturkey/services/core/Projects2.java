@@ -24,12 +24,12 @@ import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 
@@ -39,10 +39,12 @@ public class Projects2 extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Projects2.class);
 
 	// TODO understand how to specify remote repository / different sail configurations
-	@STServiceOperation(method=RequestMethod.POST)
+	@STServiceOperation(method = RequestMethod.POST)
 	public JsonNode createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
-			boolean validationEnabled, RepositoryAccess repositoryAccess, @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.PredefinedSailConfigurerFactory\"}") PluginSpecification coreRepoSailConfigurerSpecification,
+			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
+			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.PredefinedSailConfigurerFactory\"}") PluginSpecification coreRepoSailConfigurerSpecification,
+			String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.PredefinedSailConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
 			@Optional PluginSpecification renderingEngineSpecification) throws ProjectInconsistentException,
@@ -54,7 +56,7 @@ public class Projects2 extends STServiceAdapter {
 		// Expands defaults in the specification of sail configurers
 		coreRepoSailConfigurerSpecification.expandDefaults();
 		supportRepoSailConfigurerSpecification.expandDefaults();
-		
+
 		// If no rendering engine has been configured, guess the best one based on the model type
 		if (renderingEngineSpecification == null) {
 			String renderingEngineFactoryID = Project.determineBestRenderingEngine(modelType);
@@ -66,8 +68,9 @@ public class Projects2 extends STServiceAdapter {
 		renderingEngineSpecification.expandDefaults();
 
 		Project<? extends RDFModel> proj = ProjectManager.createProject2(consumer, projectName, modelType,
-				baseURI, historyEnabled, validationEnabled, coreRepoSailConfigurerSpecification, supportRepoSailConfigurerSpecification, uriGeneratorSpecification,
-				renderingEngineSpecification);
+				baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
+				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
+				uriGeneratorSpecification, renderingEngineSpecification);
 
 		// create the folders for the bindings between project and users
 		// this is required (is not enough in accessProject, cause accessProject is not invoked after

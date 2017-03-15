@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.EXCLUDE_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_NS;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_REPOSITORY_ID;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
@@ -34,6 +35,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 	private String historyRepositoryID;
 	private String historyNS;
+	private String serverURL;
 	private IRI historyGraph;
 	private Set<IRI> includeGraph;
 	private Set<IRI> excludeGraph;
@@ -45,6 +47,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 	public ChangeTrackerConfig(SailImplConfig delegate) {
 		super(ChangeTrackerFactory.SAIL_TYPE, delegate);
+		serverURL = null;
 		historyRepositoryID = null;
 		historyNS = null;
 		historyGraph = null;
@@ -107,6 +110,10 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
+		if (serverURL != null) {
+			graph.add(implNode, SERVER_URL, vf.createLiteral(serverURL));
+		}
+
 		if (historyRepositoryID != null) {
 			graph.add(implNode, HISTORY_REPOSITORY_ID, vf.createLiteral(historyRepositoryID));
 		}
@@ -138,6 +145,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	public void parse(Model graph, Resource implNode) throws SailConfigException {
 		super.parse(graph, implNode);
 
+		Models.objectString(graph.filter(implNode, SERVER_URL, null)).ifPresent(this::setServerURL);
 		Models.objectString(graph.filter(implNode, HISTORY_REPOSITORY_ID, null))
 				.ifPresent(this::setHistoryRepositoryID);
 		Models.objectString(graph.filter(implNode, HISTORY_NS, null)).ifPresent(this::setHistoryNS);
@@ -184,6 +192,14 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		if (excludeGraph == null) {
 			throw new SailConfigException("Null exclude graph for " + getType() + " Sail.");
 		}
+	}
+
+	public String getServerURL() {
+		return serverURL;
+	}
+
+	public void setServerURL(String serverURL) {
+		this.serverURL = serverURL;
 	}
 
 }

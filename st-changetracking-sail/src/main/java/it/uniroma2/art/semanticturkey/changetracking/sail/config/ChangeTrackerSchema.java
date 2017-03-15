@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 public abstract class ChangeTrackerSchema {
 	public static final String NAMESPACE = "http://semanticturkey.uniroma2.it/config/sail/changetracker#";
 
+	public static final IRI SERVER_URL;
 	public static final IRI HISTORY_REPOSITORY_ID;
 	public static final IRI HISTORY_NS;
 	public static final IRI HISTORY_GRAPH;
@@ -19,6 +20,7 @@ public abstract class ChangeTrackerSchema {
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
+		SERVER_URL = vf.createIRI(NAMESPACE, "serverURL");
 		HISTORY_REPOSITORY_ID = vf.createIRI(NAMESPACE, "historyRepositoryID");
 		HISTORY_NS = vf.createIRI(NAMESPACE, "historyNS");
 		HISTORY_GRAPH = vf.createIRI(NAMESPACE, "historyGraph");

@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.projects;
+package it.uniroma2.art.semanticturkey.project;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -17,4 +17,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		@JsonSubTypes.Type(value = CreateRemote.class, name = "CreateRemote"),
 		@JsonSubTypes.Type(value = AccessExistingRemote.class, name = "AccessExistingRemote") })
 public abstract class RepositoryAccess {
+
+	public abstract boolean isLocal();
+
+	public abstract boolean isRemote();
 }

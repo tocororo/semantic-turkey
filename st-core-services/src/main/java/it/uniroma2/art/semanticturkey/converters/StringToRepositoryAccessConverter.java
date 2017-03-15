@@ -6,7 +6,7 @@ import org.springframework.core.convert.converter.Converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 
 /**
  * Converts a JSON string to a {@link RepositoryAccess} describing different access options.

@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.config.SailConfigException;
 import org.eclipse.rdf4j.sail.config.SailFactory;
@@ -46,20 +47,28 @@ public class ChangeTrackerFactory implements SailFactory {
 
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
+		String serverURL = config2.getServerURL();
 		String metadataRepoId = config2.getHistoryRepositoryID();
 		String metadataNS = config2.getHistoryNS();
 		IRI metadataGraph = config2.getHistoryGraph();
 		Set<IRI> includeGraph = config2.getIncludeGraph();
 		Set<IRI> excludeGraph = config2.getExcludeGraph();
 		boolean interactiveNotifications = config2.isInteractiveNotifications();
-		
-		Repository metadataRepo = RepositoryRegistry.getInstance().getRepository(metadataRepoId);
 
+		Repository metadataRepo;
+
+		if (serverURL != null) {
+			metadataRepo = new HTTPRepository(serverURL, metadataRepoId);
+		} else {
+			metadataRepo = RepositoryRegistry.getInstance().getRepository(metadataRepoId);
+		}
 		logger.debug(
 				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {} // interactiveNotifications = {}",
-				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph, interactiveNotifications);
+				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,
+				interactiveNotifications);
 
-		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,interactiveNotifications);
+		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,
+				interactiveNotifications);
 	}
 
 }
