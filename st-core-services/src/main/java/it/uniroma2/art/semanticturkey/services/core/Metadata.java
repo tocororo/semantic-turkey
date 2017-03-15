@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -303,20 +305,25 @@ public class Metadata extends STServiceAdapter {
 	 * @param mirrorFile
 	 * @param transitiveImportAllowance
 	 * @throws RDF4JException
-	 * @throws MalformedURLException
 	 * @throws OntologyManagerException
 	 * @throws ModelUpdateException
+	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public Collection<OntologyImport> addFromLocalFile(String baseURI, String localFile, String mirrorFile,
-			TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws RDF4JException, MalformedURLException, OntologyManagerException, ModelUpdateException {
+	public Collection<OntologyImport> addFromLocalFile(String baseURI, MultipartFile localFile,
+			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
+			throws RDF4JException, OntologyManagerException, ModelUpdateException, IOException {
 		Set<IRI> failedImports = new HashSet<>();
+		File inputServerFile = File.createTempFile("addFromLocalFile", localFile.getOriginalFilename());
+		try {
+			localFile.transferTo(inputServerFile);
+			getOntologyManager().addOntologyImportFromLocalFile(baseURI, inputServerFile.getPath(),
+					mirrorFile, transitiveImportAllowance, failedImports);
 
-		getOntologyManager().addOntologyImportFromLocalFile(baseURI, localFile, mirrorFile,
-				transitiveImportAllowance, failedImports);
-
-		return OntologyImport.fromImportFailures(failedImports);
+			return OntologyImport.fromImportFailures(failedImports);
+		} finally {
+			inputServerFile.delete();
+		}
 	}
 
 	/**

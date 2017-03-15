@@ -54,22 +54,25 @@ public class InputOutput2 extends STServiceAdapter {
 
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File inputServerFile = File.createTempFile("loadRDF", inputFile.getOriginalFilename());
-		inputFile.transferTo(inputServerFile);
+		try {
+			inputFile.transferTo(inputServerFile);
 
-		if (rdfFormat == null) {
-			logger.debug("guessing format from extension of file to be loaded: " + rdfFormat);
-			rdfFormat = RDFFormat
-					.matchFileName(inputFile.getName(), RDFParserRegistry.getInstance().getKeys())
-					.orElseThrow(() -> new IllegalArgumentException(
-							"Could not match a parser for file name: " + inputFile.getName()));
+			if (rdfFormat == null) {
+				logger.debug("guessing format from extension of file to be loaded: " + rdfFormat);
+				rdfFormat = RDFFormat
+						.matchFileName(inputFile.getName(), RDFParserRegistry.getInstance().getKeys())
+						.orElseThrow(() -> new IllegalArgumentException(
+								"Could not match a parser for file name: " + inputFile.getName()));
+			}
+
+			Set<IRI> failedImports = new HashSet<>();
+
+			getProject().getNewOntologyManager().loadOntologyData(inputServerFile, baseURI, rdfFormat,
+					getWorkingGraph(), transitiveImportAllowance, failedImports);
+			return OntologyImport.fromImportFailures(failedImports);
+		} finally {
+			inputServerFile.delete();
 		}
-
-		Set<IRI> failedImports = new HashSet<>();
-
-		getProject().getNewOntologyManager().loadOntologyData(inputServerFile, baseURI, rdfFormat,
-				getWorkingGraph(), transitiveImportAllowance, failedImports);
-
-		return OntologyImport.fromImportFailures(failedImports);
 	}
 
 	/**
