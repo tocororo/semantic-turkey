@@ -15,9 +15,10 @@ import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import it.uniroma2.art.semanticturkey.customrange.CustomRangeProvider;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
 import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
@@ -39,9 +40,6 @@ public class DataRanges extends STServiceAdapter{
 	
 	private static Logger logger = LoggerFactory.getLogger(DataRanges.class);
 
-	@Autowired
-	private CustomRangeProvider crProvider;
-	
 	@STServiceOperation
 	@Write
 	public void createLiteralEnumeration(BNode bnode, Literal [] literalsArray) {
@@ -138,7 +136,7 @@ public class DataRanges extends STServiceAdapter{
 	
 	@STServiceOperation
 	@Read
-	public boolean hasLieralInEnumeration(BNode bNode, Literal literal){
+	public JsonNode hasLieralInEnumeration(BNode bNode, Literal literal){
 		//check if there is at least one element in the enumeration with the specified literal
 		// using a single SPARQL query
 		
@@ -161,7 +159,7 @@ public class DataRanges extends STServiceAdapter{
 		booleanQuery.setBinding("inputBNode", bNode);
 		boolean booleanReturn = booleanQuery.evaluate();
 		
-		return booleanReturn;
+		return JsonNodeFactory.instance.booleanNode(booleanReturn);
 	}
 	
 	
