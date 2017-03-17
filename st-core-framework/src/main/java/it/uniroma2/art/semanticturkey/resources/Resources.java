@@ -393,6 +393,9 @@ public class Resources {
 				String projName = abstrProj.getName();
 				for (STUser user : UsersManager.listUsers()) {
 					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail());
+					/* TODO how to handle admin? By default there is no Role, there are only capabilities.
+					 * Admin should have a "superRole" and should be able to do everything.
+					 */
 //					if (user.getEmail().equals("admin@vocbench.com")) {
 //						puBinding.addRole(UserRolesEnum.ROLE_ADMIN.name());
 //					}

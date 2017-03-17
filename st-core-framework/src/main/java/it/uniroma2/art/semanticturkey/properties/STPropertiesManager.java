@@ -6,16 +6,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 public class STPropertiesManager {
 	
+	//id of the "core plugin", used for preferences/properties that don't belong to any plugin
 	private static final String CORE_PLUGIN_ID = "it.uniroma2.art.semanticturkey";
 	
 	private static final String SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME = "system-preferences-defaults.cfg";
@@ -30,6 +27,9 @@ public class STPropertiesManager {
 	
 	private static final String USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.cfg";
 	private static final String USER_SYSTEM_PREFERENCES_FILE_NAME = "system-preferences.cfg";
+	
+	public static final String PROP_LANGUAGES = "languages";
+	
 	
 	/*
 	 * Methods to get/set properties to/from the following Properties files
@@ -128,7 +128,10 @@ public class STPropertiesManager {
 	 */
 	public static void setProjectPreference(String propName, String propValue, Project<?> project, STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getPUBindingsPreferencesFile(project, user, pluginID)).setProperty(propName, propValue);
+			File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -178,7 +181,10 @@ public class STPropertiesManager {
 	 */
 	public static void setProjectPreferenceDefault(String propName, String propValue, Project<?> project, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getProjectPreferencesDefaultsFile(project, pluginID)).setProperty(propName, propValue);
+			File propFile = getProjectPreferencesDefaultsFile(project, pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -229,7 +235,10 @@ public class STPropertiesManager {
 	 */
 	public static void setProjectPreferenceDefault(String propName, String propValue, STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getUserProjectPreferencesDefaultsFile(user, pluginID)).setProperty(propName, propValue);
+			File propFile = getUserProjectPreferencesDefaultsFile(user, pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -279,7 +288,10 @@ public class STPropertiesManager {
 	 */
 	public static void setProjectPreferenceDefault(String propName, String propValue, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getSystemProjectPreferencesDefaultsFile(pluginID)).setProperty(propName, propValue);
+			File propFile = getSystemProjectPreferencesDefaultsFile(pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -345,7 +357,10 @@ public class STPropertiesManager {
 	 */
 	public static void setSystemPreference(String propName, String propValue, STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getUserSystemPreferencesFile(user, pluginID)).setProperty(propName, propValue);
+			File propFile = getUserSystemPreferencesFile(user, pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -395,7 +410,10 @@ public class STPropertiesManager {
 	 */
 	public static void setSystemPreferenceDefault(String propName, String propValue, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getSystemPreferencesDefaultsFile(pluginID)).setProperty(propName, propValue);
+			File propFile = getSystemPreferencesDefaultsFile(pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -461,7 +479,10 @@ public class STPropertiesManager {
 	 */
 	public static void setProjectSetting(String propName, String propValue, Project<?> project, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getProjectSettingsFile(project, pluginID)).setProperty(propName, propValue);
+			File propFile = getProjectSettingsFile(project, pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -511,7 +532,10 @@ public class STPropertiesManager {
 	 */
 	public static void setProjectSettingsDefault(String propName, String propValue, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getSystemProjectSettingsDefaultsFile(pluginID)).setProperty(propName, propValue);
+			File propFile = getSystemProjectSettingsDefaultsFile(pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -566,7 +590,10 @@ public class STPropertiesManager {
 	 */
 	public static void setSystemSetting(String propName, String propValue, String pluginID) throws STPropertyUpdateException {
 		try {
-			loadProperties(getSystemSettingsFile(pluginID)).setProperty(propName, propValue);
+			File propFile = getSystemSettingsFile(pluginID);
+			Properties properties = loadProperties(propFile);
+			properties.setProperty(propName, propValue);
+			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -828,114 +855,6 @@ public class STPropertiesManager {
 		return prefFolder;
 	}
 	
-	// ======================= OLD =================================
-	
-	public static final String PROP_LANGUAGES = "languages";
-	
-	private static final String SYSTEM_PROP_FILE_NAME = "st_system.properties";
-	private static final String PROJECT_PROP_FILE_NAME = "project.properties";
-	private static final String USER_PROP_FILE_NAME = "user.properties";
-	
-	/**
-	 * Returns the value of the given property at system level. Returns null if the property has no value.
-	 * @param propName
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	public static String getSystemProperty(String propName) throws STPropertyAccessException {
-		return loadProperties(getSystemPropertyFile()).getProperty(propName);
-	}
-	
-	/**
-	 * Sets the value of the given property at system level
-	 * @param propName
-	 * @param value
-	 * @throws STPropertyUpdateException
-	 * @throws STPropertyAccessException
-	 */
-	public static void setSystemProperty(String propName, String value) throws STPropertyUpdateException, STPropertyAccessException {
-		File propFile = getSystemPropertyFile();
-		Properties properties = loadProperties(propFile);
-		properties.setProperty(propName, value);
-		updatePropertyFile(properties, propFile);
-	}
-	
-	/**
-	 * Returns the value of the given property at project level. Returns null if the property has no value.
-	 * @param projectName
-	 * @param propName
-	 * @param fallback if true and the property has no value at project level, look for the value at system level
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	public static String getProjectProperty(String projectName, String propName, boolean fallback) throws STPropertyAccessException {
-		String value = loadProperties(getProjectPropertyFile(projectName)).getProperty(propName);
-		if (value == null && fallback) {
-			value = getSystemProperty(propName);
-		}
-		return value;
-	}
-	
-	/**
-	 * Sets the value of the given property at project level
-	 * @param projectName
-	 * @param propName
-	 * @param value
-	 * @throws STPropertyUpdateException
-	 * @throws STPropertyAccessException
-	 */
-	public static void setProjectProperty(String projectName, String propName, String value) throws STPropertyUpdateException, STPropertyAccessException {
-		File propFile = getProjectPropertyFile(projectName);
-		Properties properties = loadProperties(propFile);
-		properties.setProperty(propName, value);
-		updatePropertyFile(properties, propFile);
-	}
-	
-	/**
-	 * Returns the value of the given property at user level. Returns null if the property has no value.
-	 * @param user
-	 * @param propName
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	public static String getUserProperty(STUser user, String propName) throws STPropertyAccessException {
-		return loadProperties(getUserPropertyFile(user)).getProperty(propName);
-	}
-	
-	
-	/**
-	 * Returns the value of the given property at user level. If the property has no value at user level,
-	 * looks for the value at project property, then at system level
-	 * @param user
-	 * @param propName
-	 * @param projectName 
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	public static String getUserPropertyWithFallback(STUser user, String propName, String projectName) throws STPropertyAccessException {
-		String value = getUserProperty(user, propName);
-		if (value == null) {
-			value = getProjectProperty(projectName, propName, true);
-		}
-		return value;
-	}
-	
-	/**
-	 * Sets the value of the given property at user level
-	 * @param user
-	 * @param propName
-	 * @param value
-	 * @throws STPropertyUpdateException
-	 * @throws STPropertyAccessException
-	 */
-	public static void setUserProperty(STUser user, String propName, String value)
-			throws STPropertyUpdateException, STPropertyAccessException {
-		File propFile = getUserPropertyFile(user);
-		Properties properties = loadProperties(propFile);
-		properties.setProperty(propName, value);
-		updatePropertyFile(properties, propFile);
-	}
-	
 	private static void updatePropertyFile(Properties properties, File propFile) throws STPropertyUpdateException {
 		FileOutputStream os = null;
 		try {
@@ -972,47 +891,6 @@ public class STPropertiesManager {
 					e.printStackTrace();
 				}
 			}
-		}
-	}
-	
-	private static File getSystemPropertyFile() throws STPropertyAccessException {
-		try {
-			File sysPropFile = new File(Resources.getSystemDir() + File.separator + SYSTEM_PROP_FILE_NAME);
-			if (!sysPropFile.exists()) { //if .properties file doesn't exist, create and initialize it 
-				Properties properties = new Properties();
-				updatePropertyFile(properties, sysPropFile);
-			}
-			return sysPropFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
-	}
-	
-	private static File getProjectPropertyFile(String projectName) throws STPropertyAccessException {
-		try {
-			File projectDir = ProjectManager.getProjectDir(projectName);
-			File projPropFile = new File(projectDir + File.separator + PROJECT_PROP_FILE_NAME);
-			if (!projPropFile.exists()) { //if .properties file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, projPropFile);
-			}
-			return projPropFile;
-		} catch (STPropertyUpdateException | ProjectInexistentException | InvalidProjectNameException e) {
-			throw new STPropertyAccessException(e);
-		}
-	}
-	
-	private static File getUserPropertyFile(STUser user) throws STPropertyAccessException {
-		try {
-			File userPropFile = new File(
-					UsersManager.getUserFolder(user.getEmail()) + File.separator + USER_PROP_FILE_NAME);
-			if (!userPropFile.exists()) { // if .properties file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, userPropFile);
-			}
-			return userPropFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
 		}
 	}
 	

@@ -76,10 +76,8 @@ public class ProjectUserBindingsManager {
 	 * @return
 	 */
 	public static ProjectUserBinding getPUBinding(STUser user, String projectName) {
-		System.out.println("getPub for " + user.getEmail() + " " + projectName);
 		ProjectUserBinding puBinding = null;
 		for (ProjectUserBinding pub : puBindingList) {
-			System.out.println("pub.getUserEmail() " + pub.getUserEmail() + ", pub.getProjectName()" + pub.getProjectName());
 			if (pub.getUserEmail().equals(user.getEmail()) && pub.getProjectName().equals(projectName)) {
 				puBinding = pub;
 			}

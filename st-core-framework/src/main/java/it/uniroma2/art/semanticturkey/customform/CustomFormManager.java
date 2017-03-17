@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.customform;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<FormsMapping> getProjectFormMappings(Project<?> project) {
-		return cfModelMap.get(project.getName()).getFormMappings();
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel == null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return Collections.emptyList();
+		} else {
+			return cfModel.getFormMappings();
+		}
 	}
 	
 	/**
@@ -103,7 +109,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<FormsMapping> getSystemFormMappings() {
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormMappings();
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel == null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return Collections.emptyList();
+		} else {
+			return cfModel.getFormMappings();
+		}
 	}
 	
 	/**
@@ -118,14 +129,21 @@ public class CustomFormManager {
 	 */
 	public boolean getReplace(Project<?> project, IRI resource, boolean fallback) {
 		boolean replace = false;
-		FormsMapping mapping = cfModelMap.get(project.getName()).getFormMapping(resource);
-		if (mapping != null) {
-			replace = mapping.getReplace();
-		} else { //mapping not defined (null) at project level
-			if (fallback) { //look at system level
-				mapping = cfModelMap.get(SYSTEM_LEVEL_ID).getFormMapping(resource);
-				if (mapping != null) {
-					mapping.getReplace();
+		
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			FormsMapping mapping = cfModel.getFormMapping(resource);
+			if (mapping != null) {
+				replace = mapping.getReplace();
+			} else { //mapping not defined (null) at project level
+				if (fallback) { //look at system level
+					cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+					if (cfModel != null) {
+						mapping = cfModel.getFormMapping(resource);
+						if (mapping != null) {
+							mapping.getReplace();
+						}
+					}
 				}
 			}
 		}
@@ -140,8 +158,14 @@ public class CustomFormManager {
 	 */
 	public Collection<FormCollection> getFormCollections(Project<?> project) {
 		Collection<FormCollection> formCollections = new ArrayList<>();
-		formCollections.addAll(cfModelMap.get(project.getName()).getFormCollections());
-		formCollections.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollections());
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			formCollections.addAll(cfModel.getFormCollections());
+		}
+		cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			formCollections.addAll(cfModel.getFormCollections());
+		}
 		return formCollections;
 	}
 	
@@ -153,9 +177,16 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getFormCollection(Project<?> project, IRI resource) {
-		FormCollection fc = cfModelMap.get(project.getName()).getFormCollectionForResource(resource);
-		if (fc == null) {
-			fc = cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionForResource(resource); 
+		FormCollection fc = null;
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			fc = cfModel.getFormCollectionForResource(resource);
+		}
+		if (fc == null) { //FormCollection not found at project level, check a system level
+			cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+			if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+				fc = cfModel.getFormCollectionForResource(resource);
+			}
 		}
 		return fc;
 	}
@@ -167,9 +198,16 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getFormCollection(Project<?> project, String formCollId){
-		FormCollection fc = cfModelMap.get(project.getName()).getFormCollectionById(formCollId);
-		if (fc == null) {
-			fc = cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(formCollId);
+		FormCollection fc = null;
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			fc = cfModel.getFormCollectionById(formCollId);
+		}
+		if (fc == null) { //FormCollection not found at project level, check a system level
+			cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+			if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+				fc = cfModel.getFormCollectionById(formCollId);
+			}
 		}
 		return fc;
 	}
@@ -179,7 +217,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<FormCollection> getSystemFormCollections() {
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollections();
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return cfModel.getFormCollections();
+		} else {
+			return Collections.emptyList();
+		}
 	}
 	
 	/**
@@ -189,7 +232,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getSystemFormCollection(IRI resource) {
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionForResource(resource);
+		FormCollection fc = null;
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			fc = cfModel.getFormCollectionForResource(resource);
+		}
+		return fc;
 	}
 	
 	/**
@@ -198,7 +246,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getSystemFormCollection(String formCollId){
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(formCollId);
+		FormCollection fc = null;
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			fc = cfModel.getFormCollectionById(formCollId);
+		}
+		return fc;
 	}
 	
 	/**
@@ -206,7 +259,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<FormCollection> getProjectFormCollections(Project<?> project) {
-		return cfModelMap.get(project.getName()).getFormCollections();
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return cfModel.getFormCollections();
+		} else {
+			return Collections.emptyList();
+		}
 	}
 	
 	/**
@@ -216,7 +274,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getProjectFormCollection(Project<?> project, IRI resource) {
-		return cfModelMap.get(project.getName()).getFormCollectionForResource(resource);
+		FormCollection fc = null;
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			fc = cfModel.getFormCollectionForResource(resource);
+		}
+		return fc;
 	}
 	
 	/**
@@ -226,7 +289,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public FormCollection getProjectFormCollection(Project<?> project, String formCollId){
-		return cfModelMap.get(project.getName()).getFormCollectionById(formCollId);
+		FormCollection fc = null;
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			fc = cfModel.getFormCollectionById(formCollId);
+		}
+		return fc;
 	}
 	
 	// CUSTOM FORM
@@ -237,8 +305,14 @@ public class CustomFormManager {
 	 */
 	public Collection<CustomForm> getCustomForms(Project<?> project) {
 		Collection<CustomForm> customForms = new ArrayList<>();
-		customForms.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getCustomForms());
-		customForms.addAll(cfModelMap.get(project.getName()).getCustomForms());
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			customForms.addAll(cfModel.getCustomForms());
+		}
+		cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			customForms.addAll(cfModel.getCustomForms());
+		}
 		return customForms;
 	}
 	
@@ -249,9 +323,16 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public CustomForm getCustomForm(Project<?> project, String customFormId){
-		CustomForm cf = cfModelMap.get(project.getName()).getCustomFormById(customFormId);
-		if (cf == null) {
-			cf = cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(customFormId);
+		CustomForm cf = null; 
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			cf = cfModel.getCustomFormById(customFormId);
+			if (cf == null) { //cf not found at project level, look at system level
+				cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+				if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+					cf = cfModel.getCustomFormById(customFormId);
+				}
+			}
 		}
 		return cf;
 	}
@@ -265,8 +346,14 @@ public class CustomFormManager {
 	 */
 	public Collection<CustomForm> getCustomForms(Project<?> project, IRI resource){
 		Collection<CustomForm> customForms = new ArrayList<>();
-		customForms.addAll(cfModelMap.get(project.getName()).getCustomFormForResource(resource));
-		customForms.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormForResource(resource));
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			customForms.addAll(cfModel.getCustomFormForResource(resource));
+		}
+		cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			customForms.addAll(cfModel.getCustomFormForResource(resource));
+		}
 		return customForms;
 	}
 	
@@ -275,7 +362,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<CustomForm> getSystemCustomForms() {
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getCustomForms();
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return cfModel.getCustomForms();
+		} else {
+			return Collections.emptyList();
+		}
 	}
 	
 	/**
@@ -285,7 +377,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public CustomForm getSystemCustomForm(String customFormId){
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(customFormId);
+		CustomForm cf = null;
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			cf = cfModel.getCustomFormById(customFormId);
+		}
+		return cf;
 	}
 	
 	/**
@@ -295,7 +392,13 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<CustomForm> getSystemCustomForms(IRI resource){
-		return cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormForResource(resource);
+		CustomFormModel cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return cfModel.getCustomFormForResource(resource);
+		} else {
+			return Collections.emptyList();
+		}
+		
 	}
 	
 	/**
@@ -303,7 +406,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<CustomForm> getProjectCustomForms(Project<?> project) {
-		return cfModelMap.get(project.getName()).getCustomForms();
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return cfModel.getCustomForms();
+		} else {
+			return Collections.emptyList();
+		}
 	}
 	
 	/**
@@ -314,7 +422,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public Collection<CustomForm> getProjectCustomForms(Project<?> project, IRI resource){
-		return cfModelMap.get(project.getName()).getCustomFormForResource(resource);
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			return cfModel.getCustomFormForResource(resource);
+		} else {
+			return Collections.emptyList();
+		}
 	}
 	
 	/**
@@ -324,7 +437,12 @@ public class CustomFormManager {
 	 * @return
 	 */
 	public CustomForm getProjectCustomForm(Project<?> project, String customFormId){
-		return cfModelMap.get(project.getName()).getCustomFormById(customFormId);
+		CustomForm cf = null;
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			cf = cfModel.getCustomFormById(customFormId);
+		}
+		return cf;
 	}
 	
 	/**
@@ -335,9 +453,15 @@ public class CustomFormManager {
 	public Collection<CustomFormGraph> getAllCustomFormGraphs(Project<?> project, IRI resource){
 		Collection<CustomFormGraph> cFormsGraph = new ArrayList<>();
 		//look for CF at project level...
-		cFormsGraph.addAll(cfModelMap.get(project.getName()).getCustomFormGraphForResource(resource));
+		CustomFormModel cfModel = cfModelMap.get(project.getName());
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			cFormsGraph.addAll(cfModel.getCustomFormGraphForResource(resource));
+		}
 		//...and at system level
-		cFormsGraph.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormGraphForResource(resource));
+		cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
+		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
+			cFormsGraph.addAll(cfModel.getCustomFormGraphForResource(resource));
+		}
 		return cFormsGraph;
 	}
 	
