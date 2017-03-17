@@ -31,7 +31,6 @@ import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 

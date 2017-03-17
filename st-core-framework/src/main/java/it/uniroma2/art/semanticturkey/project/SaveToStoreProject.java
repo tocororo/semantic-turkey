@@ -26,19 +26,24 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashSet;
+
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
+
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.io.RDFFormat;
-import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
-
-import java.io.File;
-import java.io.IOException;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 
 public class SaveToStoreProject<MODELTYPE extends RDFModel> extends Project<MODELTYPE> {
 
@@ -46,12 +51,13 @@ public class SaveToStoreProject<MODELTYPE extends RDFModel> extends Project<MODE
 	File triplesFile;
 
 	SaveToStoreProject(String projectName, File projectDir) throws ProjectCreationException {
-		super(projectName, projectDir);		
+		super(projectName, projectDir);
 		try {
 			triplesFile = new File(projectDir, triplesFileName);
 			if (!triplesFile.exists()) {
 				if (!triplesFile.createNewFile())
-					throw new ProjectCreationException("unable to create triple file inside project: " + projectName); 
+					throw new ProjectCreationException(
+							"unable to create triple file inside project: " + projectName);
 			}
 			nsPrefixMappingsPersistence = new NSPrefixMappings(projectDir, false);
 		} catch (IOException e) {
@@ -62,33 +68,28 @@ public class SaveToStoreProject<MODELTYPE extends RDFModel> extends Project<MODE
 	public void save() throws ProjectUpdateException {
 		try {
 			RDFModel model = getOntModel();
-			model.writeRDF(triplesFile, RDFFormat.NTRIPLES,
-					model.createURIResource(getNewOntologyManager().getBaseURI()));
+			try (RepositoryConnection conn = getRepository().getConnection()) {
+				conn.export(Rio.createWriter(RDFFormat.NTRIPLES, new FileOutputStream(triplesFile)),
+						conn.getValueFactory().createIRI(getNewOntologyManager().getBaseURI()));
+			}
 			nsPrefixMappingsPersistence.updatePrefixMappingRegistry();
-		} catch (IOException e) {
+		} catch (FileNotFoundException e) {
 			throw new ProjectUpdateException("unable to write to the project file");
-		} catch (ModelAccessException e) {
-			throw new ProjectUpdateException(
-					"unable to save the project; failing to access the triple store");
-		} catch (UnsupportedRDFFormatException e) {
-			throw new IllegalStateException(
-					"ntriples format is not accepted, though it is obligatory for ST Ontology Managers");
 		} catch (NSPrefixMappingUpdateException e) {
 			throw new ProjectUpdateException(e);
 		}
 	}
 
 	protected void loadTriples() throws ModelCreationException {
-		try {			
+		try {
 			logger.debug("clearing RDF data");
-			ontManager.clearData();
+			newOntManager.clearData();
 			logger.debug("starting the ont model");
-			ontManager.startOntModel(getBaseURI(), getProjectStoreDir(), modelConfiguration);
+			newOntManager.startOntModel(getBaseURI(), null, null);
 			logger.debug("loading ontology data");
-			ontManager.loadOntologyData(triplesFile, getBaseURI(), RDFFormat.NTRIPLES);
-		} catch (UnsupportedRDFFormatException e) {
-			throw new IllegalStateException(
-					"ntriples format is not accepted, though it is obligatory for ST Ontology Managers");
+			newOntManager.loadOntologyData(triplesFile, getBaseURI(), RDFFormat.NTRIPLES,
+					SimpleValueFactory.getInstance().createIRI(getBaseURI()),
+					TransitiveImportMethodAllowance.web, new HashSet<>());
 		} catch (Exception e) {
 			throw new ModelCreationException(e);
 		}

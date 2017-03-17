@@ -23,25 +23,18 @@
 
 package it.uniroma2.art.semanticturkey.plugin;
 
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
-import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
-
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
+import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
 
 /**
  * @author Andrea Turbati
@@ -54,7 +47,6 @@ public class PluginManager {
 	private static BundleContext m_felix = null;
 
 	private static boolean directAccessTest = false;
-	private static Class<? extends OntologyManagerFactory<ModelConfiguration>> testOntManagerFactoryCls;
 	private static Collection<PluginFactory<?>> testPluginFactoryCls = new ArrayList<>();
 
 	public static boolean isDirectAccessTest() {
@@ -67,11 +59,6 @@ public class PluginManager {
 
 	public static void setContext(BundleContext toSet) {
 		m_felix = toSet;
-	}
-
-	public static void setTestOntManagerFactoryImpl(
-			Class<? extends OntologyManagerFactory<ModelConfiguration>> ontmgrcls) {
-		testOntManagerFactoryCls = ontmgrcls;
 	}
 
 	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?>> impls) {
@@ -96,97 +83,6 @@ public class PluginManager {
 	 */
 	public static ArrayList<PluginInterface> getPlugins() {
 		return getServletExtensionsForType(PluginInterface.class);
-	}
-
-	/**
-	 * this method retrieves all IDs of available {@link OntologyManagerFactory} implementations installed in
-	 * the OSGi framework
-	 * 
-	 * @return Arraylist
-	 */
-	public static ArrayList<String> getOntManagerImplIDs() {
-		// test preamble
-		if (isDirectAccessTest()) {
-			ArrayList<String> repImplIdList = new ArrayList<String>();
-			repImplIdList.add(testOntManagerFactoryCls.getName());
-			return repImplIdList;
-		} else {
-			// real use section
-			return getServletExtensionsIDForType(OntologyManagerFactory.class);
-		}
-
-	}
-
-	/**
-	 * Funzione per avere una particolare implemementazione delle API per gestire il repository
-	 * 
-	 * @param idRepImpl
-	 *            id dell'implementazione desiderata
-	 * @return handler dell'implementazione desiderata
-	 * @throws UnavailableResourceException
-	 */
-	@SuppressWarnings("unchecked")
-	public static OntologyManagerFactory<ModelConfiguration> getOntManagerImpl(String idRepImpl)
-			throws UnavailableResourceException {
-
-		OntologyManagerFactory<ModelConfiguration> ontMgrFactory = null;
-
-		// test preamble
-		if (isDirectAccessTest()) {
-			try {
-				ontMgrFactory = testOntManagerFactoryCls.newInstance();
-			} catch (InstantiationException e) {
-				e.printStackTrace(); // this will be caught by the test unit
-			} catch (IllegalAccessException e) {
-				e.printStackTrace(); // this will be caught by the test unit
-			}
-		} else
-			// real use section
-			ontMgrFactory = getServletExtensionByID(idRepImpl, OntologyManagerFactory.class);
-
-		if (ontMgrFactory == null)
-			throw new UnavailableResourceException("OntManagerFactory: " + idRepImpl
-					+ " is not available among the registered OSGi Ont Manager factories");
-
-		return ontMgrFactory;
-	}
-
-	/**
-	 * Funzione per avere il numero di implementazioni delle API per gestire il repository
-	 * 
-	 * @return numero di implementazioni
-	 */
-	public static int getNumOntManagers() {
-		ServiceTracker m_tracker = null;
-		int num = 0;
-
-		m_tracker = new ServiceTracker(m_felix, OntologyManagerFactory.class.getName(), null);
-		m_tracker.open();
-
-		Object[] services = m_tracker.getServices();
-		num = services.length;
-		m_tracker.close();
-
-		return num;
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <T extends STOSGIExtension> T getServletExtensionByID(String idRepImpl, Class<T> type) {
-		ServiceTracker m_tracker = null;
-		T repImpl = null;
-
-		m_tracker = new ServiceTracker(m_felix, type.getName(), null);
-		m_tracker.open();
-
-		Object[] services = m_tracker.getServices();
-		for (int i = 0; (services != null) && i < services.length; ++i) {
-			if (((T) services[i]).getId().equals(idRepImpl)) {
-				repImpl = (T) services[i];
-				break;
-			}
-		}
-		m_tracker.close();
-		return repImpl;
 	}
 
 	private static ArrayList<String> getServletExtensionsIDForType(Class<? extends STOSGIExtension> type) {

@@ -30,9 +30,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 
 import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 
 /**

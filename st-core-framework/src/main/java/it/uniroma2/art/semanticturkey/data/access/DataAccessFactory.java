@@ -4,6 +4,7 @@ import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.models.ModelFactory;
 import it.uniroma2.art.owlart.models.OWLArtModelFactory;
+import it.uniroma2.art.owlart.rdf4jimpl.factory.ARTModelFactoryRDF4JImpl;
 import it.uniroma2.art.semanticturkey.data.access.impl.CloseableTripleQueryModel;
 import it.uniroma2.art.semanticturkey.data.access.impl.DescribeDataAccessSPARQLImpl;
 import it.uniroma2.art.semanticturkey.data.access.impl.PropertyPatternDataAccessDereferencingImpl;
@@ -24,16 +25,17 @@ public class DataAccessFactory {
 		CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(project.getOWLModel());
 		return new TupleQueryDataAccessSPARQLImpl(queryModel);
 	}
-	
-	public static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project, ResourcePosition resourcePosition) throws DataAccessException {
+
+	public static PropertyPatternDataAccess createPropertyPatternDataAccess(Project<?> project,
+			ResourcePosition resourcePosition) throws DataAccessException {
 		if (resourcePosition instanceof LocalResourcePosition) {
-			return createPropertyPatternDataAccess(((LocalResourcePosition)resourcePosition).getProject());
+			return createPropertyPatternDataAccess(((LocalResourcePosition) resourcePosition).getProject());
 		} else if (resourcePosition instanceof RemoteResourcePosition) {
-			RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition)resourcePosition;
-			
+			RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
+
 			return createPropertyPatternDataAccess(project, remoteResourcePosition.getDatasetMetadata());
 		} else {
-			return createPropertyPatternDataAccess(project, (DatasetMetadata)null);
+			return createPropertyPatternDataAccess(project, (DatasetMetadata) null);
 		}
 	}
 
@@ -46,29 +48,25 @@ public class DataAccessFactory {
 			DatasetMetadata meta) throws DataAccessException {
 
 		try {
-			ModelFactory<?> fact = OWLArtModelFactory.createModelFactory(getCurrentModelFactory(project));
+			ModelFactory<?> fact = OWLArtModelFactory.createModelFactory(new ARTModelFactoryRDF4JImpl());
 
 			if (meta != null) {
 				if (meta.getSparqlEndpoint() != null) {
-					CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(fact.loadTripleQueryHTTPConnection(meta.getSparqlEndpoint()));
+					CloseableTripleQueryModel queryModel = new CloseableTripleQueryModel(
+							fact.loadTripleQueryHTTPConnection(meta.getSparqlEndpoint()));
 					return new PropertyPatternDataAccessSPARQLImpl(queryModel);
-				} else if (meta.isDereferenceable()){
+				} else if (meta.isDereferenceable()) {
 					return new PropertyPatternDataAccessDereferencingImpl(fact.loadLinkedDataResolver());
 				} else {
-				throw new DataAccessException("Dataset not accessible");
+					throw new DataAccessException("Dataset not accessible");
 				}
 			} else {
-				return new PropertyPatternDataAccessDereferencingImpl(fact.loadLinkedDataResolver());				
+				return new PropertyPatternDataAccessDereferencingImpl(fact.loadLinkedDataResolver());
 			}
-		} catch (UnavailableResourceException | ProjectInconsistentException | ModelCreationException e) {
+		} catch (ModelCreationException e) {
 			throw new DataAccessException(e);
 		}
 
-	}
-
-	private static ModelFactory<?> getCurrentModelFactory(Project<?> project)
-			throws UnavailableResourceException, ProjectInconsistentException {
-		return PluginManager.getOntManagerImpl(project.getOntologyManagerImplID()).createModelFactory();
 	}
 
 }

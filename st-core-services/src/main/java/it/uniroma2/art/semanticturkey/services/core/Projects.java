@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
@@ -38,12 +37,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -74,11 +67,11 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @GenerateSTServiceController
 @Validated
 @Component
-@Controller //just for exportProject service
+@Controller // just for exportProject service
 public class Projects extends STServiceAdapterOLD {
 
 	protected static Logger logger = LoggerFactory.getLogger(Projects.class);
-	
+
 	public static class XMLNames {
 		// response tags and attributes
 		public final static String baseuriTag = "baseuri";
@@ -97,100 +90,10 @@ public class Projects extends STServiceAdapterOLD {
 	}
 
 	@GenerateSTServiceController
-	public Response createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration, 
-			@Optional String uriGeneratorFactoryID, @Optional String uriGenConfigurationClass,
-			@Optional Properties uriGenConfiguration,
-			@Optional String renderingEngineFactoryID, @Optional String renderingEngineConfigurationClass,
-			@Optional Properties renderingEngineConfiguration)
-			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException, PUBindingCreationException {
-		
-		// Handles the default values for the configuration of URI generators
-		{
-			if (uriGeneratorFactoryID == null) {
-				uriGeneratorFactoryID = Project.URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
-			}
-			PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(uriGeneratorFactoryID);
-			PluginConfiguration pluginConf = null;
-			if (uriGenConfigurationClass == null) {
-				pluginConf = pluginFactory.createDefaultPluginConfiguration();
-				uriGenConfigurationClass = pluginConf.getClass().getName();
-			} else {
-				try {
-					pluginConf = pluginFactory.createPluginConfiguration(uriGenConfigurationClass);
-				} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
-						| UnloadablePluginConfigurationException e) {
-					throw new ProjectCreationException(e);
-				}
-	
-			}
-			if (uriGenConfiguration == null) {
-				if (pluginConf.hasRequiredParameters()){
-					throw new ProjectCreationException("The implicitly assumed configuration class '" +
-							uriGenConfigurationClass + "' requires user configuration");
-				}
-				uriGenConfiguration = new Properties();
-				try {
-					pluginConf.storeParameters(uriGenConfiguration);
-				} catch (BadConfigurationException e) {
-					throw new ProjectCreationException(e);
-				}
-			}
-		}
-	
-		// Handles the default values for the configuration of rendering engines4
-		{
-			if (renderingEngineFactoryID == null) {
-				renderingEngineFactoryID = Project.determineBestRenderingEngine(modelType);
-			}
-			PluginFactory<PluginConfiguration> renderingEngineFactory = PluginManager.getPluginFactory(renderingEngineFactoryID);
-			PluginConfiguration renderingEngineConf = null;
-			if (renderingEngineConfigurationClass == null) {
-				renderingEngineConf = renderingEngineFactory.createDefaultPluginConfiguration();
-				renderingEngineConfigurationClass = renderingEngineConf.getClass().getName();
-			} else {
-				try {
-					renderingEngineConf = renderingEngineFactory.createPluginConfiguration(renderingEngineConfigurationClass);
-				} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
-						| UnloadablePluginConfigurationException e) {
-					throw new ProjectCreationException(e);
-				}
-	
-			}
-			if (renderingEngineConfiguration == null) {
-				if (renderingEngineConf.hasRequiredParameters()){
-					throw new ProjectCreationException("The implicitly assumed configuration class '" +
-							renderingEngineConfigurationClass + "' requires user configuration");
-				}
-				renderingEngineConfiguration = new Properties();
-				try {
-					renderingEngineConf.storeParameters(renderingEngineConfiguration);
-				} catch (BadConfigurationException e) {
-					throw new ProjectCreationException(e);
-				}
-			}
-		}
-		
-		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType, baseURI, ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass, uriGenConfiguration,
-				renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration);
-		
-		//create the folders for the bindings between project and users
-		//this is required (is not enough in accessProject, cause accessProject is not invoked after createProject)
-		ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
-		
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		XMLHelp.newElement(dataElement, "type", proj.getType());
-		return response;
-	}
-
-	@GenerateSTServiceController
-	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException, IOException {
+	public void deleteProject(ProjectConsumer consumer, String projectName)
+			throws ProjectDeletionException, IOException {
 		ProjectManager.deleteProject(projectName);
-		//delete the folder about project-user bindings
+		// delete the folder about project-user bindings
 		ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
 	}
 
@@ -207,8 +110,8 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectAccessException
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
-	 * @throws IOException 
-	 * @throws PUBindingCreationException 
+	 * @throws IOException
+	 * @throws PUBindingCreationException
 	 */
 	@GenerateSTServiceController
 	public void accessProject(ProjectConsumer consumer, String projectName,
@@ -217,9 +120,9 @@ public class Projects extends STServiceAdapterOLD {
 			ForbiddenProjectAccessException, PUBindingCreationException {
 
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
-		//if there aren't the folders for the project-user bindings of the current project, create them
-		//this scenario could happen when the project is imported
-		//(by means the import function or the copy of a project folder in SemanticTurkeyData/projects) 
+		// if there aren't the folders for the project-user bindings of the current project, create them
+		// this scenario could happen when the project is imported
+		// (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
 		if (ProjectUserBindingsManager.existsPUBindingsOfProject(projectName)) {
 			ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
 		}
@@ -259,24 +162,15 @@ public class Projects extends STServiceAdapterOLD {
 			if (absProj instanceof Project<?>) {
 				Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
 				try {
-					projElem.setAttribute(XMLNames.ontoTypeAttr, ((Project<?>) proj).getModelType().getName());
-					String ontMgr;
-					try {
-						ontMgr = ((Project<?>) proj).getOntologyManagerImplID();
-					} catch (ProjectInconsistentException e) {
-						ontMgr = "";
-					}
+					projElem.setAttribute(XMLNames.ontoTypeAttr,
+							((Project<?>) proj).getModelType().getName());
+					String ontMgr = "";
 					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
-					
-					String mConfID;
-					try {
-						mConfID = ((Project<?>) proj).getModelConfigurationID();
-					} catch (ProjectInconsistentException e) {
-						mConfID = "";
-					}
-					
+
+					String mConfID = "";
+
 					projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
-					
+
 					projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
 
 					projElem.setAttribute(XMLNames.statusAttr, "ok");
@@ -363,20 +257,20 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws InvalidProjectNameException
 	 */
 	@GenerateSTServiceController
-	public void cloneProject(String projectName, String newProjectName) throws InvalidProjectNameException,
-			DuplicatedResourceException, IOException, UnavailableResourceException,
-			ProjectInexistentException {
+	public void cloneProject(String projectName, String newProjectName)
+			throws InvalidProjectNameException, DuplicatedResourceException, IOException,
+			UnavailableResourceException, ProjectInexistentException {
 
 		logger.info("requested to export current project");
 
 		ProjectManager.cloneProjectToNewProject(projectName, newProjectName);
 
 	}
-	
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Projects/exportProject", 
-			method = org.springframework.web.bind.annotation.RequestMethod.GET)
-	public void exportProject(HttpServletResponse oRes,	@RequestParam(value = "projectName") String projectName)
-			throws IOException,	ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
+
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Projects/exportProject", method = org.springframework.web.bind.annotation.RequestMethod.GET)
+	public void exportProject(HttpServletResponse oRes,
+			@RequestParam(value = "projectName") String projectName) throws IOException, ModelAccessException,
+			UnsupportedRDFFormatException, UnavailableResourceException {
 		File tempServerFile = File.createTempFile("export", ".zip");
 		logger.info("requested to export current project");
 		ProjectManager.exportProject(projectName, tempServerFile);
@@ -403,9 +297,9 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ModelAccessException
 	 * @throws IOException
 	 */
-	@GenerateSTServiceController (method = RequestMethod.POST)
-	public void importProject(MultipartFile importPackage, String newProjectName) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
+	@GenerateSTServiceController(method = RequestMethod.POST)
+	public void importProject(MultipartFile importPackage, String newProjectName)
+			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
 			ModelUpdateException, InvalidProjectNameException {
 
@@ -435,7 +329,7 @@ public class Projects extends STServiceAdapterOLD {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			IOException {
 
-		//String[] propNames = propNameList.split(";");
+		// String[] propNames = propNameList.split(";");
 		String[] propValues = new String[propertyNames.length];
 
 		for (int i = 0; i < propertyNames.length; i++)
@@ -452,7 +346,7 @@ public class Projects extends STServiceAdapterOLD {
 
 		return resp;
 	}
-	
+
 	/**
 	 * this service returns a list name-value for all the property of a given project. Returns a response with
 	 * elements called {@link #propertyTag} with attributes {@link #propNameAttr} for property name and
@@ -468,15 +362,14 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws IOException
 	 */
 	@GenerateSTServiceController
-	public Response getProjectPropertyMap(String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+	public Response getProjectPropertyMap(String projectName) throws InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, IOException {
 
 		Map<String, String> map = ProjectManager.getProjectPropertyMap(projectName);
 
 		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
-		
+
 		Set<String> keys = map.keySet();
 		for (String prop : keys) {
 			Element projElem = XMLHelp.newElement(dataElem, XMLNames.propertyTag);
@@ -485,7 +378,7 @@ public class Projects extends STServiceAdapterOLD {
 		}
 		return resp;
 	}
-	
+
 	/**
 	 * this service returns a list name-value for all the property of a given project. Returns a response with
 	 * elements called {@link #propertyTag} with attributes {@link #propNameAttr} for property name and
@@ -501,9 +394,8 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws IOException
 	 */
 	@GenerateSTServiceController
-	public Response getProjectPropertyFileContent(String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+	public Response getProjectPropertyFileContent(String projectName) throws InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, IOException {
 		String rawFile = ProjectManager.getProjectPropertyFileContent(projectName);
 		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
@@ -511,8 +403,8 @@ public class Projects extends STServiceAdapterOLD {
 		contentElem.setTextContent(rawFile);
 		return resp;
 	}
-	
-	@GenerateSTServiceController (method = RequestMethod.POST)
+
+	@GenerateSTServiceController(method = RequestMethod.POST)
 	public void saveProjectPropertyFileContent(String projectName, String content)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			IOException {
@@ -538,19 +430,19 @@ public class Projects extends STServiceAdapterOLD {
 		Project<?> project = ProjectManager.getProjectDescription(projectName);
 		project.setProperty(propName, propValue);
 	}
-	
-	//TODO
+
+	// TODO
 	@SuppressWarnings("unchecked")
 	/**
 	 * Returns the access statuses for every project-consumer combination. Returns a response with a set of
-	 * <code>project</code> elements containing <code>consumer</code> elements and a <code>lock</code> element.
-	 * Each <code>project</code> element has a single attribute: its <code>name</code>.
-	 * The <code>consumer</code> elements have the following attributes:
+	 * <code>project</code> elements containing <code>consumer</code> elements and a <code>lock</code>
+	 * element. Each <code>project</code> element has a single attribute: its <code>name</code>. The
+	 * <code>consumer</code> elements have the following attributes:
 	 * <ul>
 	 * <li><code>name</code>: consumer's name</li>
 	 * <li><code>availableACLLevel</code>: ACL given from the project to the consumer</li>
-	 * <li><code>acquiredACLLevel</code>: The access level with which the consumer accesses the project
-	 * (only specified if the project is accessed by the consumer)</li>
+	 * <li><code>acquiredACLLevel</code>: The access level with which the consumer accesses the project (only
+	 * specified if the project is accessed by the consumer)</li>
 	 * </ul>
 	 * The <code>lock</code> element has the following attributes:
 	 * <ul>
@@ -560,7 +452,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * <li><code>acquiredLockLevel</code>: lock level which with a consumer is locking the project (optional
 	 * as the previous</li>
 	 * </ul>
-	 *  
+	 * 
 	 * 
 	 * @param projectName
 	 * @return
@@ -568,30 +460,29 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws IOException
-	 * @throws ForbiddenProjectAccessException 
+	 * @throws ForbiddenProjectAccessException
 	 */
 	@GenerateSTServiceController
-	public Response getAccessStatusMap()
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException {
-		
+	public Response getAccessStatusMap() throws InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException {
+
 		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = resp.getDataElement();
-		
+
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
-		
-		for (AbstractProject absProj : projects){
+
+		for (AbstractProject absProj : projects) {
 			if (absProj instanceof Project<?>) {
 				Project<? extends RDFModel> project = (Project<? extends RDFModel>) absProj;
 				Element projectElement = XMLHelp.newElement(dataElem, "project");
 				projectElement.setAttribute("name", project.getName());
-				
+
 				Collection<AbstractProject> consumers = ProjectManager.listProjects();
-				consumers.remove(project);//remove itself from its possible consumers
-				
+				consumers.remove(project);// remove itself from its possible consumers
+
 				ProjectACL projectAcl = ProjectManager.getProjectDescription(project.getName()).getACL();
-							
-				//status for SYSTEM
+
+				// status for SYSTEM
 				ProjectConsumer consumer = ProjectConsumer.SYSTEM;
 				Element consumerElement = XMLHelp.newElement(projectElement, "consumer");
 				consumerElement.setAttribute("name", consumer.getName());
@@ -601,10 +492,10 @@ public class Projects extends STServiceAdapterOLD {
 					acl = aclForConsumer.name();
 				consumerElement.setAttribute("availableACLLevel", acl);
 				AccessLevel accessedLevel = ProjectManager.getAccessedLevel(project.getName(), consumer);
-				if (accessedLevel != null){
+				if (accessedLevel != null) {
 					consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
 				}
-				//ACL for other ProjectConsumer
+				// ACL for other ProjectConsumer
 				for (AbstractProject absCons : consumers) {
 					if (absCons instanceof Project<?>) {
 						Project<? extends RDFModel> cons = (Project<? extends RDFModel>) absCons;
@@ -616,27 +507,29 @@ public class Projects extends STServiceAdapterOLD {
 							acl = aclForConsumer.name();
 						consumerElement.setAttribute("availableACLLevel", acl);
 						accessedLevel = ProjectManager.getAccessedLevel(project.getName(), cons);
-						if (accessedLevel != null){
+						if (accessedLevel != null) {
 							consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
 						}
 					}
 				}
-				//LOCK for the project
+				// LOCK for the project
 				Element lockElement = XMLHelp.newElement(projectElement, "lock");
 				lockElement.setAttribute("availableLockLevel", projectAcl.getLockLevel().name());
 				ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
-				if (lockingConsumer != null){ //the project could be not locked by any consumer
+				if (lockingConsumer != null) { // the project could be not locked by any consumer
 					lockElement.setAttribute("lockingConsumer", lockingConsumer.getName());
-					lockElement.setAttribute("acquiredLockLevel", ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name());
+					lockElement.setAttribute("acquiredLockLevel",
+							ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name());
 				}
 			}
 		}
 		return resp;
 	}
-	
+
 	/**
-	 * Updates the access level granted by the project with the given <code>projectName</code>
-	 * to the given consumer
+	 * Updates the access level granted by the project with the given <code>projectName</code> to the given
+	 * consumer
+	 * 
 	 * @param projectName
 	 * @param consumer
 	 * @param accessLevel
@@ -647,15 +540,16 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ReservedPropertyUpdateException
 	 */
 	@GenerateSTServiceController
-	public void updateAccessLevel(String projectName, String consumerName, AccessLevel accessLevel) 
+	public void updateAccessLevel(String projectName, String consumerName, AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ProjectUpdateException, ReservedPropertyUpdateException{
+			ProjectUpdateException, ReservedPropertyUpdateException {
 		Project<RDFModel> project = ProjectManager.getProjectDescription(projectName);
 		project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
 	}
-	
+
 	/**
 	 * Updates the lock level of the project with the given <code>projectName</code>
+	 * 
 	 * @param projectName
 	 * @param lockLevel
 	 * @throws InvalidProjectNameException

@@ -46,24 +46,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
 import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
-import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
-import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,13 +66,10 @@ import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.io.RDFFormat;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
 import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
-import it.uniroma2.art.owlart.models.conf.PersistenceModelConfiguration;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -92,8 +83,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -228,215 +217,12 @@ public class ProjectManager {
 			throw new ProjectDeletionException("unable to delete project: " + projectName);
 	}
 
-	/**
-	 * a shortcut for
-	 * {@link #createProject(ProjectConsumer, String, Class, String, String, String, Properties)} with
-	 * {@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}
-	 * 
-	 * @param projectName
-	 * @param modelType
-	 * @param baseURI
-	 * @param ontManagerFactoryID
-	 * @param modelConfigurationClass
-	 * @param modelConfiguration
-	 * @param uriGeneratorFactoryID
-	 * @param uriGenConfigurationClassName
-	 * @param uriGenConfiguration
-	 * @param renderingEngineFactoryID
-	 * @param renderingEngineConfigurationClass
-	 * @param renderingEngineConfiguration
-	 * @return
-	 * @throws DuplicatedResourceException
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectCreationException
-	 * @throws ProjectInconsistentException
-	 * @throws ProjectUpdateException
-	 */
-	public static Project<? extends RDFModel> createProject(String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
-			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
-			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException {
-		return createProject(ProjectConsumer.SYSTEM, projectName, modelType, baseURI,
-				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass,
-				uriGenConfiguration, renderingEngineFactoryID, renderingEngineConfigurationClass,
-				renderingEngineConfiguration);
-	}
-
-	/**
-	 * a shortcut for
-	 * {@link #createProject(ProjectConsumer, String, Class, String, String, String, String, Properties)} with
-	 * defaultNamespace automatically assigned from the baseuri
-	 * 
-	 * @param consumer
-	 * @param projectName
-	 * @param modelType
-	 * @param baseURI
-	 * @param ontManagerFactoryID
-	 * @param modelConfigurationClass
-	 * @param modelConfiguration
-	 * @param uriGeneratorFactoryID
-	 * @param uriGenConfigurationClassName
-	 * @param uriGenConfiguration
-	 * @param renderingEngineFactoryID
-	 * @param renderingEngineConfigurationClass
-	 * @param renderingEngineConfiguration
-	 * @return
-	 * @throws DuplicatedResourceException
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectCreationException
-	 * @throws ProjectInconsistentException
-	 * @throws ProjectUpdateException
-	 */
-	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
-			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
-			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException {
-		return createProject(consumer, projectName, modelType, baseURI,
-				ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI), ontManagerFactoryID,
-				modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID, uriGenConfigurationClass,
-				uriGenConfiguration, renderingEngineFactoryID, renderingEngineConfigurationClass,
-				renderingEngineConfiguration);
-	}
-
-	/**
-	 * as for
-	 * {@link #createProject(ProjectConsumer, String, Class, File, String, String, String, String, Properties)}
-	 * but the directory of the project bears the name of the project itself and is located inside the
-	 * SemanticTurkeyData directory of your Firefox profile. You should normally use this method to create new
-	 * projects which are expected to be found by the main system
-	 * 
-	 * @param consumer
-	 * @param projectName
-	 * @param modelType
-	 * @param baseURI
-	 * @param defaultNamespace
-	 * @param ontManagerFactoryID
-	 * @param modelConfigurationClass
-	 * @param modelConfiguration
-	 * @param uriGeneratorFactoryID
-	 * @param uriGenConfigurationClassName
-	 * @param uriGenConfiguration
-	 * @param renderingEngineFactoryID
-	 * @param renderingEngineConfigurationClass
-	 * @param renderingEngineConfiguration
-	 * @return
-	 * @throws DuplicatedResourceException
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectCreationException
-	 * @throws ProjectInconsistentException
-	 * @throws ProjectUpdateException
-	 */
-	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String defaultNamespace,
-			String ontManagerFactoryID, String modelConfigurationClass, Properties modelConfiguration,
-			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass,
-			Properties renderingEngineConfiguration)
-			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException {
-
-		File projectDir = resolveProjectNameToDir(projectName);
-
-		return createProject(consumer, projectName, modelType, projectDir, baseURI, defaultNamespace,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
-				uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID,
-				renderingEngineConfigurationClass, renderingEngineConfiguration);
-	}
-
-	/**
-	 * This method sets up all the necessary files which characterize projects and then generates a new
-	 * instance on the initialized folder
-	 * <p>
-	 * <em>Note: by using directly this method you may create projects in any place in the file system, and
-	 * Semantic Turkey won't be able to localize them. For this reason, it should only be used by Semantic
-	 * Turkey extensions which are adopting a new project folder, providing also dedicated API to
-	 * access/manage its projects.<br/>
-	 * use {@link #createProject(String, Class, String, String, String, Properties)} or
-	 * {@link #createProject(String, Class, String, String, String, String, Properties)} to create a new
-	 * project</em>
-	 * </p>
-	 * 
-	 * @param consumer
-	 * @param projectName
-	 * @param modelType
-	 * @param projectDir
-	 * @param baseURI
-	 * @param defaultNamespace
-	 * @param ontManagerFactoryID
-	 * @param modelConfigurationClassName
-	 * @param modelConfiguration
-	 * @param uriGeneratorFactoryID
-	 * @param uriGenConfigurationClassName
-	 * @param uriGenConfiguration
-	 * @param renderingEngineFactoryID
-	 * @param renderingEngineConfigurationClass
-	 * @param renderingEngineConfiguration
-	 * @return
-	 * @throws ProjectCreationException
-	 */
-	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, File projectDir, String baseURI, String defaultNamespace,
-			String ontManagerFactoryID, String modelConfigurationClassName, Properties modelConfiguration,
-			String uriGeneratorFactoryID, String uriGenConfigurationClassName, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass,
-			Properties renderingEngineConfiguration) throws ProjectCreationException {
-
-		try {
-			logger.debug("creating project: " + projectName);
-			OntologyManagerFactory<ModelConfiguration> ontMgrFact = PluginManager
-					.getOntManagerImpl(ontManagerFactoryID);
-			logger.debug("loaded ontMgrFactory: " + ontMgrFact);
-
-			ModelConfiguration mConf = ontMgrFact.createModelConfigurationObject(modelConfigurationClassName);
-
-			ProjectType projType;
-
-			if ((mConf instanceof PersistenceModelConfiguration)
-					&& ((PersistenceModelConfiguration) mConf).isPersistent()) {
-				projType = ProjectType.continuosEditing;
-			} else {
-				projType = ProjectType.saveToStore;
-			}
-
-			logger.debug("building project directory");
-			prepareProjectFiles(projectName, modelType, projectDir, baseURI, defaultNamespace,
-					ontManagerFactoryID, modelConfigurationClassName, modelConfiguration,
-					uriGeneratorFactoryID, uriGenConfigurationClassName, uriGenConfiguration,
-					renderingEngineFactoryID, renderingEngineConfigurationClass, renderingEngineConfiguration,
-					projType, consumer);
-
-			logger.debug("activating project");
-			// return activateProject(projectName);
-			Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
-					LockLevel.NO);
-			// TODO this has to be removed, once all references to currentProject have been removed from ST
-			// (filters etc..)
-			// setCurrentProject(project);
-			return project;
-		} catch (Exception e) {
-			try {
-				Utilities.deleteDir(resolveProjectNameToDir(projectName));
-			} catch (InvalidProjectNameException e1) {
-				logger.error("unable to remove project dir after failed project creation, need to remove i"
-						+ " manually. Details of the exception follow:" + e1);
-			}
-			throw new ProjectCreationException(e);
-		}
-	}
-
 	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(String projectName,
 			Class<MODELTYPE> modelType, File projectDir, String baseURI, String defaultNamespace,
-			String ontManagerID, String modelConfigurationClass, Properties modelConfiguration,
-			String uriGeneratorFactoryID, String uriGenConfigurationClass, Properties uriGenConfiguration,
-			String renderingEngineFactoryID, String renderingEngineConfigurationClass,
-			Properties renderingEngineConfiguration, ProjectType type, ProjectConsumer consumer)
+			boolean historyEnabled, boolean validationEnabled, String uriGeneratorFactoryID,
+			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
+			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration,
+			ProjectType type, ProjectConsumer consumer)
 			throws DuplicatedResourceException, ProjectCreationException {
 		if (projectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
@@ -454,8 +240,6 @@ public class ProjectManager {
 			// here we write directly on the file; once the project is loaded, it will be handled internally
 			// as a property file
 			BufferedWriter out = new BufferedWriter(new FileWriter(info_stp));
-			out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
-			out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
 			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorFactoryID) + "\n");
 			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGenConfigurationClass)
 					+ "\n");
@@ -471,6 +255,8 @@ public class ProjectManager {
 			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
 			out.write(ProjectACL.ACL + "="
 					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
+			out.write(Project.HISTORY_ENABLED_PROP + "=" + Boolean.toString(historyEnabled) + "\n");
+			out.write(Project.VALIDATION_ENABLED_PROP + "=" + Boolean.toString(validationEnabled) + "\n");
 			out.close();
 
 			logger.debug("project creation: all project properties have been stored");
@@ -480,11 +266,6 @@ public class ProjectManager {
 			prefixMappingFile.createNewFile();
 
 			// Model COnfiguration file creation
-			File modelConfigurationFile = new File(projectDir, Project.MODELCONFIG_FILENAME);
-			modelConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(modelConfigurationFile)) {
-				modelConfiguration.store(fw, "model configuration, initialized from project initialization");
-			}
 
 			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
 			uriGenConfigurationFile.createNewFile();
@@ -675,7 +456,7 @@ public class ProjectManager {
 		Utilities.copy(project.uriGenConfigFile, new File(tempDir, project.uriGenConfigFile.getName()));
 		Utilities.copy(project.renderingConfigFile, new File(tempDir, project.renderingConfigFile.getName()));
 		Utilities.copy(project.modelConfigFile, new File(tempDir, project.modelConfigFile.getName()));
-		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
+//		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
 		Utilities.createZipFile(tempDir, semTurkeyProjectFile, false, true,
 				"Semantic Turkey Project Archive");
 		tempDir.delete();
@@ -711,8 +492,6 @@ public class ProjectManager {
 		Utilities.copy(infoSTPFile, new File(newProjDir, infoSTPFile.getName()));
 		Utilities.copy(new File(tempDir, NSPrefixMappings.prefixMappingFileName),
 				new File(newProjDir, NSPrefixMappings.prefixMappingFileName));
-		Utilities.copy(new File(tempDir, Project.MODELCONFIG_FILENAME),
-				new File(newProjDir, Project.MODELCONFIG_FILENAME));
 		Utilities.copy(new File(tempDir, Project.URI_GENERATOR_CONFIG_FILENAME),
 				new File(newProjDir, Project.URI_GENERATOR_CONFIG_FILENAME));
 		Utilities.copy(new File(tempDir, Project.RENDERING_ENGINE_CONFIG_FILENAME),
@@ -730,8 +509,8 @@ public class ProjectManager {
 			newProj = activateProject(name);
 			try {
 				newProj.setName(name);
-				newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
-						newProj.getBaseURI(), RDFFormat.NTRIPLES);
+//				newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
+//						newProj.getBaseURI(), RDFFormat.NTRIPLES);
 
 				tempDir.delete();
 				tempDir.deleteOnExit();
@@ -947,21 +726,6 @@ public class ProjectManager {
 		else
 			throw new ProjectInconsistentException(
 					"missing required " + property + " value from description of project: " + projectName);
-	}
-
-	/**
-	 * return the id of the project manager implementation adopted by project <code>projectName</code>
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws IOException
-	 * @throws ProjectInexistentException
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectInconsistentException
-	 */
-	public static String getProjectOntologyManagerID(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectInconsistentException {
-		return getRequiredProjectProperty(projectName, Project.ONTOLOGY_MANAGER_ID_PROP);
 	}
 
 	/**
@@ -1690,21 +1454,6 @@ public class ProjectManager {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 
-	public static Project<? extends RDFModel> createProjectAndSetAsCurrent(String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, String ontManagerFactoryID,
-			String modelConfigurationClass, Properties modelConfiguration, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
-			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration)
-			throws DuplicatedResourceException, InvalidProjectNameException, ProjectCreationException,
-			ProjectInconsistentException, ProjectUpdateException {
-		Project<? extends RDFModel> project = createProject(projectName, modelType, baseURI,
-				ontManagerFactoryID, modelConfigurationClass, modelConfiguration, uriGeneratorFactoryID,
-				uriGenConfigurationClass, uriGenConfiguration, renderingEngineFactoryID,
-				renderingEngineConfigurationClass, renderingEngineConfiguration);
-		setCurrentProject(project);
-		return project;
-	}
-
 	public static Project<? extends RDFModel> createProject2(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
 			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
@@ -1761,7 +1510,7 @@ public class ProjectManager {
 			}
 		} else { // Remote repositories
 			RemoteRepositoryAccess remoteRepositoryAccess = (RemoteRepositoryAccess) repositoryAccess;
-			
+
 			if (remoteRepositoryAccess instanceof CreateRemote) {
 				RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID);
 				SailRepositoryConfig coreSailRepoConfig = new SailRepositoryConfig();
@@ -1782,7 +1531,7 @@ public class ProjectManager {
 				newCoreRepositoryConfig.setRepositoryImplConfig(coreSailRepoConfig);
 
 				RepositoryConfig newSupportRepositoryConfig = null;
-				
+
 				if (supportRepositoryConfig != null) {
 					newSupportRepositoryConfig = new RepositoryConfig(supportRepoID);
 					SailRepositoryConfig supportSailRepoConfig = new SailRepositoryConfig();
@@ -1792,9 +1541,10 @@ public class ProjectManager {
 					supportSailRepoConfig.setSailImplConfig(supportSailConfig);
 					newSupportRepositoryConfig.setRepositoryImplConfig(supportSailRepoConfig);
 				}
-			
-				RepositoryManager remoteRepoManager = RemoteRepositoryManager.getInstance(remoteRepositoryAccess.getServerURL().toString());
-				
+
+				RepositoryManager remoteRepoManager = RemoteRepositoryManager
+						.getInstance(remoteRepositoryAccess.getServerURL().toString());
+
 				if (newSupportRepositoryConfig != null) {
 					remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
 				}
@@ -1859,7 +1609,7 @@ public class ProjectManager {
 					+ "already exists; choose a different project name for a new project");
 
 		projectDir.mkdir();
-		
+
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {

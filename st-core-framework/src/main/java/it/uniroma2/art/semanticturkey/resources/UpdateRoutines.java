@@ -23,22 +23,19 @@
 
 package it.uniroma2.art.semanticturkey.resources;
 
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.semanticturkey.SemanticTurkey;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.project.ProjectManager.ProjectType;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.semanticturkey.SemanticTurkey;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 
 /**
  * This class contains various integrity checks which are launched when Semantic Turkey is being started and
@@ -160,29 +157,29 @@ public class UpdateRoutines {
 
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectInconsistentException {
-		// ADDING PROJECT_MODEL_TYPE WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
-		checkAndInitializeMissingProperty(projectName, Project.PROJECT_MODEL_TYPE, OWLModel.class.getName(),
-				"0.7.0");
-
-		// ADDING MODELCONFIG_ID WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
-		ProjectType type = ProjectManager.getProjectType(projectName);
-		String modelConfigID;
-		if (type.equals(ProjectType.saveToStore))
-			modelConfigID = "it.uniroma2.art.owlart.sesame2impl.models.conf.Sesame2NonPersistentInMemoryModelConfiguration";
-		else
-			modelConfigID = "it.uniroma2.art.owlart.sesame2impl.models.conf.Sesame2PersistentInMemoryModelConfiguration";
-		checkAndInitializeMissingProperty(projectName, Project.MODELCONFIG_ID, modelConfigID, "0.7.2");
-
-		File projDir = ProjectManager.getProjectDir(projectName);
-		File modelConfigFile = new File(projDir, Project.MODELCONFIG_FILENAME);
-		if (!modelConfigFile.exists()) {
-			try {
-				modelConfigFile.createNewFile();
-			} catch (IOException e) {
-				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: unable to create "
-						+ Project.MODELCONFIG_FILENAME + " file in Project: " + projectName);
-			}
-		}
+//		// ADDING PROJECT_MODEL_TYPE WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
+//		checkAndInitializeMissingProperty(projectName, Project.PROJECT_MODEL_TYPE, OWLModel.class.getName(),
+//				"0.7.0");
+//
+//		// ADDING MODELCONFIG_ID WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
+//		ProjectType type = ProjectManager.getProjectType(projectName);
+//		String modelConfigID;
+//		if (type.equals(ProjectType.saveToStore))
+//			modelConfigID = "it.uniroma2.art.owlart.sesame2impl.models.conf.Sesame2NonPersistentInMemoryModelConfiguration";
+//		else
+//			modelConfigID = "it.uniroma2.art.owlart.sesame2impl.models.conf.Sesame2PersistentInMemoryModelConfiguration";
+//		checkAndInitializeMissingProperty(projectName, Project.MODELCONFIG_ID, modelConfigID, "0.7.2");
+//
+//		File projDir = ProjectManager.getProjectDir(projectName);
+//		File modelConfigFile = new File(projDir, Project.MODELCONFIG_FILENAME);
+//		if (!modelConfigFile.exists()) {
+//			try {
+//				modelConfigFile.createNewFile();
+//			} catch (IOException e) {
+//				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: unable to create "
+//						+ Project.MODELCONFIG_FILENAME + " file in Project: " + projectName);
+//			}
+//		}
 	}
 
 	private static void checkAndInitializeMissingProperty(String projectName, String propertyName,

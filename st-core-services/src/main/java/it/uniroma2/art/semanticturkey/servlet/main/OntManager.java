@@ -29,7 +29,7 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collection;
+import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -40,18 +40,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Element;
 
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
-import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.models.conf.ConfParameterNotFoundException;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
-import it.uniroma2.art.semanticturkey.resources.OntTempFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -69,12 +60,11 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 @Component
 public class OntManager extends ServiceAdapter {
 	protected static Logger logger = LoggerFactory.getLogger(OntManager.class);
-	
+
 	static int webUpdate = 0;
 	static int localUpdate = 1;
 
 	// GET REQUESTS
-	protected static final String getOntManagerParametersRequest = "getOntManagerParameters";
 	protected static String getOntologyMirror = "getOntologyMirror";
 	protected static String deleteOntMirrorEntry = "deleteOntMirrorEntry";
 	protected static String updateOntMirrorEntry = "updateOntMirrorEntry";
@@ -94,14 +84,7 @@ public class OntManager extends ServiceAdapter {
 	public Response getPreCheckedResponse(String request) throws HTTPParameterUnspecifiedException {
 		fireServletEvent();
 
-		if (request.equals(getOntManagerParametersRequest)) {
-			String ontMgrID = setHttpPar(ontMgrIDField);
-
-			checkRequestParametersAllNotNull(ontMgrIDField);
-
-			return getOntologyManagerParameters(ontMgrID);
-			
-		} else if (request.equals(getOntologyMirror)) {
+		if (request.equals(getOntologyMirror)) {
 			return getOntologyMirrorTable();
 		} else if (request.equals(deleteOntMirrorEntry)) {
 			String baseURI = setHttpPar("ns");
@@ -133,72 +116,12 @@ public class OntManager extends ServiceAdapter {
 
 	}
 
-	public XMLResponse getOntologyManagerParameters(String ontMgrID) {
-		String request = getOntManagerParametersRequest;
-		OntologyManagerFactory<ModelConfiguration> ontMgrFact;
-		try {
-			ontMgrFact = PluginManager.getOntManagerImpl(ontMgrID);
-		} catch (UnavailableResourceException e1) {
-			return servletUtilities.createExceptionResponse(request, e1.getMessage());
-		}
-
-		try {
-			Collection<ModelConfiguration> mConfs = ontMgrFact.getModelConfigurations();
-
-			XMLResponseREPLY response = servletUtilities.createReplyResponse(request, RepliesStatus.ok);
-			Element dataElement = response.getDataElement();
-
-			for (ModelConfiguration mConf : mConfs) {
-
-				Element newConfType = XMLHelp.newElement(dataElement, "configuration");
-
-				newConfType.setAttribute("type", mConf.getClass().getName());
-
-				newConfType.setAttribute("shortName", mConf.getShortName());
-
-				newConfType.setAttribute("editRequired", Boolean.toString(mConf.hasRequiredParameters()));
-
-				Collection<String> pars = mConf.getConfigurationParameters();
-
-				for (String par : pars) {
-					String parDescr = mConf.getParameterDescription(par);
-					Element newPar = XMLHelp.newElement(newConfType, "par");
-					newPar.setAttribute("name", par);
-					newPar.setAttribute("description", parDescr);
-					newPar.setAttribute("required", Boolean.toString(mConf.isRequiredParameter(par)));
-					String contentType = mConf.getParameterContentType(par);
-					if (contentType != null)
-						newPar.setAttribute("type", contentType);
-					Object parValue = mConf.getParameterValue(par);
-					if (parValue != null)
-						newPar.setTextContent(parValue.toString());
-				}
-
-			}
-
-			return response;
-
-		} catch (ConfParameterNotFoundException e) {
-			return servletUtilities
-					.createExceptionResponse(
-							request,
-							"strangely, the configuration parameter (which should have provided by the same ontology manager) was not recognized: "
-									+ e.getMessage());
-		} catch (UnsupportedModelConfigurationException e) {
-			return servletUtilities.createExceptionResponse(request,
-					"strangely, the Model Configuration was not recognized: " + e.getMessage());
-		} catch (UnloadableModelConfigurationException e) {
-			return servletUtilities.createExceptionResponse(request, e.getMessage());
-		}
-
-	}
-	
 	/**
 	 * gets the namespace mapping for the loaded ontology
 	 * 
-	 * <streponse request="getOntologyMirror" type="data"> <Mirror
-	 * uri="http://xmlns.com/foaf/spec/20070524.rdf" file="foaf.rdf"/> <Mirror
-	 * uri="http://sweet.jpl.nasa.gov/ontology/earthrealm.owl" file="earthrealm.owl"/> </Tree>
+	 * <streponse request="getOntologyMirror" type="data">
+	 * <Mirror uri="http://xmlns.com/foaf/spec/20070524.rdf" file="foaf.rdf"/>
+	 * <Mirror uri="http://sweet.jpl.nasa.gov/ontology/earthrealm.owl" file="earthrealm.owl"/> </Tree>
 	 * 
 	 */
 	public ResponseREPLY getOntologyMirrorTable() {
@@ -248,9 +171,13 @@ public class OntManager extends ServiceAdapter {
 			if (updateType == webUpdate) { // use first a temporary file, just in case the download brokes in
 				// the middle, then copies the temporary to the destination in the
 				// mirror
-				OntTempFile tempFile = STOntologyManager.getTempFileEntry();
-				Utilities.downloadRDF(new URL(location), tempFile.getAbsolutePath());
-				Utilities.copy(tempFile.getAbsolutePath(), mirFile.getAbsolutePath());
+				File tempFile = Files.createTempFile("updateOntMirrorEntry", "temp").toFile();
+				try {
+					Utilities.downloadRDF(new URL(location), tempFile.getAbsolutePath());
+					Utilities.copy(tempFile.getAbsolutePath(), mirFile.getAbsolutePath());
+				} finally {
+					tempFile.delete();
+				}
 			} else if (updateType == localUpdate) {
 				Utilities.copy(location, mirFile.getAbsolutePath());
 			}

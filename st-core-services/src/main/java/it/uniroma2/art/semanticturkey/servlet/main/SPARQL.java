@@ -31,7 +31,6 @@ import it.uniroma2.art.owlart.query.Update;
 import it.uniroma2.art.owlart.query.io.TupleBindingsWriterException;
 import it.uniroma2.art.owlart.query.io.TupleBindingsWritingFormat;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceAdapter;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.Response;

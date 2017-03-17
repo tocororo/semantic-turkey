@@ -18,6 +18,9 @@
 		<!-- Owlart -->
 		<bundle dependency="true">mvn:it.uniroma2.art.owlart/owlart-api/${owlart-api.version}</bundle>
 
+		<!-- Owlart RDF4JImpl -->
+		<bundle dependency="true">wrap:mvn:it.uniroma2.art.owlart/owlart-rdf4jimpl/${owlart-rdf4jimpl.version}</bundle>
+
 		<!-- Guava -->
 		<bundle dependency="true">mvn:com.google.guava/guava/15.0</bundle>
 
@@ -111,8 +114,6 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sesame2-ontmanager/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf4j-ontmanager/${project.version}</bundle>
 	</feature>
 
 </features>

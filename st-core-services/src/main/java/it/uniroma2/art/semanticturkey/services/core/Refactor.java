@@ -32,16 +32,17 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.BaseRDFTripleModel;
 import it.uniroma2.art.owlart.models.ModelFactory;
+import it.uniroma2.art.owlart.models.OWLArtModelFactory;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.TransactionBasedModel;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.models.impl.SKOSModelImpl;
 import it.uniroma2.art.owlart.navigation.ARTNodeIterator;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
 import it.uniroma2.art.owlart.query.Update;
+import it.uniroma2.art.owlart.rdf4jimpl.factory.ARTModelFactoryRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.DataRefactoring;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.utilities.transform.ReifiedSKOSDefinitionsConverter;
@@ -60,7 +61,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.AutoRendering;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -246,8 +246,7 @@ public class Refactor extends STServiceAdapterOLD {
 			throw new ModelUpdateException(
 					"sorry, unable to replace the baseuri, try to close the project " + "and open it again");
 		} catch (ProjectUpdateException e) {
-			throw new ModelUpdateException(
-					"sorry, unable to replace the baseuri within project metadata");
+			throw new ModelUpdateException("sorry, unable to replace the baseuri within project metadata");
 		}
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -345,9 +344,8 @@ public class Refactor extends STServiceAdapterOLD {
 			@RequestParam(value = "keepSKOSXLabels", required = false, defaultValue = "false") boolean keepSKOSXLabels,
 			@RequestParam(value = "toFlatDefinitions", required = false, defaultValue = "true") boolean toFlatDefinitions,
 			@RequestParam(value = "keepReifiedDefinition", required = false, defaultValue = "false") boolean keepReifiedDefinition)
-					throws UnavailableResourceException, ProjectInconsistentException,
-					ProjectIncompatibleException, ModelAccessException, ModelUpdateException, IOException,
-					UnsupportedRDFFormatException {
+			throws UnavailableResourceException, ProjectInconsistentException, ProjectIncompatibleException,
+			ModelAccessException, ModelUpdateException, IOException, UnsupportedRDFFormatException {
 
 		OWLModel owlModel = getOWLModel();
 		if (owlModel instanceof SKOSXLModel) {// source model must be skosxl since it should contain skosxl
@@ -382,8 +380,8 @@ public class Refactor extends STServiceAdapterOLD {
 			tempServerFile = File.createTempFile("save", "." + ext);
 
 			// convert flattering
-			ModelFactory<ModelConfiguration> ontFact = PluginManager
-					.getOntManagerImpl(getProject().getOntologyManagerImplID()).createModelFactory();
+			ModelFactory<?> ontFact = OWLArtModelFactory
+					.createModelFactory(new ARTModelFactoryRDF4JImpl());
 			BaseRDFTripleModel ligthWeigth = ontFact.createLightweightRDFModel();
 			SKOSXLModel sourceModel = model;
 			SKOSModel tempTargetModel = new SKOSModelImpl(ligthWeigth);
@@ -430,8 +428,8 @@ public class Refactor extends STServiceAdapterOLD {
 	@GenerateSTServiceController
 	public void migrateDefaultGraphToBaseURIGraph(
 			@Optional(defaultValue = "false") boolean clearDestinationGraph)
-					throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
-					QueryEvaluationException {
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
+			QueryEvaluationException {
 		String updateSpec;
 		if (clearDestinationGraph) {
 			updateSpec = "MOVE DEFAULT TO GRAPH %destinationGraph%";
@@ -441,7 +439,7 @@ public class Refactor extends STServiceAdapterOLD {
 
 		ARTURIResource baseURI = VocabUtilities.nodeFactory.createURIResource(getProject().getBaseURI());
 		updateSpec = updateSpec.replace("%destinationGraph%", RDFNodeSerializer.toNT(baseURI));
-		
+
 		Update update = getOWLModel().createUpdateQuery(updateSpec);
 		update.evaluate(false);
 	}

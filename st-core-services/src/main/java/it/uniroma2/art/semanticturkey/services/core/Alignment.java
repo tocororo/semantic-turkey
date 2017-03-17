@@ -21,9 +21,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Element;
 
 import it.uniroma2.art.owlart.alignment.AlignmentModel;
+import it.uniroma2.art.owlart.alignment.AlignmentModel.Status;
 import it.uniroma2.art.owlart.alignment.AlignmentModelFactory;
 import it.uniroma2.art.owlart.alignment.Cell;
-import it.uniroma2.art.owlart.alignment.AlignmentModel.Status;
 import it.uniroma2.art.owlart.exceptions.InvalidAlignmentRelationException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -43,6 +43,7 @@ import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.impl.RDFModelImpl;
 import it.uniroma2.art.owlart.navigation.ARTURIResourceIterator;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
+import it.uniroma2.art.owlart.rdf4jimpl.factory.ARTModelFactoryRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
@@ -53,7 +54,6 @@ import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -218,8 +218,7 @@ public class Alignment extends STServiceAdapterOLD {
 	private RDFModel getTempModelForVocabularies() throws UnavailableResourceException,
 			ProjectInconsistentException, ModelAccessException, IOException, ModelUpdateException,
 			UnsupportedRDFFormatException {
-		OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(PluginManager.getOntManagerImpl(
-				getProject().getOntologyManagerImplID()).createModelFactory());
+		OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(new ARTModelFactoryRDF4JImpl());
 		mf.setPopulatingW3CVocabularies(true);
 		RDFModel tempModel = new RDFModelImpl(mf.createLightweightRDFModel());
 		ArrayList<String> vocabs = new ArrayList<String>();
@@ -259,8 +258,7 @@ public class Alignment extends STServiceAdapterOLD {
 		inputFile.transferTo(inputServerFile);
 		
 		//creating temporary model for loading alignment
-		OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(PluginManager.getOntManagerImpl(
-				getProject().getOntologyManagerImplID()).createModelFactory());
+		OWLArtModelFactory<?> mf = OWLArtModelFactory.createModelFactory(new ARTModelFactoryRDF4JImpl());
 		AlignmentModel alignModel = AlignmentModelFactory.createAlignmentModel(mf.createLightweightRDFModel());		
 		alignModel.addRDF(inputServerFile, null, RDFFormat.RDFXML_ABBREV, NodeFilters.MAINGRAPH);
 		

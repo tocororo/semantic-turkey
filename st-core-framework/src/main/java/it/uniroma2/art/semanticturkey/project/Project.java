@@ -38,21 +38,12 @@ import java.util.List;
 import java.util.Properties;
 
 import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigSchema;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.sail.SailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +52,6 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -69,7 +59,6 @@ import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
 import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.models.conf.BadConfigurationException;
 import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.rdf4jimpl.models.BaseRDFModelRDF4JImpl;
 import it.uniroma2.art.owlart.rdf4jimpl.models.OWLModelRDF4JImpl;
@@ -88,9 +77,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerFactory;
-import it.uniroma2.art.semanticturkey.ontology.STOntologyManager;
-import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerCompatibilityImpl;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
@@ -113,7 +99,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	protected File renderingConfigFile;
 	protected File uriGenConfigFile;
 
-	protected STOntologyManager<MODELTYPE> ontManager;
 	protected OntologyManager newOntManager;
 	protected OntologyManagerImpl supportOntManager;
 
@@ -121,15 +106,12 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	ModelConfiguration modelConfiguration;
 
 	public static final String INFOFILENAME = "project.info";
-	public static final String MODELCONFIG_FILENAME = "model.config";
 
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
 	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
 
 	public static final String TIMESTAMP_PROP = "timeStamp";
 	public static final String PROJECT_NAME_PROP = "name";
-	public static final String MODELCONFIG_ID = "modelConfigID";
-	public static final String ONTOLOGY_MANAGER_ID_PROP = "STOntologyManagerID";
 	public static final String BASEURI_PROP = "baseURI";
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String PROJECT_TYPE = "ProjectType";
@@ -163,19 +145,17 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final HashSet<String> reservedProperties = new HashSet<String>();
 
 	static {
-
 		reservedProperties.add(INFOFILENAME);
-		reservedProperties.add(MODELCONFIG_FILENAME);
 		reservedProperties.add(TIMESTAMP_PROP);
 		reservedProperties.add(PROJECT_NAME_PROP);
-		reservedProperties.add(MODELCONFIG_ID);
-		reservedProperties.add(ONTOLOGY_MANAGER_ID_PROP);
 		reservedProperties.add(BASEURI_PROP);
 		reservedProperties.add(DEF_NS_PROP);
 		reservedProperties.add(PROJECT_TYPE);
 		reservedProperties.add(PROJECT_MODEL_TYPE);
 		reservedProperties.add(PROJECT_STORE_DIR_NAME);
 		reservedProperties.add(PLUGINS_PROP);
+		reservedProperties.add(HISTORY_ENABLED_PROP);
+		reservedProperties.add(VALIDATION_ENABLED_PROP);
 	}
 
 	private static final String SEPARATION_SYMBOL = ";";
@@ -215,7 +195,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		super(projectName, projectDir);
 		logger.debug("initializing project: " + projectName);
 		infoSTPFile = new File(projectDir, INFOFILENAME);
-		modelConfigFile = new File(projectDir, MODELCONFIG_FILENAME);
 		uriGenConfigFile = new File(projectDir, URI_GENERATOR_CONFIG_FILENAME);
 		renderingConfigFile = new File(projectDir, RENDERING_ENGINE_CONFIG_FILENAME);
 		modelHolder = new ThreadLocal<>();
@@ -235,75 +214,19 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			ProjectUpdateException, UnavailableResourceException, UnsupportedModelConfigurationException,
 			UnloadableModelConfigurationException, ProjectAccessException {
 		try {
-			String ontMgrFactId = getProperty(ONTOLOGY_MANAGER_ID_PROP);
+			repositoryManager = new LocalRepositoryManager(_projectDir);
+			repositoryManager.initialize();
 
-			if (ontMgrFactId != null) {
-				OntologyManagerFactory<ModelConfiguration> ontMgrFact = PluginManager
-						.getOntManagerImpl(ontMgrFactId);
-				ontManager = ontMgrFact.createOntologyManager(this);
-				if (ontManager == null)
-					throw new ProjectIncompatibleException(
-							"there is no OSGi bundle loaded in Semantic Turkey for the required OntologyManager: "
-									+ getOntologyManagerImplID());
+			Repository supportRepository = repositoryManager.getRepository("support");
 
-				newOntManager = new OntologyManagerCompatibilityImpl(ontManager);
-
-				try {
-					modelConfiguration = ontMgrFact.createModelConfigurationObject(getModelConfigurationID());
-					modelConfiguration.loadParameters(modelConfigFile);
-				} catch (ClassNotFoundException e) {
-					throw new ProjectAccessException(e);
-				} catch (BadConfigurationException e) {
-					throw new ProjectAccessException(e);
-				} catch (IOException e) {
-					throw new ProjectAccessException(e);
-				}
-
-			} else {
-//				try {
-//					File coreRepoConfigFile = new File(_projectDir, COREREPOCONFIG_FILENAME);
-//					Model coreRepoConfigModel = Rio.parse(new FileInputStream(coreRepoConfigFile),
-//							coreRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
-//					Resource coreRepoRes = Models
-//							.subject(coreRepoConfigModel.filter(null, RDF.TYPE,
-//									RepositoryConfigSchema.REPOSITORY))
-//							.orElseThrow(() -> new ProjectAccessException(
-//									"Could not find the repository resource in its configuration"));
-//					coreRepoConfig = RepositoryConfig.create(coreRepoConfigModel, coreRepoRes);
-//
-//					File supportRepoConfigFile = new File(_projectDir, SUPPORTREPOCONFIG_FILENAME);
-//					Model supportRepoConfigModel = Rio.parse(new FileInputStream(supportRepoConfigFile),
-//							supportRepoConfigFile.toURI().toString(), RDFFormat.TURTLE);
-//					Resource supportRepoRes = Models
-//							.subject(supportRepoConfigModel.filter(null, RDF.TYPE,
-//									RepositoryConfigSchema.REPOSITORY))
-//							.orElseThrow(() -> new ProjectAccessException(
-//									"Could not find the repository resource in its configuration"));
-//					supportRepoConfig = RepositoryConfig.create(supportRepoConfigModel, supportRepoRes);
-//
-//					newOntManager = new OntologyManagerImpl();
-//					supportOntManager = new OntologyManagerImpl();
-//
-//					repositoryManager = new LocalRepositoryManager(
-//							new File(_projectDir, REPOSITORIES_DIR_NAME));
-//					repositoryManager.initialize();
-//				} catch (RDFParseException | UnsupportedRDFormatException | IOException e) {
-//					throw new ProjectAccessException(e);
-//				}
-				repositoryManager = new LocalRepositoryManager(_projectDir);
-				repositoryManager.initialize();
-				
-				Repository supportRepository = repositoryManager.getRepository("support");
-				
-				if (supportRepository != null) {
-					RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepository);
-					supportOntManager = new OntologyManagerImpl(supportRepository);
-				}
-
-				Repository coreRepository = repositoryManager.getRepository("core");
-				newOntManager = new OntologyManagerImpl(coreRepository);
+			if (supportRepository != null) {
+				RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepository);
+				supportOntManager = new OntologyManagerImpl(supportRepository);
 			}
-				
+
+			Repository coreRepository = repositoryManager.getRepository("core");
+			newOntManager = new OntologyManagerImpl(coreRepository);
+
 			String baseURI = getBaseURI();
 			if (baseURI == null)
 				throw new ProjectInconsistentException("baseURI is not specified");
@@ -387,26 +310,22 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				// not an RDF4J repostory
 			}
 
-			if (ontManager != null) {
-				primordialOntModel = ontManager.getOntModel();
+			String modelType = getProperty(PROJECT_MODEL_TYPE);
+
+			if (OWLModel.class.getName().equals(modelType)) {
+				primordialOntModel = (MODELTYPE) new OWLModelRDF4JImpl(
+						new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+			} else if (SKOSModel.class.getName().equals(modelType)) {
+				primordialOntModel = (MODELTYPE) new SKOSModelRDF4JImpl(
+						new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
+			} else if (SKOSXLModel.class.getName().equals(modelType)) {
+				primordialOntModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
+						new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
 			} else {
-				String modelType = getProperty(PROJECT_MODEL_TYPE);
-
-				if (OWLModel.class.getName().equals(modelType)) {
-					primordialOntModel = (MODELTYPE) new OWLModelRDF4JImpl(
-							new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
-				} else if (SKOSModel.class.getName().equals(modelType)) {
-					primordialOntModel = (MODELTYPE) new SKOSModelRDF4JImpl(
-							new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
-				} else if (SKOSXLModel.class.getName().equals(modelType)) {
-					primordialOntModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
-							new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
-				} else {
-					throw new ProjectAccessException("Unsupport model type: " + modelType);
-				}
-
-				primordialOntModel.setBaseURI(baseURI);
+				throw new ProjectAccessException("Unsupport model type: " + modelType);
 			}
+
+			primordialOntModel.setBaseURI(baseURI);
 
 			if (rdf4jRepo != null) {
 				repositoryTransactionManager = new RDF4JRepositoryTransactionManager(rdf4jRepo);
@@ -450,13 +369,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 			SemanticTurkey.initializeVocabularies(getPrimordialOntModel());
 			logger.info("defaultnamespace set to: " + defaultNamespace);
-		} catch (RDF4JException e) {
-			throw new ProjectUpdateException(e);
-		} catch (ModelUpdateException e) {
-			throw new ProjectUpdateException(e);
-		} catch (VocabularyInitializationException e) {
-			throw new ProjectUpdateException(e);
-		} catch (ModelAccessException e) {
+		} catch (Exception e) {
+			try {
+				if (repositoryManager != null && repositoryManager.isInitialized()) {
+					repositoryManager.shutDown();
+				}
+			} catch(RDF4JException e2) {
+				throw new ProjectUpdateException(e2);
+			}
+			
 			throw new ProjectUpdateException(e);
 		}
 
@@ -480,15 +401,15 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			try {
 				repositoryManager.shutDown();
 			} finally {
-//				try {
-//					if (newOntManager != null) {
-//						newOntManager.getRepository().shutDown();
-//					}
-//				} finally {
-//					if (supportOntManager != null) {
-//						supportOntManager.getRepository().shutDown();
-//					}
-//				}
+				// try {
+				// if (newOntManager != null) {
+				// newOntManager.getRepository().shutDown();
+				// }
+				// } finally {
+				// if (supportOntManager != null) {
+				// supportOntManager.getRepository().shutDown();
+				// }
+				// }
 			}
 		}
 	}
@@ -511,21 +432,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return Long.parseLong(stp_properties.getProperty(TIMESTAMP_PROP));
 	}
 
-	public String getOntologyManagerImplID() throws ProjectInconsistentException {
-		return getRequiredProperty(ONTOLOGY_MANAGER_ID_PROP);
-	}
-
-	/*
-	 * @SuppressWarnings("unchecked") public Class<? extends STOntologyManager> getOntologyManagerImplClass()
-	 * throws ProjectInconsistentException { return getClassTypedProperty(ONTOLOGY_MANAGER_ID_PROP,
-	 * STOntologyManager.class); }
-	 */
-
-	/*
-	 * public Class<? extends ModelConfiguration> getModelConfigurationClass() throws
-	 * ProjectInconsistentException { return getClassTypedProperty(MODELCONFIG_ID, ModelConfiguration.class);
-	 * }
-	 */
 
 	// casting is checked internally
 	@SuppressWarnings("unchecked")
@@ -559,14 +465,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			throw new ProjectInconsistentException("class " + e.getMessage() + ", specified as: "
 					+ propertyName + " for this project, does not exists");
 		}
-	}
-
-	public String getModelConfigurationID() throws ProjectInconsistentException {
-		return getRequiredProperty(MODELCONFIG_ID);
-	}
-
-	public STOntologyManager<MODELTYPE> getOntologyManager() {
-		return ontManager;
 	}
 
 	public String getName() {
