@@ -95,7 +95,6 @@ import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
 
 	protected File infoSTPFile;
-	protected File modelConfigFile;
 	protected File renderingConfigFile;
 	protected File uriGenConfigFile;
 
@@ -103,7 +102,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	protected OntologyManagerImpl supportOntManager;
 
 	Class<? extends ModelConfiguration> modelConfigClass;
-	ModelConfiguration modelConfiguration;
 
 	public static final String INFOFILENAME = "project.info";
 
@@ -116,7 +114,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String PROJECT_TYPE = "ProjectType";
 	public static final String PROJECT_MODEL_TYPE = "ModelType";
-	public static final String PROJECT_STORE_DIR_NAME = "store";
 
 	public static final String PLUGINS_PROP = "plugins";
 
@@ -152,7 +149,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		reservedProperties.add(DEF_NS_PROP);
 		reservedProperties.add(PROJECT_TYPE);
 		reservedProperties.add(PROJECT_MODEL_TYPE);
-		reservedProperties.add(PROJECT_STORE_DIR_NAME);
 		reservedProperties.add(PLUGINS_PROP);
 		reservedProperties.add(HISTORY_ENABLED_PROP);
 		reservedProperties.add(VALIDATION_ENABLED_PROP);
@@ -482,6 +478,14 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public String getType() throws ProjectInconsistentException {
 		return getRequiredProperty(PROJECT_TYPE);
 	}
+	
+	public boolean isHistoryEnabled() {
+		return Boolean.valueOf(getProperty(HISTORY_ENABLED_PROP));
+	}
+	
+	public boolean isValidationEnabled() {
+		return Boolean.valueOf(getProperty(VALIDATION_ENABLED_PROP));
+	}
 
 	String getRequiredProperty(String propertyName) throws ProjectInconsistentException {
 		String propValue = stp_properties.getProperty(propertyName);
@@ -734,10 +738,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		} else {
 			throw new IllegalStateException("Not an RDF4J project");
 		}
-	}
-
-	public File getProjectStoreDir() {
-		return new File(_projectDir, PROJECT_STORE_DIR_NAME);
 	}
 
 	public String toString() {

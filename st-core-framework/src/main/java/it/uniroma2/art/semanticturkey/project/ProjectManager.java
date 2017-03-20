@@ -217,80 +217,6 @@ public class ProjectManager {
 			throw new ProjectDeletionException("unable to delete project: " + projectName);
 	}
 
-	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(String projectName,
-			Class<MODELTYPE> modelType, File projectDir, String baseURI, String defaultNamespace,
-			boolean historyEnabled, boolean validationEnabled, String uriGeneratorFactoryID,
-			String uriGenConfigurationClass, Properties uriGenConfiguration, String renderingEngineFactoryID,
-			String renderingEngineConfigurationClass, Properties renderingEngineConfiguration,
-			ProjectType type, ProjectConsumer consumer)
-			throws DuplicatedResourceException, ProjectCreationException {
-		if (projectDir.exists())
-			throw new DuplicatedResourceException("project: " + projectName
-					+ "already exists; choose a different project name for a new project");
-
-		projectDir.mkdir();
-		File storeDir = new File(projectDir, Project.PROJECT_STORE_DIR_NAME);
-		storeDir.mkdir();
-		File info_stp = new File(projectDir, Project.INFOFILENAME);
-		try {
-			// STP file containing properties for the loaded project
-			logger.debug("creating project info file: " + info_stp);
-			info_stp.createNewFile();
-			logger.debug("project info file: " + info_stp + " created");
-			// here we write directly on the file; once the project is loaded, it will be handled internally
-			// as a property file
-			BufferedWriter out = new BufferedWriter(new FileWriter(info_stp));
-			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "=" + escape(uriGeneratorFactoryID) + "\n");
-			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "=" + escape(uriGenConfigurationClass)
-					+ "\n");
-			out.write(
-					Project.RENDERING_ENGINE_FACTORY_ID_PROP + "=" + escape(renderingEngineFactoryID) + "\n");
-			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "="
-					+ escape(renderingEngineConfigurationClass) + "\n");
-			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
-			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
-			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
-			out.write(Project.PROJECT_MODEL_TYPE + "=" + modelType.getName() + "\n");
-			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
-			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
-			out.write(ProjectACL.ACL + "="
-					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
-			out.write(Project.HISTORY_ENABLED_PROP + "=" + Boolean.toString(historyEnabled) + "\n");
-			out.write(Project.VALIDATION_ENABLED_PROP + "=" + Boolean.toString(validationEnabled) + "\n");
-			out.close();
-
-			logger.debug("project creation: all project properties have been stored");
-
-			// Prefix Mapping file creation
-			File prefixMappingFile = new File(projectDir, NSPrefixMappings.prefixMappingFileName);
-			prefixMappingFile.createNewFile();
-
-			// Model COnfiguration file creation
-
-			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
-			uriGenConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)) {
-				uriGenConfiguration.store(fw,
-						"uri generator configuration, initialized from project initialization");
-			}
-
-			File renderingEngineConfigurationFile = new File(projectDir,
-					Project.RENDERING_ENGINE_CONFIG_FILENAME);
-			renderingEngineConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(renderingEngineConfigurationFile)) {
-				renderingEngineConfiguration.store(fw,
-						"rendering engine configuration, initialized from project initialization");
-			}
-
-			logger.debug("all project info have been built");
-
-		} catch (IOException e) {
-			Utilities.deleteDir(projectDir); // if something fails, deletes everything
-			logger.debug("directory: " + info_stp + " deleted due to project creation fail");
-			throw new ProjectCreationException(e);
-		}
-	}
-
 	private static <MODELTYPE extends RDFModel> Project<MODELTYPE> activateProject(String projectName)
 			throws ProjectCreationException, ProjectInconsistentException, ProjectUpdateException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
@@ -455,7 +381,6 @@ public class ProjectManager {
 				new File(tempDir, project.nsPrefixMappingsPersistence.getFile().getName()));
 		Utilities.copy(project.uriGenConfigFile, new File(tempDir, project.uriGenConfigFile.getName()));
 		Utilities.copy(project.renderingConfigFile, new File(tempDir, project.renderingConfigFile.getName()));
-		Utilities.copy(project.modelConfigFile, new File(tempDir, project.modelConfigFile.getName()));
 //		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
 		Utilities.createZipFile(tempDir, semTurkeyProjectFile, false, true,
 				"Semantic Turkey Project Archive");
@@ -500,9 +425,6 @@ public class ProjectManager {
 		// ProjectType projectType = ProjectType.valueOf(stp_properties.getProperty(Project.PROJECT_TYPE));
 		// String ontManagerID = stp_properties.getProperty(Project.ONTOLOGY_MANAGER_ID_PROP);
 		// logger.info("type: " + projectType);
-
-		File storeDir = new File(newProjDir, Project.PROJECT_STORE_DIR_NAME);
-		storeDir.mkdir();
 
 		Project<? extends RDFModel> newProj;
 		try {
@@ -1454,7 +1376,7 @@ public class ProjectManager {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 
-	public static Project<? extends RDFModel> createProject2(ProjectConsumer consumer, String projectName,
+	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
 			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
 			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
 			PluginSpecification coreRepoSailConfigurerSpecification, String supportRepoID,
@@ -1585,7 +1507,7 @@ public class ProjectManager {
 			}
 		}
 
-		prepareProjectFiles2(consumer, projectName, modelType, projType, projectDir, baseURI,
+		prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI,
 				defaultNamespace, historyEnabled, validationEnabled, coreRepoID, coreRepositoryConfig,
 				supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
 				renderingEngineSpecification);
@@ -1598,7 +1520,7 @@ public class ProjectManager {
 		return project;
 	}
 
-	private static <MODELTYPE extends RDFModel> void prepareProjectFiles2(ProjectConsumer consumer,
+	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(ProjectConsumer consumer,
 			String projectName, Class<MODELTYPE> modelType, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled, String coreRepoID,
 			RepositoryConfig coreRepoConfig, String supportRepoID, RepositoryConfig supportRepoConfig,
@@ -1623,7 +1545,7 @@ public class ProjectManager {
 			// out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
 			// out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
 			out.write(Project.HISTORY_ENABLED_PROP + "=" + historyEnabled + "\n");
-			out.write(Project.VALIDATION_ENABLED_PROP + "=" + historyEnabled + "\n");
+			out.write(Project.VALIDATION_ENABLED_PROP + "=" + validationEnabled + "\n");
 			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "="
 					+ escape(uriGeneratorSpecification.getFactoryId()) + "\n");
 			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "="
