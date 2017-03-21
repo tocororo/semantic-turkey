@@ -163,7 +163,6 @@ public class CustomFormModel {
 	 */
 	public Collection<CustomFormGraph> getCustomFormGraphForResource(IRI resource){
 		Collection<CustomFormGraph> cFormsGraph = new ArrayList<>();
-		//look for CF at project level...
 		FormCollection formColl = cfConfig.getFormCollectionForResource(resource);
 		if (formColl != null) {
 			for (CustomForm form : formColl.getForms()) {

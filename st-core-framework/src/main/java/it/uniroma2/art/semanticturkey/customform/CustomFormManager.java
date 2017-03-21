@@ -452,13 +452,13 @@ public class CustomFormManager {
 	 */
 	public Collection<CustomFormGraph> getAllCustomFormGraphs(Project<?> project, IRI resource){
 		Collection<CustomFormGraph> cFormsGraph = new ArrayList<>();
-		//look for CF at project level...
+		/* Here look for CF only at project level. Since I retrieve all CFGraph in two steps
+		 * - FormCollection of the given resource
+		 * - get CustomForms of the FormCollection found in the above step 
+		 * The mappings resource-FormCollection at project level may contain already references of FormCollections
+		 * at system level, so the CustomForm referenced in turn by these FormCollections are those at system level
+		 */
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
-		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
-			cFormsGraph.addAll(cfModel.getCustomFormGraphForResource(resource));
-		}
-		//...and at system level
-		cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
 			cFormsGraph.addAll(cfModel.getCustomFormGraphForResource(resource));
 		}

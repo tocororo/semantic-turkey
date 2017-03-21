@@ -21,7 +21,7 @@ rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
 		OPTIONAL { $reifNoteId dc:related $related . }
 		OPTIONAL { $reifNoteId dc:source $source . }
 		OPTIONAL { $reifNoteId dc:modified $modified . }
-		$reifNoteId dc:created $created.
+		OPTIONAL { $reifNoteId dc:created $created. }
 	}
 }
 ]]></ref>

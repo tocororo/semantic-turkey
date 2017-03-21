@@ -32,6 +32,8 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
@@ -88,6 +90,8 @@ import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 
 @STService
 public class CustomForms extends STServiceAdapter {
+	
+	private static Logger logger = LoggerFactory.getLogger(CustomForms.class);
 	
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
@@ -233,6 +237,7 @@ public class CustomForms extends STServiceAdapter {
 					bindings += "?" + ph + " ";
 				}
 				String query = "SELECT " + bindings + " WHERE { " + graphSection + " }";
+				logger.debug("query " + query);
 				TupleQuery tq = repoConnection.prepareTupleQuery(query);
 				tq.setIncludeInferred(false);
 				tq.setBinding(cfGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
@@ -707,11 +712,8 @@ public class CustomForms extends STServiceAdapter {
 					converterNode.set("uri", jsonFactory.textNode(converter.getURI()));
 					
 					// for special case langString, specify the converter argument too
-					System.out.println("argPhId " + formEntry.getConverterArgPhId());
 					if (formEntry.getConverterArgPhId() != null) {
 						String phLangId = formEntry.getConverterArgPhId();
-						
-						System.out.println("phLangId " + phLangId);
 						/*
 						 * the language placeholder (arguments of langString converter) is already added to
 						 * the xml as formEntry element since in PEARL it must be defined before it's used as
@@ -719,7 +721,6 @@ public class CustomForms extends STServiceAdapter {
 						 * xml element
 						 */
 						for (JsonNode entry : formArrayNode) {
-							System.out.println("placeholderId " + entry.get("placeholderId"));
 							if (entry.get("placeholderId").textValue().equals(phLangId)) {
 								ObjectNode convArgNode = jsonFactory.objectNode();
 								convArgNode.set("userPrompt", jsonFactory.textNode(entry.get("userPrompt").textValue()));
@@ -950,12 +951,8 @@ public class CustomForms extends STServiceAdapter {
 	public void validateShowPropertyChain(String propChain) throws CustomFormException {
 		String[] splitted = propChain.split(",");
 		for (String s : splitted) {
-			System.out.println("prop " + s);
 			if (!URIUtil.isValidURIReference(s.trim())) {
 				throw new CustomFormException("'" + s + "' is not a valid URI");
-			}
-			else {
-				System.out.println("valid");
 			}
 		}
 	}
