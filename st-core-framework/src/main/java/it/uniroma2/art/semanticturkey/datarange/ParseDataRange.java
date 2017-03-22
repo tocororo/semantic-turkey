@@ -4,37 +4,37 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 
+import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 
 public class ParseDataRange {
 
 	
 	
-	public static DataRangeAbstract getDataRange(BNode startingBNode, RepositoryConnection conn){
-
+	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, RepositoryConnection conn){
 		//see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
 
-		//List<IRI> typeIriList = new ArrayList<IRI>();
 		List<Literal> literalList = new ArrayList<>();
-		IRI typeOfDataRange=null;
-		BNode bnodeForDataOneOf=null;
+		//IRI typeOfDataRange=null;
+		//BNode bnodeForDataOneOf=null;
 		
 		//use a sparql query to obtain all the literal associated to the input bnode with the property 
 		// owl:oneOf and check that the input bnode has rdfs:Datatype as its own type
@@ -43,10 +43,10 @@ public class ParseDataRange {
 		String dataypeString = SPARQLHelp.toSPARQL(RDFS.DATATYPE);
 		String firstrString = SPARQLHelp.toSPARQL(RDF.FIRST);
 		String restString = SPARQLHelp.toSPARQL(RDF.REST);
-		String nilString = SPARQLHelp.toSPARQL(RDF.NIL);
+		//String nilString = SPARQLHelp.toSPARQL(RDF.NIL);
 		
 		// @formatter:off
-		String query = "SELECT ?firstBnodeInList ?bnodeInList ?literalValue ?nextBNode" + //change the * with the right variable (or use a CONSTRUCT)
+		String query = "SELECT ?firstBnodeInList ?bnodeInList ?literalValue ?nextBNode" + 
 						"\nWHERE{" +
 						
 						//do a subquery to obtain the main list (linked with owl:oneOf to the inputBNode)
@@ -112,6 +112,34 @@ public class ParseDataRange {
 			if(lastBNodeConsidered == null){
 				//the last element, in not in the map, since its next is rdf:nil
 				stop = true;
+			}
+		}
+		
+		return new DataRangeDataOneOf(startingBNode, literalList);
+	}
+	
+	
+	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements){
+		//see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
+		
+		List<Literal> literalList = new ArrayList<>();
+		
+		//consult the input repository to obtain all the RDF Literals in the List linked to the input BNode
+		// using the property OWL.ONEOF (and the input bnode should have the type RDFS.DATATYPE)
+		Optional<Resource> optionalRes = Models.objectResource(statements.filter(startingBNode, OWL.ONEOF, null));
+		if(!optionalRes.isPresent()){
+			return new DataRangeDataOneOf(startingBNode, literalList);
+		}
+		BNode listBNode = (BNode)optionalRes.get();
+		
+		
+		for(Value value : RDFCollections.asValues(statements, listBNode, new ArrayList<Value>()) ){
+			if(value instanceof Literal){
+				literalList.add((Literal) value);
+			}
+			else{
+				//TODO
+				//the element in the list is not a literal, this should never happen, decide what to do
 			}
 		}
 		

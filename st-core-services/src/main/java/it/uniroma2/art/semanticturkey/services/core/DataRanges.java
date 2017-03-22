@@ -77,7 +77,7 @@ public class DataRanges extends STServiceAdapter{
 		List<Literal> literalList = new ArrayList<Literal>();
 		
 		DataRangeDataOneOf dataOneOf = null;
-		DataRangeAbstract dataRangeAbstract = ParseDataRange.getDataRange(bnode, getManagedConnection());
+		DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(bnode, getManagedConnection());
 		if(dataRangeAbstract instanceof DataRangeDataOneOf){
 			dataOneOf = (DataRangeDataOneOf) dataRangeAbstract;
 		} else{
