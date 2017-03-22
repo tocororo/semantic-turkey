@@ -136,7 +136,7 @@ public class DataRanges extends STServiceAdapter{
 	
 	@STServiceOperation
 	@Read
-	public JsonNode hasLieralInEnumeration(BNode bNode, Literal literal){
+	public JsonNode hasLiteralInEnumeration(BNode bNode, Literal literal){
 		//check if there is at least one element in the enumeration with the specified literal
 		// using a single SPARQL query
 		
