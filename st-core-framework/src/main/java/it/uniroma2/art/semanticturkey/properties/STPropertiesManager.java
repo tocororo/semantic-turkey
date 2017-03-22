@@ -29,6 +29,7 @@ public class STPropertiesManager {
 	private static final String USER_SYSTEM_PREFERENCES_FILE_NAME = "system-preferences.cfg";
 	
 	public static final String PROP_LANGUAGES = "languages";
+	public static final String PROP_SHOW_FLAGS = "show_flags";
 	
 	
 	/*
