@@ -23,11 +23,8 @@ public class Resources extends STServiceAdapter {
 	public void updateTriple(Resource resource, IRI property, Value value, Value newValue){
 		logger.info("request to update a triple");
 		
-		
-		getManagedConnection().remove(resource, property, value);
-		getManagedConnection().add(resource, property, newValue);
-		
-		
+		getManagedConnection().remove(resource, property, value, getWorkingGraph());
+		getManagedConnection().add(resource, property, newValue, getWorkingGraph());
 		
 		//OLD version, using SPARQL, so the Bnodes should not be used
 		/*
