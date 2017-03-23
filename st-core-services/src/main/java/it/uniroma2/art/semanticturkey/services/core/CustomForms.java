@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,7 +17,6 @@ import java.util.Map.Entry;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.antlr.runtime.RecognitionException;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -986,16 +986,13 @@ public class CustomForms extends STServiceAdapter {
 			}
 		} else { //type node
 			try {
-				//Treat separately the case where pearl is simply "literal", because parser.projectionOperator()
-				//called in createProjectionOperatorTree()
-				//inexplicably throws an exception (no viable alternative at input <EOF>)
-				if (pearl.equals("literal")) {
-					return JsonNodeFactory.instance.booleanNode(true);
-				}
-				CustomFormParseUtils.createProjectionOperatorTree(pearl);
-				//parser didn't throw exception, so pearl is valid
+				CODACore codaCore = getInitializedCodaCore(getManagedConnection());
+				codaCore.parseProjectionOperator(pearl, Collections.emptyMap());
+				shutDownCodaCore(codaCore);
 				return JsonNodeFactory.instance.booleanNode(true);
-			} catch (RecognitionException e) {
+//			} catch (RecognitionException e) {
+//				throw new CustomFormException("Invalid projection operator");
+			} catch (PRParserException e) {
 				throw new CustomFormException("Invalid projection operator");
 			} catch (AntlrParserRuntimeException e) {
 				throw new CustomFormException("Invalid projection operator: " + e.getMsg());
