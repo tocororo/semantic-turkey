@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -40,7 +39,6 @@ import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
-import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
@@ -66,6 +64,8 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 		newOntManager.startOntModel(getBaseURI(), null, null);
 
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
+			conn.begin();
+			
 			ValueFactory vf = conn.getValueFactory();
 
 			IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
@@ -76,26 +76,31 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 
 			try {
 				if (!conn.hasStatement(null, null, null, false, rdfBaseURI)) {
+					logger.debug("Loading RDF vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("rdf.rdf"), rdfBaseURI.stringValue(),
 							RDFFormat.RDFXML, rdfBaseURI);
 				}
 
 				if (!conn.hasStatement(null, null, null, false, rdfsBaseURI)) {
+					logger.debug("Loading RDFS vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("rdf-schema.rdf"),
 							rdfsBaseURI.stringValue(), RDFFormat.RDFXML, rdfsBaseURI);
 				}
 
 				if (!conn.hasStatement(null, null, null, false, owlBaseURI)) {
+					logger.debug("Loading OWL vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("owl.rdf"), owlBaseURI.stringValue(),
 							RDFFormat.RDFXML, owlBaseURI);
 				}
 
 				if (SKOSModel.class.isAssignableFrom(getModelType())) {
+					logger.debug("Loading SKOS vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("skos.rdf"), skosBaseURI.stringValue(),
 							RDFFormat.RDFXML, skosBaseURI);
 				}
 
 				if (SKOSXLModel.class.isAssignableFrom(getModelType())) {
+					logger.debug("Loading SKOS-XL vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("skos-xl.rdf"),
 							skosxlBaseURI.stringValue(), RDFFormat.RDFXML, skosxlBaseURI);
 				}
@@ -104,6 +109,10 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 			} catch (ProjectInconsistentException e) {
 				throw new ModelCreationException(e);
 			}
+			
+			logger.debug("About to commit the loaded triples");
+			conn.commit();
+			logger.debug("Triples loaded");
 		}
 	}
 

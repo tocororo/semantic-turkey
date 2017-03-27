@@ -64,17 +64,15 @@ public class Classes extends STServiceAdapter {
 					" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
 					"                                                                             \n" +                                      
 					" SELECT ?resource ?attr_color WHERE {                                        \n" +                                                    
-					" 	?resource a ?metaClass .                                                  \n" +
-					"     FILTER EXISTS {                                                         \n" +
-					"      ?metaClass rdfs:subClassOf* owl:Class .                                \n" +
-					"     }                                                                       \n" +
+					" 	  ?metaClass rdfs:subClassOf* owl:Class .                                 \n" +
+					"     ?resource a ?metaClass.                                                 \n" +
 					"     FILTER(isIRI(?resource))                                                \n" +
 					"     FILTER(?resource != owl:Thing)                                          \n" +
 					"     FILTER NOT EXISTS {                                                     \n" +
 					"     	?resource rdfs:subClassOf ?superClass2 .                              \n" +
-					"         FILTER(isIRI(?superClass2) && ?superClass2 != owl:Thing)            \n" +
-					"         ?superClass2 a ?metaClass2 .                                        \n" +
-					"         ?metaClass2 rdfs:subClassOf* rdfs:Class .                           \n" +
+					"       FILTER(isIRI(?superClass2) && ?superClass2 != owl:Thing)              \n" +
+//					"         ?superClass2 a ?metaClass2 .                                        \n" +
+//					"         ?metaClass2 rdfs:subClassOf* rdfs:Class .                           \n" +
 					"     }                                                                       \n" +
 					" }                                                                           \n" +
 					" GROUP BY ?resource ?attr_color                                              \n"                             
@@ -91,14 +89,12 @@ public class Classes extends STServiceAdapter {
 					" 	{                                                                             \n" +
 					" 		BIND(owl:Thing as ?resource)                                              \n" +
 					" 	} UNION {                                                                     \n" +
-					" 		?resource a ?metaClass .                                                  \n" +
-					" 		FILTER EXISTS {                                                           \n" +
-					" 			{                                                                     \n" +
-					" 				?metaClass rdfs:subClassOf* rdfs:Class .                          \n" +
-					" 			} MINUS {                                                             \n" +
-					" 				?metaClass rdfs:subClassOf* owl:Class .                           \n" +
-					" 			}                                                                     \n" +
+					" 		{                                                                         \n" +
+					" 			?metaClass rdfs:subClassOf* rdfs:Class .                              \n" +
+					" 		} MINUS {                                                                 \n" +
+					" 			?metaClass rdfs:subClassOf* owl:Class .                               \n" +
 					" 		}                                                                         \n" +
+					" 		?resource a ?metaClass .                                                  \n" +
 					" 		FILTER(isIRI(?resource))                                                  \n" +
 					" 		FILTER(?resource != rdfs:Resource)                                        \n" +
 					" 		FILTER NOT EXISTS {                                                       \n" +
