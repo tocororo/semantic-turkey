@@ -120,7 +120,8 @@ public class Classes extends STServiceAdapter {
 			);
 		}
 		qb.process(ClassesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
+		qb.process(FixedRoleProcessor.INSTANCE, "resource", "attr_role");
+//		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		if (numInst) {
@@ -237,6 +238,38 @@ class ClassesNumInstProcessor implements QueryBuilderProcessor {
 		this.graphPattern = GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
 				.projection(ProjectionElementBuilder.count("anInstance", "attr_more"))
 				.pattern("?anInstance a ?resource .").graphPattern();
+	}
+
+	@Override
+	public boolean introducesDuplicates() {
+		return true;
+	}
+
+	@Override
+	public String getBindingVariable() {
+		return "resource";
+	}
+
+	@Override
+	public GraphPattern getGraphPattern(Project<?> currentProject) {
+		return graphPattern;
+	}
+
+	@Override
+	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+		return null;
+	}
+};
+
+class FixedRoleProcessor implements QueryBuilderProcessor {
+
+	public static final FixedRoleProcessor INSTANCE = new FixedRoleProcessor();
+	private GraphPattern graphPattern;
+
+	private FixedRoleProcessor() {
+		this.graphPattern = GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
+				.projection(ProjectionElementBuilder.variable("roleT"))
+				.pattern("bind(\"cls\" as ?roleT)").graphPattern();
 	}
 
 	@Override
