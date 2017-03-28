@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -515,9 +517,9 @@ public class CustomFormXMLHelper {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(file);
+			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (TransformerException | ParserConfigurationException e) {
+		} catch (TransformerException | ParserConfigurationException | FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -550,9 +552,9 @@ public class CustomFormXMLHelper {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(file);
+			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException e) {
+		} catch (ParserConfigurationException | TransformerException | FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -594,9 +596,9 @@ public class CustomFormXMLHelper {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(file);
+			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException e) {
+		} catch (ParserConfigurationException | TransformerException | FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -636,9 +638,9 @@ public class CustomFormXMLHelper {
 			outputProps.setProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			transformer.setOutputProperties(outputProps);
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(file);
+			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException e) {
+		} catch (ParserConfigurationException | TransformerException | FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}

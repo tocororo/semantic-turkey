@@ -64,5 +64,11 @@ public class Resources extends STServiceAdapter {
 		update.execute();
 		*/
 	}
+	
+	@STServiceOperation
+	@Write
+	public void removeTriple(Resource resource, IRI property, Value value){
+		getManagedConnection().remove(resource, property, value, getWorkingGraph());
+	}
 
 }
