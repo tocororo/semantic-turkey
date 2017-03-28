@@ -3,7 +3,10 @@ package it.uniroma2.art.semanticturkey.servlet.main;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -11,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -19,6 +23,10 @@ import org.xml.sax.SAXException;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
+import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
+import it.uniroma2.art.owlart.model.ARTStatement;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.query.BooleanQuery;
@@ -39,6 +47,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.JSONHelp;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
@@ -155,7 +164,7 @@ public class SPARQL extends ServiceAdapter {
 						logger.debug("query is a graph query");
 						dataElement.setAttribute(resultTypeAttr, "graph");
 						ARTStatementIterator statIt = ((GraphQuery) query).evaluate(infer);
-						Statement.createStatementsList(owlModel, statIt, dataElement);
+						createStatementsList(owlModel, statIt, dataElement);
 					} else if (query instanceof BooleanQuery) {
 						logger.debug("query is a boolean query");
 						dataElement.setAttribute(resultTypeAttr, "boolean");
@@ -188,7 +197,7 @@ public class SPARQL extends ServiceAdapter {
 							logger.debug("query is a graph query");
 							data.put(resultTypeAttr, "graph");
 							ARTStatementIterator statIt = ((GraphQuery) query).evaluate(infer);
-							Statement.createStatementsList(owlModel, statIt, data);
+							createStatementsList(owlModel, statIt, data);
 						} else if (query instanceof BooleanQuery) {
 							logger.debug("query is a boolean query");
 							data.put(resultTypeAttr, "boolean");
@@ -241,48 +250,123 @@ public class SPARQL extends ServiceAdapter {
 			return servletUtilities.createExceptionResponse(request, e.toString(), ser_type);
 		}
 	}
+	
+	private final static String statementTag = "stm";
+	private final static String subjTag = "subj";
+	private final static String predTag = "pred";
+	private final static String objTag = "obj";
+	private final static String typeAttr = "type";
+	private final static String uriXMLValue = "uri";
+	private final static String literalXMLValue = "lit";
+	private final static String bnodeXMLValue = "bn";
+	private final static String sparqlJSONAttr = "sparql";
+	private final static String headJSONAttr = "head";
+	private final static String varsJSONAttr = "vars";
+	private final static String resultsJSONAttr = "results";
+	private final static String bindingsJSONAttr = "bindings";
+	private final static String valueJSONAttr = "value";
+	private final static String xmlLangJSONAttr = "xml:lang";
+	private final static String datatypeJSONAAttr = "datatype";
+	private final static String uriJSONAValue = "uri";
+	private final static String bnodeJSONAValue = "bnode";
+	private final static String literalJSONAValue = "literal";
+	
+	private void createStatementsList(RDFModel owlModel, ARTStatementIterator statIt,
+			Element dataElement) throws DOMException, ModelAccessException {
+		while (statIt.streamOpen()) {
+			ARTStatement stat = statIt.getNext();
+			Element statElement = XMLHelp.newElement(dataElement, statementTag);
+			ARTResource subj = stat.getSubject();
+			if (subj.isURIResource())
+				XMLHelp.newElement(statElement, subjTag, owlModel.getQName(subj.asURIResource().getURI()))
+						.setAttribute(typeAttr, uriXMLValue);
+			else
+				XMLHelp.newElement(statElement, subjTag, subj.toString()).setAttribute(typeAttr,
+						bnodeXMLValue);
+
+			XMLHelp.newElement(statElement, predTag, owlModel.getQName(stat.getPredicate().getURI()))
+					.setAttribute(typeAttr, uriXMLValue);
+
+			ARTNode obj = stat.getObject();
+			if (obj.isResource()) {
+				if (obj.isURIResource())
+					XMLHelp.newElement(statElement, objTag, owlModel.getQName(obj.asURIResource().getURI()))
+							.setAttribute(typeAttr, uriXMLValue);
+				else
+					XMLHelp.newElement(statElement, objTag, obj.toString()).setAttribute(typeAttr,
+							bnodeXMLValue);
+			} else
+				XMLHelp.newElement(statElement, objTag, obj.asLiteral().toString()).setAttribute(typeAttr,
+						literalXMLValue);
+		}
+		statIt.close();
+	}
+	
+	public static void createStatementsList(RDFModel owlModel, ARTStatementIterator statIt, JSONObject data)
+			throws ModelAccessException, JSONException {
+		JSONObject sparqlObject = new JSONObject();
+		
+		JSONObject headObject = new JSONObject();
+		List<String> vars = new ArrayList<String>();
+		vars.add(subjTag);
+		vars.add(predTag);
+		vars.add(objTag);
+		headObject.put(varsJSONAttr, new JSONArray(vars));
+		sparqlObject.put(headJSONAttr, headObject);
+		
+		JSONObject resultsObject = new JSONObject();
+		JSONArray bindingsArray = new JSONArray();
+		
+		while (statIt.streamOpen()) {
+			ARTStatement stat = statIt.getNext();
+			
+			JSONObject bindingObject = new JSONObject();
+			
+			JSONObject subjObject = new JSONObject();
+			ARTResource subj = stat.getSubject();
+			if (subj.isURIResource()) {
+				JSONHelp.newObject(subjObject, typeAttr, uriJSONAValue);
+				JSONHelp.newObject(subjObject, valueJSONAttr, subj.asURIResource().getURI());
+			} else { //bnode
+				JSONHelp.newObject(subjObject, typeAttr, bnodeJSONAValue);
+				JSONHelp.newObject(subjObject, valueJSONAttr, subj.toString());
+			}
+			bindingObject.put(subjTag, subjObject);
+
+			JSONObject predObject = new JSONObject();
+			JSONHelp.newObject(predObject, typeAttr, uriJSONAValue);
+			JSONHelp.newObject(predObject, valueJSONAttr, stat.getPredicate().getURI());
+			bindingObject.put(predTag, predObject);
+
+			JSONObject objObject = new JSONObject();
+			ARTNode obj = stat.getObject();
+			if (obj.isResource()) {
+				if (obj.isURIResource()) {
+					JSONHelp.newObject(objObject, typeAttr, uriJSONAValue);
+					JSONHelp.newObject(objObject, valueJSONAttr, obj.asURIResource().getURI());
+				} else { //bnode
+					JSONHelp.newObject(objObject, typeAttr, bnodeJSONAValue);
+					JSONHelp.newObject(objObject, valueJSONAttr, obj.toString());
+				}
+			} else { //literal
+				ARTLiteral objLiteral = obj.asLiteral();
+				JSONHelp.newObject(objObject, typeAttr, literalJSONAValue);
+				JSONHelp.newObject(objObject, valueJSONAttr, objLiteral.getLabel());
+				if (objLiteral.getDatatype() != null) {
+					JSONHelp.newObject(objObject, datatypeJSONAAttr, objLiteral.getDatatype().getURI());
+				}
+				if (objLiteral.getLanguage() != null) {
+					JSONHelp.newObject(objObject, xmlLangJSONAttr, objLiteral.getLanguage());
+				}
+			}
+			bindingObject.put(objTag, objObject);
+			
+			bindingsArray.put(bindingObject);
+		}
+		resultsObject.put(bindingsJSONAttr, bindingsArray);
+		sparqlObject.put(resultsJSONAttr, resultsObject);
+		data.put(sparqlJSONAttr, sparqlObject);
+		
+		statIt.close();
+	}
 }
-
-/*
- * if (query.contains("SELECT")) { Vector result = repository.getResultQuerySelect(query1); int i = 0;
- * treeElement.setAttribute("queryType", "select"); for (i = 0; i < result.size() - 1; i++) { Element
- * classElement = XMLHelp.newElement(treeElement, "Binding"); classElement.setAttribute("bindingName",
- * ((String) ((ArrayList) result .get(result.size() - 1)).get(i))); for (int j = 0; j < ((ArrayList)
- * result.get(i)).size(); j++) { Element elem = XMLHelp.newElement(classElement, "Value"); String aResURI =
- * ((ArrayList<String>) result.get(i)).get(j); ARTResource aRes = repository.getSTResource(aResURI);
- * elem.setAttribute("value", aRes.getLocalName()); if (repository.isClass(aRes)) elem.setAttribute("type",
- * "Class"); else if (repository.isDatatypeProperty(aRes)) elem.setAttribute("type", "DatatypeProperty"); else
- * if (repository.isAnnotationProperty(aRes)) elem.setAttribute("type", "AnnotationProperty"); else if
- * (repository.isProperty(aRes)) elem.setAttribute("type", "Property"); else if
- * (repository.isObjectProperty(aRes)) elem.setAttribute("type", "ObjectProperty"); else
- * elem.setAttribute("type", "Instance"); } }
- * 
- * tree.appendChild(treeElement);
- * 
- * } else if (query.contains("CONSTRUCT")) { String result = repository.getResultQueryConstruct(query1); //
- * result = result.replace("#", "$"); treeElement.setAttribute("queryType", "construct");
- * treeElement.setAttribute("value", result);
- * 
- * tree.appendChild(treeElement);
- * 
- * } else if (query.contains("ASK")) { String result = repository.getResultQueryAsk(query1);
- * treeElement.setAttribute("queryType", "ask"); treeElement.setAttribute("value", result);
- * tree.appendChild(treeElement); } else if (query.contains("DESCRIBE")) { String result =
- * repository.getResultQueryDescribe(query1); // result = result.replace("#", "$");
- * treeElement.setAttribute("queryType", "describe"); treeElement.setAttribute("value", result);
- * tree.appendChild(treeElement); } else { treeElement = tree.createElement("error");
- * treeElement.setAttribute("id_value", "SPARQLException"); System.out.println("Exception");
- * treeElement.setAttribute("sparqlexception",
- * "The query must contains one of SELECT, CONSTRUCT, ASK or DESCRIBE "); tree.appendChild(treeElement);
- * 
- * }
- * 
- * 
- * } catch (Exception e) { // TODO Auto-generated catch block e.printStackTrace(); Element treeElement =
- * tree.createElement("error"); treeElement.setAttribute("id_value", "SPARQLException");
- * System.out.println("Exception"); treeElement.setAttribute("sparqlexception", e.getMessage());
- * tree.appendChild(treeElement);
- * 
- * } return tree;
- */
-
