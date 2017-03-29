@@ -28,6 +28,7 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
@@ -104,6 +105,48 @@ public class Refactor2 extends STServiceAdapter  {
 		query = query.replace("%oldRes_uri%", NTriplesUtil.toNTriplesString(oldResource));
 		query = query.replace("%newRes_uri%", NTriplesUtil.toNTriplesString(newResource));
 		Update update = conn.prepareUpdate(query);
+		update.execute();
+	}
+	
+	/**
+	 * Replace the <code>sourceBaseURI</code> with the <code>targetBaseURI</code>.
+	 * If <code>sourceBaseURI</code> is not provided, replace the default baseURI.
+	 * @param sourceBaseURI
+	 * @param targetBaseURI
+	 */
+//	@STServiceOperation
+//	@Write
+//	public void replaceBaseURI(@Optional IRI sourceBaseURI, IRI targetBaseURI) {
+//		RepositoryConnection conn = getManagedConnection();
+//		// @formatter:off
+//		String query = "";
+//		// @formatter:on
+//		Update update = conn.prepareUpdate(query);
+//		update.execute();
+//	}
+	
+	/**
+	 * Moves the content of the default graph to a graph named after the base URI of the current project. This
+	 * method clears the default graph and preserves (by default) the information already contained in the
+	 * destination graph.
+	 * 
+	 * @param clearDestinationGraph
+	 *            Specifies whether the destination graph is cleared before the insert of triples from the
+	 *            default graph
+	 * @return
+	 */
+	@STServiceOperation
+	@Write
+	public void migrateDefaultGraphToBaseURIGraph(@Optional(defaultValue = "false") boolean clearDestinationGraph) {
+		String updateSpec;
+		if (clearDestinationGraph) {
+			updateSpec = "MOVE DEFAULT TO GRAPH %destinationGraph%";
+		} else {
+			updateSpec = "ADD DEFAULT TO GRAPH %destinationGraph% ; DROP DEFAULT";
+		}
+		updateSpec = updateSpec.replace("%destinationGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(updateSpec);
 		update.execute();
 	}
 	

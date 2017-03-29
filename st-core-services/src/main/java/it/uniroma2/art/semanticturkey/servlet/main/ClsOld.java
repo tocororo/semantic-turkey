@@ -111,14 +111,12 @@ public class ClsOld extends ResourceOld {
 
 	// ADD REQUESTS
 	public static final String addOneOfRequest = "addOneOf";
-	public static final String addTypeRequest = "addType";
 	public static final String addSuperClsRequest = "addSuperCls";
 	public static final String addIntersectionOfRequest = "addIntersectionOf";
 	public static final String addUnionOfRequest = "addUnionOf";
 
 	// REMOVE REQUESTS
 	public static final String removeOneOfRequest = "removeOneOf";
-	public static final String removeTypeRequest = "removeType";
 	public static final String removeSuperClsRequest = "removeSuperCls";
 	public static final String removeIntersectionOfRequest = "removeIntersectionOf";
 	public static final String removeUnionOfRequest = "removeUnionOf";
@@ -151,12 +149,9 @@ public class ClsOld extends ResourceOld {
 
 	protected static Logger logger = LoggerFactory.getLogger(ClsOld.class);
 
-	private Individual individual;
-
 	@Autowired
-	public ClsOld(@Value("Cls") String id, Individual individual) {
+	public ClsOld(@Value("Cls") String id) {
 		super(id);
-		this.individual = individual;
 	}
 
 	public Logger getLogger() {
@@ -227,14 +222,7 @@ public class ClsOld extends ResourceOld {
 			String instanceQName = setHttpPar(instanceNamePar);
 			checkRequestParametersAllNotNull(instanceNamePar, clsQNameField);
 			response = createInstanceOption(instanceQName, clsQName);
-		} else if (request.equals(addTypeRequest)) {
-			String clsQName = setHttpPar(clsQNamePar);
-			String typeQName = setHttpPar(typeQNamePar);
-			checkRequestParametersAllNotNull(clsQNamePar, typeQNamePar);
-			response = individual.addType(clsQName, typeQName);
-		} else if (request.equals(removeTypeRequest))
-			response = individual.removeType(setHttpPar("clsqname"), req().getParameter("typeqname"));
-		else if (request.equals(addIntersectionOfRequest)) {
+		} else if (request.equals(addIntersectionOfRequest)) {
 			String clsName = setHttpPar(clsQNameField);
 			String clsDescriptions = setHttpPar(clsDescriptionsPar);
 			checkRequestParametersAllNotNull(clsQNameField, clsDescriptionsPar);
