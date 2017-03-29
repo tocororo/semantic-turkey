@@ -12,14 +12,19 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -38,6 +43,73 @@ import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 public class Refactor2 extends STServiceAdapter  {
 	
 	private static Logger logger = LoggerFactory.getLogger(Refactor2.class);
+	
+	@STServiceOperation
+	@Write
+	public void changeResourceURI(@LocallyDefined IRI oldResource, IRI newResource) throws DuplicatedResourceException {
+		RepositoryConnection conn = getManagedConnection();
+		//check if a resource with the new IRI already exists
+		// @formatter:off
+		String query = 
+				"ASK {								\n" +
+				"	BIND (%graph_uri% as ?graph) 	\n" +
+				"	BIND (%res_uri% as ?res)	 	\n" +
+				"	GRAPH ?graph {					\n" +
+				"		{ ?res ?p1 ?o1 . } 			\n" + //as subject
+				"		UNION 						\n" +
+				"		{ ?s2 ?res ?o2 . } 			\n" + //as predicate
+				"		UNION 						\n" +
+				"		{ ?s3 ?p3 ?res . } 			\n" + //as object
+				"	}								\n" +
+				"}";
+		// @formatter:on
+		query = query.replace("%graph_uri%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
+		query = query.replace("%res_uri%", NTriplesUtil.toNTriplesString(newResource));
+		System.out.println("check existing query \n " + query);
+		BooleanQuery bq = conn.prepareBooleanQuery(query);
+		boolean existing = bq.evaluate();
+		System.out.println("existing " + existing);
+		if (existing) {
+			throw new DuplicatedResourceException("Could not rename resource: "
+					+ oldResource.stringValue() + " to: " + newResource.stringValue()
+					+ " because a resource with this name already exists");
+		}
+		// @formatter:off
+		query =	"DELETE { 							\n" +
+				"	GRAPH ?graph { 					\n" + 
+				"		?oldRes ?p1 ?o1 .			\n" +
+				"		?s2 ?oldRes ?o2 .			\n" +
+				"		?s3 ?p3 ?oldRes .			\n" +
+				"	} 								\n" +
+				"} 									\n" +
+				"INSERT {							\n" +
+				"	GRAPH ?graph { 					\n" + 
+				"		?newRes ?p1 ?o1 .			\n" +
+				"		?s2 ?newRes ?o2 .			\n" +
+				"		?s3 ?p3 ?newRes .			\n" +
+				"	} 								\n" +
+				"} 									\n" +
+				"WHERE { 							\n" +
+				"	BIND (%graph_uri% as ?graph)	\n" +
+				"	BIND (%oldRes_uri% as ?oldRes)	\n" +
+				"	BIND (%newRes_uri% as ?newRes)	\n" +
+				"	GRAPH ?graph { 					\n" + 
+				"		{ ?oldRes ?p1 ?o1 . }		\n" +
+				"		UNION						\n" +
+				"		{ ?s2 ?oldRes ?o2 . }		\n" +
+				"		UNION						\n" +
+				"		{ ?s3 ?p3 ?oldRes . }		\n" +
+				"	} 								\n" +
+				"}";
+		// @formatter:on
+		query = query.replace("%graph_uri%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
+		query = query.replace("%oldRes_uri%", NTriplesUtil.toNTriplesString(oldResource));
+		query = query.replace("%newRes_uri%", NTriplesUtil.toNTriplesString(newResource));
+		System.out.println("replace query\n" + query);
+		Update update = conn.prepareUpdate(query);
+		update.execute();
+	}
+	
 
 	/**
 	 * it refactor SKOS data into SKOSXL
