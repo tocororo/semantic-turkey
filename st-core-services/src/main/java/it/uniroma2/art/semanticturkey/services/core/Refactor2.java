@@ -65,10 +65,8 @@ public class Refactor2 extends STServiceAdapter  {
 		// @formatter:on
 		query = query.replace("%graph_uri%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
 		query = query.replace("%res_uri%", NTriplesUtil.toNTriplesString(newResource));
-		System.out.println("check existing query \n " + query);
 		BooleanQuery bq = conn.prepareBooleanQuery(query);
 		boolean existing = bq.evaluate();
-		System.out.println("existing " + existing);
 		if (existing) {
 			throw new DuplicatedResourceException("Could not rename resource: "
 					+ oldResource.stringValue() + " to: " + newResource.stringValue()
@@ -105,7 +103,6 @@ public class Refactor2 extends STServiceAdapter  {
 		query = query.replace("%graph_uri%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
 		query = query.replace("%oldRes_uri%", NTriplesUtil.toNTriplesString(oldResource));
 		query = query.replace("%newRes_uri%", NTriplesUtil.toNTriplesString(newResource));
-		System.out.println("replace query\n" + query);
 		Update update = conn.prepareUpdate(query);
 		update.execute();
 	}
