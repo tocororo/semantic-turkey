@@ -131,7 +131,7 @@ import it.uniroma2.art.semanticturkey.utilities.Utilities;
 public class ProjectManager {
 
 	public static enum ProjectType {
-		continuosEditing, saveToStore
+		continousEditing, saveToStore
 	}
 
 	public static final String triples_exchange_FileName = "ontology.nt";
@@ -478,7 +478,7 @@ public class ProjectManager {
 		try {
 			type = getProjectType(projectName);
 			logger.debug("project type:" + type);
-			if (type == ProjectType.continuosEditing)
+			if (type == ProjectType.continousEditing)
 				proj = new PersistentStoreProject<MODELTYPE>(projectName, projectDir);
 			else
 				proj = new SaveToStoreProject<MODELTYPE>(projectName, projectDir);
@@ -1388,7 +1388,7 @@ public class ProjectManager {
 			UnloadablePluginConfigurationException, BadConfigurationException {
 
 		// Currently, only continuous editing projects
-		ProjectType projType = ProjectType.continuosEditing;
+		ProjectType projType = ProjectType.continousEditing;
 
 		// Currently, only projects in the default location
 		File projectDir = resolveProjectNameToDir(projectName);
