@@ -171,22 +171,17 @@ public class CustomFormManager {
 	
 	/**
 	 * Given a resource (property or class) returns the {@link FormCollection} linked to that resource.
-	 * It looks first at project level, then at system level.
 	 * <code>null</code> if no FormCollection is linked to the resource.
 	 * @param resource
 	 * @return
 	 */
 	public FormCollection getFormCollection(Project<?> project, IRI resource) {
 		FormCollection fc = null;
+		//look only at project level since the mappings between resource and FC at system level are just
+		//default/suggestion that are copied at project level in order to be editable
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
 			fc = cfModel.getFormCollectionForResource(resource);
-		}
-		if (fc == null) { //FormCollection not found at project level, check a system level
-			cfModel = cfModelMap.get(SYSTEM_LEVEL_ID);
-			if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
-				fc = cfModel.getFormCollectionForResource(resource);
-			}
 		}
 		return fc;
 	}
