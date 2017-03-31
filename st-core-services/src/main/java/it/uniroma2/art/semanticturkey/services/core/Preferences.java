@@ -2,16 +2,20 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Collection;
 
+import org.eclipse.rdf4j.model.IRI;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -35,31 +39,6 @@ public class Preferences extends STServiceAdapter {
 	 */
 	
 	/**
-	 * Gets the languages preference.
-	 * @return
-	 * @throws STPropertyAccessException
-	 * @throws STPropertyUpdateException 
-	 * @throws IllegalStateException 
-	 */
-//	@STServiceOperation
-//	public Collection<String> getLanguages() throws STPropertyAccessException, STPropertyUpdateException {
-//		Collection<String> languages = new ArrayList<>();
-//		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_LANGUAGES, getProject(),
-//				UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-//		if (value != null) {
-//			value.replaceAll(" ", ""); // remove all spaces
-//			String[] splitted = value.split(",");
-//			for (int i = 0; i < splitted.length; i++) {
-//				languages.add(splitted[i]);
-//			}
-//		} else {
-//			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_LANGUAGES, "*", getProject(),	
-//					UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-//		}
-//		return languages;
-//	}
-
-	/**
 	 * Sets the languages preference
 	 * @param languages
 	 * @throws STPropertyUpdateException
@@ -79,26 +58,7 @@ public class Preferences extends STServiceAdapter {
 	}
 	
 	/**
-	 * Gets the show_flag preference. If the property is not set, sets true as default in the preference file and returns it.
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-//	@STServiceOperation
-//	public Boolean getShowFlags() throws STPropertyAccessException, STPropertyUpdateException {
-//		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, getProject(),
-//				UsersManager.getLoggedUser());
-//		boolean show = true;
-//		if (value != null) {
-//			show = Boolean.parseBoolean(value);
-//		} else { //property not set => set default
-//			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, show+"", getProject(),
-//					UsersManager.getLoggedUser());
-//		}
-//		return show;
-//	}
-	
-	/**
-	 * Gets the show_flag preference. If the property is not set, sets true as default in the preference file and returns it.
+	 * Sets the show_flag preference. If the property is not set, sets true as default in the preference file and returns it.
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
@@ -106,6 +66,25 @@ public class Preferences extends STServiceAdapter {
 	public void setShowFlags(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
 		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, show+"", getProject(),
 			UsersManager.getLoggedUser());
+	}
+	
+	/**
+	 * Set the active scheme preference (in order to retrieve it on the future access) for the current project.
+	 * The scheme is optional, if not provided it means that the concept tree is working in no scheme mode
+	 * @param scheme
+	 * @throws IllegalStateException
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation
+	public void setActiveScheme(@Optional @LocallyDefined IRI scheme) throws IllegalStateException, STPropertyUpdateException {
+		if (scheme != null) {
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, scheme.stringValue(),
+					getProject(), UsersManager.getLoggedUser());
+		} else { // no scheme mode
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, null, getProject(),
+					UsersManager.getLoggedUser());
+		}
+		
 	}
 	
 	@STServiceOperation
@@ -141,6 +120,11 @@ public class Preferences extends STServiceAdapter {
 					UsersManager.getLoggedUser());
 		}
 		preferencesNode.set(STPropertiesManager.PROP_SHOW_FLAGS, jsonFactory.booleanNode(show));
+		
+		//active_scheme
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, getProject(),
+				UsersManager.getLoggedUser());
+		preferencesNode.set(STPropertiesManager.PROP_ACTIVE_SCHEME, jsonFactory.textNode(value));
 		
 		return preferencesNode;
 	}

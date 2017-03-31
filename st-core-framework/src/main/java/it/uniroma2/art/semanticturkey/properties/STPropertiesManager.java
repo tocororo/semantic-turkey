@@ -30,7 +30,7 @@ public class STPropertiesManager {
 	
 	public static final String PROP_LANGUAGES = "languages";
 	public static final String PROP_SHOW_FLAGS = "show_flags";
-	
+	public static final String PROP_ACTIVE_SCHEME = "active_scheme";
 	
 	/*
 	 * Methods to get/set properties to/from the following Properties files
@@ -131,7 +131,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -184,7 +184,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getProjectPreferencesDefaultsFile(project, pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -238,7 +238,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getUserProjectPreferencesDefaultsFile(user, pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -291,7 +291,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getSystemProjectPreferencesDefaultsFile(pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -360,7 +360,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getUserSystemPreferencesFile(user, pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -413,7 +413,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getSystemPreferencesDefaultsFile(pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -482,7 +482,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getProjectSettingsFile(project, pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -535,7 +535,7 @@ public class STPropertiesManager {
 		try {
 			File propFile = getSystemProjectSettingsDefaultsFile(pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
@@ -593,13 +593,13 @@ public class STPropertiesManager {
 		try {
 			File propFile = getSystemSettingsFile(pluginID);
 			Properties properties = loadProperties(propFile);
-			properties.setProperty(propName, propValue);
+			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
-	
+
 	/*
 	 * Methods to retrieve the following Properties files
 	 * <STData>/system/plugins/<plugin>/system-preference-defaults.cfg
@@ -782,7 +782,6 @@ public class STPropertiesManager {
 		}
 	}
 	
-	//TODO this folders should be initialized here or in Resources?
 	/*
 	 * Methods to retrieve the following folders:
 	 * <STData>/system/plugins/<plugin>/
@@ -854,6 +853,20 @@ public class STPropertiesManager {
 			prefFolder.mkdirs();
 		}
 		return prefFolder;
+	}
+	
+	/**
+	 * Sets the value for a property. If the value is null, removes the property.
+	 * @param properties
+	 * @param propName
+	 * @param propValue
+	 */
+	private static void setProperty(Properties properties, String propName, String propValue) {
+		if (propValue != null) {
+			properties.setProperty(propName, propValue);
+		} else {
+			properties.remove(propName);
+		}
 	}
 	
 	private static void updatePropertyFile(Properties properties, File propFile) throws STPropertyUpdateException {
