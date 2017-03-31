@@ -21,7 +21,7 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 import java.util.Map;
 
@@ -32,6 +32,7 @@ import org.eclipse.rdf4j.model.Value;
 
 public class ManchesterValueClass extends ManchesterClassInterface {
 
+	private boolean inverse = false;
 	private IRI prop;
 	private Value value;
 
@@ -39,6 +40,17 @@ public class ManchesterValueClass extends ManchesterClassInterface {
 		super(PossType.VALUE);
 		this.prop = prop;
 		this.value = value;
+	}
+	
+	public ManchesterValueClass(boolean inverse, IRI prop, Value value) {
+		super(PossType.VALUE);
+		this.inverse = inverse;
+		this.prop = prop;
+		this.value = value;
+	}
+	
+	public boolean hasInverse(){
+		return inverse;
 	}
 
 	public IRI getProp() {
@@ -53,6 +65,9 @@ public class ManchesterValueClass extends ManchesterClassInterface {
 	public String print(String tab) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n" + tab + getType());
+		if(inverse){
+			sb.append("\n" + tab + "\t inverse");
+		}
 		sb.append("\n" + tab + "\t" + prop.stringValue());
 		String valueAsString="";
 		if(value instanceof IRI){
@@ -69,25 +84,23 @@ public class ManchesterValueClass extends ManchesterClassInterface {
 			boolean useUppercaseSyntax){
 		String valueString;
 		
+		String inverseOrEmpty="";
+		if(inverse){
+			inverseOrEmpty="inverse ";
+		}
 		
 		if (value instanceof IRI) {
 			valueString = printRes(getPrefixName, namespaceToPrefixsMap, (IRI)value);
 		} else if (value instanceof Literal) {
-			Literal valueLiteral = (Literal) value;
-			valueString = "\"" + valueLiteral.stringValue() + "\"";
-			if (valueLiteral.getLanguage().isPresent()) {
-				valueString += "@" + valueLiteral.getLanguage().get();
-			} else if (valueLiteral.getDatatype() != null) {
-				valueString += "^^" + printRes(getPrefixName, namespaceToPrefixsMap, valueLiteral.getDatatype());
-			}
+			valueString = printLiteral(getPrefixName, namespaceToPrefixsMap, (Literal) value);
 		} else {
 			// this should never happen
 			valueString = "";
 		}
 		if(useUppercaseSyntax){
-			return printRes(getPrefixName, namespaceToPrefixsMap, prop) + " VALUE " + valueString;
+			return inverseOrEmpty.toUpperCase() + printRes(getPrefixName, namespaceToPrefixsMap, prop) + " VALUE " + valueString;
 		} else {
-			return printRes(getPrefixName, namespaceToPrefixsMap, prop) + " value " + valueString;
+			return inverseOrEmpty + printRes(getPrefixName, namespaceToPrefixsMap, prop) + " value " + valueString;
 		}
 	}
 }

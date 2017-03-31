@@ -55,6 +55,23 @@
 					</instructions>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.antlr</groupId>
+				<artifactId>antlr4-maven-plugin</artifactId>
+				<version>4.3</version>
+				<configuration>
+					<sourceDirectory>src/main/java</sourceDirectory>
+					<outputDirectory>src/main/generated-sources</outputDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<id>antlr</id>
+						<goals>
+							<goal>antlr4</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -91,6 +108,11 @@
 			<groupId>org.eclipse.rdf4j</groupId>
 			<artifactId>rdf4j-model</artifactId>
 			<version>${rdf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>antlr4-runtime</artifactId>
+			<version>${antlr4.version}</version>
 		</dependency>
 
 		<dependency>

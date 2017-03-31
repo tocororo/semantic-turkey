@@ -96,6 +96,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<rdf4j.version>2.2</rdf4j.version>
 		<graphdb.version>8.0.4</graphdb.version>
 		<junit.version>4.12</junit.version>
+		<antlr4.version>4.6</antlr4.version>
 	</properties>
 
 	<scm>

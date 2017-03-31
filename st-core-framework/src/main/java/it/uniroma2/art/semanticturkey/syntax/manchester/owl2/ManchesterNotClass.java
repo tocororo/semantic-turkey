@@ -21,66 +21,40 @@
   *
   */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 import java.util.Map;
 
-import org.eclipse.rdf4j.model.IRI;
+public class ManchesterNotClass extends ManchesterClassInterface{
 
-public class ManchesterCardClass extends ManchesterClassInterface{
-
-	private int card;
-	private IRI prop;
+	private ManchesterClassInterface notClass;
 	
-	public ManchesterCardClass(PossType type, int card, IRI prop) {
-		super(type);
-		this.card = card;
-		this.prop = prop;
+	public ManchesterNotClass(ManchesterClassInterface notClass) {
+		super(PossType.NOT);
+		this.notClass = notClass;
 	}
-
-	public int getCard() {
-		return card;
-	}
-
-	public IRI getProp() {
-		return prop;
+	
+	public ManchesterClassInterface getNotClass(){
+		return notClass;
 	}
 	
 	@Override
 	public String print(String tab) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n"+tab+getType());
-		sb.append("\n"+tab+"\t"+prop.stringValue());
-		sb.append("\n"+tab+"\t"+card);
+		sb.append("\n"+tab+"\t"+notClass.print(tab+"\t"));
 		return sb.toString();
 	}
 
 	@Override
 	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
 			boolean useUppercaseSyntax) {
-		String manchExpr = printRes(getPrefixName, namespaceToPrefixsMap, prop);
-		if(getType() == PossType.MIN){
-			if(useUppercaseSyntax){
-				manchExpr += " MIN ";
-			} else{
-				manchExpr += " min ";
-			}
-		} else if(getType() == PossType.MAX){
-			if(useUppercaseSyntax){
-				manchExpr += " MAX ";
-			} else{
-				manchExpr += " max ";
-			}
-		} else{ // is is exactly
-			if(useUppercaseSyntax){
-				manchExpr += " EXACTLY ";
-			} else{
-				manchExpr += " exaclty ";
-			}
+		if(useUppercaseSyntax){
+			return "NOT "+notClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
+		} else {
+			return "not "+notClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
 		}
-		manchExpr += card;
-		
-		return manchExpr;
 	}
-
+	
+	
 }

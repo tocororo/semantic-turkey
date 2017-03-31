@@ -21,40 +21,66 @@
   *
   */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-public class ManchesterNotClass extends ManchesterClassInterface{
+public class ManchesterOrClass extends ManchesterClassInterface {
+	private List<ManchesterClassInterface>orClassList;
 
-	private ManchesterClassInterface notClass;
 	
-	public ManchesterNotClass(ManchesterClassInterface notClass) {
-		super(PossType.NOT);
-		this.notClass = notClass;
+	public ManchesterOrClass() {
+		super(PossType.OR);
+		this.orClassList = new ArrayList<ManchesterClassInterface>();
 	}
 	
-	public ManchesterClassInterface getNotClass(){
-		return notClass;
-	}
-	
-	@Override
-	public String print(String tab) {
-		StringBuffer sb = new StringBuffer();
-		sb.append("\n"+tab+getType());
-		sb.append("\n"+tab+"\t"+notClass.print(tab+"\t"));
-		return sb.toString();
-	}
-
-	@Override
-	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
-			boolean useUppercaseSyntax) {
-		if(useUppercaseSyntax){
-			return "NOT "+notClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
-		} else {
-			return "not "+notClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
+	public ManchesterOrClass(List<ManchesterClassInterface>orClassList) {
+		super(PossType.OR);
+		if(orClassList!=null){
+			this.orClassList = orClassList;
+		} else{
+			this.orClassList = new ArrayList<ManchesterClassInterface>();
 		}
 	}
 	
+	public List<ManchesterClassInterface> getOrClassList(){
+		return orClassList;
+	}
 	
+	public void addClassToOrClassList(ManchesterClassInterface manchClass){
+		orClassList.add(manchClass);
+	}
+
+	@Override
+	public String print(String tab) {
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append("\n"+tab+"OR");
+		for(int i=0; i<orClassList.size(); ++i){
+			sb.append(orClassList.get(i).print("\t"+tab));
+		}
+		return sb.toString();
+	}
+	
+	@Override
+	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
+			boolean useUppercaseSyntax) {
+		String manchExpr = "(";
+		boolean first = true;
+		for(ManchesterClassInterface mci : orClassList){
+			if(!first){
+				if(useUppercaseSyntax){
+					manchExpr += " OR ";
+				} else {
+					manchExpr += " or ";
+				}
+			}
+			first = false;
+			manchExpr += mci.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
+		}
+		manchExpr += ")";
+		return manchExpr;
+	}
 }

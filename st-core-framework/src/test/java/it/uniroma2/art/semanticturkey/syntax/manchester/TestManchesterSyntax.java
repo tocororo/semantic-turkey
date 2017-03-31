@@ -16,6 +16,8 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
 //this class is not a real junit test, it is used just to understand how to use the Manchester syntax 
 // utilities and data structures
@@ -33,7 +35,7 @@ public class TestManchesterSyntax {
 			
 			RepositoryConnection conn = testManchesterSyntax.initializeForWrite();
 			
-			testManchesterSyntax.startWriteTest(conn);
+			//testManchesterSyntax.startWriteTest(conn);
 			
 		} catch (RecognitionException e) {
 			e.printStackTrace();
@@ -101,11 +103,11 @@ public class TestManchesterSyntax {
 		prefixtoNamespaceMap.put("my", "http://test.it");
 
 		String inputAssertion = class1uri + " and " + class2uri;
-		manchesterClassInterface = ManchesterParser.parse(inputAssertion, valueFactory, prefixtoNamespaceMap);
+		manchesterClassInterface = ManchesterSyntaxUtils.parse(inputAssertion, valueFactory, prefixtoNamespaceMap);
 		printResults(inputAssertion, manchesterClassInterface);
 
 		inputAssertion = prop1uri + "value " + valueLiteral;
-		manchesterClassInterface = ManchesterParser.parse(inputAssertion, valueFactory, prefixtoNamespaceMap);
+		manchesterClassInterface = ManchesterSyntaxUtils.parse(inputAssertion, valueFactory, prefixtoNamespaceMap);
 		printResults(inputAssertion, manchesterClassInterface);
 
 	}
@@ -133,7 +135,7 @@ public class TestManchesterSyntax {
 		prefixtoNamespaceMap.put("my", "http://test.it");
 
 		String inputAssertion = class1uri + " and " + class2uri;
-		manchesterClassInterface = ManchesterParser.parse(inputAssertion, conn.getValueFactory(), prefixtoNamespaceMap);
+		manchesterClassInterface = ManchesterSyntaxUtils.parse(inputAssertion, conn.getValueFactory(), prefixtoNamespaceMap);
 		
 		
 		

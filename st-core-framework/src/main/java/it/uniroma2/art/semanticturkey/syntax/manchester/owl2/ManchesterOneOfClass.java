@@ -21,37 +21,64 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 
-public class ManchesterBaseClass extends ManchesterClassInterface {
+public class ManchesterOneOfClass extends ManchesterClassInterface {
 
-	//private ARTURIResource baseClass;
-	private IRI baseClass;
+	private List<IRI> oneOfList;
 
-	public ManchesterBaseClass(IRI baseClass) {
-		super(PossType.BASE);
-		this.baseClass = baseClass;
+	public ManchesterOneOfClass(List<IRI> oneOfList) {
+		super(PossType.ONEOF);
+		if (oneOfList != null) {
+			this.oneOfList = oneOfList;
+		} else {
+			this.oneOfList = new ArrayList<>();
+		}
 	}
 
-	public IRI getBaseClass() {
-		return baseClass;
+	public ManchesterOneOfClass() {
+		super(PossType.ONEOF);
+		this.oneOfList = new ArrayList<IRI>();
+	}
+
+	public void addOneOf(IRI oneOf) {
+		oneOfList.add(oneOf);
+	}
+
+	public List<IRI> getOneOfList() {
+		return oneOfList;
 	}
 
 	@Override
 	public String print(String tab) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n" + tab + getType());
-		sb.append("\n" + tab + "\t" + baseClass.stringValue());
+		for (int i = 0; i < oneOfList.size(); ++i) {
+			sb.append("\n" + tab + "\t" + oneOfList.get(i).stringValue());
+		}
 		return sb.toString();
 	}
 
 	@Override
-	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, boolean useUppercaseSyntax){
-		return printRes(getPrefixName, namespaceToPrefixsMap, baseClass);
+	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
+			boolean useUppercaseSyntax) {
+		String manchExpr = "{";
+		boolean first = true;
+		for (IRI oneOf : oneOfList) {
+			if (!first) {
+				manchExpr += ", ";
+			}
+			first = false;
+			manchExpr += printRes(getPrefixName, namespaceToPrefixsMap, oneOf);
+		}
+		manchExpr += "}";
+		return manchExpr;
 	}
 
 }

@@ -32,7 +32,7 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.syntax.manchester.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
 public abstract class AbstractStatementConsumer implements StatementConsumer {
 	private static final Literal DEFAULT_ROLE = SimpleValueFactory.getInstance()

@@ -21,46 +21,47 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 
-public class ManchesterOneOfClass extends ManchesterClassInterface {
+public class ManchesterLiteralListClass extends ManchesterClassInterface {
 
-	private List<IRI> oneOfList;
+	private List<Literal> literalList;
 
-	public ManchesterOneOfClass(List<IRI> oneOfList) {
-		super(PossType.ONEOF);
-		if (oneOfList != null) {
-			this.oneOfList = oneOfList;
+	public ManchesterLiteralListClass(List<Literal> literalList) {
+		super(PossType.LITERALLIST);
+		if (literalList != null) {
+			this.literalList = literalList;
 		} else {
-			this.oneOfList = new ArrayList<>();
+			this.literalList = new ArrayList<>();
 		}
 	}
 
-	public ManchesterOneOfClass() {
-		super(PossType.ONEOF);
-		this.oneOfList = new ArrayList<IRI>();
+	public ManchesterLiteralListClass() {
+		super(PossType.LITERALLIST);
+		this.literalList = new ArrayList<Literal>();
 	}
 
-	public void addOneOf(IRI oneOf) {
-		oneOfList.add(oneOf);
+	public void addOneOf(Literal literal) {
+		literalList.add(literal);
 	}
 
-	public List<IRI> getOneOfList() {
-		return oneOfList;
+	public List<Literal> getLiteralList() {
+		return literalList;
 	}
 
 	@Override
 	public String print(String tab) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n" + tab + getType());
-		for (int i = 0; i < oneOfList.size(); ++i) {
-			sb.append("\n" + tab + "\t" + oneOfList.get(i).stringValue());
+		for (int i = 0; i < literalList.size(); ++i) {
+			sb.append("\n" + tab + "\t" + printLiteral(false, new HashMap<String, String>(), literalList.get(i)));
 		}
 		return sb.toString();
 	}
@@ -70,12 +71,12 @@ public class ManchesterOneOfClass extends ManchesterClassInterface {
 			boolean useUppercaseSyntax) {
 		String manchExpr = "{";
 		boolean first = true;
-		for (IRI oneOf : oneOfList) {
+		for (Literal literal : literalList) {
 			if (!first) {
 				manchExpr += ", ";
 			}
 			first = false;
-			manchExpr += printRes(getPrefixName, namespaceToPrefixsMap, oneOf);
+			manchExpr += printLiteral(getPrefixName, namespaceToPrefixsMap, literal);
 		}
 		manchExpr += "}";
 		return manchExpr;

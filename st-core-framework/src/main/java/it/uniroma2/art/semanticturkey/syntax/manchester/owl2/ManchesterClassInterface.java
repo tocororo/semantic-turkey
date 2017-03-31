@@ -21,17 +21,18 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 
 public abstract class ManchesterClassInterface {
 	private PossType type;
 
 	public static enum PossType {
-		BASE, AND, OR, NOT, ONEOF, SOME, ONLY, MIN, MAX, EXACTLY, VALUE
+		BASE, AND, OR, NOT, ONEOF, SOME, ONLY, MIN, MAX, EXACTLY, VALUE, SELF, LITERALLIST
 	}
 
 	public ManchesterClassInterface(PossType type) {
@@ -42,7 +43,7 @@ public abstract class ManchesterClassInterface {
 		return type;
 	}
 
-	public String printRes(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, IRI res) {
+	protected String printRes(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, IRI res) {
 		if(!getPrefixName){
 			return "<"+res.stringValue()+">";
 		}
@@ -54,6 +55,16 @@ public abstract class ManchesterClassInterface {
 		} else{
 			return prefix+":"+res.getLocalName();
 		}
+	}
+	
+	protected String printLiteral(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, Literal literal){
+		String valueString = "\"" + literal.stringValue() + "\"";
+		if (literal.getLanguage().isPresent()) {
+			valueString += "@" + literal.getLanguage().get();
+		} else if (literal.getDatatype() != null) {
+			valueString += "^^" + printRes(getPrefixName, namespaceToPrefixsMap, literal.getDatatype());
+		}
+		return valueString;
 	}
 
 	/**

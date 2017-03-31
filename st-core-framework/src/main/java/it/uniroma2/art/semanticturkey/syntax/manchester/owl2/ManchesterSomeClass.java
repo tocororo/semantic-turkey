@@ -21,7 +21,7 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 import java.util.Map;
 
@@ -29,15 +29,27 @@ import org.eclipse.rdf4j.model.IRI;
 
 public class ManchesterSomeClass extends ManchesterClassInterface {
 
-	IRI someProp;
-	ManchesterClassInterface someClass;
-
+	private boolean inverse = false;
+	private IRI someProp;
+	private ManchesterClassInterface someClass;
+	
 	public ManchesterSomeClass(IRI someProp, ManchesterClassInterface someClass) {
 		super(PossType.SOME);
 		this.someProp = someProp;
 		this.someClass = someClass;
 	}
-
+	
+	public ManchesterSomeClass(boolean inverse, IRI someProp, ManchesterClassInterface someClass) {
+		super(PossType.SOME);
+		this.inverse = inverse;
+		this.someProp = someProp;
+		this.someClass = someClass;
+	}
+	
+	public boolean hasInverse(){
+		return inverse;
+	}
+	
 	public IRI getSomeProp() {
 		return someProp;
 	}
@@ -46,10 +58,15 @@ public class ManchesterSomeClass extends ManchesterClassInterface {
 		return someClass;
 	}
 
+	
+	
 	@Override
 	public String print(String tab) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n" + tab + "SOME");
+		if(inverse){
+			sb.append("\n" + tab + "\t inverse");
+		}
 		sb.append("\n" + tab + "\t" + someProp);
 		sb.append(someClass.print(tab + "\t"));
 		return sb.toString();
@@ -58,11 +75,15 @@ public class ManchesterSomeClass extends ManchesterClassInterface {
 	@Override
 	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
 			boolean useUppercaseSyntax) {
+		String inverseOrEmpty="";
+		if(inverse){
+			inverseOrEmpty="inverse ";
+		}
 		if(useUppercaseSyntax){
-			return printRes(getPrefixName, namespaceToPrefixsMap, someProp) + " SOME "
+			return inverseOrEmpty.toUpperCase() + printRes(getPrefixName, namespaceToPrefixsMap, someProp) + " SOME "
 				+ someClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
 		} else {
-			return printRes(getPrefixName, namespaceToPrefixsMap, someProp) + " some "
+			return inverseOrEmpty + printRes(getPrefixName, namespaceToPrefixsMap, someProp) + " some "
 					+ someClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
 		}
 	}
