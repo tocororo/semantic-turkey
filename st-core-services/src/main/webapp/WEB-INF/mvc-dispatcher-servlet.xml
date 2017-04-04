@@ -21,62 +21,6 @@
 		</mvc:interceptor>
 	</mvc:interceptors>
 	
-	<bean id="conversionService"
-		class="org.springframework.context.support.ConversionServiceFactoryBean">
-		<property name="converters">
-			<list>
-				<!-- <bean id="toArtNodesConverter" class="it.uniroma2.art.semanticturkey.converters.ToARTNodes" 
-					/> -->
-				<bean id="StringToACLAccessLevelConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToACLAccessLevelConverter" />
-				<bean id="StringToACLLockLevelConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToACLLockLevelConverter" />
-				<bean id="StringToProjectConsumerConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />
-
-				<bean id="StringToARTBNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTBNodeConverter" />
-				<bean id="StringToARTLiteralConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTLiteralConverter" />
-				<bean id="StringToARTNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTNodeConverter" />
-				<bean id="StringToARTResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTResourceConverter" />
-				<bean id="StringToARTURIResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTURIResourceConverter" />
-				<bean id="StringToResourcePositionConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
-					<constructor-arg ref="datasetMetadataRepository" />
-				</bean>
-
-				<bean id="StringToRDF4JBNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JBNodeConverter" />
-				<bean id="StringToRDF4JIRIConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JIRIConverter" />
-				<bean id="StringToRDF4JLiteralConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JLiteralConverter" />
-				<bean id="StringToRDF4JResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JResourceConverter" />
-				<bean id="StringToRDF4JValueConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter" />
-					
-				<bean id="StringToPluginSpecificationConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter" />
-				<bean id="StringToFilteringStepConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToFilteringStepConverter" />
-				<bean id="StringToFilteringPipelineConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToFilteringPipelineConverter" />
-
-				<bean id="StringToRDF4JRDFormatConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JRDFormatConverter" />
-
-				<bean id="StringToRepositoryAccessConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRepositoryAccessConverter" />
-
-			</list>
-		</property>
-	</bean>
-
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey">
 		<context:exclude-filter type="regex"
 			expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*" />
@@ -139,11 +83,6 @@
 			<bean class="it.uniroma2.art.semanticturkey.shower.impl.ShowerLabels">
 			</bean>
 		</property>
-	</bean>
-
-	<!-- TEST STServiceHTTPContext -->
-	<bean
-		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext">
 	</bean>
 
 	<!-- This enables Spring multipart handling by adding a multipart resolver -->

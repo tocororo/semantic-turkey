@@ -16,6 +16,7 @@ import org.springframework.core.io.Resource;
 
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
@@ -25,6 +26,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
 public class STServiceHTTPContext implements STServiceContext, ApplicationListener<ContextRefreshedEvent> {
 
 	private static final String HTTP_PARAM_PREFIX = "ctx_";
+	private static final String HTTP_PARAM_PROJECT_CONSUMER = HTTP_PARAM_PREFIX + "consumer";
 	private static final String HTTP_PARAM_PROJECT = HTTP_PARAM_PREFIX + "project";
 	private static final String HTTP_PARAM_WGRAPH = HTTP_PARAM_PREFIX + "wgraph";
 	private static final String HTTP_PARAM_RGRAPHS = HTTP_PARAM_PREFIX + "rgraphs";
@@ -44,6 +46,25 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	private ConversionService conversionService;
 
 	private String extensionPathComponent = null;
+
+	@Override
+	public ProjectConsumer getProjectConsumer() {
+		String consumerParameter = request.getParameter(HTTP_PARAM_PROJECT_CONSUMER);
+
+		if (consumerParameter == null || consumerParameter.equals(ProjectConsumer.SYSTEM.getName())) {
+			return ProjectConsumer.SYSTEM;
+		} else {
+			Project<?> project = ProjectManager.getProject(consumerParameter);
+
+			if (project == null) {
+				throw new InvalidContextException(
+						"the provided consumer is not an open project: " + consumerParameter);
+			}
+
+			return project;
+		}
+
+	}
 
 	@Override
 	public Project<?> getProject() {

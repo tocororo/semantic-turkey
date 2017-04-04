@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -52,6 +53,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('auth(rdf(concept, taxonomy), ''R'')', '')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefined Resource scheme) {
 		QueryBuilder qb;
 

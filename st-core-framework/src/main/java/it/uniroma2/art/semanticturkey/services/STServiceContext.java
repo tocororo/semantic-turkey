@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services;
 
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 
 /**
  * An interface describing contextual information associated with service invocation. Currently, the
@@ -12,6 +13,9 @@ import it.uniroma2.art.semanticturkey.project.Project;
  *
  */
 public interface STServiceContext {
+	
+	ProjectConsumer getProjectConsumer();
+	
 	Project<?> getProject();
 
 	Project<?> getProject(int index);

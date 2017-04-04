@@ -19,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -120,7 +119,7 @@ public class Users extends STServiceAdapter {
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin", 
 			method = RequestMethod.GET, produces = "application/json")
-	@PreAuthorize("@auth.isAuthorized('concept', 'lexicalization', 'update')")
+//	@PreAuthorize("@auth.isAuthorized('concept', 'lexicalization', 'update')")
 	@ResponseBody
 	public String testRequiredAdmin(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
