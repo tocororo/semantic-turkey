@@ -20,7 +20,7 @@ public class StringToMapConverter implements Converter<String, Map<String, Objec
 	@Override
 	public Map<String, Object> convert(String source) {
 		try {
-			return mapper.readValue(source, new TypeReference<Map<String, String>>(){});
+			return mapper.readValue(source, new TypeReference<Map<String, Object>>(){});
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);
 		}

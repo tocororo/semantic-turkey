@@ -165,7 +165,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 				+ NTriplesUtil.toNTriplesString(stmt.getPredicate()) + " "
 				+ NTriplesUtil.toNTriplesString(stmt.getObject()) + Optional.ofNullable(stmt.getContext())
 						.map(c -> NTriplesUtil.toNTriplesString(c)).orElse("")));
-		quadAdditions.forEach(stmt -> System.out.println("- "
+		quadRemovals.forEach(stmt -> System.out.println("- "
 				+ NTriplesUtil.toNTriplesString(stmt.getSubject()) + " "
 				+ NTriplesUtil.toNTriplesString(stmt.getPredicate()) + " "
 				+ NTriplesUtil.toNTriplesString(stmt.getObject()) + Optional.ofNullable(stmt.getContext())

@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.customform;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,7 +50,6 @@ import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
@@ -315,9 +313,9 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
 	 */
-	public List<ARTTriple> executePearlForRange(CODACore codaCore, Map<String, Object> userPromptMap)
+	public UpdateTripleSet executePearlForRange(CODACore codaCore, Map<String, Object> userPromptMap)
 			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
-		List<ARTTriple> triples = new ArrayList<ARTTriple>();
+		UpdateTripleSet uts = new UpdateTripleSet();
 		try {
 			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
 			// this jcas has the structure defined by the TSD (created following the pearl)
@@ -344,14 +342,15 @@ public class CustomFormGraph extends CustomForm {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
 				// get only triples of relevant annotations (those triples that start with it.uniroma2.
 				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {
-					triples.addAll(suggOntCoda.getAllInsertARTTriple());
+					uts.addInsertTriples(suggOntCoda.getAllInsertARTTriple());
+					uts.addDeleteTriples(suggOntCoda.getAllDeleteARTTriple());
 				}
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException
 				| DependencyException | UIMAException | RDFModelNotSetException e) {
 			throw new CODAException(e);
 		}
-		return triples;
+		return uts;
 	}
 	
 	/**
@@ -366,10 +365,10 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
 	 */
-	public List<ARTTriple> executePearlForConstructor(CODACore codaCore, Map<String, Object> userPromptMap, 
+	public UpdateTripleSet executePearlForConstructor(CODACore codaCore, Map<String, Object> userPromptMap, 
 			StandardForm stdForm)
 			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
-		List<ARTTriple> triples = new ArrayList<>();
+		UpdateTripleSet uts = new UpdateTripleSet();
 		try {
 			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
 			// this jcas has the structure defined by the TSD (created following the pearl)
@@ -402,14 +401,15 @@ public class CustomFormGraph extends CustomForm {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
 				// get only triples of relevant annotations (those triples that start with it.uniroma2.
 				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {
-					triples.addAll(suggOntCoda.getAllInsertARTTriple());
+					uts.addInsertTriples(suggOntCoda.getAllInsertARTTriple());
+					uts.addDeleteTriples(suggOntCoda.getAllDeleteARTTriple());
 				}
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException
 				| DependencyException | UIMAException | RDFModelNotSetException e) {
 			throw new CODAException(e);
 		}
-		return triples;
+		return uts;
 	}
 	
 	private FeatureStructure createAndFillPromptFS(Type annType, CAS aCAS, Map<String, Object> promptValueMap) {

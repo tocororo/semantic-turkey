@@ -1,13 +1,19 @@
 package it.uniroma2.art.semanticturkey.security;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -31,57 +37,73 @@ public class STAuthorizationEvaluator {
 
 	@Autowired
 	AccessControlManager acMgr;
+	
+	/**
+	 * To use like follow:
+	 * <code>
+	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	 * </code>
+	 * For complete documentation see {@link #isAuthorized(String, String, String)} 
+	 * 
+	 * @param prologCapability
+	 * @param crudv
+	 * @return
+	 */
+	public boolean isAuthorized(String prologCapability, String crudv) {
+		return this.isAuthorized(prologCapability, "{}", crudv);
+	}
 
 	/**
 	 * 
-	 * To use like follow: @PreAuthorize("@auth.isAuthorized('concept', 'lexicalization', 'update')")
+	 * To use like follow:
+	 * <code>
+	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
+	 * </code> 
 	 * 
-	 * @param topicSubject
-	 *            can be any object in the domain of ST. It could be:
-	 *            <ul>
-	 *            <li>An <i>xRole</i> of RDF objects
-	 *            (<code>cls, individual, property, ontology, concept, conceptScheme, xLabel, skosCollection</code>)
-	 *            </li>
-	 *            <li>Some special classes (e.g. <code>triples, project, user, system</code>)</li>
-	 *            </ul>
+	 * @param prologCapability
+	 * 		Expressed in this way <code>&lt;area&gt;(&lt;subject&gt;, &lt;scope&gt;)</code>.
 	 * 
-	 * @param topicScope
-	 *            might refer to specific actions or range of actions that are allowed on specific resource
-	 *            types. It could be:
-	 *            <ul>
-	 *            <li>partitions from the resource view:
-	 *            <code>types, schemes, broader, superclasses, superproperties, otherproperties etc...</code>
-	 *            </li>
-	 *            <li><code>lexicalization</code> (any kind of triple or set of triples related to the
-	 *            lexicalization of an object, in any possible lexicalization model).</li>
-	 *            <li><code>axiom</code> editing of OWL axioms (or to be included in the possibility</li>
-	 *            </ul>
+	 * @param userResponsibility
+	 * 		A String representing a JSON map serialization like <code>{key1: "value1", key2: "value2"}</code>
+	 * 		TODO: define the available keys
 	 * 
-	 * @param accessPrivilege
-	 *            following the CRUD paradigma, it could be any of <code>create</code> <code>read</code>
-	 *            <code>update</code> <code>delete</code>
+	 * @param crudv
+	 * 		Following the CRUD paradigma, it could be any of <code>C (create)</code> <code>R (read)</code>
+	 *		<code>U (update)</code> <code>D (delete)</code>, plus <code>V (validation)</code>.
 	 * 
 	 * @return
 	 */
-	public boolean isAuthorized(String prologCapability, String userResponsibility) {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		STUser loggedUser = (STUser) auth.getPrincipal();
-
-		Collection<UserCapabilitiesEnum> capabilities = getCapabilities(loggedUser);
-
-		System.out.println("User: " + loggedUser);
-		System.out.println("Capabilities:");
-		Iterator<UserCapabilitiesEnum> it = capabilities.iterator();
-		while (it.hasNext()) {
-			System.out.println("\t" + it.next().name());
+	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv) {
+		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "')";
+		
+		//parse userResponsibility
+		Map<String, Object> userRespMap;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+			mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+			userRespMap = mapper.readValue(userResponsibility, new TypeReference<Map<String, Object>>(){});
+		} catch (IOException e) {
+			throw new IllegalArgumentException(
+					"Illegal authorization parameter 'userResponsabililty': " + userResponsibility);
 		}
+		
+//		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//		STUser loggedUser = (STUser) auth.getPrincipal();
+//		System.out.println("User: " + loggedUser);
+//		Collection<UserCapabilitiesEnum> capabilities = getCapabilities(loggedUser);
+//		System.out.println("Capabilities:");
+//		Iterator<UserCapabilitiesEnum> it = capabilities.iterator();
+//		while (it.hasNext()) {
+//			System.out.println("\t" + it.next().name());
+//		}
 
 		System.out.println("Role base access control:");
 		Project<?> targetForRBAC = getTargetForRBAC();
 
 		System.out.println("\ttarget for RBAC = " + targetForRBAC.getName());
-		System.out.println("\tprolog capability = " + prologCapability);
-		System.out.println("\tuserResponsibility = " + userResponsibility);
+		System.out.println("\tprolog goal = " + prologGoal);
+		System.out.println("\tuser responsibility map = " + userRespMap);
 
 		AccessLevel requestedAccessLevel = AccessLevel.R;
 		LockLevel requestedLockLevel = LockLevel.NO;

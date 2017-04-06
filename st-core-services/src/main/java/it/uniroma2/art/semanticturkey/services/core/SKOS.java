@@ -16,7 +16,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +33,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -70,7 +70,8 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('auth(rdf(concept, taxonomy), ''R'')', '')")
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefined Resource scheme) {
 		QueryBuilder qb;
 
@@ -329,46 +330,55 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
-		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		
-		IRI newConceptIRI = generateConceptIRI(newConcept, conceptScheme);
-		
-		try {
-			//add concept sparql update
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			if (cForm.isTypeGraph()){
-				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
 
-				StandardForm stdForm = new StandardForm(
-						newConceptIRI.stringValue(), newConcept.getLabel(), newConcept.getLanguage().orElse(null));
-				
-				List<ARTTriple> triples = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
-				shutDownCodaCore(codaCore);
-				
-				String query = "INSERT DATA { \n GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n";
-				for (ARTTriple t : triples){
-					query += NTriplesUtil.toNTriplesString(t.getSubject()) + " " + 
-							NTriplesUtil.toNTriplesString(t.getPredicate()) + " " + 
-							NTriplesUtil.toNTriplesString(t.getObject()) + " .\n";
-				}
-				query += "}\n}";
-				
-				System.out.println("query:\n" + query);
-	//			Update update = repoConnection.prepareUpdate(query);
-	//			update.setIncludeInferred(false);
-	//			update.execute();
-				
-			} else {
-				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-					+ "' as constructor since it is not of type 'graph'");
-			}
-		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
-			throw new CODAException(e);
-		} finally {
-			shutDownCodaCore(codaCore);
+		IRI newConceptIRI = generateConceptIRI(newConcept, conceptScheme);
+
+		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT); //?conc a skos:Concept
+		if (newConcept != null) { //?conc skos:prefLabel ?label
+			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, newConcept);
 		}
-			
-		
+		modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
+		if (broaderConcept != null) {//?conc skos:broader ?broad
+			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
+		} else { //?conc skos:topConceptOf ?sc
+			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+		}
+
+		//CustomForm further info
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+		if (customFormId != null && userPromptMap != null) {
+			try {
+				
+				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+				if (cForm.isTypeGraph()){
+					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+					StandardForm stdForm = new StandardForm(
+							newConceptIRI.stringValue(), newConcept.getLabel(), newConcept.getLanguage().orElse(null));
+					UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
+					shutDownCodaCore(codaCore);
+					
+					for (ARTTriple t : updates.getInsertTriples()){
+						modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+					}
+					for (ARTTriple t : updates.getDeleteTriples()){
+						modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+					}
+				} else {
+					throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+				}
+			} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
+				throw new CODAException(e);
+			} finally {
+				shutDownCodaCore(codaCore);
+			}
+		}
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
 
 	/**

@@ -19,8 +19,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -69,6 +71,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormXMLHelper;
 import it.uniroma2.art.semanticturkey.customform.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.FormsMapping;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
@@ -83,7 +86,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
-import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 
 @STService
 public class CustomForms extends STServiceAdapter {
@@ -116,41 +118,36 @@ public class CustomForms extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
 		try {
+			Model modelAdditions = new LinkedHashModel();
+			Model modelRemovals = new LinkedHashModel();
+			
 			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
 			if (cForm.isTypeGraph()){
 				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
-				List<ARTTriple> triples = cfGraph.executePearlForRange(codaCore, userPromptMap);
-				String query = createInsertQuery(triples);
-				Update update = repoConnection.prepareUpdate(query);
-				update.setIncludeInferred(false);
-				update.execute();
+				UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore, userPromptMap);
 				//link the generated graph with the resource
-				repoConnection.add(subject, predicate, detectGraphEntry(triples), getWorkingGraph());
+				modelAdditions.add(subject, predicate, detectGraphEntry(updates.getInsertTriples()));
+				for (ARTTriple t : updates.getInsertTriples()){
+					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
+				}
+				for (ARTTriple t : updates.getDeleteTriples()){
+					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject());
+				}
 			} else if (cForm.isTypeNode()){
 				String value = userPromptMap.entrySet().iterator().next().getValue().toString();//get the only value
 				ProjectionOperator projOperator = CustomFormParseUtils.getProjectionOperator(codaCore, cForm.getRef());
 				Value generatedValue = codaCore.executeProjectionOperator(projOperator, value);
 				//link the generated value with the resource
-				repoConnection.add(subject, predicate, generatedValue, getWorkingGraph());
+				modelAdditions.add(subject, predicate, generatedValue);
 			}
+			repoConnection.add(modelAdditions, getWorkingGraph());
+			repoConnection.remove(modelRemovals, getWorkingGraph());
 		} catch (PRParserException | ComponentProvisioningException | ConverterException |
 				ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
 			throw new CODAException(e);
 		} finally {
 			shutDownCodaCore(codaCore);
 		}
-	}
-	
-	private String createInsertQuery(List<ARTTriple> triples) {
-		String query = "INSERT DATA { \n"
-				+ "GRAPH " + SPARQLHelp.toSPARQL(getWorkingGraph()) + " {\n";
-		for (ARTTriple triple : triples){
-			query += SPARQLHelp.toSPARQL(triple.getSubject()) + " " + 
-					SPARQLHelp.toSPARQL(triple.getPredicate()) + " " + 
-					SPARQLHelp.toSPARQL(triple.getObject()) + " .\n";
-		}
-		query += "}\n}";
-		return query;
 	}
 	
 	/**
