@@ -125,6 +125,9 @@
 
 				<beans:bean id="StringToRepositoryAccessConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToRepositoryAccessConverter" />
+					
+				<beans:bean id="StringToMapConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToMapConverter" />
 
 			</beans:list>
 		</beans:property>

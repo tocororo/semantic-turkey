@@ -16,13 +16,26 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -30,6 +43,7 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
@@ -50,6 +64,9 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 public class SKOS extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(SKOS.class);
+	
+	@Autowired
+	private CustomFormManager cfManager;
 
 	@STServiceOperation
 	@Read
@@ -304,6 +321,54 @@ public class SKOS extends STServiceAdapter {
 		}
 
 		applyPatch(quadAdditions, quadRemovals);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public void createConcept2(@Optional @LanguageTaggedString Literal newConcept,
+			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
+			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
+		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
+		
+		IRI newConceptIRI = generateConceptIRI(newConcept, conceptScheme);
+		
+		try {
+			//add concept sparql update
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			if (cForm.isTypeGraph()){
+				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+
+				StandardForm stdForm = new StandardForm(
+						newConceptIRI.stringValue(), newConcept.getLabel(), newConcept.getLanguage().orElse(null));
+				
+				List<ARTTriple> triples = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
+				shutDownCodaCore(codaCore);
+				
+				String query = "INSERT DATA { \n GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n";
+				for (ARTTriple t : triples){
+					query += NTriplesUtil.toNTriplesString(t.getSubject()) + " " + 
+							NTriplesUtil.toNTriplesString(t.getPredicate()) + " " + 
+							NTriplesUtil.toNTriplesString(t.getObject()) + " .\n";
+				}
+				query += "}\n}";
+				
+				System.out.println("query:\n" + query);
+	//			Update update = repoConnection.prepareUpdate(query);
+	//			update.setIncludeInferred(false);
+	//			update.execute();
+				
+			} else {
+				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+					+ "' as constructor since it is not of type 'graph'");
+			}
+		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
+			throw new CODAException(e);
+		} finally {
+			shutDownCodaCore(codaCore);
+		}
+			
+		
 	}
 
 	/**

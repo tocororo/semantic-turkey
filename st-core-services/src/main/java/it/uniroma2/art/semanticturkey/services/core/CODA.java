@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
@@ -32,9 +31,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 public class CODA extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(CODA.class);
-
-	@Autowired
-	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
 	@STServiceOperation
 	@Read
@@ -92,18 +88,6 @@ public class CODA extends STServiceAdapter {
 				shutDownCodaCore(codaCore);
 			}
 		}
-	}
-
-	private CODACore getInitializedCodaCore(RepositoryConnection connection)
-			throws UnavailableResourceException, ProjectInconsistentException {
-		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
-		codaCore.initialize(getManagedConnection());
-		return codaCore;
-	}
-
-	private void shutDownCodaCore(CODACore codaCore) {
-		codaCore.setRepositoryConnection(null);
-		codaCore.stopAndClose();
 	}
 
 }

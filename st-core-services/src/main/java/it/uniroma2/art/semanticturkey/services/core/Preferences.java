@@ -3,17 +3,23 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.util.Collection;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -84,8 +90,26 @@ public class Preferences extends STServiceAdapter {
 			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, null, getProject(),
 					UsersManager.getLoggedUser());
 		}
-		
 	}
+	
+	@STServiceOperation
+	public AnnotatedValue<IRI> getActiveScheme(String projectName) throws IllegalStateException, STPropertyAccessException,
+			ProjectAccessException {
+		AnnotatedValue<IRI> scheme = null;
+		Project<?> project = ProjectManager.getProject(projectName);
+		if (project == null) {
+			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName 
+					+ ". It could be closed or not existing.");
+		}
+		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME,
+				ProjectManager.getProject(projectName), UsersManager.getLoggedUser());
+		if (value != null) {
+			scheme = new AnnotatedValue<IRI>(SimpleValueFactory.getInstance().createIRI(value));
+		}
+		return scheme;
+	}
+	
+	
 	
 	@STServiceOperation
 	public JsonNode getProjectPreferences() throws STPropertyAccessException, STPropertyUpdateException {

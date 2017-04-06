@@ -23,14 +23,18 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.rdf4jimpl.RDF4JARTResourceFactory;
+import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
@@ -58,6 +62,9 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
 	private PlatformTransactionManager txManager;
+	
+	@Autowired
+	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
 	private final ValueFactory sesVf;
 	private final RDF4JARTResourceFactory rdf4j2artFact;
@@ -202,6 +209,29 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			e.printStackTrace();
 			throw e;
 		}
+	}
+	
+	
+	/**
+	 * Returns an instance of {@link CODACore} to use in services.
+	 * @param repoConnection
+	 * @return
+	 * @throws ProjectInconsistentException
+	 */
+	protected CODACore getInitializedCodaCore(RepositoryConnection repoConnection) throws ProjectInconsistentException{
+		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
+		codaCore.initialize(repoConnection);
+		return codaCore;
+	}
+	
+	/**
+	 * Stops and shutdown the instance of CODACore. This method should be called when it is finished using
+	 * the instance of CODACore returned by {@link #getInitializedCodaCore(RepositoryConnection)}
+	 * @param codaCore
+	 */
+	protected void shutDownCodaCore(CODACore codaCore) {
+		codaCore.setRepositoryConnection(null);
+		codaCore.stopAndClose();
 	}
 
 	// Semi-deprecated

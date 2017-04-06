@@ -49,7 +49,6 @@ import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
 import it.uniroma2.art.coda.pearl.model.ProjectionRule;
 import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
@@ -59,9 +58,15 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 public class CustomFormGraph extends CustomForm {
 	
+	//fields in CustomForm prompted to user are identified with the Feature Structure userPrompt/...
 	private static final String USER_PROMPT_FEATURE_NAME = "userPrompt";
 	private static final String USER_PROMPT_TYPE_PATH = "it.uniroma2.art.semanticturkey.userPromptFS";
+	//fields in standard Form prompted to user are identified with the Feature Structure stdForm/...
+	private static final String STANDARD_FORM_FEATURE_NAME = "stdForm";
+	private static final String STANDARD_FORM_TYPE_PATH = "it.uniroma2.art.semanticturkey.stdFormFS";
+	
 	private String annotationTypeName;//UIMA type taken from pearl rule (rule ....)
+	
 	private List<IRI> showPropertyChain;
 	
 	CustomFormGraph(String id, String name, String description, String ref, List<IRI> showPropChain) {
@@ -80,73 +85,6 @@ public class CustomFormGraph extends CustomForm {
 	
 	public void setShowPropertyChain(List<IRI> propertyChain){
 		this.showPropertyChain = propertyChain;
-	}
-	
-	/**
-	 * Returns a list (without duplicates) of predicates contained in the pearl of the {@link CustomFormGraph}.
-	 * @param codaCore an instance of CODACore already initialized, used to parse and retrieve
-	 * necessary information from PEARL code.
-	 * @param onlyMandatory <code>false</code> returns all the predicate; <code>true</code> returns
-	 * just the ones non-optional
-	 * @param onlyShowable <code>false</code> returns all the predicate; <code>true</code> returns
-	 * just the ones to show to the user.
-	 * tells if the returned collection should contain all the predicate or 
-	 * TODO: onlyShowable parameter will be useful when the CRE will provide further information to
-	 * know whether or not a predicate-object has to be shown to the user in the UI (through pearl 
-	 * annotation or other attribute in CRE xml)
-	 * @return
-	 * @throws PRParserException 
-	 * @throws RDFModelNotSetException 
-	 * @throws ModelAccessException 
-	 */
-	public Collection<String> getGraphPredicates(CODACore codaCore, boolean onlyMandatory, boolean onlyShowable) 
-			throws PRParserException, RDFModelNotSetException {
-		Collection<String> predicates = new ArrayList<String>();
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
-		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
-		Set<String> prRuleIds = prRuleMap.keySet();
-		for (String prId : prRuleIds){
-			ProjectionRule projRule = prRuleMap.get(prId);
-			//get the graph section
-			Collection<GraphElement> graphList = projRule.getInsertGraphList();
-			//it's supposed that the graph entry is the subject of the first graphElement (that is not optional)
-			String graphEntry = graphList.iterator().next().asGraphStruct().getSubject().getValueAsString();
-			for (GraphElement g : graphList) {
-				if (g.isGraphStruct()){
-					GraphStruct gs = g.asGraphStruct();
-					if (gs.getSubject().getValueAsString().equals(graphEntry)){
-						GraphSingleElement predGraphElem = gs.getPredicate();
-						if (predGraphElem instanceof GraphSingleElemUri){
-							String pred = ((GraphSingleElemUri) predGraphElem).getURI();
-							if (!predicates.contains(pred)){//prevent duplicates
-								predicates.add(pred);
-							}
-						}
-					}
-				} else { //g.isOptionalGraphStruct
-					if (!onlyMandatory){
-						OptionalGraphStruct ogs = g.asOptionalGraphStruct();
-						Collection<GraphElement> optionalGraphList = ogs.getOptionalTriples();
-						for (GraphElement otpG : optionalGraphList) {
-							if (otpG.isGraphStruct()){
-								GraphStruct gs = otpG.asGraphStruct();
-								if (gs.getSubject().getValueAsString().equals(graphEntry)){
-									GraphSingleElement predGraphElem = gs.getPredicate();
-									if (predGraphElem instanceof GraphSingleElemUri){
-										String pred = ((GraphSingleElemUri) predGraphElem).getURI();
-										if (!predicates.contains(pred)){//prevent duplicates
-											predicates.add(pred);
-										}
-									}
-								}
-							} //2nd level optional graph are not considered.
-						}
-					}
-				}
-			}
-		}
-		return predicates;
 	}
 	
 	/**
@@ -377,35 +315,23 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
 	 */
-	public List<ARTTriple> executePearl(CODACore codaCore, Map<String, String> userPromptMap)
+	public List<ARTTriple> executePearlForRange(CODACore codaCore, Map<String, Object> userPromptMap)
 			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
-		List<ARTTriple> triples = null;
+		List<ARTTriple> triples = new ArrayList<ARTTriple>();
 		try {
 			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
-			JCas jcas = JCasFactory.createJCas(tsd);// this jcas has the structure defined by the TSD (created
-													// following the pearl)
+			// this jcas has the structure defined by the TSD (created following the pearl)
+			JCas jcas = JCasFactory.createJCas(tsd);
 			CAS aCAS = jcas.getCas();
 			TypeSystem ts = aCAS.getTypeSystem();
 			// create an annotation named as the pearlRule (annotationTypeName is set with the pearl rule name
 			// in getTypeSystemDescription())
 			Type annotationType = ts.getType(annotationTypeName);
 			AnnotationFS ann = aCAS.createAnnotation(annotationType, 0, 0);
-			// create a FS of type userPromptType and set its features with the value find in inputMap
+			// create a FS of type userPromptType and fill its features with the value find in inputMap
 			Type userPromptType = ts.getType(USER_PROMPT_TYPE_PATH);
-			FeatureStructure userPromptFS = aCAS.createFS(userPromptType);
-			// get the userPrompt features (userPrompt/...)
-			List<Feature> featuresList = userPromptType.getFeatures();
-			// fill the feature with the values specified in the inputMap
-			for (Feature f : featuresList) {
-				if (f.getName().startsWith(USER_PROMPT_TYPE_PATH)) {
-					// get the value of the given feature from the map
-					String userPromptName = f.getShortName();
-					String userPromptValue = userPromptMap.get(userPromptName);
-					// assign the value to the feature
-					userPromptFS.setStringValue(f, userPromptValue);
-				}
-			}
 			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
+			FeatureStructure userPromptFS = createAndFillPromptFS(userPromptType, aCAS, userPromptMap);
 			ann.setFeatureValue(userPromptFeature, userPromptFS);
 			aCAS.addFsToIndexes(ann);
 			// analyseCas(aCAS);
@@ -418,7 +344,7 @@ public class CustomFormGraph extends CustomForm {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
 				// get only triples of relevant annotations (those triples that start with it.uniroma2.
 				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {
-					triples = suggOntCoda.getAllInsertARTTriple();
+					triples.addAll(suggOntCoda.getAllInsertARTTriple());
 				}
 			}
 		} catch (PRParserException | ComponentProvisioningException | ConverterException
@@ -426,6 +352,83 @@ public class CustomFormGraph extends CustomForm {
 			throw new CODAException(e);
 		}
 		return triples;
+	}
+	
+	/**
+	 * Fills a CAS with the value specified in the given userPromptMap, then executes CODA with the 
+	 * CAS, generates the triples and returns them.
+	 * @param userPromptMap map containing userPrompt-value pairs, where userPrompt is a feature name
+	 * (the same indicated in the pearl userPrompt/...) and value is the value given by user.
+	 * @param stdForm contains the value provided/generated from the standard form
+	 * @param codaCore an instance of CODACore already initialized
+	 * @return 
+	 * @throws CODAException 
+	 * @throws UnassignableFeaturePathException 
+	 * @throws ProjectionRuleModelNotSet 
+	 */
+	public List<ARTTriple> executePearlForConstructor(CODACore codaCore, Map<String, Object> userPromptMap, 
+			StandardForm stdForm)
+			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
+		List<ARTTriple> triples = new ArrayList<>();
+		try {
+			TypeSystemDescription tsd = createTypeSystemDescription(codaCore);
+			// this jcas has the structure defined by the TSD (created following the pearl)
+			JCas jcas = JCasFactory.createJCas(tsd);
+			CAS aCAS = jcas.getCas();
+			TypeSystem ts = aCAS.getTypeSystem();
+			// create an annotation named as the pearlRule (annotationTypeName is set with the pearl rule name
+			// in getTypeSystemDescription())
+			Type annotationType = ts.getType(annotationTypeName);
+			AnnotationFS ann = aCAS.createAnnotation(annotationType, 0, 0);
+			// create a FS of type userPromptType and fill its features with the value found in userPromptMap
+			Type userPromptType = ts.getType(USER_PROMPT_TYPE_PATH);
+			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
+			FeatureStructure userPromptFS = createAndFillPromptFS(userPromptType, aCAS, userPromptMap);
+			ann.setFeatureValue(userPromptFeature, userPromptFS);
+			// create a FS of type stdFormType and fill its features with the value found in stdForm Map
+			Type stdFormType = ts.getType(STANDARD_FORM_TYPE_PATH);
+			Feature stdFormFeature = annotationType.getFeatureByBaseName(STANDARD_FORM_FEATURE_NAME);
+			FeatureStructure stdFormFS = createAndFillPromptFS(stdFormType, aCAS, stdForm.asMap());
+			ann.setFeatureValue(stdFormFeature, stdFormFS);
+			
+			aCAS.addFsToIndexes(ann);
+//			analyseCas(aCAS);
+			
+			// run coda with the given pearl and the cas just created.
+			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
+			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+			codaCore.setJCas(jcas);
+			while (codaCore.isAnotherAnnotationPresent()) {
+				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
+				// get only triples of relevant annotations (those triples that start with it.uniroma2.
+				if (suggOntCoda.getAnnotation().getType().getName().startsWith("it.uniroma2")) {
+					triples.addAll(suggOntCoda.getAllInsertARTTriple());
+				}
+			}
+		} catch (PRParserException | ComponentProvisioningException | ConverterException
+				| DependencyException | UIMAException | RDFModelNotSetException e) {
+			throw new CODAException(e);
+		}
+		return triples;
+	}
+	
+	private FeatureStructure createAndFillPromptFS(Type annType, CAS aCAS, Map<String, Object> promptValueMap) {
+		FeatureStructure promptFS = aCAS.createFS(annType);
+		// get the (user/std)Prompt features (ex. userPrompt/...)
+		List<Feature> featuresList = annType.getFeatures();
+		// fill the feature with the values specified in the inputMap
+		for (Feature f : featuresList) {
+			if (f.getName().startsWith(annType.getName())) {
+				// get the value of the given feature from the map
+				String promptName = f.getShortName();
+				//add the value to the FS only if has value
+				Object promptValue = promptValueMap.get(promptName);
+				if (promptValue != null) {
+					promptFS.setStringValue(f, promptValue.toString());
+				}
+			}
+		}
+		return promptFS;
 	}
 	
 	/**
@@ -472,67 +475,75 @@ public class CustomFormGraph extends CustomForm {
 			Set<String> placeHolderIds = placeHolderMap.keySet();
 			//create an annotation (it...userPromptFS) which its structure is based on the value find in the userPrompt features
 			TypeDescription userPromptType = tsd.addType(USER_PROMPT_TYPE_PATH, "", CAS.TYPE_NAME_TOP);
-			//look for the userPrompt/... feature in PEARL code and add the related Features to the above annotation 
+			//create an annotation (it...stdFormFS) which its structure is based on the value find in the stdForm features
+			TypeDescription stdFormType = tsd.addType(STANDARD_FORM_TYPE_PATH, "", CAS.TYPE_NAME_TOP);
+			//look for the userPrompt/ and stdForm/ features in PEARL code and add the related Features to the above annotations 
 			for (String placeHolderId : placeHolderIds){
 //				System.out.println("placeHolderId: " + placeHolderId);
 				PlaceholderStruct placeHolderStruct = placeHolderMap.get(placeHolderId);
 				if (placeHolderStruct.hasFeaturePath()){
 					String featurePath = placeHolderStruct.getFeaturePath();
-					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){//add feature only for that featurePath that start with userPrompt/
+					//add feature only for that featurePath that start with userPrompt/ or stdForm/
+					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
 						String prompt = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
 						userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
+					} else if (featurePath.startsWith(STANDARD_FORM_FEATURE_NAME+"/")){
+						String prompt = featurePath.substring(STANDARD_FORM_FEATURE_NAME.length()+1);
+						stdFormType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
 					}
 				}
 			}
-			//finally add to the main annotation a feature named "userPrompt" of the type just created
+			//finally add to the main annotation the features named "userPrompt" and "stdForm" of the types just created
 			annotationType.addFeature(USER_PROMPT_FEATURE_NAME, "", userPromptType.getName());
+			annotationType.addFeature(STANDARD_FORM_FEATURE_NAME, "", stdFormType.getName());
 		}
 //		describeTSD(tsd);
 		return tsd;
 	}
 	
-	//For debug decomment in createTypeSystemDescription
-		@SuppressWarnings("unused")
-		private void describeTSD(TypeSystemDescription tsd){
-			System.out.println("================ TSD structure ================");
-			TypeDescription[] types = tsd.getTypes();
-			System.out.println("type list:");
-			for (int i=0; i<types.length; i++){
-				TypeDescription type = types[i];
-				if (type.getName().startsWith("it.uniroma2.art.semanticturkey")){
-					System.out.println("\nType: " + type.getName());
-					FeatureDescription[] features = type.getFeatures();
-					System.out.println("features:");
-					for (int j=0; j<features.length; j++){
-						FeatureDescription feature = features[j];
-						System.out.println("\t" + feature.getName() + "\t" + feature.getRangeTypeName());
-					}
+	// For debug decomment in createTypeSystemDescription
+	@SuppressWarnings("unused")
+	private void describeTSD(TypeSystemDescription tsd) {
+		System.out.println("================ TSD structure ================");
+		TypeDescription[] types = tsd.getTypes();
+		System.out.println("type list:");
+		for (int i = 0; i < types.length; i++) {
+			TypeDescription type = types[i];
+			if (type.getName().startsWith("it.uniroma2.art.semanticturkey")) {
+				System.out.println("\nType: " + type.getName());
+				FeatureDescription[] features = type.getFeatures();
+				System.out.println("features:");
+				for (int j = 0; j < features.length; j++) {
+					FeatureDescription feature = features[j];
+					System.out.println("\t" + feature.getName() + "\t" + feature.getRangeTypeName());
 				}
 			}
-			System.out.println("===============================================");
 		}
+		System.out.println("===============================================");
+	}
 
-		//For debug decomment in executePearl
-		@SuppressWarnings("unused")
-		private void analyseCas(CAS aCAS){
-			System.out.println("======== CAS ==========");
-			AnnotationIndex<AnnotationFS> anIndex = aCAS.getAnnotationIndex();
-			for (AnnotationFS an : anIndex){
-				if (an.getType().getName().startsWith("it.uniroma")){//I want to explode only my annotation (ignore DocumentAnnotation)
-					System.out.println("Annotation: " + an.getType().getName());
-					Feature feature = an.getType().getFeatureByBaseName("userPrompt");
-					System.out.println("\tFeature: " + feature.getName());
-					FeatureStructure userPromptFS = an.getFeatureValue(feature);
-					Type userPromptType = userPromptFS.getType();
-					List<Feature> upFeatures = userPromptType.getFeatures();
-					for (Feature upF : upFeatures){
-						String upfValue = userPromptFS.getStringValue(upF);
-						System.out.println("\t\tFeature: " + upF.getShortName() + "; value: " + upfValue);
-					}
-					
+	// For debug decomment in executePearl
+	@SuppressWarnings("unused")
+	private void analyseCas(CAS aCAS) {
+		System.out.println("======== CAS ==========");
+		AnnotationIndex<AnnotationFS> anIndex = aCAS.getAnnotationIndex();
+		for (AnnotationFS an : anIndex) {
+			// I want to explode only my annotation (ignore DocumentAnnotation)
+			if (an.getType().getName().startsWith("it.uniroma")) {
+				System.out.println("Annotation: " + an.getType().getName());
+				Feature feature = an.getType().getFeatureByBaseName("userPrompt");
+				System.out.println("\tFeature: " + feature.getName());
+				FeatureStructure userPromptFS = an.getFeatureValue(feature);
+				Type userPromptType = userPromptFS.getType();
+				List<Feature> upFeatures = userPromptType.getFeatures();
+				for (Feature upF : upFeatures) {
+					String upfValue = userPromptFS.getStringValue(upF);
+					System.out.println("\t\tFeature: " + upF.getShortName() + "; value: " + upfValue);
 				}
-			}
-			System.out.println("=======================");
-		}
 
+			}
+		}
+		System.out.println("=======================");
+	}
+	
 }
