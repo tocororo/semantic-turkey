@@ -3,12 +3,9 @@ package it.uniroma2.art.semanticturkey.security;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -105,23 +102,39 @@ public class STAuthorizationEvaluator {
 		System.out.println("\tprolog goal = " + prologGoal);
 		System.out.println("\tuser responsibility map = " + userRespMap);
 
-		AccessLevel requestedAccessLevel = AccessLevel.R;
+		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
-		boolean aclCheck = checkACL(requestedAccessLevel, requestedLockLevel);
-
-		boolean authorized = false;
+		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
 
 		System.out.println("\tproject consumer = " + stServiceContext.getProjectConsumer().getName());
 		System.out.println("\taccessed project = " + stServiceContext.getProject().getName());
-		System.out.println("\taclCheck = " + aclCheck);
+		System.out.println("\trequested access level = " + requestedAccessLevel);
+		System.out.println("\taclCheck = " + aclSatisfied);
 
+		if (!aclSatisfied) {
+			return false;
+		}
+		
+		boolean authorized = false;
+		
 		// TODO here should go the logic to determine which capability is required based on the
 		// topicSubject, topicScope and accessPrivilege triple
 		
 		authorized = true;
-		authorized&= aclCheck;
 
 		return authorized;
+	}
+
+	/**
+	 * Computes the requested <em>access level</em> to the <em>consumed</em> project based on the given
+	 * <em>accessPrivilege</em>, expressed as a <em>crudv</em>. The requested access is <em>R</em> if there
+	 * is no other privilege than <em>R</em>, otherwise it is <em>RW</em>.
+	 * 
+	 * @param crudv
+	 * @return
+	 */
+	private AccessLevel computeRequestedAccessLevel(String crudv) {
+		return crudv.chars().anyMatch(c -> c != 'R') ? AccessLevel.RW : AccessLevel.R;
 	}
 
 	/**
