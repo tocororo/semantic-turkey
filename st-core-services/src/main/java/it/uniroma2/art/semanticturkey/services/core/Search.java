@@ -5,6 +5,7 @@ import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
 import it.uniroma2.art.owlart.model.ARTNode;
+import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.query.MalformedQueryException;
@@ -226,10 +227,12 @@ public class Search extends STServiceAdapterOLD {
 		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(false);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
-		List<String> addedIndividualList = new ArrayList<String>();
-		List<String> addedClassList = new ArrayList<String>();
+		
+		Map<String, ValueTypeAndShow> propertyMap = new HashMap<String, ValueTypeAndShow>();
+		Map<String, ValueTypeAndShow> otherResourcesMap = new HashMap<String, ValueTypeAndShow>();
+		
+		
 		while (tupleBindingsIterator.hasNext()) {
 			TupleBindings tupleBindings = tupleBindingsIterator.next();
 			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
@@ -246,60 +249,141 @@ public class Search extends STServiceAdapterOLD {
 			role = getRoleFromType(type);
 			
 			if(role.equals(RDFResourceRolesEnum.cls)){
-				if(	addedClassList.contains(resourceURI.asURIResource().getNominalValue())){
+				if(otherResourcesMap.containsKey(resourceURI.asURIResource().getNominalValue())){
 					//the class was already added
 					continue;
 				}
-				addedClassList.add(resourceURI.asURIResource().getNominalValue());
+				//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
+				// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
+				// when the parent class is Owl:Thing the service filters out those classes with 
+				// NoLanguageResourcePredicate)
+				if(role.equals(RDFResourceRolesEnum.cls)){
+					String resNamespace = resourceURI.asURIResource().getNamespace();
+					if(resNamespace.equals(XmlSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
+							|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
+						continue;
+					}
+				}
+				String show = null;
+				if(tupleBindings.hasBinding("show")){
+					show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+				}
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
+				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
 			} else if(role.equals(RDFResourceRolesEnum.individual)){
-				if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
+				//there a special section for the individual, since an individual can belong to more than a
+				// class, so the result set could have more tuple regarding a single individual, this way
+				// should speed up the process
+				if(otherResourcesMap.containsKey(resourceURI.asURIResource().getNominalValue())){
 					//the individual was already added
 					continue;
 				}
-				addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
-			}
-			
-			//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
-			// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
-			// when the parent class is Owl:Thing the service filters out those classes with 
-			// NoLanguageResourcePredicate)
-			if(role.equals(RDFResourceRolesEnum.cls)){
-				String resNamespace = resourceURI.asURIResource().getNamespace();
-				if(resNamespace.equals(XmlSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
-						|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
-					continue;
+				String show = null;
+				if(tupleBindings.hasBinding("show")){
+					show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
 				}
-			}
-			
-			
-			//if a show was found, use it instead of the automatically retrieve one (the qname)
-			String show = null;
-			if(tupleBindings.hasBinding("show")){
-				show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
-				if(show.length()>0){
-					collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
-							true, show));
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
+				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+			} else if(role.equals(RDFResourceRolesEnum.property) || 
+					role.equals(RDFResourceRolesEnum.annotationProperty) || 
+					role.equals(RDFResourceRolesEnum.datatypeProperty) || 
+					role.equals(RDFResourceRolesEnum.objectProperty) || 
+					role.equals(RDFResourceRolesEnum.ontologyProperty) ) {
+				//check if the property was already added before (with a different type)
+				if(propertyMap.containsKey(resourceURI.asURIResource().getNominalValue())){
+					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(resourceURI.asURIResource().getNominalValue());
+					if(prevValueTypeAndShow.getRole().equals(RDFResourceRolesEnum.property)){
+						//the previous value was property, now it has a different role, so replace the old 
+						// one with the new one
+						String show = null;
+						if(tupleBindings.hasBinding("show")){
+							show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+						}
+						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
+						propertyMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+					}
+				} else{
+					//the property map did not have a previous value, so add this one without any checking
+					String show = null;
+					if(tupleBindings.hasBinding("show")){
+						show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+					}
+					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
+					propertyMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
 				}
+			} else{
+				//it is a concept, a conceptScheme or a collection, just add it to the otherMap
+				String show = null;
+				if(tupleBindings.hasBinding("show")){
+					show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+				}
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
+				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
 			}
-			else{
-				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
-						true, true));
-			}
-			
-			/*if(show!= null && show.length()>0){
-				collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
-						true, show));
-			} else {
-				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
-						true, true));
-			}*/
-			
-			
 		}
+		
+		//now iterate over the 2 maps and construct the responses
+		for(String key : otherResourcesMap.keySet()){
+			ValueTypeAndShow valueTypeAndShow = otherResourcesMap.get(key);
+			if(valueTypeAndShow.isShowPresent() || !valueTypeAndShow.getShow().isEmpty()){
+				collection.add(STRDFNodeFactory.createSTRDFURI(valueTypeAndShow.getResource().asURIResource(),
+						valueTypeAndShow.getRole(), true, valueTypeAndShow.getShow()));
+			} else{
+				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, 
+						valueTypeAndShow.getResource().asURIResource(), valueTypeAndShow.getRole(), 
+						true, true));
+			}
+		}
+		for(String key : propertyMap.keySet()){
+			ValueTypeAndShow valueTypeAndShow = propertyMap.get(key);
+			if(valueTypeAndShow.isShowPresent() || !valueTypeAndShow.getShow().isEmpty()){
+				collection.add(STRDFNodeFactory.createSTRDFURI(valueTypeAndShow.getResource().asURIResource(),
+						valueTypeAndShow.getRole(), true, valueTypeAndShow.getShow()));
+			} else{
+				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, 
+						valueTypeAndShow.getResource().asURIResource(), valueTypeAndShow.getRole(), 
+						true, true));
+			}
+		}
+		
 		RDFXMLHelp.addRDFNodes(dataElement, collection);
 
 		return response;
 	}
+	
+	
+	private class ValueTypeAndShow{
+		ARTResource resource  = null;
+		String show = null;
+		RDFResourceRolesEnum role = null;
+		
+		public ValueTypeAndShow(ARTResource resource, String show, RDFResourceRolesEnum role) {
+			this.resource = resource;
+			this.show = show;
+			this.role = role;
+		}
+
+		public ARTResource getResource() {
+			return resource;
+		}
+
+		public String getShow() {
+			return show;
+		}
+
+		public RDFResourceRolesEnum getRole() {
+			return role;
+		}
+		
+		public boolean isShowPresent(){
+			if(show != null){
+				return true;
+			}
+			return false;
+		}
+		
+	}
+	
 	
 	@GenerateSTServiceController
 	public Response searchInstancesOfClass(ARTURIResource cls, String searchString, boolean useLocalName, 
