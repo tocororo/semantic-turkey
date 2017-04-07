@@ -11,7 +11,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.AtomicContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ClassIRIContext;
@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2Synta
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeIRIContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionInnerContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.IndividualContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.IndividualListContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralContext;
@@ -54,20 +55,20 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	@Override
 	public void enterDescription(DescriptionContext ctx){
 		//System.out.println("\nenterDescription");
-		try {
+		//try {
 			if(mci == null){
-				mci = parseDescription(ctx);
+				mci = parseDescription(ctx.descriptionInner());
 			}
-		} catch (ManchesterParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		} catch (ManchesterParserException e) {
+//			// TODO Auto-generated catch block
+//			//e.printStackTrace();
+//		}
 	}
 	
-	private ManchesterClassInterface parseDescription(DescriptionContext ctx) throws ManchesterParserException{
+	private ManchesterClassInterface parseDescription(DescriptionInnerContext descriptionInnerContext) {
 		//System.out.println("parseDescription"); // da cancellare
 		ManchesterClassInterface manchesterClassInterface;
-		List<ConjunctionContext> conjuctionList = ctx.conjunction();
+		List<ConjunctionContext> conjuctionList = descriptionInnerContext.conjunction();
 		if(conjuctionList.size()>1){
 			//System.out.println("D1"); //da cancellare
 			manchesterClassInterface = new ManchesterOrClass();
@@ -82,8 +83,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		return manchesterClassInterface;
 	}
 
-	private ManchesterClassInterface parseConjuction(ConjunctionContext conjunctionContext) 
-			throws ManchesterParserException {
+	private ManchesterClassInterface parseConjuction(ConjunctionContext conjunctionContext) {
 		//System.out.println("parseConjunction"); // da cancellare
 		ManchesterAndClass mac = new ManchesterAndClass();
 		if(conjunctionContext.classIRI() != null){
@@ -120,8 +120,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	}
 	
 	
-	private ManchesterClassInterface parseNotRestriction(NotRestrictionContext notRestrictionContext) 
-			throws ManchesterParserException{
+	private ManchesterClassInterface parseNotRestriction(NotRestrictionContext notRestrictionContext)  {
 		//System.out.println("parseNotRestriction"); // da cancellare
 		if(notRestrictionContext.not != null) { 
 			return new ManchesterNotClass(parseRestriction(notRestrictionContext.restriction()));
@@ -131,7 +130,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	}
 	
 	private ManchesterClassInterface parsePrimary(PrimaryContext primaryContext) 
-			throws ManchesterParserException {
+			{
 		//System.out.println("parsePrimary"); // da cancellare
 		boolean hasNot = false;
 		
@@ -157,7 +156,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 			
 	}
 
-	private ManchesterClassInterface parseAtomic(AtomicContext atomicContext) throws ManchesterParserException {
+	private ManchesterClassInterface parseAtomic(AtomicContext atomicContext) {
 		//System.out.println("parseAtomic"); // da cancellare
 		if(atomicContext.classIRI() != null){
 			ClassIRIContext classIRIContext = atomicContext.classIRI();
@@ -169,12 +168,11 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 			return parseIndividualList(atomicContext.individualList());
 		} else{
 			//System.out.println("A3"); //da cancellare
-			return parseDescription(atomicContext.description());
+			return parseDescription(atomicContext.descriptionInner());
 		}
 	}
 
-	private ManchesterClassInterface parseIndividualList(IndividualListContext individualListContext) 
-			throws ManchesterParserException {
+	private ManchesterClassInterface parseIndividualList(IndividualListContext individualListContext) {
 		//System.out.println("parseIndividualList"); // da cancellare
 		List<IndividualContext> individualContextList = individualListContext.individual();
 		ManchesterOneOfClass moc = new ManchesterOneOfClass();
@@ -184,7 +182,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		return moc;
 	}
 
-	private ManchesterClassInterface parseRestriction(RestrictionContext restrictionContext) throws ManchesterParserException{
+	private ManchesterClassInterface parseRestriction(RestrictionContext restrictionContext) {
 		//System.out.println("parseRestriction"); // da cancellare
 		//it can have an objectPropertyExpression or a dataPropertyExpression
 		if(restrictionContext.objectPropertyExpression()!= null){
@@ -259,20 +257,19 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	
 	
 
-	private Literal parseLiteral(LiteralContext literalContext) throws ManchesterParserException {
+	private Literal parseLiteral(LiteralContext literalContext) {
 		//System.out.println("parseLiteral"); // da cancellare
 		return getLiteral(literalContext);
 	}
 
 	
 
-	private Value parseIndividual(IndividualContext individual) throws ManchesterParserException {
+	private Value parseIndividual(IndividualContext individual) {
 		//System.out.println("parseIndividual"); // da cancellare
 		return getIndividual(individual);
 	}
 
-	private ManchesterClassInterface parseDataPrimary(DataPrimaryContext dataPrimaryContext) 
-			throws ManchesterParserException {
+	private ManchesterClassInterface parseDataPrimary(DataPrimaryContext dataPrimaryContext) {
 		//System.out.println("parseDataPrimary"); // da cancellare
 		boolean hasNot = false;
 		if(dataPrimaryContext.not != null){
@@ -286,8 +283,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 
-	private ManchesterClassInterface parseDataAtomic(DataAtomicContext dataAtomicContext) 
-			throws ManchesterParserException {
+	private ManchesterClassInterface parseDataAtomic(DataAtomicContext dataAtomicContext) {
 		//System.out.println("parseDataAtomic"); // da cancellare
 		if(dataAtomicContext.datatype() != null){
 			return parseDataType(dataAtomicContext.datatype());
@@ -296,8 +292,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 
-	private ManchesterClassInterface parseLiteralList(LiteralListContext literalListContext) 
-			throws ManchesterParserException {
+	private ManchesterClassInterface parseLiteralList(LiteralListContext literalListContext) {
 		//System.out.println("parseLiteralList"); // da cancellare
 		List<LiteralContext> literalContextList = literalListContext.literal();
 		List<Literal> literalList = new ArrayList<Literal>();
@@ -307,8 +302,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		return new ManchesterLiteralListClass(literalList);
 	}
 
-	private ManchesterClassInterface parseDataType(DatatypeContext datatypeContext) 
-			throws ManchesterParserException {
+	private ManchesterClassInterface parseDataType(DatatypeContext datatypeContext) {
 		//System.out.println("parseDataType"); // da cancellare
 		if(datatypeContext.datatypeIRI() != null){
 			DatatypeIRIContext datatypeIRIContext = datatypeContext.datatypeIRI();
@@ -324,15 +318,14 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 			} else if(abbr.getText().equals("string")){
 				return new ManchesterBaseClass(XMLSchema.STRING);
 			} else{
-				throw new ManchesterParserException("The abbreviated type "+abbr.getText()+" is not supported");
+				throw new ManchesterParserRuntimeException("The abbreviated type "+abbr.getText()+" is not supported");
 			}
 		}
 	}
 
 	/************************************************************/
 	
-	private IRI getIRIFromResource(ClassIRIContext classIRIcontext)
-			throws ManchesterParserException {
+	private IRI getIRIFromResource(ClassIRIContext classIRIcontext){
 		if(classIRIcontext.IRIREF() != null){
 			//it is directly an IRI
 			String baseClass = classIRIcontext.IRIREF().getText();
@@ -343,8 +336,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 	
-	private IRI getIRIFromResource(ObjectPropertyExpressionContext objectPropertyExpressionContext) 
-			throws ManchesterParserException {
+	private IRI getIRIFromResource(ObjectPropertyExpressionContext objectPropertyExpressionContext) {
 		ObjectPropertyIRIContext objPropIRIContext;
 		if(objectPropertyExpressionContext.objectPropertyIRI() != null){
 			objPropIRIContext = objectPropertyExpressionContext.objectPropertyIRI();
@@ -354,8 +346,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		return getIRIFromResource(objPropIRIContext);
 	}
 	
-	private IRI getIRIFromResource(ObjectPropertyIRIContext objPropIRIContext) 
-			throws ManchesterParserException {
+	private IRI getIRIFromResource(ObjectPropertyIRIContext objPropIRIContext) {
 		if(objPropIRIContext.IRIREF() != null){
 			//it is directly an IRI
 			String objProp = objPropIRIContext.IRIREF().getText();
@@ -366,7 +357,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 	
-	private IRI getIRIFromResource(DatatypeIRIContext datatypeIRIContext) throws ManchesterParserException{
+	private IRI getIRIFromResource(DatatypeIRIContext datatypeIRIContext) {
 		if(datatypeIRIContext.IRIREF() != null){
 			//it is directly an IRI
 			String baseClass = datatypeIRIContext.IRIREF().getText();
@@ -377,8 +368,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 	
-	private IRI getIRIFromResource(DataPropertyExpressionContext dataPropertyExpressionContext) 
-			throws ManchesterParserException {
+	private IRI getIRIFromResource(DataPropertyExpressionContext dataPropertyExpressionContext) {
 		if(dataPropertyExpressionContext.IRIREF() != null){
 			String baseDataProp = dataPropertyExpressionContext.IRIREF().getText();
 			return valueFactory.createIRI(baseDataProp.substring(1,  baseDataProp.length() - 1));
@@ -391,17 +381,17 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		return (objectPropertyExpressionContext.inverseObjectProperty() != null);
 	}
 
-	private IRI resolvePrefixedName(PrefixedNameContext prefixedNameContext) throws ManchesterParserException {
+	private IRI resolvePrefixedName(PrefixedNameContext prefixedNameContext) {
 		String qname = prefixedNameContext.PNAME_LN().getText();
 		String[] qnameArray = qname.split(":");
 		String namespace = prefixToNamespacesMap.get(qnameArray[0]);
 		if(namespace == null){
-			throw new ManchesterParserException("There is no prefix for the namespace: "+qnameArray[0]);
+			throw new ManchesterParserRuntimeException("There is no prefix for the namespace: "+qnameArray[0]);
 		}
 		return valueFactory.createIRI(namespace, qnameArray[1]);
 	}
 
-	private Literal getLiteral(LiteralContext literalContext) throws ManchesterParserException {
+	private Literal getLiteral(LiteralContext literalContext) {
 		String literalWithNoises = literalContext.string().getText();
 		String label = literalWithNoises.substring(1, literalWithNoises.length()-1);
 		if(literalContext.LANGTAG() != null){
@@ -413,7 +403,7 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 	
-	private IRI getIndividual(IndividualContext individualContext) throws ManchesterParserException {
+	private IRI getIndividual(IndividualContext individualContext) {
 		if(individualContext.IRIREF() != null){
 			//it is directly an IRI
 			String individual = individualContext.IRIREF().getText();

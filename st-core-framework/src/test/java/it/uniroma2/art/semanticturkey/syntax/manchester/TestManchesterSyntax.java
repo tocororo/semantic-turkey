@@ -103,11 +103,11 @@ public class TestManchesterSyntax {
 		prefixtoNamespaceMap.put("my", "http://test.it");
 
 		String inputAssertion = class1uri + " and " + class2uri;
-		manchesterClassInterface = ManchesterSyntaxUtils.parse(inputAssertion, valueFactory, prefixtoNamespaceMap);
+		manchesterClassInterface = ManchesterSyntaxUtils.parseCompleteExpression(inputAssertion, valueFactory, prefixtoNamespaceMap);
 		printResults(inputAssertion, manchesterClassInterface);
 
 		inputAssertion = prop1uri + "value " + valueLiteral;
-		manchesterClassInterface = ManchesterSyntaxUtils.parse(inputAssertion, valueFactory, prefixtoNamespaceMap);
+		manchesterClassInterface = ManchesterSyntaxUtils.parseCompleteExpression(inputAssertion, valueFactory, prefixtoNamespaceMap);
 		printResults(inputAssertion, manchesterClassInterface);
 
 	}
@@ -135,7 +135,7 @@ public class TestManchesterSyntax {
 		prefixtoNamespaceMap.put("my", "http://test.it");
 
 		String inputAssertion = class1uri + " and " + class2uri;
-		manchesterClassInterface = ManchesterSyntaxUtils.parse(inputAssertion, conn.getValueFactory(), prefixtoNamespaceMap);
+		manchesterClassInterface = ManchesterSyntaxUtils.parseCompleteExpression(inputAssertion, conn.getValueFactory(), prefixtoNamespaceMap);
 		
 		
 		

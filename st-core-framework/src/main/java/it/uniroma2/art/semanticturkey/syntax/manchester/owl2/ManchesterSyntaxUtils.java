@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.LexerNoViableAltException;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -21,6 +23,8 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
 
@@ -35,25 +39,30 @@ public class ManchesterSyntaxUtils {
 	public static String OWL_ONCLASS = "http://www.w3.org/2002/07/owl#onClass";
 	
 	
-	public static ManchesterClassInterface parse(String mancExp, ValueFactory valueFactory, 
-			Map<String, String> statList){
+	public static ManchesterClassInterface parseCompleteExpression(String mancExp, ValueFactory valueFactory, 
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException{
 		// Get our lexer
-		ManchesterOWL2SyntaxParserLexer lexer = new ManchesterOWL2SyntaxParserLexer(new ANTLRInputStream(mancExp));
+		//ManchesterOWL2SyntaxParserLexer lexer = new ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
+		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
 		// Get a list of matched tokens
 	    CommonTokenStream tokens = new CommonTokenStream(lexer);
 	    // Pass the tokens to the parser
 	    ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
+	    //set the error handler that does not try to recover from error, it just throw exception
+	    parser.setErrorHandler(new BailErrorStrategy());
+	    try{
+		    DescriptionContext descriptionContext = parser.description();
+		    
+		    // Walk it and attach our listener
+		    ParseTreeWalker walker = new ParseTreeWalker();
+		    ParserDescription parserDescription = new ParserDescription(valueFactory, 
+		    		prefixToNamespacesMap);
+	    	walker.walk(parserDescription, descriptionContext);
+	    	return parserDescription.getManchesterClass();
+	    } catch(ManchesterParserRuntimeException e){
+	    	throw new ManchesterParserException(e);
+	    }
 	    
-	    DescriptionContext descriptionContext = parser.description();
-	    
-	    
-	    // Walk it and attach our listener
-	    ParseTreeWalker walker = new ParseTreeWalker();
-	    ParserDescription parserDescription = new ParserDescription(valueFactory, 
-	    		statList);
-	    walker.walk(parserDescription, descriptionContext);
-	    
-	    return parserDescription.getManchesterClass();
 	}
 	
 	public static Resource parseManchesterExpr(ManchesterClassInterface mci, List<Statement> statList, 
@@ -549,5 +558,18 @@ public class ManchesterSyntaxUtils {
 			}
 		}
 		return valueList;
+	}
+	
+	
+	public static class BailSimpleLexer extends ManchesterOWL2SyntaxParserLexer {
+
+		public BailSimpleLexer(CharStream input) {
+			super(input);
+		}
+		
+		public void recover(LexerNoViableAltException e){
+			throw new ManchesterParserRuntimeException(e);
+		}
+		
 	}
 }

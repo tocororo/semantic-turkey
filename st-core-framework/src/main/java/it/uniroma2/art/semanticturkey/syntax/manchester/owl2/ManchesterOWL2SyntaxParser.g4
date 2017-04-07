@@ -37,10 +37,15 @@ package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 description
 	:
-	conjunction (OR conjunction)*
+	descriptionInner EOF
 	//conjunction 'or' conjunction ( 'or' conjunction )*
 	//| 
 	//conjunction
+	;
+
+descriptionInner
+	:
+	conjunction (OR conjunction)* 
 	;
 	
 conjunction 
@@ -105,7 +110,7 @@ atomic :
 	| 
 	'{' individualList '}' 
 	| 
-	'(' description ')'	
+	'(' descriptionInner ')'	
 	;
 
 dataPrimary 
@@ -199,8 +204,8 @@ prefixedName
   //PNAME_NS
   ;	
 
-WS:     (' ' | '\t' | '\f' |'\r')+ -> skip;
-NEWLINE:  '\n' -> skip;
+WS:     (' ' | '\t' )+ -> skip;
+NEWLINE:  '\r'? '\n' -> skip;
 //COMMENT: '//' .* ('\n' | '\r') -> skip;
 COMMENT: '//' .*? ('\n' | '\r') -> skip;
 //MULTILINE_COMMENT:  '/*' (options {greedy=false;} : .)* '*/' -> skip;

@@ -1,207 +1,201 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.antlr.runtime.RecognitionException;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
-import org.w3c.dom.Element;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 
-import it.uniroma2.art.owlart.exceptions.ManchesterParserException;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.io.RDFNodeSerializer;
-import it.uniroma2.art.owlart.model.ARTBNode;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterClassInterface;
-import it.uniroma2.art.owlart.model.syntax.manchester.ManchesterParser;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterSyntaxException;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
-@GenerateSTServiceController
-@Validated
-@Component
-public class ManchesterHandler extends STServiceAdapterOLD {
 
-	@GenerateSTServiceController
-	public Response getAllDLExpression(ARTURIResource classUri,
+/**
+ * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
+ */
+
+@STService
+public class ManchesterHandler extends STServiceAdapter {
+
+	/**
+	 * returns all Manchester expression associated to the given classIRI (using owl:equivalentClassand and 
+	 * rdfs:subClassOf ) and the starting bnode
+	 * @param classIri the input classIRI
+	 * @param usePrefixes true if the returned expression should be in qname, false for complete IRI
+	 * @param useUppercaseSyntax true if the name of the symbols used in the Manchester should be in uppercase,
+	 * false for lowercase 
+	 * @return a map of with two keys, equivalent and sublcass, and for each key a map of Bnode and 
+	 * associated Manchester Expression
+	 */
+	@STServiceOperation
+	@Read
+	public Map<String, Map<String, String>> getAllDLExpression(IRI classIri,
 			@Optional(defaultValue = "true") boolean usePrefixes,
-			@Optional(defaultValue = "true") boolean useUppercaseSyntax) throws ModelAccessException {
-
-		OWLModel model = getOWLModel();
-
-		List<ARTBNode> equivalentClassList = new ArrayList<ARTBNode>();
-		List<ARTBNode> subClassList = new ArrayList<ARTBNode>();
-
-		ARTStatementIterator iter = model.listStatements(classUri, NodeFilters.ANY, NodeFilters.ANY, false,
-				getWorkingGraph());
-		while (iter.hasNext()) {
-			ARTStatement artStatement = iter.next();
-			// check if the statement has a predicate RDFS.Res.SUBCLASSOF or OWL.Res.EQUIVALENTCLASS
-			// remember that the restriction is ALWAYS a bnode
-			ARTURIResource predicate = artStatement.getPredicate();
-			ARTNode object = artStatement.getObject();
-			if (predicate.equals(RDFS.Res.SUBCLASSOF) && object.isBlank()) {
-				subClassList.add(object.asBNode());
-			} else if (predicate.equals(OWL.Res.EQUIVALENTCLASS) && object.isBlank()) {
-				equivalentClassList.add(object.asBNode());
+			@Optional(defaultValue = "true") boolean useUppercaseSyntax){
+		Map<String, Map<String, String>> typeToMapBNodeToExpr = new HashMap<String, Map<String,String>>();
+		RepositoryConnection conn = getManagedConnection();
+		List<BNode> subClassBNodeList = new ArrayList<>();
+		List<BNode> equivalentClassNodeList = new ArrayList<>();
+		RepositoryResult<Statement> repRes = conn.getStatements(classIri, null, null);
+		while(repRes.hasNext()){
+			Statement statement = repRes.next();
+			IRI pred = statement.getPredicate();
+			Value obj = statement.getObject();
+			if(pred.equals(OWL.EQUIVALENTCLASS) && obj instanceof BNode){
+				equivalentClassNodeList.add((BNode) obj);
+			} else if(pred.equals(RDFS.SUBCLASSOF) && obj instanceof BNode){
+				subClassBNodeList.add((BNode) obj);
 			}
 		}
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-
-		// now take all the bnode in both lists and get the associted manchester expression
-		Element collElem = XMLHelp.newElement(dataElement, "collection");
-		for (ARTBNode artNode : equivalentClassList) {
-			String manchExpr = getSingleManchExpression(artNode, model, null, usePrefixes, useUppercaseSyntax);
-			Element equivalentClassElem = XMLHelp.newElement(collElem, "equivalentClass");
-			equivalentClassElem.setAttribute("bnode", artNode.getNominalValue());
-			equivalentClassElem.setAttribute("expression", manchExpr);
+		Resource graphsArray[] = new Resource[1] ;
+		graphsArray[0] = getWorkingGraph();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> namespaceToPrefixsMap = new HashMap<String, String>();
+		for(String prefix: prefixToNamespacesMap.keySet()){
+			namespaceToPrefixsMap.put(prefix, prefixToNamespacesMap.get(prefix));
 		}
-		for (ARTBNode artNode : subClassList) {
-			String manchExpr = getSingleManchExpression(artNode, model, null, usePrefixes, useUppercaseSyntax);
-			Element equivalentClassElem = XMLHelp.newElement(collElem, "subClass");
-			equivalentClassElem.setAttribute("bnode", artNode.getNominalValue());
-			equivalentClassElem.setAttribute("expression", manchExpr);
+		//now iterate over the two lists
+		Map<String, String>bnodeToExprEquivalentMap = new HashMap<>();
+		typeToMapBNodeToExpr.put("equivalentClass", bnodeToExprEquivalentMap);
+		for(BNode bnode : equivalentClassNodeList){
+			String expr = getSingleManchExpression(bnode, graphsArray, new ArrayList<>(), namespaceToPrefixsMap, 
+					usePrefixes, useUppercaseSyntax);
+			bnodeToExprEquivalentMap.put(bnode.stringValue(), expr);
 		}
-
-		return response;
-	}
-
-	@GenerateSTServiceController
-	public Response getExpression(ARTBNode artNode, @Optional(defaultValue = "true") boolean usePrefixes,
-			@Optional(defaultValue = "true") boolean useUppercaseSyntax) throws ModelAccessException {
-
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-
-		OWLModel model = getOWLModel();
-		List<ARTStatement> tripleList = new ArrayList<ARTStatement>();
-
-		String manchExpr = getSingleManchExpression(artNode, model, tripleList, usePrefixes,
-				useUppercaseSyntax);
-
-		Element manchExprElem = XMLHelp.newElement(dataElement, "MachesterExpression");
-		manchExprElem.setAttribute("value", manchExpr);
-
-		return response;
-
-	}
-
-	private String getSingleManchExpression(ARTBNode artNode, OWLModel model, List<ARTStatement> tripleList,
-			boolean usePrefixes, boolean useUppercaseSyntax) throws ModelAccessException {
-		ManchesterClassInterface manchClassFromBNode = model.getManchClassFromBNode(artNode, model,
-				getWorkingGraph(), tripleList);
-		String manchExpr = manchClassFromBNode.getManchExpr(usePrefixes, useUppercaseSyntax);
-		return manchExpr;
-	}
-
-	@GenerateSTServiceController
-	public Response removeExpression(ARTURIResource classUri, ARTURIResource exprType, ARTNode artNode)
-			throws ModelAccessException, ModelUpdateException {
-
-		OWLModel model = getOWLModel();
-		ARTResource workingGraph = getWorkingGraph();
-
-		if (!artNode.isBlank()) {
-			// this should never happen
-			return createReplyFAIL("the input artNode should be a BNode");
+		Map<String, String>bnodeToExprSubClassMap = new HashMap<>();
+		typeToMapBNodeToExpr.put("subClassOf", bnodeToExprSubClassMap);
+		for(BNode bnode : equivalentClassNodeList){
+			String expr = getSingleManchExpression(bnode, graphsArray, new ArrayList<>(), namespaceToPrefixsMap, 
+					usePrefixes, useUppercaseSyntax);
+			bnodeToExprSubClassMap.put(bnode.stringValue(), expr);
 		}
-
-		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
-		List<ARTStatement> tripleList = new ArrayList<ARTStatement>();
-		model.getManchClassFromBNode(artNode.asBNode(), model, workingGraph, tripleList);
-		// remove all the triple
-		for (ARTStatement artStatement : tripleList) {
-			model.deleteStatement(artStatement, workingGraph);
-		}
-		model.deleteTriple(classUri, exprType, artNode.asBNode(), workingGraph);
-
-		return resp;
-	}
-
-	@GenerateSTServiceController
-	public Response checkExpression(String manchExpr) {
-		try {
-			ManchesterParser.parse(manchExpr, getOWLModel());
-		} catch (RecognitionException | ModelAccessException | ManchesterParserException e) {
-			return createReplyFAIL("the expression : " + manchExpr + " is not valid");
-
-		}
-		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
-
-		return resp;
-
-	}
-
-	@GenerateSTServiceController
-	public Response createRestriction(ARTURIResource classUri, ARTURIResource exprType, String manchExpr)
-			throws ManchesterSyntaxException, ModelUpdateException {
-		OWLModel model = getOWLModel();
-		ARTResource workingGraph = getWorkingGraph();
 		
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-
-//		if (!exprType.equals(RDFS.Res.SUBCLASSOF) && !exprType.equals(OWL.Res.EQUIVALENTCLASS)) {
-//			throw new ManchesterSyntaxException("the exprType is " + exprType.getURI() + " should be either "
-//					+ RDFS.Res.SUBCLASSOF.getNominalValue() + " or " + OWL.Res.EQUIVALENTCLASS.getURI());
-//		}
-
-		try {
-			ManchesterClassInterface manchesterClassInterface = ManchesterParser.parse(manchExpr, model);
-			List<ARTStatement> statList = new ArrayList<ARTStatement>();
-			ARTBNode bnode = model.parseManchesterExpr(manchesterClassInterface, statList).asBNode();
-
-			Element collElem = XMLHelp.newElement(dataElement, "collection");
-			// add all the statement to the maingraph
-			for (ARTStatement stat : statList) {
-				model.addStatement(stat, workingGraph);
-				Element tripleElem = XMLHelp.newElement(collElem, "triple");
-				XMLHelp.newElement(tripleElem, "subject", RDFNodeSerializer.toNT(stat.getSubject()));
-				XMLHelp.newElement(tripleElem, "predicate", RDFNodeSerializer.toNT(stat.getPredicate()));
-				XMLHelp.newElement(tripleElem, "object", RDFNodeSerializer.toNT(stat.getObject()));
-			}
-
-			// add the subClass o equivalentClass property between the main ClassURI and the new BNode
-			Element infoClassType;
-			model.addTriple(classUri, exprType, bnode, workingGraph);
-			infoClassType = XMLHelp.newElement(dataElement, exprType.getLocalName());
-			dataElement.appendChild(infoClassType);
-
-			STRDFResource stBNode = STRDFNodeFactory.createSTRDFResource(model, bnode,
-					RDFResourceRolesEnum.undetermined,
-					servletUtilities.checkWritable(model, bnode, workingGraph), false);
-			RDFXMLHelp.addRDFNode(infoClassType, stBNode);
-		} catch (RecognitionException | ModelAccessException e) {
-			throw new ManchesterSyntaxException("Syntax problem with the expression : " + manchExpr);
-		} catch (ModelUpdateException e) {
-			throw new ManchesterSyntaxException("ModelUpdateException : " + manchExpr);
-			// throw new ModelUpdateException(e);
-		} catch (ManchesterParserException e) {
-			throw new ManchesterSyntaxException("Syntax problem with the expression : " + manchExpr);
-		}
-		return response;
-
+		
+		
+		return typeToMapBNodeToExpr;
 	}
-
+	
+	/**
+	 * returns the associated Manchester expression for the given bnode
+	 * @param bnode the input bnode
+	 * @param usePrefixes true if the returned expression should be in qname, false for complete IRI
+	 * @param useUppercaseSyntax true if the name of the symbols used in the Manchester should be in uppercase,
+	 * false for lowercase 
+	 * @return the Manchester expression associated to the given bnode
+	 */
+	@STServiceOperation
+	@Read
+	public String getExpression(BNode bnode, @Optional(defaultValue = "true") boolean usePrefixes,
+			@Optional(defaultValue = "true") boolean useUppercaseSyntax){
+		
+		List<Statement> statList = new ArrayList<>();
+		Resource graphsArray[] = new Resource[1] ;
+		graphsArray[0] = getWorkingGraph();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> namespaceToPrefixsMap = new HashMap<String, String>();
+		for(String prefix: prefixToNamespacesMap.keySet()){
+			namespaceToPrefixsMap.put(prefix, prefixToNamespacesMap.get(prefix));
+		}
+		return getSingleManchExpression(bnode, graphsArray, statList, namespaceToPrefixsMap, 
+				usePrefixes, useUppercaseSyntax);
+		
+	}
+	
+	private String getSingleManchExpression(BNode bnode, Resource[] graphsArray, List<Statement> statList, 
+			Map<String, String> namespaceToPrefixsMap, boolean usePrefixes, boolean useUppercaseSyntax){
+		ManchesterClassInterface mci = ManchesterSyntaxUtils.getManchClassFromBNode(bnode, graphsArray, 
+				statList, getManagedConnection());
+		return mci.getManchExpr(namespaceToPrefixsMap, usePrefixes, useUppercaseSyntax);
+	}
+	
+	/**
+	 * Remove all the RDF triples used to store the Restriction associated to the input classIRI using the 
+	 * specific relation (owl:equivalentClassand and rdfs:subClassOf) 
+	 * @param classIri (OPTIONL) the input classIRI
+	 * @param exprType (OPTIONL) the relation (owl:equivalentClassand or rdfs:subClassOf)  linking the Restriction to 
+	 * the input clasIRI 
+	 * @param bnode the bnode representing the restriction
+	 */
+	@STServiceOperation
+	@Write
+	public void removeExpression(@Optional IRI classIri, @Optional IRI exprType, BNode bnode){
+		RepositoryConnection conn = getManagedConnection();
+		List<Statement> statList = new ArrayList<>();
+		Resource graphsArray[] = new Resource[1] ;
+		graphsArray[0] = getWorkingGraph();
+		ManchesterSyntaxUtils.getManchClassFromBNode(bnode, graphsArray, statList, conn);
+		conn.remove(statList, getWorkingGraph());
+		//delete the subClass o equivalentClass property between the main ClassURI and the BNode
+		//TODO decide whether to check that expreType is either owl:equivalentClassand or rdfs:subClassOf 
+		if(classIri != null && exprType != null){
+			conn.remove(conn.getValueFactory().createStatement(classIri, exprType, bnode), getWorkingGraph());
+		} else{
+			//since the classIRI and/or exprType is not specified, try to get the from the ontology and remove
+			conn.remove(conn.getStatements(null, null, bnode, getWorkingGraph()));
+		}
+	}
+	
+	
+	/**
+	 * returns true if the expression is compliant with the syntax, false otherwise
+	 * @return true if the expression is compliant with the syntax, false otherwise
+	 */
+	@STServiceOperation
+	@Read
+	public Boolean checkExpression(String manchExpr) {
+		RepositoryConnection conn = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		try {
+			ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, conn.getValueFactory(), prefixToNamespacesMap);
+		} catch (ManchesterParserException e) {
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Create the restriction in the ontology (all the necessary RDf triples) 
+	 * @param classIri the class which the restriction should be associated to
+	 * @param exprType the property linking the classIRI to the restriction (owl:equivalentClassand or rdfs:subClassOf)
+	 * @param manchExpr the Manchester expression defying the restriction
+	 * @return the newly created resource (mainly a bnode)
+	 * @throws ManchesterParserException
+	 */
+	@STServiceOperation
+	@Write
+	public Resource createRestriction(IRI classIri, IRI exprType, String manchExpr) 
+			throws ManchesterParserException{
+		RepositoryConnection conn = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, 
+				conn.getValueFactory(), prefixToNamespacesMap);
+		
+		List<Statement> statList = new ArrayList<>();
+		Resource newResource = ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, conn.getValueFactory());
+		
+		conn.add(statList, getWorkingGraph());
+		
+		// add the subClass o equivalentClass property between the main ClassURI and the new BNode
+		//TODO decide whether to check that expreType is either owl:equivalentClassand or rdfs:subClassOf 
+		conn.add(conn.getValueFactory().createStatement(classIri, exprType, newResource), getWorkingGraph());
+		
+		
+		return newResource;
+	}
 }
