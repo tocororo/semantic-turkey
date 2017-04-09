@@ -43,7 +43,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Element;
 
-@Component
+@Component(value = "skosxlOld")
 public class SKOSXL extends SKOS {
 
 	protected static Logger logger = LoggerFactory.getLogger(SKOSXL.class);

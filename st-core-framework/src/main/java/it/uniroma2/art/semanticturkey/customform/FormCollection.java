@@ -48,6 +48,20 @@ public class FormCollection {
 	}
 	
 	/**
+	 * Returns the {@link CustomForm}s of type graph contained in this collection
+	 * @return
+	 */
+	public Collection<CustomFormGraph> getGraphForms() {
+		ArrayList<CustomFormGraph> cfColl = new ArrayList<>();
+		for (CustomForm cf : forms) {
+			if (cf.isTypeGraph()) {
+				cfColl.add(cf.asCustomFormGraph());
+			}
+		}
+		return cfColl;
+	}
+	
+	/**
 	 * Returns the {@link CustomForm} with the given ID. Null if it doesn't exists in this collection
 	 * @param formId
 	 * @return

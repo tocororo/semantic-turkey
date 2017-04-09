@@ -1,4 +1,3 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <customFormConfig>
-	<formsMapping formCollection="it.uniroma2.art.semanticturkey.customform.collection.note" replace="false" resource="http://www.w3.org/2004/02/skos/core#note"/>
 </customFormConfig>

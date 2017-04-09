@@ -126,9 +126,12 @@ public class CustomForms extends STServiceAdapter {
 				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
 				UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore, userPromptMap);
 				//link the generated graph with the resource
-				modelAdditions.add(subject, predicate, detectGraphEntry(updates.getInsertTriples()));
-				for (ARTTriple t : updates.getInsertTriples()){
-					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
+				List<ARTTriple> insertTriples = updates.getInsertTriples();
+				if (!insertTriples.isEmpty()) {
+					modelAdditions.add(subject, predicate, detectGraphEntry(insertTriples));
+					for (ARTTriple t : insertTriples){
+						modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
+					}
 				}
 				for (ARTTriple t : updates.getDeleteTriples()){
 					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject());
@@ -157,7 +160,6 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	private Resource detectGraphEntry(List<ARTTriple> triples){
 		for (ARTTriple t1 : triples){
-//			System.out.println("triple " + t1.getSubject().stringValue() + " " + t1.getPredicate().stringValue() + " " + t1.getObject().stringValue());
 			Resource subj = t1.getSubject();
 			boolean neverObj = true;
 			for (ARTTriple t2 : triples){
@@ -615,13 +617,47 @@ public class CustomForms extends STServiceAdapter {
 	}
 	
 	/**
+	 * Returns the FormCollection (with available CustomForms to use as constructor) linked to the given resource.
+	 * This method doesn't check if the resource is a class or a property
+	 * (it wouldn't have sense to use it with properties since Properties.getRange()
+	 * already list the CF to use for custom ranges).
+	 * @param resource
+	 * @return
+	 * @throws CustomFormException
+	 */
+	@STServiceOperation
+	public JsonNode getCustomConstructors(IRI resource) throws CustomFormException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+//		Collection<CustomFormGraph> cForms = cfManager.getAllCustomFormGraphs(getProject(), resource);
+		
+		ObjectNode formCollNode = jsonFactory.objectNode();
+		FormCollection formColl = cfManager.getFormCollection(getProject(), resource);
+		if(formColl != null) {
+			formCollNode.set("id", jsonFactory.textNode(formColl.getId()));
+			ArrayNode formsArrayNode = jsonFactory.arrayNode();
+			Collection<CustomFormGraph> cForms = formColl.getGraphForms();
+			for(CustomForm customForm : cForms){
+				ObjectNode formObjectNode = jsonFactory.objectNode();
+				formObjectNode.set("id", jsonFactory.textNode(customForm.getId()));
+				formObjectNode.set("name", jsonFactory.textNode(customForm.getName()));
+				formObjectNode.set("type", jsonFactory.textNode(customForm.getType()));
+				formObjectNode.set("description", jsonFactory.textNode(customForm.getDescription()));
+				formsArrayNode.add(formObjectNode);
+				
+			}
+			formCollNode.set("forms", formsArrayNode);
+		}
+		return formCollNode;
+	}
+	
+	/**
 	 * Returns the serialization of the CurtomForm with the given id
 	 * @param id
 	 * @return
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
-	public JsonNode getCustomForm(String id) throws CustomFormException{
+	public JsonNode getCustomForm(String id) throws CustomFormException {
 		CustomForm cf = cfManager.getCustomForm(getProject(), id); //at project level
 		if (cf != null){
 			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;

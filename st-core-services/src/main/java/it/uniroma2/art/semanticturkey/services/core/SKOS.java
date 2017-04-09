@@ -25,9 +25,11 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
@@ -296,49 +298,27 @@ public class SKOS extends STServiceAdapter {
 		}
 	}
 
-	@STServiceOperation
-	@Write
-	public void createConcept(@Optional @LanguageTaggedString Literal newConcept,
-			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme)
-					throws URIGenerationException {
-		Model quadAdditions = new LinkedHashModel();
-		Model quadRemovals = new LinkedHashModel();
-
-		IRI newConceptIRI = generateConceptIRI(newConcept, conceptScheme);
-
-		quadAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
-
-		if (newConcept != null) {
-			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, newConcept);
-		}
-
-		quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);
-
-		if (broaderConcept != null) {
-			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
-		} else {
-			quadAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF,
-					conceptScheme);
-		}
-
-		applyPatch(quadAdditions, quadRemovals);
-	}
-	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void createConcept2(@Optional @LanguageTaggedString Literal newConcept,
+	public AnnotatedValue<IRI> createConcept(
+			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-
-		IRI newConceptIRI = generateConceptIRI(newConcept, conceptScheme);
-
+		
+		IRI newConceptIRI;
+		if (newConcept == null) {
+			newConceptIRI = generateConceptIRI(label, conceptScheme);
+		} else {
+			newConceptIRI = newConcept;
+		}
+		
 		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT); //?conc a skos:Concept
-		if (newConcept != null) { //?conc skos:prefLabel ?label
-			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, newConcept);
+		if (label != null) { //?conc skos:prefLabel ?label
+			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		}
 		modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
 		if (broaderConcept != null) {//?conc skos:broader ?broad
@@ -357,7 +337,7 @@ public class SKOS extends STServiceAdapter {
 				if (cForm.isTypeGraph()){
 					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
 					StandardForm stdForm = new StandardForm(
-							newConceptIRI.stringValue(), newConcept.getLabel(), newConcept.getLanguage().orElse(null));
+							newConceptIRI.stringValue(), label.getLabel(), label.getLanguage().orElse(null));
 					UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
 					shutDownCodaCore(codaCore);
 					
@@ -379,6 +359,11 @@ public class SKOS extends STServiceAdapter {
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<IRI> annotatedConcept = new AnnotatedValue<IRI>(newConceptIRI);
+		annotatedConcept.setAttribute("role", RDFResourceRolesEnum.concept.name());
+		//TODO compute show
+		return annotatedConcept; 
 	}
 
 	/**
