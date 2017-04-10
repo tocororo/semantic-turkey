@@ -325,7 +325,7 @@ public class Search extends STServiceAdapterOLD {
 		//now iterate over the 2 maps and construct the responses
 		for(String key : otherResourcesMap.keySet()){
 			ValueTypeAndShow valueTypeAndShow = otherResourcesMap.get(key);
-			if(valueTypeAndShow.isShowPresent() || !valueTypeAndShow.getShow().isEmpty()){
+			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
 				collection.add(STRDFNodeFactory.createSTRDFURI(valueTypeAndShow.getResource().asURIResource(),
 						valueTypeAndShow.getRole(), true, valueTypeAndShow.getShow()));
 			} else{
@@ -336,7 +336,7 @@ public class Search extends STServiceAdapterOLD {
 		}
 		for(String key : propertyMap.keySet()){
 			ValueTypeAndShow valueTypeAndShow = propertyMap.get(key);
-			if(valueTypeAndShow.isShowPresent() || !valueTypeAndShow.getShow().isEmpty()){
+			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
 				collection.add(STRDFNodeFactory.createSTRDFURI(valueTypeAndShow.getResource().asURIResource(),
 						valueTypeAndShow.getRole(), true, valueTypeAndShow.getShow()));
 			} else{
