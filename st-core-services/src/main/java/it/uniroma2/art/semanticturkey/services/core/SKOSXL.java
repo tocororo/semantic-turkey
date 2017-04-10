@@ -72,10 +72,11 @@ public class SKOSXL extends STServiceAdapter {
 		} else {
 			newConceptIRI = newConcept;
 		}
+		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
 		
-		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT); 
+		IRI xLabelIRI = null;
 		if (label != null) {
-			IRI xLabelIRI = generateXLabelIRI(newConceptIRI, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
+			xLabelIRI = generateXLabelIRI(newConceptIRI, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xLabelIRI);
 			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
 			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
@@ -96,8 +97,7 @@ public class SKOSXL extends STServiceAdapter {
 				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
 				if (cForm.isTypeGraph()){
 					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
-					StandardForm stdForm = new StandardForm(
-							newConceptIRI.stringValue(), label.getLabel(), label.getLanguage().orElse(null));
+					StandardForm stdForm = new StandardForm(newConceptIRI, xLabelIRI, label, label.getLanguage().orElse(null));
 					UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
 					shutDownCodaCore(codaCore);
 					
@@ -121,9 +121,122 @@ public class SKOSXL extends STServiceAdapter {
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
 		AnnotatedValue<IRI> annotatedConcept = new AnnotatedValue<IRI>(newConceptIRI);
+		annotatedConcept.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
+		//TODO compute show
+		return annotatedConcept; 
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public AnnotatedValue<IRI> createConceptScheme(
+			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
+			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
+		
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		IRI newSchemeIRI;
+		if (newScheme == null) {
+			newSchemeIRI = generateConceptSchemeURI(label);
+		} else {
+			newSchemeIRI = newScheme;
+		}
+		modelAdditions.add(newSchemeIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME);
+		
+		IRI xLabelIRI = null;
+		if (label != null) {
+			xLabelIRI = generateXLabelIRI(newSchemeIRI, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
+			modelAdditions.add(newSchemeIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xLabelIRI);
+			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
+			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
+		}
+
+		//CustomForm further info
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+		if (customFormId != null && userPromptMap != null) {
+			try {
+				
+				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+				if (cForm.isTypeGraph()){
+					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+					StandardForm stdForm = new StandardForm(newSchemeIRI, xLabelIRI, label, label.getLanguage().orElse(null));
+					UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
+					shutDownCodaCore(codaCore);
+					
+					for (ARTTriple t : updates.getInsertTriples()){
+						modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+					}
+					for (ARTTriple t : updates.getDeleteTriples()){
+						modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+					}
+				} else {
+					throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+				}
+			} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
+				throw new CODAException(e);
+			} finally {
+				shutDownCodaCore(codaCore);
+			}
+		}
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<IRI> annotatedConcept = new AnnotatedValue<IRI>(newSchemeIRI);
 		annotatedConcept.setAttribute("role", RDFResourceRolesEnum.concept.name());
 		//TODO compute show
 		return annotatedConcept; 
+	}
+	
+	/**
+	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
+	 * scheme. The actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in
+	 * turn invokes the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI
+	 * generator</i> will be provided with the following:
+	 * <ul>
+	 * <li><code>concept</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>label</code> and <code>scheme</code> (each, if
+	 * not <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept (can be <code>null</code>)
+	 * @param scheme
+	 *            the scheme to which the concept is being attached at the moment of its creation (can be
+	 *            <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
+		Map<String, Value> args = new HashMap<>();
+
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+
+		if (scheme != null) {
+			args.put(URIGenerator.Parameters.scheme, scheme);
+		}
+
+		return generateIRI(URIGenerator.Roles.concept, args);
+	}
+	
+	/**
+	 * Generates a new URI for a SKOS concept scheme, optionally given its accompanying preferred label.
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept scheme (can be <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
+		Map<String, Value> args = new HashMap<>();
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+		return generateIRI(URIGenerator.Roles.conceptScheme, args);
 	}
 	
 	/**
@@ -166,39 +279,6 @@ public class SKOSXL extends STServiceAdapter {
 		}
 		
 		return generateIRI(URIGenerator.Roles.xLabel, args);
-	}
-	
-	/**
-	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
-	 * scheme. The actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in
-	 * turn invokes the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI
-	 * generator</i> will be provided with the following:
-	 * <ul>
-	 * <li><code>concept</code> as the <code>xRole</code></li>
-	 * <li>a map of additional parameters consisting of <code>label</code> and <code>scheme</code> (each, if
-	 * not <code>null</code>)</li>
-	 * </ul>
-	 * 
-	 * @param label
-	 *            the preferred label accompanying the concept (can be <code>null</code>)
-	 * @param scheme
-	 *            the scheme to which the concept is being attached at the moment of its creation (can be
-	 *            <code>null</code>)
-	 * @return
-	 * @throws URIGenerationException
-	 */
-	public IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
-		Map<String, Value> args = new HashMap<>();
-
-		if (label != null) {
-			args.put(URIGenerator.Parameters.label, label);
-		}
-
-		if (scheme != null) {
-			args.put(URIGenerator.Parameters.scheme, scheme);
-		}
-
-		return generateIRI(URIGenerator.Roles.concept, args);
 	}
 	
 }

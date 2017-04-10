@@ -25,6 +25,8 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.owlart.model.ARTLiteral;
+import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -315,8 +317,8 @@ public class SKOS extends STServiceAdapter {
 		} else {
 			newConceptIRI = newConcept;
 		}
-		
 		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT); //?conc a skos:Concept
+		
 		if (label != null) { //?conc skos:prefLabel ?label
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		}
@@ -332,12 +334,10 @@ public class SKOS extends STServiceAdapter {
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
 		if (customFormId != null && userPromptMap != null) {
 			try {
-				
 				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
 				if (cForm.isTypeGraph()){
 					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
-					StandardForm stdForm = new StandardForm(
-							newConceptIRI.stringValue(), label.getLabel(), label.getLanguage().orElse(null));
+					StandardForm stdForm = new StandardForm(newConceptIRI, label, label.getLanguage().orElse(null));
 					UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
 					shutDownCodaCore(codaCore);
 					
@@ -362,6 +362,66 @@ public class SKOS extends STServiceAdapter {
 		
 		AnnotatedValue<IRI> annotatedConcept = new AnnotatedValue<IRI>(newConceptIRI);
 		annotatedConcept.setAttribute("role", RDFResourceRolesEnum.concept.name());
+		//TODO compute show
+		return annotatedConcept; 
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public AnnotatedValue<IRI> createConceptScheme(
+			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
+			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
+		
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		IRI newSchemeIRI;
+		if (newScheme == null) {
+			newSchemeIRI = generateConceptSchemeURI(label);
+		} else {
+			newSchemeIRI = newScheme;
+		}
+		modelAdditions.add(newSchemeIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME);
+		
+		if (label != null) {
+			modelAdditions.add(newSchemeIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
+		}
+
+		//CustomForm further info
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+		if (customFormId != null && userPromptMap != null) {
+			try {
+				
+				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+				if (cForm.isTypeGraph()){
+					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+					StandardForm stdForm = new StandardForm(newSchemeIRI, label, label.getLanguage().orElse(null));
+					UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
+					shutDownCodaCore(codaCore);
+					
+					for (ARTTriple t : updates.getInsertTriples()){
+						modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+					}
+					for (ARTTriple t : updates.getDeleteTriples()){
+						modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+					}
+				} else {
+					throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+				}
+			} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
+				throw new CODAException(e);
+			} finally {
+				shutDownCodaCore(codaCore);
+			}
+		}
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<IRI> annotatedConcept = new AnnotatedValue<IRI>(newSchemeIRI);
+		annotatedConcept.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
 		//TODO compute show
 		return annotatedConcept; 
 	}
@@ -397,6 +457,22 @@ public class SKOS extends STServiceAdapter {
 		}
 
 		return generateIRI(URIGenerator.Roles.concept, args);
+	}
+	
+	/**
+	 * Generates a new URI for a SKOS concept scheme, optionally given its accompanying preferred label.
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept scheme (can be <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
+		Map<String, Value> args = new HashMap<>();
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+		return generateIRI(URIGenerator.Roles.conceptScheme, args);
 	}
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {

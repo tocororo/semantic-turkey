@@ -3,36 +3,58 @@ package it.uniroma2.art.semanticturkey.customform;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+
 public class StandardForm {
 	
-	private static final String URI_FS_NAME = "stdUri";
-	private static final String LABEL_FS_NAME = "stdLabel";
-	private static final String LANG_FS_NAME = "stdLang";
+	private static final String RESOURCE_URI_FS_NAME = "resource";
+	private static final String LABEL_FS_NAME = "label";
+	private static final String XLABEL_URI_FS_NAME = "xLabel";
+	private static final String LANG_FS_NAME = "labelLang";
+//	private static final String SCHEMES_FS_NAME = "schemes";
 	
-	private String uri;
-	private String label; //this could be a URI (xLabel) or a literal (rdfs or skos label)
-	private String lang;
+	private IRI resource;
+	private Literal label; //rdfs or skos label or literal form of skosxl label
+	private IRI xLabel;
+	private String lang; //langTag of label
+//	private String schemes;
 	
-	public StandardForm(String uri, String label, String lang) {
-		this.uri = uri;
+	public StandardForm(IRI resource, Literal label, String lang) {
+		this.resource = resource;
+		this.label = label;
+		this.lang = lang;
+	}
+	
+	public StandardForm(IRI resource, IRI xLabel, Literal label, String lang) {
+		this.resource = resource;
+		this.xLabel = xLabel;
 		this.label = label;
 		this.lang = lang;
 	}
 
-	public String getUri() {
-		return uri;
+	public IRI getResource() {
+		return resource;
 	}
 
-	public void setUri(String uri) {
-		this.uri = uri;
+	public void setResource(IRI resource) {
+		this.resource = resource;
 	}
 
-	public String getLabel() {
+	public Literal getLabel() {
 		return label;
 	}
 
-	public void setLabel(String label) {
+	public void setLabel(Literal label) {
 		this.label = label;
+	}
+	
+	public IRI getXLabel() {
+		return xLabel;
+	}
+	
+	public void setXLabel(IRI xLabel) {
+		this.xLabel = xLabel;
 	}
 
 	public String getLang() {
@@ -45,11 +67,14 @@ public class StandardForm {
 	
 	public Map<String, Object> asMap() {
 		Map<String, Object> formMap = new HashMap<String, Object>();
-		if (uri != null) {
-			formMap.put(URI_FS_NAME, uri);
+		if (resource != null) {
+			formMap.put(RESOURCE_URI_FS_NAME, resource.stringValue());
 		}
 		if (label != null) {
-			formMap.put(LABEL_FS_NAME, label);
+			formMap.put(LABEL_FS_NAME, label.getLabel());
+		}
+		if (xLabel != null) {
+			formMap.put(XLABEL_URI_FS_NAME, xLabel.stringValue());
 		}
 		if (lang != null) {
 			formMap.put(LANG_FS_NAME, lang);
