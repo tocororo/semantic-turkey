@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.Literal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -266,7 +267,11 @@ public class Search extends STServiceAdapterOLD {
 				}
 				String show = null;
 				if(tupleBindings.hasBinding("show")){
-					show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
+					ARTNode showRes = tupleBindings.getBinding("show").getBoundValue();
+					show = showRes.getNominalValue();
+					if(showRes.isLiteral() && ((Literal)showRes).getLanguage().isPresent()){
+						show += " ("+((Literal)showRes).getLanguage().get()+")";
+					}
 				}
 				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
 				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
