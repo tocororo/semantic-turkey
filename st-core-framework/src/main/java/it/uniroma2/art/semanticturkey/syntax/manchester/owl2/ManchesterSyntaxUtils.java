@@ -61,6 +61,8 @@ public class ManchesterSyntaxUtils {
 	    	return parserDescription.getManchesterClass();
 	    } catch(ManchesterParserRuntimeException e){
 	    	throw new ManchesterParserException(e);
+	    } catch (StringIndexOutOfBoundsException e){
+	    	throw new ManchesterParserException(e);
 	    }
 	    
 	}
