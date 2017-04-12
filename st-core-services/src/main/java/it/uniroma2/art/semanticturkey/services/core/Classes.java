@@ -9,23 +9,46 @@ import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
@@ -41,6 +64,9 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 public class Classes extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Classes.class);
+	
+	@Autowired
+	private CustomFormManager cfManager;
 
 	/**
 	 * Returns the (explicit) subclasses of the class <code>superClass</code>. If <code>numInst</code> is set to
@@ -193,6 +219,113 @@ public class Classes extends STServiceAdapter {
 		qb.setBinding("cls", cls);
 		return qb.runQuery();
 	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public AnnotatedValue<IRI> createClass(@NotLocallyDefined IRI newClass, @LocallyDefined IRI superClass,
+			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+					throws ProjectInconsistentException, CODAException, CustomFormException {
+		
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelAdditions.add(newClass, RDF.TYPE, OWL.CLASS);
+		modelAdditions.add(newClass, RDFS.SUBCLASSOF, superClass);
+		
+		RepositoryConnection repoConnection = getManagedConnection();
+
+		//CustomForm further info
+		if (customFormId != null && userPromptMap != null) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, newClass.stringValue());
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+		}
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newClass);
+		annotatedValue.setAttribute("role", RDFResourceRolesEnum.cls.name());
+		//TODO compute show
+		return annotatedValue; 
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public AnnotatedValue<IRI> createInstance(@NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
+			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+					throws ProjectInconsistentException, CODAException, CustomFormException {
+		
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelAdditions.add(newInstance, RDF.TYPE, cls);
+		
+		RepositoryConnection repoConnection = getManagedConnection();
+
+		//CustomForm further info
+		if (customFormId != null && userPromptMap != null) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, newInstance.stringValue());
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+		}
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newInstance);
+		if (cls.equals(SKOS.CONCEPT)) {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.concept.name());
+		} else if (cls.equals(SKOS.CONCEPT_SCHEME)) {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
+		} else if (cls.equals(SKOS.COLLECTION)) {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosCollection.name());
+		} else if (cls.equals(SKOS.ORDERED_COLLECTION)) {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosOrderedCollection.name());
+		} else if (cls.equals(SKOSXL.LABEL)) {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+		} else {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.individual.name());
+		}
+		//TODO compute show
+		return annotatedValue; 
+	}
+	
+	/**
+	 * TODO: move to STServiceAdapter?
+	 * 
+	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and remove
+	 * suggested by CODA running the PEARL rule defined in the CustomForm with the given <code>cfId</code>  
+	 */
+	private void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions, Model modelRemovals,
+			String cfId, Map<String, Object> userPromptMap, StandardForm stdForm)
+			throws ProjectInconsistentException, CODAException, CustomFormException {
+		CODACore codaCore = getInitializedCodaCore(repoConn);
+		try {
+
+			CustomForm cForm = cfManager.getCustomForm(getProject(), cfId);
+			if (cForm.isTypeGraph()) {
+				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+				UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
+				shutDownCodaCore(codaCore);
+
+				for (ARTTriple t : updates.getInsertTriples()) {
+					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+				for (ARTTriple t : updates.getDeleteTriples()) {
+					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+			} else {
+				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+			}
+		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e) {
+			throw new CODAException(e);
+		} finally {
+			shutDownCodaCore(codaCore);
+		}
+	}
+	
 }
 
 class ClassesMoreProcessor implements QueryBuilderProcessor {

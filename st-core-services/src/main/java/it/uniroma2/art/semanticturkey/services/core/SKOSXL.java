@@ -9,6 +9,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
@@ -56,10 +57,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 public class SKOSXL extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(SKOSXL.class);
-	
-	private static enum CollectionCreationMode {
-		bnode, uri
-	};
 	
 	@Autowired
 	private CustomFormManager cfManager;
@@ -169,82 +166,82 @@ public class SKOSXL extends STServiceAdapter {
 		return annotatedValue; 
 	}
 	
-//	@STServiceOperation(method = RequestMethod.POST)
-//	@Write
-//	public AnnotatedValue<Resource> createCollection(
-//			IRI collectionType, @Optional @NotLocallyDefined IRI newCollection, 
-//			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,
-//			@Optional CollectionCreationMode mode,
-//			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
-//					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, IllegalAccessException {
-//		
-//		Model modelAdditions = new LinkedHashModel();
-//		Model modelRemovals = new LinkedHashModel();
-//		
-//		Resource newCollectionRes;
-//		if (newCollection == null) {
-//			if (mode == CollectionCreationMode.bnode) {
-//				newCollectionRes = SimpleValueFactory.getInstance().createBNode();
-//			} else { //CollectionCreationMode.uri
-//				newCollectionRes = generateCollectionURI(label);
-//			}
-//		} else {
-//			newCollectionRes = newCollection;
-//		}
-//		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
-//			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION);
-//		} else if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION)){
-//			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION);
-//			modelAdditions.add(newCollectionRes, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, RDF.NIL);
-//		} else {
-//			throw new IllegalAccessException(collectionType.stringValue() + " is not a valid collection type");
-//		}
-//		
-//		IRI xLabelIRI = null;
-//		if (label != null) {
-//			xLabelIRI = generateXLabelIRI(newCollectionRes, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
-//			modelAdditions.add(newCollectionRes, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xLabelIRI);
-//			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
-//			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
-//		}
-//
-//		RepositoryConnection repoConnection = getManagedConnection();
-//		
-//		if (containingCollection != null) {
-//			if (repoConnection.hasStatement(containingCollection, RDF.TYPE, 
-//					org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION, false, getWorkingGraph())) {
-//				//TODO add newCollection as last of containingCollection
-//				
-//			} else if (repoConnection.hasStatement(containingCollection, RDF.TYPE,
-//					org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION, false, getWorkingGraph())) {
-//				modelAdditions.add(containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, newCollectionRes);
-//			}
-//		}
-//		
-//		//CustomForm further info
-//		if (customFormId != null && userPromptMap != null) {
-//			StandardForm stdForm = new StandardForm();
-//			stdForm.addFormEntry(StandardForm.Prompt.resource, newCollectionRes.stringValue());
-//			if (xLabelIRI != null) {
-//				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabelIRI.stringValue());
-//				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
-//				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-//			}
-//			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
-//		}
-//
-//		repoConnection.add(modelAdditions, getWorkingGraph());
-//		repoConnection.remove(modelRemovals, getWorkingGraph());
-//		
-//		AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(newCollectionRes);
-//		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
-//			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosCollection.name());
-//		} else { //ORDERED
-//			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosOrderedCollection.name());
-//		}
-//		//TODO compute show
-//		return annotatedValue; 
-//	}
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public AnnotatedValue<Resource> createCollection(
+			IRI collectionType, @Optional @NotLocallyDefined IRI newCollection, 
+			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,
+			@Optional(defaultValue = "false") boolean bnodeCreationMode,
+			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, IllegalAccessException {
+		
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		Resource newCollectionRes;
+		if (newCollection == null) {
+			if (bnodeCreationMode) {
+				newCollectionRes = SimpleValueFactory.getInstance().createBNode();
+			} else { //uri
+				newCollectionRes = generateCollectionURI(label);
+			}
+		} else {
+			newCollectionRes = newCollection;
+		}
+		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
+			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION);
+		} else if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION)){
+			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION);
+			modelAdditions.add(newCollectionRes, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, RDF.NIL);
+		} else {
+			throw new IllegalAccessException(collectionType.stringValue() + " is not a valid collection type");
+		}
+		
+		IRI xLabelIRI = null;
+		if (label != null) {
+			xLabelIRI = generateXLabelIRI(newCollectionRes, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
+			modelAdditions.add(newCollectionRes, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xLabelIRI);
+			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
+			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
+		}
+
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		if (containingCollection != null) {
+			if (repoConnection.hasStatement(containingCollection, RDF.TYPE, 
+					org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION, false, getWorkingGraph())) {
+				//TODO add newCollection as last of containingCollection
+				
+			} else if (repoConnection.hasStatement(containingCollection, RDF.TYPE,
+					org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION, false, getWorkingGraph())) {
+				modelAdditions.add(containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, newCollectionRes);
+			}
+		}
+		
+		//CustomForm further info
+		if (customFormId != null && userPromptMap != null) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, newCollectionRes.stringValue());
+			if (xLabelIRI != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabelIRI.stringValue());
+				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
+				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
+			}
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+		}
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(newCollectionRes);
+		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosCollection.name());
+		} else { //ORDERED
+			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosOrderedCollection.name());
+		}
+		//TODO compute show
+		return annotatedValue; 
+	}
 	
 	/**
 	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
