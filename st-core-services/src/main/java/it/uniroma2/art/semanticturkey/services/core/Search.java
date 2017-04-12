@@ -1,34 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.owlart.query.TupleBindings;
-import it.uniroma2.art.owlart.query.TupleBindingsIterator;
-import it.uniroma2.art.owlart.query.TupleQuery;
-import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
-import it.uniroma2.art.owlart.vocabulary.SKOS;
-import it.uniroma2.art.owlart.vocabulary.SKOSXL;
-import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -37,17 +15,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
-import org.w3c.dom.Element;
 
 @GenerateSTServiceController
 @Validated
 @Component
-public class Search extends STServiceAdapterOLD {
+public class Search extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Search.class);
 	
@@ -60,10 +50,10 @@ public class Search extends STServiceAdapterOLD {
 	private static String END_SEARCH_MODE = "end";
 	private static String EXACT_SEARCH_MODE = "exact";
 	
-	@GenerateSTServiceController
-	public Response searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
-			String searchMode, @Optional String lang, @Optional ARTURIResource scheme) throws ModelUpdateException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
+			String searchMode, @Optional String lang, @Optional IRI scheme)  {
 		
 		boolean isClassWanted = false;
 		boolean isConceptWanted = false;
@@ -75,15 +65,15 @@ public class Search extends STServiceAdapterOLD {
 		String searchModeSelected = null;
 		
 		
-		
+		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
 		
 		if(searchString.isEmpty()){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			response.setReplyMessage("the serchString cannot be empty");
-			return response;
+			//TODO change the exception (previously was a fail)
+			throw new IllegalArgumentException("the serchString cannot be empty");
 		}
 		
 		for(int i=0; i<rolesArray.length; ++i){
+			//TODO remove the RDFResourceRolesEnum from the owlart and find an equivalent in RDF4J
 			if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.cls.name())){
 				isClassWanted = true;
 			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
@@ -101,15 +91,17 @@ public class Search extends STServiceAdapterOLD {
 		//@formatter:off
 		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
 				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			response.setReplyMessage("the serch roles should be at least one of: "+
+			
+			String msg = "the serch roles should be at least one of: "+
 					RDFResourceRolesEnum.cls.name()+", "+
 					RDFResourceRolesEnum.concept.name()+", "+
 					RDFResourceRolesEnum.conceptScheme.name()+", "+
 					RDFResourceRolesEnum.individual+", "+
 					RDFResourceRolesEnum.property.name() +" or "+
-					RDFResourceRolesEnum.skosCollection.name());
-			return response;
+					RDFResourceRolesEnum.skosCollection.name();
+			//TODO change the exception (previously was a fail)
+			throw new IllegalArgumentException(msg);
+			
 		}
 		//@formatter:on
 		
@@ -124,15 +116,11 @@ public class Search extends STServiceAdapterOLD {
 		}
 		
 		if(searchModeSelected == null){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			response.setReplyMessage("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
-			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE);
-			return response;
+			String msg = "the serch mode should be at one of: "+START_SEARCH_MODE+", "+
+			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE;
+			//TODO change the exception (previously was a fail)
+			throw new IllegalArgumentException(msg);
 		}
-		
-		//TODO verify that in a SKOS it is possible to use a owl model
-		OWLModel owlModel = getOWLModel();
-		
 		
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
@@ -189,13 +177,13 @@ public class Search extends STServiceAdapterOLD {
 		if(isConceptWanted || isConceptSchemeWanted || isCollectionWanted ){
 			query+="\nUNION" +
 					"\n{" +
-					"\n?resource (<"+SKOS.PREFLABEL+"> | <"+SKOS.ALTLABEL+">) ?skosLabel ."+
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?skosLabel ."+
 					searchModePrepareQuery("?skosLabel", searchString, searchModeSelected) +
 					"\n}" +
 					"\nUNION" +
 					"\n{" +
-					"\n?resource (<"+SKOSXL.PREFLABEL+"> | <"+SKOSXL.ALTLABEL+">) ?skosxlLabel ." +
-					"\n?skosxlLabel <"+SKOSXL.LITERALFORM+"> ?literalForm ." +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
 					searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
 					"\n}";
 		}
@@ -207,13 +195,13 @@ public class Search extends STServiceAdapterOLD {
 		if((isConceptWanted || isConceptSchemeWanted || isCollectionWanted)&& lang!=null && lang.length()>0){
 			query+="\nOPTIONAL" +
 					"\n{" +
-					"\n?resource <"+SKOSXL.PREFLABEL+"> ?skosPrefLabel ." +
-					"\n?skosPrefLabel <"+SKOSXL.LITERALFORM+"> ?show ." +
+					"\n?resource <"+SKOSXL.PREF_LABEL.stringValue()+"> ?skosPrefLabel ." +
+					"\n?skosPrefLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?show ." +
 					"\nFILTER(lang(?show) = \""+lang+"\")"+
 					"\n}" +
 					"\nOPTIONAL" +
 					"\n{" +
-					"\n?resource <"+SKOS.PREFLABEL+"> ?show ." +
+					"\n?resource <"+SKOS.PREF_LABEL.stringValue()+"> ?show ." +
 					"\nFILTER(lang(?show) = \""+lang+"\")"+
 					"\n}";
 		}
@@ -224,33 +212,53 @@ public class Search extends STServiceAdapterOLD {
 		logger.debug("query = "+query);
 		
 		TupleQuery tupleQuery;
-		tupleQuery = owlModel.createTupleQuery(query);
-		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(false);
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
+		tupleQuery = getManagedConnection().prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		
+		
+		//set the dataset to search just in the UserNamedGraphs
+		SimpleDataset dataset = new SimpleDataset();
+		Resource[] namedGraphs = getUserNamedGraphs();
+		for(Resource namedGraph : namedGraphs){
+			if(namedGraph instanceof IRI){
+				dataset.addDefaultGraph((IRI) namedGraph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
+
+		
+		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
 		
 		Map<String, ValueTypeAndShow> propertyMap = new HashMap<String, ValueTypeAndShow>();
 		Map<String, ValueTypeAndShow> otherResourcesMap = new HashMap<String, ValueTypeAndShow>();
 		
 		
 		while (tupleBindingsIterator.hasNext()) {
-			TupleBindings tupleBindings = tupleBindingsIterator.next();
-			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
+			BindingSet tupleBindings = tupleBindingsIterator.next();
+			Value value = tupleBindings.getBinding("resource").getValue();
 
-			if (!resourceURI.isURIResource()) {
+			if (value instanceof IRI) {
 				continue;
 			}
 
 			// TODO, explicit set to true
 			RDFResourceRolesEnum role = null;
 			//since there are more than one element in the input role array, see the resource
-			String type = tupleBindings.getBinding("type").getBoundValue().getNominalValue();
+			String type = tupleBindings.getBinding("type").getValue().stringValue();
 			
 			role = getRoleFromType(type);
 			
+			String show = null;
+			if(tupleBindings.hasBinding("show")){
+				Value showRes = tupleBindings.getBinding("show").getValue();
+				show = showRes.stringValue();
+				if(showRes instanceof Literal && ((Literal)showRes).getLanguage().isPresent()){
+					show += " ("+((Literal)showRes).getLanguage().get()+")";
+				}
+			}
+			
 			if(role.equals(RDFResourceRolesEnum.cls)){
-				if(otherResourcesMap.containsKey(resourceURI.asURIResource().getNominalValue())){
+				if(otherResourcesMap.containsKey(value.stringValue())){
 					//the class was already added
 					continue;
 				}
@@ -259,116 +267,85 @@ public class Search extends STServiceAdapterOLD {
 				// when the parent class is Owl:Thing the service filters out those classes with 
 				// NoLanguageResourcePredicate)
 				if(role.equals(RDFResourceRolesEnum.cls)){
-					String resNamespace = resourceURI.asURIResource().getNamespace();
-					if(resNamespace.equals(XmlSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
+					String resNamespace = value.stringValue();
+					if(resNamespace.equals(XMLSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
 							|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
 						continue;
 					}
 				}
-				String show = null;
-				if(tupleBindings.hasBinding("show")){
-					ARTNode showRes = tupleBindings.getBinding("show").getBoundValue();
-					show = showRes.getNominalValue();
-					if(showRes.isLiteral() && ((Literal)showRes).getLanguage().isPresent()){
-						show += " ("+((Literal)showRes).getLanguage().get()+")";
-					}
-				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
-				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 			} else if(role.equals(RDFResourceRolesEnum.individual)){
 				//there a special section for the individual, since an individual can belong to more than a
 				// class, so the result set could have more tuple regarding a single individual, this way
 				// should speed up the process
-				if(otherResourcesMap.containsKey(resourceURI.asURIResource().getNominalValue())){
+				if(otherResourcesMap.containsKey(value.stringValue())){
 					//the individual was already added
 					continue;
 				}
-				String show = null;
-				if(tupleBindings.hasBinding("show")){
-					show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
-				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
-				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 			} else if(role.equals(RDFResourceRolesEnum.property) || 
 					role.equals(RDFResourceRolesEnum.annotationProperty) || 
 					role.equals(RDFResourceRolesEnum.datatypeProperty) || 
 					role.equals(RDFResourceRolesEnum.objectProperty) || 
 					role.equals(RDFResourceRolesEnum.ontologyProperty) ) {
 				//check if the property was already added before (with a different type)
-				if(propertyMap.containsKey(resourceURI.asURIResource().getNominalValue())){
-					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(resourceURI.asURIResource().getNominalValue());
+				if(propertyMap.containsKey(value.stringValue())){
+					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(value.stringValue());
 					if(prevValueTypeAndShow.getRole().equals(RDFResourceRolesEnum.property)){
 						//the previous value was property, now it has a different role, so replace the old 
 						// one with the new one
-						String show = null;
-						if(tupleBindings.hasBinding("show")){
-							show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
-						}
-						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
-						propertyMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+						propertyMap.put(value.stringValue(), valueTypeAndShow);
 					}
 				} else{
 					//the property map did not have a previous value, so add this one without any checking
-					String show = null;
-					if(tupleBindings.hasBinding("show")){
-						show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
-					}
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
-					propertyMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+					propertyMap.put(value.stringValue(), valueTypeAndShow);
 				}
 			} else{
 				//it is a concept, a conceptScheme or a collection, just add it to the otherMap
-				String show = null;
-				if(tupleBindings.hasBinding("show")){
-					show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
-				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow(resourceURI.asURIResource(), show, role);
-				otherResourcesMap.put(resourceURI.asURIResource().getNominalValue(), valueTypeAndShow);
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 			}
 		}
 		
 		//now iterate over the 2 maps and construct the responses
 		for(String key : otherResourcesMap.keySet()){
 			ValueTypeAndShow valueTypeAndShow = otherResourcesMap.get(key);
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
+			annotatedValue.setAttribute("explicit", true);
 			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
-				collection.add(STRDFNodeFactory.createSTRDFURI(valueTypeAndShow.getResource().asURIResource(),
-						valueTypeAndShow.getRole(), true, valueTypeAndShow.getShow()));
-			} else{
-				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, 
-						valueTypeAndShow.getResource().asURIResource(), valueTypeAndShow.getRole(), 
-						true, true));
-			}
+				annotatedValue.setAttribute("show", valueTypeAndShow.getShow());
+			} 
+			results.add(annotatedValue);
 		}
 		for(String key : propertyMap.keySet()){
 			ValueTypeAndShow valueTypeAndShow = propertyMap.get(key);
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
+			annotatedValue.setAttribute("explicit", true);
 			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
-				collection.add(STRDFNodeFactory.createSTRDFURI(valueTypeAndShow.getResource().asURIResource(),
-						valueTypeAndShow.getRole(), true, valueTypeAndShow.getShow()));
-			} else{
-				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, 
-						valueTypeAndShow.getResource().asURIResource(), valueTypeAndShow.getRole(), 
-						true, true));
-			}
+				annotatedValue.setAttribute("show", valueTypeAndShow.getShow());
+			} 
+			results.add(annotatedValue);
 		}
-		
-		RDFXMLHelp.addRDFNodes(dataElement, collection);
-
-		return response;
+		return results;
 	}
 	
 	
 	private class ValueTypeAndShow{
-		ARTResource resource  = null;
+		IRI resource  = null;
 		String show = null;
 		RDFResourceRolesEnum role = null;
 		
-		public ValueTypeAndShow(ARTResource resource, String show, RDFResourceRolesEnum role) {
+		public ValueTypeAndShow(IRI resource, String show, RDFResourceRolesEnum role) {
 			this.resource = resource;
 			this.show = show;
 			this.role = role;
 		}
 
-		public ARTResource getResource() {
+		public IRI getResource() {
 			return resource;
 		}
 
@@ -390,19 +367,19 @@ public class Search extends STServiceAdapterOLD {
 	}
 	
 	
-	@GenerateSTServiceController
-	public Response searchInstancesOfClass(ARTURIResource cls, String searchString, boolean useLocalName, 
-			boolean useURI, String searchMode, @Optional String lang) 
-					throws ModelUpdateException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString, boolean useLocalName, 
+			boolean useURI, String searchMode, @Optional String lang) {
+		
+		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
 		
 		String searchModeSelected = null;
 		
 		
 		if(searchString.isEmpty()){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			response.setReplyMessage("the serchString cannot be empty");
-			return response;
+			//TODO change the exception (previously was a fail)
+			throw new IllegalArgumentException("the serchString cannot be empty");
 		}
 
 		if(searchMode.toLowerCase().contains(START_SEARCH_MODE)){
@@ -416,13 +393,11 @@ public class Search extends STServiceAdapterOLD {
 		}
 		
 		if(searchModeSelected == null){
-			XMLResponseREPLY response = createReplyResponse(RepliesStatus.fail);
-			response.setReplyMessage("the serch mode should be at one of: "+START_SEARCH_MODE+", "+
-			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE);
-			return response;
+			String msg = "the serch mode should be at one of: "+START_SEARCH_MODE+", "+
+			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE;
+			//TODO change the exception (previously was a fail)
+			throw new IllegalArgumentException("the serchString cannot be empty");
 		}
-		
-		OWLModel owlModel = getOWLModel();
 		
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
@@ -431,7 +406,7 @@ public class Search extends STServiceAdapterOLD {
 		//do a subquery to get the candidate resources
 		query+="\nSELECT DISTINCT ?resource" +
 			"\nWHERE{" + 
-			"\n ?resource a <"+cls.getNominalValue()+"> . " +
+			"\n ?resource a <"+cls.stringValue()+"> . " +
 			"\n}" +
 			"\n}";
 			
@@ -470,379 +445,383 @@ public class Search extends STServiceAdapterOLD {
 		
 		logger.debug("query = "+query);
 		
-		TupleQuery tupleQuery;
-		tupleQuery = owlModel.createTupleQuery(query);
-		TupleBindingsIterator tupleBindingsIterator = tupleQuery.evaluate(false);
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
+		TupleQuery tupleQuery = getManagedConnection().prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		
+		//set the dataset to search just in the UserNamedGraphs
+		SimpleDataset dataset = new SimpleDataset();
+		Resource[] namedGraphs = getUserNamedGraphs();
+		for(Resource namedGraph : namedGraphs){
+			if(namedGraph instanceof IRI){
+				dataset.addDefaultGraph((IRI) namedGraph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
+		
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
 		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
-		Collection<STRDFURI> collection = STRDFNodeFactory.createEmptyURICollection();
 		List<String> addedIndividualList = new ArrayList<String>();
 		List<String> addedClassList = new ArrayList<String>();
-		while (tupleBindingsIterator.hasNext()) {
-			TupleBindings tupleBindings = tupleBindingsIterator.next();
-			ARTNode resourceURI = tupleBindings.getBinding("resource").getBoundValue();
+		while (tupleQueryResult.hasNext()) {
+			BindingSet bindingSet = tupleQueryResult.next();
+			Value resourceURI = bindingSet.getBinding("resource").getValue();
 
-			if (!resourceURI.isURIResource()) {
+			if (!(resourceURI instanceof IRI)) {
 				continue;
 			}
 
-			RDFResourceRolesEnum role = getRoleFromType(cls.getURI());
-			if(addedIndividualList.contains(resourceURI.asURIResource().getNominalValue())){
+			RDFResourceRolesEnum role = getRoleFromType(cls.stringValue());
+			if(addedIndividualList.contains(resourceURI.stringValue())){
 				//the individual was already added
 				continue;
 			}
-			addedIndividualList.add(resourceURI.asURIResource().getNominalValue());
+			addedIndividualList.add(resourceURI.stringValue());
 			
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI)resourceURI);
+			annotatedValue.setAttribute("explicit", true);
 			
-			
-			
-			//if a show was found, use it instead of the automatically retrieve one (the qname)
 			String show = null;
-			if(tupleBindings.hasBinding("show")){
-				show = tupleBindings.getBinding("show").getBoundValue().getNominalValue();
-				if(show.length()>0){
-					collection.add(STRDFNodeFactory.createSTRDFURI(resourceURI.asURIResource(), role, 
-							true, show));
+			if(bindingSet.hasBinding("show")){
+				Value showRes = bindingSet.getBinding("show").getValue();
+				show = showRes.stringValue();
+				if(showRes instanceof Literal && ((Literal)showRes).getLanguage().isPresent()){
+					show += " ("+((Literal)showRes).getLanguage().get()+")";
 				}
+				annotatedValue.setAttribute("show", show);
 			}
-			else{
-				collection.add(STRDFNodeFactory.createSTRDFURI(owlModel, resourceURI.asURIResource(), role, 
-						true, true));
-			}
+			results.add(annotatedValue);
 			
 		}
-		RDFXMLHelp.addRDFNodes(dataElement, collection);
-
-		return response;
+		return results;
 	}
 
-	@GenerateSTServiceController
-	public Response getPathFromRoot(String role, String resourceURI, @Optional String schemeURI)
+	@STServiceOperation
+	@Read
+	public Collection<AnnotatedValue<Resource>> getPathFromRoot(String role, IRI resourceURI, @Optional IRI schemeURI)
 			throws InvalidParameterException{
 		
-		OWLModel owlModel = getOWLModel();
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-
-		ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
+		//ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 		
-		try {
-			
-			String query = null;
-			String superResourceVar = null, superSuperResourceVar = null;
-			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
-				superResourceVar = "broader";
-				superSuperResourceVar = "broaderOfBroader";
-				//@formatter:off
-				query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
-						"\nWHERE{" +
-						"\n{" + 
-						"\n<" + resourceURI + "> (<" + SKOS.BROADER + "> | ^<"+SKOS.NARROWER+"> )+ ?broader .";
-				if (schemeURI != null) {
-					query += "\n?broader <" + SKOS.INSCHEME + "> <" + schemeURI + "> ."+
-							"\nOPTIONAL{" +
-							"\nBIND (\"true\" AS ?isTopConcept)" +
-							"\n?broader (<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) <"+schemeURI+"> ." +
-							"\n}";
-				}
-				query += "\nOPTIONAL{" +
-						"\n?broader (<" + SKOS.BROADER + "> | ^<"+SKOS.NARROWER+">) ?broaderOfBroader .";
-				if (schemeURI != null) {
-					query += "\n?broaderOfBroader <" + SKOS.INSCHEME + "> <" + schemeURI + "> . ";
-				}
-				query +="\n}" + 
-						"\n}" +
-						"\nUNION" +
-						"\n{";
-				//this union is used when the first part does not return anything, so when the desired concept
-				// does not have any broader, but it is defined as topConcept (to either a specified scheme or
-				// to at least one)
-				query+= "\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> .";
-				if(schemeURI != null){
-						query+="\n<"+resourceURI+"> " +
-								"(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) <"+schemeURI+">";
-				} else{
-					query+="\n<"+resourceURI+"> " +
-							"(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+">) _:b1";
-				}
-				query+="\nBIND(\"true\" AS ?isTop )" +
-						"\n}";
-						
-				// this using, used only when no scheme is selected, is used when the concept does not have any
-				// brader and it is not topConcept of any scheme
-				if(schemeURI == null){
-					query+="\nUNION" +
-							"\n{" +
-							"\n<" + resourceURI + "> a <"+SKOS.CONCEPT+"> ." +
-							"\nFILTER(NOT EXISTS{<"+resourceURI+"> "
-									+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +
-							"\nFILTER (NOT EXISTS{ <"+resourceURI+"> "
-									+ "(<"+SKOS.TOPCONCEPTOF+"> | ^<"+SKOS.HASTOPCONCEPT+"> ) ?genericScheme})" +
-							"\nBIND(\"true\" AS ?isTop )" +
-							"\n}";
-				}
-						
-						
-				query+="\n}";
-				//@formatter:on
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
-				superResourceVar = "superProperty";
-				superSuperResourceVar = "superSuperProperty";
-				//@formatter:off
-				query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
-						"\nWHERE{" + 
-						"\n{" + 
-						"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + ">+ ?superProperty ." +
+		String query = null;
+		String superResourceVar = null, superSuperResourceVar = null;
+		if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
+			superResourceVar = "broader";
+			superSuperResourceVar = "broaderOfBroader";
+			//@formatter:off
+			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
+					"\nWHERE{" +
+					"\n{" + 
+					"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )+ ?broader .";
+			if (schemeURI != null) {
+				query += "\n?broader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemeURI.stringValue() + "> ."+
 						"\nOPTIONAL{" +
-						"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty ." +
-						"\n}" + 
-						"\n}" +
-						"\nUNION" +
-						"\n{" +
-						"\n<"+resourceURI+"> a ?type ." +
-						"\nFILTER( " +
-						"?type = <"+RDF.PROPERTY+"> || " +
-						"?type = <"+OWL.OBJECTPROPERTY+"> || " +
-						"?type = <"+OWL.DATATYPEPROPERTY+"> || " +
-						"?type = <"+OWL.ANNOTATIONPROPERTY+"> || " +
-						"?type = <"+OWL.ONTOLOGYPROPERTY+"> )" +
-						"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBPROPERTYOF+"> _:b1}" +
-						"\nBIND(\"true\" AS ?isTop )" +
-						"\n}" +
+						"\nBIND (\"true\" AS ?isTopConcept)" +
+						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemeURI.stringValue()+"> ." +
 						"\n}";
-				//@formatter:on
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.cls.name().toLowerCase())) {
-				superResourceVar = "superClass";
-				superSuperResourceVar = "superSuperClass";
-				//@formatter:off
-				query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
-						"\nWHERE{" + 
-						"\n{" + 
-						"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + ">+ ?superClass ." + 
-						"\nOPTIONAL{" +
-						"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass ." +
-						"\n}" + 
-						"\n}" +
-						"\nUNION" +
-						"\n{" +
-						"\n<"+resourceURI+"> a <"+OWL.CLASS+">." +
-						"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBCLASSOF+"> _:b1}" +
-						"\nBIND(\"true\" AS ?isTop )" +
-						"\n}" +
-						"\n}";
-				//@formatter:on
-				/*
-				 // old version, now skosCollection and skosOrderedCollection are managed together
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
-				superResourceVar = "superCollection";
-				superSuperResourceVar = "superSuperCollection";
-				//@formatter:off
-				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
-						"\nWHERE {"+
-						"\n{"+
-						"\n?superCollection <"+SKOS.MEMBER+">+ <"+resourceURI+"> ." +
-						"\nOPTIONAL {"+
-						"?superSuperCollection <"+SKOS.MEMBER+"> ?superCollection ." +
-						"\n}" +
-						"\n}" +
-						"\nUNION" +
-						"\n{" +
-						"\n<"+resourceURI+"> a <"+SKOS.COLLECTION+"> ." +
-						"\nFILTER NOT EXISTS{ _:b1 <"+SKOS.MEMBER+"> <"+resourceURI+"> }" +
-						"\nBIND(\"true\" AS ?isTop )" +
-						"\n}" +
-						"\n}";
-				//@formatter:on
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosOrderedCollection.name().toLowerCase())){
-				//@formatter:off
-				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
-						"\nWHERE {"+
-						"\n{"+
-						"\n?superCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">)+ <"+resourceURI+"> ." +
-						"\nOPTIONAL {"+
-						"?superSuperCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) ?superCollection ." +
-						"\n}" +
-						"\n}" +
-						"\nUNION" +
-						"\n{" +
-						"\n<"+resourceURI+"> a <"+SKOS.ORDEREDCOLLECTION+"> ." +
-						"\nFILTER NOT EXISTS{ _:b1 (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) <"+resourceURI+"> }" +
-						"\nBIND(\"true\" AS ?isTop )" +
-						"\n}" +
-						"\n}";
-				//@formatter:on
-			*/
-			} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
-				superResourceVar = "superCollection";
-				superSuperResourceVar = "superSuperCollection";
-				String complexPropPath = "(<"+SKOS.MEMBER+"> | (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">*/<"+RDF.FIRST+">))";
-				//@formatter:off
-				query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
-						"\nWHERE {"+
-						"\n{"+
-						"\n?superCollection "+complexPropPath+"+ <"+resourceURI+"> ." +
-						"\nOPTIONAL {"+
-						"?superSuperCollection "+complexPropPath+" ?superCollection ." +
-						"\n}" +
-						"\n}" +
-						"\nUNION" +
-						"\n{" +
-						"\n<"+resourceURI+"> a ?type ." +
-						"\nFILTER(?type = <"+SKOS.COLLECTION+"> ||  ?type = <"+SKOS.ORDEREDCOLLECTION+"> )"+
-						"\nFILTER NOT EXISTS{ _:b1 "+complexPropPath+" <"+resourceURI+"> }" +
-						"\nBIND(\"true\" AS ?isTop )" +
-						"\n}" +
-						"\n}";
-				//@formatter:on
-			} else {
-				throw new IllegalArgumentException("Invalid input role: "+role);
 			}
-			logger.debug("query: " + query);
-			TupleQuery tupleQuery = owlModel.createTupleQuery(query);
+			query += "\nOPTIONAL{" +
+					"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader .";
+			if (schemeURI != null) {
+				query += "\n?broaderOfBroader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemeURI.stringValue() + "> . ";
+			}
+			query +="\n}" + 
+					"\n}" +
+					"\nUNION" +
+					"\n{";
+			//this union is used when the first part does not return anything, so when the desired concept
+			// does not have any broader, but it is defined as topConcept (to either a specified scheme or
+			// to at least one)
+			query+= "\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> .";
+			if(schemeURI != null){
+					query+="\n<"+resourceURI.stringValue()+"> " +
+							"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemeURI.stringValue()+">";
+			} else{
+				query+="\n<"+resourceURI.stringValue()+"> " +
+						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) _:b1";
+			}
+			query+="\nBIND(\"true\" AS ?isTop )" +
+					"\n}";
+					
+			// this using, used only when no scheme is selected, is used when the concept does not have any
+			// brader and it is not topConcept of any scheme
+			if(schemeURI == null){
+				query+="\nUNION" +
+						"\n{" +
+						"\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> ." +
+						"\nFILTER(NOT EXISTS{<"+resourceURI.stringValue()+"> "
+								+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +
+						"\nFILTER (NOT EXISTS{ <"+resourceURI.stringValue()+"> "
+								+ "(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+"> ) ?genericScheme})" +
+						"\nBIND(\"true\" AS ?isTop )" +
+						"\n}";
+			}
+					
+					
+			query+="\n}";
+			//@formatter:on
+		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
+			superResourceVar = "superProperty";
+			superSuperResourceVar = "superSuperProperty";
+			//@formatter:off
+			query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
+					"\nWHERE{" + 
+					"\n{" + 
+					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBPROPERTYOF.stringValue() + ">+ ?superProperty ." +
+					"\nOPTIONAL{" +
+					"\n?superProperty <" + RDFS.SUBPROPERTYOF.stringValue() + "> ?superSuperProperty ." +
+					"\n}" + 
+					"\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n<"+resourceURI.stringValue()+"> a ?type ." +
+					"\nFILTER( " +
+					"?type = <"+RDF.PROPERTY.stringValue()+"> || " +
+					"?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || " +
+					"?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || " +
+					"?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
+					"?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )" +
+					"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBPROPERTYOF.stringValue()+"> _:b1}" +
+					"\nBIND(\"true\" AS ?isTop )" +
+					"\n}" +
+					"\n}";
+			//@formatter:on
+		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.cls.name().toLowerCase())) {
+			superResourceVar = "superClass";
+			superSuperResourceVar = "superSuperClass";
+			//@formatter:off
+			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
+					"\nWHERE{" + 
+					"\n{" + 
+					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">+ ?superClass ." + 
+					"\nOPTIONAL{" +
+					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass ." +
+					"\n}" + 
+					"\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n<"+resourceURI.stringValue()+"> a <"+OWL.CLASS.stringValue()+">." +
+					"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBCLASSOF.stringValue()+"> _:b1}" +
+					"\nBIND(\"true\" AS ?isTop )" +
+					"\n}" +
+					"\n}";
+			//@formatter:on
+			/*
+			 // old version, now skosCollection and skosOrderedCollection are managed together
+		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+			superResourceVar = "superCollection";
+			superSuperResourceVar = "superSuperCollection";
+			//@formatter:off
+			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
+					"\nWHERE {"+
+					"\n{"+
+					"\n?superCollection <"+SKOS.MEMBER+">+ <"+resourceURI+"> ." +
+					"\nOPTIONAL {"+
+					"?superSuperCollection <"+SKOS.MEMBER+"> ?superCollection ." +
+					"\n}" +
+					"\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n<"+resourceURI+"> a <"+SKOS.COLLECTION+"> ." +
+					"\nFILTER NOT EXISTS{ _:b1 <"+SKOS.MEMBER+"> <"+resourceURI+"> }" +
+					"\nBIND(\"true\" AS ?isTop )" +
+					"\n}" +
+					"\n}";
+			//@formatter:on
+		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosOrderedCollection.name().toLowerCase())){
+			//@formatter:off
+			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
+					"\nWHERE {"+
+					"\n{"+
+					"\n?superCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">)+ <"+resourceURI+"> ." +
+					"\nOPTIONAL {"+
+					"?superSuperCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) ?superCollection ." +
+					"\n}" +
+					"\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n<"+resourceURI+"> a <"+SKOS.ORDEREDCOLLECTION+"> ." +
+					"\nFILTER NOT EXISTS{ _:b1 (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) <"+resourceURI+"> }" +
+					"\nBIND(\"true\" AS ?isTop )" +
+					"\n}" +
+					"\n}";
+			//@formatter:on
+		*/
+		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+			superResourceVar = "superCollection";
+			superSuperResourceVar = "superSuperCollection";
+			String complexPropPath = "(<"+SKOS.MEMBER.stringValue()+"> | (<"+SKOS.MEMBER_LIST.stringValue()+">/<"+RDF.REST.stringValue()+">*/<"+RDF.FIRST.stringValue()+">))";
+			//@formatter:off
+			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
+					"\nWHERE {"+
+					"\n{"+
+					"\n?superCollection "+complexPropPath+"+ <"+resourceURI.stringValue()+"> ." +
+					"\nOPTIONAL {"+
+					"?superSuperCollection "+complexPropPath+" ?superCollection ." +
+					"\n}" +
+					"\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n<"+resourceURI.stringValue()+"> a ?type ." +
+					"\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> ||  ?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> )"+
+					"\nFILTER NOT EXISTS{ _:b1 "+complexPropPath+" <"+resourceURI.stringValue()+"> }" +
+					"\nBIND(\"true\" AS ?isTop )" +
+					"\n}" +
+					"\n}";
+			//@formatter:on
+		} else {
+			throw new IllegalArgumentException("Invalid input role: "+role);
+		}
+		logger.debug("query: " + query);
+		
+		TupleQuery tupleQuery = getManagedConnection().prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		
+		//set the dataset to search just in the UserNamedGraphs
+		SimpleDataset dataset = new SimpleDataset();
+		Resource[] namedGraphs = getUserNamedGraphs();
+		for(Resource namedGraph : namedGraphs){
+			if(namedGraph instanceof IRI){
+				dataset.addDefaultGraph((IRI) namedGraph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
 
-			TupleBindingsIterator iter = tupleQuery.evaluate(false);
-			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = 
-					new HashMap<String, ResourceForHierarchy>();
-			boolean isTopResource = false; 
-			while (iter.hasNext()) {
-				TupleBindings tupleBindings = iter.next();
-				if(tupleBindings.hasBinding(superResourceVar)){
-					ARTNode superArtNode = tupleBindings.getBinding(superResourceVar).getBoundValue();
-					boolean isResNotURI = false;
-					String superResourceShow = null;
-					String superResourceId; 
-					if(superArtNode.isURIResource()){
-						superResourceId = superArtNode.getNominalValue();
-						superResourceShow = superArtNode.asURIResource().getLocalName();
-					} else { // BNode or Literal 
-						superResourceId = "NOT URI "+superArtNode.getNominalValue();
-						isResNotURI = true;
-					} 
-					
-					String superSuperResourceId = null;
-					String superSuperResourceShow = null;
-					boolean isSuperResABNode = false;
-					if (tupleBindings.hasBinding(superSuperResourceVar)) {
-						ARTNode superSuperResNode = tupleBindings.getBinding(superSuperResourceVar)
-								.getBoundValue();
-						if(superSuperResNode.isURIResource()){
-							superSuperResourceId = superSuperResNode.getNominalValue();
-							superSuperResourceShow = superSuperResNode.asURIResource().getLocalName();
-						} else { // BNode or Literal
-							superSuperResourceId = "NOT URI "+superSuperResNode.getNominalValue();
-							isSuperResABNode = true;
-						}
-					}
-					if (!resourceToResourceForHierarchyMap.containsKey(superResourceId)) {
-						resourceToResourceForHierarchyMap.put(superResourceId, new ResourceForHierarchy(
-								superResourceId, superResourceShow, isResNotURI));
-					}
-					if (!tupleBindings.hasBinding("isTopConcept")) { // use only for concept
-						resourceToResourceForHierarchyMap.get(superResourceId).setTopConcept(false);
-					}
-					
-					if (superSuperResourceId != null) {
-						if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceId)) {
-							resourceToResourceForHierarchyMap.put(superSuperResourceId, 
-									new ResourceForHierarchy(superSuperResourceId, superSuperResourceShow, 
-											isSuperResABNode));
-						}
-						ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
-								.get(superSuperResourceId);
-						resourceForHierarchy.addSubResource(superResourceId);
-						
-						resourceToResourceForHierarchyMap.get(superResourceId).setHasNoSuperResource(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = 
+				new HashMap<String, ResourceForHierarchy>();
+		boolean isTopResource = false; 
+		while (tupleQueryResult.hasNext()) {
+			BindingSet bindingSet = tupleQueryResult.next();
+			if(bindingSet.hasBinding(superResourceVar)){
+				Value superArtNode = bindingSet.getBinding(superResourceVar).getValue();
+				boolean isResNotURI = false;
+				String superResourceShow = null;
+				String superResourceId; 
+				if(superArtNode instanceof IRI){
+					superResourceId = superArtNode.stringValue();
+					superResourceShow = ((IRI) superArtNode).getLocalName();
+				} else { // BNode or Literal 
+					superResourceId = "NOT URI "+superArtNode.stringValue();
+					isResNotURI = true;
+				} 
+				
+				String superSuperResourceId = null;
+				String superSuperResourceShow = null;
+				Value superSuperResNode = null;
+				boolean isSuperResABNode = false;
+				if (bindingSet.hasBinding(superSuperResourceVar)) {
+					superSuperResNode = bindingSet.getBinding(superSuperResourceVar).getValue();
+					if(superSuperResNode instanceof IRI){
+						superSuperResourceId = superSuperResNode.stringValue();
+						superSuperResourceShow = ((IRI) superSuperResNode).getLocalName();
+					} else { // BNode or Literal
+						superSuperResourceId = "NOT URI "+superSuperResNode.stringValue();
+						isSuperResABNode = true;
 					}
 				}
-				if(tupleBindings.hasBinding("isTop")){
-					isTopResource = true;
+				if (!resourceToResourceForHierarchyMap.containsKey(superResourceId)) {
+					resourceToResourceForHierarchyMap.put(superResourceId, new ResourceForHierarchy(
+							superArtNode, superResourceShow, isResNotURI));
+				}
+				if (!bindingSet.hasBinding("isTopConcept")) { // use only for concept
+					resourceToResourceForHierarchyMap.get(superResourceId).setTopConcept(false);
 				}
 				
+				if (superSuperResNode != null) {
+					if (!resourceToResourceForHierarchyMap.containsKey(superSuperResourceId)) {
+						resourceToResourceForHierarchyMap.put(superSuperResourceId, 
+								new ResourceForHierarchy(superSuperResNode, superSuperResourceShow, 
+										isSuperResABNode));
+					}
+					ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
+							.get(superSuperResourceId);
+					resourceForHierarchy.addSubResource(superResourceId);
+					
+					resourceToResourceForHierarchyMap.get(superResourceId).setHasNoSuperResource(false);
+				}
 			}
-			iter.close();
+			if(bindingSet.hasBinding("isTop")){
+				isTopResource = true;
+			}
 			
-			
-			//iterate over the resoruceToResourceForHierarchyMap and look for the topConcept
-			//and construct a list of list containing all the possible paths
-			// exclude all the path having at least one elment which is not a URI (so a BNode or a Literal)
-			List<List<String>> pathList = new ArrayList<List<String>>();
-			for(ResourceForHierarchy resourceForHierarchy : resourceToResourceForHierarchyMap.values()){
-				if(!resourceForHierarchy.hasNoSuperResource){
-					//since it has at least one superElement (superClass, broader concept or superProperty)
-					// it cannot be the first element of a path
+		}
+		tupleQueryResult.close();
+		
+		
+		//iterate over the resoruceToResourceForHierarchyMap and look for the topConcept
+		//and construct a list of list containing all the possible paths
+		// exclude all the path having at least one element which is not a URI (so a BNode or a Literal)
+		List<List<String>> pathList = new ArrayList<List<String>>();
+		for(ResourceForHierarchy resourceForHierarchy : resourceToResourceForHierarchyMap.values()){
+			if(!resourceForHierarchy.hasNoSuperResource){
+				//since it has at least one superElement (superClass, broader concept or superProperty)
+				// it cannot be the first element of a path
+				continue;
+			}
+			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+				//the role is a concept, so check it an input scheme was passed, if so, if it is not a 
+				// top concept (for that particular scheme) then pass to the next concept
+				if(schemeURI!=null && !resourceForHierarchy.isTopConcept){
 					continue;
 				}
-				if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
-					//the role is a concept, so check it an input scheme was passed, if so, if it is not a 
-					// top concept (for that particular scheme) then pass to the next concept
-					if(schemeURI!=null && !resourceForHierarchy.isTopConcept){
-						continue;
-					}
-				}
-				List<String> currentList = new ArrayList<String>();
-				currentList.add(resourceForHierarchy.getResource());
-				getSubResourcesListUsingResourceFroHierarchy(resourceForHierarchy, currentList, pathList, 
-						resourceToResourceForHierarchyMap);
 			}
-			
-			//now construct the response
-			//to order the path (from the shortest to the longest) first find the maximum length
-			int maxLength = -1;
-			for(List<String> path : pathList){
-				int currentLength = path.size();
-				if(maxLength==-1 || maxLength<currentLength){
-					maxLength = currentLength;
-				}
-			}
-			Element pathCollection = XMLHelp.newElement(dataElement, "collection");
-			//if it is explicitly a topResource or if no path is returned while there was at least one 
-			// result from the SPARQL quey (this mean that all the paths contained at least one non-URI resource)
-			if(isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty() )){
-				//the input resource is a top resource for its role (concept, class or property)
-				Element pathElem = XMLHelp.newElement(pathCollection, "path");
-				pathElem.setAttribute("length", "0");
-				Element pathInnerCollection = XMLHelp.newElement(pathElem, "collection");
-				Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
-				concElem.setAttribute("role", role);
-				concElem.setAttribute("show", inputResource.getLocalName());
-				concElem.setTextContent(inputResource.getURI());
-			}
-			for(int currentLength=1; currentLength<=maxLength; ++currentLength){
-				for(List<String> path : pathList){
-					if(currentLength != path.size()){
-						//it is not the right interation to add this path
-						continue;
-					}
-					Element pathElem = XMLHelp.newElement(pathCollection, "path");
-					pathElem.setAttribute("length", path.size()+"");
-					Element pathInnerCollection = XMLHelp.newElement(pathElem, "collection");
-					for(String conceptInPath : path){
-						Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
-						concElem.setAttribute("role", role);
-						concElem.setAttribute("show", resourceToResourceForHierarchyMap.get(conceptInPath)
-								.getShow());
-						concElem.setTextContent(resourceToResourceForHierarchyMap.get(conceptInPath)
-								.getResource());
-					}
-					//add, at the end, the input concept
-					Element concElem = XMLHelp.newElement(pathInnerCollection, "uri");
-					concElem.setAttribute("role", role);
-					concElem.setAttribute("show", inputResource.getLocalName());
-					concElem.setTextContent(inputResource.getURI());
-				}
-			}
-			
-			return response;
-		} catch (ModelAccessException e) {
-			return logAndSendException(e);
-		} catch (UnsupportedQueryLanguageException e) {
-			return logAndSendException(e);
-		} catch (MalformedQueryException e) {
-			return logAndSendException(e);
-		} catch (QueryEvaluationException e) {
-			return logAndSendException(e);
+			List<String> currentList = new ArrayList<String>();
+			currentList.add(resourceForHierarchy.getValue().stringValue());
+			getSubResourcesListUsingResourceFroHierarchy(resourceForHierarchy, currentList, pathList, 
+					resourceToResourceForHierarchyMap);
 		}
+		
+		//now construct the response
+		//to order the path (from the shortest to the longest) first find the maximum length
+		int maxLength = -1;
+		for(List<String> path : pathList){
+			int currentLength = path.size();
+			if(maxLength==-1 || maxLength<currentLength){
+				maxLength = currentLength;
+			}
+		}
+		
+		boolean pathFound = false;
+		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
+		
+		//if it is explicitly a topResource or if no path is returned while there was at least one 
+		// result from the SPARQL quey (this mean that all the paths contained at least one non-URI resource)
+		if(isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty() )){
+			//the input resource is a top resource for its role (concept, class or property)
+			pathFound = true;
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI)resourceURI);
+			annotatedValue.setAttribute("explicit", true);
+			annotatedValue.setAttribute("show", resourceURI.getLocalName());
+			results.add(annotatedValue);
+		}
+		
+		
+		for(int currentLength=1; currentLength<=maxLength && pathFound; ++currentLength){
+			for(List<String> path : pathList){
+				if(currentLength != path.size()){
+					//it is not the right iteration to add this path
+					continue;
+				}
+				pathFound = true;
+				
+				for(String conceptInPath : path){
+					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
+							(Resource) resourceToResourceForHierarchyMap.get(conceptInPath).getValue());
+					annotatedValue.setAttribute("explicit", true);
+					annotatedValue.setAttribute("show", resourceToResourceForHierarchyMap.get(conceptInPath)
+							.getShow());
+					results.add(annotatedValue);
+				}
+				//add, at the end, the input concept
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI)resourceURI);
+				annotatedValue.setAttribute("explicit", true);
+				annotatedValue.setAttribute("show", resourceURI.getLocalName());
+				results.add(annotatedValue);
+				
+			}
+		}
+		
+		return results;
 	}
 	
 	
@@ -907,14 +886,14 @@ public class Search extends STServiceAdapterOLD {
 	
 	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
 			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isConceptSchemeWanted, boolean isCollectionWanted, ARTURIResource scheme){
+			boolean isConceptSchemeWanted, boolean isCollectionWanted, IRI scheme){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
 		if(isClassWanted){
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+" = <"+OWL.CLASS+"> || " +
-							type+" = <"+RDFS.CLASS+"> )" +
+					"\nFILTER("+type+" = <"+OWL.CLASS.stringValue()+"> || " +
+							type+" = <"+RDFS.CLASS.stringValue()+"> )" +
 					"\n}";
 			
 			otherWanted = true;
@@ -924,11 +903,11 @@ public class Search extends STServiceAdapterOLD {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+ " = <"+RDF.PROPERTY+"> || "+
-					type+" = <"+OWL.OBJECTPROPERTY+"> || "+
-					type+" = <"+OWL.DATATYPEPROPERTY+"> || "+
-					type+" = <"+OWL.ANNOTATIONPROPERTY+"> || " +
-					type+" = <"+OWL.ONTOLOGYPROPERTY+"> )"+
+					"\nFILTER("+type+ " = <"+RDF.PROPERTY.stringValue()+"> || "+
+					type+" = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "+
+					type+" = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "+
+					type+" = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
+					type+" = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
 					"\n}";
 			otherWanted = true;
 		}
@@ -937,9 +916,9 @@ public class Search extends STServiceAdapterOLD {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.CONCEPT+">)";
-			if(scheme!=null && scheme.getURI().length()>0){
-				filterQuery += "\n"+resource+" <"+SKOS.INSCHEME+"> <"+scheme.getURI()+"> .";
+					 "\nFILTER("+type+" = <"+SKOS.CONCEPT.stringValue()+">)";
+			if(scheme!=null && scheme.stringValue().length()>0){
+				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> <"+scheme.stringValue()+"> .";
 			}
 			
 			filterQuery += "\n}";
@@ -951,7 +930,7 @@ public class Search extends STServiceAdapterOLD {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.CONCEPTSCHEME+">)";
+					 "\nFILTER("+type+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
 			
 			filterQuery += "\n}";
 			
@@ -962,8 +941,8 @@ public class Search extends STServiceAdapterOLD {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.COLLECTION+"> || " +
-					 		 type+" = <"+SKOS.ORDEREDCOLLECTION+"> )" +
+					 "\nFILTER("+type+" = <"+SKOS.COLLECTION.stringValue()+"> || " +
+					 		 type+" = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> )" +
 					 "\n}";
 			
 			otherWanted = true;
@@ -973,7 +952,7 @@ public class Search extends STServiceAdapterOLD {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\n?type a <"+OWL.CLASS+"> . "+
+					"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
 					//"\n?type a ?classType ." +
 					//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
 					"\n}";
@@ -1040,12 +1019,14 @@ public class Search extends STServiceAdapterOLD {
 		private boolean isTopConcept; // used only for concept
 		private boolean hasNoSuperResource;
 		private List<String>subResourcesList;
-		private String resource;
+		//private String resourceString;
+		private Value value;
 		private String show;
 		private boolean isNotURI;
 		
-		public ResourceForHierarchy(String resource, String show, boolean isNotURI) {
-			this.resource = resource;
+		public ResourceForHierarchy(Value value, String show, boolean isNotURI) {
+			//this.resourceString = resource.stringValue();
+			this.value = value;
 			this.show = show;
 			this.isNotURI = isNotURI;
 			isTopConcept = true;
@@ -1057,8 +1038,12 @@ public class Search extends STServiceAdapterOLD {
 			return isNotURI;
 		}
 		
-		public String getResource(){
-			return resource;
+		/*public String getResourceString(){
+			return resourceString;
+		}*/
+		
+		public Value getValue(){
+			return value;
 		}
 		
 		public String getShow(){
@@ -1095,27 +1080,27 @@ public class Search extends STServiceAdapterOLD {
 	
 	private RDFResourceRolesEnum getRoleFromType(String typeURI){
 		RDFResourceRolesEnum role;
-		if(typeURI.equals(OWL.CLASS) || typeURI.equals(RDFS.CLASS) ){
+		if(typeURI.equals(OWL.CLASS.stringValue()) || typeURI.equals(RDFS.CLASS.stringValue()) ){
 			role = RDFResourceRolesEnum.cls;
-		} else if(typeURI.equals(RDF.PROPERTY)){
+		} else if(typeURI.equals(RDF.PROPERTY.stringValue())){
 			role = RDFResourceRolesEnum.property;
-		} else if(typeURI.equals(OWL.OBJECTPROPERTY)){
+		} else if(typeURI.equals(OWL.OBJECTPROPERTY.stringValue())){
 			role = RDFResourceRolesEnum.objectProperty;
-		} else if(typeURI.equals(OWL.DATATYPEPROPERTY)){
+		} else if(typeURI.equals(OWL.DATATYPEPROPERTY.stringValue())){
 			role = RDFResourceRolesEnum.datatypeProperty;
-		} else if(typeURI.equals(OWL.ANNOTATIONPROPERTY)){
+		} else if(typeURI.equals(OWL.ANNOTATIONPROPERTY.stringValue())){
 			role = RDFResourceRolesEnum.annotationProperty;
-		} else if(typeURI.equals(OWL.ONTOLOGYPROPERTY)){
+		} else if(typeURI.equals(OWL.ONTOLOGYPROPERTY.stringValue())){
 			role = RDFResourceRolesEnum.ontologyProperty;
-		}  else if(typeURI.equals(SKOS.CONCEPT)){
+		}  else if(typeURI.equals(SKOS.CONCEPT.stringValue())){
 			role = RDFResourceRolesEnum.concept;
-		} else if(typeURI.equals(SKOS.COLLECTION)){
+		} else if(typeURI.equals(SKOS.COLLECTION.stringValue())){
 			role = RDFResourceRolesEnum.skosCollection;
-		} else if(typeURI.equals(SKOS.ORDEREDCOLLECTION)){
+		} else if(typeURI.equals(SKOS.ORDERED_COLLECTION.stringValue())){
 			role = RDFResourceRolesEnum.skosOrderedCollection;
-		} else if(typeURI.equals(SKOSXL.LABEL)){
+		} else if(typeURI.equals(SKOSXL.LABEL.stringValue())){
 			role = RDFResourceRolesEnum.xLabel;
-		} else if(typeURI.equals(SKOS.CONCEPTSCHEME)){
+		} else if(typeURI.equals(SKOS.CONCEPT_SCHEME.stringValue())){
 			role = RDFResourceRolesEnum.conceptScheme;
 		} else {
 			role = RDFResourceRolesEnum.individual;
