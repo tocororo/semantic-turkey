@@ -236,7 +236,7 @@ public class Search extends STServiceAdapter {
 			BindingSet tupleBindings = tupleBindingsIterator.next();
 			Value value = tupleBindings.getBinding("resource").getValue();
 
-			if (value instanceof IRI) {
+			if (!(value instanceof IRI)) {
 				continue;
 			}
 
