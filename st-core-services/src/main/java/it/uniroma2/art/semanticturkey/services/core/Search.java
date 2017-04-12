@@ -6,6 +6,7 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 import java.security.InvalidParameterException;
@@ -34,9 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-@GenerateSTServiceController
-@Validated
-@Component
+@STService
 public class Search extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Search.class);
