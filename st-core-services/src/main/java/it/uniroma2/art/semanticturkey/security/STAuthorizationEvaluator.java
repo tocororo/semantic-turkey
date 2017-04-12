@@ -12,11 +12,18 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import alice.tuprolog.InvalidTheoryException;
+import alice.tuprolog.MalformedGoalException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.rbac.HaltedEngineException;
+import it.uniroma2.art.semanticturkey.rbac.HarmingGoalException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
+import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
@@ -45,8 +52,14 @@ public class STAuthorizationEvaluator {
 	 * @param prologCapability
 	 * @param crudv
 	 * @return
+	 * @throws HarmingGoalException 
+	 * @throws HaltedEngineException 
+	 * @throws TheoryNotFoundException 
+	 * @throws MalformedGoalException 
+	 * @throws InvalidTheoryException 
 	 */
-	public boolean isAuthorized(String prologCapability, String crudv) {
+	public boolean isAuthorized(String prologCapability, String crudv) throws InvalidTheoryException,
+		MalformedGoalException, TheoryNotFoundException, HaltedEngineException, HarmingGoalException {
 		return this.isAuthorized(prologCapability, "{}", crudv);
 	}
 
@@ -69,9 +82,15 @@ public class STAuthorizationEvaluator {
 	 *		<code>U (update)</code> <code>D (delete)</code>, plus <code>V (validation)</code>.
 	 * 
 	 * @return
+	 * @throws TheoryNotFoundException 
+	 * @throws InvalidTheoryException 
+	 * @throws HarmingGoalException 
+	 * @throws HaltedEngineException 
+	 * @throws MalformedGoalException 
 	 */
-	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv) {
-		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "')";
+	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv)
+			throws InvalidTheoryException, TheoryNotFoundException, MalformedGoalException, HaltedEngineException, HarmingGoalException {
+		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "').";
 		
 		//parse userResponsibility
 		Map<String, Object> userRespMap;
@@ -94,6 +113,17 @@ public class STAuthorizationEvaluator {
 //		while (it.hasNext()) {
 //			System.out.println("\t" + it.next().name());
 //		}
+		
+//		UsersManager.getLoggedUser();
+		RBACProcessor rbac = RBACManager.getRBACProcessor("administrator");
+		try {
+			System.out.println("capability list term: " + rbac.getCapabilitiesAsListTerm());
+			System.out.println("capability term list: " + rbac.getCapabilitiesAsTermList());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		boolean prologGoalSatistied = rbac.authorizes(prologGoal);
+		System.out.println("prolog goal satisfied? " + prologGoalSatistied);
 
 		System.out.println("Role base access control:");
 		Project<?> targetForRBAC = getTargetForRBAC();
@@ -145,9 +175,9 @@ public class STAuthorizationEvaluator {
 	 * @return
 	 */
 	private Collection<UserCapabilitiesEnum> getCapabilities(STUser user) {
-		String projectParam = getTargetForRBAC().getName();
-		if (projectParam != null) {
-			return acMgr.getCapabilities(user, projectParam);
+		String projectName = getTargetForRBAC().getName();
+		if (projectName != null) {
+			return acMgr.getCapabilities(user, projectName);
 		} else {
 			return Collections.emptyList();
 		}

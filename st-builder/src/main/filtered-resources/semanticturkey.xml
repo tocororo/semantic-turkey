@@ -89,6 +89,8 @@
 		<bundle dependency="true">mvn:com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru/1.4.2</bundle>
 		<bundle dependency="true">wrap:mvn:com.ontotext.graphdb/graphdb-free-runtime/8.0.4$Bundle-Version=8.0.4&amp;Import-Package=org.apache.commons.codec.*;version="[1.4,2)",*</bundle>
 		<bundle dependency="true">mvn:it.uniroma2.art.semanticturkey/st-graphdb-rdf4j-bridge/${project.version}</bundle>
+		
+		<bundle dependency="true">wrap:mvn:it.unibo.alice.tuprolog/tuprolog/3.2.1</bundle>
 	
 		<configfile finalname="GRAPHDB_LITE.license" override="true">
 <!-- 			jar:file:system/com/ontotext/graphdb/graphdb-free-runtime/8.0.4/graphdb-free-runtime-8.0.4.jar!/GRAPHDB_LITE.license -->

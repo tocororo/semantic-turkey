@@ -1,0 +1,1 @@
+capability(rdf(resource, alignment), 'CRUD').
