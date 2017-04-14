@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -15,7 +16,9 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -63,8 +66,6 @@ public class ManchesterHandler extends STServiceAdapter {
 				subClassBNodeList.add((BNode) obj);
 			}
 		}
-		Resource graphsArray[] = new Resource[1] ;
-		graphsArray[0] = getWorkingGraph();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 		Map<String, String> namespaceToPrefixsMap = new HashMap<String, String>();
 		for(String prefix: prefixToNamespacesMap.keySet()){
@@ -74,14 +75,14 @@ public class ManchesterHandler extends STServiceAdapter {
 		Map<String, String>bnodeToExprEquivalentMap = new HashMap<>();
 		typeToMapBNodeToExpr.put("equivalentClass", bnodeToExprEquivalentMap);
 		for(BNode bnode : equivalentClassNodeList){
-			String expr = getSingleManchExpression(bnode, graphsArray, new ArrayList<>(), namespaceToPrefixsMap, 
+			String expr = getSingleManchExpression(bnode, getUserNamedGraphs(), new ArrayList<>(), namespaceToPrefixsMap, 
 					usePrefixes, useUppercaseSyntax);
 			bnodeToExprEquivalentMap.put(bnode.stringValue(), expr);
 		}
 		Map<String, String>bnodeToExprSubClassMap = new HashMap<>();
 		typeToMapBNodeToExpr.put("subClassOf", bnodeToExprSubClassMap);
 		for(BNode bnode : equivalentClassNodeList){
-			String expr = getSingleManchExpression(bnode, graphsArray, new ArrayList<>(), namespaceToPrefixsMap, 
+			String expr = getSingleManchExpression(bnode, getUserNamedGraphs(), new ArrayList<>(), namespaceToPrefixsMap, 
 					usePrefixes, useUppercaseSyntax);
 			bnodeToExprSubClassMap.put(bnode.stringValue(), expr);
 		}
@@ -105,14 +106,12 @@ public class ManchesterHandler extends STServiceAdapter {
 			@Optional(defaultValue = "true") boolean useUppercaseSyntax){
 		
 		List<Statement> statList = new ArrayList<>();
-		Resource graphsArray[] = new Resource[1] ;
-		graphsArray[0] = getWorkingGraph();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 		Map<String, String> namespaceToPrefixsMap = new HashMap<String, String>();
 		for(String prefix: prefixToNamespacesMap.keySet()){
 			namespaceToPrefixsMap.put(prefix, prefixToNamespacesMap.get(prefix));
 		}
-		return getSingleManchExpression(bnode, graphsArray, statList, namespaceToPrefixsMap, 
+		return getSingleManchExpression(bnode, getUserNamedGraphs(), statList, namespaceToPrefixsMap, 
 				usePrefixes, useUppercaseSyntax);
 		
 	}
@@ -122,33 +121,6 @@ public class ManchesterHandler extends STServiceAdapter {
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.getManchClassFromBNode(bnode, graphsArray, 
 				statList, getManagedConnection());
 		return mci.getManchExpr(namespaceToPrefixsMap, usePrefixes, useUppercaseSyntax);
-	}
-	
-	/**
-	 * Remove all the RDF triples used to store the Restriction associated to the input classIRI using the 
-	 * specific relation (owl:equivalentClassand and rdfs:subClassOf) 
-	 * @param classIri (OPTIONL) the input classIRI
-	 * @param exprType (OPTIONL) the relation (owl:equivalentClassand or rdfs:subClassOf)  linking the Restriction to 
-	 * the input clasIRI 
-	 * @param bnode the bnode representing the restriction
-	 */
-	@STServiceOperation
-	@Write
-	public void removeExpression(@Optional IRI classIri, @Optional IRI exprType, BNode bnode){
-		RepositoryConnection conn = getManagedConnection();
-		List<Statement> statList = new ArrayList<>();
-		Resource graphsArray[] = new Resource[1] ;
-		graphsArray[0] = getWorkingGraph();
-		ManchesterSyntaxUtils.getManchClassFromBNode(bnode, graphsArray, statList, conn);
-		conn.remove(statList, getWorkingGraph());
-		//delete the subClass o equivalentClass property between the main ClassURI and the BNode
-		//TODO decide whether to check that expreType is either owl:equivalentClassand or rdfs:subClassOf 
-		if(classIri != null && exprType != null){
-			conn.remove(conn.getValueFactory().createStatement(classIri, exprType, bnode), getWorkingGraph());
-		} else{
-			//since the classIRI and/or exprType is not specified, try to get the from the ontology and remove
-			conn.remove(conn.getStatements(null, null, bnode, getWorkingGraph()));
-		}
 	}
 	
 	
@@ -174,12 +146,12 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @param classIri the class which the restriction should be associated to
 	 * @param exprType the property linking the classIRI to the restriction (owl:equivalentClassand or rdfs:subClassOf)
 	 * @param manchExpr the Manchester expression defying the restriction
-	 * @return the newly created resource (mainly a bnode)
+	 * @return the newly created bnode 
 	 * @throws ManchesterParserException
 	 */
 	@STServiceOperation
 	@Write
-	public Resource createRestriction(IRI classIri, IRI exprType, String manchExpr) 
+	public AnnotatedValue<BNode> createRestriction(IRI classIri, IRI exprType, String manchExpr) 
 			throws ManchesterParserException{
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
@@ -187,15 +159,99 @@ public class ManchesterHandler extends STServiceAdapter {
 				conn.getValueFactory(), prefixToNamespacesMap);
 		
 		List<Statement> statList = new ArrayList<>();
-		Resource newResource = ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, conn.getValueFactory());
+		//it is possible to cast the Resource to a BNode, because the input mci should have a bnode as 
+		// starting element
+		BNode newBnode = (BNode) ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, conn.getValueFactory());
 		
 		conn.add(statList, getWorkingGraph());
 		
 		// add the subClass o equivalentClass property between the main ClassURI and the new BNode
 		//TODO decide whether to check that expreType is either owl:equivalentClassand or rdfs:subClassOf 
-		conn.add(conn.getValueFactory().createStatement(classIri, exprType, newResource), getWorkingGraph());
+		conn.add(conn.getValueFactory().createStatement(classIri, exprType, newBnode), getWorkingGraph());
 		
 		
-		return newResource;
+		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(newBnode);
+		annBNode.setAttribute("role", RDFResourceRolesEnum.cls.name());
+		
+		return annBNode;
+	}
+	
+	/**
+	 * Remove all the RDF triples used to store the Restriction associated to the input classIRI using the 
+	 * specific relation (owl:equivalentClassand and rdfs:subClassOf) 
+	 * @param classIri (OPTIONL) the input classIRI
+	 * @param exprType (OPTIONL) the relation (owl:equivalentClassand or rdfs:subClassOf)  linking the Restriction to 
+	 * the input clasIRI 
+	 * @param bnode the bnode representing the restriction
+	 */
+	@STServiceOperation
+	@Write
+	public void removeExpression(@Optional IRI classIri, @Optional IRI exprType, BNode bnode){
+		RepositoryConnection conn = getManagedConnection();
+		List<Statement> statList = new ArrayList<>();
+		ManchesterSyntaxUtils.getManchClassFromBNode(bnode, getUserNamedGraphs(), statList, conn);
+		conn.remove(statList, getDeleteGraph());
+		//delete the subClass o equivalentClass property between the main ClassURI and the BNode
+		//TODO decide whether to check that expreType is either owl:equivalentClassand or rdfs:subClassOf 
+		if(classIri != null && exprType != null){
+			conn.remove(conn.getValueFactory().createStatement(classIri, exprType, bnode), getDeleteGraph());
+		} else{
+			//since the classIRI and/or exprType is not specified, try to get the from the ontology and remove
+			conn.remove(conn.getStatements(null, null, bnode, getDeleteGraph()));
+		}
+	}
+	
+	/**
+	 * Update the restriction by removing all the RDF triples used to store the old Restriction and then creting the new RDF triples.
+	 * It uses the same BNode as the old restriction to represent the restriction itself
+	 * @param classIri (OPTIONL) the input classIRI
+	 * @param exprType (OPTIONL) the relation (owl:equivalentClassand or rdfs:subClassOf)  linking the Restriction to 
+	 * the input clasIRI 
+	 * @param bnode the bnode representing the restriction
+	 * @return the same bnode passed in input and used to create the updated restriction 
+	 * @throws ManchesterParserException 
+	 */
+	@STServiceOperation
+	@Write
+	public AnnotatedValue<BNode> updateExpression(@Optional IRI classIri, @Optional IRI exprType, String newManchExpr, 
+			BNode bnode) throws ManchesterParserException{
+		//first of all, parse the new Expression to be sure that it is a valid one
+		RepositoryConnection conn = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(newManchExpr, 
+				conn.getValueFactory(), prefixToNamespacesMap);
+		
+		//now remove the old triples
+		List<Statement> statList = new ArrayList<>();
+		ManchesterSyntaxUtils.getManchClassFromBNode(bnode, getUserNamedGraphs(), statList, conn);
+		conn.remove(statList, getDeleteGraph());
+		
+		
+		//then add the new triples
+		statList = new ArrayList<>();
+		BNode newBNode = (BNode) ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, conn.getValueFactory());
+		
+		//since the Restriction should have the same bnode as "entry point", search in the generated triples
+		//the ones having the newBNode and replace them with the old bnode
+		List<Statement> tempStatList = new ArrayList<>(); 
+		Iterator<Statement> iter = statList.iterator();
+		while(iter.hasNext()){
+			Statement stat = iter.next();
+			if(stat.getSubject().equals(newBNode)){
+				tempStatList.add(conn.getValueFactory().createStatement(bnode, stat.getPredicate(), stat.getObject()));
+				iter.remove();
+			} else if(stat.getObject().equals(newBNode)){
+				tempStatList.add(conn.getValueFactory().createStatement(stat.getSubject(), stat.getPredicate(), bnode));
+				iter.remove();
+			}
+		}
+		statList.addAll(tempStatList);
+		
+		conn.add(statList, getWorkingGraph());
+		
+		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(bnode);
+		annBNode.setAttribute("role", RDFResourceRolesEnum.cls.name());
+		
+		return annBNode;
 	}
 }

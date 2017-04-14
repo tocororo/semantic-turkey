@@ -58,7 +58,14 @@ public class ManchesterSyntaxUtils {
 		    ParserDescription parserDescription = new ParserDescription(valueFactory, 
 		    		prefixToNamespacesMap);
 	    	walker.walk(parserDescription, descriptionContext);
-	    	return parserDescription.getManchesterClass();
+	    	ManchesterClassInterface mci = parserDescription.getManchesterClass();
+	    	
+	    	if(mci instanceof ManchesterBaseClass){
+	    		throw new ManchesterParserException("The expression "+mancExp+" cannot be composed of a "
+	    				+ "single IRI/QName");
+	    	}
+	    	
+	    	return mci;
 	    } catch(ManchesterParserRuntimeException e){
 	    	throw new ManchesterParserException(e);
 	    } catch (StringIndexOutOfBoundsException e){
@@ -98,7 +105,7 @@ public class ManchesterSyntaxUtils {
 					statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
 					prevBNodeInList = currentBNodeInList;
 				}
-				Value innerClass = parseManchesterExpr(mciInner, statList, valueFactory);
+				Resource innerClass = parseManchesterExpr(mciInner, statList, valueFactory);
 				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
 				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, innerClass));
 			}
@@ -128,7 +135,7 @@ public class ManchesterSyntaxUtils {
 					statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
 					prevBNodeInList = currentBNodeInList;
 				}
-				Value innerClass = parseManchesterExpr(mciInner, statList, valueFactory);
+				Resource innerClass = parseManchesterExpr(mciInner, statList, valueFactory);
 				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
 				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, innerClass));
 			}
@@ -235,7 +242,7 @@ public class ManchesterSyntaxUtils {
 		}else if (mci instanceof ManchesterOnlyClass ) { //PossType.ONLY
 			ManchesterOnlyClass moc = (ManchesterOnlyClass) mci;
 			IRI prop = moc.getOnlyProp();
-			Value onlyInnerClass = parseManchesterExpr(moc.getOnlyClass(), statList, valueFactory);
+			Resource onlyInnerClass = parseManchesterExpr(moc.getOnlyClass(), statList, valueFactory);
 			BNode onlyClass = valueFactory.createBNode();
 			statList.add(valueFactory.createStatement(onlyClass, RDF.TYPE, OWL.RESTRICTION));
 			statList.addAll(generateInverseTriples(valueFactory, moc.hasInverse(), onlyClass, prop));
@@ -244,7 +251,7 @@ public class ManchesterSyntaxUtils {
 		} else if (mci instanceof ManchesterSomeClass) { // PossType.SOME
 			ManchesterSomeClass msc = (ManchesterSomeClass) mci;
 			IRI prop = msc.getSomeProp();
-			Value someInnerClass = parseManchesterExpr(msc.getSomeClass(), statList, valueFactory);
+			Resource someInnerClass = parseManchesterExpr(msc.getSomeClass(), statList, valueFactory);
 			BNode someClass = valueFactory.createBNode();
 			statList.add(valueFactory.createStatement(someClass, RDF.TYPE, OWL.RESTRICTION));
 			statList.addAll(generateInverseTriples(valueFactory, msc.hasInverse(), someClass, prop));

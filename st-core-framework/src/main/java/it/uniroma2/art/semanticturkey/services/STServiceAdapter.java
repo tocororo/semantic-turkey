@@ -97,6 +97,11 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	public Resource getWorkingGraph() {
 		return rdf4j2artFact.aRTResource2RDF4JResource(stServiceContext.getWGraph());
 	}
+	
+	public Resource getDeleteGraph() {
+		//TODO check this method
+		return getWorkingGraph();
+	}
 
 	public Resource getMetadataGraph() {
 		return rdf4j2artFact.aRTResource2RDF4JResource(
