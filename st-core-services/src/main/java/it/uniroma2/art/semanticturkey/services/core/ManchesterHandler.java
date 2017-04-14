@@ -204,8 +204,6 @@ public class ManchesterHandler extends STServiceAdapter {
 	/**
 	 * Update the restriction by removing all the RDF triples used to store the old Restriction and then creting the new RDF triples.
 	 * It uses the same BNode as the old restriction to represent the restriction itself
-	 * @param classIri (OPTIONL) the input classIRI
-	 * @param exprType (OPTIONL) the relation (owl:equivalentClassand or rdfs:subClassOf)  linking the Restriction to 
 	 * the input clasIRI 
 	 * @param bnode the bnode representing the restriction
 	 * @return the same bnode passed in input and used to create the updated restriction 
@@ -213,8 +211,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Write
-	public AnnotatedValue<BNode> updateExpression(@Optional IRI classIri, @Optional IRI exprType, String newManchExpr, 
-			BNode bnode) throws ManchesterParserException{
+	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode) throws ManchesterParserException{
 		//first of all, parse the new Expression to be sure that it is a valid one
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
