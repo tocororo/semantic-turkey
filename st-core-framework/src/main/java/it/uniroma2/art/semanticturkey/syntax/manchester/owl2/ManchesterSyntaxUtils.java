@@ -12,14 +12,21 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
@@ -317,8 +324,29 @@ public class ManchesterSyntaxUtils {
 
 	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode,
 			Resource[] graphs, List<Statement> tripleList, RepositoryConnection conn) {
+		//do a SPARQL DESCRIBE to obtain all the triple regarding this restriction 
+		String query = "DESCRIBE ?res WHERE {BIND (?inputRes AS ?res)}";
+		GraphQuery graphQuery = conn.prepareGraphQuery(query);
+		graphQuery.setBinding("inputRes", bnode);
+		graphQuery.setIncludeInferred(false);
+		SimpleDataset dataset = new SimpleDataset();
+		for(Resource graphIRI : graphs){
+			if(graphIRI instanceof IRI){
+				dataset.addDefaultGraph((IRI) graphIRI);
+			}
+		}
+		graphQuery.setDataset(dataset);
+		GraphQueryResult graphQueryResult = graphQuery.evaluate();
+		Model model = QueryResults.asModel(graphQueryResult);
+		return getManchClassFromBNode(bnode, graphs, tripleList, model);
+		
+	}
+	
+	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode,
+			Resource[] graphs, List<Statement> tripleList, Model model) {
 		//get all the triples having the input bnode as subject
-		RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
+		//RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
+		Model filteredModel = model.filter(bnode, null, null, graphs);
 		
 		// check the predicate, which can be:
 		// - OWL.INTERSECTIONOF
@@ -345,8 +373,9 @@ public class ManchesterSyntaxUtils {
 		PossType type = null;
 		int card = 0;
 		boolean inverse = false;
-		while (statements.hasNext()) {
-			Statement stat = statements.next();
+		//while (statements.hasNext()) {
+		for(Statement stat : filteredModel) {
+			//Statement stat = statements.next();
 			if (tripleList != null) {
 				tripleList.add(stat);
 			}
@@ -376,7 +405,8 @@ public class ManchesterSyntaxUtils {
 					//this means that the restriction has an inverse object property, so you need to get the 
 					// real property
 					inverse = true;
-					prop = (IRI)conn.getStatements((BNode)obj, OWL.INVERSEOF, null, graphs).next().getObject();
+					//prop = (IRI)conn.getStatements((BNode)obj, OWL.INVERSEOF, null, graphs).next().getObject(); // OLD
+					prop = (IRI)Models.objectIRI(model.filter((BNode)obj, OWL.INVERSEOF, null, graphs)).get();
 				} else{
 					prop = (IRI) stat.getObject();
 				}
@@ -395,15 +425,15 @@ public class ManchesterSyntaxUtils {
 				// but its value is process in another else if
 			}
 			else if (pred.equals(OWL.MAXCARDINALITY) || 
-					pred.equals(conn.getValueFactory().createIRI(OWL_MAXQUALIFIEDCARDINALITY))) {
+					pred.equals(SimpleValueFactory.getInstance().createIRI(OWL_MAXQUALIFIEDCARDINALITY))) {
 				card = Integer.parseInt(stat.getObject().stringValue());
 				type = PossType.MAX;
 			} else if (pred.equals(OWL.MINCARDINALITY) || 
-					pred.equals(conn.getValueFactory().createIRI(OWL_MINQUALIFIEDCARDINALITY))) {
+					pred.equals(SimpleValueFactory.getInstance().createIRI(OWL_MINQUALIFIEDCARDINALITY))) {
 				card = Integer.parseInt(stat.getObject().stringValue());
 				type = PossType.MIN;
 			} else if (pred.equals(OWL.CARDINALITY) || 
-					pred.equals(conn.getValueFactory().createIRI(OWL_QUALIFIEDCARDINALITY))) {
+					pred.equals(SimpleValueFactory.getInstance().createIRI(OWL_QUALIFIEDCARDINALITY))) {
 				card = Integer.parseInt(stat.getObject().stringValue());
 				type = PossType.EXACTLY;
 			} else if (pred.equals(OWL.ALLVALUESFROM)) {
@@ -425,9 +455,9 @@ public class ManchesterSyntaxUtils {
 			} else if (pred.equals(OWL.HASVALUE)) {
 				value = stat.getObject();
 				type = PossType.VALUE;
-			} else if(pred.equals(conn.getValueFactory().createIRI(OWL_SELF))){
+			} else if(pred.equals(SimpleValueFactory.getInstance().createIRI(OWL_SELF))){
 				type = PossType.SELF;
-			} else if(pred.equals(conn.getValueFactory().createIRI(OWL_ONCLASS))){
+			} else if(pred.equals(SimpleValueFactory.getInstance().createIRI(OWL_ONCLASS))){
 				if(stat.getObject() instanceof BNode) {
 					onClassNode = (BNode) stat.getObject();
 				} else{
@@ -447,7 +477,7 @@ public class ManchesterSyntaxUtils {
 			} else{
 				if(onClassNode != null){
 					mci = new ManchesterCardClass(inverse, type, card, prop, 
-							getManchClassFromBNode(onClassNode, graphs, tripleList, conn));
+							getManchClassFromBNode(onClassNode, graphs, tripleList, model));
 				} else{
 					mci = new ManchesterCardClass(inverse, type, card, prop, 
 							new ManchesterBaseClass(onClassIRI));
@@ -455,22 +485,22 @@ public class ManchesterSyntaxUtils {
 			}
 		} else if (type.equals(PossType.AND)) {
 			List<ManchesterClassInterface> andClassList = new ArrayList<ManchesterClassInterface>();
-			parseListFirstRest(objBnode, andClassList, graphs, tripleList, conn);
+			parseListFirstRest(objBnode, andClassList, graphs, tripleList, model);
 			mci = new ManchesterAndClass(andClassList);
 		} else if (type.equals(PossType.OR)) {
 			List<ManchesterClassInterface> orClassList = new ArrayList<ManchesterClassInterface>();
-			parseListFirstRest(objBnode, orClassList, graphs, tripleList, conn);
+			parseListFirstRest(objBnode, orClassList, graphs, tripleList, model);
 			mci = new ManchesterOrClass(orClassList);
 		} else if (type.equals(PossType.NOT)) {
 			if (objBnode != null) {
-				mci = new ManchesterNotClass(getManchClassFromBNode(objBnode, graphs, tripleList, conn));
+				mci = new ManchesterNotClass(getManchClassFromBNode(objBnode, graphs, tripleList, model));
 			} else { // the class is a URI
 				mci = new ManchesterNotClass(new ManchesterBaseClass(objURI));
 			}
 		} else if (type.equals(PossType.ONEOF)) { 
 			// this one deals with both the list of individuals and the list of literals
 			//List<ManchesterClassInterface> oneOfList = new ArrayList<ManchesterClassInterface>();
-			List<Value> oneOfList = parseListFirstRest(objBnode, graphs, tripleList, conn);
+			List<Value> oneOfList = parseListFirstRest(objBnode, graphs, tripleList, model);
 			mci = new ManchesterOneOfClass();
 			boolean containsIRI = false;
 			if(oneOfList.size()>0 ){
@@ -489,14 +519,14 @@ public class ManchesterSyntaxUtils {
 		} else if (type.equals(PossType.ONLY)) {
 			if (objBnode != null) {
 				mci = new ManchesterOnlyClass(inverse, prop,
-						getManchClassFromBNode(objBnode, graphs, tripleList, conn));
+						getManchClassFromBNode(objBnode, graphs, tripleList, model));
 			} else { // the class is a URI
 				mci = new ManchesterOnlyClass(inverse, prop, new ManchesterBaseClass(objURI));
 			}
 		} else if (type.equals(PossType.SOME)) {
 			if (objBnode != null) {
 				mci = new ManchesterSomeClass(inverse, prop,
-						getManchClassFromBNode(objBnode, graphs, tripleList, conn));
+						getManchClassFromBNode(objBnode, graphs, tripleList, model));
 			} else { // the class is a URI
 				mci = new ManchesterSomeClass(inverse, prop, new ManchesterBaseClass(objURI));
 			}
@@ -509,10 +539,11 @@ public class ManchesterSyntaxUtils {
 	}
 	
 	private static void parseListFirstRest(Resource bnode, List<ManchesterClassInterface> manchClassList,
-			Resource[] graphs, List<Statement> tripleList, RepositoryConnection conn) {
-		RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
-		while (statements.hasNext()) {
-			Statement stat = statements.next();
+			Resource[] graphs, List<Statement> tripleList, Model model) {
+		//RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
+		//while (statements.hasNext()) {
+		for(Statement stat : model.filter(bnode, null, null, graphs)){
+			//Statement stat = statements.next();
 			if(tripleList != null){
 				tripleList.add(stat);
 			}
@@ -525,13 +556,13 @@ public class ManchesterSyntaxUtils {
 					// it is a bnode, so it is a restriction itself
 					manchClassList
 							.add((getManchClassFromBNode((BNode) stat.getObject(), graphs, 
-									tripleList, conn)));
+									tripleList, model)));
 				}
 			} else if (pred.equals(RDF.REST)) {
 				// the first could be a bnode or RDF.Res.NIL
 				if (stat.getObject() instanceof BNode) {
 					parseListFirstRest((BNode) stat.getObject(), manchClassList, graphs, 
-							tripleList, conn);
+							tripleList, model);
 				} else {
 					// it is RDF.NIL, so set it to null
 				}
@@ -542,11 +573,10 @@ public class ManchesterSyntaxUtils {
 	}
 	
 	private static List<Value> parseListFirstRest(Resource bnode, Resource[] graphs, 
-			List<Statement> tripleList, RepositoryConnection conn) {
-		RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
+			List<Statement> tripleList, Model model) {
 		List <Value> valueList = new ArrayList<>();
-		while (statements.hasNext()) {
-			Statement stat = statements.next();
+		//while (statements.hasNext()) {
+		for(Statement stat : model.filter(bnode, null, null, graphs)){
 			if(tripleList != null){
 				tripleList.add(stat);
 			}
@@ -558,7 +588,7 @@ public class ManchesterSyntaxUtils {
 			} else if (pred.equals(RDF.REST)) {
 				// the first could be a bnode or RDF.Res.NIL
 				if (stat.getObject() instanceof BNode) {
-					parseListFirstRest((BNode) stat.getObject(), graphs, tripleList, conn);
+					parseListFirstRest((BNode) stat.getObject(), graphs, tripleList, model);
 				} else {
 					// it is RDF.NIL, so set it to null
 				}
