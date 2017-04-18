@@ -26,35 +26,31 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
-import it.uniroma2.art.semanticturkey.user.RolesManager;
-import it.uniroma2.art.semanticturkey.user.STRole;
 import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.UUID;
-
-import org.hibernate.validator.util.privilegedactions.GetClassLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Armando Stellato
@@ -195,13 +191,20 @@ public class Resources {
 			if (!projectUserBindingsDir.exists()) {
 				try {
 					initializePUBindingFileStructure();
-				} catch (ProjectAccessException | PUBindingCreationException e) {
+				} catch (ProjectAccessException | PUBindingException e) {
 					throw new STInitializationException(e);
 				}
 			}
 			if (!CustomFormManager.getCustomFormsFolder(null).exists()) {
 				try {
 					initializeCustomFormFileStructure();
+				} catch (IOException e) {
+					throw new STInitializationException(e);
+				}
+			}
+			if (!RBACManager.getRolesDir(null).exists()) {
+				try {
+					initializeRoles();
 				} catch (IOException e) {
 					throw new STInitializationException(e);
 				}
@@ -333,11 +336,12 @@ public class Resources {
 							+ "/ontlibrary/owl.rdfs"));
 			
 			initializeCustomFormFileStructure();
+			initializeRoles();
 						
 			try {
 				initializeUsersFileStructure();
 				initializePUBindingFileStructure();
-			} catch (UserCreationException | ProjectAccessException | RoleCreationException | PUBindingCreationException e) {
+			} catch (UserCreationException | ProjectAccessException | RoleCreationException | PUBindingException e) {
 				throw new STInitializationException(e);
 			}
 			
@@ -361,15 +365,6 @@ public class Resources {
 	 */
 	private static void initializeUsersFileStructure() throws UserCreationException, ProjectAccessException, RoleCreationException {
 		usersDir.mkdir();
-		
-		// create default admin and user roles
-		STRole roleAdmin = new STRole("Administrator");
-		roleAdmin.setCapabilities(Arrays.asList(UserCapabilitiesEnum.values())); //all capabilities for administrator
-		RolesManager.createRole(roleAdmin);
-		STRole roleUser = new STRole("User");
-		roleUser.addCapability(UserCapabilitiesEnum.CAPABILITY_USER);
-		RolesManager.createRole(roleUser);
-
 		// create and register admin user
 		STUser admin = new STUser("admin@vocbench.com", "admin", "Admin", "Admin");
 		admin.setStatus(UserStatus.ENABLED);
@@ -384,7 +379,7 @@ public class Resources {
 	 * @throws ProjectAccessException
 	 * @throws IOException 
 	 */
-	private static void initializePUBindingFileStructure() throws ProjectAccessException, PUBindingCreationException {
+	private static void initializePUBindingFileStructure() throws ProjectAccessException, PUBindingException {
 		// create project-user bindings
 		projectUserBindingsDir.mkdir();
 
@@ -393,13 +388,9 @@ public class Resources {
 				String projName = abstrProj.getName();
 				for (STUser user : UsersManager.listUsers()) {
 					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail());
-					/* TODO how to handle admin? By default there is no Role, there are only capabilities.
-					 * Admin should have a "superRole" and should be able to do everything.
-					 */
-//					if (user.getEmail().equals("admin@vocbench.com")) {
-//						puBinding.addRole(UserRolesEnum.ROLE_ADMIN.name());
-//					}
-//					puBinding.addRole(UserRolesEnum.ROLE_USER.name()); //TODO add user role as default???
+					if (user.getEmail().equals("admin@vocbench.com")) {
+						puBinding.addRole(RBACManager.DefaultRole.ADMINISTRATOR);
+					}
 					ProjectUserBindingsManager.createPUBinding(puBinding);
 				}
 			}
@@ -443,6 +434,23 @@ public class Resources {
 						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
 				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
 		);
+	}
+	
+	private static void initializeRoles() throws IOException {
+		String[] roles = {
+				RBACManager.DefaultRole.ADMINISTRATOR, RBACManager.DefaultRole.LEXICOGRAPHER,
+				RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.PROJECTMANAGER
+		};
+		File rolesDir = RBACManager.getRolesDir(null);
+		if (!rolesDir.exists()) {
+			rolesDir.mkdirs();
+		}
+		for (String r : roles) {
+			Utilities.copy(Resources.class.getClassLoader()
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r + ".pl"),
+					new File(rolesDir, "role_" + r + ".pl")
+			);
+		}
 	}
 
 }

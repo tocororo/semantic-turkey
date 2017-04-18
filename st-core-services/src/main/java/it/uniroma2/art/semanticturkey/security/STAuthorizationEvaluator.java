@@ -25,8 +25,10 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UserCapabilitiesEnum;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 /**
  * http://stackoverflow.com/a/14904130/5805661
@@ -104,34 +106,13 @@ public class STAuthorizationEvaluator {
 					"Illegal authorization parameter 'userResponsabililty': " + userResponsibility);
 		}
 		
-//		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//		STUser loggedUser = (STUser) auth.getPrincipal();
-//		System.out.println("User: " + loggedUser);
-//		Collection<UserCapabilitiesEnum> capabilities = getCapabilities(loggedUser);
-//		System.out.println("Capabilities:");
-//		Iterator<UserCapabilitiesEnum> it = capabilities.iterator();
-//		while (it.hasNext()) {
-//			System.out.println("\t" + it.next().name());
-//		}
-		
-//		UsersManager.getLoggedUser();
-		RBACProcessor rbac = RBACManager.getRBACProcessor("administrator");
-		try {
-			System.out.println("capability list term: " + rbac.getCapabilitiesAsListTerm());
-			System.out.println("capability term list: " + rbac.getCapabilitiesAsTermList());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		boolean prologGoalSatistied = rbac.authorizes(prologGoal);
-		System.out.println("prolog goal satisfied? " + prologGoalSatistied);
-
 		System.out.println("Role base access control:");
 		Project<?> targetForRBAC = getTargetForRBAC();
 
 		System.out.println("\ttarget for RBAC = " + targetForRBAC.getName());
 		System.out.println("\tprolog goal = " + prologGoal);
 		System.out.println("\tuser responsibility map = " + userRespMap);
-
+		
 		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
@@ -149,6 +130,19 @@ public class STAuthorizationEvaluator {
 		
 		// TODO here should go the logic to determine which capability is required based on the
 		// topicSubject, topicScope and accessPrivilege triple
+		
+		STUser loggedUser = UsersManager.getLoggedUser();
+		Collection<String> userRoles = getRoles(loggedUser);
+		System.out.println("User roles: " + userRoles);//TODO gestire ruoli utenti e assegnazione capab
+		boolean prologGoalSatisfied = false;
+		for (String role: userRoles) {
+			RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role);
+			if (rbac.authorizes(prologGoal)) {
+				prologGoalSatisfied = true;
+				break;
+			}
+		}
+		System.out.println("prolog goal satisfied? " + prologGoalSatisfied);
 		
 		authorized = true;
 
@@ -174,10 +168,11 @@ public class STAuthorizationEvaluator {
 	 * @param user
 	 * @return
 	 */
-	private Collection<UserCapabilitiesEnum> getCapabilities(STUser user) {
+	private Collection<String> getRoles(STUser user) {
 		String projectName = getTargetForRBAC().getName();
 		if (projectName != null) {
-			return acMgr.getCapabilities(user, projectName);
+			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
+			return puBinding.getRolesName();
 		} else {
 			return Collections.emptyList();
 		}

@@ -90,7 +90,11 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.extpts.SailConfigurer;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 /**
@@ -929,11 +933,13 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws ForbiddenProjectAccessException
+	 * @throws PUBindingException 
+	 * @throws RBACException 
 	 */
 	public static Project<? extends RDFModel> accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException {
+			ForbiddenProjectAccessException, PUBindingException, RBACException {
 
 		Project<?> project = getProjectDescription(projectName);
 
@@ -948,6 +954,15 @@ public class ProjectManager {
 					project = activateProject(projectName);
 					openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
 				}
+				
+				// if there aren't the folders for the project-user bindings of the current project, create them
+				// this scenario could happen when the project is imported
+				// (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
+				if (ProjectUserBindingsManager.existsPUBindingsOfProject(projectName)) {
+					ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
+				}
+				RBACManager.loadRBACProcessor(project);
+				
 				return project;
 			} else {
 				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
@@ -1014,6 +1029,7 @@ public class ProjectManager {
 		logger.debug("closing project: " + project);
 		project.deactivate();
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
+		RBACManager.unloadRBACProcessor(project);
 		openProjects.removeProject(project);
 	}
 
@@ -1355,9 +1371,11 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws ForbiddenProjectAccessException
 	 * @throws InvalidProjectNameException
+	 * @throws RBACException 
+	 * @throws PUBindingException 
 	 */
 	public static Project<? extends RDFModel> openProject(String projectName) throws ProjectAccessException,
-			ProjectInexistentException, InvalidProjectNameException, ForbiddenProjectAccessException {
+			ProjectInexistentException, InvalidProjectNameException, ForbiddenProjectAccessException, PUBindingException, RBACException {
 		Project<? extends RDFModel> project;
 		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
 		setCurrentProject(project);
@@ -1385,7 +1403,7 @@ public class ProjectManager {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, BadConfigurationException {
+			UnloadablePluginConfigurationException, BadConfigurationException, PUBindingException, RBACException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;

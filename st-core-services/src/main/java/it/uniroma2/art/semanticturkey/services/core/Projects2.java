@@ -25,13 +25,18 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
+import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
 public class Projects2 extends STServiceAdapter {
@@ -51,7 +56,7 @@ public class Projects2 extends STServiceAdapter {
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, PUBindingCreationException {
+			UnloadablePluginConfigurationException, PUBindingException, RBACException {
 
 		// Expands defaults in the specification of sail configurers
 		coreRepoSailConfigurerSpecification.expandDefaults();
@@ -71,12 +76,13 @@ public class Projects2 extends STServiceAdapter {
 				baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
 				uriGeneratorSpecification, renderingEngineSpecification);
-
-		// create the folders for the bindings between project and users
-		// this is required (is not enough in accessProject, cause accessProject is not invoked after
-		// createProject)
-		ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
-
+		
+		STUser loggedUser = UsersManager.getLoggedUser();
+		//TODO is correct to assign administrator role to the user that creates project?
+		//if not how do I handle the administrator role since the role is related to a project?
+		ProjectUserBindingsManager.addRoleToPUBinding(
+				loggedUser.getEmail(), projectName, RBACManager.DefaultRole.ADMINISTRATOR);
+		
 		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
 		objectNode.set("type", JsonNodeFactory.instance.textNode(proj.getType()));
 

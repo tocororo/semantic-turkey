@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.rbac;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -20,15 +22,24 @@ public class RBACProcessor {
 	public static String tboxTheoryLocation = "/it/uniroma2/art/semanticturkey/rbac/rbac_tbox.pl";
 	Prolog engine;
 	String role;
+	File roleFile;
 
-	public RBACProcessor(String role) throws InvalidTheoryException, TheoryNotFoundException {
+	public RBACProcessor(File roleFile) throws InvalidTheoryException, TheoryNotFoundException {
+		this.roleFile = roleFile;
 		engine = new Prolog();
+		String fileName = roleFile.getName();
+		role = fileName.substring(fileName.indexOf("role_") + 5, fileName.indexOf(".pl"));
+		initializeResources(roleFile);
+	}
+	
+	public RBACProcessor(String role) throws InvalidTheoryException, TheoryNotFoundException {
 		this.role = role;
-		initializeResources(role);
+		this.roleFile = RBACManager.getRoleFile(null, role);
+		engine = new Prolog();
+		initializeResources(roleFile);
 	}
 
-	public void initializeResources(String role) throws InvalidTheoryException, TheoryNotFoundException {
-		System.out.println("initializing RBACProcessor for role " + role);
+	public void initializeResources(File roleFile) throws InvalidTheoryException, TheoryNotFoundException {
 		// creating initial theory (consulting a file)
 		try {
 			engine.setTheory(new Theory(RBACProcessor.class.getClassLoader().getResourceAsStream(tboxTheoryLocation)));
@@ -37,19 +48,21 @@ public class RBACProcessor {
 		}
 		// loading a new theory and adding it to the first one (adding a role to the core RBAC rules)
 		Theory roleTheory;
-		try {
-			roleTheory = new Theory(RBACProcessor.class.getClassLoader().getResourceAsStream(
-					"/it/uniroma2/art/semanticturkey/rbac/roles/role_" + role + ".pl"));
+		try (FileInputStream fis = new FileInputStream(roleFile)) {
+			roleTheory = new Theory(fis);
 		} catch (IOException e) {
-			throw new TheoryNotFoundException("a problem occuring in loading the USER ROLE model occurred",
-					e);
+			throw new TheoryNotFoundException("a problem occuring in loading the USER ROLE model occurred", e);
 		}
 		engine.addTheory(roleTheory);
 	}
 
 	private void resetEngine() throws InvalidTheoryException, TheoryNotFoundException {
 		engine = new Prolog();
-		initializeResources(role);
+		initializeResources(roleFile);
+	}
+	
+	public String getRole() {
+		return this.role;
 	}
 
 	/**

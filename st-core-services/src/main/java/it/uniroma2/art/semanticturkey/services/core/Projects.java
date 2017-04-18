@@ -46,14 +46,18 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.user.PUBindingCreationException;
+import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 /**
@@ -111,21 +115,16 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
 	 * @throws IOException
-	 * @throws PUBindingCreationException
+	 * @throws PUBindingException
+	 * @throws RBACException 
 	 */
 	@GenerateSTServiceController
 	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, PUBindingCreationException {
+			ForbiddenProjectAccessException, PUBindingException, RBACException {
 
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
-		// if there aren't the folders for the project-user bindings of the current project, create them
-		// this scenario could happen when the project is imported
-		// (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
-		if (ProjectUserBindingsManager.existsPUBindingsOfProject(projectName)) {
-			ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
-		}
 	}
 
 	/**
@@ -296,18 +295,25 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws UnsupportedRDFFormatException
 	 * @throws ModelAccessException
 	 * @throws IOException
+	 * @throws PUBindingException 
 	 */
 	@GenerateSTServiceController(method = RequestMethod.POST)
 	public void importProject(MultipartFile importPackage, String newProjectName)
 			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
-			ModelUpdateException, InvalidProjectNameException {
+			ModelUpdateException, InvalidProjectNameException, PUBindingException {
 
 		logger.info("requested to import project from file: " + importPackage);
 
 		File projectFile = File.createTempFile("prefix", "suffix");
 		importPackage.transferTo(projectFile);
 		ProjectManager.importProject(projectFile, newProjectName);
+		
+		STUser loggedUser = UsersManager.getLoggedUser();
+		//TODO is correct to assign administrator role to the user that creates project?
+		//if not how do I handle the administrator role since the role is related to a project?
+		ProjectUserBindingsManager.addRoleToPUBinding(
+				loggedUser.getEmail(), newProjectName, RBACManager.DefaultRole.ADMINISTRATOR);
 	}
 
 	/**
