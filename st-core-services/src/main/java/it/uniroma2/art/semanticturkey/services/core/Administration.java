@@ -220,14 +220,18 @@ public class Administration extends STServiceAdapter {
 		ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode rolesArrayNode = jsonFactory.arrayNode();
+		Collection<Role> roles;
 		if (projectName != null) {
 			Project<?> project = ProjectManager.getProjectDescription(projectName);
-			for (Role role : RBACManager.getRoles(project)) {
-				ObjectNode roleNode = jsonFactory.objectNode();
-				roleNode.set("name", jsonFactory.textNode(role.getName()));
-				roleNode.set("level", jsonFactory.textNode(role.getLevel().name()));
-				rolesArrayNode.add(roleNode);
-			}
+			roles = RBACManager.getRoles(project);
+		} else {
+			roles = RBACManager.getRoles(null);
+		}
+		for (Role role : roles) {
+			ObjectNode roleNode = jsonFactory.objectNode();
+			roleNode.set("name", jsonFactory.textNode(role.getName()));
+			roleNode.set("level", jsonFactory.textNode(role.getLevel().name()));
+			rolesArrayNode.add(roleNode);
 		}
 		return rolesArrayNode;
 	}
