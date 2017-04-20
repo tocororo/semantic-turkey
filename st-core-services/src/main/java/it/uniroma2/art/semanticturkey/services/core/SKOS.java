@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,7 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 
 /**
  * This class provides services for manipulating SKOS constructs.
@@ -314,10 +316,10 @@ public class SKOS extends STServiceAdapter {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		IRI newConceptIRI;
 		if (newConcept == null) {
-			newConceptIRI = generateConceptIRI(label, conceptScheme);
+			newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
 		} else {
 			newConceptIRI = newConcept;
 		}
@@ -485,26 +487,27 @@ public class SKOS extends STServiceAdapter {
 	 * 
 	 * @param label
 	 *            the preferred label accompanying the concept (can be <code>null</code>)
-	 * @param scheme
-	 *            the scheme to which the concept is being attached at the moment of its creation (can be
+	 * @param schemes
+	 *            the schemes to which the concept is being attached at the moment of its creation (can be
 	 *            <code>null</code>)
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
+	public IRI generateConceptIRI(Literal label, List<IRI> schemes) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
 		}
 
-		if (scheme != null) {
-			args.put(URIGenerator.Parameters.scheme, scheme);
+		if (schemes != null) {
+			args.put(URIGenerator.Parameters.schemes,
+					SimpleValueFactory.getInstance().createLiteral(TurtleHelp.serializeCollection(schemes)));
 		}
 
 		return generateIRI(URIGenerator.Roles.concept, args);
 	}
-	
+
 	/**
 	 * Generates a new URI for a SKOS concept scheme, optionally given its accompanying preferred label.
 	 * 
@@ -513,14 +516,14 @@ public class SKOS extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
+	public IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
 		}
 		return generateIRI(URIGenerator.Roles.conceptScheme, args);
 	}
-	
+
 	/**
 	 * Generates a new URI for a SKOS collection, optionally given its accompanying preferred label.
 	 * 
@@ -529,7 +532,7 @@ public class SKOS extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateCollectionURI(Literal label) throws URIGenerationException {
+	public IRI generateCollectionURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);

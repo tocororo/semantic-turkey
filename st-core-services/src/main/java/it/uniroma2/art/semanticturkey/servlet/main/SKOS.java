@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,7 @@ import it.uniroma2.art.owlart.query.Update;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
@@ -85,6 +87,8 @@ import it.uniroma2.art.semanticturkey.servlet.ResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.main.SPARQLUtilities.ResourceQuery;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 @Component(value = "skosOld")
@@ -365,18 +369,18 @@ public class SKOS extends ResourceOld {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
 			String lang = setHttpPar(Par.lang);
-			
+
 			checkRequestParametersAllNotNull(Par.collection, Par.element);
-			
+
 			response = removeFromOrderedCollection(collection, element, lang);
 			// ADD SKOS METHODS
 		} else if (request.equals(Req.removeFromCollectionRequest)) {
 			String collection = setHttpPar(Par.collection);
 			String element = setHttpPar(Par.element);
 			String lang = setHttpPar(Par.lang);
-			
+
 			checkRequestParametersAllNotNull(Par.collection, Par.element);
-			
+
 			response = removeFromCollection(collection, element, lang);
 			// ADD SKOS METHODS
 		} else if (request.equals(Req.addBroaderConceptRequest)) {
@@ -445,11 +449,12 @@ public class SKOS extends ResourceOld {
 			String language = setHttpPar(Par.lang);
 			String containingCollectionName = setHttpPar(Par.container);
 			String modeString = setHttpPar(Par.mode);
-			
-			CollectionCreationMode mode = modeString != null ? CollectionCreationMode.valueOf(modeString) : CollectionCreationMode.uri;
-			
-			response = createCollection(it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, collectionName, containingCollectionName, prefLabel, prefLabelLang,
-					language, mode);
+
+			CollectionCreationMode mode = modeString != null ? CollectionCreationMode.valueOf(modeString)
+					: CollectionCreationMode.uri;
+
+			response = createCollection(it.uniroma2.art.owlart.vocabulary.SKOS.Res.COLLECTION, collectionName,
+					containingCollectionName, prefLabel, prefLabelLang, language, mode);
 		} else if (request.equals(Req.createOrderedCollectionRequest)) {
 			String collectionName = setHttpPar(Par.collection);
 			String prefLabel = setHttpPar(Par.prefLabel);
@@ -458,10 +463,11 @@ public class SKOS extends ResourceOld {
 			String containingCollectionName = setHttpPar(Par.container);
 			String modeString = setHttpPar(Par.mode);
 
-			CollectionCreationMode mode = modeString != null ? CollectionCreationMode.valueOf(modeString) : CollectionCreationMode.uri;
-			
-			response = createCollection(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION, collectionName, containingCollectionName, prefLabel, prefLabelLang,
-					language, mode);
+			CollectionCreationMode mode = modeString != null ? CollectionCreationMode.valueOf(modeString)
+					: CollectionCreationMode.uri;
+
+			response = createCollection(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION,
+					collectionName, containingCollectionName, prefLabel, prefLabelLang, language, mode);
 		} else if (request.equals(Req.assignHierarchyToSchemeRequest)) {
 			String conceptName = setHttpPar(Par.concept);
 			String sourceSchemeName = setHttpPar(Par.sourceScheme);
@@ -541,9 +547,11 @@ public class SKOS extends ResourceOld {
 				skosModel.setPrefLabel(newCollectionRes, prefLabel, prefLabelLang, wrkGraph);
 			}
 			if (collectionType.equals(it.uniroma2.art.owlart.vocabulary.SKOS.Res.ORDEREDCOLLECTION)) {
-				RDFXMLHelp.addRDFNode(response, createSTOrderedCollection(skosModel, newCollectionRes, true, language));
+				RDFXMLHelp.addRDFNode(response,
+						createSTOrderedCollection(skosModel, newCollectionRes, true, language));
 			} else {
-				RDFXMLHelp.addRDFNode(response, createSTCollection(skosModel, newCollectionRes, true, language));
+				RDFXMLHelp.addRDFNode(response,
+						createSTCollection(skosModel, newCollectionRes, true, language));
 			}
 		} catch (ModelAccessException e) {
 			return logAndSendException(e);
@@ -560,7 +568,7 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-	
+
 	public Response removeFromOrderedCollection(String collectionName, String elementName, String lang) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
@@ -572,14 +580,16 @@ public class SKOS extends ResourceOld {
 			ARTResource elementRes = retrieveExistingResource(skosModel, elementName, graphs);
 
 			skosModel.removeFromCollection(elementRes, collectioRes, wrkGraph);
-			
+
 			TupleQuery query = createRootCollectionsQuery(wrkGraph, lang, elementRes);
 			// This collection should only contain one element, when the element removed from the collection
 			// is a root collection
-			Collection<STRDFResource> resourceAsNewRootCollection = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
+			Collection<STRDFResource> resourceAsNewRootCollection = SPARQLUtilities
+					.getSTRDFResourcesFromTupleQuery(skosModel, query);
 
 			if (!resourceAsNewRootCollection.isEmpty()) {
-				Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(), "collectionTreeChange");
+				Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(),
+						"collectionTreeChange");
 				Element addedConceptElement = XMLHelp.newElement(collectionTreeChangeElement, "addedRoot");
 				STRDFResource newRoot = resourceAsNewRootCollection.iterator().next();
 				RDFXMLHelp.addRDFResource(addedConceptElement, newRoot);
@@ -603,7 +613,7 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-	
+
 	public Response removeFromCollection(String collectionName, String elementName, String lang) {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		try {
@@ -614,19 +624,24 @@ public class SKOS extends ResourceOld {
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collectionName, graphs);
 			ARTResource elementRes = retrieveExistingResource(skosModel, elementName, graphs);
 
-			if (!skosModel.hasTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, elementRes, false, wrkGraph)) {
-				return createReplyFAIL("Resource: " + elementRes + " is not a member of collection: " + collectionRes);
+			if (!skosModel.hasTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER,
+					elementRes, false, wrkGraph)) {
+				return createReplyFAIL(
+						"Resource: " + elementRes + " is not a member of collection: " + collectionRes);
 			}
-			
-			skosModel.deleteTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER, elementRes, wrkGraph);
-			
+
+			skosModel.deleteTriple(collectionRes, it.uniroma2.art.owlart.vocabulary.SKOS.Res.MEMBER,
+					elementRes, wrkGraph);
+
 			TupleQuery query = createRootCollectionsQuery(wrkGraph, lang, elementRes);
 			// This collection should only contain one element, when the element removed from the collection
 			// is a root collection
-			Collection<STRDFResource> resourceAsNewRootCollection = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
+			Collection<STRDFResource> resourceAsNewRootCollection = SPARQLUtilities
+					.getSTRDFResourcesFromTupleQuery(skosModel, query);
 
 			if (!resourceAsNewRootCollection.isEmpty()) {
-				Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(), "collectionTreeChange");
+				Element collectionTreeChangeElement = XMLHelp.newElement(response.getDataElement(),
+						"collectionTreeChange");
 				Element addedConceptElement = XMLHelp.newElement(collectionTreeChangeElement, "addedRoot");
 				STRDFResource newRoot = resourceAsNewRootCollection.iterator().next();
 				RDFXMLHelp.addRDFResource(addedConceptElement, newRoot);
@@ -755,10 +770,11 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTResource workingGraph = getWorkingGraph();
-			
+
 			TupleQuery query = createRootCollectionsQuery(workingGraph, lang, null);
-			
-			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
+
+			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel,
+					query);
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
 			RDFXMLHelp.addRDFNodes(dataElement, collections);
@@ -770,7 +786,7 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		}
 	}
-	
+
 	private TupleQuery createRootCollectionsQuery(ARTResource workingGraph, String lang, ARTResource resource)
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException {
 		// @formatter:off
@@ -822,9 +838,9 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTResource workingGraph = getWorkingGraph();
-			
+
 			ARTResource containerRes = retrieveExistingResource(skosModel, container, graphs);
-			
+
 			// @formatter:off
 			// @formatter:off
 			String queryFragment =
@@ -844,7 +860,7 @@ public class SKOS extends ResourceOld {
 
 			// See http://stackoverflow.com/a/17530689 for a description of a pure SPARQL solution to obtain
 			// the elements of an RDF collection together with their position
-			
+
 			// @formatter:off
 			String moreFragment =
 					"OPTIONAL {\n" +
@@ -863,16 +879,19 @@ public class SKOS extends ResourceOld {
 			// @formatter:on
 
 			ResourceQuery queryResourceBuilder = SPARQLUtilities.buildResourceQuery(getSKOSModel())
-					.withPattern("resource", queryFragment).addInformation("info_more", moreFragment).addInformation("role", getRoleQueryFragment());
-
+					.withPattern("resource", queryFragment).addInformation("info_more", moreFragment)
+					.addInformation("role", getRoleQueryFragment());
 
 			if (lang != null) {
-				queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show", getShowQueryFragment(lang));
+				queryResourceBuilder = queryResourceBuilder.addConcatenatedInformation("show",
+						getShowQueryFragment(lang));
 			}
 
-			TupleQuery query = queryResourceBuilder.groupBy("node").countDistinct("mid", "index").orderBy("index").query(workingGraph);
+			TupleQuery query = queryResourceBuilder.groupBy("node").countDistinct("mid", "index")
+					.orderBy("index").query(workingGraph);
 			query.setBinding("container", containerRes);
-			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel, query);
+			Collection<STRDFResource> collections = SPARQLUtilities.getSTRDFResourcesFromTupleQuery(skosModel,
+					query);
 			XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 			Element dataElement = response.getDataElement();
 			RDFXMLHelp.addRDFNodes(dataElement, collections);
@@ -1030,7 +1049,7 @@ public class SKOS extends ResourceOld {
 	 */
 	private void assignHierarchyToSchemeRecursive(SKOSModel skosModel, ARTURIResource concept,
 			ARTURIResource sourceScheme, ARTURIResource targetScheme, ARTResource... graphs)
-					throws ModelAccessException, ModelUpdateException, NonExistingRDFResourceException {
+			throws ModelAccessException, ModelUpdateException, NonExistingRDFResourceException {
 		skosModel.addConceptToScheme(concept, targetScheme, graphs);
 		ARTURIResourceIterator narrowers = skosModel.listNarrowerConcepts(concept, false, true, graphs);
 		Iterator<ARTURIResource> filteredNarrowers = Iterators.filter(narrowers,
@@ -1169,7 +1188,7 @@ public class SKOS extends ResourceOld {
 			SKOSModel skosModel = getSKOSModel();
 			ARTResource[] graphs = getUserNamedGraphs();
 			ARTURIResource concept = retrieveExistingURIResource(skosModel, conceptName, graphs);
-			
+
 			// TODO: note that user named graphs are not considered
 
 			BooleanQuery checkQuery = skosModel.createBooleanQuery(
@@ -1179,14 +1198,14 @@ public class SKOS extends ResourceOld {
 					"	[] skos:broader|^skos:narrower ?concept                                         \n" +
 					"}                                                                                  \n"
 				// @formatter:on
-				);
+			);
 			checkQuery.setBinding("concept", concept);
-			
+
 			if (checkQuery.evaluate(true)) {
 				return createReplyFAIL(
 						"concept: " + conceptName + " has narrower concepts; delete them before");
 			}
-			
+
 			GraphQuery tripleQuery = skosModel.createGraphQuery(
 					// @formatter:off
 					"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                                 \n" +
@@ -1194,21 +1213,22 @@ public class SKOS extends ResourceOld {
 					"	{ BIND(?concept as ?x) } UNION { ?concept skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?x } \n "+
 					"}                                                                                   \n"
 					// @formatter:on
-					);
+			);
 			tripleQuery.setBinding("concept", concept);
-			
+
 			StringBuilder sb;
 			Map<String, ARTNode> var2node;
 			ARTStatementIterator triplesIt = tripleQuery.evaluate(false);
 			try {
 				sb = new StringBuilder();
 				var2node = new HashMap<>();
-				
+
 				sb.append("DELETE { GRAPH ?wg {\n");
 				int varCount = 0;
 				while (triplesIt.streamOpen()) {
 					ARTStatement stmt = triplesIt.getNext();
-					for (ARTNode term : Arrays.asList(stmt.getSubject(), stmt.getPredicate(), stmt.getObject())) {
+					for (ARTNode term : Arrays.asList(stmt.getSubject(), stmt.getPredicate(),
+							stmt.getObject())) {
 						if (term.isBlank()) {
 							String varName = "v" + varCount++;
 							sb.append("?").append(varName).append(" ");
@@ -1224,11 +1244,11 @@ public class SKOS extends ResourceOld {
 			} finally {
 				triplesIt.close();
 			}
-			
+
 			var2node.put("wg", getWorkingGraph());
-			
+
 			String updateString = sb.toString();
-			
+
 			logger.debug("update (begin)");
 			logger.debug(updateString);
 			logger.debug(var2node.toString());
@@ -1325,27 +1345,28 @@ public class SKOS extends ResourceOld {
 		}
 		return response;
 	}
-	
+
 	public Response deleteCollection(String collectionName) {
 		logger.debug("delete collection: " + collectionName);
 
 		Response response = createReplyResponse(RepliesStatus.ok);
 		try {
 			SKOSModel skosModel = getSKOSModel();
-			ARTResource[] graphs = getUserNamedGraphs();		
-			
+			ARTResource[] graphs = getUserNamedGraphs();
+
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collectionName, graphs);
-			
-			BooleanQuery deleteContraintQuery = skosModel.createBooleanQuery("ASK {?resource <http://www.w3.org/2004/02/skos/core#member> ?member ."+
-			"{?member a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?member a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}}");
+
+			BooleanQuery deleteContraintQuery = skosModel.createBooleanQuery(
+					"ASK {?resource <http://www.w3.org/2004/02/skos/core#member> ?member ."
+							+ "{?member a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?member a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}}");
 			deleteContraintQuery.setBinding("resource", collectionRes);
 			boolean deletionForbidden = deleteContraintQuery.evaluate(true);
-			
+
 			if (deletionForbidden) {
 				return createReplyFAIL(
-						"collection: " + collectionName + " has nested collections; delete them before");	
+						"collection: " + collectionName + " has nested collections; delete them before");
 			}
-			
+
 			// @formatter:off
 			String updateString =
 			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
@@ -1438,21 +1459,22 @@ public class SKOS extends ResourceOld {
 		Response response = createReplyResponse(RepliesStatus.ok);
 		try {
 			SKOSModel skosModel = getSKOSModel();
-			ARTResource[] graphs = getUserNamedGraphs();		
-			
+			ARTResource[] graphs = getUserNamedGraphs();
+
 			ARTResource collectionRes = retrieveExistingResource(skosModel, collectionName, graphs);
-			
-			BooleanQuery deleteContraintQuery = skosModel.createBooleanQuery("ASK {?resource <http://www.w3.org/2004/02/skos/core#memberList> ?memberList . "+
-			"?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?member . " +
-					"{?member a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?member a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}}");
+
+			BooleanQuery deleteContraintQuery = skosModel.createBooleanQuery(
+					"ASK {?resource <http://www.w3.org/2004/02/skos/core#memberList> ?memberList . "
+							+ "?memberList <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>*/<http://www.w3.org/1999/02/22-rdf-syntax-ns#first> ?member . "
+							+ "{?member a <http://www.w3.org/2004/02/skos/core#Collection>} UNION {?member a <http://www.w3.org/2004/02/skos/core#OrderedCollection>}}");
 			deleteContraintQuery.setBinding("resource", collectionRes);
 			boolean deletionForbidden = deleteContraintQuery.evaluate(true);
-			
+
 			if (deletionForbidden) {
-				return createReplyFAIL(
-						"ordered collection: " + collectionName + " has nested collections; delete them before");	
+				return createReplyFAIL("ordered collection: " + collectionName
+						+ " has nested collections; delete them before");
 			}
-			
+
 			// @formatter:off
 			String updateString =
 			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
@@ -1937,7 +1959,7 @@ public class SKOS extends ResourceOld {
 	 * @param collection
 	 * @param index
 	 * @param element
-	 * @param lang 
+	 * @param lang
 	 * @return
 	 */
 	public Response addFirstToOrderedCollection(String collection, String element, String lang) {
@@ -1964,7 +1986,7 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		}
 	}
-	
+
 	/**
 	 * this service adds an element to a collection at its end.
 	 * 
@@ -1998,14 +2020,14 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		}
 	}
-	
+
 	/**
 	 * this service adds an element to a collection at a given position.
 	 * 
 	 * @param collection
 	 * @param index
 	 * @param element
-	 * @param lang 
+	 * @param lang
 	 * @return
 	 */
 	public Response addInPositionToOrderedCollection(String collection, int index, String element,
@@ -2033,13 +2055,13 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		}
 	}
-	
+
 	/**
 	 * this service adds an element to a (unordered) collection.
 	 * 
 	 * @param collection
 	 * @param element
-	 * @param lang 
+	 * @param lang
 	 * @return
 	 */
 	public Response addToCollection(String collection, String element, String lang) {
@@ -2068,11 +2090,11 @@ public class SKOS extends ResourceOld {
 			return logAndSendException(e);
 		}
 	}
-	
+
 	private void decorateReponseWithAddedNested(XMLResponseREPLY response, SKOSModel skosModel,
 			ARTResource workingGraph, ARTResource resource, String lang)
-					throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
-					DOMException, IllegalAccessException, QueryEvaluationException {
+			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException,
+			DOMException, IllegalAccessException, QueryEvaluationException {
 		// @formatter:off
 		String moreFragment =
 				"OPTIONAL {\n" +
@@ -2116,7 +2138,7 @@ public class SKOS extends ResourceOld {
 			RDFXMLHelp.addRDFResource(addedNestedElement, newRoot);
 		}
 	}
-	
+
 	/**
 	 * this service removes the preferred label for a given language
 	 * 
@@ -2309,7 +2331,7 @@ public class SKOS extends ResourceOld {
 	 */
 	protected STRDFResource createSTSKOSResource(SKOSModel skosModel, ARTResource resource,
 			RDFResourceRolesEnum role, boolean explicit, String defaultLanguage)
-					throws ModelAccessException, NonExistingRDFResourceException {
+			throws ModelAccessException, NonExistingRDFResourceException {
 		String show;
 		ARTLiteral lbl = null;
 		if (defaultLanguage != null)
@@ -2332,10 +2354,11 @@ public class SKOS extends ResourceOld {
 				defaultLanguage);
 	}
 
-	protected STRDFNode createSTOrderedCollection(SKOSModel skosModel, ARTResource collection, boolean explicit,
-			String defaultLanguage) throws ModelAccessException, NonExistingRDFResourceException {
-		return createSTSKOSResource(skosModel, collection, RDFResourceRolesEnum.skosOrderedCollection, explicit,
-				defaultLanguage);
+	protected STRDFNode createSTOrderedCollection(SKOSModel skosModel, ARTResource collection,
+			boolean explicit, String defaultLanguage)
+			throws ModelAccessException, NonExistingRDFResourceException {
+		return createSTSKOSResource(skosModel, collection, RDFResourceRolesEnum.skosOrderedCollection,
+				explicit, defaultLanguage);
 	}
 
 	protected STRDFNode createSTCollection(SKOSModel skosModel, ARTResource collection, boolean explicit,
@@ -2363,7 +2386,7 @@ public class SKOS extends ResourceOld {
 	 */
 	public Collection<STRDFResource> createSTSKOSResourceCollection(SKOSModel model,
 			ARTURIResourceIterator it, RDFResourceRolesEnum role, boolean explicit, String lang)
-					throws ModelAccessException, NonExistingRDFResourceException {
+			throws ModelAccessException, NonExistingRDFResourceException {
 		Collection<STRDFResource> uris = new ArrayList<STRDFResource>();
 		while (it.streamOpen()) {
 			uris.add(createSTSKOSResource(model, it.getNext(), role, explicit, lang));
@@ -2390,7 +2413,7 @@ public class SKOS extends ResourceOld {
 
 	public static void decorateForTreeView(SKOSModel model, STRDFResource concept, ARTURIResource scheme,
 			boolean inference, ARTResource[] graphs)
-					throws ModelAccessException, NonExistingRDFResourceException {
+			throws ModelAccessException, NonExistingRDFResourceException {
 		ARTURIResourceIterator unfilteredIt = model
 				.listNarrowerConcepts((ARTURIResource) concept.getARTNode(), false, inference, graphs);
 
@@ -2446,7 +2469,7 @@ public class SKOS extends ResourceOld {
 	 * generator</i> will be provided with the following:
 	 * <ul>
 	 * <li><code>concept</code> as the <code>xRole</code></li>
-	 * <li>a map of additional parameters consisting of <code>label</code> and <code>scheme</code> (each, if
+	 * <li>a map of additional parameters consisting of <code>label</code> and <code>schemes</code> (each, if
 	 * not <code>null</code>)</li>
 	 * </ul>
 	 * 
@@ -2467,7 +2490,8 @@ public class SKOS extends ResourceOld {
 		}
 
 		if (scheme != null) {
-			args.put(URIGenerator.Parameters.scheme, scheme);
+			args.put(URIGenerator.Parameters.schemes, VocabUtilities.nodeFactory.createLiteral(TurtleHelp
+					.serializeCollection(Arrays.asList(RDF4JMigrationUtils.convert2rdf4j(scheme)))));
 		}
 
 		return generateURI(URIGenerator.Roles.concept, args);
@@ -2482,8 +2506,8 @@ public class SKOS extends ResourceOld {
 	 * @param lang
 	 *            the language of the label defined hereby (can be <code>null</code>)
 	 * @param scheme
-	 *            the <i>local name</i> of the scheme to which the concept is being attached at the moment of
-	 *            its creation (can be <code>null</code>)
+	 *            the scheme to which the concept is being attached at the moment of its creation (can be
+	 *            <code>null</code>)
 	 * 
 	 * @return
 	 * @throws URIGenerationException

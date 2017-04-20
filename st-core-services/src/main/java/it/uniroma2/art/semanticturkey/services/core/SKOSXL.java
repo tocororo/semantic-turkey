@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -43,6 +45,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 
 /**
  * This class provides services for manipulating SKOSXL constructs.
@@ -64,7 +67,6 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
@@ -76,7 +78,7 @@ public class SKOSXL extends STServiceAdapter {
 		
 		IRI newConceptIRI;
 		if (newConcept == null) {
-			newConceptIRI = generateConceptIRI(label, conceptScheme);
+			newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
 		} else {
 			newConceptIRI = newConcept;
 		}
@@ -260,21 +262,22 @@ public class SKOSXL extends STServiceAdapter {
 	 * 
 	 * @param label
 	 *            the preferred label accompanying the concept (can be <code>null</code>)
-	 * @param scheme
-	 *            the scheme to which the concept is being attached at the moment of its creation (can be
+	 * @param schemes
+	 *            the schemes to which the concept is being attached at the moment of its creation (can be
 	 *            <code>null</code>)
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
+	public IRI generateConceptIRI(Literal label, List<IRI> schemes) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
 		}
 
-		if (scheme != null) {
-			args.put(URIGenerator.Parameters.scheme, scheme);
+		if (schemes != null) {
+			args.put(URIGenerator.Parameters.schemes,
+					SimpleValueFactory.getInstance().createLiteral(TurtleHelp.serializeCollection(schemes)));
 		}
 
 		return generateIRI(URIGenerator.Roles.concept, args);
@@ -288,7 +291,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
+	public IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
@@ -304,7 +307,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateCollectionURI(Literal label) throws URIGenerationException {
+	public IRI generateCollectionURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
@@ -331,14 +334,15 @@ public class SKOSXL extends STServiceAdapter {
 	 *            the textual content of the label
 	 * @param lexicalizedResource
 	 *            the resource to which the label will be attached to
-	 * @param type
+	 * @param lexicalizationProperty
 	 *            the property used for attaching the label
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateXLabelIRI(Resource lexicalizedResource, Literal lexicalForm, IRI type) throws URIGenerationException {
+	public IRI generateXLabelIRI(Resource lexicalizedResource, Literal lexicalForm,
+			IRI lexicalizationProperty) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
-		
+
 		if (lexicalizedResource != null) {
 			args.put(URIGenerator.Parameters.lexicalizedResource, lexicalizedResource);
 		}
@@ -346,11 +350,11 @@ public class SKOSXL extends STServiceAdapter {
 		if (lexicalForm != null) {
 			args.put(URIGenerator.Parameters.lexicalForm, lexicalForm);
 		}
-		
-		if (type != null) {
-			args.put(URIGenerator.Parameters.type, type);
+
+		if (lexicalizationProperty != null) {
+			args.put(URIGenerator.Parameters.lexicalizationProperty, lexicalizationProperty);
 		}
-		
+
 		return generateIRI(URIGenerator.Roles.xLabel, args);
 	}
 	

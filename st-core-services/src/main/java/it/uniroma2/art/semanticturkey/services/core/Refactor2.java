@@ -276,7 +276,7 @@ public class Refactor2 extends STServiceAdapter  {
 			} else{ // hidden label
 				skosxlLabelType = SKOSXL.HIDDEN_LABEL;
 			}
-			valueMapping.put(URIGenerator.Parameters.type, skosxlLabelType);
+			valueMapping.put(URIGenerator.Parameters.lexicalizationProperty, skosxlLabelType);
 			IRI newIRIForLabel = generateIRI(URIGenerator.Roles.xLabel, valueMapping );
 			//now add the new xlabel and remove the old data regarding SKOS
 			String graphString = SPARQLHelp.toSPARQL(graph); 
@@ -323,7 +323,7 @@ public class Refactor2 extends STServiceAdapter  {
 				Map<String, Value> valueMapping = new HashMap<String, Value>();
 				valueMapping.put(URIGenerator.Parameters.lexicalForm, value);
 				valueMapping.put(URIGenerator.Parameters.lexicalizedResource, concept);
-				valueMapping.put(URIGenerator.Parameters.type, noteType);
+				valueMapping.put(URIGenerator.Parameters.noteProperty, noteType);
 				IRI newIRIForNote = generateIRI(URIGenerator.Roles.xNote, valueMapping );
 				//now add the new xNote and remove the old data regarding SKOS
 				String graphString = SPARQLHelp.toSPARQL(graph); 

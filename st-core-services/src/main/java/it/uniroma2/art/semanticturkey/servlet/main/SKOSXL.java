@@ -1,5 +1,18 @@
 package it.uniroma2.art.semanticturkey.servlet.main;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.w3c.dom.Element;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
@@ -8,7 +21,6 @@ import it.uniroma2.art.owlart.model.ARTNode;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
@@ -25,23 +37,8 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.main.SKOS.CollectionCreationMode;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
-import org.apache.velocity.runtime.parser.TokenMgrError;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.w3c.dom.Element;
 
 @Component(value = "skosxlOld")
 public class SKOSXL extends SKOS {
@@ -1056,7 +1053,8 @@ public class SKOSXL extends SKOS {
 	 * <ul>
 	 * <li><code>xLabel</code> as the <code>xRole</code></li>
 	 * <li>a map of additional parameters consisting of <code>lexicalForm</code>,
-	 * <code>lexicalizedResource</code> and <code>type</code> (each, if not <code>null</code>)</li>
+	 * <code>lexicalizedResource</code> and <code>lexicalizationProperty</code> (each, if not
+	 * <code>null</code>)</li>
 	 * </ul>
 	 * 
 	 * All arguments should be not <code>null</code>, but in the end is the specific implementation of the
@@ -1067,13 +1065,13 @@ public class SKOSXL extends SKOS {
 	 *            the textual content of the label
 	 * @param lexicalizedResource
 	 *            the resource to which the label will be attached to
-	 * @param type
+	 * @param lexicalizationProperty
 	 *            the property used for attaching the label
 	 * @return
 	 * @throws URIGenerationException
 	 */
 	public ARTURIResource generateXLabelURI(ARTLiteral lexicalForm, ARTURIResource lexicalizedResource,
-			ARTURIResource type) throws URIGenerationException {
+			ARTURIResource lexicalizationProperty) throws URIGenerationException {
 		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
 
 		if (lexicalForm != null) {
@@ -1084,15 +1082,15 @@ public class SKOSXL extends SKOS {
 			args.put(URIGenerator.Parameters.lexicalizedResource, lexicalizedResource);
 		}
 
-		if (type != null) {
-			args.put(URIGenerator.Parameters.type, type);
+		if (lexicalizationProperty != null) {
+			args.put(URIGenerator.Parameters.lexicalizationProperty, lexicalizationProperty);
 		}
 
 		return generateURI(URIGenerator.Roles.xLabel, args);
 	}
 
 	/**
-	 * Generates a new URI for a SKOSXL Label. This method delegates {@link TokenMgrError}
+	 * Generates a new URI for a SKOSXL Label. This method delegates to
 	 * {@link #generateXLabelURI(ARTLiteral, ARTURIResource, ARTURIResource)}.
 	 * 
 	 * @param lang
@@ -1101,14 +1099,15 @@ public class SKOSXL extends SKOS {
 	 *            the lexical form of this <code>skosxl:Label</code> without its language tag
 	 * @param lexicalizedResource
 	 *            the resource to which the label will be attached to
-	 * @param type
+	 * @param lexicalizationProperty
 	 *            the property used for attaching the label
 	 * 
 	 * @return
 	 * @throws URIGenerationException
 	 */
 	public ARTURIResource generateXLabelURI(String lang, String lexicalForm,
-			ARTURIResource lexicalizedResource, ARTURIResource type) throws URIGenerationException {
+			ARTURIResource lexicalizedResource, ARTURIResource lexicalizationProperty)
+			throws URIGenerationException {
 
 		ARTLiteral lexicalFormObj = null;
 
@@ -1119,7 +1118,7 @@ public class SKOSXL extends SKOS {
 				lexicalFormObj = getOntModel().createLiteral(lexicalForm);
 			}
 		}
-		return generateXLabelURI(lexicalFormObj, lexicalizedResource, type);
+		return generateXLabelURI(lexicalFormObj, lexicalizedResource, lexicalizationProperty);
 	}
 
 	/**
@@ -1131,7 +1130,7 @@ public class SKOSXL extends SKOS {
 	 * <ul>
 	 * <li><code>xNote</code> as the <code>xRole</code></li>
 	 * <li>a map of additional parameters consisting of <code>value</code>, <code>annotatedResource</code> and
-	 * <code>type</code> (each, if not <code>null</code> )</li>
+	 * <code>noteProperty</code> (each, if not <code>null</code> )</li>
 	 * </ul>
 	 * 
 	 * All arguments should be not <code>null</code>, but in the end is the specific implementation of the
@@ -1142,13 +1141,13 @@ public class SKOSXL extends SKOS {
 	 *            the content of the note
 	 * @param annotatedResource
 	 *            the resource being annotated
-	 * @param type
+	 * @param noteProperty
 	 *            the property used for attaching the note
 	 * @return
 	 * @throws URIGenerationException
 	 */
 	public ARTURIResource generateXNoteURI(ARTLiteral value, ARTURIResource annotatedResource,
-			ARTURIResource type) throws URIGenerationException {
+			ARTURIResource noteProperty) throws URIGenerationException {
 		Map<String, ARTNode> args = new HashMap<String, ARTNode>();
 		
 		if (value != null) {
@@ -1159,8 +1158,8 @@ public class SKOSXL extends SKOS {
 			args.put(URIGenerator.Parameters.annotatedResource, annotatedResource);
 		}
 		
-		if (type != null) {
-			args.put(URIGenerator.Parameters.type, type);
+		if (noteProperty != null) {
+			args.put(URIGenerator.Parameters.noteProperty, noteProperty);
 		}
 		return generateURI(URIGenerator.Roles.xNote, args);
 	}
@@ -1175,14 +1174,14 @@ public class SKOSXL extends SKOS {
 	 *            the content of the note
 	 * @param annotatedResource
 	 *            the resource being annotated
-	 * @param type
+	 * @param noteProperty
 	 *            the property used for attaching the label
 	 * 
 	 * @return
 	 * @throws URIGenerationException
 	 */
 	public ARTURIResource generateXNoteURI(String lang, String value, ARTURIResource annotatedResource,
-			ARTURIResource type) throws URIGenerationException {
+			ARTURIResource noteProperty) throws URIGenerationException {
 
 		ARTLiteral valueObj = null;
 
@@ -1194,6 +1193,6 @@ public class SKOSXL extends SKOS {
 			}
 		}
 
-		return generateXNoteURI(valueObj, annotatedResource, type);
+		return generateXNoteURI(valueObj, annotatedResource, noteProperty);
 	}
 }
