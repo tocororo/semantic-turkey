@@ -74,7 +74,6 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-//	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefined Resource scheme) {
 		QueryBuilder qb;
 
@@ -125,6 +124,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
 			@Optional @LocallyDefined Resource scheme) {
 		QueryBuilder qb;
@@ -178,6 +178,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getAllSchemes() {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
@@ -200,6 +201,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSchemesMatrixPerConcept(@LocallyDefined Resource concept) {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
@@ -226,6 +228,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getRootCollections() {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
@@ -255,6 +258,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNestedCollections(@LocallyDefined Resource container) {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
@@ -301,6 +305,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
@@ -352,6 +357,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'C')")
 	public AnnotatedValue<IRI> createConceptScheme(
 			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
@@ -396,6 +402,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'C')")
 	public AnnotatedValue<Resource> createCollection(
 			IRI collectionType, @Optional @NotLocallyDefined IRI newCollection, 
 			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,
@@ -484,7 +491,7 @@ public class SKOS extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
+	private IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 
 		if (label != null) {
@@ -506,7 +513,7 @@ public class SKOS extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
+	private IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
@@ -522,7 +529,7 @@ public class SKOS extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateCollectionURI(Literal label) throws URIGenerationException {
+	private IRI generateCollectionURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);

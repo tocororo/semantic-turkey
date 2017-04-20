@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -163,6 +164,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws IOException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Response getMappingRelations(ARTURIResource resource, @Optional (defaultValue = "false") boolean allMappingProps)
 			throws ModelAccessException, UnavailableResourceException, ProjectInconsistentException, IOException, ModelUpdateException, UnsupportedRDFFormatException {
 
@@ -248,6 +250,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController (method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Response loadAlignment(MultipartFile inputFile) 
 			throws IOException, ModelAccessException, ModelUpdateException, UnsupportedRDFFormatException, 
 			UnavailableResourceException, ProjectInconsistentException, UnsupportedQueryLanguageException, 
@@ -300,6 +303,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Response listCells(@Optional (defaultValue = "0") int pageIdx, @Optional (defaultValue = "0") int range) 
 			throws ModelAccessException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -377,6 +381,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'C')")
 	public Response acceptAllAlignment() throws ModelAccessException, UnsupportedQueryLanguageException, 
 			MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -404,6 +409,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'C')")
 	public Response acceptAllAbove(float threshold) throws ModelAccessException, 
 			UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException{
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -439,6 +445,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', '')")
 	public Response rejectAlignment(ARTURIResource entity1, ARTURIResource entity2, String relation) 
 			throws ModelAccessException, UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -461,6 +468,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', '')")
 	public Response rejectAllAlignment() throws ModelAccessException, UnsupportedQueryLanguageException, 
 			MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -488,6 +496,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', '')")
 	public Response rejectAllUnder(float threshold) throws ModelAccessException, 
 			UnsupportedQueryLanguageException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -543,6 +552,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'U')")
 	public Response changeMappingProperty(ARTURIResource entity1, ARTURIResource entity2, ARTURIResource mappingProperty)
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -566,6 +576,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'CUD')")
 	public Response applyValidation(@Optional (defaultValue = "false") boolean deleteRejected) throws UnsupportedQueryLanguageException, ModelAccessException, 
 			MalformedQueryException, QueryEvaluationException, ModelUpdateException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -618,6 +629,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Alignment/exportAlignment", 
 			method = org.springframework.web.bind.annotation.RequestMethod.GET)
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public void exportAlignment(HttpServletResponse oRes) throws IOException, ModelAccessException, UnsupportedRDFFormatException, ModelUpdateException {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		File tempServerFile = File.createTempFile("alignment", ".rdf");
@@ -640,6 +652,7 @@ public class Alignment extends STServiceAdapterOLD {
 	 * @throws InvalidAlignmentRelationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Response listSuggestedProperties(ARTURIResource entity, String relation) 
 			throws ModelAccessException, InvalidAlignmentRelationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);

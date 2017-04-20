@@ -42,5 +42,14 @@ public class ProjectUserBinding {
 	public void removeRole(Role role) {
 		this.roles.remove(role);
 	}
+	
+	@Override
+	public String toString() {
+		Collection<String> rolesAsStringList = new ArrayList<>();
+		for (Role r: this.roles) {
+			rolesAsStringList.add(r.getName());
+		}
+		return "<" + this.project.getName() + "," + this.user.getEmail() + ">: " + this.roles; 
+	}
 
 }

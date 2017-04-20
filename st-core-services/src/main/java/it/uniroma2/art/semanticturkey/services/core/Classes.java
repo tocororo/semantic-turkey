@@ -24,6 +24,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
@@ -78,6 +79,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSubClasses(@LocallyDefined IRI superClass,
 			@Optional(defaultValue = "true") boolean numInst) {
 		QueryBuilder qb;
@@ -169,6 +171,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getClassesInfo(IRI[] classList,
 			@Optional(defaultValue = "true") boolean numInst) {
 
@@ -204,6 +207,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getInstances(@LocallyDefined IRI cls) {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off

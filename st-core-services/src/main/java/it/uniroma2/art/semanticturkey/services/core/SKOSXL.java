@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
@@ -63,6 +64,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
@@ -119,6 +121,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'C')")
 	public AnnotatedValue<IRI> createConceptScheme(
 			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
@@ -168,6 +171,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'C')")
 	public AnnotatedValue<Resource> createCollection(
 			IRI collectionType, @Optional @NotLocallyDefined IRI newCollection, 
 			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,
@@ -262,7 +266,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
+	private IRI generateConceptIRI(Literal label, IRI scheme) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 
 		if (label != null) {
@@ -284,7 +288,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
+	private IRI generateConceptSchemeURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
@@ -300,7 +304,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateCollectionURI(Literal label) throws URIGenerationException {
+	private IRI generateCollectionURI(Literal label) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (label != null) {
 			args.put(URIGenerator.Parameters.label, label);
@@ -332,7 +336,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	public IRI generateXLabelIRI(Resource lexicalizedResource, Literal lexicalForm, IRI type) throws URIGenerationException {
+	private IRI generateXLabelIRI(Resource lexicalizedResource, Literal lexicalForm, IRI type) throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		
 		if (lexicalizedResource != null) {

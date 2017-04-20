@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -82,6 +83,7 @@ public class Users extends STServiceAdapter {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/listUsers", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'R')")
 	public String listUsers() throws JSONException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("listUsers", RepliesStatus.ok, SerializationType.json);
@@ -106,6 +108,7 @@ public class Users extends STServiceAdapter {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/listUsersBoundToProject", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
+	@PreAuthorize("@auth.isAuthorized('um(user, project)', 'R')")
 	public String listUsersBoundToProject(@RequestParam("projectName") String projectName) throws JSONException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
@@ -119,20 +122,6 @@ public class Users extends STServiceAdapter {
 			}
 		}
 		jsonResp.getDataElement().put("users", usersJson);
-		return jsonResp.toString();
-	}
-	
-	/**
-	 * Just an example to test a service for which a capability is required. If the current logged user
-	 * has no the capability determined in auth.isAuthorized, then a denied response is returned
-	 */
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/testRequiredAdmin", 
-			method = RequestMethod.GET, produces = "application/json")
-//	@PreAuthorize("@auth.isAuthorized('concept', 'lexicalization', 'update')")
-	@ResponseBody
-	public String testRequiredAdmin(HttpServletRequest request, HttpServletResponse response) throws JSONException, IOException {
-		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-				.createReplyResponse("testRequiredAdmin", RepliesStatus.ok, SerializationType.json);
 		return jsonResp.toString();
 	}
 	
@@ -423,6 +412,7 @@ public class Users extends STServiceAdapter {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/enableUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
 	public String enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
 			throws IOException, JSONException, PUBindingException  {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
@@ -449,6 +439,7 @@ public class Users extends STServiceAdapter {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/deleteUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'D')")
 	public String deleteUser(@RequestParam("email") String email) throws IOException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {

@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -164,7 +165,8 @@ public class Administration extends STServiceAdapter {
 	 * @throws RBACException 
 	 */
 	@STServiceOperation
-	public void addRoleToUserInProject(String projectName, String email, String role) throws PUBindingException, 
+	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
+	public void addRoleToUser(String projectName, String email, String role) throws PUBindingException, 
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
@@ -186,7 +188,8 @@ public class Administration extends STServiceAdapter {
 	 * @throws PUBindingException 
 	 */
 	@STServiceOperation
-	public void removeRoleToUserInProject(String projectName, String email, String role) throws PUBindingException,
+	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
+	public void removeRoleFromUser(String projectName, String email, String role) throws PUBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
@@ -216,6 +219,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'R')")
 	public JsonNode listRoles(@Optional String projectName) throws JSONException, RBACException, InvalidProjectNameException,
 		ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -272,6 +276,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'C')")
 	public void createRole(String roleName) throws RoleCreationException {
 		RBACManager.createRole(getProject(), roleName);
 	}
@@ -283,6 +288,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws PUBindingException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'D')")
 	public void deleteRole(String roleName) throws PUBindingException {
 		Role aRole = RBACManager.getRole(getProject(), roleName);
 		if (aRole == null) {
@@ -366,6 +372,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws RBACException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rbac(role, capability)', 'C')")
 	public void addCapabilityToRole(String role, String capability) throws RBACException {
 		RBACManager.addCapability(getProject(), role, capability);
 	}
@@ -378,6 +385,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws RBACException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rbac(role, capability)', 'D')")
 	public void removeCapabilityFromRole(String role, String capability) throws RBACException {
 		RBACManager.removeCapability(getProject(), role, capability);
 	}

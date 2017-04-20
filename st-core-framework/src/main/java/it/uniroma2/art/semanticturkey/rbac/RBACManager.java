@@ -94,6 +94,13 @@ public class RBACManager {
 		roleRBacMap.replaceAll((k, v) -> null);
 	}
 	
+	/**
+	 * Returns the RBACProcessor for the given role in the given project. If project is null,
+	 * searches the role at system level.
+	 * @param project
+	 * @param role
+	 * @return
+	 */
 	public static RBACProcessor getRBACProcessor(AbstractProject project, String role) {
 		//first looks for role at project level...
 		String projectName = project == null ? SYSTEM_PROJ_ID : project.getName();

@@ -1,14 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,8 +23,15 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -51,6 +49,7 @@ public class Search extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
 			String searchMode, @Optional String lang, @Optional IRI scheme)  {
 		
@@ -368,6 +367,7 @@ public class Search extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString, boolean useLocalName, 
 			boolean useURI, String searchMode, @Optional String lang) {
 		
@@ -392,8 +392,6 @@ public class Search extends STServiceAdapter {
 		}
 		
 		if(searchModeSelected == null){
-			String msg = "the serch mode should be at one of: "+START_SEARCH_MODE+", "+
-			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE;
 			//TODO change the exception (previously was a fail)
 			throw new IllegalArgumentException("the serchString cannot be empty");
 		}
@@ -460,7 +458,6 @@ public class Search extends STServiceAdapter {
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
 		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
 		List<String> addedIndividualList = new ArrayList<String>();
-		List<String> addedClassList = new ArrayList<String>();
 		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
 			Value resourceURI = bindingSet.getBinding("resource").getValue();
@@ -469,7 +466,6 @@ public class Search extends STServiceAdapter {
 				continue;
 			}
 
-			RDFResourceRolesEnum role = getRoleFromType(cls.stringValue());
 			if(addedIndividualList.contains(resourceURI.stringValue())){
 				//the individual was already added
 				continue;

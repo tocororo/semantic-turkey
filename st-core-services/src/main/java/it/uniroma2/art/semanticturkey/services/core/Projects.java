@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -94,6 +95,7 @@ public class Projects extends STServiceAdapterOLD {
 	}
 
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
 	public void deleteProject(ProjectConsumer consumer, String projectName)
 			throws ProjectDeletionException, IOException {
 		ProjectManager.deleteProject(projectName);
@@ -139,6 +141,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ModelUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
 	public void disconnectFromProject(ProjectConsumer consumer, String projectName)
 			throws ModelUpdateException {
 
@@ -148,6 +151,7 @@ public class Projects extends STServiceAdapterOLD {
 	@SuppressWarnings("unchecked")
 	@GenerateSTServiceController
 	// @AutoRendering
+//	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public Response listProjects(@Optional ProjectConsumer consumer,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel)
@@ -210,6 +214,7 @@ public class Projects extends STServiceAdapterOLD {
 	}
 
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void repairProject(String projectName) throws IOException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectInconsistentException {
 		UpdateRoutines.repairProject(projectName);
@@ -224,6 +229,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void saveProject(String project) throws IllegalAccessException, ProjectUpdateException {
 		logger.info("requested to save project: " + project);
 
@@ -260,6 +266,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws InvalidProjectNameException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'RC')")
 	public void cloneProject(String projectName, String newProjectName)
 			throws InvalidProjectNameException, DuplicatedResourceException, IOException,
 			UnavailableResourceException, ProjectInexistentException {
@@ -271,6 +278,7 @@ public class Projects extends STServiceAdapterOLD {
 	}
 
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Projects/exportProject", method = org.springframework.web.bind.annotation.RequestMethod.GET)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public void exportProject(HttpServletResponse oRes,
 			@RequestParam(value = "projectName") String projectName) throws IOException, ModelAccessException,
 			UnsupportedRDFFormatException, UnavailableResourceException {
@@ -304,6 +312,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectInexistentException 
 	 */
 	@GenerateSTServiceController(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
 	public void importProject(MultipartFile importPackage, String newProjectName)
 			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
@@ -338,6 +347,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws IOException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public Response getProjectProperty(String projectName, String[] propertyNames)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			IOException {
@@ -375,6 +385,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws IOException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public Response getProjectPropertyMap(String projectName) throws InvalidProjectNameException,
 			ProjectInexistentException, ProjectAccessException, IOException {
 
@@ -407,6 +418,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws IOException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public Response getProjectPropertyFileContent(String projectName) throws InvalidProjectNameException,
 			ProjectInexistentException, ProjectAccessException, IOException {
 		String rawFile = ProjectManager.getProjectPropertyFileContent(projectName);
@@ -437,6 +449,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ProjectUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void setProjectProperty(String projectName, String propName, String propValue)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
@@ -476,6 +489,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ForbiddenProjectAccessException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public Response getAccessStatusMap() throws InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException {
 
@@ -553,6 +567,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ReservedPropertyUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void updateAccessLevel(String projectName, String consumerName, AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
@@ -572,6 +587,7 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ReservedPropertyUpdateException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void updateLockLevel(String projectName, LockLevel lockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {

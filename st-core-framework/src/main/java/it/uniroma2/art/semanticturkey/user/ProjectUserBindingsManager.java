@@ -42,8 +42,7 @@ public class ProjectUserBindingsManager {
 		//For debug
 //		System.out.println("Project-User Bindings");
 //		for (ProjectUserBinding pub : puBindingList) {
-//			System.out.println(pub.getProjectName() + "-" + pub.getUserEmail());
-//			System.out.println("\troles: " + String.join(", ", pub.getRolesName()));
+//			System.out.println(pub);
 //		}
 	}
 	
@@ -201,6 +200,7 @@ public class ProjectUserBindingsManager {
 	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+				System.out.println("pub found " + pub);
 				pub.addRole(role);
 				createOrUpdatePUBindingFolder(pub);
 				return;

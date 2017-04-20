@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
@@ -48,6 +49,7 @@ public class InputOutput2 extends STServiceAdapter {
 	 * @throws UnsupportedRDFFormatException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf', 'C')")
 	public Collection<OntologyImport> loadRDF(MultipartFile inputFile, String baseURI,
 			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws FileNotFoundException, IOException, UnsupportedRDFFormatException {
@@ -86,6 +88,7 @@ public class InputOutput2 extends STServiceAdapter {
 	 * @throws UnsupportedRDFFormatException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
 	public void clearData() throws RDF4JException {
 		getProject().getNewOntologyManager().clearData();
 	}

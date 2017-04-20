@@ -45,6 +45,7 @@ import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
@@ -64,6 +65,7 @@ public class Plugins extends STServiceAdapterOLD {
 	 * @throws ConfParameterNotFoundException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
 	public Response getPluginConfigurations(String factoryID) throws ConfParameterNotFoundException  {
 		PluginFactory<?> pluginFactory = PluginManager.getPluginFactory(factoryID);
 		
@@ -114,6 +116,7 @@ public class Plugins extends STServiceAdapterOLD {
 	 * @throws ConfParameterNotFoundException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
 	public Response getAvailablePlugins(String extensionPoint) throws ConfParameterNotFoundException {
 		Collection<PluginFactory<?>> pluginFactoryCollection = PluginManager.getPluginFactories(extensionPoint);
 		

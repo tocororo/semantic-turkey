@@ -22,9 +22,11 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -116,6 +118,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 */
 //	@STServiceOperation
 //	@Write
+//	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
 //	public void replaceBaseURI(@Optional IRI sourceBaseURI, IRI targetBaseURI) {
 //		RepositoryConnection conn = getManagedConnection();
 //		// @formatter:off
@@ -137,6 +140,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 */
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
 	public void migrateDefaultGraphToBaseURIGraph(@Optional(defaultValue = "false") boolean clearDestinationGraph) {
 		String updateSpec;
 		if (clearDestinationGraph) {
@@ -158,6 +162,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 */
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(lexicalization)', 'CD')")
 	public void SKOStoSKOSXL(boolean reifyNotes) throws URIGenerationException{
 		logger.info("request to refactor SKOS data to SKOSXL");
 		
@@ -359,6 +364,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 */
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(lexicalization)', 'CD')")
 	public void SKOSXLtoSKOS(boolean flattenNotes){
 		logger.info("request to refactor SKOSXL data to SKOS");
 		

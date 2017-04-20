@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -20,6 +21,7 @@ public class Resources extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'U')")
 	public void updateTriple(Resource resource, IRI property, Value value, Value newValue){
 		logger.info("request to update a triple");
 		
@@ -67,6 +69,7 @@ public class Resources extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
 	public void removeTriple(Resource resource, IRI property, Value value){
 		getManagedConnection().remove(resource, property, value, getWorkingGraph());
 	}

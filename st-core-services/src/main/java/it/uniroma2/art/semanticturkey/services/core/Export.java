@@ -32,6 +32,7 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
@@ -57,6 +58,7 @@ public class Export extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getNamedGraphs() throws Exception {
 		return Iterations.stream(getManagedConnection().getContextIDs())
 				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toList());
@@ -88,6 +90,7 @@ public class Export extends STServiceAdapter {
 	 */
 	@STServiceOperation(method=RequestMethod.POST)
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
 			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
 			@Optional(defaultValue = "TRIG") RDFFormat outputFormat,

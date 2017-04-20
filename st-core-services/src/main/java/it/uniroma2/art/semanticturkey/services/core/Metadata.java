@@ -23,6 +23,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -64,6 +65,7 @@ public class Metadata extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(project, baseuri)', 'R')")
 	public String getBaseURI() {
 		return getOntologyManager().getBaseURI();
 	}
@@ -77,6 +79,7 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('pm(project, defnamespace)', 'R')")
 	public String getDefaultNamespace() {
 		return getManagedConnection().getNamespace("");
 	}
@@ -88,6 +91,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws ProjectUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, defnamespace)', 'U')")
 	// @Write Project.setDefaultNamespace uses an internal/dedicate connection
 	public void setDefaultNamespace(String namespace) throws ProjectUpdateException {
 		getProject().setDefaultNamespace(namespace);
@@ -100,6 +104,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws OntologyManagerException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'R')")
 	public Collection<PrefixMapping> getNamespaceMappings() throws OntologyManagerException {
 		Map<String, String> allMappings = getOntologyManager().getNSPrefixMappings(false);
 		Map<String, String> explicitMappings = getOntologyManager().getNSPrefixMappings(true);
@@ -149,6 +154,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws NSPrefixMappingUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
 	public void setNSPrefixMapping(String prefix, String namespace)
 			throws NSPrefixMappingUpdateException, ModelUpdateException {
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
@@ -161,6 +167,7 @@ public class Metadata extends STServiceAdapter {
 	 * situation change, this method will require a proper implementation.
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
 	public void changeNSPrefixMapping(String prefix, String namespace)
 			throws NSPrefixMappingUpdateException, ModelUpdateException {
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
@@ -175,6 +182,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws NSPrefixMappingUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'D')")
 	public void removeNSPrefixMapping(String namespace)
 			throws NSPrefixMappingUpdateException, ModelUpdateException {
 		getOntologyManager().removeNSPrefixMapping(namespace);
@@ -233,6 +241,7 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'R')")
 	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getNamedGraphs()
 			throws RepositoryException {
 		return Iterations.stream(getManagedConnection().getContextIDs())
@@ -246,6 +255,7 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'R')")
 	public Collection<OntologyImport> getImports() throws RepositoryException {
 		RepositoryConnection conn = getManagedConnection();
 
@@ -310,6 +320,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromLocalFile(String baseURI, MultipartFile localFile,
 			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, OntologyManagerException, ModelUpdateException, IOException {
@@ -339,6 +350,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromMirror(String baseURI, String mirrorFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, OntologyManagerException, ModelUpdateException {
@@ -364,6 +376,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromWeb(String baseURI, @Optional String altUrl,
 			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, OntologyManagerException, ModelUpdateException {
@@ -417,6 +430,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'D')")
 	public void removeImport(String baseURI) throws RDF4JException, OntologyManagerException,
 			ModelUpdateException, IOException, ModelAccessException {
 		getOntologyManager().removeOntologyImport(baseURI);
@@ -438,6 +452,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> downloadFromWeb(String baseURI, @Optional String altUrl,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws RDF4JException,
 			MalformedURLException, ModelUpdateException, ImportManagementException, IOException {
@@ -466,6 +481,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(ontologymirror)', 'C')")
 	public Collection<OntologyImport> downloadFromWebToMirror(String baseURI, @Optional String altUrl,
 			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ModelUpdateException, ImportManagementException,

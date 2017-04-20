@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -77,6 +78,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopProperties() {
 		logger.info("request to get all the top properties");
 		
@@ -111,6 +113,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopRDFProperties() {
 		logger.info("request to get the top RDF properties");
 		
@@ -140,7 +143,8 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> geTopObjectProperties() {
+	@PreAuthorize("@auth.isAuthorized('rdf(objectProperty, taxonomy)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getTopObjectProperties() {
 		logger.info("request to get the top Object properties");
 		
 		QueryBuilder qb;
@@ -170,6 +174,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(datatypeProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopDatatypeProperties() {
 		logger.info("request to get the top Datatype properties");
 		
@@ -200,6 +205,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(annotationProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopAnnotationProperties() {
 		logger.info("request to get the top Annotation properties");
 		
@@ -230,6 +236,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(ontologyProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopOntologyProperties() {
 		logger.info("request to get the top Ontology properties");
 		
@@ -262,6 +269,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getPropertiesInfo(IRI[] propList) {
 		logger.info("request to get the Propery info, given a property List");
 		
@@ -293,6 +301,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSubProperties(@LocallyDefined Resource superProperty) {
 		logger.info("request to get the top sub properties for "+superProperty.stringValue());
 		
@@ -320,6 +329,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSuperProperties(@LocallyDefined Resource subProperty) {
 		logger.info("request to get the top super properties for "+subProperty.stringValue());
 		
@@ -459,6 +469,7 @@ public class Properties extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource property) {
 		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
 		QueryBuilder qb;
@@ -484,6 +495,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public JsonNode getRange(@LocallyDefined IRI property) {
 		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
 		

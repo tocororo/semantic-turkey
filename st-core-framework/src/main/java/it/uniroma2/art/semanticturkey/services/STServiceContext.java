@@ -29,4 +29,6 @@ public interface STServiceContext {
 	STRequest getRequest();
 
 	String getSessionToken();
+	
+	boolean hasContextParameter(String parameter);
 }

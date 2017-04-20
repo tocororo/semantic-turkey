@@ -36,6 +36,7 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -189,6 +190,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
 	public Map<String, ResourceViewSection> getGraphObjectDescription(Resource resource, IRI predicate) 
 			throws ProjectInconsistentException, RDFModelNotSetException, PRParserException {
 		
@@ -409,6 +411,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
 	public JsonNode getFormCollection(String id) throws CustomFormException{
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode formCollNode = jsonFactory.objectNode();
@@ -434,6 +437,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
 	public JsonNode getAllFormCollections(){
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode formCollArray = jsonFactory.arrayNode();
@@ -455,6 +459,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws DuplicateIdException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'C')")
 	public void createFormCollection(String id) throws DuplicateIdException {
 		cfManager.createFormCollection(getProject(), id);
 	}
@@ -467,6 +472,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'C')")
 	public void cloneFormCollection(String sourceId, String targetId) throws CustomFormException {
 		//look for FC at project level
 		FormCollection sourceFC = cfManager.getFormCollection(getProject(), sourceId);
@@ -485,6 +491,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
 	public void exportFormCollection(HttpServletResponse oRes, String id) throws CustomFormException, IOException {
 		FormCollection formCollection = cfManager.getFormCollection(getProject(), id);
 		if (formCollection == null) {
@@ -513,6 +520,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'C')")
 	public void importFormCollection(MultipartFile inputFile, @Optional String newId) throws IOException, CustomFormException {
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File tempServerFile = File.createTempFile("cfImport", inputFile.getOriginalFilename());
@@ -548,6 +556,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'D')")
 	public void deleteFormCollection(String id) throws CustomFormException {
 		FormCollection formColl = cfManager.getProjectFormCollection(getProject(),id);
 		if (formColl == null) {
@@ -564,6 +573,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'C')")
 	public void addFormToCollection(String formCollectionId, String customFormId) throws CustomFormException{
 		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
 		if (formColl == null) {
@@ -584,6 +594,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'D')")
 	public void removeFormFromCollection(String formCollectionId, String customFormId) throws CustomFormException {
 		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
 		if (formColl == null) {
@@ -603,6 +614,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
 	public JsonNode getAllCustomForms(){
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode customFormArrayNode = jsonFactory.arrayNode();
@@ -657,6 +669,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
 	public JsonNode getCustomForm(String id) throws CustomFormException {
 		CustomForm cf = cfManager.getCustomForm(getProject(), id); //at project level
 		if (cf != null){
@@ -693,6 +706,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
 	public JsonNode getCustomFormRepresentation(String id) throws 
 			ProjectInconsistentException, PRParserException, RDFModelNotSetException,  CustomFormException {
 		CustomForm cForm = cfManager.getCustomForm(getProject(), id);
@@ -772,6 +786,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws DuplicateIdException 
 	 */
 	@STServiceOperation (method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'C')")
 	public void createCustomForm(String type, String id, String name, String description, String ref, @Optional List<IRI> showPropChain)
 			throws DuplicateIdException {
 		//avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref when calling this service
@@ -786,6 +801,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'C')")
 	public void cloneCustomForm(String sourceId, String targetId) throws CustomFormException {
 		CustomForm sourceCF = cfManager.getCustomForm(getProject(), sourceId);
 		if (sourceCF == null) {
@@ -815,6 +831,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
 	public void exportCustomForm(HttpServletResponse oRes, String id) throws CustomFormException, IOException {
 		CustomForm customForm = cfManager.getCustomForm(getProject(), id);
 		if (customForm == null) {
@@ -843,6 +860,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'C')")
 	public void importCustomForm(MultipartFile inputFile, @Optional String newId) throws IOException, CustomFormException {
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File tempServerFile = File.createTempFile("cfImport", inputFile.getOriginalFilename());
@@ -898,6 +916,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'D')")
 	public void deleteCustomForm(String id, @Optional (defaultValue = "false") boolean deleteEmptyColl) throws CustomFormException {
 		CustomForm cf = cfManager.getProjectCustomForm(getProject(), id);
 		if (cf == null) {
@@ -913,6 +932,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'R')")
 	public JsonNode isFormLinkedToCollection(String id) {
 		//Since this is used before to delete a CustomForm, look only at project level, since is not possible to delete at system level
 		Collection<FormCollection> formCollections = cfManager.getProjectFormCollections(getProject());
@@ -937,6 +957,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation (method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'U')")
 	public void updateCustomForm(String id, String name, String description, String ref, @Optional List<IRI> showPropChain) throws CustomFormException {
 		CustomForm cf = cfManager.getProjectCustomForm(getProject(), id);
 		if (cf == null) {
@@ -1014,6 +1035,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
 	public JsonNode getCustomFormConfigMap() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode cfcArrayNode = jsonFactory.arrayNode();
@@ -1042,6 +1064,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form, mapping)', 'C')")
 	public void addFormsMapping(IRI resource, String formCollId,
 			@Optional (defaultValue = "false") boolean replace) throws CustomFormException{
 		FormCollection formColl = cfManager.getFormCollection(getProject(), formCollId);
@@ -1058,6 +1081,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form, mapping)', 'D')")
 	public void removeFormCollectionOfResource(IRI resource) throws CustomFormException{
 		cfManager.removeFormsMapping(getProject(), resource);
 	}
@@ -1070,6 +1094,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'U')")
 	public void updateReplace(IRI resource, boolean replace) throws CustomFormException {
 		cfManager.setReplace(getProject(), resource, replace);
 	}

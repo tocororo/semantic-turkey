@@ -182,7 +182,6 @@ public class RBACProcessor {
 	}
 
 	public boolean authorizes(String goal) throws MalformedGoalException, HaltedEngineException, HarmingGoalException {
-		System.out.println("check satisfaction for goal " + goal);
 		SolveInfo info = engine.solve(goal);
 		if (engine.isHalted()) {
 			try {

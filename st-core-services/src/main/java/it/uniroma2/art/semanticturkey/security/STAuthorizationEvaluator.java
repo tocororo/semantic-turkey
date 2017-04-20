@@ -50,6 +50,7 @@ public class STAuthorizationEvaluator {
 	 * To use like follow:
 	 * <code>
 	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
 	 * </code>
 	 * For complete documentation see {@link #isAuthorized(String, String, String)} 
 	 * 
@@ -109,20 +110,22 @@ public class STAuthorizationEvaluator {
 		}
 		
 		System.out.println("Role base access control:");
-		Project<?> targetForRBAC = getTargetForRBAC();
-
-		System.out.println("\ttarget for RBAC = " + targetForRBAC.getName());
-		System.out.println("\tprolog goal = " + prologGoal);
-		System.out.println("\tuser responsibility map = " + userRespMap);
 		
+		STUser loggedUser = UsersManager.getLoggedUser();
+		Collection<Role> userRoles = getRoles(loggedUser);
+		Project<?> targetForRBAC = getTargetForRBAC();
 		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
 
+		System.out.println("\tprolog goal = " + prologGoal);
+		System.out.println("\tuser responsibility map = " + userRespMap);
 		System.out.println("\tproject consumer = " + stServiceContext.getProjectConsumer().getName());
-		System.out.println("\taccessed project = " + stServiceContext.getProject().getName());
+		System.out.println("\taccessed project = " + (targetForRBAC != null ? targetForRBAC.getName() : "SYSTEM"));
 		System.out.println("\trequested access level = " + requestedAccessLevel);
 		System.out.println("\taclCheck = " + aclSatisfied);
+		System.out.println("\tlogged User = " + loggedUser.getEmail());
+		System.out.println("\t\troles = " + userRoles);
 
 		if (!aclSatisfied) {
 			return false;
@@ -130,15 +133,12 @@ public class STAuthorizationEvaluator {
 		
 		boolean authorized = false;
 		
-		// TODO here should go the logic to determine which capability is required based on the
-		// topicSubject, topicScope and accessPrivilege triple
-		
-		STUser loggedUser = UsersManager.getLoggedUser();
-		Collection<Role> userRoles = getRoles(loggedUser);
 		boolean prologGoalSatisfied = false;
 		for (Role role: userRoles) {
 			RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
+			System.out.println("check satisfaction for goal " + prologGoal);
 			if (rbac.authorizes(prologGoal)) {
+				//TODO in order to enable the evaluator, use authorized here instead of prologGoalSatisfied
 				prologGoalSatisfied = true;
 				break;
 			}
@@ -180,24 +180,25 @@ public class STAuthorizationEvaluator {
 	}
 
 	private Project<?> getTargetForRBAC() {
-		Project<?> project = stServiceContext.getProject();
-		ProjectConsumer consumer = stServiceContext.getProjectConsumer();
-
-		if (consumer.equals(ProjectConsumer.SYSTEM)) {
-			return project;
+		if (stServiceContext.hasContextParameter("project")) {
+			Project<?> project = stServiceContext.getProject();
+			ProjectConsumer consumer = stServiceContext.getProjectConsumer();
+			if (consumer.equals(ProjectConsumer.SYSTEM)) {
+				return project;
+			} else {
+				return (Project<?>) consumer;
+			}
 		} else {
-			return (Project<?>) consumer;
+			return null;
 		}
 	}
 
 	private boolean checkACL(AccessLevel requestedAccessLevel, LockLevel requestedLockLevel) {
 		ProjectConsumer consumer = stServiceContext.getProjectConsumer();
-		Project<?> project = stServiceContext.getProject();
-
 		if (ProjectConsumer.SYSTEM.equals(consumer)) {
 			return true;
 		}
-
+		Project<?> project = stServiceContext.getProject();
 		return ProjectManager.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
 				.isAffirmative();
 	}

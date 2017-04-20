@@ -137,7 +137,7 @@ public class ProjectUserBindingsRepoHelper {
 			if (role != null) {
 				// Check if the current tuple is about a binding already fetched (and differs just for a role)
 				for (ProjectUserBinding b : list) {
-					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user)) {
+					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
 						// binding already in list => add the role to it
 						b.addRole(role);
 						continue tupleLoop;

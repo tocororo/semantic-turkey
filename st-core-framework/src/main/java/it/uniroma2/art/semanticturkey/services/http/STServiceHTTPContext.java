@@ -200,5 +200,10 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		}
 		return token;
 	}
+	
+	@Override
+	public boolean hasContextParameter(String parameter) {
+		return request.getParameter("ctx_" + parameter) != null;
+	}
 
 }

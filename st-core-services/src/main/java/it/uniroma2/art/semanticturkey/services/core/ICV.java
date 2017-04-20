@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
@@ -59,6 +60,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listDanglingConcepts(ARTURIResource scheme, @Optional (defaultValue="0") Integer limit) throws UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -142,6 +144,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listCyclicConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -190,6 +193,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'R')")
 	public Response listConceptSchemesWithNoTopConcept() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -221,6 +225,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithNoScheme(@Optional (defaultValue="0") Integer limit) throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -264,6 +269,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listTopConceptsWithBroader() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -296,6 +302,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listHierarchicallyRedundantConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -332,6 +339,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithSameSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -372,6 +380,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithSameSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -414,6 +423,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithOnlySKOSAltLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT DISTINCT ?resource ?lang ?type WHERE {\n"
@@ -462,6 +472,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithOnlySKOSXLAltLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT DISTINCT ?resource ?lang ?type WHERE { \n"
@@ -511,6 +522,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithNoSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT ?resource ?type WHERE {\n"
@@ -552,6 +564,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithNoSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT ?resource ?type WHERE {\n"
@@ -593,6 +606,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithMultipleSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -627,6 +641,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithMultipleSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -664,6 +679,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithNoLanguageTagSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT ?resource ?labelPred ?label ?type WHERE {\n"
@@ -721,6 +737,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithNoLanguageTagSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT ?resource ?labelPred ?xlabel ?literalForm ?type WHERE {\n"
@@ -779,6 +796,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithOverlappedSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		String q = "SELECT ?resource ?label ?lang ?type WHERE {\n"
@@ -823,6 +841,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesWithOverlappedSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -870,6 +889,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithExtraWhitespaceInSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -912,6 +932,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws MalformedQueryException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Response listConceptsWithExtraWhitespaceInSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -953,6 +974,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(xLabel)', 'R')")
 	public Response listDanglingXLabels() throws UnsupportedQueryLanguageException, ModelAccessException,
 			MalformedQueryException, QueryEvaluationException {
 		String q = "SELECT ?xlabel WHERE {\n"
@@ -979,6 +1001,7 @@ public class ICV extends STServiceAdapterOLD {
 	//-----GENERICS-----
 	
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Response listResourcesURIWithSpace(@Optional (defaultValue="0") Integer limit) throws QueryEvaluationException,
 		UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
@@ -1036,6 +1059,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public Response setAllDanglingAsTopConcept(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "INSERT {\n"
@@ -1081,6 +1105,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public Response setBroaderForAllDangling(ARTURIResource scheme, ARTURIResource broader) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "INSERT {\n"
@@ -1125,6 +1150,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
 	public Response removeAllDanglingFromScheme(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE { ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
@@ -1167,6 +1193,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'D')")
 	public Response deleteAllDanglingConcepts(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE { "
@@ -1213,6 +1240,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, scheme)', 'C')")
 	public Response addAllConceptsToScheme(ARTURIResource scheme) 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "INSERT {\n"
@@ -1239,6 +1267,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public Response removeBroadersToConcept(ARTURIResource concept, ARTURIResource scheme)
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE {\n"
@@ -1266,6 +1295,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public Response removeBroadersToAllConcepts()  
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE {\n"
@@ -1291,6 +1321,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public Response removeAllAsTopConceptsWithBroader() 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE {\n"
@@ -1316,6 +1347,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public Response removeAllHierarchicalRedundancy() 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE {\n"
@@ -1342,6 +1374,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(xLabel)', 'D')")
 	public Response deleteAllDanglingXLabel() 
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "DELETE {\n"
@@ -1373,6 +1406,7 @@ public class ICV extends STServiceAdapterOLD {
 	 * @throws QueryEvaluationException
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, lexicalization)', 'C')")
 	public Response setDanglingXLabel(ARTURIResource concept, ARTURIResource xlabelPred, ARTResource xlabel)
 			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
 		String q = "";

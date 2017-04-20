@@ -36,5 +36,10 @@ public class Role {
 	    Role otherRole = (Role)other;
 	    return (otherRole.getName().equals(this.name) && otherRole.getLevel() == this.level);
 	}
+	
+	@Override
+	public String toString() {
+		return this.name + "(" + this.level + ")";
+	}
 
 }

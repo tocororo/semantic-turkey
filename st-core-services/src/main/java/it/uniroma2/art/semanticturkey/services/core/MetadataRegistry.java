@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
@@ -44,6 +45,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 	 * @throws DatasetMetadataRepositoryWritingException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
 	public void addDatasetMetadata(String baseURI, String title, String sparqlEndpoint, boolean dereferenceable) throws DuplicateDatasetMetadataException, DatasetMetadataRepositoryWritingException {
 		
 		DatasetMetadata meta = new DatasetMetadata(baseURI, title, null, sparqlEndpoint, dereferenceable, null, null);
@@ -64,6 +66,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 	 * @throws NoSuchDatasetMetadataException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
 	public void deleteDatasetMetadata(String baseURI) throws DatasetMetadataRepositoryWritingException, NoSuchDatasetMetadataException {
 		
 		synchronized (datasetMetadataRepository) {
@@ -84,6 +87,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 	 * @throws DuplicateDatasetMetadataException 
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
 	public void editDatasetMetadata(String baseURI, String newBaseURI, String newTitle, String newSparqlEndpoint, boolean newDereferenceable) throws NoSuchDatasetMetadataException, DatasetMetadataRepositoryWritingException, DuplicateDatasetMetadataException {
 		
 		if (newTitle.equals("")) {
@@ -108,6 +112,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 	 * @return
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public Response getDatasetMetadata(String baseURI) {
 				
 		DatasetMetadata meta = datasetMetadataRepository.getDatasetMetadata(baseURI);
@@ -141,6 +146,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 	 * @return
 	 */
 	@GenerateSTServiceController
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public Response listDatasets() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
