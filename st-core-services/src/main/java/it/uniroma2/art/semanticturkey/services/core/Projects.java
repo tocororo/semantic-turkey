@@ -98,7 +98,11 @@ public class Projects extends STServiceAdapterOLD {
 			throws ProjectDeletionException, IOException {
 		ProjectManager.deleteProject(projectName);
 		// delete the folder about project-user bindings
-		ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+		try {
+			ProjectUserBindingsManager.deletePUBindingsOfProject(ProjectManager.getProjectDescription(projectName));
+		} catch (ProjectAccessException | InvalidProjectNameException | ProjectInexistentException e) {
+			throw new ProjectDeletionException(e);
+		}
 	}
 
 	/**
@@ -296,12 +300,14 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws ModelAccessException
 	 * @throws IOException
 	 * @throws PUBindingException 
+	 * @throws ProjectAccessException 
+	 * @throws ProjectInexistentException 
 	 */
 	@GenerateSTServiceController(method = RequestMethod.POST)
 	public void importProject(MultipartFile importPackage, String newProjectName)
 			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
 			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
-			ModelUpdateException, InvalidProjectNameException, PUBindingException {
+			ModelUpdateException, InvalidProjectNameException, PUBindingException, ProjectInexistentException, ProjectAccessException {
 
 		logger.info("requested to import project from file: " + importPackage);
 
@@ -312,8 +318,9 @@ public class Projects extends STServiceAdapterOLD {
 		STUser loggedUser = UsersManager.getLoggedUser();
 		//TODO is correct to assign administrator role to the user that creates project?
 		//if not how do I handle the administrator role since the role is related to a project?
-		ProjectUserBindingsManager.addRoleToPUBinding(
-				loggedUser.getEmail(), newProjectName, RBACManager.DefaultRole.ADMINISTRATOR);
+		
+		ProjectUserBindingsManager.addRoleToPUBinding(loggedUser, ProjectManager.getProjectDescription(newProjectName),
+				RBACManager.DefaultRole.ADMINISTRATOR);
 	}
 
 	/**

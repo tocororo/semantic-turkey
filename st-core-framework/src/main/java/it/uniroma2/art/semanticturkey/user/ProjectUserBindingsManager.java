@@ -71,10 +71,10 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @return
 	 */
-	public static ProjectUserBinding getPUBinding(STUser user, String projectName) {
+	public static ProjectUserBinding getPUBinding(STUser user, AbstractProject project) {
 		ProjectUserBinding puBinding = null;
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUserEmail().equals(user.getEmail()) && pub.getProjectName().equals(projectName)) {
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
 				puBinding = pub;
 			}
 		}
@@ -86,10 +86,10 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @return
 	 */
-	public static Collection<ProjectUserBinding> listPUBindingsOfProject(String projectName) {
+	public static Collection<ProjectUserBinding> listPUBindingsOfProject(AbstractProject project) {
 		Collection<ProjectUserBinding> pubList = new ArrayList<>();
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getProjectName().equals(projectName)) {
+			if (pub.getProject().getName().equals(project.getName())) {
 				pubList.add(pub);
 			}
 		}
@@ -101,8 +101,8 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @return
 	 */
-	public static boolean existsPUBindingsOfProject(String projectName) {
-		return !getProjBindingsFolder(projectName).exists();
+	public static boolean existsPUBindingsOfProject(AbstractProject project) {
+		return !getProjBindingsFolder(project).exists();
 	}
 	
 	/**
@@ -112,11 +112,11 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfProject(String projectName) throws PUBindingException {
+	public static void createPUBindingsOfProject(AbstractProject project) throws PUBindingException {
 		Collection<STUser> users = UsersManager.listUsers();
 		//for each user creates the binding with the given project
 		for (STUser u : users) {
-			createPUBinding(new ProjectUserBinding(projectName, u.getEmail()));
+			createPUBinding(new ProjectUserBinding(project, u));
 		}
 	}
 	
@@ -125,15 +125,15 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public static void deletePUBindingsOfProject(String projectName) throws IOException {
+	public static void deletePUBindingsOfProject(AbstractProject project) throws IOException {
 		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
 		while (itPUB.hasNext()) {
-			if (itPUB.next().getProjectName().equals(projectName)) {
+			if (itPUB.next().getProject().getName().equals(project.getName())) {
 				itPUB.remove();
 			}
 		}
 		//delete folder about the project's bindings
-		FileUtils.deleteDirectory(getProjBindingsFolder(projectName));
+		FileUtils.deleteDirectory(getProjBindingsFolder(project));
 	}
 	
 	/**
@@ -144,12 +144,12 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfUser(String userEmail) throws ProjectAccessException, PUBindingException {
+	public static void createPUBindingsOfUser(STUser user) throws ProjectAccessException, PUBindingException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
 			if (abstrProj instanceof Project<?>) {
-				createPUBinding(new ProjectUserBinding(abstrProj.getName(), userEmail));
+				createPUBinding(new ProjectUserBinding(abstrProj, user));
 			}
 		}
 	}
@@ -159,15 +159,15 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @throws IOException 
 	 */
-	public static void deletePUBindingsOfUser(String userEmail) throws IOException {
+	public static void deletePUBindingsOfUser(STUser user) throws IOException {
 		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
 		while (itPUB.hasNext()) {
-			if (itPUB.next().getUserEmail().equals(userEmail)) {
+			if (itPUB.next().getUser().getEmail().equals(user.getEmail())) {
 				itPUB.remove();
 			}
 		}
 		//delete folders about the user's bindings
-		for (File userBindingFolder : getUserBindingsFolders(userEmail)) {
+		for (File userBindingFolder : getUserBindingsFolders(user)) {
 			FileUtils.deleteDirectory(userBindingFolder);
 		}
 	}
@@ -179,10 +179,10 @@ public class ProjectUserBindingsManager {
 	 * @param roles
 	 * @throws PUBindingException
 	 */
-	public static void addRolesToPUBinding(String userEmail, String projectName, Collection<String> roles) throws PUBindingException {
+	public static void addRolesToPUBinding(STUser user, AbstractProject project, Collection<Role> roles) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
-				for (String r : roles) {
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+				for (Role r : roles) {
 					pub.addRole(r);
 				}
 				createOrUpdatePUBindingFolder(pub);
@@ -198,9 +198,9 @@ public class ProjectUserBindingsManager {
 	 * @param roles
 	 * @throws PUBindingException
 	 */
-	public static void addRoleToPUBinding(String userEmail, String projectName, String role) throws PUBindingException {
+	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
 				pub.addRole(role);
 				createOrUpdatePUBindingFolder(pub);
 				return;
@@ -215,10 +215,10 @@ public class ProjectUserBindingsManager {
 	 * @param role
 	 * @throws PUBindingException
 	 */
-	public static void removeRoleFromPUBinding(String userEmail, String projectName, String role) throws PUBindingException {
+	public static void removeRoleFromPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUserEmail().equals(userEmail) && pub.getProjectName().equals(projectName)) {
-				Collection<String> roles = pub.getRolesName();
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+				Collection<Role> roles = pub.getRoles();
 				roles.remove(role);
 				pub.setRoles(roles);
 				createOrUpdatePUBindingFolder(pub);
@@ -232,9 +232,9 @@ public class ProjectUserBindingsManager {
 	 * @param role
 	 * @throws PUBindingException 
 	 */
-	public static void removeRoleFromPUBindings(Project<?> project, String role) throws PUBindingException {
-		for (ProjectUserBinding pub : listPUBindingsOfProject(project.getName())) {
-			Collection<String> roles = pub.getRolesName();
+	public static void removeRoleFromPUBindings(AbstractProject project, Role role) throws PUBindingException {
+		for (ProjectUserBinding pub : listPUBindingsOfProject(project)) {
+			Collection<Role> roles = pub.getRoles();
 			roles.remove(role);
 			pub.setRoles(roles);
 			createOrUpdatePUBindingFolder(pub);
@@ -262,8 +262,8 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @return
 	 */
-	public static File getProjBindingsFolder(String projectName) {
-		return new File(Resources.getProjectUserBindingsDir() + File.separator + projectName);
+	public static File getProjBindingsFolder(AbstractProject project) {
+		return new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName());
 	}
 	
 	/**
@@ -292,8 +292,8 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @return
 	 */
-	public static File getPUBindingsFolder(String projectName, String userEmail) {
-		return new File(getProjBindingsFolder(projectName) + File.separator + STUser.getUserFolderName(userEmail));
+	public static File getPUBindingsFolder(AbstractProject project, STUser user) {
+		return new File(getProjBindingsFolder(project) + File.separator + STUser.encodeUserEmail(user.getEmail()));
 	}
 	
 	/**
@@ -301,12 +301,12 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @return
 	 */
-	public static Collection<File> getUserBindingsFolders(String userEmail) {
+	public static Collection<File> getUserBindingsFolders(STUser user) {
 		Collection<File> userBindingsFolders = new ArrayList<>();
 		Collection<File> projBindFolders = getAllProjBindingsFolders();
 		//get all subfolder of "pu_binding/<projectName>" folder (one subfolder for each user)
 		for (File projFolder : projBindFolders) {
-			userBindingsFolders.add(new File(projFolder, STUser.getUserFolderName(userEmail)));
+			userBindingsFolders.add(new File(projFolder, STUser.encodeUserEmail(user.getEmail())));
 		}
 		return userBindingsFolders;
 	}
@@ -317,8 +317,8 @@ public class ProjectUserBindingsManager {
 	 * @return
 	 */
 	private static File getPUBindingDetailsFile(ProjectUserBinding puBinding) {
-		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + puBinding.getProjectName() 
-			+ File.separator + STUser.getUserFolderName(puBinding.getUserEmail()));
+		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + puBinding.getProject().getName() 
+			+ File.separator + STUser.encodeUserEmail(puBinding.getUser().getEmail()));
 		if (!bindingFolder.exists()) {
 			bindingFolder.mkdirs();
 		}

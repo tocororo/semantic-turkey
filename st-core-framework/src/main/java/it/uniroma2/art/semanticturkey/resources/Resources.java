@@ -45,6 +45,7 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
@@ -385,9 +386,8 @@ public class Resources {
 
 		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
 			if (abstrProj instanceof Project<?>) {
-				String projName = abstrProj.getName();
 				for (STUser user : UsersManager.listUsers()) {
-					ProjectUserBinding puBinding = new ProjectUserBinding(projName, user.getEmail());
+					ProjectUserBinding puBinding = new ProjectUserBinding(abstrProj, user);
 					if (user.getEmail().equals("admin@vocbench.com")) {
 						puBinding.addRole(RBACManager.DefaultRole.ADMINISTRATOR);
 					}
@@ -437,7 +437,7 @@ public class Resources {
 	}
 	
 	private static void initializeRoles() throws IOException {
-		String[] roles = {
+		Role[] roles = {
 				RBACManager.DefaultRole.ADMINISTRATOR, RBACManager.DefaultRole.LEXICOGRAPHER,
 				RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.PROJECTMANAGER
 		};
@@ -445,10 +445,10 @@ public class Resources {
 		if (!rolesDir.exists()) {
 			rolesDir.mkdirs();
 		}
-		for (String r : roles) {
+		for (Role r : roles) {
 			Utilities.copy(Resources.class.getClassLoader()
-					.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r + ".pl"),
-					new File(rolesDir, "role_" + r + ".pl")
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
+					new File(rolesDir, "role_" + r.getName() + ".pl")
 			);
 		}
 	}

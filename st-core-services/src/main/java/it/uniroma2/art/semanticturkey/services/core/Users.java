@@ -30,7 +30,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
@@ -95,18 +99,23 @@ public class Users extends STServiceAdapter {
 	 * @param projectName
 	 * @return
 	 * @throws JSONException 
+	 * @throws ProjectAccessException 
+	 * @throws ProjectInexistentException 
+	 * @throws InvalidProjectNameException 
 	 */
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/listUsersBoundToProject", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String listUsersBoundToProject(@RequestParam("projectName") String projectName) throws JSONException {
+	public String listUsersBoundToProject(@RequestParam("projectName") String projectName) throws JSONException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("listUsersBoundToProject", RepliesStatus.ok, SerializationType.json);
-		Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(projectName);
+		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(project);
 		JSONArray usersJson = new JSONArray();
 		for (ProjectUserBinding pub : puBindings) {
-			if (!pub.getRolesName().isEmpty()) {
-				usersJson.put(UsersManager.getUserByEmail(pub.getUserEmail()).getAsJSONObject());
+			if (!pub.getRoles().isEmpty()) {
+				usersJson.put(UsersManager.getUserByEmail(pub.getUser().getEmail()).getAsJSONObject());
 			}
 		}
 		jsonResp.getDataElement().put("users", usersJson);
@@ -185,7 +194,7 @@ public class Users extends STServiceAdapter {
 				user.setPhone(phone);
 			}
 			UsersManager.registerUser(user);
-			ProjectUserBindingsManager.createPUBindingsOfUser(email);
+			ProjectUserBindingsManager.createPUBindingsOfUser(user);
 			
 			//TODO to enable when AccessControl role-base is completed (so the admin can set a valid admin email config) 
 //			EmailSender.sendRegistrationMail(email, firstName, lastName);
@@ -408,12 +417,17 @@ public class Users extends STServiceAdapter {
 	 * @return
 	 * @throws IOException 
 	 * @throws JSONException 
+	 * @throws PUBindingException 
 	 */
 	//TODO move to Administration?
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/enableUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled) throws IOException, JSONException  {
+	public String enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
+			throws IOException, JSONException, PUBindingException  {
+		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
+			throw new PUBindingException("Cannot disable current logged user");
+		}
 		STUser user = UsersManager.getUserByEmail(email);
 		if (enabled) {
 			user = UsersManager.updateUserStatus(user, UserStatus.ENABLED);
@@ -436,8 +450,12 @@ public class Users extends STServiceAdapter {
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public String deleteUser(@RequestParam("email") String email) throws IOException {
+		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+		}
 		UsersManager.deleteUser(email);
-		ProjectUserBindingsManager.deletePUBindingsOfUser(email);
+		ProjectUserBindingsManager.deletePUBindingsOfUser(user);
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("deleteUser", RepliesStatus.ok, SerializationType.json);
 		return jsonResp.toString();

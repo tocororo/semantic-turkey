@@ -20,15 +20,17 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.user.Role;
+import it.uniroma2.art.semanticturkey.user.Role.RoleLevel;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 
 public class RBACManager {
 	
 	public static final class DefaultRole {
-		public static final String ADMINISTRATOR = "administrator";
-		public static final String LEXICOGRAPHER = "lexicographer";
-		public static final String MAPPER = "mapper";
-		public static final String PROJECTMANAGER = "projectmanager";
+		public static final Role ADMINISTRATOR = new Role("administrator", RoleLevel.system);
+		public static final Role LEXICOGRAPHER = new Role("lexicographer", RoleLevel.system);
+		public static final Role MAPPER = new Role("mapper", RoleLevel.system);
+		public static final Role PROJECTMANAGER = new Role("projectmanager", RoleLevel.system);
 	}
 	
 	private static final String SYSTEM_PROJ_ID = "SYSTEM";
@@ -103,9 +105,43 @@ public class RBACManager {
 		return rbac;
 	}
 	
-	public static Collection<String> getRoles(AbstractProject project) throws RBACException {
-		String projectName = project == null ? SYSTEM_PROJ_ID : project.getName();
-		return rbacMap.get(projectName).keySet();
+	/**
+	 * Returns the roles defined at system level and in the given project
+	 * @param project
+	 * @return
+	 * @throws RBACException
+	 */
+	public static Collection<Role> getRoles(AbstractProject project) throws RBACException {
+		Collection<Role> roles = new ArrayList<>(); 
+		for (String role: rbacMap.get(SYSTEM_PROJ_ID).keySet()) {
+			roles.add(new Role(role, RoleLevel.system));
+		}
+		if (project != null) {
+			for (String role: rbacMap.get(project.getName()).keySet()) {
+				roles.add(new Role(role, RoleLevel.project));
+			}
+		}
+		return roles;
+	}
+	
+	/**
+	 * Returns the role with the given name, <code>null</code> if no role is found with the given name.
+	 * This method first searches for the role in the given project, then if no role is found, searches at system level.
+	 * @param project
+	 * @param roleName
+	 * @return
+	 */
+	public static Role getRole(AbstractProject project, String roleName) {
+		if (project != null) {
+			if (rbacMap.get(project.getName()).keySet().contains(roleName)) {
+				return new Role(roleName, RoleLevel.project); 
+			} else if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+				return new Role(roleName, RoleLevel.system);
+			}
+		} else {
+			return new Role(roleName, RoleLevel.system);
+		}
+		return null;
 	}
 	
 	/**

@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.user;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -7,15 +9,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
+
 public class STUser implements UserDetails {
 
 	private static final long serialVersionUID = -5621952496841740959L;
 	
+	private IRI iri;
 	private String firstName;
 	private String lastName;
 	private String password; //encoded
@@ -34,12 +41,32 @@ public class STUser implements UserDetails {
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
 	public STUser(String email, String password, String firstName, String lastName) {
+		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, encodeUserEmail(email));
+		this.iri = iri;
 		this.email = email;
 		this.password = password;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.authorities = new ArrayList<GrantedAuthority>();
 		this.status = UserStatus.REGISTERED;
+	}
+	
+	public STUser(IRI iri, String email, String password, String firstName, String lastName) {
+		this.iri = iri;
+		this.email = email;
+		this.password = password;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.authorities = new ArrayList<GrantedAuthority>();
+		this.status = UserStatus.REGISTERED;
+	}
+	
+	public IRI getIRI() {
+		return iri;
+	}
+	
+	public void setIRI(IRI iri) {
+		this.iri = iri;
 	}
 	
 	public String getFirstName() {
@@ -228,15 +255,14 @@ public class STUser implements UserDetails {
 		return s;
 	}
 	
-	/**
-	 * Processes the user's email and returns a string to use as name of the user folder
-	 * @param userEmail
-	 * @return
-	 */
-	public static String getUserFolderName(String userEmail) {
-		String folderName = userEmail.replace("@", "AT");
-		folderName = folderName.replace(".", "_");
-		return folderName;
+	public static String encodeUserEmail(String email) {
+		String encodedEMail = "";
+		try {
+			encodedEMail = URLEncoder.encode(email, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		return encodedEMail;
 	}
 
 }

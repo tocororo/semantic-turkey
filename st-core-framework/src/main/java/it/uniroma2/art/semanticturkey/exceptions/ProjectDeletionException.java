@@ -38,4 +38,8 @@ public class ProjectDeletionException extends Exception {
 		super(msg);
 	}
 	
+	public ProjectDeletionException(Exception e) {
+		super(e);
+	}
+	
 }

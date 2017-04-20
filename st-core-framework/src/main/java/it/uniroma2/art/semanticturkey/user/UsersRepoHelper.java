@@ -13,9 +13,12 @@ import java.util.Collection;
 import java.util.Date;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.ORG;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -29,6 +32,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +47,7 @@ public class UsersRepoHelper {
 	
 	private DateFormat dateFormat;
 	
+	private String BINDING_IRI = "userIri";
 	private String BINDING_FIRST_NAME = "firstName";
 	private String BINDING_LAST_NAME = "lastName";
 	private String BINDING_PASSWORD = "password";
@@ -67,7 +72,7 @@ public class UsersRepoHelper {
 	
 	public void loadUserDetails(File userDetailsFile) throws RDFParseException, RepositoryException, IOException {
 		RepositoryConnection conn = repository.getConnection();
-		conn.add(userDetailsFile, UserVocabulary.URI, RDFFormat.TURTLE);
+		conn.add(userDetailsFile, UserVocabulary.BASEURI, RDFFormat.TURTLE);
 		conn.close();
 	}
 	
@@ -77,35 +82,37 @@ public class UsersRepoHelper {
 	 */
 	public void insertUser(STUser user) {
 		String query = "INSERT DATA {"
-				+ " _:user a <" + UserVocabulary.USER + "> ."
-				+ " _:user <" + UserVocabulary.FIRST_NAME + "> '" + user.getFirstName() + "' ."
-				+ " _:user <" + UserVocabulary.LAST_NAME + "> '" + user.getLastName() + "' ."
-				+ " _:user <" + UserVocabulary.EMAIL + "> '" + user.getEmail() + "' ."
-				+ " _:user <" + UserVocabulary.PASSWORD + "> '" + user.getPassword() + "' ."
-				+ " _:user <" + UserVocabulary.REGISTRATION_DATE + "> '" + dateFormat.format(user.getRegistrationDate()) + "' ."
-				+ " _:user <" + UserVocabulary.STATUS + "> '" + user.getStatus() + "' .";
+				+ " ?" + BINDING_IRI + " a " + NTriplesUtil.toNTriplesString(UserVocabulary.USER) + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " '" + user.getFirstName() + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " '" + user.getLastName() + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.MBOX) + " '" + user.getEmail() + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.PASSWORD) + " '" + user.getPassword() + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " '" + dateFormat.format(user.getRegistrationDate()) + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.STATUS) + " '" + user.getStatus() + "' .";
 		if (user.getUrl() != null) {
-			query += " _:user <" + UserVocabulary.URL+ "> '" + user.getUrl() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " '" + user.getUrl() + "' .";
 		}
 		if (user.getPhone() != null) {
-			query += " _:user <" + UserVocabulary.PHONE+ "> '" + user.getPhone() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " '" + user.getPhone() + "' .";
 		}
 		if (user.getBirthday() != null) {
-			query += " _:user <" + UserVocabulary.BIRTHDAY+ "> '" + dateFormat.format(user.getBirthday()) + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.BIRTHDAY) + " '" + dateFormat.format(user.getBirthday()) + "' .";
 		}
 		if (user.getGender() != null) {
-			query += " _:user <" + UserVocabulary.GENDER+ "> '" + user.getGender() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GENDER) + " '" + user.getGender() + "' .";
 		}
 		if (user.getAffiliation() != null) {
-			query += " _:user <" + UserVocabulary.AFFILIATION+ "> '" + user.getAffiliation() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " '" + user.getAffiliation() + "' .";
 		}
 		if (user.getCountry() != null) {
-			query += " _:user <" + UserVocabulary.COUNTRY+ "> '" + user.getCountry() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.COUNTRY) + " '" + user.getCountry() + "' .";
 		}
 		if (user.getAddress() != null) {
-			query += " _:user <" + UserVocabulary.ADDRESS+ "> '" + user.getAddress() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " '" + user.getAddress() + "' .";
 		}
 		query += " }";
+		
+		query = query.replace("?" + BINDING_IRI, NTriplesUtil.toNTriplesString(user.getIRI()));
 		
 		//execute query
 		logger.debug(query);
@@ -122,20 +129,20 @@ public class UsersRepoHelper {
 	 */
 	public Collection<STUser> listUsers() {
 		String query = "SELECT * WHERE {"
-				+ " ?userNode a <" + UserVocabulary.USER + "> ."
-				+ " ?userNode <" + UserVocabulary.FIRST_NAME + "> ?" + BINDING_FIRST_NAME + " ."
-				+ " ?userNode <" + UserVocabulary.LAST_NAME + "> ?" + BINDING_LAST_NAME + " ."
-				+ " ?userNode <" + UserVocabulary.PASSWORD + "> ?" + BINDING_PASSWORD + " ."
-				+ " ?userNode <" + UserVocabulary.EMAIL + "> ?" + BINDING_EMAIL + " ."
-				+ " ?userNode <" + UserVocabulary.REGISTRATION_DATE + "> ?" + BINDING_REGISTRATION_DATE + " ."
-				+ " ?userNode <" + UserVocabulary.STATUS + "> ?" + BINDING_STATUS + " ."
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.URL + "> ?" + BINDING_URL + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.PHONE + "> ?" + BINDING_PHONE + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.BIRTHDAY + "> ?" + BINDING_BIRTHDAY + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.GENDER + "> ?" + BINDING_GENDER + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.AFFILIATION + "> ?" + BINDING_AFFILIATION + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.COUNTRY + "> ?" + BINDING_COUNTRY + " . }"
-				+ " OPTIONAL { ?userNode <" + UserVocabulary.ADDRESS + "> ?" + BINDING_ADDRESS + " . }"
+				+ " ?" + BINDING_IRI + " a " + NTriplesUtil.toNTriplesString(UserVocabulary.USER) + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " ?" + BINDING_FIRST_NAME + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " ?" + BINDING_LAST_NAME + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.PASSWORD) + " ?" + BINDING_PASSWORD + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.MBOX) + " ?" + BINDING_EMAIL + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " ?" + BINDING_REGISTRATION_DATE + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.STATUS) + " ?" + BINDING_STATUS + " ."
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " ?" + BINDING_URL + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " ?" + BINDING_PHONE + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.BIRTHDAY) + " ?" + BINDING_BIRTHDAY + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GENDER) + " ?" + BINDING_GENDER + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " ?" + BINDING_AFFILIATION + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.COUNTRY) + " ?" + BINDING_COUNTRY + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " ?" + BINDING_ADDRESS + " . }"
 				+ "}";
 		
 		//execute query
@@ -182,14 +189,14 @@ public class UsersRepoHelper {
 	private Collection<STUser> getUsersFromTupleResult(TupleQueryResult result) {
 		// collect users
 		Collection<STUser> list = new ArrayList<STUser>();
-//		tupleLoop: 
+
 		while (result.hasNext()) {
 			BindingSet tuple = result.next();
 
+			IRI iri = (IRI) tuple.getValue(BINDING_IRI);
 			String email = tuple.getValue(BINDING_EMAIL).stringValue();
-			STUser user = new STUser(email, tuple.getValue(BINDING_PASSWORD).stringValue(),
-					tuple.getValue(BINDING_FIRST_NAME).stringValue(),
-					tuple.getValue(BINDING_LAST_NAME).stringValue());
+			STUser user = new STUser(iri, email, tuple.getValue(BINDING_PASSWORD).stringValue(),
+					tuple.getValue(BINDING_FIRST_NAME).stringValue(), tuple.getValue(BINDING_LAST_NAME).stringValue());
 			
 			user.setStatus(UserStatus.valueOf(tuple.getValue(BINDING_STATUS).stringValue()));
 			

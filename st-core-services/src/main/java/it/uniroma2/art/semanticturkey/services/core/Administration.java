@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,6 +31,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -47,6 +47,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -99,26 +100,31 @@ public class Administration extends STServiceAdapter {
 	//PROJECT-USER BINDING SERVICES
 	
 	/**
-	 * @throws RBACException
+	 * @throws PUBindingException
 	 * @throws JSONException 
+	 * @throws ProjectAccessException 
+	 * @throws ProjectInexistentException 
+	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
-	public JsonNode getProjectUserBinding(String projectName, String email) throws RBACException, JSONException {
+	public JsonNode getProjectUserBinding(String projectName, String email) throws PUBindingException, JSONException, 
+		InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
-			throw new RBACException("No user found with email " + email);
+			throw new PUBindingException("No user found with email " + email);
 		}
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
+		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
-			throw new RBACException("No binding found for user with email " + email + " and project " + projectName);
+			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
 		}
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode bindingNode = jsonFactory.objectNode();
-		bindingNode.set("userEmail", jsonFactory.textNode(puBinding.getUserEmail()));
-		bindingNode.set("projectName", jsonFactory.textNode(puBinding.getProjectName()));
+		bindingNode.set("userEmail", jsonFactory.textNode(puBinding.getUser().getEmail()));
+		bindingNode.set("projectName", jsonFactory.textNode(puBinding.getProject().getName()));
 		ArrayNode rolesArrayNode = jsonFactory.arrayNode();
-		for (String role: puBinding.getRolesName()) {
-			rolesArrayNode.add(role);
+		for (Role role: puBinding.getRoles()) {
+			rolesArrayNode.add(role.getName());
 		}
 		bindingNode.set("roles", rolesArrayNode);
 		return bindingNode;
@@ -126,54 +132,76 @@ public class Administration extends STServiceAdapter {
 	
 	/**
 	 * @throws PUBindingException 
-	 * @throws RBACException 
+	 * @throws ProjectAccessException 
+	 * @throws ProjectInexistentException 
+	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
-	public void addProjectUserBinding(String projectName, String email, String[] roles) throws RBACException, PUBindingException {
+	public void addProjectUserBinding(String projectName, String email, String[] roles) throws PUBindingException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
-			throw new RBACException("No user found with email " + email);
+			throw new PUBindingException("No user found with email " + email);
 		}
-
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
+		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
-			throw new RBACException("No binding found for user with email " + email + " and project " + projectName);
+			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
 		}
-		ProjectUserBindingsManager.addRolesToPUBinding(email, projectName, Arrays.asList(roles));
+		Collection<Role> roleList = new ArrayList<>();
+		for (String r : roles) {
+			Role role = RBACManager.getRole(getProject(), r);
+			if (role == null) {
+				throw new PUBindingException("No role '" + r + "' found");
+			} else {
+				roleList.add(role);
+			}
+		}
+		ProjectUserBindingsManager.addRolesToPUBinding(user, project, roleList);
 	}
 	
 	/**
 	 * @throws RBACException 
-	 * @throws PUBindingException 
 	 */
 	@STServiceOperation
-	public void addRoleToUserInProject(String projectName, String email, String role) throws RBACException, PUBindingException {
+	public void addRoleToUserInProject(String projectName, String email, String role) throws PUBindingException, 
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
-			throw new RBACException("No user found with email " + email);
+			throw new PUBindingException("No user found with email " + email);
 		}
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
+		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
-			throw new RBACException("No binding found for user with email " + email + " and project " + projectName);
+			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
 		}
-		ProjectUserBindingsManager.addRolesToPUBinding(email, projectName, Arrays.asList(new String[]{role}));
+		Role aRole = RBACManager.getRole(getProject(), role);
+		if (aRole == null) {
+			throw new PUBindingException("No role '" + role + "' found");
+		}
+		ProjectUserBindingsManager.addRoleToPUBinding(user, project, aRole);
 	}
 	
 	/**
 	 * @throws PUBindingException 
-	 * @throws RBACException 
 	 */
 	@STServiceOperation
-	public void removeRoleToUserInProject(String projectName, String email, String role) throws RBACException, PUBindingException {
+	public void removeRoleToUserInProject(String projectName, String email, String role) throws PUBindingException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
-			throw new RBACException("No user found with email " + email);
+			throw new PUBindingException("No user found with email " + email);
 		}
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
+		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
-			throw new RBACException("No binding found for user with email " + email + " and project " + projectName);
+			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
 		}
-		ProjectUserBindingsManager.removeRoleFromPUBinding(email, projectName, role);
+		Role aRole = RBACManager.getRole(getProject(), role);
+		if (aRole == null) {
+			throw new PUBindingException("No role '" + role + "' found");
+		}
+		ProjectUserBindingsManager.removeRoleFromPUBinding(user, project, aRole);
 	}
 	
 	//ROLES AND CAPABILITIES SERVICES
@@ -192,20 +220,12 @@ public class Administration extends STServiceAdapter {
 		ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode rolesArrayNode = jsonFactory.arrayNode();
-		//system roles
-		for (String role : RBACManager.getRoles(null)) {
-			ObjectNode roleNode = jsonFactory.objectNode();
-			roleNode.set("name", jsonFactory.textNode(role));
-			roleNode.set("level", jsonFactory.textNode("system"));
-			rolesArrayNode.add(roleNode);
-		}
-		//project roles
 		if (projectName != null) {
 			Project<?> project = ProjectManager.getProjectDescription(projectName);
-			for (String role : RBACManager.getRoles(project)) {
+			for (Role role : RBACManager.getRoles(project)) {
 				ObjectNode roleNode = jsonFactory.objectNode();
-				roleNode.set("name", jsonFactory.textNode(role));
-				roleNode.set("level", jsonFactory.textNode("project"));
+				roleNode.set("name", jsonFactory.textNode(role.getName()));
+				roleNode.set("level", jsonFactory.textNode(role.getLevel().name()));
 				rolesArrayNode.add(roleNode);
 			}
 		}
@@ -260,8 +280,12 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public void deleteRole(String roleName) throws PUBindingException {
+		Role aRole = RBACManager.getRole(getProject(), roleName);
+		if (aRole == null) {
+			throw new PUBindingException("No role '" + roleName + "' found");
+		}
 		RBACManager.deleteRole(getProject(), roleName);
-		ProjectUserBindingsManager.removeRoleFromPUBindings(getProject(), roleName);
+		ProjectUserBindingsManager.removeRoleFromPUBindings(getProject(), aRole);
 	}
 	
 	/**

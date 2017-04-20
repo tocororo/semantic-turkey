@@ -958,8 +958,8 @@ public class ProjectManager {
 				// if there aren't the folders for the project-user bindings of the current project, create them
 				// this scenario could happen when the project is imported
 				// (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
-				if (ProjectUserBindingsManager.existsPUBindingsOfProject(projectName)) {
-					ProjectUserBindingsManager.createPUBindingsOfProject(projectName);
+				if (ProjectUserBindingsManager.existsPUBindingsOfProject(project)) {
+					ProjectUserBindingsManager.createPUBindingsOfProject(project);
 				}
 				RBACManager.loadRBACProcessor(project);
 				

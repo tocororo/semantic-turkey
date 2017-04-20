@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
@@ -27,6 +28,7 @@ import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
@@ -132,11 +134,10 @@ public class STAuthorizationEvaluator {
 		// topicSubject, topicScope and accessPrivilege triple
 		
 		STUser loggedUser = UsersManager.getLoggedUser();
-		Collection<String> userRoles = getRoles(loggedUser);
-		System.out.println("User roles: " + userRoles);//TODO gestire ruoli utenti e assegnazione capab
+		Collection<Role> userRoles = getRoles(loggedUser);
 		boolean prologGoalSatisfied = false;
-		for (String role: userRoles) {
-			RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role);
+		for (Role role: userRoles) {
+			RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
 			if (rbac.authorizes(prologGoal)) {
 				prologGoalSatisfied = true;
 				break;
@@ -168,11 +169,11 @@ public class STAuthorizationEvaluator {
 	 * @param user
 	 * @return
 	 */
-	private Collection<String> getRoles(STUser user) {
-		String projectName = getTargetForRBAC().getName();
-		if (projectName != null) {
-			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, projectName);
-			return puBinding.getRolesName();
+	private Collection<Role> getRoles(STUser user) {
+		AbstractProject project = getTargetForRBAC();
+		if (project != null) {
+			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
+			return puBinding.getRoles();
 		} else {
 			return Collections.emptyList();
 		}

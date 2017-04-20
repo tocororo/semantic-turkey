@@ -33,7 +33,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -81,7 +80,7 @@ public class Projects2 extends STServiceAdapter {
 		//TODO is correct to assign administrator role to the user that creates project?
 		//if not how do I handle the administrator role since the role is related to a project?
 		ProjectUserBindingsManager.addRoleToPUBinding(
-				loggedUser.getEmail(), projectName, RBACManager.DefaultRole.ADMINISTRATOR);
+				loggedUser, proj, RBACManager.DefaultRole.ADMINISTRATOR);
 		
 		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
 		objectNode.set("type", JsonNodeFactory.instance.textNode(proj.getType()));

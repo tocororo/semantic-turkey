@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -87,6 +88,22 @@ public class UsersManager {
 		STUser user = null;
 		for (STUser u : userList) {
 			if (u.getEmail().equals(email)) {
+				user = u;
+			}
+		}
+		return user;
+	}
+	
+	/**
+	 * Returns the user with the given IRI. Null if there is no user with the given IRI.
+	 * 
+	 * @param iri
+	 * @return
+	 */
+	public static STUser getUserByIRI(IRI iri) {
+		STUser user = null;
+		for (STUser u : userList) {
+			if (u.getIRI().equals(iri)) {
 				user = u;
 			}
 		}
@@ -294,7 +311,7 @@ public class UsersManager {
 	 * @return
 	 */
 	public static File getUserFolder(String userEmail) {
-		return new File(Resources.getUsersDir() + File.separator + STUser.getUserFolderName(userEmail));
+		return new File(Resources.getUsersDir() + File.separator + STUser.encodeUserEmail(userEmail));
 	}
 	
 	/**
@@ -322,7 +339,7 @@ public class UsersManager {
 	 * @return
 	 */
 	private static File getUserDetailsFile(String userEmail) {
-		File userFolder = new File(Resources.getUsersDir() + File.separator + STUser.getUserFolderName(userEmail));
+		File userFolder = new File(Resources.getUsersDir() + File.separator + STUser.encodeUserEmail(userEmail));
 		if (!userFolder.exists()) {
 			userFolder.mkdir();
 		}

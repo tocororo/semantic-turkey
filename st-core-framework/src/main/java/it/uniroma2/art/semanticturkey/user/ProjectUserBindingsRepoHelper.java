@@ -4,13 +4,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -24,10 +29,17 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.user.Role.RoleLevel;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
 public class ProjectUserBindingsRepoHelper {
@@ -49,7 +61,7 @@ public class ProjectUserBindingsRepoHelper {
 	
 	public void loadBindingDetails(File bindingDetailsFile) throws RDFParseException, RepositoryException, IOException {
 		RepositoryConnection conn = repository.getConnection();
-		conn.add(bindingDetailsFile, UserVocabulary.URI, RDFFormat.TURTLE);
+		conn.add(bindingDetailsFile, UserVocabulary.BASEURI, RDFFormat.TURTLE);
 		conn.close();
 	}
 	
@@ -59,11 +71,14 @@ public class ProjectUserBindingsRepoHelper {
 	 */
 	public void insertBinding(ProjectUserBinding puBinding) {
 		String query = "INSERT DATA {"
-				+ " _:binding a <" + UserVocabulary.BINDING + "> ."
-				+ " _:binding <" + UserVocabulary.USER_PROP + "> '" + puBinding.getUserEmail() + "' ."
-				+ " _:binding <" + UserVocabulary.PROJECT + "> '" + puBinding.getProjectName() + "' .";
-		for (String role : puBinding.getRolesName()) {
-			query += " _:binding <" + UserVocabulary.ROLE_PROP + "> '" + role + "' .";
+				+ " _:binding a " + NTriplesUtil.toNTriplesString(UserVocabulary.BINDING) + " ."
+				+ " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.USER_PROP) + " " 
+				+ NTriplesUtil.toNTriplesString(puBinding.getUser().getIRI()) + " ."
+				+ " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.PROJECT) + " " 
+				+ NTriplesUtil.toNTriplesString(getProjectIRI(puBinding.getProject())) + " .";
+		for (Role role : puBinding.getRoles()) {
+			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " " 
+					+ NTriplesUtil.toNTriplesString(getRoleIRI(role, puBinding.getProject())) + " .";
 		}
 		query += " }";
 		
@@ -83,10 +98,10 @@ public class ProjectUserBindingsRepoHelper {
 	 */
 	public Collection<ProjectUserBinding> listPUBindings() {
 		String query = "SELECT * WHERE {"
-				+ " ?binding a <" + UserVocabulary.BINDING + "> ."
-				+ " ?binding <" + UserVocabulary.USER_PROP + "> ?" + BINDING_USER + " ."
-				+ " ?binding <" + UserVocabulary.PROJECT + "> ?" + BINDING_PROJECT + " ."
-				+ " OPTIONAL { ?binding <" + UserVocabulary.ROLE_PROP + "> ?" + BINDING_ROLE + " . }"
+				+ " ?binding a " + NTriplesUtil.toNTriplesString(UserVocabulary.BINDING) + " ."
+				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.USER_PROP) + " ?" + BINDING_USER + " ."
+				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.PROJECT) + " ?" + BINDING_PROJECT + " ."
+				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " ?" + BINDING_ROLE + " . }"
 				+ " }";
 		// execute query
 		logger.debug(query);
@@ -109,28 +124,28 @@ public class ProjectUserBindingsRepoHelper {
 		tupleLoop: while (result.hasNext()) {
 			BindingSet tuple = result.next();
 
-			String projectName = tuple.getValue(BINDING_PROJECT).stringValue();
-			String userEmail = tuple.getValue(BINDING_USER).stringValue();
+			AbstractProject project = getProjectFromIRI((IRI) tuple.getValue(BINDING_PROJECT));
+			STUser user = getUserFromIRI((IRI) tuple.getValue(BINDING_USER));
 			
-			ProjectUserBinding puBinding = new ProjectUserBinding(projectName, userEmail);
+			ProjectUserBinding puBinding = new ProjectUserBinding(project, user);
 			
-			String roleName = null;
+			Role role = null;
 			if (tuple.getBinding(BINDING_ROLE) != null) {
-				roleName = tuple.getValue(BINDING_ROLE).stringValue();
+				role = getRoleFromIRI((IRI) tuple.getValue(BINDING_ROLE));
 			}
 			
-			if (roleName != null) {
+			if (role != null) {
 				// Check if the current tuple is about a binding already fetched (and differs just for a role)
 				for (ProjectUserBinding b : list) {
-					if (b.getProjectName().equals(projectName) && b.getUserEmail().equals(userEmail)) {
+					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user)) {
 						// binding already in list => add the role to it
-						b.addRole(roleName);
+						b.addRole(role);
 						continue tupleLoop;
 					}
 				}
 				//if it reach this point, current binding was not already fetched
 				//so add the role to the binding and then the binding to the list
-				puBinding.addRole(roleName);
+				puBinding.addRole(role);
 			}
 
 			list.add(puBinding);
@@ -165,6 +180,71 @@ public class ProjectUserBindingsRepoHelper {
 	
 	public void shutDownRepository() {
 		repository.shutDown();
+	}
+	
+	private IRI getProjectIRI(AbstractProject project) {
+		return SimpleValueFactory.getInstance().createIRI(UserVocabulary.PROJECTSBASEURI, encodeProjectName(project));
+	}
+	
+	private IRI getRoleIRI(Role role, AbstractProject project) {
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+		if (role.getLevel() == RoleLevel.project) {
+			return vf.createIRI(UserVocabulary.ROLESBASEURI, encodeProjectName(project) + "/" + role.getName());
+		} else { //system level
+			return vf.createIRI(UserVocabulary.ROLESBASEURI, role.getName());
+		}
+	}
+	
+	private AbstractProject getProjectFromIRI(IRI projectIRI) {
+		try {
+			String projectName = "";
+			try {
+				projectName = URLDecoder.decode(projectIRI.getLocalName(), "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+			return ProjectManager.getProjectDescription(projectName);
+		} catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException e) {
+			throw new IllegalStateException("Invalid binding: IRI " + projectIRI.stringValue()
+				+ " references to a not existing project");
+		}
+	}
+	
+	private STUser getUserFromIRI(IRI userIRI) {
+		STUser user = UsersManager.getUserByIRI(userIRI);
+		if (user == null) {
+			throw new IllegalStateException("Invalid binding: IRI " + userIRI.stringValue()
+				+ " references to a not existing user");
+		}
+		return user;
+	}
+	
+	private Role getRoleFromIRI(IRI roleIRI) {
+		String roleString = roleIRI.stringValue(); 
+		String projAndRole = roleString.substring(UserVocabulary.ROLESBASEURI.length());
+		try {
+			projAndRole = URLDecoder.decode(projAndRole, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		int separatorIdx = projAndRole.indexOf("/");
+		if (separatorIdx == -1) { //no separator => uri doesn't contain the project name => system role
+			return new Role(projAndRole, RoleLevel.system);
+		} else {
+			String roleName = projAndRole.substring(separatorIdx + 1);
+			return new Role(roleName, RoleLevel.project);
+		}
+		
+	}
+	
+	public static String encodeProjectName(AbstractProject project) {
+		String encodedProjName = "";
+		try {
+			encodedProjName = URLEncoder.encode(project.getName(), "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		return encodedProjName;
 	}
 
 }
