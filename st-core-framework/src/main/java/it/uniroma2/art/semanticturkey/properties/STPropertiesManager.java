@@ -30,6 +30,7 @@ public class STPropertiesManager {
 	
 	public static final String PROP_LANGUAGES = "languages";
 	public static final String PROP_SHOW_FLAGS = "show_flags";
+	public static final String PROP_SHOW_INSTANCES_NUMBER = "show_instances_number";
 	public static final String PROP_ACTIVE_SCHEME = "active_scheme";
 	
 	/*

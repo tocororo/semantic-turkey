@@ -10,9 +10,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -71,6 +71,18 @@ public class Preferences extends STServiceAdapter {
 	@STServiceOperation
 	public void setShowFlags(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
 		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, show+"", getProject(),
+			UsersManager.getLoggedUser());
+	}
+	
+	/**
+	 * Sets the show_instances_number preference. If the property is not set, sets true as default in the preference
+	 * file and returns it.
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	public void setShowInstancesNumb(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
+		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
 	
@@ -136,14 +148,32 @@ public class Preferences extends STServiceAdapter {
 		//show_flags
 		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, getProject(),
 				UsersManager.getLoggedUser());
-		boolean show = true;
+		boolean showFlags = true;
 		if (value != null) {
-			show = Boolean.parseBoolean(value);
+			showFlags = Boolean.parseBoolean(value);
 		} else { //property not set => set default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, show+"", getProject(),
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, showFlags+"", getProject(),
 					UsersManager.getLoggedUser());
 		}
-		preferencesNode.set(STPropertiesManager.PROP_SHOW_FLAGS, jsonFactory.booleanNode(show));
+		preferencesNode.set(STPropertiesManager.PROP_SHOW_FLAGS, jsonFactory.booleanNode(showFlags));
+		
+		//show_instances_number
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, getProject(),
+				UsersManager.getLoggedUser());
+		boolean showInst;
+		try {
+			//default: false in skos, true in owl
+			showInst = getProject().getModelType().getName().contains("SKOS") ? false : true;
+		} catch (ProjectInconsistentException e) {
+			showInst = true;
+		}
+		if (value != null) {
+			showInst = Boolean.parseBoolean(value);
+		} else { //property not set => set default
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, showInst+"",
+					getProject(), UsersManager.getLoggedUser());
+		}
+		preferencesNode.set(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, jsonFactory.booleanNode(showInst));
 		
 		//active_scheme
 		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, getProject(),
