@@ -67,6 +67,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,

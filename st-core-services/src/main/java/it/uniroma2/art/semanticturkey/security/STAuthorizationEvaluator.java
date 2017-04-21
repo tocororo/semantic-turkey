@@ -5,6 +5,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -25,7 +30,10 @@ import it.uniroma2.art.semanticturkey.rbac.HarmingGoalException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -50,7 +58,6 @@ public class STAuthorizationEvaluator {
 	 * To use like follow:
 	 * <code>
 	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
 	 * </code>
 	 * For complete documentation see {@link #isAuthorized(String, String, String)} 
 	 * 
@@ -67,7 +74,7 @@ public class STAuthorizationEvaluator {
 		MalformedGoalException, TheoryNotFoundException, HaltedEngineException, HarmingGoalException {
 		return this.isAuthorized(prologCapability, "{}", crudv);
 	}
-
+	
 	/**
 	 * 
 	 * To use like follow:
@@ -201,6 +208,32 @@ public class STAuthorizationEvaluator {
 		Project<?> project = stServiceContext.getProject();
 		return ProjectManager.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
 				.isAffirmative();
+	}
+	
+	public RDFResourceRolesEnum typeof(Resource resource) {
+		Repository repo = stServiceContext.getProject().getRepository();
+		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
+		try {
+			QueryBuilder qb;
+			StringBuilder sb = new StringBuilder();
+			sb.append(
+					// @formatter:off
+					" SELECT ?resource WHERE {							\n" +
+					" BIND (?temp as ?resource)							\n" +
+					" } 												\n" +
+					" GROUP BY ?resource								\n"
+					// @formatter:on
+			);
+			qb = new QueryBuilder(stServiceContext, sb.toString());
+			qb.setBinding("temp", resource);
+			qb.processRole();
+			Collection<AnnotatedValue<Resource>> res = qb.runQuery();
+			Value role = res.iterator().next().getAttributes().get("role");
+			RDFResourceRolesEnum roleEnum = RDFResourceRolesEnum.valueOf(role.stringValue());
+			return roleEnum;
+		} finally {
+			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
+		}
 	}
 
 }

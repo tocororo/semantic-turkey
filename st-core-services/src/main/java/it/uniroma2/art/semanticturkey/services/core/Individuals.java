@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -37,6 +38,7 @@ public class Individuals extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNamedTypes(@LocallyDefined Resource individual) {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
@@ -61,6 +63,7 @@ public class Individuals extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'U')")
 	public void addType(@LocallyDefined Resource individual, @LocallyDefined Resource type) {
 		String query =
 				"INSERT DATA {					\n" +
@@ -83,6 +86,7 @@ public class Individuals extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'D')")
 	public void removeType(@LocallyDefined Resource individual, @LocallyDefined Resource type) {
 		String query =
 				"DELETE WHERE {					\n" +
