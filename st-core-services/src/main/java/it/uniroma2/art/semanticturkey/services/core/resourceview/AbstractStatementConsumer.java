@@ -90,7 +90,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 
 		if (resource instanceof BNode) {
 			if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.CLASS, true)
-					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.CLASS, true)) {
+					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.CLASS, true)
+					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.RESTRICTION, true)) {
 				Map<String, String> namespaceToprefixMap = QueryResults.stream(repoConn.getNamespaces())
 						.collect(toMap(Namespace::getName, Namespace::getPrefix,
 								(v1, v2) -> v1 != null ? v1 : v2));
