@@ -14,6 +14,17 @@
 			<artifactId>graphdb-free-runtime</artifactId>
 			<version>${graphdb.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>osgi.core</artifactId>
+			<version>${osgi.core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-core-framework</artifactId>
+			<version>${project.version}</version>
+			<type>bundle</type>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -25,8 +36,7 @@
 				<configuration>
 					<instructions>
 						<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
-						<Fragment-Host>org.eclipse.rdf4j</Fragment-Host>
-						<Import-Package>com.ontotext.trree.config,com.ontotext.trree.free,com.ontotext.trree.monitorRepository,com.ontotext.trree.plugin.geo</Import-Package>
+						<Bundle-Activator>it.uniroma2.art.semanticturkey.graphdb.rdf4jbridge.GraphDBRDF4JBridgeActivator</Bundle-Activator>
 					</instructions>
 				</configuration>
 			</plugin>
