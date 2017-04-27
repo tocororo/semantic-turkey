@@ -81,11 +81,11 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 							RDFFormat.RDFXML, rdfBaseURI);
 				}
 
-				if (!conn.hasStatement(null, null, null, false, rdfsBaseURI)) {
-					logger.debug("Loading RDFS vocabulary...");
-					conn.add(OntologyManager.class.getResourceAsStream("rdf-schema.rdf"),
-							rdfsBaseURI.stringValue(), RDFFormat.RDFXML, rdfsBaseURI);
-				}
+//				if (!conn.hasStatement(null, null, null, false, rdfsBaseURI)) {
+//					logger.debug("Loading RDFS vocabulary...");
+//					conn.add(OntologyManager.class.getResourceAsStream("rdf-schema.rdf"),
+//							rdfsBaseURI.stringValue(), RDFFormat.RDFXML, rdfsBaseURI);
+//				}
 
 				if (!conn.hasStatement(null, null, null, false, owlBaseURI)) {
 					logger.debug("Loading OWL vocabulary...");

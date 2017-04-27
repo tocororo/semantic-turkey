@@ -7,6 +7,7 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.GraphDBFreeConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.PredefinedSailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.RDF4JNonPersistentInMemorySailConfigurerConfiguration;
@@ -27,7 +28,8 @@ public class PredefinedSailConfigurerFactory implements PluginFactory<Predefined
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
 		return Arrays.<PluginConfiguration>asList(new RDF4JPersistentInMemorySailConfigurerConfiguration(),
-				new RDF4JNonPersistentInMemorySailConfigurerConfiguration(), new RDF4JNativeSailConfigurerConfiguration());
+				new RDF4JNonPersistentInMemorySailConfigurerConfiguration(),
+				new RDF4JNativeSailConfigurerConfiguration(), new GraphDBFreeConfigurerConfiguration());
 	}
 
 	@Override

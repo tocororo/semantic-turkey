@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -50,13 +51,18 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1481,6 +1487,11 @@ public class ProjectManager {
 					supportSailRepoConfig.setSailImplConfig(supportSailConfig);
 					newSupportRepositoryConfig.setRepositoryImplConfig(supportSailRepoConfig);
 				}
+				
+				Model model = new TreeModel();
+				newCoreRepositoryConfig.export(model);
+				Rio.write(model, System.out, RDFFormat.TURTLE);
+				System.out.println(newCoreRepositoryConfig);
 
 				RepositoryManager remoteRepoManager = RemoteRepositoryManager
 						.getInstance(remoteRepositoryAccess.getServerURL().toString());
