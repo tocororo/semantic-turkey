@@ -1,15 +1,22 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
@@ -19,22 +26,42 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingPredicateBetweenResourcesExpcetion;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 
 /**
  * This class provides services to convert SKOS to SKOSXL data and SKOSXL to SKOS.
@@ -46,6 +73,9 @@ import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 public class Refactor2 extends STServiceAdapter  {
 	
 	private static Logger logger = LoggerFactory.getLogger(Refactor2.class);
+	
+	@Autowired
+	private CustomFormManager cfManager;
 	
 	@STServiceOperation
 	@Write
@@ -452,6 +482,158 @@ public class Refactor2 extends STServiceAdapter  {
 		
 		//execute the query
 		update.execute();
+	}
+	
+	
+	/**
+	 * a refactoring service for moving xLabels to new concepts ( ST-498 ) 
+	 * @return the newCoceptIRI as an AnnotatedValue
+	 */
+	@STServiceOperation
+	@Write
+	//TODO decide which value assign to @PreAuthorize
+	public AnnotatedValue<IRI> spawnNewConceptFromLabel(
+			@Optional @NotLocallyDefined IRI newConcept, 
+			@LocallyDefined Resource xLabel,
+			@LocallyDefined IRI oldConcept,
+			@Optional @LocallyDefined Resource altToPrefXLabel,
+			@Optional @LocallyDefined @Selection Resource broaderConcept, 
+			@LocallyDefined IRI conceptScheme,
+			@Optional String customFormId, 
+			@Optional Map<String, Object> userPromptMap)
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
+					CODAException, NonExistingLiteralFormForResourceException, NonExistingPredicateBetweenResourcesExpcetion {
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		IRI newConceptIRI;
+		//get the label from the input xLabel
+		RepositoryResult<Statement> repositoryResult = getManagedConnection().getStatements(xLabel, SKOSXL.LITERAL_FORM, null, getUserNamedGraphs());
+		Model tempModel = QueryResults.asModel(repositoryResult);
+		if(!Models.objectLiteral(tempModel).isPresent()){
+			throw new NonExistingLiteralFormForResourceException(xLabel);
+		}
+		Literal label = Models.objectLiteral(tempModel).get();
+		if (newConcept == null) {
+			newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
+		} else {
+			newConceptIRI = newConcept;
+		}
+		//add the new concept (just generated using the passed xLabel or the IRI passed by the user) 
+		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
+		
+		//add the passed xLabel to the new concept as skosxl:prefLabel
+		modelAdditions.add(newConceptIRI, SKOSXL.PREF_LABEL, xLabel);
+		
+		//add the new concept to the desired scheme
+		modelAdditions.add(newConceptIRI, SKOS.IN_SCHEME, conceptScheme);
+		if (broaderConcept != null) {
+			modelAdditions.add(newConceptIRI, SKOS.BROADER, broaderConcept);
+		} else {
+			modelAdditions.add(newConceptIRI, SKOS.TOP_CONCEPT_OF, conceptScheme);
+		}
+
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		//find out what property exists between the passed xLabel and the old concept
+		repositoryResult = getManagedConnection().getStatements(oldConcept, null, xLabel, getUserNamedGraphs());
+		tempModel = QueryResults.asModel(repositoryResult);
+		if(!Models.predicate(tempModel).isPresent()){
+			throw new NonExistingPredicateBetweenResourcesExpcetion(oldConcept, xLabel);
+		}
+		IRI predicate = Models.predicate(tempModel).get();
+		modelRemovals.add(oldConcept, predicate, xLabel);
+		
+		//CustomForm further info
+		if (customFormId != null && userPromptMap != null) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, newConceptIRI.stringValue());
+			if (xLabel != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
+				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
+				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
+			}
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+		}
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+		
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newConceptIRI);
+		annotatedValue.setAttribute("role", RDFResourceRolesEnum.concept.name());
+		//TODO compute show
+		return annotatedValue; 
+	}
+	
+	//copied from the service SKOXL
+	/**
+	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
+	 * scheme. The actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in
+	 * turn invokes the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI
+	 * generator</i> will be provided with the following:
+	 * <ul>
+	 * <li><code>concept</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>label</code> and <code>scheme</code> (each, if
+	 * not <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * @param label
+	 *            the preferred label accompanying the concept (can be <code>null</code>)
+	 * @param schemes
+	 *            the schemes to which the concept is being attached at the moment of its creation (can be
+	 *            <code>null</code>)
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public IRI generateConceptIRI(Literal label, List<IRI> schemes) throws URIGenerationException {
+		Map<String, Value> args = new HashMap<>();
+
+		if (label != null) {
+			args.put(URIGenerator.Parameters.label, label);
+		}
+
+		if (schemes != null) {
+			args.put(URIGenerator.Parameters.schemes,
+					SimpleValueFactory.getInstance().createLiteral(TurtleHelp.serializeCollection(schemes)));
+		}
+
+		return generateIRI(URIGenerator.Roles.concept, args);
+	}
+	
+	//copied from the service SKOSXL
+	/**
+	 * TODO: move to STServiceAdapter?
+	 * 
+	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and remove
+	 * suggested by CODA running the PEARL rule defined in the CustomForm with the given <code>cfId</code>  
+	 */
+	private void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions, Model modelRemovals,
+			String cfId, Map<String, Object> userPromptMap, StandardForm stdForm)
+			throws ProjectInconsistentException, CODAException, CustomFormException {
+		CODACore codaCore = getInitializedCodaCore(repoConn);
+		try {
+
+			CustomForm cForm = cfManager.getCustomForm(getProject(), cfId);
+			if (cForm.isTypeGraph()) {
+				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+				UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
+				shutDownCodaCore(codaCore);
+
+				for (ARTTriple t : updates.getInsertTriples()) {
+					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+				for (ARTTriple t : updates.getDeleteTriples()) {
+					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+			} else {
+				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+			}
+		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e) {
+			throw new CODAException(e);
+		} finally {
+			shutDownCodaCore(codaCore);
+		}
 	}
 	
 	private class ConceptLabelValueGraph{
