@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -49,11 +51,13 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserCreationException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 @Validated
 @Controller
 public class Users extends STServiceAdapter {
 	
+	private static Logger logger = LoggerFactory.getLogger(Users.class);
 	
 	/**
 	 * Returns response containing a json representation of the logged user.
@@ -157,8 +161,8 @@ public class Users extends STServiceAdapter {
 			@RequestParam(value = "address", required = false) String address,
 			@RequestParam(value = "affiliation", required = false) String affiliation,
 			@RequestParam(value = "url", required = false) String url,
-			@RequestParam(value = "phone", required = false) String phone) throws MessagingException, ProjectAccessException,
-		UserCreationException, ParseException, PUBindingException {
+			@RequestParam(value = "phone", required = false) String phone) throws ProjectAccessException, 
+				UserCreationException, ParseException, PUBindingException {
 		try {
 			STUser user = new STUser(email, password, firstName, lastName);
 			if (birthday != null) {
@@ -185,10 +189,13 @@ public class Users extends STServiceAdapter {
 			UsersManager.registerUser(user);
 			ProjectUserBindingsManager.createPUBindingsOfUser(user);
 			
-			//TODO to enable when AccessControl role-base is completed (so the admin can set a valid admin email config) 
-//			EmailSender.sendRegistrationMail(email, firstName, lastName);
-			//TODO send mail to system administrator too in order to enable new user
-//			EmailSender.sendRegistrationMailToAdmin(email, firstName, lastName);
+			try {
+				EmailSender.sendRegistrationMailToUser(email, firstName, lastName);
+				EmailSender.sendRegistrationMailToAdmin(email, firstName, lastName);
+			} catch (UnsupportedEncodingException | MessagingException e) {
+				logger.error(Utilities.printFullStackTrace(e));
+				e.printStackTrace();
+			}
 			
 			JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 					.createReplyResponse("registerUser", RepliesStatus.ok, SerializationType.json);
@@ -433,17 +440,20 @@ public class Users extends STServiceAdapter {
 	/**
 	 * Deletes an user
 	 * @param email
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
 	//TODO move to Administration?
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/deleteUser", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'D')")
-	public String deleteUser(@RequestParam("email") String email) throws IOException {
+	public String deleteUser(@RequestParam("email") String email) throws Exception {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+		}
+		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
+			throw new Exception("A user cannot delete himself"); //TODO create a more specific exception
 		}
 		UsersManager.deleteUser(email);
 		ProjectUserBindingsManager.deletePUBindingsOfUser(user);

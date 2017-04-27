@@ -15,18 +15,18 @@ public class STPropertiesManager {
 	//id of the "core plugin", used for preferences/properties that don't belong to any plugin
 	private static final String CORE_PLUGIN_ID = "it.uniroma2.art.semanticturkey";
 	
-	private static final String SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME = "system-preferences-defaults.cfg";
-	private static final String SYSTEM_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.cfg";
-	private static final String SYSTEM_PROJECT_SETTINGS_DEFAULTS_FILE_NAME = "project-settings-defaults.cfg";
-	private static final String SYSTEM_SETTINGS_FILE_NAME = "settings.cfg";
+	private static final String SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME = "system-preferences-defaults.props";
+	private static final String SYSTEM_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.props";
+	private static final String SYSTEM_PROJECT_SETTINGS_DEFAULTS_FILE_NAME = "project-settings-defaults.props";
+	private static final String SYSTEM_SETTINGS_FILE_NAME = "settings.props";
 	
-	private static final String PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "preferences-defaults.cfg";
-	private static final String PROJECT_SETTINGS_FILE_NAME = "settings.cfg";
+	private static final String PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "preferences-defaults.props";
+	private static final String PROJECT_SETTINGS_FILE_NAME = "settings.props";
 	
-	private static final String PU_BINDING_PREFERENCES_FILE_NAME = "preferences.cfg";
+	private static final String PU_BINDING_PREFERENCES_FILE_NAME = "preferences.props";
 	
-	private static final String USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.cfg";
-	private static final String USER_SYSTEM_PREFERENCES_FILE_NAME = "system-preferences.cfg";
+	private static final String USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.props";
+	private static final String USER_SYSTEM_PREFERENCES_FILE_NAME = "system-preferences.props";
 	
 	public static final String PROP_LANGUAGES = "languages";
 	public static final String PROP_SHOW_FLAGS = "show_flags";
@@ -37,21 +37,21 @@ public class STPropertiesManager {
 	 * Methods to get/set properties to/from the following Properties files
 	 * 
 	 * PP: project-preference: user-project --> default(pp,project) --> default(pp,user) --> default(pp,system)
-	 * getProjectPreference(prop, project, user, pluginID)		pu_binding/<projectname>/<username>/plugins/<plugin>/preferences.cfg
-	 * getProjectPreferenceDefault(prop, project, pluginID)		projects/<projectname>/plugins/<plugin>/preference-defaults.cfg
-	 * getProjectPreferenceDefault(prop, user, pluginID)		users/<username>/plugins/<plugin>/project-preference-defaults.cfg
-	 * getProjectPreferenceDefault(prop, pluginID)				system/plugins/<plugin>/project-preference-defaults.cfg	
+	 * getProjectPreference(prop, project, user, pluginID)		pu_binding/<projectname>/<username>/plugins/<plugin>/preferences.props
+	 * getProjectPreferenceDefault(prop, project, pluginID)		projects/<projectname>/plugins/<plugin>/preference-defaults.props
+	 * getProjectPreferenceDefault(prop, user, pluginID)		users/<username>/plugins/<plugin>/project-preference-defaults.props
+	 * getProjectPreferenceDefault(prop, pluginID)				system/plugins/<plugin>/project-preference-defaults.props	
 	 * 
 	 * SP: system-preference: user --> default(sp,system)
-	 * getSystemPreference(prop, user, pluginID)				users/<username>/plugins/<plugin>/system-preferences.cfg
-	 * getSystemPreferenceDefault(prop, pluginID)				system/plugins/<plugin>/system-preference-defaults.cfg
+	 * getSystemPreference(prop, user, pluginID)				users/<username>/plugins/<plugin>/system-preferences.props
+	 * getSystemPreferenceDefault(prop, pluginID)				system/plugins/<plugin>/system-preference-defaults.props
 	 * 
 	 * PS: project-settings: project --> default(ps, system)
-	 * getProjectSetting(prop, project, pluginID)				projects/<projectname>/plugins/<plugin>/settings.cfg
-	 * getProjectSettingDefault(prop, pluginID)					system/plugins/<plugin>/project-settings-defaults.cfg
+	 * getProjectSetting(prop, project, pluginID)				projects/<projectname>/plugins/<plugin>/settings.props
+	 * getProjectSettingDefault(prop, pluginID)					system/plugins/<plugin>/project-settings-defaults.props
 	 * 
 	 * SS: system-settings: system
-	 * getSystemSetting(prop, pluginID)							system/plugins/<plugin>/settings.cfg	
+	 * getSystemSetting(prop, pluginID)							system/plugins/<plugin>/settings.props	
 	 */
 	
 	/*
@@ -59,7 +59,7 @@ public class STPropertiesManager {
 	 */
 	
 	/*
-	 * Getter/Setter <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/preferences.cfg
+	 * Getter/Setter <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/preferences.props
 	 */
 	
 	/**
@@ -140,7 +140,7 @@ public class STPropertiesManager {
 	}
 	
 	/*
-	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/preference-defaults.cfg
+	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/preference-defaults.props
 	 */
 	
 	/**
@@ -193,7 +193,7 @@ public class STPropertiesManager {
 	}
 	
 	/*
-	 * Getter/Setter <STData>/users/<username>/plugins/<plugin>/project-preference-defaults.cfg
+	 * Getter/Setter <STData>/users/<username>/plugins/<plugin>/project-preference-defaults.props
 	 */
 	/**
 	 * Returns the value of a project setting at user level.
@@ -247,7 +247,7 @@ public class STPropertiesManager {
 	}
 	
 	/*
-	 * Getter/Setter <STData>/system/plugins/<plugin>/project-preference-defaults.cfg
+	 * Getter/Setter <STData>/system/plugins/<plugin>/project-preference-defaults.props
 	 */
 	
 	/**
@@ -304,7 +304,7 @@ public class STPropertiesManager {
 	 */
 	
 	/*
-	 * Getter/Setter <STData>/users/<username>/plugins/<plugin>/system-preferences.cfg
+	 * Getter/Setter <STData>/users/<username>/plugins/<plugin>/system-preferences.props
 	 */
 	
 	/**
@@ -369,7 +369,7 @@ public class STPropertiesManager {
 	}
 	
 	/*
-	 * Getter/Setter <STData>/system/plugins/<plugin>/system-preference-defaults.cfg
+	 * Getter/Setter <STData>/system/plugins/<plugin>/system-preference-defaults.props
 	 */
 	
 	/**
@@ -426,7 +426,7 @@ public class STPropertiesManager {
 	 */
 	
 	/*
-	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/settings.cfg
+	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/settings.props
 	 */
 	
 	/**
@@ -491,7 +491,7 @@ public class STPropertiesManager {
 	}
 	
 	/*
-	 * Getter/Setter <STData>/system/plugins/<plugin>/project-settings-defaults.cfg
+	 * Getter/Setter <STData>/system/plugins/<plugin>/project-settings-defaults.props
 	 */
 	
 	/**
@@ -548,7 +548,7 @@ public class STPropertiesManager {
 	 */
 	
 	/*
-	 * Getter/Setter <STData>/system/plugins/<plugin>/settings.cfg
+	 * Getter/Setter <STData>/system/plugins/<plugin>/settings.props
 	 */
 	
 	/**
@@ -603,19 +603,19 @@ public class STPropertiesManager {
 
 	/*
 	 * Methods to retrieve the following Properties files
-	 * <STData>/system/plugins/<plugin>/system-preference-defaults.cfg
-	 * <STData>/system/plugins/<plugin>/project-preference-defaults.cfg
-	 * <STData>/system/plugins/<plugin>/project-settings-defaults.cfg
-	 * <STData>/system/plugins/<plugin>/settings.cfg
-	 * <STData>/projects/<projectname>/plugins/<plugin>/preference-defaults.cfg
-	 * <STData>/projects/<projectname>/plugins/<plugin>/settings.cfg
-	 * <STData>/users/<username>/plugins/<plugin>/project-preference-defaults.cfg
-	 * <STData>/users/<username>/plugins/<plugin>/system-preferences.cfg
-	 * <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/preferences.cfg
+	 * <STData>/system/plugins/<plugin>/system-preference-defaults.props
+	 * <STData>/system/plugins/<plugin>/project-preference-defaults.props
+	 * <STData>/system/plugins/<plugin>/project-settings-defaults.props
+	 * <STData>/system/plugins/<plugin>/settings.props
+	 * <STData>/projects/<projectname>/plugins/<plugin>/preference-defaults.props
+	 * <STData>/projects/<projectname>/plugins/<plugin>/settings.props
+	 * <STData>/users/<username>/plugins/<plugin>/project-preference-defaults.props
+	 * <STData>/users/<username>/plugins/<plugin>/system-preferences.props
+	 * <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/preferences.props
 	 */
 	
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/system-preferences-defaults.cfg
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/system-preferences-defaults.props
 	 * @param pluginID
 	 * @return
 	 * @throws STPropertyAccessException
@@ -623,7 +623,7 @@ public class STPropertiesManager {
 	private static File getSystemPreferencesDefaultsFile(String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -633,15 +633,14 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/project-preferences-defaults.cfg
-	 * @param pluginID
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/project-preferences-defaults.c.props	 * @param pluginID
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
 	private static File getSystemProjectPreferencesDefaultsFile(String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -651,7 +650,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/project-settings-defaults.cfg
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/project-settings-defaults.props
 	 * @param pluginID
 	 * @return
 	 * @throws STPropertyAccessException
@@ -659,7 +658,7 @@ public class STPropertiesManager {
 	private static File getSystemProjectSettingsDefaultsFile(String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -669,7 +668,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/settings.cfg
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/settings.props
 	 * @param pluginID
 	 * @return
 	 * @throws STPropertyAccessException
@@ -677,7 +676,7 @@ public class STPropertiesManager {
 	private static File getSystemSettingsFile(String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -687,7 +686,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/projects/<projName>/plugins/<plugin>/preferences-defaults.cfg
+	 * Returns the Properties file <STData>/projects/<projName>/plugins/<plugin>/preferences-defaults.props
 	 * @param project
 	 * @param pluginID
 	 * @return
@@ -696,7 +695,7 @@ public class STPropertiesManager {
 	private static File getProjectPreferencesDefaultsFile(Project<?> project, String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getProjectPropertyFolder(project, pluginID) + File.separator + PROJECT_PREFERENCES_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -706,7 +705,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/projects/<projName>/plugins/<plugin>/settings.cfg
+	 * Returns the Properties file <STData>/projects/<projName>/plugins/<plugin>/settings.props
 	 * @param project
 	 * @param pluginID
 	 * @return
@@ -715,7 +714,7 @@ public class STPropertiesManager {
 	private static File getProjectSettingsFile(Project<?> project, String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getProjectPropertyFolder(project, pluginID) + File.separator + PROJECT_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -725,7 +724,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/users/<userEmail>/plugins/<plugin>/project-preferences-defaults.cfg
+	 * Returns the Properties file <STData>/users/<userEmail>/plugins/<plugin>/project-preferences-defaults.props
 	 * @param user
 	 * @param pluginID
 	 * @return
@@ -734,7 +733,7 @@ public class STPropertiesManager {
 	private static File getUserProjectPreferencesDefaultsFile(STUser user, String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getUserPropertyFolder(user, pluginID) + File.separator + USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -744,7 +743,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/users/<userEmail>/plugins/<plugin>/system-preferences.cfg
+	 * Returns the Properties file <STData>/users/<userEmail>/plugins/<plugin>/system-preferences.props
 	 * @param user
 	 * @param pluginID
 	 * @return
@@ -753,7 +752,7 @@ public class STPropertiesManager {
 	private static File getUserSystemPreferencesFile(STUser user, String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getUserPropertyFolder(user, pluginID) + File.separator + USER_SYSTEM_PREFERENCES_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}
@@ -763,7 +762,7 @@ public class STPropertiesManager {
 		}
 	}
 	/**
-	 * Returns the Properties file <STData>/pu_bindings/<projName>/<userEmail>/plugins/<plugin>/preferences.cfg
+	 * Returns the Properties file <STData>/pu_bindings/<projName>/<userEmail>/plugins/<plugin>/preferences.props
 	 * @param project
 	 * @param user
 	 * @param pluginID
@@ -773,7 +772,7 @@ public class STPropertiesManager {
 	private static File getPUBindingsPreferencesFile(Project<?> project, STUser user, String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getPUBindingPropertyFolder(project, user, pluginID) + File.separator + PU_BINDING_PREFERENCES_FILE_NAME);
-			if (!propFile.exists()) { //if .cfg file doesn't exist, create and initialize it 
+			if (!propFile.exists()) { //if .props file doesn't exist, create and initialize it 
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
 			}

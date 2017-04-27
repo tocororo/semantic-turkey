@@ -51,6 +51,7 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingPredicateBetweenResourcesExpcetion;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -141,22 +142,76 @@ public class Refactor2 extends STServiceAdapter  {
 	}
 	
 	/**
+	 * 
+	 * TODO this doesn't work at the moment, 
+	 * it doesn't update correctly the working graph and the baseURI in the project object
+	 * 
 	 * Replace the <code>sourceBaseURI</code> with the <code>targetBaseURI</code>.
 	 * If <code>sourceBaseURI</code> is not provided, replace the default baseURI.
 	 * @param sourceBaseURI
 	 * @param targetBaseURI
+	 * @throws ProjectUpdateException 
 	 */
-//	@STServiceOperation
-//	@Write
-//	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
-//	public void replaceBaseURI(@Optional IRI sourceBaseURI, IRI targetBaseURI) {
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
+	public void replaceBaseURI(@Optional IRI sourceBaseURI, IRI targetBaseURI) throws ProjectUpdateException {
+		//get the source baseURI
+		String source;
+		if (sourceBaseURI == null) {
+			source = getProject().getBaseURI();
+		} else {
+			source = sourceBaseURI.stringValue();
+		}
+		//get the target baseURI
+		String target = targetBaseURI.stringValue();
+		//if the source baseURI is the default one, set the new baseURI of the project
+		if (source.equals(getProject().getBaseURI())) {
+			getProject().getNewOntologyManager().setBaseURI(target);
+		}
+		// @formatter:off
+		String query =
+				"DELETE {																					\n" +
+				"	GRAPH ?graph {																			\n" +
+				"		?oldS ?oldP ?oldO .																	\n" +
+				"	}																						\n" +
+				"}																							\n" +
+				"INSERT {																					\n" +
+				"	GRAPH ?graph {																			\n" +
+				"		?newS ?newP ?newO .																	\n" +
+				"	}																						\n" +
+				"}																							\n" +
+				"WHERE {																					\n" +
+				"	BIND(%workingGraph% AS ?graph)															\n" +
+				"	GRAPH ?graph {																			\n" +
+				"		?oldS ?oldP ?oldO .																	\n" +
+				"	}																						\n" +
+				"	FILTER (																				\n" +
+    			"		STRSTARTS(str(?oldS), '%oldBaseURI%') || 											\n" +
+    			"		STRSTARTS(str(?oldP), '%oldBaseURI%') || 											\n" +
+    			"		STRSTARTS(str(?oldO), '%oldBaseURI%')												\n" +
+    			"	)																						\n" +
+    			//alternative valid regex '^(http(s)?:\\/\\/([^#]+(#|\\/)))(.+)'
+    			"	BIND (URI(REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3')) AS ?newS)		\n" + 
+    			"	BIND (URI(REPLACE(STR(?oldP), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3')) AS ?newP)		\n" +
+    			"	BIND (URI(REPLACE(STR(?oldO), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3')) AS ?newO)		\n" +
+    			"	FILTER (																				\n" +
+    			"		!SAMETERM(?oldS, ?newS) || !SAMETERM(?oldP, ?newP) || !SAMETERM(?oldO, ?newO)		\n" +
+    			"	)																						\n" +
+    			"}";
+		// @formatter:on
+		query = query.replace("%oldBaseURI%", source);
+		query = query.replace("%newBaseURI%", target);
+		query = query.replace("%workingGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph())); 
+		System.out.println("replace base uri query\n" + query);
+		System.out.println("now baseURI is " + getProject().getBaseURI()); //this prints old baseURI, so it is not updated
+		System.out.println("now baseURI (passing by onto mgr) is " + getProject().getNewOntologyManager().getBaseURI());
+		System.out.println("now working graph is " + getWorkingGraph().stringValue()); //this prints old baseURI, so it is not updated
+		
 //		RepositoryConnection conn = getManagedConnection();
-//		// @formatter:off
-//		String query = "";
-//		// @formatter:on
 //		Update update = conn.prepareUpdate(query);
 //		update.execute();
-//	}
+	}
 	
 	/**
 	 * Moves the content of the default graph to a graph named after the base URI of the current project. This

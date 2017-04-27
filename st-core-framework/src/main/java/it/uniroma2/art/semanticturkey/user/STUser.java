@@ -16,6 +16,7 @@ import org.json.JSONObject;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
 public class STUser implements UserDetails {
@@ -208,6 +209,10 @@ public class STUser implements UserDetails {
 		this.status = status;
 	}
 	
+	public boolean isAdmin() {
+		return Config.getEmailAdminAddress().equals(email);
+	}
+	
 	public JSONObject getAsJSONObject() throws JSONException {
 		JSONObject userJson = new JSONObject();
 		userJson.put("email", email);
@@ -227,6 +232,7 @@ public class STUser implements UserDetails {
 		userJson.put("url", url);
 		userJson.put("phone", phone);
 		userJson.put("status", status);
+		userJson.put("admin", isAdmin());
 		
 		return userJson;
 	}
@@ -251,6 +257,7 @@ public class STUser implements UserDetails {
 		s += "\nAddress: " + this.address;
 		s += "\nRegistraion date: " + dateFormat.format(this.registrationDate);
 		s += "\nStatus: " + this.status;
+		s += "\nisAdmin: " + isAdmin();
 		s += "\n";
 		return s;
 	}

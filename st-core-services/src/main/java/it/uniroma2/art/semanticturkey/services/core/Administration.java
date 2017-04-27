@@ -85,7 +85,7 @@ public class Administration extends STServiceAdapter {
 	 * @param emailFromPort
 	 * @return
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	public void updateAdministrationConfig(
 			String emailAdminAddress, String emailFromAddress, String emailFromPassword,
 			String emailFromAlias, String emailFromHost, String emailFromPort) {
