@@ -28,6 +28,10 @@ public class Repositories extends STServiceAdapter {
 	public Collection<RepositoryInfo> getRemoteRepositories(String serverURL, @Optional String username,
 			@Optional String password) {
 		RemoteRepositoryManager remoteRepositoryManager = new RemoteRepositoryManager(serverURL);
+		
+		if (username != null && password != null) {
+			remoteRepositoryManager.setUsernameAndPassword(username, password);
+		}
 		remoteRepositoryManager.initialize();
 		try {
 			return remoteRepositoryManager.getAllRepositoryInfos();
