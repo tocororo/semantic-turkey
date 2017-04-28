@@ -14,10 +14,16 @@ public class ContentTypeVocabulary {
 
 	static HashSet<String> registeredTypes = new HashSet<String>();
 	
+	public static final String URL = "url";
+	public static final String FILE = "file";
+	public static final String DIRECTORY = "directory";
+	public static final String BOOLEAN = "boolean";
+	
 	static {
-		registeredTypes.add("url");
-		registeredTypes.add("file");
-		registeredTypes.add("directory");
+		registeredTypes.add(URL);
+		registeredTypes.add(FILE);
+		registeredTypes.add(DIRECTORY);
+		registeredTypes.add(BOOLEAN);
 	}
 	
 	public static Collection<String> getContentTypeVocabulary() {

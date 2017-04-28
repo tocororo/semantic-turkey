@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.properties;
 
-import java.io.File;
-
 public class STPropertyUpdateException extends Exception {
 
 	/**
