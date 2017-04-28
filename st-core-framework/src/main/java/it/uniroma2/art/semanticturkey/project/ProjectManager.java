@@ -52,12 +52,11 @@ import java.util.Set;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
-import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +86,7 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.SailConfigurer;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -385,7 +384,8 @@ public class ProjectManager {
 				new File(tempDir, project.nsPrefixMappingsPersistence.getFile().getName()));
 		Utilities.copy(project.uriGenConfigFile, new File(tempDir, project.uriGenConfigFile.getName()));
 		Utilities.copy(project.renderingConfigFile, new File(tempDir, project.renderingConfigFile.getName()));
-//		project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName), RDFFormat.NTRIPLES);
+		// project.ontManager.writeRDFOnFile(new File(tempDir, triples_exchange_FileName),
+		// RDFFormat.NTRIPLES);
 		Utilities.createZipFile(tempDir, semTurkeyProjectFile, false, true,
 				"Semantic Turkey Project Archive");
 		tempDir.delete();
@@ -435,8 +435,8 @@ public class ProjectManager {
 			newProj = activateProject(name);
 			try {
 				newProj.setName(name);
-//				newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
-//						newProj.getBaseURI(), RDFFormat.NTRIPLES);
+				// newProj.getOntologyManager().loadOntologyData(new File(tempDir, triples_exchange_FileName),
+				// newProj.getBaseURI(), RDFFormat.NTRIPLES);
 
 				tempDir.delete();
 				tempDir.deleteOnExit();
@@ -933,8 +933,8 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws ForbiddenProjectAccessException
-	 * @throws PUBindingException 
-	 * @throws RBACException 
+	 * @throws PUBindingException
+	 * @throws RBACException
 	 */
 	public static Project<? extends RDFModel> accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
@@ -954,15 +954,17 @@ public class ProjectManager {
 					project = activateProject(projectName);
 					openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
 				}
-				
-				// if there aren't the folders for the project-user bindings of the current project, create them
+
+				// if there aren't the folders for the project-user bindings of the current project, create
+				// them
 				// this scenario could happen when the project is imported
-				// (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
+				// (by means the import function or the copy of a project folder in
+				// SemanticTurkeyData/projects)
 				if (ProjectUserBindingsManager.existsPUBindingsOfProject(project)) {
 					ProjectUserBindingsManager.createPUBindingsOfProject(project);
 				}
 				RBACManager.loadRBACProcessor(project);
-				
+
 				return project;
 			} else {
 				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
@@ -1371,11 +1373,12 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws ForbiddenProjectAccessException
 	 * @throws InvalidProjectNameException
-	 * @throws RBACException 
-	 * @throws PUBindingException 
+	 * @throws RBACException
+	 * @throws PUBindingException
 	 */
-	public static Project<? extends RDFModel> openProject(String projectName) throws ProjectAccessException,
-			ProjectInexistentException, InvalidProjectNameException, ForbiddenProjectAccessException, PUBindingException, RBACException {
+	public static Project<? extends RDFModel> openProject(String projectName)
+			throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException,
+			ForbiddenProjectAccessException, PUBindingException, RBACException {
 		Project<? extends RDFModel> project;
 		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
 		setCurrentProject(project);
@@ -1403,7 +1406,8 @@ public class ProjectManager {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, BadConfigurationException, PUBindingException, RBACException {
+			UnloadablePluginConfigurationException, BadConfigurationException, PUBindingException,
+			RBACException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1414,73 +1418,84 @@ public class ProjectManager {
 		// Currently, only guess the namespace from the base uri
 		String defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
 
-		RepositoryConfig coreRepositoryConfig = new RepositoryConfig("core");
+		RepositoryConfig coreRepositoryConfig = new RepositoryConfig("core",
+				"Core repository for project " + projectName);
 		RepositoryConfig supportRepositoryConfig;
 
 		if (historyEnabled || validationEnabled) {
-			supportRepositoryConfig = new RepositoryConfig("support");
+			supportRepositoryConfig = new RepositoryConfig("support",
+					"Support repository for project " + projectName);
 		} else {
 			supportRepositoryConfig = null;
 		}
 
 		if (repositoryAccess.isLocal()) { // Local repositories
-			SailRepositoryConfig coreSailRepoConfig = new SailRepositoryConfig();
-			SailConfigurer coreRepoSailConfigurer = (SailConfigurer) coreRepoSailConfigurerSpecification
+			RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
 					.instatiatePlugin();
-			SailImplConfig coreSailConfig = coreRepoSailConfigurer.buildSailConfig();
-			if (historyEnabled) {
-				ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(coreSailConfig);
-				changeTrackerSailConfig.setHistoryRepositoryID(projectName + "-support");
-				changeTrackerSailConfig.setHistoryGraph(
-						SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
-				changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+			RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
+					.buildRepositoryImplConfig(backendSailImplConfig -> {
+						if (!historyEnabled)
+							return backendSailImplConfig;
 
-				coreSailConfig = changeTrackerSailConfig;
-			}
-			coreSailRepoConfig.setSailImplConfig(coreSailConfig);
-			coreRepositoryConfig.setRepositoryImplConfig(coreSailRepoConfig);
+						ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
+								backendSailImplConfig);
+						changeTrackerSailConfig.setHistoryRepositoryID(projectName + "-support");
+						changeTrackerSailConfig.setHistoryGraph(
+								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
+						changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+
+						return changeTrackerSailConfig;
+					});
+			coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 			if (supportRepositoryConfig != null) {
-				SailRepositoryConfig supportSailRepoConfig = new SailRepositoryConfig();
-				SailConfigurer supportRepoSailConfigurer = (SailConfigurer) supportRepoSailConfigurerSpecification
+				RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
 						.instatiatePlugin();
-				SailImplConfig supportSailConfig = supportRepoSailConfigurer.buildSailConfig();
-				supportSailRepoConfig.setSailImplConfig(supportSailConfig);
-				supportRepositoryConfig.setRepositoryImplConfig(supportSailRepoConfig);
+				RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
+						.buildRepositoryImplConfig(null);
+				supportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
 			}
 		} else { // Remote repositories
 			RemoteRepositoryAccess remoteRepositoryAccess = (RemoteRepositoryAccess) repositoryAccess;
 
 			if (remoteRepositoryAccess instanceof CreateRemote) {
-				RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID);
-				SailRepositoryConfig coreSailRepoConfig = new SailRepositoryConfig();
-				SailConfigurer coreRepoSailConfigurer = (SailConfigurer) coreRepoSailConfigurerSpecification
+				RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID,
+						"Core repository for project " + projectName);
+				RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
 						.instatiatePlugin();
-				SailImplConfig coreSailConfig = coreRepoSailConfigurer.buildSailConfig();
-				if (supportRepositoryConfig != null) {
-					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(coreSailConfig);
-					changeTrackerSailConfig.setServerURL(remoteRepositoryAccess.getServerURL().toString());
-					changeTrackerSailConfig.setHistoryRepositoryID(supportRepoID);
-					changeTrackerSailConfig.setHistoryGraph(
-							SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
-					changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+				RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
+						.buildRepositoryImplConfig(backendSailImplConfig -> {
+							if (supportRepositoryConfig == null)
+								return backendSailImplConfig;
 
-					coreSailConfig = changeTrackerSailConfig;
-				}
-				coreSailRepoConfig.setSailImplConfig(coreSailConfig);
-				newCoreRepositoryConfig.setRepositoryImplConfig(coreSailRepoConfig);
+							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
+									backendSailImplConfig);
+							changeTrackerSailConfig
+									.setServerURL(remoteRepositoryAccess.getServerURL().toString());
+							changeTrackerSailConfig.setHistoryRepositoryID(supportRepoID);
+							changeTrackerSailConfig.setHistoryGraph(
+									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
+							changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+
+							return changeTrackerSailConfig;
+						});
+				newCoreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 				RepositoryConfig newSupportRepositoryConfig = null;
 
 				if (supportRepositoryConfig != null) {
-					newSupportRepositoryConfig = new RepositoryConfig(supportRepoID);
-					SailRepositoryConfig supportSailRepoConfig = new SailRepositoryConfig();
-					SailConfigurer supportRepoSailConfigurer = (SailConfigurer) supportRepoSailConfigurerSpecification
+					newSupportRepositoryConfig = new RepositoryConfig(supportRepoID,
+							"Support repository for project " + projectName);
+					RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
 							.instatiatePlugin();
-					SailImplConfig supportSailConfig = supportRepoSailConfigurer.buildSailConfig();
-					supportSailRepoConfig.setSailImplConfig(supportSailConfig);
-					newSupportRepositoryConfig.setRepositoryImplConfig(supportSailRepoConfig);
+					RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
+							.buildRepositoryImplConfig(null);
+					newSupportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
 				}
+
+//				Model model = new TreeModel();
+//				newCoreRepositoryConfig.export(model);
+//				Rio.write(model, System.out, RDFFormat.TURTLE);
 
 				RepositoryManager remoteRepoManager = RemoteRepositoryManager
 						.getInstance(remoteRepositoryAccess.getServerURL().toString());
@@ -1525,10 +1540,9 @@ public class ProjectManager {
 			}
 		}
 
-		prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI,
-				defaultNamespace, historyEnabled, validationEnabled, coreRepoID, coreRepositoryConfig,
-				supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
-				renderingEngineSpecification);
+		prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI, defaultNamespace,
+				historyEnabled, validationEnabled, coreRepoID, coreRepositoryConfig, supportRepoID,
+				supportRepositoryConfig, uriGeneratorSpecification, renderingEngineSpecification);
 
 		Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
 				LockLevel.NO);

@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer;
+package it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -7,10 +7,10 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.sail.config.AbstractSailImplConfig;
+import org.eclipse.rdf4j.repository.config.AbstractRepositoryImplConfig;
 import org.eclipse.rdf4j.sail.config.SailConfigException;
 
-public class ModelBasedSailImplConfig extends AbstractSailImplConfig {
+public class ModelBasedRepositoryImplConfig extends AbstractRepositoryImplConfig {
 	private Model m;
 	private Resource implNode;
 

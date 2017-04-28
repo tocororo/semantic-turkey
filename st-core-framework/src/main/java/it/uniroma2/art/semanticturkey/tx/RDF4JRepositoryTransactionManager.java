@@ -106,6 +106,9 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 				TransactionSynchronizationManager.bindResource(this.repository,
 						txObject.getRDF4JRepositoryConnectionHolder());
 			}
+			
+			logger.debug("Begun");
+
 		} catch (Throwable e) {
 			RDF4JRepositoryUtils.releaseConnection(conn, repository);
 			throw new CannotCreateTransactionException("Could not open RDF4J Connection for transaction", e);

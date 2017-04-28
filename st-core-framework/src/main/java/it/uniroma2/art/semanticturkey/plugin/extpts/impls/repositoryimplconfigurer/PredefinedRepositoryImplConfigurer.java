@@ -1,25 +1,31 @@
-package it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer;
+package it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer;
+
+import java.util.function.Function;
+
+import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.sail.Sail;
+import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.eclipse.rdf4j.sail.inferencer.fc.config.DirectTypeHierarchyInferencerConfig;
 import org.eclipse.rdf4j.sail.inferencer.fc.config.ForwardChainingRDFSInferencerConfig;
 import org.eclipse.rdf4j.sail.memory.config.MemoryStoreConfig;
 import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 
-import it.uniroma2.art.semanticturkey.plugin.extpts.SailConfigurer;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.AbstractGraphDBConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.GraphDBFreeConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.PredefinedSailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.RDF4JInMemorySailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.conf.RDF4JSailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.AbstractGraphDBConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JSailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.vocabulary.OWLIM;
 
 /**
@@ -27,19 +33,20 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWLIM;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class PredefinedSailConfigurer implements SailConfigurer {
+public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigurer {
 
-	private PredefinedSailConfigurerConfiguration config;
+	private PredefinedRepositoryImplConfigurerConfiguration config;
 
-	public PredefinedSailConfigurer(PredefinedSailConfigurerConfiguration config) {
+	public PredefinedRepositoryImplConfigurer(PredefinedRepositoryImplConfigurerConfiguration config) {
 		this.config = config;
 	}
 
 	@Override
-	public SailImplConfig buildSailConfig() {
-		SailImplConfig sailConfig;
+	public RepositoryImplConfig buildRepositoryImplConfig(@Nullable Function<SailImplConfig, SailImplConfig> backendDecorator) {
+		RepositoryImplConfig repositoryImplConfig;
 
 		if (config instanceof RDF4JSailConfigurerConfiguration) {
+			SailImplConfig sailImplConfig;
 
 			if (config instanceof RDF4JInMemorySailConfigurerConfiguration) {
 				MemoryStoreConfig memoryStoreConfig = new MemoryStoreConfig();
@@ -53,7 +60,7 @@ public class PredefinedSailConfigurer implements SailConfigurer {
 					memoryStoreConfig.setPersist(false);
 				}
 
-				sailConfig = memoryStoreConfig;
+				sailImplConfig = memoryStoreConfig;
 			} else if (config instanceof RDF4JNativeSailConfigurerConfiguration) {
 				RDF4JNativeSailConfigurerConfiguration config2 = (RDF4JNativeSailConfigurerConfiguration) config;
 
@@ -63,20 +70,26 @@ public class PredefinedSailConfigurer implements SailConfigurer {
 					nativeStoreConfig.setTripleIndexes(config2.tripleIndexes);
 				}
 
-				sailConfig = nativeStoreConfig;
+				sailImplConfig = nativeStoreConfig;
 			} else {
 				throw new IllegalArgumentException("Unsupported config class: " + config.getClass());
 			}
 
+			if (backendDecorator != null) {
+				sailImplConfig = backendDecorator.apply(sailImplConfig);
+			}
+			
 			RDF4JSailConfigurerConfiguration rdf4jConfig = (RDF4JSailConfigurerConfiguration) config;
 
 			if (rdf4jConfig.rdfsInference) {
-				sailConfig = new ForwardChainingRDFSInferencerConfig(sailConfig);
+				sailImplConfig = new ForwardChainingRDFSInferencerConfig(sailImplConfig);
 			}
 
 			if (rdf4jConfig.directTypeInference) {
-				sailConfig = new DirectTypeHierarchyInferencerConfig(sailConfig);
+				sailImplConfig = new DirectTypeHierarchyInferencerConfig(sailImplConfig);
 			}
+
+			repositoryImplConfig = new SailRepositoryConfig(sailImplConfig);
 		} else if (config instanceof AbstractGraphDBConfigurerConfiguration) {
 			AbstractGraphDBConfigurerConfiguration config2 = (AbstractGraphDBConfigurerConfiguration) config;
 
@@ -105,20 +118,26 @@ public class PredefinedSailConfigurer implements SailConfigurer {
 			ModelBasedSailImplConfig graphdbConfig = new ModelBasedSailImplConfig();
 
 			graphdbConfig.parse(model, implNode);
-			
+
 			if (config instanceof GraphDBFreeConfigurerConfiguration) {
 				graphdbConfig.setType("graphdb:FreeSail");
 			} else {
 				throw new IllegalArgumentException(
 						"Could not recognize GraphDB Sail Type from config object: " + config.getClass());
 			}
+			
+			SailImplConfig sailImplConfig = graphdbConfig;
+			
+			if (backendDecorator != null) {
+				sailImplConfig = backendDecorator.apply(sailImplConfig);
+			}
 
-			sailConfig = graphdbConfig;
+			repositoryImplConfig = new SailRepositoryConfig(sailImplConfig);
 		} else {
 			throw new IllegalArgumentException("Unsupported config class: " + config.getClass());
 		}
 
-		return sailConfig;
+		return repositoryImplConfig;
 	}
 
 }

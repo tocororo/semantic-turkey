@@ -78,7 +78,7 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
-	
+
 	<!-- Publishes the SPARQL-based implementation of the extension point ExportFilter -->
 	<bean id="SPARQLExportFilterFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.SPARQLExportFilterFactory" />
@@ -90,8 +90,9 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter" />
 		</osgi:service-properties>
 	</osgi:service>
-	
-	<!-- Publishes the Delete Property Value implementation of the extension point ExportFilter -->
+
+	<!-- Publishes the Delete Property Value implementation of the extension 
+		point ExportFilter -->
 	<bean id="DeletePropertyValueExportFilterFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DeletePropertyValueExportFilterFactory" />
 
@@ -103,7 +104,8 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the Update Property Value implementation of the extension point ExportFilter -->
+	<!-- Publishes the Update Property Value implementation of the extension 
+		point ExportFilter -->
 	<bean id="UpdatePropertyValueExportFilterFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.UpdatePropertyValueExportFilterFactory" />
 
@@ -115,7 +117,8 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the XLabel Dereification implementation of the extension point ExportFilter -->
+	<!-- Publishes the XLabel Dereification implementation of the extension 
+		point ExportFilter -->
 	<bean id="XLabelDereificationExportFilterFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.XLabelDereificationExportFilterFactory" />
 
@@ -127,7 +130,8 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the XNote Dereification implementation of the extension point ExportFilter -->
+	<!-- Publishes the XNote Dereification implementation of the extension point 
+		ExportFilter -->
 	<bean id="XNoteDereificationExportFilterFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.XNoteDereificationExportFilterFactory" />
 
@@ -139,18 +143,19 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the Predefined Sail Configurer implementation of the extension point SailConfigurer -->
-	<bean id="PredefinedSailConfigurerFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.extpts.impls.sailconfigurer.PredefinedSailConfigurerFactory" />
+	<!-- Publishes the Predefined Repository Impl Configurer implementation of the extension 
+		point RepositoryImplConfigurer -->
+	<bean id="PredefinedRepositoryImplConfigurerFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory" />
 
 	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="PredefinedSailConfigurerFactory">
+		ref="PredefinedRepositoryImplConfigurerFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.SailConfigurer" />
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer" />
 		</osgi:service-properties>
 	</osgi:service>
-	
+
 	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->
 	<bean id="datasetMetadataRepository"
 		class="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
@@ -175,12 +180,12 @@
 		interface="it.uniroma2.art.semanticturkey.customform.CustomFormManager"
 		ref="customFormManager">
 	</osgi:service>
-	
+
 	<!-- Publishes CODACoreProvider as an OSGi service (bean instance generated 
 		based on annotations) -->
 	<osgi:service
 		interface="it.uniroma2.art.semanticturkey.customform.CODACoreProvider"
 		ref="CODACoreProvider">
 	</osgi:service>
-	
+
 </beans>
