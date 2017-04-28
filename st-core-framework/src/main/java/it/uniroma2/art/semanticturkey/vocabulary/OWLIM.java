@@ -39,8 +39,8 @@ public abstract class OWLIM {
 	/** owlim:repository-type */
 	public static final IRI REPOSITORY_TYPE;
 
-	/** owlim:rule-set */
-	public static final IRI RULE_SET;
+	/** owlim:ruleset */
+	public static final IRI RULESET;
 
 	/** owlim:storage-folder */
 	public static final IRI STORAGE_FOLDER;
@@ -84,7 +84,7 @@ public abstract class OWLIM {
 		ENTITY_ID_SIZE = vf.createIRI(NAMESPACE, "entity-id-size");
 		IMPORTS = vf.createIRI(NAMESPACE, "imports");
 		REPOSITORY_TYPE = vf.createIRI(NAMESPACE, "repository-type");
-		RULE_SET = vf.createIRI(NAMESPACE, "rule-set");
+		RULESET = vf.createIRI(NAMESPACE, "ruleset");
 		STORAGE_FOLDER = vf.createIRI(NAMESPACE, "storage-folder");
 		ENABLE_CONTEXT_INDEX = vf.createIRI(NAMESPACE, "enable-context-index");
 		ENABLE_PREDICATE_LIST = vf.createIRI(NAMESPACE, "enablePredicateList");

@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.repository.config.AbstractRepositoryImplConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.sail.Sail;
@@ -101,7 +102,7 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 												.add(OWLIM.ENTITY_INDEX_SIZE, "" + config2.entityIndexSize)
 												.add(OWLIM.ENTITY_ID_SIZE, "" + config2.entityIdSize)
 												.add(OWLIM.IMPORTS, config2.imports)
-												.add(OWLIM.RULE_SET, config2.ruleSet)
+												.add(OWLIM.RULESET, config2.ruleset)
 												.add(OWLIM.STORAGE_FOLDER, config2.storageFolder)
 												.add(OWLIM.ENABLE_CONTEXT_INDEX, Boolean.toString(config2.enableContextIndex))
 												.add(OWLIM.ENABLE_PREDICATE_LIST, Boolean.toString(config2.enablePredicateList))
@@ -119,8 +120,10 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 
 			graphdbConfig.parse(model, implNode);
 
+			String gdbRepoType;
 			if (config instanceof GraphDBFreeConfigurerConfiguration) {
 				graphdbConfig.setType("graphdb:FreeSail");
+				gdbRepoType = "graphdb:FreeSailRepository";
 			} else {
 				throw new IllegalArgumentException(
 						"Could not recognize GraphDB Sail Type from config object: " + config.getClass());
@@ -132,7 +135,10 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 				sailImplConfig = backendDecorator.apply(sailImplConfig);
 			}
 
-			repositoryImplConfig = new SailRepositoryConfig(sailImplConfig);
+			
+			SailRepositoryConfig repositoryImplConfigTemp = new SailRepositoryConfig(sailImplConfig);
+			repositoryImplConfigTemp.setType(gdbRepoType);
+			repositoryImplConfig = repositoryImplConfigTemp;
 		} else {
 			throw new IllegalArgumentException("Unsupported config class: " + config.getClass());
 		}
