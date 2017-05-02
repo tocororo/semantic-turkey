@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -28,10 +29,10 @@ import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
@@ -305,14 +306,39 @@ public class SKOS extends STServiceAdapter {
 		}
 	}
 
+	/**
+	 * @param newConcept
+	 * 		IRI of the new created concept. If not provided a random IRI is generated.
+	 * @param label
+	 * 		preferred label of the concept
+	 * @param broaderConcept
+	 * 		broader of the new created concept. If not provided the new concept will be a top concept
+	 * @param conceptScheme
+	 * 		concept scheme where the concept belongs
+	 * @param conceptCls
+	 * 		class type of the new created concept. It must be a subClassOf skos:Concept. If not provided the new concept
+	 * 		will be simply a skos:Concept
+	 * @param customFormId
+	 * 		id of the custom form to use to add additional info to the concept
+	 * @param userPromptMap
+	 * 		(json) map of userPrompt field to use with the custom form
+	 * @return
+	 * @throws URIGenerationException
+	 * @throws ProjectInconsistentException
+	 * @throws CustomFormException
+	 * @throws CODAException
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
+		
+		RepositoryConnection repoConnection = getManagedConnection();
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -323,7 +349,13 @@ public class SKOS extends STServiceAdapter {
 		} else {
 			newConceptIRI = newConcept;
 		}
-		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT); //?conc a skos:Concept
+		
+		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
+		if (conceptCls != null) {
+			conceptClass = conceptCls;
+		}
+		
+		modelAdditions.add(newConceptIRI, RDF.TYPE, conceptClass);
 		
 		if (label != null) { //?conc skos:prefLabel ?label
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
@@ -334,8 +366,6 @@ public class SKOS extends STServiceAdapter {
 		} else { //?conc skos:topConceptOf ?sc
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
 		}
-		
-		RepositoryConnection repoConnection = getManagedConnection();
 		
 		//CustomForm further info
 		if (customFormId != null && userPromptMap != null) {
@@ -362,6 +392,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'C')")
 	public AnnotatedValue<IRI> createConceptScheme(
 			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#ConceptScheme") IRI schemeCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
 		
@@ -374,7 +405,13 @@ public class SKOS extends STServiceAdapter {
 		} else {
 			newSchemeIRI = newScheme;
 		}
-		modelAdditions.add(newSchemeIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME);
+		
+		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
+		if (schemeCls != null) {
+			schemeClass = schemeCls;
+		}
+		
+		modelAdditions.add(newSchemeIRI, RDF.TYPE, schemeClass);
 		
 		if (label != null) {
 			modelAdditions.add(newSchemeIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
