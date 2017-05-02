@@ -29,6 +29,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropert
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
@@ -69,11 +70,20 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 		boolean symmetric = false;
 		boolean symmetricExplicit = true;
 
+		boolean asymmetric = false;
+		boolean asymmetricExplicit = true;
+
 		boolean functional = false;
 		boolean functionalExplicit = true;
 
 		boolean inverseFunctional = false;
 		boolean inverseFunctionalExplicit = true;
+
+		boolean reflexive = false;
+		boolean reflexiveExplicit = true;
+
+		boolean irreflexive = false;
+		boolean irreflexiveExplicit = true;
 
 		boolean transitive = false;
 		boolean transitiveExplicit = true;
@@ -87,6 +97,14 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 			processedStatements.addAll(relevantStmts);
 			symmetric = true;
 			symmetricExplicit = currentProject
+					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
+		}
+
+		if (propTypes2stmts.containsKey(OWL2Fragment.ASYMMETRICPROPERTY)) {
+			List<Statement> relevantStmts = propTypes2stmts.get(OWL2Fragment.ASYMMETRICPROPERTY);
+			processedStatements.addAll(relevantStmts);
+			asymmetric = true;
+			asymmetricExplicit = currentProject
 					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
 		}
 
@@ -106,6 +124,22 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
 		}
 
+		if (propTypes2stmts.containsKey(OWL2Fragment.REFLEXIVEPROPERTY)) {
+			List<Statement> relevantStmts = propTypes2stmts.get(OWL2Fragment.REFLEXIVEPROPERTY);
+			processedStatements.addAll(relevantStmts);
+			reflexive = true;
+			reflexiveExplicit = currentProject
+					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
+		}
+
+		if (propTypes2stmts.containsKey(OWL2Fragment.IRREFLEXIVEPROPERTY)) {
+			List<Statement> relevantStmts = propTypes2stmts.get(OWL2Fragment.IRREFLEXIVEPROPERTY);
+			processedStatements.addAll(relevantStmts);
+			irreflexive = true;
+			irreflexiveExplicit = currentProject
+					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
+		}
+
 		if (propTypes2stmts.containsKey(OWL.TRANSITIVEPROPERTY)) {
 			List<Statement> relevantStmts = propTypes2stmts.get(OWL.TRANSITIVEPROPERTY);
 			processedStatements.addAll(relevantStmts);
@@ -122,9 +156,10 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
 		rv.put("facets",
-				new PropertyFacetsSection(symmetric, symmetricExplicit, functional, functionalExplicit,
-						inverseFunctional, inverseFunctionalExplicit, transitive, transitiveExplicit,
-						inverseOf));
+				new PropertyFacetsSection(symmetric, symmetricExplicit, asymmetric, asymmetricExplicit,
+						functional, functionalExplicit, inverseFunctional, inverseFunctionalExplicit,
+						reflexive, reflexiveExplicit, irreflexive, irreflexiveExplicit, transitive,
+						transitiveExplicit, inverseOf));
 
 		return rv;
 	}

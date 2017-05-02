@@ -21,6 +21,13 @@ public class PropertyFacetsSectionSerializer extends JsonSerializer<PropertyFace
 			gen.writeEndObject();
 		}
 		
+		if (value.isAsymmetric()) {
+			gen.writeObjectFieldStart("asymmetric");
+			gen.writeBooleanField("value", true);
+			gen.writeBooleanField("explicit", value.isAsymmetricExplicit());
+			gen.writeEndObject();
+		}
+		
 		if (value.isFunctional()) {
 			gen.writeObjectFieldStart("functional");
 			gen.writeBooleanField("value", true);
@@ -32,6 +39,20 @@ public class PropertyFacetsSectionSerializer extends JsonSerializer<PropertyFace
 			gen.writeObjectFieldStart("inverseFunctional");
 			gen.writeBooleanField("value", true);
 			gen.writeBooleanField("explicit", value.isInverseFunctionalExplicit());
+			gen.writeEndObject();
+		}
+		
+		if (value.isReflexive()) {
+			gen.writeObjectFieldStart("reflexive");
+			gen.writeBooleanField("value", true);
+			gen.writeBooleanField("explicit", value.isReflexiveExplicit());
+			gen.writeEndObject();
+		}
+		
+		if (value.isIrreflexive()) {
+			gen.writeObjectFieldStart("irreflexive");
+			gen.writeBooleanField("value", true);
+			gen.writeBooleanField("explicit", value.isIrreflexiveExplicit());
 			gen.writeEndObject();
 		}
 
