@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer;
+package it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;

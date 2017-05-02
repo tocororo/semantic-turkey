@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer;
+package it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer;
 
 import java.util.function.Function;
 
@@ -20,13 +20,13 @@ import org.eclipse.rdf4j.sail.memory.config.MemoryStoreConfig;
 import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 
 import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.AbstractGraphDBConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JInMemorySailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JSailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.AbstractGraphDBConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JSailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.vocabulary.OWLIM;
 
 /**

@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer;
+package it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -7,11 +7,11 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JNonPersistentInMemorySailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNonPersistentInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
 
 /**
  * Factory for the instantiation of {@link PredefinedRepositoryImplConfigurer}.

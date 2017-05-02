@@ -44,6 +44,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.sail.SailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -770,6 +771,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public OntologyManager getNewOntologyManager() {
 		return newOntManager;
+	}
+
+	public RepositoryManager getRepositoryManager() {
+		return repositoryManager;
 	}
 }
 

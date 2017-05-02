@@ -146,7 +146,7 @@
 	<!-- Publishes the Predefined Repository Impl Configurer implementation of the extension 
 		point RepositoryImplConfigurer -->
 	<bean id="PredefinedRepositoryImplConfigurerFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.extpts.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory" />
+		class="it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory" />
 
 	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="PredefinedRepositoryImplConfigurerFactory">

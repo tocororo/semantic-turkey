@@ -1493,18 +1493,20 @@ public class ProjectManager {
 					newSupportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
 				}
 
-//				Model model = new TreeModel();
-//				newCoreRepositoryConfig.export(model);
-//				Rio.write(model, System.out, RDFFormat.TURTLE);
+				// Model model = new TreeModel();
+				// newCoreRepositoryConfig.export(model);
+				// Rio.write(model, System.out, RDFFormat.TURTLE);
 
 				RepositoryManager remoteRepoManager = RemoteRepositoryManager
 						.getInstance(remoteRepositoryAccess.getServerURL().toString());
-
-				if (newSupportRepositoryConfig != null) {
-					remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
+				try {
+					if (newSupportRepositoryConfig != null) {
+						remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
+					}
+					remoteRepoManager.addRepositoryConfig(newCoreRepositoryConfig);
+				} finally {
+					remoteRepoManager.shutDown();
 				}
-				remoteRepoManager.addRepositoryConfig(newCoreRepositoryConfig);
-				remoteRepoManager.shutDown();
 			}
 
 			HTTPRepositoryConfig coreRemoteRepoConfig = new HTTPRepositoryConfig();
