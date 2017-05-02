@@ -9,11 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 /**
- * Validators associated with the constraint {@link LocallyDefined}
+ * Validators associated with the constraint {@link NotLocallyDefined}
  * 
+ * @author <a href="mailto:tiziano.lorenzetti@gmail.com">Tiziano Lorenzetti</a>
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class NotLocallyDefinedValidator implements ConstraintValidator<NotLocallyDefined, Resource> {
@@ -37,7 +39,7 @@ public class NotLocallyDefinedValidator implements ConstraintValidator<NotLocall
 			}
 
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
-					.getConnection(serviceContext.getProject().getRepository())) {
+					.getConnection(STServiceContextUtils.getRepostory(serviceContext))) {
 				return !repoConn.hasStatement(value, null, null, true);
 			}
 		} catch (Exception e) {

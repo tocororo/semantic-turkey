@@ -112,6 +112,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsum
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
@@ -153,7 +154,7 @@ public class ResourceView2 extends STServiceAdapter {
 			SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
 			if (resourcePosition == null) {
-				resourcePosition = resourceLocator.locateResource(getProject(), resource);
+				resourcePosition = resourceLocator.locateResource(getProject(), getRepository(), resource);
 			}
 
 			Model retrievedStatements = retrieveStatements(resourcePosition, resource);
@@ -229,7 +230,8 @@ public class ResourceView2 extends STServiceAdapter {
 	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
 			@Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException {
 		if (resourcePosition == null) {
-			resourcePosition = resource != null ? resourceLocator.locateResource(getProject(), resource)
+			resourcePosition = resource != null
+					? resourceLocator.locateResource(getProject(), getRepository(), resource)
 					: ResourceLocator.UNKNOWN_RESOURCE_POSITION;
 		}
 

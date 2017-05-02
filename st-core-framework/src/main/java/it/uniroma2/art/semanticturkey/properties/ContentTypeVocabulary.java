@@ -22,7 +22,6 @@ public class ContentTypeVocabulary {
 		registeredTypes.add(URL);
 		registeredTypes.add(FILE);
 		registeredTypes.add(DIRECTORY);
-		registeredTypes.add(BOOLEAN);
 	}
 	
 	public static Collection<String> getContentTypeVocabulary() {

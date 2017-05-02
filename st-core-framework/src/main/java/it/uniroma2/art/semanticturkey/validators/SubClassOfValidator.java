@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 /**
@@ -48,7 +49,7 @@ public class SubClassOfValidator implements ConstraintValidator<SubClassOf, Reso
 			}
 			
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
-					.getConnection(serviceContext.getProject().getRepository())) {
+					.getConnection(STServiceContextUtils.getRepostory(serviceContext))) {
 				String query = "ASK { \n"
 						+ NTriplesUtil.toNTriplesString(value) + " " 
 						+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + " "

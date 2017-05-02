@@ -154,7 +154,7 @@ public class QueryBuilder {
 	 */
 	public Collection<AnnotatedValue<Resource>> runQuery()
 			throws QueryBuilderException, QueryEvaluationException {
-		Repository repo = serviceContext.getProject().getRepository();
+		Repository repo = STServiceContextUtils.getRepostory(serviceContext);
 		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
 			return runQuery(conn);
@@ -171,7 +171,7 @@ public class QueryBuilder {
 	 */
 	public <T> T runQuery(QueryResultsProcessor<T> resultsProcessor)
 			throws QueryBuilderException, QueryEvaluationException {
-		Repository repo = serviceContext.getProject().getRepository();
+		Repository repo = STServiceContextUtils.getRepostory(serviceContext);
 		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
 			return runQuery(conn, resultsProcessor);

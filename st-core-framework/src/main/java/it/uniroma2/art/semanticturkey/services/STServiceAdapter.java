@@ -38,6 +38,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
@@ -62,7 +63,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
 	private PlatformTransactionManager txManager;
-	
+
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
@@ -97,9 +98,9 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	public Resource getWorkingGraph() {
 		return rdf4j2artFact.aRTResource2RDF4JResource(stServiceContext.getWGraph());
 	}
-	
+
 	public Resource getDeleteGraph() {
-		//TODO check this method
+		// TODO check this method
 		return getWorkingGraph();
 	}
 
@@ -109,31 +110,39 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	}
 
 	public RepositoryConnection getManagedConnection() {
-		Repository repo = getProject().getRepository();
-		return RDF4JRepositoryUtils.getConnection(repo);
+		return RDF4JRepositoryUtils.getConnection(getRepository());
+	}
+
+	/**
+	 * Returns the repository for servicing a data request. This operation is aware of different mechanisms
+	 * that alter the repository, e.g. version dumps.
+	 * 
+	 * @return
+	 */
+	public Repository getRepository() {
+		return STServiceContextUtils.getRepostory(stServiceContext);
 	}
 
 	protected Collection<AnnotatedValue<Resource>> retrieveResources(String queryString) {
 		RepositoryConnection repoConn = getManagedConnection();
 		ValueFactory vf = repoConn.getValueFactory();
-		
+
 		TupleQuery query = repoConn.prepareTupleQuery(queryString);
-		
+
 		Set<String> queryVariables = SPARQLUtilities.getVariables(queryString);
-		
+
 		Method currentMethod = STServiceAspect.getCurrentServiceInvocation().getMethod();
 		Parameter[] currentMethodParameters = currentMethod.getParameters();
 		Object[] currentMethodArguments = STServiceAspect.getCurrentServiceInvocation().getArguments();
-		
-		
-		for (int i = 0 ; i < currentMethodParameters.length ; i++) {
+
+		for (int i = 0; i < currentMethodParameters.length; i++) {
 			String parameterName = currentMethodParameters[i].getName();
-			
+
 			if (queryVariables.contains(parameterName)) {
 				query.setBinding(parameterName, SPARQLUtilities.java2node(currentMethodArguments[i]));
 			}
 		}
-		
+
 		return QueryResults.stream(query.evaluate())
 				.map(bindingSet -> new AnnotatedValue<>((Resource) bindingSet.getValue("resource")))
 				.collect(toList());
@@ -189,7 +198,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	protected QueryBuilder createQueryBuilder(String resourceQuery) {
 		return new QueryBuilder(stServiceContext, resourceQuery);
 	}
-	
+
 	/**
 	 * Returns a new IRI for a resource. The parameter {@code xRole} holds the nature of the resource that
 	 * will be identified with the given URI. Depending on the value of the parameter {@code xRole}, a
@@ -203,11 +212,10 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	 */
 	public IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
 		try {
-			Map<String, Value> artValueMapping = valueMapping.entrySet().stream().collect(Collectors
-					.toMap(Map.Entry::getKey, (entry) -> entry.getValue()));
+			Map<String, Value> artValueMapping = valueMapping.entrySet().stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, (entry) -> entry.getValue()));
 
-			IRI iriRes = getProject().getURIGenerator().generateIRI(stServiceContext, xRole,
-					artValueMapping);
+			IRI iriRes = getProject().getURIGenerator().generateIRI(stServiceContext, xRole, artValueMapping);
 
 			return sesVf.createIRI(iriRes.stringValue());
 		} catch (Exception e) {
@@ -215,23 +223,25 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			throw e;
 		}
 	}
-	
-	
+
 	/**
 	 * Returns an instance of {@link CODACore} to use in services.
+	 * 
 	 * @param repoConnection
 	 * @return
 	 * @throws ProjectInconsistentException
 	 */
-	protected CODACore getInitializedCodaCore(RepositoryConnection repoConnection) throws ProjectInconsistentException{
+	protected CODACore getInitializedCodaCore(RepositoryConnection repoConnection)
+			throws ProjectInconsistentException {
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(repoConnection);
 		return codaCore;
 	}
-	
+
 	/**
-	 * Stops and shutdown the instance of CODACore. This method should be called when it is finished using
-	 * the instance of CODACore returned by {@link #getInitializedCodaCore(RepositoryConnection)}
+	 * Stops and shutdown the instance of CODACore. This method should be called when it is finished using the
+	 * instance of CODACore returned by {@link #getInitializedCodaCore(RepositoryConnection)}
+	 * 
 	 * @param codaCore
 	 */
 	protected void shutDownCodaCore(CODACore codaCore) {

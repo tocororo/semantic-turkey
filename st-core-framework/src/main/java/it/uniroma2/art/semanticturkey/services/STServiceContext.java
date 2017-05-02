@@ -30,5 +30,7 @@ public interface STServiceContext {
 
 	String getSessionToken();
 	
+	String getVersion();
+	
 	boolean hasContextParameter(String parameter);
 }

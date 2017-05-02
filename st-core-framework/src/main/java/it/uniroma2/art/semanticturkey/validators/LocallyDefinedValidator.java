@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 /**
@@ -37,7 +38,7 @@ public class LocallyDefinedValidator implements ConstraintValidator<LocallyDefin
 			}
 
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
-					.getConnection(serviceContext.getProject().getRepository())) {
+					.getConnection(STServiceContextUtils.getRepostory(serviceContext))) {
 				return repoConn.hasStatement(value, null, null, true);
 			}
 		} catch (Exception e) {

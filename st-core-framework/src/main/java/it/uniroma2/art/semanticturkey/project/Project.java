@@ -43,7 +43,11 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.HTTPRepository;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.sail.SailException;
 import org.slf4j.Logger;
@@ -75,21 +79,26 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.RepositoryCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
@@ -371,10 +380,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				if (repositoryManager != null && repositoryManager.isInitialized()) {
 					repositoryManager.shutDown();
 				}
-			} catch(RDF4JException e2) {
+			} catch (RDF4JException e2) {
 				throw new ProjectUpdateException(e2);
 			}
-			
+
 			throw new ProjectUpdateException(e);
 		}
 
@@ -429,7 +438,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return Long.parseLong(stp_properties.getProperty(TIMESTAMP_PROP));
 	}
 
-
 	// casting is checked internally
 	@SuppressWarnings("unchecked")
 	public Class<MODELTYPE> getModelType() throws ProjectInconsistentException {
@@ -479,11 +487,11 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public String getType() throws ProjectInconsistentException {
 		return getRequiredProperty(PROJECT_TYPE);
 	}
-	
+
 	public boolean isHistoryEnabled() {
 		return Boolean.valueOf(getProperty(HISTORY_ENABLED_PROP));
 	}
-	
+
 	public boolean isValidationEnabled() {
 		return Boolean.valueOf(getProperty(VALIDATION_ENABLED_PROP));
 	}
@@ -729,6 +737,13 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return (OWLModel) model;
 	}
 
+	/**
+	 * Returns the core repository associated with this project. Clients should rarely invoke this method, and
+	 * use instead the operations found in {@link STServiceContextUtils} (which are aware, for example, of
+	 * version dumps).
+	 * 
+	 * @return
+	 */
 	public Repository getRepository() {
 		return newOntManager.getRepository();
 	}
@@ -775,6 +790,72 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public RepositoryManager getRepositoryManager() {
 		return repositoryManager;
+	}
+
+	public Repository createRepository(RepositoryAccess repositoryAccess, String repositoryId,
+			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
+			throws RepositoryCreationException {
+
+		RepositoryImplConfig localRepositoryImplConfig;
+
+		// TODO: not an atomic check
+		if (repositoryManager.hasRepositoryConfig(localRepostoryId)) {
+			throw new RepositoryCreationException("Local repository alread existing:" + localRepostoryId);
+		}
+
+		try {
+			if (repositoryAccess.isRemote()) {
+				if (repositoryId == null) {
+					throw new IllegalArgumentException("The name of a remote repository must be non-null");
+				}
+
+				RemoteRepositoryAccess repositoryAccess2 = (RemoteRepositoryAccess) repositoryAccess;
+
+				RepositoryManager remoteRepositoryManager = RemoteRepositoryManager.getInstance(
+						repositoryAccess2.getServerURL().toString(), repositoryAccess2.getUsername(),
+						repositoryAccess2.getPassword());
+
+				if (repositoryAccess instanceof CreateRemote) { // Create remote
+					RepositoryImplConfigurer repoConfigurer = (RepositoryImplConfigurer) repoConfigurerSpecification
+							.instatiatePlugin();
+					RepositoryImplConfig remoteRepositoryImplConfig = repoConfigurer
+							.buildRepositoryImplConfig(null);
+					RepositoryConfig remoteRepositoryConfig = new RepositoryConfig(repositoryId, "",
+							remoteRepositoryImplConfig);
+
+					// TODO: this check is not atomic!
+					if (remoteRepositoryManager.hasRepositoryConfig(repositoryId)) {
+						throw new RepositoryCreationException(
+								"Remote repository already exists: " + repositoryId);
+					}
+
+					remoteRepositoryManager.addRepositoryConfig(remoteRepositoryConfig);
+				} else { // Access remote
+					if (!remoteRepositoryManager.hasRepositoryConfig(repositoryId)) {
+						throw new RepositoryCreationException(
+								"Remote repository does not exist: " + repositoryId);
+					}
+				}
+
+				HTTPRepositoryConfig localRepositoryImplConfig2 = new HTTPRepositoryConfig(
+						repositoryAccess2.getServerURL().toString());
+				localRepositoryImplConfig2.setUsername(repositoryAccess2.getUsername());
+				localRepositoryImplConfig2.setPassword(repositoryAccess2.getPassword());
+				localRepositoryImplConfig = localRepositoryImplConfig2;
+			} else {
+				RepositoryImplConfigurer repoConfigurer = (RepositoryImplConfigurer) repoConfigurerSpecification
+						.instatiatePlugin();
+				localRepositoryImplConfig = repoConfigurer.buildRepositoryImplConfig(null);
+			}
+
+			RepositoryConfig localRepositoryConfig = new RepositoryConfig(localRepostoryId, "",
+					localRepositoryImplConfig);
+			repositoryManager.addRepositoryConfig(localRepositoryConfig);
+			return repositoryManager.getRepository(localRepostoryId);
+		} catch (ClassCastException | ClassNotFoundException | UnsupportedPluginConfigurationException
+				| UnloadablePluginConfigurationException | BadConfigurationException e) {
+			throw new RepositoryException(e);
+		}
 	}
 }
 

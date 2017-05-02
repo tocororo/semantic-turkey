@@ -61,6 +61,8 @@ public class ResourceLocator {
 	 * 
 	 * @param project
 	 *            the current project
+	 * @param projectRepository
+	 *            the repository holding the data inside the project
 	 * @param resource
 	 *            the resource to be located
 	 * @param requestedAccessLevel
@@ -69,17 +71,16 @@ public class ResourceLocator {
 	 * @throws ModelAccessException
 	 * @throws ProjectAccessException
 	 */
-	public ResourcePosition locateResource(Project<?> project, Resource resource,
-			AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
+	public ResourcePosition locateResource(Project<?> project, Repository projectRepository,
+			Resource resource, AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
 			throws ModelAccessException, ProjectAccessException {
 		if (resource instanceof BNode) {
-			return new LocalResourcePosition(project); // TODO: implement a better condition
+			return new LocalResourcePosition(project); // TODOprojectRepository: implement a better condition
 		}
 
 		IRI iriResource = (IRI) resource;
 
-		Repository repo = project.getRepository();
-		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
+		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(projectRepository);
 		try {
 			if (Objects.equals(repoConn.getNamespace(""), iriResource.getNamespace())
 					|| repoConn.hasStatement(iriResource, null, null, false)) {
@@ -87,7 +88,7 @@ public class ResourceLocator {
 			}
 
 		} finally {
-			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
+			RDF4JRepositoryUtils.releaseConnection(repoConn, projectRepository);
 		}
 
 		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
@@ -119,57 +120,18 @@ public class ResourceLocator {
 	}
 
 	/**
-	 * An overload of {@link #locateResource(Project, Resource, AccessLevel, LockLevel)}, with the last two
+	 * An overload of {@link #locateResource(Project, Repository, Resource)}, with the last two
 	 * parameters set to {@link AccessLevel#R} and {@link LockLevel#NO}, respectively.
 	 * 
 	 * @param project
+	 * @param projectRepository
 	 * @param resource
 	 * @return
 	 * @throws ProjectAccessException
 	 * @throws ModelAccessException
 	 */
-	public ResourcePosition locateResource(Project<?> project, Resource resource)
-			throws ModelAccessException, ProjectAccessException {
-		return locateResource(project, resource, AccessLevel.R, LockLevel.NO);
-	}
-
-	@Deprecated
-	public ResourcePosition locateResource(Project<?> project, ARTResource resource)
-			throws ModelAccessException, ProjectAccessException {
-
-		if (resource.isBlank()) {
-			return new LocalResourcePosition(project); // TODO: implement a better condition
-		}
-
-		ARTURIResource uriResource = resource.asURIResource();
-
-		RDFModel model = project.getOntModel();
-
-		if (model.getDefaultNamespace() != null
-				&& model.getDefaultNamespace().equals(uriResource.getNamespace())
-				|| model.isLocallyDefined(uriResource, NodeFilters.ANY)) {
-			return new LocalResourcePosition(project);
-		}
-
-		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
-			if (!ProjectManager.isOpen(abstrProj.getName()))
-				continue;
-
-			Project<?> proj = ProjectManager.getProject(abstrProj.getName());
-
-			String ns = proj.getDefaultNamespace();
-
-			if (ns.equals(uriResource.getNamespace())) {
-				return new LocalResourcePosition((Project<?>) proj);
-			}
-		}
-
-		DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(uriResource);
-
-		if (meta != null) {
-			return new RemoteResourcePosition(meta);
-		} else {
-			return UNKNOWN_RESOURCE_POSITION;
-		}
+	public ResourcePosition locateResource(Project<?> project, Repository projectRepository,
+			Resource resource) throws ModelAccessException, ProjectAccessException {
+		return locateResource(project, projectRepository, resource, AccessLevel.R, LockLevel.NO);
 	}
 }
