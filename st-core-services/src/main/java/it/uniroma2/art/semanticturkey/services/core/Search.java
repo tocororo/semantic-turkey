@@ -314,6 +314,7 @@ public class Search extends STServiceAdapter {
 			ValueTypeAndShow valueTypeAndShow = otherResourcesMap.get(key);
 			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
 			annotatedValue.setAttribute("explicit", true);
+			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
 			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
 				annotatedValue.setAttribute("show", valueTypeAndShow.getShow());
 			} 
@@ -323,6 +324,7 @@ public class Search extends STServiceAdapter {
 			ValueTypeAndShow valueTypeAndShow = propertyMap.get(key);
 			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
 			annotatedValue.setAttribute("explicit", true);
+			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
 			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
 				annotatedValue.setAttribute("show", valueTypeAndShow.getShow());
 			} 
