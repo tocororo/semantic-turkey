@@ -35,6 +35,7 @@ import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
@@ -547,21 +548,22 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public AnnotatedValue<IRI> createProperty(IRI propertyType, @NotLocallyDefined IRI newProperty, @Optional IRI superProperty,
+	public AnnotatedValue<IRI> createProperty(
+			@SubClassOf(superClassIRI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property") IRI propertyType,
+			@NotLocallyDefined IRI newProperty, @Optional IRI superProperty,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
-		if (propertyType.equals(OWL.OBJECTPROPERTY) || propertyType.equals(OWL.DATATYPEPROPERTY) ||
-			propertyType.equals(OWL.ANNOTATIONPROPERTY) || propertyType.equals(OWL.ONTOLOGYPROPERTY) ||
-			propertyType.equals(RDF.PROPERTY)) {
-			
-			modelAdditions.add(newProperty, RDF.TYPE, propertyType);
-		} else {
+		if (!propertyType.equals(OWL.OBJECTPROPERTY) || !propertyType.equals(OWL.DATATYPEPROPERTY) ||
+			!propertyType.equals(OWL.ANNOTATIONPROPERTY) || !propertyType.equals(OWL.ONTOLOGYPROPERTY) ||
+			!propertyType.equals(RDF.PROPERTY)) {
 			throw new IllegalArgumentException(propertyType.stringValue() + " is not a valid property type");
 		}
+		
+		modelAdditions.add(newProperty, RDF.TYPE, propertyType);
 		
 		if (superProperty != null) {
 			modelAdditions.add(newProperty, RDFS.SUBPROPERTYOF, superProperty);

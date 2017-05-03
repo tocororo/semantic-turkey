@@ -85,7 +85,7 @@ public class Versions extends STServiceAdapter {
 
 		if (repositoryAccess == null) {
 			throw new UnsupportedOperationException(
-					"Implement inherintance of reposuitory access from the prjoect");
+					"Implement inherintance of repository access from the prjoect");
 		}
 		if (repositoryId != null) {
 			if (repositoryAccess.isLocal()) {
