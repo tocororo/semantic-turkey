@@ -15,8 +15,10 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -218,9 +220,12 @@ public class SKOSXL extends STServiceAdapter {
 	public AnnotatedValue<Resource> createCollection(
 			IRI collectionType, @Optional @NotLocallyDefined IRI newCollection, 
 			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Collection") IRI collectionCls,
 			@Optional(defaultValue = "false") boolean bnodeCreationMode,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, IllegalAccessException {
+		
+		RepositoryConnection repoConnection = getManagedConnection();
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -238,10 +243,29 @@ public class SKOSXL extends STServiceAdapter {
 			newCollectionRes = newCollection;
 		}
 		
+		IRI collectionClass = collectionType;
+		if (collectionCls != null) {
+			/* check consistency between collection type an class: @SubClassOf just check that collectionCls is 
+			 * subClassOf Collection, but if collectionCls is subClassOf OrderedCollection and collectionType
+			 * is collection throw exception */
+			if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
+				String query = "ASK { "
+						+ NTriplesUtil.toNTriplesString(collectionCls) + " " 
+						+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+						+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION) + " }";
+				boolean inconsistent = repoConnection.prepareBooleanQuery(query).evaluate();
+				if (inconsistent) {
+					throw new IllegalArgumentException("Inconsistent collection type: cannot create a collection (not-ordered)"
+							+ " of type " + collectionCls.stringValue() + " that is an ordered collection instead");
+				}
+			}
+			collectionClass = collectionCls;
+		}
+		
 		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
-			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION);
+			modelAdditions.add(newCollectionRes, RDF.TYPE, collectionClass);
 		} else if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION)){
-			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION);
+			modelAdditions.add(newCollectionRes, RDF.TYPE, collectionClass);
 			modelAdditions.add(newCollectionRes, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, RDF.NIL);
 		} else {
 			throw new IllegalAccessException(collectionType.stringValue() + " is not a valid collection type");
@@ -255,8 +279,6 @@ public class SKOSXL extends STServiceAdapter {
 			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
 		}
 
-		RepositoryConnection repoConnection = getManagedConnection();
-		
 		if (containingCollection != null) {
 			if (repoConnection.hasStatement(containingCollection, RDF.TYPE, 
 					org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION, false, getWorkingGraph())) {
@@ -277,10 +299,6 @@ public class SKOSXL extends STServiceAdapter {
 				} else {
 					BNode newNode = vf.createBNode();
 					modelAdditions.add(newNode, RDF.TYPE, RDF.LIST);
-					System.out.println("adding statement:");
-					System.out.println(newNode);
-					System.out.println(RDF.FIRST);
-					System.out.println(newCollectionRes);
 					modelAdditions.add(newNode, RDF.FIRST, newCollectionRes);
 					modelAdditions.add(newNode, RDF.REST, RDF.NIL);
 					

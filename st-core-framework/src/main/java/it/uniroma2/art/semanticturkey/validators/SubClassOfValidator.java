@@ -45,14 +45,14 @@ public class SubClassOfValidator implements ConstraintValidator<SubClassOf, Reso
 			IRI superClass = vf.createIRI(this.annotation.superClassIRI());
 			
 			if (value.equals(superClass)) { //a class is subClassOf itself
-				return true;
+				return true; //avoid to perform the sparql query
 			}
 			
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
 					.getConnection(STServiceContextUtils.getRepostory(serviceContext))) {
 				String query = "ASK { \n"
 						+ NTriplesUtil.toNTriplesString(value) + " " 
-						+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + " "
+						+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
 						+ NTriplesUtil.toNTriplesString(superClass) + " \n"
 						+ " }";
 				BooleanQuery bq = repoConn.prepareBooleanQuery(query);
