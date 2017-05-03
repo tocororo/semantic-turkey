@@ -28,6 +28,7 @@ import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.versions.VersionInfo;
@@ -68,7 +69,7 @@ public class Versions extends STServiceAdapter {
 	 * @return
 	 * @throws RepositoryCreationException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method=RequestMethod.POST)
 	@Read
 	public VersionInfo createVersionDump(@Optional RepositoryAccess repositoryAccess,
 			@Optional String repositoryId,
