@@ -5,15 +5,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -222,16 +225,19 @@ public class SKOSXL extends STServiceAdapter {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+		
 		Resource newCollectionRes;
 		if (newCollection == null) {
 			if (bnodeCreationMode) {
-				newCollectionRes = SimpleValueFactory.getInstance().createBNode();
+				newCollectionRes = vf.createBNode();
 			} else { //uri
 				newCollectionRes = generateCollectionURI(label);
 			}
 		} else {
 			newCollectionRes = newCollection;
 		}
+		
 		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
 			modelAdditions.add(newCollectionRes, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION);
 		} else if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION)){
@@ -254,7 +260,40 @@ public class SKOSXL extends STServiceAdapter {
 		if (containingCollection != null) {
 			if (repoConnection.hasStatement(containingCollection, RDF.TYPE, 
 					org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION, false, getWorkingGraph())) {
-				//TODO add newCollection as last of containingCollection
+				
+				//add newCollection as last of containingCollection (inspired from SKOSModelImpl.addLastToSKOSOrderedCollection())
+				Resource memberList = null;
+				RepositoryResult<Statement> res = repoConnection.getStatements(
+						containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, null, false, getWorkingGraph());
+				if (res.hasNext()) {
+					memberList = (Resource) res.next().getObject();//it's a resource for sure since the predicate is skos:memberList
+				}
+				if (memberList == null) {
+					BNode newNode = vf.createBNode();
+					modelAdditions.add(newNode, RDF.TYPE, RDF.LIST);
+					modelAdditions.add(newNode, RDF.FIRST, newCollectionRes);
+					modelAdditions.add(newNode, RDF.REST, RDF.NIL);
+					modelAdditions.add(containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, newNode);
+				} else {
+					BNode newNode = vf.createBNode();
+					modelAdditions.add(newNode, RDF.TYPE, RDF.LIST);
+					System.out.println("adding statement:");
+					System.out.println(newNode);
+					System.out.println(RDF.FIRST);
+					System.out.println(newCollectionRes);
+					modelAdditions.add(newNode, RDF.FIRST, newCollectionRes);
+					modelAdditions.add(newNode, RDF.REST, RDF.NIL);
+					
+					if (memberList.equals(RDF.NIL)) {
+						modelRemovals.add(containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, memberList);
+						modelAdditions.add(containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, newNode);
+					} else {
+						//get last node of the list
+						Resource lastNode = walkMemberList(repoConnection, memberList);
+						modelRemovals.add(lastNode, RDF.REST, RDF.NIL);
+						modelAdditions.add(lastNode, RDF.REST, newNode);
+					}
+				}
 				
 			} else if (repoConnection.hasStatement(containingCollection, RDF.TYPE,
 					org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION, false, getWorkingGraph())) {
@@ -428,6 +467,24 @@ public class SKOSXL extends STServiceAdapter {
 			throw new CODAException(e);
 		} finally {
 			shutDownCodaCore(codaCore);
+		}
+	}
+	
+	/**
+	 * Returns the last member of a member list (the one that has no rest or has rdf:nil as rest)
+	 */
+	private Resource walkMemberList(RepositoryConnection repoConnection, Resource list) {
+		RepositoryResult<Statement> stmts = repoConnection.getStatements(list, RDF.REST, null, getWorkingGraph());
+		if (stmts.hasNext()) {
+			Resource obj = (Resource) stmts.next().getObject();
+			if (obj.equals(RDF.NIL)) {
+				return list;
+			} else {
+				return walkMemberList(repoConnection, obj);
+			}
+		} else {
+			//if list has no object for rdf:rest property, assume that rest was rdf:nil and list was the last element
+			return list;
 		}
 	}
 	
