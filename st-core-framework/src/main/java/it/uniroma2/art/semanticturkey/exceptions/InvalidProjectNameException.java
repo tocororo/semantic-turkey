@@ -34,18 +34,8 @@ public class InvalidProjectNameException extends Exception {
 	 */
 	private static final long serialVersionUID = 6891890698836795808L;
 
-	public InvalidProjectNameException() {
-		super("the selected Project Name may not contain the following symbols: \\/:*?\"<>|");
-	}
-
-	public InvalidProjectNameException(String projectName) {
-		super("the selected Project Name, which is: \"" + projectName
-				+ "\", may not contain the following symbols: \\/:*?\"<>|");
-	}
-	
 	public InvalidProjectNameException(String msg, String projectName) {
-		super(msg + ": the selected Project Name, which is: \"" + projectName
-				+ "\", may not contain the following symbols: \\/:*?\"<>|");
+		super("Invalid project name \"" + projectName + "\": " + msg);
 	}
 
 }

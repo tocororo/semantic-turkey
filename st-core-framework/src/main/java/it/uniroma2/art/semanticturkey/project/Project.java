@@ -44,7 +44,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
@@ -130,6 +129,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
 
+	public static final String VERSIONS_PROP = "versions";
+
 	// Constants concerning project plugins
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
 
@@ -181,6 +182,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	protected RepositoryConfig coreRepoConfig;
 	protected RepositoryConfig supportRepoConfig;
 	private LocalRepositoryManager repositoryManager;
+	private VersionManager versionManager;
 
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -211,6 +213,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			stp_properties.load(propFileInStream);
 			propFileInStream.close();
 			acl = new ProjectACL(this);
+			versionManager = new VersionManager(this);
 		} catch (IOException e1) {
 			throw new ProjectCreationException(e1);
 		}
@@ -856,6 +859,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				| UnloadablePluginConfigurationException | BadConfigurationException e) {
 			throw new RepositoryException(e);
 		}
+	}
+
+	public VersionManager getVersionManager() {
+		return versionManager;
 	}
 }
 

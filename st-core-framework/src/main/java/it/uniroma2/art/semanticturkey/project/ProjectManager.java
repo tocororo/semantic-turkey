@@ -311,8 +311,7 @@ public class ProjectManager {
 
 		logger.debug("cloning project: " + projectName + " to project: " + newProjectName);
 
-		if (!validProjectName(newProjectName))
-			throw new InvalidProjectNameException(projectName);
+		checkProjectName(newProjectName);
 
 		if (isOpen(projectName)) {
 			throw new UnavailableResourceException(
@@ -324,7 +323,7 @@ public class ProjectManager {
 
 		if (newProjectDir.exists())
 			throw new DuplicatedResourceException("project: " + projectName
-					+ "already exists; choose a different project name for a new project");
+					+ " already exists; choose a different project name for a new project");
 
 		Utilities.recursiveCopy(oldProjectDir, newProjectDir);
 		setProjectProperty(newProjectName, Project.PROJECT_NAME_PROP, newProjectName);
@@ -362,10 +361,8 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 */
 	public static File resolveProjectNameToDir(String projectName) throws InvalidProjectNameException {
-		if (!validProjectName(projectName))
-			throw new InvalidProjectNameException();
-		else
-			return new File(Resources.getProjectsDir(), projectName);
+		checkProjectName(projectName);
+		return new File(Resources.getProjectsDir(), projectName);
 	}
 
 	public static void exportProject(String projectName, File semTurkeyProjectFile) throws IOException,
@@ -493,12 +490,22 @@ public class ProjectManager {
 		}
 	}
 
-	public static boolean validProjectName(String projectName) {
+	public static void checkProjectName(String projectName) throws InvalidProjectNameException {
 		logger.debug("checking if name: " + projectName + " is a valid project name");
-		if (projectName.matches(".*[:\\\\/*?\"<>|].*"))
-			return false;
+		if (projectName == null) {
+			throw new InvalidProjectNameException("Project name may not be null", null);
+		}
+
+		if (ProjectConsumer.SYSTEM.getName().equalsIgnoreCase(projectName)) {
+			throw new InvalidProjectNameException("Project name may not be equal (ignoring case) to SYSTEM",
+					projectName);
+		}
+
+		if (projectName.matches(".*[:\\\\/*?\"<>|].*")) {
+			throw new InvalidProjectNameException("Project name may not contain the characters \\/*?\"<>|",
+					projectName);
+		}
 		logger.debug("name is valid");
-		return true;
 	}
 
 	/**
@@ -1415,137 +1422,180 @@ public class ProjectManager {
 		// Currently, only projects in the default location
 		File projectDir = resolveProjectNameToDir(projectName);
 
-		// Currently, only guess the namespace from the base uri
-		String defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
+		// Checks the suitability of the project name
+		checkProjectName(projectName);
 
-		RepositoryConfig coreRepositoryConfig = new RepositoryConfig("core",
-				"Core repository for project " + projectName);
-		RepositoryConfig supportRepositoryConfig;
+		// Creates the directory for the project, checking whether it already existed
+		if (!projectDir.mkdir())
+			throw new DuplicatedResourceException("project: " + projectName
+					+ " already exists; choose a different project name for a new project");
 
-		if (historyEnabled || validationEnabled) {
-			supportRepositoryConfig = new RepositoryConfig("support",
-					"Support repository for project " + projectName);
-		} else {
-			supportRepositoryConfig = null;
-		}
+		try {
 
-		if (repositoryAccess.isLocal()) { // Local repositories
-			RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
-					.instatiatePlugin();
-			RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
-					.buildRepositoryImplConfig(backendSailImplConfig -> {
-						if (!historyEnabled)
-							return backendSailImplConfig;
+			// Currently, only guess the namespace from the base uri
+			String defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
 
-						ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
-								backendSailImplConfig);
-						changeTrackerSailConfig.setHistoryRepositoryID(projectName + "-support");
-						changeTrackerSailConfig.setHistoryGraph(
-								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
-						changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+			RepositoryConfig coreRepositoryConfig = new RepositoryConfig("core",
+					"Core repository for project " + projectName);
+			RepositoryConfig supportRepositoryConfig;
 
-						return changeTrackerSailConfig;
-					});
-			coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
-
-			if (supportRepositoryConfig != null) {
-				RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
-						.instatiatePlugin();
-				RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
-						.buildRepositoryImplConfig(null);
-				supportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
+			if (historyEnabled || validationEnabled) {
+				supportRepositoryConfig = new RepositoryConfig("support",
+						"Support repository for project " + projectName);
+			} else {
+				supportRepositoryConfig = null;
 			}
-		} else { // Remote repositories
-			RemoteRepositoryAccess remoteRepositoryAccess = (RemoteRepositoryAccess) repositoryAccess;
 
-			if (remoteRepositoryAccess instanceof CreateRemote) {
-				RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID,
-						"Core repository for project " + projectName);
+			if (repositoryAccess.isLocal()) { // Local repositories
 				RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
 						.instatiatePlugin();
 				RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
 						.buildRepositoryImplConfig(backendSailImplConfig -> {
-							if (supportRepositoryConfig == null)
+							if (!historyEnabled)
 								return backendSailImplConfig;
 
 							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
 									backendSailImplConfig);
-							changeTrackerSailConfig
-									.setServerURL(remoteRepositoryAccess.getServerURL().toString());
-							changeTrackerSailConfig.setHistoryRepositoryID(supportRepoID);
+							changeTrackerSailConfig.setHistoryRepositoryID(projectName + "-support");
 							changeTrackerSailConfig.setHistoryGraph(
 									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
 							changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
 
 							return changeTrackerSailConfig;
 						});
-				newCoreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
-
-				RepositoryConfig newSupportRepositoryConfig = null;
+				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 				if (supportRepositoryConfig != null) {
-					newSupportRepositoryConfig = new RepositoryConfig(supportRepoID,
-							"Support repository for project " + projectName);
 					RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
 							.instatiatePlugin();
 					RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
 							.buildRepositoryImplConfig(null);
-					newSupportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
+					supportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
 				}
+			} else { // Remote repositories
+				RemoteRepositoryAccess remoteRepositoryAccess = (RemoteRepositoryAccess) repositoryAccess;
 
-				// Model model = new TreeModel();
-				// newCoreRepositoryConfig.export(model);
-				// Rio.write(model, System.out, RDFFormat.TURTLE);
+				if (remoteRepositoryAccess instanceof CreateRemote) {
+					RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID,
+							"Core repository for project " + projectName);
+					RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
+							.instatiatePlugin();
+					RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
+							.buildRepositoryImplConfig(backendSailImplConfig -> {
+								if (supportRepositoryConfig == null)
+									return backendSailImplConfig;
 
-				RepositoryManager remoteRepoManager = RemoteRepositoryManager
-						.getInstance(remoteRepositoryAccess.getServerURL().toString());
-				try {
-					if (newSupportRepositoryConfig != null) {
-						remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
+								ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
+										backendSailImplConfig);
+								changeTrackerSailConfig
+										.setServerURL(remoteRepositoryAccess.getServerURL().toString());
+								changeTrackerSailConfig.setHistoryRepositoryID(supportRepoID);
+								changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
+										.createIRI(defaultNamespace + "history"));
+								changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+
+								return changeTrackerSailConfig;
+							});
+					newCoreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
+
+					RepositoryConfig newSupportRepositoryConfig = null;
+
+					if (supportRepositoryConfig != null) {
+						newSupportRepositoryConfig = new RepositoryConfig(supportRepoID,
+								"Support repository for project " + projectName);
+						RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
+								.instatiatePlugin();
+						RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
+								.buildRepositoryImplConfig(null);
+						newSupportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
 					}
-					remoteRepoManager.addRepositoryConfig(newCoreRepositoryConfig);
-				} finally {
-					remoteRepoManager.shutDown();
+
+					// Model model = new TreeModel();
+					// newCoreRepositoryConfig.export(model);
+					// Rio.write(model, System.out, RDFFormat.TURTLE);
+
+					RepositoryManager remoteRepoManager = RemoteRepositoryManager
+							.getInstance(remoteRepositoryAccess.getServerURL().toString());
+					
+					try {
+						if (remoteRepoManager.hasRepositoryConfig(coreRepoID)) {
+							throw new ProjectCreationException("Remote repository already existing: " + coreRepoID);
+						}
+						
+						if (supportRepositoryConfig != null && remoteRepoManager.hasRepositoryConfig(supportRepoID)) {
+							throw new ProjectCreationException("Remote repository already existing: " + supportRepoID);
+						}
+						
+						if (newSupportRepositoryConfig != null) {
+							remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
+						}
+						remoteRepoManager.addRepositoryConfig(newCoreRepositoryConfig);
+					} finally {
+						remoteRepoManager.shutDown();
+					}
+				} else { // remote access & not create --> access existing remote
+					
+					// Check the existence of remote repositories
+					
+					RepositoryManager remoteRepoManager = RemoteRepositoryManager
+							.getInstance(remoteRepositoryAccess.getServerURL().toString());
+					
+					try {
+						if (!remoteRepoManager.hasRepositoryConfig(coreRepoID)) {
+							throw new ProjectCreationException("Remote repository not existing: " + coreRepoID);
+						}
+						
+						if (supportRepositoryConfig != null && !remoteRepoManager.hasRepositoryConfig(supportRepoID)) {
+							throw new ProjectCreationException("Remote repository not existing: " + supportRepoID);
+						}
+					} finally {
+						remoteRepoManager.shutDown();
+					}
 				}
-			}
 
-			HTTPRepositoryConfig coreRemoteRepoConfig = new HTTPRepositoryConfig();
-			coreRemoteRepoConfig.setURL(Protocol
-					.getRepositoryLocation(remoteRepositoryAccess.getServerURL().toString(), coreRepoID));
-			String username = remoteRepositoryAccess.getUsername();
-			if (username != null && !username.isEmpty()) {
-				coreRemoteRepoConfig.setUsername(username);
-			}
-
-			String password = remoteRepositoryAccess.getPassword();
-			if (password != null && !password.isEmpty()) {
-				coreRemoteRepoConfig.setPassword(password);
-			}
-
-			coreRepositoryConfig.setRepositoryImplConfig(coreRemoteRepoConfig);
-
-			if (supportRepositoryConfig != null) {
-
-				HTTPRepositoryConfig supportRemoteRepoConfig = new HTTPRepositoryConfig();
-				supportRemoteRepoConfig.setURL(Protocol.getRepositoryLocation(
-						remoteRepositoryAccess.getServerURL().toString(), supportRepoID));
-
+				HTTPRepositoryConfig coreRemoteRepoConfig = new HTTPRepositoryConfig();
+				coreRemoteRepoConfig.setURL(Protocol
+						.getRepositoryLocation(remoteRepositoryAccess.getServerURL().toString(), coreRepoID));
+				String username = remoteRepositoryAccess.getUsername();
 				if (username != null && !username.isEmpty()) {
-					supportRemoteRepoConfig.setUsername(username);
+					coreRemoteRepoConfig.setUsername(username);
 				}
 
+				String password = remoteRepositoryAccess.getPassword();
 				if (password != null && !password.isEmpty()) {
-					supportRemoteRepoConfig.setPassword(password);
+					coreRemoteRepoConfig.setPassword(password);
 				}
 
-				supportRepositoryConfig.setRepositoryImplConfig(supportRemoteRepoConfig);
+				coreRepositoryConfig.setRepositoryImplConfig(coreRemoteRepoConfig);
+
+				if (supportRepositoryConfig != null) {
+
+					HTTPRepositoryConfig supportRemoteRepoConfig = new HTTPRepositoryConfig();
+					supportRemoteRepoConfig.setURL(Protocol.getRepositoryLocation(
+							remoteRepositoryAccess.getServerURL().toString(), supportRepoID));
+
+					if (username != null && !username.isEmpty()) {
+						supportRemoteRepoConfig.setUsername(username);
+					}
+
+					if (password != null && !password.isEmpty()) {
+						supportRemoteRepoConfig.setPassword(password);
+					}
+
+					supportRepositoryConfig.setRepositoryImplConfig(supportRemoteRepoConfig);
+				}
 			}
+
+			prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI,
+					defaultNamespace, historyEnabled, validationEnabled, coreRepoID, coreRepositoryConfig,
+					supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
+					renderingEngineSpecification);
+
+		} catch (Exception e) {
+			Utilities.deleteDir(projectDir); // if something fails, deletes everything
+			logger.debug("directory: " + projectDir + " deleted due to project creation fail");
+			throw e;
 		}
-
-		prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI, defaultNamespace,
-				historyEnabled, validationEnabled, coreRepoID, coreRepositoryConfig, supportRepoID,
-				supportRepositoryConfig, uriGeneratorSpecification, renderingEngineSpecification);
-
 		Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
 				LockLevel.NO);
 		// TODO this has to be removed, once all references to currentProject have been removed from ST
@@ -1560,12 +1610,6 @@ public class ProjectManager {
 			RepositoryConfig coreRepoConfig, String supportRepoID, RepositoryConfig supportRepoConfig,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
 			throws DuplicatedResourceException, ProjectCreationException {
-		if (projectDir.exists())
-			throw new DuplicatedResourceException("project: " + projectName
-					+ "already exists; choose a different project name for a new project");
-
-		projectDir.mkdir();
-
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1651,8 +1695,6 @@ public class ProjectManager {
 				localRepoMgr.shutDown();
 			}
 		} catch (IOException e) {
-			Utilities.deleteDir(projectDir); // if something fails, deletes everything
-			logger.debug("directory: " + info_stp + " deleted due to project creation fail");
 			throw new ProjectCreationException(e);
 		}
 	}
