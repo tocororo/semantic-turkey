@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
@@ -114,7 +115,7 @@ public class TestManchesterSyntax {
 
 	
 	
-	private void startWriteTest(RepositoryConnection conn) throws RecognitionException, ManchesterParserException {
+	private void startWriteTest(RepositoryConnection conn) throws RecognitionException, ManchesterParserException, NotClassAxiomException {
 		ManchesterClassInterface manchesterClassInterface;
 
 		Resource[] graphs = new Resource[] { conn.getValueFactory().createIRI("http://maingraph.it") };
