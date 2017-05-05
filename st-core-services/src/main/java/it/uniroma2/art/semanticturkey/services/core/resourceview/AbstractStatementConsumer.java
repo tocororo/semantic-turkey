@@ -101,6 +101,10 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 					expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource,
 							namespaceToprefixMap, true, new Resource[0], null, true, repoConn);
 					if (expr != null && !expr.isEmpty()) {
+						if(expr.startsWith("(") && expr.endsWith("")){
+							//remove the starting '(' and the end ')' 
+							expr = expr.substring(1, expr.length()-1).trim();
+						}
 						return expr;
 					}
 				} catch (NotClassAxiomException e) {
