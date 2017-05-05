@@ -48,8 +48,8 @@ public class UsersRepoHelper {
 	private DateFormat dateFormat;
 	
 	private String BINDING_IRI = "userIri";
-	private String BINDING_FIRST_NAME = "firstName";
-	private String BINDING_LAST_NAME = "lastName";
+	private String BINDING_GIVEN_NAME = "givenName";
+	private String BINDING_FAMILY_NAME = "familyName";
 	private String BINDING_PASSWORD = "password";
 	private String BINDING_EMAIL = "email";
 	private String BINDING_URL = "url";
@@ -83,8 +83,8 @@ public class UsersRepoHelper {
 	public void insertUser(STUser user) {
 		String query = "INSERT DATA {"
 				+ " ?" + BINDING_IRI + " a " + NTriplesUtil.toNTriplesString(UserVocabulary.USER) + " ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " '" + user.getFirstName() + "' ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " '" + user.getLastName() + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " '" + user.getGivenName() + "' ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " '" + user.getFamilyName() + "' ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.MBOX) + " '" + user.getEmail() + "' ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.PASSWORD) + " '" + user.getPassword() + "' ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " '" + dateFormat.format(user.getRegistrationDate()) + "' ."
@@ -130,8 +130,8 @@ public class UsersRepoHelper {
 	public Collection<STUser> listUsers() {
 		String query = "SELECT * WHERE {"
 				+ " ?" + BINDING_IRI + " a " + NTriplesUtil.toNTriplesString(UserVocabulary.USER) + " ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " ?" + BINDING_FIRST_NAME + " ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " ?" + BINDING_LAST_NAME + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " ?" + BINDING_GIVEN_NAME + " ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " ?" + BINDING_FAMILY_NAME + " ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.PASSWORD) + " ?" + BINDING_PASSWORD + " ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.MBOX) + " ?" + BINDING_EMAIL + " ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " ?" + BINDING_REGISTRATION_DATE + " ."
@@ -196,7 +196,7 @@ public class UsersRepoHelper {
 			IRI iri = (IRI) tuple.getValue(BINDING_IRI);
 			String email = tuple.getValue(BINDING_EMAIL).stringValue();
 			STUser user = new STUser(iri, email, tuple.getValue(BINDING_PASSWORD).stringValue(),
-					tuple.getValue(BINDING_FIRST_NAME).stringValue(), tuple.getValue(BINDING_LAST_NAME).stringValue());
+					tuple.getValue(BINDING_GIVEN_NAME).stringValue(), tuple.getValue(BINDING_FAMILY_NAME).stringValue());
 			
 			user.setStatus(UserStatus.valueOf(tuple.getValue(BINDING_STATUS).stringValue()));
 			

@@ -46,10 +46,7 @@ public class UsersManager {
 	/**
 	 * Registers a user
 	 * 
-	 * @param email
-	 * @param password
-	 * @param firstName
-	 * @param lastName
+	 * @param user
 	 * @throws UserCreationException
 	 * @throws IOException
 	 */
@@ -130,9 +127,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserFirstName(STUser user, String newValue) throws IOException {
+	public static STUser updateUserGivenName(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
-		user.setFirstName(newValue);
+		user.setGivenName(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}
@@ -145,9 +142,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserLastName(STUser user, String newValue) throws IOException {
+	public static STUser updateUserFamilyName(STUser user, String newValue) throws IOException {
 		user = getUserByEmail(user.getEmail());
-		user.setLastName(newValue);
+		user.setFamilyName(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}

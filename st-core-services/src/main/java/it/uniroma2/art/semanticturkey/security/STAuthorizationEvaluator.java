@@ -180,10 +180,12 @@ public class STAuthorizationEvaluator {
 		AbstractProject project = getTargetForRBAC();
 		if (project != null) {
 			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-			return puBinding.getRoles();
-		} else {
-			return Collections.emptyList();
+			//puBinding could be null if user tries to access a 2nd project from the project in which is logged
+			if (puBinding != null) {
+				return puBinding.getRoles();
+			}
 		}
+		return Collections.emptyList();
 	}
 
 	private Project<?> getTargetForRBAC() {

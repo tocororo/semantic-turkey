@@ -133,8 +133,8 @@ public class Users extends STServiceAdapter {
 	 * Registers a new user
 	 * @param email this will be used as id
 	 * @param password password not encoded, it is encoded here
-	 * @param firstName
-	 * @param lastName
+	 * @param givenName
+	 * @param familyName
 	 * @param birthday
 	 * @param gender
 	 * @param country
@@ -154,7 +154,7 @@ public class Users extends STServiceAdapter {
 	@ResponseBody
 	public String registerUser(
 			@RequestParam("email") String email, @RequestParam("password") String password,
-			@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName,
+			@RequestParam("givenName") String givenName, @RequestParam("familyName") String familyName,
 			@RequestParam(value = "birthday", required = false) String birthday,
 			@RequestParam(value = "gender", required = false) String gender,
 			@RequestParam(value = "country", required = false) String country,
@@ -164,7 +164,7 @@ public class Users extends STServiceAdapter {
 			@RequestParam(value = "phone", required = false) String phone) throws ProjectAccessException, 
 				UserCreationException, ParseException, PUBindingException {
 		try {
-			STUser user = new STUser(email, password, firstName, lastName);
+			STUser user = new STUser(email, password, givenName, familyName);
 			if (birthday != null) {
 				user.setBirthday(birthday);
 			}
@@ -190,8 +190,8 @@ public class Users extends STServiceAdapter {
 			ProjectUserBindingsManager.createPUBindingsOfUser(user);
 			
 			try {
-				EmailSender.sendRegistrationMailToUser(email, firstName, lastName);
-				EmailSender.sendRegistrationMailToAdmin(email, firstName, lastName);
+				EmailSender.sendRegistrationMailToUser(email, givenName, familyName);
+				EmailSender.sendRegistrationMailToAdmin(email, givenName, familyName);
 			} catch (UnsupportedEncodingException | MessagingException e) {
 				logger.error(Utilities.printFullStackTrace(e));
 				e.printStackTrace();
@@ -210,21 +210,21 @@ public class Users extends STServiceAdapter {
 	/**
 	 * Update first name of the given user.
 	 * @param email
-	 * @param firstName
+	 * @param givenName
 	 * @return
 	 * @throws JSONException 
 	 * @throws IOException 
 	 */
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserFirstName", 
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserGivenName", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserFirstName(@RequestParam("email") String email, @RequestParam("firstName") String firstName) throws JSONException, IOException {
+	public String updateUserGivenName(@RequestParam("email") String email, @RequestParam("givenName") String givenName) throws JSONException, IOException {
 		STUser user = UsersManager.getUserByEmail(email);
-		user = UsersManager.updateUserFirstName(user, firstName);
+		user = UsersManager.updateUserGivenName(user, givenName);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-				.createReplyResponse("updateUserFirstName", RepliesStatus.ok, SerializationType.json);
+				.createReplyResponse("updateUserGivenName", RepliesStatus.ok, SerializationType.json);
 		jsonResp.getDataElement().put("user", user.getAsJSONObject());
 		return jsonResp.toString();
 	}
@@ -232,21 +232,21 @@ public class Users extends STServiceAdapter {
 	/**
 	 * Update last name of the given user.
 	 * @param email
-	 * @param lastName
+	 * @param familyName
 	 * @return
 	 * @throws JSONException 
 	 * @throws IOException 
 	 */
-	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserLastName", 
+	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Users/updateUserFamilyName", 
 			method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String updateUserLastName(@RequestParam("email") String email, @RequestParam("lastName") String lastName) throws JSONException, IOException {
+	public String updateUserFamilyName(@RequestParam("email") String email, @RequestParam("familyName") String familyName) throws JSONException, IOException {
 		STUser user = UsersManager.getUserByEmail(email);
-		user = UsersManager.updateUserLastName(user, lastName);
+		user = UsersManager.updateUserFamilyName(user, familyName);
 		updateUserInSecurityContext(user);
 		
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-				.createReplyResponse("updateUserLastName", RepliesStatus.ok, SerializationType.json);
+				.createReplyResponse("updateUserFamilyName", RepliesStatus.ok, SerializationType.json);
 		jsonResp.getDataElement().put("user", user.getAsJSONObject());
 		return jsonResp.toString();
 	}
@@ -427,9 +427,9 @@ public class Users extends STServiceAdapter {
 		}
 		STUser user = UsersManager.getUserByEmail(email);
 		if (enabled) {
-			user = UsersManager.updateUserStatus(user, UserStatus.ENABLED);
+			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
 		} else {
-			user = UsersManager.updateUserStatus(user, UserStatus.DISABLED);
+			user = UsersManager.updateUserStatus(user, UserStatus.INACTIVE);
 		}
 		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
 				.createReplyResponse("enableUser", RepliesStatus.ok, SerializationType.json);
@@ -473,13 +473,13 @@ public class Users extends STServiceAdapter {
 		/**
 		 * Sends an email to the registered user
 		 * @param toEmail
-		 * @param firstName
-		 * @param lastName
+		 * @param givenName
+		 * @param familyName
 		 * @throws MessagingException
 		 * @throws UnsupportedEncodingException
 		 */
-		public static void sendRegistrationMailToUser(String toEmail, String firstName, String lastName) throws MessagingException, UnsupportedEncodingException {
-			String text = "Dear " + firstName + " " + lastName + ","
+		public static void sendRegistrationMailToUser(String toEmail, String givenName, String familyName) throws MessagingException, UnsupportedEncodingException {
+			String text = "Dear " + givenName + " " + familyName + ","
 					+ "\nthank you for registering as a user of VocBench 3."
 					+ " Your request has been received. Please wait for the administrator to approve it."
 					+ " You will be informed when you can start to login in the system."
@@ -496,11 +496,11 @@ public class Users extends STServiceAdapter {
 		 * @throws MessagingException 
 		 * @throws UnsupportedEncodingException 
 		 */
-		public static void sendRegistrationMailToAdmin(String userEmail, String userFirstName, String userLastName) throws UnsupportedEncodingException, MessagingException {
+		public static void sendRegistrationMailToAdmin(String userEmail, String userGivenName, String userFamilyName) throws UnsupportedEncodingException, MessagingException {
 			String text = "Dear VocBench administrator,"
 					+ "\nthere is a new user registration request for VocBench."
-					+ "\nFirst Name: " + userFirstName
-					+ "\nLast Name: " + userLastName
+					+ "\nGiven Name: " + userGivenName
+					+ "\nFamily Name: " + userFamilyName
 					+ "\nE-mail: " + userEmail
 					+ "\nPlease activate the account.\nRegards,\nThe VocBench Team.";
 			sendMail(Config.getEmailAdminAddress(), text);

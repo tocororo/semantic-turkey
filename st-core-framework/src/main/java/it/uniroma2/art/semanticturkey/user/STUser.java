@@ -24,8 +24,8 @@ public class STUser implements UserDetails {
 	private static final long serialVersionUID = -5621952496841740959L;
 	
 	private IRI iri;
-	private String firstName;
-	private String lastName;
+	private String givenName;
+	private String familyName;
 	private String password; //encoded
 	private String email;
 	private Collection<GrantedAuthority> authorities;
@@ -41,25 +41,25 @@ public class STUser implements UserDetails {
 	
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
-	public STUser(String email, String password, String firstName, String lastName) {
+	public STUser(String email, String password, String givenName, String familyName) {
 		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, encodeUserEmail(email));
 		this.iri = iri;
 		this.email = email;
 		this.password = password;
-		this.firstName = firstName;
-		this.lastName = lastName;
+		this.givenName = givenName;
+		this.familyName = familyName;
 		this.authorities = new ArrayList<GrantedAuthority>();
-		this.status = UserStatus.REGISTERED;
+		this.status = UserStatus.NEW;
 	}
 	
-	public STUser(IRI iri, String email, String password, String firstName, String lastName) {
+	public STUser(IRI iri, String email, String password, String givenName, String familyName) {
 		this.iri = iri;
 		this.email = email;
 		this.password = password;
-		this.firstName = firstName;
-		this.lastName = lastName;
+		this.givenName = givenName;
+		this.familyName = familyName;
 		this.authorities = new ArrayList<GrantedAuthority>();
-		this.status = UserStatus.REGISTERED;
+		this.status = UserStatus.NEW;
 	}
 	
 	public IRI getIRI() {
@@ -70,20 +70,20 @@ public class STUser implements UserDetails {
 		this.iri = iri;
 	}
 	
-	public String getFirstName() {
-		return firstName;
+	public String getGivenName() {
+		return givenName;
 	}
 	
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
+	public void setGivenName(String givenName) {
+		this.givenName = givenName;
 	}
 	
-	public String getLastName() {
-		return lastName;
+	public String getFamilyName() {
+		return familyName;
 	}
 	
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
+	public void setFamilyName(String familyName) {
+		this.familyName = familyName;
 	}
 	
 	@Override
@@ -130,7 +130,7 @@ public class STUser implements UserDetails {
 
 	@Override
 	public boolean isEnabled() {
-		return this.status.equals(UserStatus.ENABLED);
+		return this.status.equals(UserStatus.ACTIVE);
 	}
 	
 	public String getUrl() {
@@ -216,8 +216,8 @@ public class STUser implements UserDetails {
 	public JSONObject getAsJSONObject() throws JSONException {
 		JSONObject userJson = new JSONObject();
 		userJson.put("email", email);
-		userJson.put("firstName", firstName);
-		userJson.put("lastName", lastName);
+		userJson.put("givenName", givenName);
+		userJson.put("familyName", familyName);
 		if (birthday != null) {
 			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday));
 		} else {
@@ -240,8 +240,8 @@ public class STUser implements UserDetails {
 	public String toString() {
 		DateFormat dateFormat = new SimpleDateFormat(STUser.USER_DATE_FORMAT);
 		String s = "";
-		s += "First Name: " + this.firstName;
-		s += "\nLast Name: " + this.lastName;
+		s += "Given Name: " + this.givenName;
+		s += "\nFamily Name: " + this.familyName;
 		s += "\nPassword: " + this.password;
 		s += "\ne-mail: " + this.email;
 		s += "\nUrl: " + this.url;

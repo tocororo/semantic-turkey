@@ -368,7 +368,7 @@ public class Resources {
 		usersDir.mkdir();
 		// create and register admin user
 		STUser admin = new STUser("admin@vocbench.com", "admin", "Admin", "Admin");
-		admin.setStatus(UserStatus.ENABLED);
+		admin.setStatus(UserStatus.ACTIVE);
 		UsersManager.registerUser(admin);
 	}
 	
