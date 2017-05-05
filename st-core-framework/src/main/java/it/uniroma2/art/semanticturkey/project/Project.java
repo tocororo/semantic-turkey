@@ -35,7 +35,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
+
+import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -131,6 +134,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public static final String VERSIONS_PROP = "versions";
 
+	public static final String DEFAULT_REPOSITORY_LOCATION_PROP = "defaultRepositoryLocation";
+
 	// Constants concerning project plugins
 	public static final String MANDATORY_PLUGINS_PROP_PREFIX = "plugins.mandatory";
 
@@ -183,6 +188,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	protected RepositoryConfig supportRepoConfig;
 	private LocalRepositoryManager repositoryManager;
 	private VersionManager versionManager;
+	private RepositoryLocation defaultRepositoryLocation;
 
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -214,6 +220,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			propFileInStream.close();
 			acl = new ProjectACL(this);
 			versionManager = new VersionManager(this);
+			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
+					.map(RepositoryLocation::fromString).orElse(null);
 		} catch (IOException e1) {
 			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
 			throw new ProjectCreationException(e1);
@@ -796,11 +804,26 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return repositoryManager;
 	}
 
-	public Repository createRepository(RepositoryAccess repositoryAccess, String repositoryId,
+	/**
+	 * Creates a new repository.
+	 * 
+	 * @param repositoryAccess
+	 *            if <code>null</code> the default repository location associated with the project is used
+	 * @param repositoryId
+	 * @param repoConfigurerSpecification
+	 * @param localRepostoryId
+	 * @return
+	 * @throws RepositoryCreationException
+	 */
+	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess, String repositoryId,
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
 			throws RepositoryCreationException {
 
 		RepositoryImplConfig localRepositoryImplConfig;
+
+		if (repositoryAccess == null) {
+			repositoryAccess = getDefaultRepositoryLocation().toRepositoryAccess();
+		}
 
 		// TODO: not an atomic check
 		if (repositoryManager.hasRepositoryConfig(localRepostoryId)) {
@@ -864,6 +887,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public VersionManager getVersionManager() {
 		return versionManager;
+	}
+
+	public RepositoryLocation getDefaultRepositoryLocation() {
+		return defaultRepositoryLocation;
 	}
 }
 

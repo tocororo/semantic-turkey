@@ -25,6 +25,7 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.project.CreateLocal;
 import it.uniroma2.art.semanticturkey.project.ProjectUtils;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.VersionInfo;
@@ -71,7 +72,8 @@ public class Versions extends STServiceAdapter {
 	 * Dumps the current content of the core repository to a dedicated repository.
 	 * 
 	 * @param repositoryAccess
-	 *            tells the location of the repository
+	 *            tells the location of the repository. If <code>null</code>, the default repository location
+	 *            associated with the project is used
 	 * @param repositoryId
 	 *            tells the name of the version repository. If the repository is local, this parameter must be
 	 *            <code>null</code>
@@ -85,7 +87,8 @@ public class Versions extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	public VersionInfo createVersionDump(RepositoryAccess repositoryAccess, @Optional String repositoryId,
+	public VersionInfo createVersionDump(@Optional RepositoryAccess repositoryAccess,
+			@Optional String repositoryId,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification repoConfigurerSpecification,
 			String versionId) throws RepositoryCreationException, JsonProcessingException,
 			ProjectUpdateException, ReservedPropertyUpdateException {

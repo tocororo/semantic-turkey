@@ -1516,16 +1516,19 @@ public class ProjectManager {
 
 					RepositoryManager remoteRepoManager = RemoteRepositoryManager
 							.getInstance(remoteRepositoryAccess.getServerURL().toString());
-					
+
 					try {
 						if (remoteRepoManager.hasRepositoryConfig(coreRepoID)) {
-							throw new ProjectCreationException("Remote repository already existing: " + coreRepoID);
+							throw new ProjectCreationException(
+									"Remote repository already existing: " + coreRepoID);
 						}
-						
-						if (supportRepositoryConfig != null && remoteRepoManager.hasRepositoryConfig(supportRepoID)) {
-							throw new ProjectCreationException("Remote repository already existing: " + supportRepoID);
+
+						if (supportRepositoryConfig != null
+								&& remoteRepoManager.hasRepositoryConfig(supportRepoID)) {
+							throw new ProjectCreationException(
+									"Remote repository already existing: " + supportRepoID);
 						}
-						
+
 						if (newSupportRepositoryConfig != null) {
 							remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
 						}
@@ -1534,19 +1537,22 @@ public class ProjectManager {
 						remoteRepoManager.shutDown();
 					}
 				} else { // remote access & not create --> access existing remote
-					
+
 					// Check the existence of remote repositories
-					
+
 					RepositoryManager remoteRepoManager = RemoteRepositoryManager
 							.getInstance(remoteRepositoryAccess.getServerURL().toString());
-					
+
 					try {
 						if (!remoteRepoManager.hasRepositoryConfig(coreRepoID)) {
-							throw new ProjectCreationException("Remote repository not existing: " + coreRepoID);
+							throw new ProjectCreationException(
+									"Remote repository not existing: " + coreRepoID);
 						}
-						
-						if (supportRepositoryConfig != null && !remoteRepoManager.hasRepositoryConfig(supportRepoID)) {
-							throw new ProjectCreationException("Remote repository not existing: " + supportRepoID);
+
+						if (supportRepositoryConfig != null
+								&& !remoteRepoManager.hasRepositoryConfig(supportRepoID)) {
+							throw new ProjectCreationException(
+									"Remote repository not existing: " + supportRepoID);
 						}
 					} finally {
 						remoteRepoManager.shutDown();
@@ -1587,8 +1593,9 @@ public class ProjectManager {
 			}
 
 			prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI,
-					defaultNamespace, historyEnabled, validationEnabled, coreRepoID, coreRepositoryConfig,
-					supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
+					defaultNamespace, historyEnabled, validationEnabled,
+					RepositoryLocation.fromRepositoryAccess(repositoryAccess), coreRepoID,
+					coreRepositoryConfig, supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
 					renderingEngineSpecification);
 
 		} catch (Exception e) {
@@ -1606,8 +1613,9 @@ public class ProjectManager {
 
 	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(ProjectConsumer consumer,
 			String projectName, Class<MODELTYPE> modelType, ProjectType type, File projectDir, String baseURI,
-			String defaultNamespace, boolean historyEnabled, boolean validationEnabled, String coreRepoID,
-			RepositoryConfig coreRepoConfig, String supportRepoID, RepositoryConfig supportRepoConfig,
+			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
+			RepositoryLocation defaultRepositoryLocation, String coreRepoID, RepositoryConfig coreRepoConfig,
+			String supportRepoID, RepositoryConfig supportRepoConfig,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
@@ -1639,7 +1647,9 @@ public class ProjectManager {
 			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
 			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
 			out.write(ProjectACL.ACL + "="
-					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
+					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW) + "\n");
+			out.write(Project.DEFAULT_REPOSITORY_LOCATION_PROP + "="
+					+ escape(defaultRepositoryLocation.toString()));
 			out.close();
 
 			logger.debug("project creation: all project properties have been stored");
