@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import org.eclipse.rdf4j.IsolationLevels;
@@ -98,7 +99,7 @@ public class Versions extends STServiceAdapter {
 			outConn.commit();
 		}
 
-		VersionInfo newVersionInfo = new VersionInfo(versionId, Instant.now(), localRepostoryId);
+		VersionInfo newVersionInfo = new VersionInfo(versionId, new Date(), localRepostoryId);
 
 		getProject().getVersionManager().recordVersion(newVersionInfo);
 

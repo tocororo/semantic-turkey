@@ -1,6 +1,10 @@
 package it.uniroma2.art.semanticturkey.project;
 
-import java.time.Instant;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 
 /**
  * Information about a version dump.
@@ -10,20 +14,23 @@ import java.time.Instant;
 public class VersionInfo {
 	private final String versionId;
 	private final String repositoryId;
-	private final Instant instant;
+	private final Date dateTime;
 
-	public VersionInfo(String versionId, Instant instant, String repositoryId) {
+	public VersionInfo(@JsonProperty("versionId") String versionId,
+			@JsonProperty("dateTime") Date dateTime,
+			@JsonProperty("repositoryId") String repositoryId) {
 		this.versionId = versionId;
-		this.instant = instant;
+		this.dateTime = dateTime;
 		this.repositoryId = repositoryId;
 	}
 
 	public String getVersionId() {
 		return this.versionId;
 	}
-	
-	public Instant getInstant() {
-		return instant;
+
+	@JsonFormat(shape = Shape.STRING)
+	public Date getDateTime() {
+		return dateTime;
 	}
 
 	public String getRepositoryId() {

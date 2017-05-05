@@ -215,6 +215,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			acl = new ProjectACL(this);
 			versionManager = new VersionManager(this);
 		} catch (IOException e1) {
+			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
 			throw new ProjectCreationException(e1);
 		}
 	}
