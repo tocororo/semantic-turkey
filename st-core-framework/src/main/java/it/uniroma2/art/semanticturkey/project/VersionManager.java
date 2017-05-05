@@ -3,10 +3,8 @@ package it.uniroma2.art.semanticturkey.project;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -50,16 +48,22 @@ public class VersionManager {
 	public synchronized void recordVersion(VersionInfo newVersionInfo)
 			throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
 		if (versionInfoList.stream().anyMatch(v -> v.getVersionId().equals(newVersionInfo.getVersionId()))) {
-			throw new IllegalArgumentException("A version with the same identifier was already dumped: " + newVersionInfo.getVersionId());
+			throw new IllegalArgumentException("A version with the same identifier was already dumped: "
+					+ newVersionInfo.getVersionId());
 		}
 		versionInfoList.add(newVersionInfo);
 		saveVersions();
 	}
 
-	private void saveVersions() throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
+	private void saveVersions()
+			throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
 		ObjectMapper objectMapper = new ObjectMapper();
 		project.setProperty(Project.VERSIONS_PROP, objectMapper.writeValueAsString(versionInfoList));
-		
+
+	}
+
+	public Optional<VersionInfo> getVersion(String versionId) {
+		return versionInfoList.stream().filter(v -> versionId.equals(v.getVersionId())).findAny();
 	}
 
 }

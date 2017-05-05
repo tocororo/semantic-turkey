@@ -1,13 +1,15 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +48,23 @@ public class Versions extends STServiceAdapter {
 	// TODO: establish authorizations for each operation
 
 	@STServiceOperation
-	public List<VersionInfo> getVersions() throws JsonParseException, JsonMappingException, IOException {
-		return getProject().getVersionManager().getVersions();
+	public List<VersionInfo> getVersions(@Optional(defaultValue = "false") boolean setRepositoryStatus)
+			throws JsonParseException, JsonMappingException, IOException {
+		List<VersionInfo> versionInfoList = getProject().getVersionManager().getVersions();
+
+		Set<String> initializedRepositories = getProject().getRepositoryManager()
+				.getInitializedRepositoryIDs();
+
+		if (setRepositoryStatus) {
+			return versionInfoList.stream().map(versionInfo -> {
+				String repositoryId = versionInfo.getRepositoryId();
+				return versionInfo.newWithRepositoryStatus(initializedRepositories.contains(repositoryId)
+						? VersionInfo.RepositoryStatus.INITIALIZED
+						: VersionInfo.RepositoryStatus.UNITIALIZED);
+			}).collect(Collectors.toList());
+		}
+
+		return versionInfoList;
 	}
 
 	/**
@@ -104,6 +121,17 @@ public class Versions extends STServiceAdapter {
 		getProject().getVersionManager().recordVersion(newVersionInfo);
 
 		return newVersionInfo;
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Read
+	public void closeVersion(String versionId) {
+		VersionInfo versionInfo = getProject().getVersionManager().getVersion(versionId).orElseThrow(
+				() -> new IllegalArgumentException("Unexisting version identifier: " + versionId));
+
+		Repository versionRepository = getProject().getRepositoryManager()
+				.getRepository(versionInfo.getRepositoryId());
+		versionRepository.shutDown();
 	}
 
 };
