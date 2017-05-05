@@ -32,6 +32,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
 
@@ -302,8 +303,27 @@ public class ManchesterSyntaxUtils {
 		return statList;
 	}
 
+	/**
+	 * return true if the bnode represents a class axiom, false otherwise
+	 * @param bnode
+	 * @param resources
+	 * @param repositoryConnection
+	 * @return
+	 */
+	public static boolean isClassAxiom(BNode bnode, Resource[] resources, RepositoryConnection repositoryConnection ){
+		List<Statement> statList = new ArrayList<>();
+		ManchesterClassInterface mci;
+		try {
+			mci = ManchesterSyntaxUtils.getManchClassFromBNode(bnode, resources, 
+					statList, repositoryConnection);
+		} catch (NotClassAxiomException e) {
+			return false;
+		}
+		return true;
+	}
+	
 	public static String getManchExprFromBNode(BNode bnode, Resource[] graphs, 
-			List<Statement> tripleList, boolean useUppercaseSyntax, RepositoryConnection conn) {
+			List<Statement> tripleList, boolean useUppercaseSyntax, RepositoryConnection conn) throws NotClassAxiomException {
 		ManchesterClassInterface mci = getManchClassFromBNode(bnode, graphs, tripleList, conn);
 		if (mci != null) {
 			return mci.getManchExpr(useUppercaseSyntax);
@@ -313,7 +333,7 @@ public class ManchesterSyntaxUtils {
 	
 	public static String getManchExprFromBNode(BNode bnode, Map<String, String> namespaceToPrefixMap, 
 			boolean getPrefixName, Resource[] graphs, List<Statement> tripleList, 
-			boolean useUppercaseSyntax, RepositoryConnection conn) {
+			boolean useUppercaseSyntax, RepositoryConnection conn) throws NotClassAxiomException {
 		ManchesterClassInterface mci = getManchClassFromBNode(bnode, graphs, tripleList, conn);
 		if (mci != null) {
 			return mci.getManchExpr(namespaceToPrefixMap, getPrefixName, useUppercaseSyntax);
@@ -323,7 +343,7 @@ public class ManchesterSyntaxUtils {
 	
 
 	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode,
-			Resource[] graphs, List<Statement> tripleList, RepositoryConnection conn) {
+			Resource[] graphs, List<Statement> tripleList, RepositoryConnection conn) throws NotClassAxiomException {
 		//do a SPARQL DESCRIBE to obtain all the triple regarding this restriction 
 		String query = "DESCRIBE ?res WHERE {BIND (?inputRes AS ?res)}";
 		GraphQuery graphQuery = conn.prepareGraphQuery(query);
@@ -343,7 +363,7 @@ public class ManchesterSyntaxUtils {
 	}
 	
 	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode,
-			Resource[] graphs, List<Statement> tripleList, Model model) {
+			Resource[] graphs, List<Statement> tripleList, Model model) throws NotClassAxiomException {
 		//get all the triples having the input bnode as subject
 		//RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
 		Model filteredModel = model.filter(bnode, null, null, graphs);
@@ -371,7 +391,7 @@ public class ManchesterSyntaxUtils {
 		BNode onClassNode = null;
 		IRI onClassIRI = null;
 		PossType type = null;
-		int card = 0;
+		int card = -1;
 		boolean inverse = false;
 		//while (statements.hasNext()) {
 		for(Statement stat : filteredModel) {
@@ -466,35 +486,61 @@ public class ManchesterSyntaxUtils {
 			}
 		}
 
-		// all the information regarding this restriction are been process, now use the extracted
+		if(type == null){
+			//it is not a class axiom, so return null, since no ManchesterClassInterface can be
+			// associated to this bnode
+			throw new NotClassAxiomException(bnode, graphs);
+		}
+		
+		// all the information regarding this restriction have been process, now use the extracted
 		// information to create the right object
 		ManchesterClassInterface mci = null;
 		if (type.equals(PossType.VALUE)) {
+			if(prop==null || value==null ){
+				//some required triple is missing, so it it not really a class axiom
+				throw new NotClassAxiomException(bnode, graphs);
+			}
 			mci = new ManchesterValueClass(inverse, prop, value);
 		} else if (type.equals(PossType.EXACTLY) || type.equals(PossType.MAX) || type.equals(PossType.MIN)) {
 			if(onClassNode == null && onClassIRI == null){
+				if(prop==null || value==null || card==-1){
+					//some required triple is missing, so it it not really a class axiom
+					throw new NotClassAxiomException(bnode, graphs);
+				}
 				mci = new ManchesterCardClass(inverse, type, card, prop);
 			} else{
 				if(onClassNode != null){
+					if(prop==null || card==-1){
+						//some required triple is missing, so it it not really a class axiom
+						throw new NotClassAxiomException(bnode, graphs);
+					}
 					mci = new ManchesterCardClass(inverse, type, card, prop, 
 							getManchClassFromBNode(onClassNode, graphs, tripleList, model));
 				} else{
+					if(prop==null || onClassIRI==null || card==-1){
+						//some required triple is missing, so it it not really a class axiom
+						throw new NotClassAxiomException(bnode, graphs);
+					}
 					mci = new ManchesterCardClass(inverse, type, card, prop, 
 							new ManchesterBaseClass(onClassIRI));
 				}
 			}
 		} else if (type.equals(PossType.AND)) {
 			List<ManchesterClassInterface> andClassList = new ArrayList<ManchesterClassInterface>();
-			parseListFirstRest(objBnode, andClassList, graphs, tripleList, model);
+			parseListFirstRestForManchesterAxiom(objBnode, andClassList, graphs, tripleList, model);
 			mci = new ManchesterAndClass(andClassList);
 		} else if (type.equals(PossType.OR)) {
 			List<ManchesterClassInterface> orClassList = new ArrayList<ManchesterClassInterface>();
-			parseListFirstRest(objBnode, orClassList, graphs, tripleList, model);
+			parseListFirstRestForManchesterAxiom(objBnode, orClassList, graphs, tripleList, model);
 			mci = new ManchesterOrClass(orClassList);
 		} else if (type.equals(PossType.NOT)) {
 			if (objBnode != null) {
 				mci = new ManchesterNotClass(getManchClassFromBNode(objBnode, graphs, tripleList, model));
 			} else { // the class is a URI
+				if(objURI==null){
+					//some required triple is missing, so it it not really a class axiom
+					throw new NotClassAxiomException(bnode, graphs);
+				}
 				mci = new ManchesterNotClass(new ManchesterBaseClass(objURI));
 			}
 		} else if (type.equals(PossType.ONEOF)) { 
@@ -518,57 +564,81 @@ public class ManchesterSyntaxUtils {
 			}
 		} else if (type.equals(PossType.ONLY)) {
 			if (objBnode != null) {
+				if(prop==null){
+					//some required triple is missing, so it it not really a class axiom
+					throw new NotClassAxiomException(bnode, graphs);
+				}
 				mci = new ManchesterOnlyClass(inverse, prop,
 						getManchClassFromBNode(objBnode, graphs, tripleList, model));
 			} else { // the class is a URI
+				if(prop==null || objURI==null){
+					//some required triple is missing, so it it not really a class axiom
+					throw new NotClassAxiomException(bnode, graphs);
+				}
 				mci = new ManchesterOnlyClass(inverse, prop, new ManchesterBaseClass(objURI));
 			}
 		} else if (type.equals(PossType.SOME)) {
 			if (objBnode != null) {
+				if(prop==null){
+					//some required triple is missing, so it it not really a class axiom
+					throw new NotClassAxiomException(bnode, graphs);
+				}
 				mci = new ManchesterSomeClass(inverse, prop,
 						getManchClassFromBNode(objBnode, graphs, tripleList, model));
 			} else { // the class is a URI
+				if(prop==null || objURI==null){
+					//some required triple is missing, so it it not really a class axiom
+					throw new NotClassAxiomException(bnode, graphs);
+				}
 				mci = new ManchesterSomeClass(inverse, prop, new ManchesterBaseClass(objURI));
 			}
 		} else if(type.equals(PossType.SELF)){
+			if(prop==null){
+				//some required triple is missing, so it it not really a class axiom
+				throw new NotClassAxiomException(bnode, graphs);
+			}
 			mci = new ManchesterSelfClass(inverse, prop);
-		}else {
+		} else {
 			// this should never happen
 		}
 		return mci;
 	}
 	
-	private static void parseListFirstRest(Resource bnode, List<ManchesterClassInterface> manchClassList,
-			Resource[] graphs, List<Statement> tripleList, Model model) {
+	private static void parseListFirstRestForManchesterAxiom(BNode bnode, List<ManchesterClassInterface> manchClassList,
+			Resource[] graphs, List<Statement> tripleList, Model model) throws NotClassAxiomException {
 		//RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
 		//while (statements.hasNext()) {
-		for(Statement stat : model.filter(bnode, null, null, graphs)){
-			//Statement stat = statements.next();
-			if(tripleList != null){
-				tripleList.add(stat);
-			}
-			IRI pred = stat.getPredicate();
-			if (pred.equals(RDF.FIRST)) {
-				// the first could be a URI or a bnode
-				if (stat.getObject() instanceof IRI) {
-					manchClassList.add(new ManchesterBaseClass((IRI) stat.getObject()));
-				} else {
-					// it is a bnode, so it is a restriction itself
-					manchClassList
-							.add((getManchClassFromBNode((BNode) stat.getObject(), graphs, 
-									tripleList, model)));
-				}
-			} else if (pred.equals(RDF.REST)) {
-				// the first could be a bnode or RDF.Res.NIL
-				if (stat.getObject() instanceof BNode) {
-					parseListFirstRest((BNode) stat.getObject(), manchClassList, graphs, 
-							tripleList, model);
-				} else {
-					// it is RDF.NIL, so set it to null
-				}
-			} else { //pred.equals(RDF.List)
-				// nothing to do in this case
-			}
+		
+		Model firstModel = model.filter(bnode, RDF.FIRST, null, graphs);
+		Model restModel = model.filter(bnode, RDF.REST, null, graphs);
+		
+		if(firstModel.isEmpty() || restModel.isEmpty()){
+			throw new NotClassAxiomException(bnode, graphs);
+		}
+		
+		Value firstValue = Models.object(firstModel).get();
+		if (firstValue instanceof IRI) {
+			manchClassList.add(new ManchesterBaseClass((IRI) firstValue));
+		} else if (firstValue instanceof BNode ){
+			// it is a bnode, so it is a restriction itself
+			manchClassList
+					.add((getManchClassFromBNode((BNode) firstValue, graphs, 
+							tripleList, model)));
+		} else{
+			//something is wrong with this value, it is a Literal
+			throw new NotClassAxiomException(bnode, graphs);
+		}
+		
+		Value restValue = Models.object(restModel).get();
+		// the first could be a bnode or RDF.Res.NIL
+		if (restValue instanceof BNode) {
+			parseListFirstRestForManchesterAxiom((BNode) restValue, manchClassList, graphs, 
+					tripleList, model);
+		} else if(restValue.equals(RDF.NIL)) {
+			// it is RDF.NIL, the end of the list
+		} else {
+			//something is wrong with this value, it is a Literal, so return false
+			throw new NotClassAxiomException(bnode, graphs);
 		}
 	}
 	

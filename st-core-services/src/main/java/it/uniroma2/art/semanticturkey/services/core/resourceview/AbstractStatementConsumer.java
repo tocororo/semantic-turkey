@@ -31,6 +31,7 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
@@ -95,11 +96,21 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				Map<String, String> namespaceToprefixMap = QueryResults.stream(repoConn.getNamespaces())
 						.collect(toMap(Namespace::getName, Namespace::getPrefix,
 								(v1, v2) -> v1 != null ? v1 : v2));
-				String expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource,
-						namespaceToprefixMap, true, new Resource[0], null, true, repoConn);
-				if (expr != null && !expr.isEmpty()) {
-					return expr;
+				String expr;
+				try {
+					expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource,
+							namespaceToprefixMap, true, new Resource[0], null, true, repoConn);
+					if (expr != null && !expr.isEmpty()) {
+						if(expr.startsWith("(") && expr.endsWith("")){
+							//remove the starting '(' and the end ')' 
+							expr = expr.substring(1, expr.length()-1).trim();
+						}
+						return expr;
+					}
+				} catch (NotClassAxiomException e) {
+					//Do nothing, since it is not a valid Class Axiom
 				}
+				
 			} else if (repoConn.hasStatement(resource, RDF.TYPE, RDF.LIST, true)) {
 				Model statements = new LinkedHashModel();
 				Connections.getRDFCollection(repoConn, resource, statements);

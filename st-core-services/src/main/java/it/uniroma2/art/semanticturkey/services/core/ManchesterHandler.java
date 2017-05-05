@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -75,16 +76,28 @@ public class ManchesterHandler extends STServiceAdapter {
 		Map<String, String>bnodeToExprEquivalentMap = new HashMap<>();
 		typeToMapBNodeToExpr.put("equivalentClass", bnodeToExprEquivalentMap);
 		for(BNode bnode : equivalentClassNodeList){
-			String expr = getSingleManchExpression(bnode, getUserNamedGraphs(), new ArrayList<>(), namespaceToPrefixsMap, 
-					usePrefixes, useUppercaseSyntax);
-			bnodeToExprEquivalentMap.put(bnode.stringValue(), expr);
+			String expr;
+			try {
+				expr = getSingleManchExpression(bnode, getUserNamedGraphs(), new ArrayList<>(), namespaceToPrefixsMap, 
+						usePrefixes, useUppercaseSyntax);
+				bnodeToExprEquivalentMap.put(bnode.stringValue(), expr);
+			} catch (NotClassAxiomException e) {
+				//do nothing
+			}
+			
 		}
 		Map<String, String>bnodeToExprSubClassMap = new HashMap<>();
 		typeToMapBNodeToExpr.put("subClassOf", bnodeToExprSubClassMap);
 		for(BNode bnode : equivalentClassNodeList){
-			String expr = getSingleManchExpression(bnode, getUserNamedGraphs(), new ArrayList<>(), namespaceToPrefixsMap, 
-					usePrefixes, useUppercaseSyntax);
-			bnodeToExprSubClassMap.put(bnode.stringValue(), expr);
+			String expr;
+			try {
+				expr = getSingleManchExpression(bnode, getUserNamedGraphs(), new ArrayList<>(), namespaceToPrefixsMap, 
+						usePrefixes, useUppercaseSyntax);
+				bnodeToExprSubClassMap.put(bnode.stringValue(), expr);
+			} catch (NotClassAxiomException e) {
+				//do nothing
+			}
+			
 		}
 		
 		
@@ -99,11 +112,12 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @param useUppercaseSyntax true if the name of the symbols used in the Manchester should be in uppercase,
 	 * false for lowercase 
 	 * @return the Manchester expression associated to the given bnode
+	 * @throws NotClassAxiomException 
 	 */
 	@STServiceOperation
 	@Read
 	public String getExpression(BNode bnode, @Optional(defaultValue = "true") boolean usePrefixes,
-			@Optional(defaultValue = "true") boolean useUppercaseSyntax){
+			@Optional(defaultValue = "true") boolean useUppercaseSyntax) throws NotClassAxiomException{
 		
 		List<Statement> statList = new ArrayList<>();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
@@ -117,12 +131,29 @@ public class ManchesterHandler extends STServiceAdapter {
 	}
 	
 	private String getSingleManchExpression(BNode bnode, Resource[] graphsArray, List<Statement> statList, 
-			Map<String, String> namespaceToPrefixsMap, boolean usePrefixes, boolean useUppercaseSyntax){
+			Map<String, String> namespaceToPrefixsMap, boolean usePrefixes, boolean useUppercaseSyntax) throws NotClassAxiomException{
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.getManchClassFromBNode(bnode, graphsArray, 
 				statList, getManagedConnection());
-		return mci.getManchExpr(namespaceToPrefixsMap, usePrefixes, useUppercaseSyntax);
+		String expr = mci.getManchExpr(namespaceToPrefixsMap, usePrefixes, useUppercaseSyntax);
+		
+		if(expr.startsWith("(") && expr.endsWith("")){
+			//remove the starting '(' and the end ')' 
+			expr = expr.substring(1, expr.length()-1).trim();
+		}
+		
+		return expr;
 	}
 	
+	/**
+	 * return true if the bnode represents a Class Axiom, false otherwise
+	 * @param bnode the bnode to test
+	 * @return true if the bnode represents a Class Axiom, false otherwise
+	 */
+	@STServiceOperation
+	@Read
+	public Boolean isClassAxion(BNode bnode) {
+		return ManchesterSyntaxUtils.isClassAxiom(bnode, getUserNamedGraphs(), getManagedConnection());
+	}
 	
 	/**
 	 * returns true if the expression is compliant with the syntax, false otherwise
@@ -183,10 +214,11 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @param exprType (OPTIONL) the relation (owl:equivalentClassand or rdfs:subClassOf)  linking the Restriction to 
 	 * the input clasIRI 
 	 * @param bnode the bnode representing the restriction
+	 * @throws NotClassAxiomException 
 	 */
 	@STServiceOperation
 	@Write
-	public void removeExpression(@Optional IRI classIri, @Optional IRI exprType, BNode bnode){
+	public void removeExpression(@Optional IRI classIri, @Optional IRI exprType, BNode bnode) throws NotClassAxiomException{
 		RepositoryConnection conn = getManagedConnection();
 		List<Statement> statList = new ArrayList<>();
 		ManchesterSyntaxUtils.getManchClassFromBNode(bnode, getUserNamedGraphs(), statList, conn);
@@ -208,10 +240,12 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @param bnode the bnode representing the restriction
 	 * @return the same bnode passed in input and used to create the updated restriction 
 	 * @throws ManchesterParserException 
+	 * @throws NotClassAxiomException 
 	 */
 	@STServiceOperation
 	@Write
-	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode) throws ManchesterParserException{
+	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode) 
+			throws ManchesterParserException, NotClassAxiomException{
 		//first of all, parse the new Expression to be sure that it is a valid one
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);

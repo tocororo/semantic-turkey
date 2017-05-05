@@ -5,9 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 
@@ -21,6 +27,8 @@ public class TestTestManchesterSyntaxOWL2 {
 		 prefixToNamsepace.put("", "http://test.it/");
 		 SimpleValueFactory simpleValueFactory = SimpleValueFactory.getInstance();
 		
+		 IRI graph = simpleValueFactory.createIRI("http://test.it/mainGraph");
+		 Resource []graphs = {graph};
 		
 		String dlExpr="";
 		ManchesterClassInterface mci = null;
@@ -45,7 +53,7 @@ public class TestTestManchesterSyntaxOWL2 {
 		
 		
 		//complex test
-		/*dlExpr = 
+		dlExpr = 
 				" <http://test.it/prop1> some <http://test.it/Class1> OR " +
 				" <http://test.it/prop2> only <http://test.it/Class2> OR " + 
 				" {<http://test.it/inst1> , <http://test.it/inst2>} OR" +
@@ -59,11 +67,7 @@ public class TestTestManchesterSyntaxOWL2 {
 				" <http://test.it/prop9> exactly 9 <http://test.it/Class9> OR "+
 				"<http://test.it#prop1>value \"Mario\"@it";
 				;
-		try {
-			mci = testOWL2.test(dlExpr, simpleValueFactory, prefixToNamsepace, false);
-		} catch (ManchesterParserException e) {
-			e.printStackTrace();
-		}*/
+		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, false);
 		
 		
 		//WRONG test, not completed
@@ -79,44 +83,31 @@ public class TestTestManchesterSyntaxOWL2 {
 		*/
 				
 		//wrong
-		/*dlExpr = ":Person and :genre some \"female\"";
-		try {
-			mci = testOWL2.test(dlExpr, simpleValueFactory, prefixToNamsepace, false);
-		} catch (ManchesterParserException e) {
+		//dlExpr = ":Person and :genre some \"female\"";
+		//try {
+			mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, false);
+		/*} catch (ManchesterParserException e) {
 			System.out.println("EXCEPTION: ");
 			e.printStackTrace();
 		}*/
 		
-		//right
-		/*dlExpr = "(:Animal) ";
-		try {
-			mci = testOWL2.test(dlExpr, simpleValueFactory, prefixToNamsepace, false);
-		} catch (ManchesterParserException e) {
-			e.printStackTrace();
-		}*/
+		//ERROR
+		dlExpr = "(:Animal) ";
+		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, false);
 		
-		//right
-		/*dlExpr = "( :Person )";
-		try {
-			mci = testOWL2.test(dlExpr, simpleValueFactory, prefixToNamsepace, false);
-		} catch (ManchesterParserException e) {
-			e.printStackTrace();
-		}*/
+		//ERROR
+		dlExpr = "( :Person )";
+		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, false);
 		
 		
 		//inverse
-		/*dlExpr = "inverse :regulate value :A";
-		try {
-			mci = testOWL2.test(dlExpr, simpleValueFactory, prefixToNamsepace, false);
-		} catch (ManchesterParserException e) {
-			e.printStackTrace();
-		}*/
+		dlExpr = "inverse :regulate value :A";
+		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, false);
 		
 		
 		dlExpr = "<http://test.it/knows> some <http://test.it/Person>";
 		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, true);
-		testOWL2.createRestriction(mci, simpleValueFactory, statList, true);
-	
+		BNode bnode = (BNode)testOWL2.createRestriction(mci, simpleValueFactory, statList, true);
 		
 		/*
 		dlExpr = "<http://test.it/Animal> and <http://test.it/Person>";
@@ -128,7 +119,7 @@ public class TestTestManchesterSyntaxOWL2 {
 	
 	private ManchesterClassInterface testCreateMCI(String dlExpr, SimpleValueFactory simpleValueFactory, 
 			Map <String, String>prefixToNamsepace, boolean useUpperCase) {
-		System.out.println("manchester Expression: "+dlExpr);
+		System.out.println("\nmanchester Expression: "+dlExpr);
 		ManchesterClassInterface mci;
 		try {
 			mci = ManchesterSyntaxUtils.parseCompleteExpression(dlExpr, simpleValueFactory, prefixToNamsepace);
@@ -154,9 +145,6 @@ public class TestTestManchesterSyntaxOWL2 {
 		}
 		return newResource;
 	}
-	
-	
-	
 	
 	
 	/*public ManchesterClassInterface parseDLExpr(String mancExp){
