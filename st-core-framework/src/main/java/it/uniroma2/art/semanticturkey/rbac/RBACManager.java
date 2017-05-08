@@ -146,7 +146,9 @@ public class RBACManager {
 				return new Role(roleName, RoleLevel.system);
 			}
 		} else {
-			return new Role(roleName, RoleLevel.system);
+			if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+				return new Role(roleName, RoleLevel.system);
+			}
 		}
 		return null;
 	}

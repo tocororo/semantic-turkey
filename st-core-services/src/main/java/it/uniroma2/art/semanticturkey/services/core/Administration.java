@@ -132,13 +132,15 @@ public class Administration extends STServiceAdapter {
 	}
 	
 	/**
+	 * Adds the given roles to the user.
 	 * @throws PUBindingException 
 	 * @throws ProjectAccessException 
 	 * @throws ProjectInexistentException 
 	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
-	public void addProjectUserBinding(String projectName, String email, String[] roles) throws PUBindingException,
+	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
+	public void addRolesToUser(String projectName, String email, String[] roles) throws PUBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
@@ -151,7 +153,7 @@ public class Administration extends STServiceAdapter {
 		}
 		Collection<Role> roleList = new ArrayList<>();
 		for (String r : roles) {
-			Role role = RBACManager.getRole(getProject(), r);
+			Role role = RBACManager.getRole(project, r);
 			if (role == null) {
 				throw new PUBindingException("No role '" + r + "' found");
 			} else {
@@ -161,12 +163,39 @@ public class Administration extends STServiceAdapter {
 		ProjectUserBindingsManager.addRolesToPUBinding(user, project, roleList);
 	}
 	
+//	/**
+//	 * @throws RBACException 
+//	 */
+//	@STServiceOperation
+//	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
+//	public void addRoleToUser(String projectName, String email, String role) throws PUBindingException, 
+//			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+//		STUser user = UsersManager.getUserByEmail(email);
+//		if (user == null) {
+//			throw new PUBindingException("No user found with email " + email);
+//		}
+//		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+//		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
+//		if (puBinding == null) {
+//			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
+//		}
+//		Role aRole = RBACManager.getRole(project, role);
+//		if (aRole == null) {
+//			throw new PUBindingException("No role '" + role + "' found");
+//		}
+//		ProjectUserBindingsManager.addRoleToPUBinding(user, project, aRole);
+//	}
+	
 	/**
-	 * @throws RBACException 
+	 * Removes all roles from the user in the given project
+	 * @throws PUBindingException 
+	 * @throws ProjectAccessException 
+	 * @throws ProjectInexistentException 
+	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
-	public void addRoleToUser(String projectName, String email, String role) throws PUBindingException, 
+	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
+	public void removeAllRolesFromUser(String projectName, String email) throws PUBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
@@ -177,11 +206,8 @@ public class Administration extends STServiceAdapter {
 		if (puBinding == null) {
 			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
 		}
-		Role aRole = RBACManager.getRole(getProject(), role);
-		if (aRole == null) {
-			throw new PUBindingException("No role '" + role + "' found");
-		}
-		ProjectUserBindingsManager.addRoleToPUBinding(user, project, aRole);
+		//removes all role from the binding
+		ProjectUserBindingsManager.removeAllRoleFromPUBinding(user, project);
 	}
 	
 	/**
@@ -200,7 +226,7 @@ public class Administration extends STServiceAdapter {
 		if (puBinding == null) {
 			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
 		}
-		Role aRole = RBACManager.getRole(getProject(), role);
+		Role aRole = RBACManager.getRole(project, role);
 		if (aRole == null) {
 			throw new PUBindingException("No role '" + role + "' found");
 		}
@@ -290,7 +316,11 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'D')")
 	public void deleteRole(String roleName) throws PUBindingException {
-		Role aRole = RBACManager.getRole(getProject(), roleName);
+		Project<?> project = null;
+		if (stServiceContext.hasContextParameter("project")) {
+			project = getProject();
+		}
+		Role aRole = RBACManager.getRole(project, roleName);
 		if (aRole == null) {
 			throw new PUBindingException("No role '" + roleName + "' found");
 		}
@@ -308,11 +338,15 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public void exportRole(HttpServletResponse oRes, String roleName) throws RBACException, IOException {
-		if (RBACManager.getRBACProcessor(getProject(), roleName) == null) {
-			throw new RBACException("Impossible to export role '" + roleName + "'."
-					+ " A role with that name doesn't exist in project '" + getProject().getName() + "'");
+		Project<?> project = null;
+		if (stServiceContext.hasContextParameter("project")) {
+			project = getProject();
 		}
-		File roleFile = RBACManager.getRoleFile(getProject(), roleName);
+		if (RBACManager.getRBACProcessor(project, roleName) == null) {
+			throw new RBACException("Impossible to export role '" + roleName + "'."
+					+ " A role with that name doesn't exist");
+		}
+		File roleFile = RBACManager.getRoleFile(project, roleName);
 		File tempServerFile = File.createTempFile("roleExport", ".pl");
 		try {
 			FileUtils.copyFile(roleFile, tempServerFile);

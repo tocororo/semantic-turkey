@@ -228,6 +228,23 @@ public class ProjectUserBindingsManager {
 	}
 	
 	/**
+	 * Remove all the roles assigned to a user in a project
+	 * @param user
+	 * @param project
+	 * @param role
+	 * @throws PUBindingException
+	 */
+	public static void removeAllRoleFromPUBinding(STUser user, AbstractProject project) throws PUBindingException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+				pub.setRoles(new ArrayList<Role>());
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
 	 * Removes a role from all the bindings of the given project (useful in case a role is deleted)
 	 * @param role
 	 * @throws PUBindingException 

@@ -59,7 +59,7 @@ import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
-	private STServiceContext stServiceContext;
+	protected STServiceContext stServiceContext;
 
 	@Autowired
 	private PlatformTransactionManager txManager;
