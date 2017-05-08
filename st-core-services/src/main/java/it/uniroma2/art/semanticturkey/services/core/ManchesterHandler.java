@@ -151,7 +151,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Boolean isClassAxion(BNode bnode) {
+	public Boolean isClassAxiom(BNode bnode) {
 		return ManchesterSyntaxUtils.isClassAxiom(bnode, getUserNamedGraphs(), getManagedConnection());
 	}
 	
