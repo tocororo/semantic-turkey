@@ -100,14 +100,6 @@ public class Versions extends STServiceAdapter {
 			throw new RepositoryCreationException(e);
 		}
 
-		if (repositoryId != null) {
-			if (repositoryAccess.isLocal()) {
-				throw new IllegalArgumentException("Cannot specify the identifier of a local repository");
-			}
-		} else {
-			repositoryId = getProject().getName() + "-" + ProjectUtils.computeVersionRepository(versionId);
-		}
-
 		String localRepostoryId = ProjectUtils.computeVersionRepository(versionId);
 
 		Repository versionRepository = getProject().createRepository(repositoryAccess, repositoryId,

@@ -810,12 +810,14 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	 * @param repositoryAccess
 	 *            if <code>null</code> the default repository location associated with the project is used
 	 * @param repositoryId
+	 *            if <code>null</code> when accessing a remote repository, the default value is
+	 *            <code>projectName-localRepositoryId</code>
 	 * @param repoConfigurerSpecification
 	 * @param localRepostoryId
 	 * @return
 	 * @throws RepositoryCreationException
 	 */
-	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess, String repositoryId,
+	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess, @Nullable String repositoryId,
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
 			throws RepositoryCreationException {
 
@@ -823,6 +825,16 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 		if (repositoryAccess == null) {
 			repositoryAccess = getDefaultRepositoryLocation().toRepositoryAccess();
+		}
+
+		if (repositoryId != null) {
+			if (repositoryAccess.isLocal()) {
+				throw new IllegalArgumentException("Cannot specify the identifier of a local repository");
+			}
+		} else {
+			if (repositoryAccess.isRemote()) {
+				repositoryId = getName() + "-" + localRepostoryId;
+			}
 		}
 
 		// TODO: not an atomic check
