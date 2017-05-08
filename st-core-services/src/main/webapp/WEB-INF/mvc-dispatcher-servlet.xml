@@ -56,17 +56,6 @@
 		<aop:scoped-proxy proxy-target-class="false" />
 	</bean>
 
-	<bean class="org.springframework.aop.support.DefaultPointcutAdvisor">
-		<property name="pointcut">
-			<bean
-				class="it.uniroma2.art.semanticturkey.aspects.rendering.STServiceRenderingPointcut" />
-		</property>
-		<property name="advice">
-			<bean
-				class="it.uniroma2.art.semanticturkey.aspects.rendering.STServiceRenderingAdvice" />
-		</property>
-	</bean>
-
 	<bean
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
@@ -74,15 +63,6 @@
 			on constraint validators -->
 		<property name="validatorFactory" ref="validatorFactory"></property>
 		<property name="order" value="300" />
-	</bean>
-
-
-	<!-- TEST SHOWER -->
-	<bean class="it.uniroma2.art.semanticturkey.shower.ShowerManager">
-		<property name="showerImpl">
-			<bean class="it.uniroma2.art.semanticturkey.shower.impl.ShowerLabels">
-			</bean>
-		</property>
 	</bean>
 
 	<!-- This enables Spring multipart handling by adding a multipart resolver -->
