@@ -36,6 +36,9 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
 public abstract class AbstractStatementConsumer implements StatementConsumer {
+	
+	public static final String UNKNOWN_OWL_AXIOM = "unknown OWL axiom";
+	
 	private static final Literal DEFAULT_ROLE = SimpleValueFactory.getInstance()
 			.createLiteral(RDFResourceRolesEnum.undetermined.toString());
 
@@ -105,12 +108,12 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 							//remove the starting '(' and the end ')' 
 							expr = expr.substring(1, expr.length()-1).trim();
 						}
-						return expr;
 					}
 				} catch (NotClassAxiomException e) {
-					//Do nothing, since it is not a valid Class Axiom
+					//there was a problem parsing the expression, so report it
+					expr = UNKNOWN_OWL_AXIOM;
 				}
-				
+				return expr;
 			} else if (repoConn.hasStatement(resource, RDF.TYPE, RDF.LIST, true)) {
 				Model statements = new LinkedHashModel();
 				Connections.getRDFCollection(repoConn, resource, statements);
