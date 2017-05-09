@@ -28,12 +28,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.rdf4jimpl.RDF4JARTResourceFactory;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.SessionFormData;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -48,6 +58,7 @@ import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.tx.STServiceInvocaton;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
 /**
@@ -247,6 +258,40 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	protected void shutDownCodaCore(CODACore codaCore) {
 		codaCore.setRepositoryConnection(null);
 		codaCore.stopAndClose();
+	}
+	
+	
+	/**
+	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and remove
+	 * suggested by CODA running the PEARL rule defined in the CustomForm with the given <code>cfId</code>  
+	 */
+	protected void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions, Model modelRemovals,
+			CustomForm cForm, Map<String, Object> userPromptMap, StandardForm stdForm)
+			throws ProjectInconsistentException, CODAException, CustomFormException {
+		CODACore codaCore = getInitializedCodaCore(repoConn);
+		try {
+			if (cForm.isTypeGraph()) {
+				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+				SessionFormData sessionData = new SessionFormData();
+				sessionData.addSessionParameter(SessionFormData.Data.user, UsersManager.getLoggedUser().getIRI().stringValue());
+				UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm, sessionData);
+				shutDownCodaCore(codaCore);
+
+				for (ARTTriple t : updates.getInsertTriples()) {
+					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+				for (ARTTriple t : updates.getDeleteTriples()) {
+					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+			} else {
+				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+			}
+		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e) {
+			throw new CODAException(e);
+		} finally {
+			shutDownCodaCore(codaCore);
+		}
 	}
 
 	// Semi-deprecated

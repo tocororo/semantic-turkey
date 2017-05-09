@@ -24,10 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
-import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
-import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
@@ -35,10 +31,8 @@ import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -145,7 +139,8 @@ public class SKOSXL extends STServiceAdapter {
 				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
 		}
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -202,7 +197,8 @@ public class SKOSXL extends STServiceAdapter {
 				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
 		}
 				
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -328,7 +324,8 @@ public class SKOSXL extends STServiceAdapter {
 				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, customFormId, userPromptMap, stdForm);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -451,41 +448,6 @@ public class SKOSXL extends STServiceAdapter {
 		}
 
 		return generateIRI(URIGenerator.Roles.xLabel, args);
-	}
-	
-	/**
-	 * TODO: move to STServiceAdapter?
-	 * 
-	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and remove
-	 * suggested by CODA running the PEARL rule defined in the CustomForm with the given <code>cfId</code>  
-	 */
-	private void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions, Model modelRemovals,
-			String cfId, Map<String, Object> userPromptMap, StandardForm stdForm)
-			throws ProjectInconsistentException, CODAException, CustomFormException {
-		CODACore codaCore = getInitializedCodaCore(repoConn);
-		try {
-
-			CustomForm cForm = cfManager.getCustomForm(getProject(), cfId);
-			if (cForm.isTypeGraph()) {
-				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
-				UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm);
-				shutDownCodaCore(codaCore);
-
-				for (ARTTriple t : updates.getInsertTriples()) {
-					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-				for (ARTTriple t : updates.getDeleteTriples()) {
-					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-			} else {
-				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-						+ "' as constructor since it is not of type 'graph'");
-			}
-		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e) {
-			throw new CODAException(e);
-		} finally {
-			shutDownCodaCore(codaCore);
-		}
 	}
 	
 	/**

@@ -63,6 +63,10 @@ public class CustomFormGraph extends CustomForm {
 	private static final String STANDARD_FORM_FEATURE_NAME = "stdForm";
 	private static final String STANDARD_FORM_TYPE_PATH = "it.uniroma2.art.semanticturkey.stdFormFS";
 	
+	//further info about session, identified with the Feature Structure session/...
+	private static final String SESSION_DATA_FEATURE_NAME = "session";
+	private static final String SESSION_DATA_TYPE_PATH = "it.uniroma2.art.semanticturkey.sessionFS";
+	
 	private String annotationTypeName;//UIMA type taken from pearl rule (rule ....)
 	
 	private List<IRI> showPropertyChain;
@@ -313,7 +317,7 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
 	 */
-	public UpdateTripleSet executePearlForRange(CODACore codaCore, Map<String, Object> userPromptMap)
+	public UpdateTripleSet executePearlForRange(CODACore codaCore, Map<String, Object> userPromptMap, SessionFormData sessionData)
 			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
 		UpdateTripleSet uts = new UpdateTripleSet();
 		try {
@@ -331,6 +335,12 @@ public class CustomFormGraph extends CustomForm {
 			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
 			FeatureStructure userPromptFS = createAndFillPromptFS(userPromptType, aCAS, userPromptMap);
 			ann.setFeatureValue(userPromptFeature, userPromptFS);
+			// create a FS of type sessionDataType and fill its features with the value found in sessionFS Map
+			Type sessionDataType = ts.getType(SESSION_DATA_TYPE_PATH);
+			Feature sessionDataFeature = annotationType.getFeatureByBaseName(SESSION_DATA_FEATURE_NAME);
+			FeatureStructure sessionFS = createAndFillPromptFS(sessionDataType, aCAS, sessionData.asMap());
+			ann.setFeatureValue(sessionDataFeature, sessionFS);
+			
 			aCAS.addFsToIndexes(ann);
 			// analyseCas(aCAS);
 			// run coda with the given pearl and the cas just created.
@@ -366,7 +376,7 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws ProjectionRuleModelNotSet 
 	 */
 	public UpdateTripleSet executePearlForConstructor(CODACore codaCore, Map<String, Object> userPromptMap, 
-			StandardForm stdForm)
+			StandardForm stdForm, SessionFormData sessionData)
 			throws CODAException, ProjectionRuleModelNotSet, UnassignableFeaturePathException {
 		UpdateTripleSet uts = new UpdateTripleSet();
 		try {
@@ -384,6 +394,11 @@ public class CustomFormGraph extends CustomForm {
 			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
 			FeatureStructure userPromptFS = createAndFillPromptFS(userPromptType, aCAS, userPromptMap);
 			ann.setFeatureValue(userPromptFeature, userPromptFS);
+			// create a FS of type sessionDataType and fill its features with the value found in sessionFS Map
+			Type sessionDataType = ts.getType(SESSION_DATA_TYPE_PATH);
+			Feature sessionDataFeature = annotationType.getFeatureByBaseName(SESSION_DATA_FEATURE_NAME);
+			FeatureStructure sessionFS = createAndFillPromptFS(sessionDataType, aCAS, sessionData.asMap());
+			ann.setFeatureValue(sessionDataFeature, sessionFS);
 			// create a FS of type stdFormType and fill its features with the value found in stdForm Map
 			Type stdFormType = ts.getType(STANDARD_FORM_TYPE_PATH);
 			Feature stdFormFeature = annotationType.getFeatureByBaseName(STANDARD_FORM_FEATURE_NAME);
@@ -475,9 +490,11 @@ public class CustomFormGraph extends CustomForm {
 			Set<String> placeHolderIds = placeHolderMap.keySet();
 			//create an annotation (it...userPromptFS) which its structure is based on the value find in the userPrompt features
 			TypeDescription userPromptType = tsd.addType(USER_PROMPT_TYPE_PATH, "", CAS.TYPE_NAME_TOP);
+			//create an annotation (it...sessionFS) which its structure is based on the value find in the session features
+			TypeDescription sessionDataType = tsd.addType(SESSION_DATA_TYPE_PATH, "", CAS.TYPE_NAME_TOP);
+			//look for the userPrompt/ and stdForm/ features in PEARL code and add the related Features to the above annotations 
 			//create an annotation (it...stdFormFS) which its structure is based on the value find in the stdForm features
 			TypeDescription stdFormType = tsd.addType(STANDARD_FORM_TYPE_PATH, "", CAS.TYPE_NAME_TOP);
-			//look for the userPrompt/ and stdForm/ features in PEARL code and add the related Features to the above annotations 
 			for (String placeHolderId : placeHolderIds){
 //				System.out.println("placeHolderId: " + placeHolderId);
 				PlaceholderStruct placeHolderStruct = placeHolderMap.get(placeHolderId);
@@ -487,14 +504,18 @@ public class CustomFormGraph extends CustomForm {
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME+"/")){
 						String prompt = featurePath.substring(USER_PROMPT_FEATURE_NAME.length()+1);
 						userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
+					} else if (featurePath.startsWith(SESSION_DATA_FEATURE_NAME+"/")){
+						String prompt = featurePath.substring(SESSION_DATA_FEATURE_NAME.length()+1);
+						sessionDataType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
 					} else if (featurePath.startsWith(STANDARD_FORM_FEATURE_NAME+"/")){
 						String prompt = featurePath.substring(STANDARD_FORM_FEATURE_NAME.length()+1);
 						stdFormType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
 					}
 				}
 			}
-			//finally add to the main annotation the features named "userPrompt" and "stdForm" of the types just created
+			//finally add to the main annotation the features named "userPrompt", "session" and "stdForm" of the types just created
 			annotationType.addFeature(USER_PROMPT_FEATURE_NAME, "", userPromptType.getName());
+			annotationType.addFeature(SESSION_DATA_FEATURE_NAME, "", sessionDataType.getName());
 			annotationType.addFeature(STANDARD_FORM_FEATURE_NAME, "", stdFormType.getName());
 		}
 //		describeTSD(tsd);

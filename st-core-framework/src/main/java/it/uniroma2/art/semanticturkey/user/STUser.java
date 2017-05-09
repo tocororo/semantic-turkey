@@ -42,7 +42,8 @@ public class STUser implements UserDetails {
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
 	public STUser(String email, String password, String givenName, String familyName) {
-		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, encodeUserEmail(email));
+//		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, encodeUserEmail(email));
+		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email);
 		this.iri = iri;
 		this.email = email;
 		this.password = password;

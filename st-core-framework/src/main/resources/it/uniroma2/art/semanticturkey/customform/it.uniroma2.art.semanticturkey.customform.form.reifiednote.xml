@@ -13,14 +13,12 @@ rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
 		noteLit literal userPrompt/note .
 		source literal userPrompt/source .
 		related uri userPrompt/related .
-		modified literal^^xsd:datetime userPrompt/modified .
 		created literal(coda:date()) .
 	}
 	graph = {
 		$reifNoteId rdf:value $noteLit .
 		OPTIONAL { $reifNoteId dc:related $related . }
 		OPTIONAL { $reifNoteId dc:source $source . }
-		OPTIONAL { $reifNoteId dc:modified $modified . }
 		OPTIONAL { $reifNoteId dc:created $created. }
 	}
 }

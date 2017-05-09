@@ -72,6 +72,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormXMLHelper;
 import it.uniroma2.art.semanticturkey.customform.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.FormsMapping;
+import it.uniroma2.art.semanticturkey.customform.SessionFormData;
 import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
@@ -87,6 +88,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
 public class CustomForms extends STServiceAdapter {
@@ -125,7 +127,9 @@ public class CustomForms extends STServiceAdapter {
 			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
 			if (cForm.isTypeGraph()){
 				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
-				UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore, userPromptMap);
+				SessionFormData sessionData = new SessionFormData();
+				sessionData.addSessionParameter(SessionFormData.Data.user, UsersManager.getLoggedUser().getIRI().stringValue());
+				UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore, userPromptMap, sessionData);
 				//link the generated graph with the resource
 				List<ARTTriple> insertTriples = updates.getInsertTriples();
 				if (!insertTriples.isEmpty()) {
