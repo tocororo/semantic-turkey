@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customForm id="it.uniroma2.art.semanticturkey.customform.form.basictemplate" name="Template" type="graph">
+	<description>This is a template of a CustomForm for custom constructors. It contains an empty graph section, while the node section just defines the nodes provided by the standard form. It is not mandatory to use them all, use them only if necessary. Warning: do not change the name of the stdForm/ features or it will broke the behaviour of the CustomForm.</description>
+	<ref><![CDATA[prefix coda: <http://art.uniroma2.it/coda/contracts/>
+prefix dc: <http://purl.org/dc/terms/>
+prefix skos: <http://www.w3.org/2004/02/skos/core#>
+prefix skosxl: <http://www.w3.org/2008/05/skos-xl#>
+			
+rule it.uniroma2.art.semanticturkey.customform.form.generictemplate id:template {
+	nodes = {
+		
+		/*
+		The standard form for skos resources (skos:Concept, skos:ConceptScheme, skos:Collection)
+		is composed by two input field:
+			uri: (optional) prompts the URI of the creating resource
+			label: prompts the label of the creating resource with the related language selection
+		These info can be referenced in the node section.
+		
+		The standard form for other resources (classes, instances, properties) is composed by the sole uri.
+		*/
+	
+		//uri of the new resource
+		resource uri stdForm/resource .
+		
+		//in case of SKOS project, the label of the resource is a simple literal
+		label literal stdForm/label .
+		
+		//in case of SKOSXL project, the label of the resource is a skosxl:Label composed by its URI and a skos:literalForm
+		xLabel uri stdForm/xLabel .
+		lexicalForm literal stdForm/lexicalForm .
+		
+		//language tag of the label
+		labelLang literal stdForm/labelLang .
+		
+		//the user logged in the current session can be referenced too
+		user uri session/user .
+		
+	}
+	graph = {
+		/*
+		use here the nodes defined in the above section, if necessary, like the following:
+		$resource a skos:Concept .
+		$resource skosxl:prefLabel $xLabel .
+		$xLabel a skosxl:Label .
+		$xLabel skosxl:literalForm $lexicalForm .
+		$resource dc:publisher $user .
+		*/
+	}
+}
+]]></ref>
+</customForm>

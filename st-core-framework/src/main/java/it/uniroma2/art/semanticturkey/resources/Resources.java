@@ -434,6 +434,11 @@ public class Resources {
 						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
 				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
 		);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
+				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml")
+		);
 	}
 	
 	private static void initializeRoles() throws IOException {
