@@ -163,7 +163,7 @@ public class ManchesterSyntaxUtils {
 			statList.add(valueFactory.createStatement(restrictionBnode, RDF.TYPE, OWL.RESTRICTION));
 			statList.addAll(generateInverseTriples(valueFactory, mcc.hasInverse(), restrictionBnode, prop));
 			IRI cardTypeUri = null;
-			if(classQualCard != null){
+			if(classQualCard == null){
 				if (type.equals(PossType.MAX)) {
 					cardTypeUri = OWL.MAXCARDINALITY;
 				} else if (type.equals(PossType.MIN)) {
@@ -180,6 +180,7 @@ public class ManchesterSyntaxUtils {
 					cardTypeUri = valueFactory.createIRI(OWL_QUALIFIEDCARDINALITY);
 				}
 				Resource classQualCardClass = parseManchesterExpr(classQualCard, statList, valueFactory);
+				
 				statList.add(valueFactory.createStatement(restrictionBnode, 
 						valueFactory.createIRI(OWL_ONCLASS), classQualCardClass));			
 			}
@@ -503,7 +504,7 @@ public class ManchesterSyntaxUtils {
 			mci = new ManchesterValueClass(inverse, prop, value);
 		} else if (type.equals(PossType.EXACTLY) || type.equals(PossType.MAX) || type.equals(PossType.MIN)) {
 			if(onClassNode == null && onClassIRI == null){
-				if(prop==null || value==null || card==-1){
+				if(prop==null || card==-1){
 					//some required triple is missing, so it it not really a class axiom
 					throw new NotClassAxiomException(bnode, graphs);
 				}

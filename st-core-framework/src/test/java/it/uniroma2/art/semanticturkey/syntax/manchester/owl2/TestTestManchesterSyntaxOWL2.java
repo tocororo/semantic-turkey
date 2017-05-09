@@ -53,7 +53,7 @@ public class TestTestManchesterSyntaxOWL2 {
 		
 		
 		//complex test
-		dlExpr = 
+		/*dlExpr = 
 				" <http://test.it/prop1> some <http://test.it/Class1> OR " +
 				" <http://test.it/prop2> only <http://test.it/Class2> OR " + 
 				" {<http://test.it/inst1> , <http://test.it/inst2>} OR" +
@@ -68,7 +68,7 @@ public class TestTestManchesterSyntaxOWL2 {
 				"<http://test.it#prop1>value \"Mario\"@it";
 				;
 		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, false);
-		
+		*/
 		
 		//WRONG test, not completed
 		/*dlExpr = " <http://test.it/prop1> or";
@@ -114,6 +114,11 @@ public class TestTestManchesterSyntaxOWL2 {
 		testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, true);
 		testOWL2.createRestriction(mci, simpleValueFactory, statList, true);
 		*/
+		
+		dlExpr = "<http://test.it/prop1> min 1";
+		mci = testOWL2.testCreateMCI(dlExpr, simpleValueFactory, prefixToNamsepace, true);
+		//bnode = (BNode)testOWL2.createRestriction(mci, simpleValueFactory, statList, true);
+		
 	
 	}
 	
