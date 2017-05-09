@@ -27,6 +27,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
@@ -92,7 +93,7 @@ public class SKOSXL extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
-			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
+			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
@@ -104,7 +105,7 @@ public class SKOSXL extends STServiceAdapter {
 		
 		IRI newConceptIRI;
 		if (newConcept == null) {
-			newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
+			newConceptIRI = generateConceptIRI(label, conceptSchemes);
 		} else {
 			newConceptIRI = newConcept;
 		}
@@ -123,11 +124,15 @@ public class SKOSXL extends STServiceAdapter {
 			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
 			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
 		}
-		modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);
+		for(IRI conceptScheme : conceptSchemes){
+			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);
+		}
 		if (broaderConcept != null) {
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
 		} else {
-			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+			for(IRI conceptScheme : conceptSchemes){
+				modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+			}
 		}
 
 		//CustomForm further info

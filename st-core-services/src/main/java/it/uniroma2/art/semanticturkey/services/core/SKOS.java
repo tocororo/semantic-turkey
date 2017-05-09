@@ -31,6 +31,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
@@ -75,11 +76,11 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefined Resource scheme) {
+	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes) {
 		QueryBuilder qb;
 
-		if (scheme != null) {
-			qb = createQueryBuilder(
+		if (schemes != null && !schemes.isEmpty()) {
+			String query = 
 					// @formatter:off
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
@@ -89,15 +90,24 @@ public class SKOS extends STServiceAdapter {
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
+					"FILTER(";
+			boolean first=true;
+			for(IRI scheme : schemes){
+				if(!first){
+					query+= " || ";
+				}
+				first=false;
+				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
+			}		
+			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
 					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
 					"     }                                                                              \n" +
 					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n"
+					" GROUP BY ?resource ?attr_more                                                      \n";
 					// @formatter:on
-			);
-			qb.setBinding("scheme", scheme);
+			qb = createQueryBuilder(query);
 		} else {
 			qb = createQueryBuilder(
 					// @formatter:off
@@ -127,11 +137,11 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefined Resource scheme) {
+			@Optional @LocallyDefinedResources List<IRI> schemes) {
 		QueryBuilder qb;
 
-		if (scheme != null) {
-			qb = createQueryBuilder(
+		if (schemes != null && !schemes.isEmpty()) {
+			String query = 
 					// @formatter:off
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
@@ -142,15 +152,25 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
 					"     ?resource skos:inScheme ?scheme.                                               \n" +
+					"FILTER (";
+			boolean first=true;
+			for(IRI scheme : schemes){
+				if(!first){
+					query+= " || ";
+				}
+				first=false;
+				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
+			}	
+			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
 					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
 					"     }                                                                              \n" +
 					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n"
+					" GROUP BY ?resource ?attr_more                                                      \n";
 					// @formatter:on
-			);
-			qb.setBinding("scheme", scheme);
+			qb = createQueryBuilder(query);
+			//qb.setBinding("scheme", scheme);
 		} else {
 			qb = createQueryBuilder(
 					// @formatter:off
@@ -331,7 +351,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
-			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefined IRI conceptScheme,
+			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
@@ -343,7 +363,7 @@ public class SKOS extends STServiceAdapter {
 
 		IRI newConceptIRI;
 		if (newConcept == null) {
-			newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
+			newConceptIRI = generateConceptIRI(label, conceptSchemes);
 		} else {
 			newConceptIRI = newConcept;
 		}
@@ -358,11 +378,15 @@ public class SKOS extends STServiceAdapter {
 		if (label != null) { //?conc skos:prefLabel ?label
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		}
-		modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
+		for(IRI conceptScheme : conceptSchemes){
+			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
+		}
 		if (broaderConcept != null) {//?conc skos:broader ?broad
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
 		} else { //?conc skos:topConceptOf ?sc
-			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+			for(IRI conceptScheme : conceptSchemes){
+				modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
+			}
 		}
 		
 		//CustomForm further info
