@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -35,6 +36,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
@@ -544,27 +546,29 @@ public class Refactor2 extends STServiceAdapter  {
 	public AnnotatedValue<IRI> spawnNewConceptFromLabel(
 			@Optional @NotLocallyDefined IRI newConcept, 
 			@LocallyDefined Resource xLabel,
-			@LocallyDefined IRI oldConcept,
-			@Optional @LocallyDefined Resource altToPrefXLabel,
+			@Optional @LocallyDefined IRI oldConcept,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, 
-			@LocallyDefined IRI conceptScheme,
+			@LocallyDefinedResources List<IRI> conceptSchemes,
 			@Optional String customFormId, 
 			@Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
-					CODAException, NonExistingLiteralFormForResourceException, NonExistingPredicateBetweenResourcesExpcetion {
+					CODAException, NonExistingLiteralFormForResourceException{
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
+		RepositoryConnection repoConnection = getManagedConnection();
 		
-		IRI newConceptIRI;
+		IRI newConceptIRI = null;
 		//get the label from the input xLabel
-		RepositoryResult<Statement> repositoryResult = getManagedConnection().getStatements(xLabel, SKOSXL.LITERAL_FORM, null, getUserNamedGraphs());
+		RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(xLabel, SKOSXL.LITERAL_FORM, null, getUserNamedGraphs());
 		Model tempModel = QueryResults.asModel(repositoryResult);
 		if(!Models.objectLiteral(tempModel).isPresent()){
 			throw new NonExistingLiteralFormForResourceException(xLabel);
 		}
 		Literal label = Models.objectLiteral(tempModel).get();
 		if (newConcept == null) {
-			newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
+			for(IRI conceptScheme : conceptSchemes){
+				newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
+			}
 		} else {
 			newConceptIRI = newConcept;
 		}
@@ -575,23 +579,53 @@ public class Refactor2 extends STServiceAdapter  {
 		modelAdditions.add(newConceptIRI, SKOSXL.PREF_LABEL, xLabel);
 		
 		//add the new concept to the desired scheme
-		modelAdditions.add(newConceptIRI, SKOS.IN_SCHEME, conceptScheme);
+		for(IRI conceptScheme : conceptSchemes){
+			modelAdditions.add(newConceptIRI, SKOS.IN_SCHEME, conceptScheme);
+		}
 		if (broaderConcept != null) {
 			modelAdditions.add(newConceptIRI, SKOS.BROADER, broaderConcept);
 		} else {
-			modelAdditions.add(newConceptIRI, SKOS.TOP_CONCEPT_OF, conceptScheme);
+			for(IRI conceptScheme : conceptSchemes){
+				modelAdditions.add(newConceptIRI, SKOS.TOP_CONCEPT_OF, conceptScheme);
+			}
 		}
 
-		RepositoryConnection repoConnection = getManagedConnection();
-		
 		//find out what property exists between the passed xLabel and the old concept
-		repositoryResult = getManagedConnection().getStatements(oldConcept, null, xLabel, getUserNamedGraphs());
-		tempModel = QueryResults.asModel(repositoryResult);
+		//oldConcept can be null
+		
+		String query = "SELECT ?concept ?predicate \n"+
+					"WHERE{ \n"+
+					"?concept ?predicate "+NTriplesUtil.toNTriplesString(xLabel)+" .\n "+
+					"?concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+
+					"}";
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		if(oldConcept != null){
+			tupleQuery.setBinding("concept", oldConcept);
+		}
+		SimpleDataset dataset = new SimpleDataset();
+		//add the default named graphs 
+		for(Resource graph : getUserNamedGraphs()){
+			if(graph instanceof IRI){
+				dataset.addDefaultGraph((IRI)graph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		while(tupleQueryResult.hasNext()){
+			BindingSet bindingSet = tupleQueryResult.next();
+			IRI conceptIRI = (IRI) bindingSet.getBinding("concept").getValue();
+			IRI predicate = (IRI) bindingSet.getBinding("predicate").getValue();
+			modelRemovals.add(conceptIRI, predicate, xLabel);
+		}
+		tupleQueryResult.close();
+		
+		//repositoryResult = repoConnection.getStatements(oldConcept, null, xLabel, getUserNamedGraphs());
+		/*tempModel = QueryResults.asModel(repositoryResult);
 		if(!Models.predicate(tempModel).isPresent()){
 			throw new NonExistingPredicateBetweenResourcesExpcetion(oldConcept, xLabel);
 		}
 		IRI predicate = Models.predicate(tempModel).get();
-		modelRemovals.add(oldConcept, predicate, xLabel);
+		modelRemovals.add(oldConcept, predicate, xLabel);*/
 		
 		//CustomForm further info
 		if (customFormId != null && userPromptMap != null) {
