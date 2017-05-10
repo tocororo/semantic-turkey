@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,7 +52,7 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
-			String searchMode, @Optional String lang, @Optional IRI scheme)  {
+			String searchMode, @Optional String lang, @Optional List<IRI> schemes)  {
 		
 		boolean isClassWanted = false;
 		boolean isConceptWanted = false;
@@ -134,7 +135,7 @@ public class Search extends STServiceAdapter {
 						isConceptWanted);*/
 		
 		query+=filterResourceTypeAndScheme("?resource", "?type", isClassWanted, isInstanceWanted, 
-				isPropertyWanted, isConceptWanted, isConceptSchemeWanted, isCollectionWanted, scheme);
+				isPropertyWanted, isConceptWanted, isConceptSchemeWanted, isCollectionWanted, schemes);
 		
 		
 		query+="\n}" +
@@ -494,7 +495,7 @@ public class Search extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getPathFromRoot(String role, IRI resourceURI, @Optional IRI schemeURI)
+	public Collection<AnnotatedValue<Resource>> getPathFromRoot(String role, IRI resourceURI, @Optional List<IRI> schemesIRI)
 			throws InvalidParameterException{
 		
 		//ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
@@ -509,17 +510,28 @@ public class Search extends STServiceAdapter {
 					"\nWHERE{" +
 					"\n{" + 
 					"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )+ ?broader .";
-			if (schemeURI != null) {
-				query += "\n?broader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemeURI.stringValue() + "> ."+
+			if (schemesIRI != null && schemesIRI.size()==1) {
+				query += "\n?broader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
-						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemeURI.stringValue()+"> ." +
+						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> ." +
+						"\n}";
+			} else if(schemesIRI != null && schemesIRI.size()>1){
+				query += "\n?broader <" + SKOS.IN_SCHEME.stringValue() + "> ?scheme1 ."+
+						filterWithOrValues(schemesIRI, "?scheme1") +
+						"\nOPTIONAL{" +
+						"\nBIND (\"true\" AS ?isTopConcept)" +
+						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme2 ." +
+						filterWithOrValues(schemesIRI, "?scheme2") +
 						"\n}";
 			}
 			query += "\nOPTIONAL{" +
 					"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader .";
-			if (schemeURI != null) {
-				query += "\n?broaderOfBroader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemeURI.stringValue() + "> . ";
+			if (schemesIRI != null && schemesIRI.size()==1) {
+				query += "\n?broaderOfBroader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemesIRI.get(0).stringValue() + "> . ";
+			} else if(schemesIRI != null && schemesIRI.size()>1){
+				query += "\n?broaderOfBroader <" + SKOS.IN_SCHEME.stringValue() + "> ?scheme3 . "+
+				filterWithOrValues(schemesIRI, "?scheme3");
 			}
 			query +="\n}" + 
 					"\n}" +
@@ -529,9 +541,13 @@ public class Search extends STServiceAdapter {
 			// does not have any broader, but it is defined as topConcept (to either a specified scheme or
 			// to at least one)
 			query+= "\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> .";
-			if(schemeURI != null){
+			if(schemesIRI != null && schemesIRI.size()==1){
 					query+="\n<"+resourceURI.stringValue()+"> " +
-							"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemeURI.stringValue()+">";
+							"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> .";
+			} else if(schemesIRI != null && schemesIRI.size()>1){
+				query+="\n<"+resourceURI.stringValue()+"> " +
+						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme4 ."+
+						filterWithOrValues(schemesIRI, "?scheme4");
 			} else{
 				query+="\n<"+resourceURI.stringValue()+"> " +
 						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) _:b1";
@@ -541,7 +557,7 @@ public class Search extends STServiceAdapter {
 					
 			// this using, used only when no scheme is selected, is used when the concept does not have any
 			// brader and it is not topConcept of any scheme
-			if(schemeURI == null){
+			if(schemesIRI == null){
 				query+="\nUNION" +
 						"\n{" +
 						"\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> ." +
@@ -552,7 +568,6 @@ public class Search extends STServiceAdapter {
 						"\nBIND(\"true\" AS ?isTop )" +
 						"\n}";
 			}
-					
 					
 			query+="\n}";
 			//@formatter:on
@@ -758,7 +773,7 @@ public class Search extends STServiceAdapter {
 			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
 				//the role is a concept, so check it an input scheme was passed, if so, if it is not a 
 				// top concept (for that particular scheme) then pass to the next concept
-				if(schemeURI!=null && !resourceForHierarchy.isTopConcept){
+				if(schemesIRI!=null && !resourceForHierarchy.isTopConcept){
 					continue;
 				}
 			}
@@ -822,6 +837,23 @@ public class Search extends STServiceAdapter {
 	}
 	
 	
+	private String filterWithOrValues(List<IRI> IRIList, String variable){
+		if(!variable.startsWith("?")){
+			variable+="?"+variable;
+		}
+		String schemesInFilter = "\nFILTER (";
+		boolean first=true;
+		for(IRI iri : IRIList){
+			if(!first){
+				schemesInFilter+=" || ";
+			}
+			first=false;
+			schemesInFilter+="variable="+NTriplesUtil.toNTriplesString(iri);
+		}
+		schemesInFilter+= ") \n";
+		return schemesInFilter;
+	}
+	
 //	private String addFilterForRsourseType(String variable, boolean isClassWanted, 
 //			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted) {
 //		boolean otherWanted = false;
@@ -883,7 +915,7 @@ public class Search extends STServiceAdapter {
 	
 	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
 			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isConceptSchemeWanted, boolean isCollectionWanted, IRI scheme){
+			boolean isConceptSchemeWanted, boolean isCollectionWanted, List<IRI> schemes){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
@@ -914,8 +946,11 @@ public class Search extends STServiceAdapter {
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
 					 "\nFILTER("+type+" = <"+SKOS.CONCEPT.stringValue()+">)";
-			if(scheme!=null && scheme.stringValue().length()>0){
-				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> <"+scheme.stringValue()+"> .";
+			if(schemes!=null && schemes.size()==1){
+				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> <"+schemes.get(0).stringValue()+"> .";
+			} else if(schemes!=null && schemes.size()>1){
+				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> ?scheme0 . "+
+						filterWithOrValues(schemes, "?scheme0");
 			}
 			
 			filterQuery += "\n}";
