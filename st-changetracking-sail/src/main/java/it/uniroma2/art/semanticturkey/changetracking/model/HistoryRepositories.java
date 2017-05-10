@@ -118,9 +118,11 @@ public abstract class HistoryRepositories {
 		TupleQuery tipQuery = conn.prepareTupleQuery(
 			// @formatter:off
 			" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                   \n" +
+			" PREFIX prov: <http://www.w3.org/ns/prov#>                                      \n" +
 			" SELECT ?s ?p ?o ?c                                                             \n" +
 			" WHERE {                                                                        \n" +
-			"   ?commit ?statementPredicate ?q .                                             \n" +
+			"   ?commit prov:generated ?modifiedTriples .                                    \n" +
+			"   ?modifiedTriples ?statementPredicate ?q .                                    \n" +
 			"   ?q cl:subject ?s .                                                           \n" +
 			"   ?q cl:predicate ?p .                                                         \n" +
 			"   ?q cl:object ?o .                                                            \n" +

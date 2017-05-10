@@ -55,6 +55,13 @@
 		scope="request">
 		<aop:scoped-proxy proxy-target-class="false" />
 	</bean>
+	
+	<bean
+		class="it.uniroma2.art.semanticturkey.history.HistoryMetadataPostProcessor">
+		<property name="proxyTargetClass" value="true"></property>
+		<property name="order" value="250" />
+	</bean>
+
 
 	<bean
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">

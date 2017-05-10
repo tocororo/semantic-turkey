@@ -47,6 +47,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
@@ -544,7 +545,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	public AnnotatedValue<IRI> createProperty(
 			@SubClassOf(superClassIRI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property") IRI propertyType,
-			@NotLocallyDefined IRI newProperty, @Optional IRI superProperty,
+			@Subject @NotLocallyDefined IRI newProperty, @Optional IRI superProperty,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		

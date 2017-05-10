@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.changetracking.vocabulary;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 
@@ -10,37 +12,55 @@ import org.eclipse.rdf4j.model.vocabulary.SESAME;
  * <p>
  * 
  * <pre>
- * history:0b3838bd-150d-4621-9477-f2aa6d2f64d7
- *   a cl:Commit ;
- *   cl:status "committed ;
- *   dcterms:created "...."^xsd:datetime ;
- *   cl:addedStatement history:4a24d3a7-2a50-41f5-8fe8-7fcf8304ae7a
- *   .
+ * {@code
+ * 	<!-- the example below assumes the additional metadata specified by ST services -->
  * 
- * history:4a24d3a7-2a50-41f5-8fe8-7fcf8304ae7a
- *   a cl:Quadruple ;
- *   cl:subject &lt;http://example.org#john&gt; ;
- *   cl:predicate &lt;http://example.org#loves&gt; ;
- *   cl:object &lt;http://example.org#mary&gt; ;
- *   cl:context &lt;http://example.org&gt;
- *   .
- *   
- * history:bcff850b-7163-4576-9a37-cd2abbdbdf47
- *   a cl:Commit ;
- *   cl:status "committed ;
- *   cl:parentCommit history:0b3838bd-150d-4621-9477-f2aa6d2f64d7 ;
- *   dcterms:created "...."^xsd:datetime ;
- *   cl:addedStatement history:130626bc-e94a-4125-86b5-f1cf3791898f
- *   .
- *   
- * history:130626bc-e94a-4125-86b5-f1cf3791898f
- *   a cl:Quadruple ;
- *   cl:subject &lt;http://example.org#alice&gt; ;
- *   cl:predicate &lt;http://example.org#loves&gt; ;
- *   cl:object &lt;http://example.org#pete&gt; ;
- *   cl:context &lt;http://example.org&gt;
- *   .
- * cl:MASTER cl:tip history:bcff850b-7163-4576-9a37-cd2abbdbdf47 .
+ *	<http://example.org/history#fec31f27-00b2-4a21-ac0f-e1d72ae90f4a> a cl:Commit ;
+ *		prov:startedAtTime "2017-05-09T22:39:51.410+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+ *		prov:endedAtTime "2017-05-09T22:39:51.420+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+ *		prov:generated <http://example.org/history#72de0bd1-b132-4ec1-aa36-859df633d910> ;
+ *		prov:qualifiedAssociation [
+ *			prov:agent <http://semanticturkey.uniroma2.it/ns/users/TestUser> ;
+ *			prov:hadRole <http://semanticturkey.uniroma2.it/ns/tracking/performer> .
+ *		] ;
+ *		cl:status "committed" .
+ *
+ *	<http://example.org/history#72de0bd1-b132-4ec1-aa36-859df633d910> cl:addedStatement <http://example.org/history#b3213db9-d52b-4985-9fbe-5201d1173785> ;
+ *		a prov:Entity ;
+ *		prov:generatedAtTime "2017-05-09T22:39:51.419+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+ *		prov:wasGeneratedBy <http://example.org/history#fec31f27-00b2-4a21-ac0f-e1d72ae90f4a> .
+ *		
+ *	<http://example.org/history#b3213db9-d52b-4985-9fbe-5201d1173785> a cl:Quadruple ;
+ *		cl:context <http://example.org/graph-A> ;
+ *		cl:object <http://xmlns.com/foaf/0.1/Person> ;
+ *		cl:predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ;
+ *		cl:subject <http://example.org/socrates> .	
+ *
+ *	<http://example.org/history#7d1110b5-8542-430a-b940-7d0868d204d3> a cl:Commit ;
+ *		prov:startedAtTime "2017-05-09T22:39:51.760+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+ *		prov:endedAtTime "2017-05-09T22:39:51.762+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+ *		prov:generated <http://example.org/history#4480a891-17f4-4dc9-965a-7ce1aa877b14> ;
+ *		prov:qualifiedAssociation [
+ *			prov:agent <http://semanticturkey.uniroma2.it/ns/users/TestUser> ;
+ *			prov:hadRole <http://semanticturkey.uniroma2.it/ns/tracking/performer> .
+ *		] ;
+ * 		cl:status "committed" ;
+ *		cl:parentCommit <http://example.org/history#fec31f27-00b2-4a21-ac0f-e1d72ae90f4a> .
+
+ *	<http://example.org/history#4480a891-17f4-4dc9-965a-7ce1aa877b14> a prov:Entity ;
+ *		prov:generatedAtTime "2017-05-09T22:39:51.761+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+ *		prov:wasGeneratedBy <http://example.org/history#7d1110b5-8542-430a-b940-7d0868d204d3> ;
+ *		cl:removedStatement <http://example.org/history#b8931f7e-c1c0-4b28-8f1f-fc88ae0dccd7> .
+ *	
+ *	<http://example.org/history#b8931f7e-c1c0-4b28-8f1f-fc88ae0dccd7> a cl:Quadruple ;
+ *		cl:context <http://example.org/graph-A> ;
+ *		cl:object <http://xmlns.com/foaf/0.1/Person> ;
+ *		cl:predicate <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ;
+ *		cl:subject <http://example.org/socrates> .
+
+ *
+ * 	cl:MASTER cl:tip <http://example.org/history#7d1110b5-8542-430a-b940-7d0868d204d3> .
+ * }
  * </pre>
  * <p>
  * The resource <code>cl:MASTER</code> conventionally holds a reference to the tip of the history: i.e. the
@@ -48,7 +68,7 @@ import org.eclipse.rdf4j.model.vocabulary.SESAME;
  * connects a commit to the commit that was the tip when the update of the data repository was perfomed.
  * <p>
  * Each commit may be described via a number of metadata properties, and above all it is connected to the
- * triples effectibely added or removed. In the history, the null context is represented via the resource
+ * triples effectively added or removed. In the history, the null context is represented via the resource
  * {@link SESAME#NIL}.
  * <p>
  * Usually, the metadata about changes to the data repository are recorded before of the actual change to the
@@ -80,6 +100,11 @@ public abstract class CHANGELOG {
 	 * Recommended prefix for the CHANGETRACKER namespace: "cl"
 	 */
 	public static final String PREFIX = "cl";
+
+	/**
+	 * An immutable {@link Namespace} constant that represents the CHANGELOG namespace.
+	 */
+	public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
 	public static final IRI QUADRUPLE;
 	public static final IRI SUBJECT;

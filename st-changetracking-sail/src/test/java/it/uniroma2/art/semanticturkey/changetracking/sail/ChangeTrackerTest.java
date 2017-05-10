@@ -1,16 +1,15 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.eclipse.rdf4j.common.io.FileUtil;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -21,36 +20,51 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.repository.util.Repositories;
-import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 
 /**
  * Test class for {@link ChangeTracker}.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class ChangeTrackerTest extends NotifyingSailWrapper {
+public class ChangeTrackerTest {
 
 	private static final String HISTORY_REPO_ID = "test-history";
 	private static final String HISTORY_NS = "http://example.org/history#";
@@ -70,6 +84,7 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 	private static final IRI graphB;
 	private static final IRI socrates;
 	private static final IRI plato;
+	private static final boolean PRINT_HISTORY = true;
 
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
@@ -95,7 +110,10 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 		historyRepo = repositoryManager.getRepository(HISTORY_REPO_ID);
 		RepositoryRegistry.getInstance().addRepository(HISTORY_REPO_ID, historyRepo);
-
+		Repositories.consume(historyRepo, conn->{
+			conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
+			conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
+		});
 		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
 		trackerConfig.setHistoryRepositoryID(HISTORY_REPO_ID);
 		trackerConfig.setHistoryNS(HISTORY_NS);
@@ -127,7 +145,11 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 					Collections.emptyList());
 
 			strategy.doUpdate(conn);
-
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			assertTrue(Models.isomorphic(
 					QueryResults
 							.asModel(conn.getStatements(null, null, null, CHANGETRACKER.STAGED_ADDITIONS)),
@@ -151,6 +173,7 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 		if (strategy.shouldIncreaseHistory()) {
 			Repositories.consume(historyRepo, conn -> {
+				conditionalPrintHistory(conn);
 				Optional<Resource> tipHolder = HistoryRepositories.getTip(conn, HISTORY_GRAPH);
 
 				assertTrue(tipHolder.isPresent());
@@ -169,8 +192,37 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 				assertTrue(Models.isomorphic(expectedAdditions, actualAdditions));
 				assertTrue(Models.isomorphic(expectedRemovals, actualRemovals));
 
+				
+				Optional<Literal> startTimeHolder = Models.objectLiteral(QueryResults.asModel(conn.getStatements(tip, PROV.STARTED_AT_TIME, null)));
+				Optional<Literal> endTimeHolder = Models.objectLiteral(QueryResults.asModel(conn.getStatements(tip, PROV.ENDED_AT_TIME, null)));
+
+				assertTrue(startTimeHolder.isPresent());
+				assertTrue(endTimeHolder.isPresent());
+				
+				Literal startTime = startTimeHolder.get();
+				Literal endTime = endTimeHolder.get();
+
+				assertEquals(XMLSchema.DATETIME, startTime.getDatatype());
+				assertEquals(XMLSchema.DATETIME, endTime.getDatatype());
+
+				XMLGregorianCalendar startTimeValue = Literals.getCalendarValue(startTime, null);
+				XMLGregorianCalendar endTimeValue = Literals.getCalendarValue(endTime, null);
+				
+				assertTrue(startTimeValue.compare(endTimeValue) < 0);
+				
 				strategy.checkCommit(conn, tip);
 			});
+		}
+	}
+
+	protected void conditionalPrintHistory(RepositoryConnection historyConn)
+			throws UnsupportedRDFormatException, RepositoryException, RDFHandlerException {
+		if (PRINT_HISTORY) {
+			System.out.println("-------------------");
+			RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TRIG, System.out);
+			rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
+			historyConn.export(rdfWriter);
+			System.out.println("-------------------");
 		}
 	}
 
@@ -392,7 +444,11 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 			return tip;
 		});
-
+		
+		Repositories.consume(historyRepo, conn -> {
+			conditionalPrintHistory(conn);
+		});
+		
 		Repositories.consume(historyRepo, conn -> {
 			Optional<Resource> parentHolder = HistoryRepositories.getParent(conn, secondCommit,
 					HISTORY_GRAPH);
@@ -400,7 +456,6 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 			assertTrue(parentHolder.isPresent());
 			assertEquals(firstCommit, parentHolder.get());
 		});
-
 	}
 
 	@Test
@@ -609,55 +664,22 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 	@Test
 	public void testCommitMetadata1() {
-		testSkeleton(new TestCommitStrategy() {
-
-			@Override
-			public boolean shouldIncreaseHistory() {
-				return true;
-			}
-
-			@Override
-			public boolean shouldIncreaseData() {
-				return true;
-			}
-
-			@Override
-			public Model expectedAdditions() {
-				return new ModelBuilder().namedGraph(graphA).add(socrates, RDF.TYPE, FOAF.PERSON).build();
-			}
-
-			@Override
-			public Model expectedRemovals() {
-				return new LinkedHashModel();
-			}
-
-			@Override
-			public void doUpdate(RepositoryConnection conn) {
-				conn.add(CHANGETRACKER.COMMIT_METADATA, DCTERMS.CREATOR,
-						SimpleValueFactory.getInstance().createIRI("http://example.org/Someone"),
-						CHANGETRACKER.COMMIT_METADATA);
-				conn.add(socrates, RDF.TYPE, FOAF.PERSON, graphA);
-			}
-
-			@Override
-			public void checkCommit(RepositoryConnection historyConn, Resource commit) {
-				assertTrue(historyConn.hasStatement(commit, DCTERMS.CREATOR,
-						SimpleValueFactory.getInstance().createIRI("http://example.org/Someone"), false,
-						HISTORY_GRAPH));
-
-				assertTrue(Models
-						.objectLiteral(QueryResults.asModel(historyConn.getStatements(commit, DCTERMS.CREATED,
-								null, false, HISTORY_GRAPH)))
-						.filter(l -> l.getDatatype().equals(XMLSchema.DATETIME)).isPresent());
-
-			}
-		});
-	}
-
-	@Test
-	public void testCommitMetadata2() {
-		Literal CREATION_DATE = SimpleValueFactory.getInstance().createLiteral("2000-01-01T00:00:00",
-				XMLSchema.DATETIME);
+		// @formatter:off
+		BNode qualifiedAssociation = SimpleValueFactory.getInstance().createBNode();
+		
+		Model commitMetadata = new ModelBuilder()
+			.setNamespace(CHANGELOG.NS)
+			.setNamespace(PROV.NS)
+			.namedGraph(CHANGETRACKER.COMMIT_METADATA)
+			.subject(CHANGETRACKER.COMMIT_METADATA)
+				.add(PROV.USED, SimpleValueFactory.getInstance().createIRI("http://semanticturkey.uniroma2.it/ns/services/SKOS/addConcept"))
+				.add(PROV.QUALIFIED_ASSOCIATION, qualifiedAssociation)
+			.subject(qualifiedAssociation)
+				.add(RDF.TYPE, PROV.ASSOCIATION)
+				.add(PROV.HAS_AGENT, SimpleValueFactory.getInstance().createIRI("http://semanticturkey.uniroma2.it/ns/users/TestUser"))
+				.add(PROV.HAD_ROLE, SimpleValueFactory.getInstance().createIRI("http://semanticturkey.uniroma2.it/ns/roles/performer"))
+			.build();
+		// @formatter:on
 
 		testSkeleton(new TestCommitStrategy() {
 
@@ -683,20 +705,19 @@ public class ChangeTrackerTest extends NotifyingSailWrapper {
 
 			@Override
 			public void doUpdate(RepositoryConnection conn) {
-				conn.add(CHANGETRACKER.COMMIT_METADATA, DCTERMS.CREATED, CREATION_DATE,
-						CHANGETRACKER.COMMIT_METADATA);
+				conn.add(commitMetadata, CHANGETRACKER.COMMIT_METADATA);
 				conn.add(socrates, RDF.TYPE, FOAF.PERSON, graphA);
 			}
 
 			@Override
 			public void checkCommit(RepositoryConnection historyConn, Resource commit) {
-				Set<Value> creationDates = QueryResults.asModel(
-						historyConn.getStatements(commit, DCTERMS.CREATED, null, false, HISTORY_GRAPH))
-						.objects();
-				assertTrue(creationDates.size() == 1);
-				assertTrue(creationDates.stream().allMatch(v -> v.equals(CREATION_DATE)));
+				String metadataCheckQuery = commitMetadata.stream().map(s -> RenderUtils.toSPARQL(s.getSubject()) + " " + RenderUtils.toSPARQL(s.getPredicate()) + " " + RenderUtils.toSPARQL(s.getObject()) + ".").collect(Collectors.joining("\n", "ASK {\n", "\n}\n"));
+				metadataCheckQuery = metadataCheckQuery.replace("<http://semanticturkey.uniroma2.it/ns/change-tracker#commit-metadata>", RenderUtils.toSPARQL(commit));
+				BooleanQuery metadataCheckQueryObj = historyConn.prepareBooleanQuery(metadataCheckQuery);
+				assertTrue(metadataCheckQueryObj.evaluate());
+				
+					
 			}
 		});
 	}
-
 }

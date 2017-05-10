@@ -43,6 +43,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
@@ -220,7 +221,7 @@ public class Classes extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public AnnotatedValue<IRI> createClass(@NotLocallyDefined IRI newClass, @LocallyDefined IRI superClass,
+	public AnnotatedValue<IRI> createClass(@Subject @NotLocallyDefined IRI newClass, @LocallyDefined IRI superClass,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		
@@ -251,7 +252,7 @@ public class Classes extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public AnnotatedValue<IRI> createInstance(@NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
+	public AnnotatedValue<IRI> createInstance(@Subject @NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		

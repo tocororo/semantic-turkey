@@ -26,7 +26,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -44,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 
 /**
  * A {@link NotifyingSailConnection} which is returned by a {@link ChangeTracker}.
@@ -59,6 +59,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private final StagingArea stagingArea;
 	private Model connectionLocalGraphManagement;
 	private final UpdateHandler updateHandler;
+
+	private Literal startTime;
 
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
 		super(wrappedCon);
@@ -92,6 +94,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		super.begin(level);
 		stagingArea.clear();
 		updateHandler.clearHandler();
+		startTime = currentTimeAsLiteral();
 		logger.debug("Transaction Begin / Isolation Level = {}", level);
 	}
 
@@ -152,14 +155,19 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 			// Commits the metadata
 			IRI commitIRI;
+			IRI modifiedTriplesIRI;
+			
 			Resource previousTip = null;
 			Model commitMetadataModel = new LinkedHashModel();
 			boolean triplesUnknown = false;
-
+			
 			try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
 				ValueFactory vf = metaRepoConn.getValueFactory();
 
 				metaRepoConn.begin();
+				
+				Literal generationTime = currentTimeAsLiteral();
+				Literal endTime = currentTimeAsLiteral();
 
 				// Gets the tip of MASTER:
 				// - if the history is empty, then there is no MASTER and its associated tip
@@ -211,21 +219,11 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				}).forEach(commitMetadataModel::add);
 
 				metaRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.metadataGraph);
+				metaRepoConn.add(commitIRI, PROV.STARTED_AT_TIME, startTime, sail.metadataGraph);
+				metaRepoConn.add(commitIRI, PROV.ENDED_AT_TIME, endTime, sail.metadataGraph);
 
 				if (!commitMetadataModel.isEmpty()) {
 					metaRepoConn.add(commitMetadataModel, sail.metadataGraph);
-				}
-
-				if (!commitMetadataModel.contains(commitIRI, DCTERMS.CREATED, null)) {
-					GregorianCalendar calendar = new GregorianCalendar();
-					XMLGregorianCalendar currentDateTimeXML;
-					try {
-						currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
-					} catch (DatatypeConfigurationException e) {
-						throw new SailException(e);
-					}
-					Literal commitDatetime = vf.createLiteral(currentDateTimeXML);
-					metaRepoConn.add(commitIRI, DCTERMS.CREATED, commitDatetime, sail.metadataGraph);
 				}
 
 				if (stagingArea.isEmpty()) {
@@ -233,10 +231,16 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					metaRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("triples-unknown"),
 							sail.metadataGraph);
 				} else {
+					modifiedTriplesIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
+					
+					metaRepoConn.add(modifiedTriplesIRI, RDF.TYPE, PROV.ENTITY, sail.metadataGraph);
 					stagingArea.getAddedStatements().forEach(
-							consumer.apply(commitIRI).apply(metaRepoConn).apply(CHANGELOG.ADDED_STATEMENT));
+							consumer.apply(modifiedTriplesIRI).apply(metaRepoConn).apply(CHANGELOG.ADDED_STATEMENT));
 					stagingArea.getRemovedStatements().forEach(
-							consumer.apply(commitIRI).apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
+							consumer.apply(modifiedTriplesIRI).apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
+					metaRepoConn.add(modifiedTriplesIRI, PROV.WAS_GENERATED_BY, commitIRI, sail.metadataGraph);
+					metaRepoConn.add(modifiedTriplesIRI, PROV.GENERATED_AT_TIME, generationTime, sail.metadataGraph);
+					metaRepoConn.add(commitIRI, PROV.GENERATED, modifiedTriplesIRI, sail.metadataGraph);
 				}
 
 				if (previousTip != null) {
@@ -301,6 +305,17 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or not
 		// the commit has been applied to the data repo
+	}
+
+	protected Literal currentTimeAsLiteral() throws SailException {
+		GregorianCalendar calendar = new GregorianCalendar();
+		XMLGregorianCalendar currentDateTimeXML;
+		try {
+			currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
+		} catch (DatatypeConfigurationException e) {
+			throw new SailException(e);
+		}
+		return SimpleValueFactory.getInstance().createLiteral(currentDateTimeXML);
 	}
 
 	private void removeLastCommit(IRI commitIRI, Resource previousTip, Model commitMetadataModel,

@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.changetracking.vocabulary;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
@@ -18,6 +20,11 @@ public abstract class CHANGETRACKER {
 	 * Recommended prefix for the CHANGETRACKER namespace: "ct"
 	 */
 	public static final String PREFIX = "ct";
+
+	/**
+	 * An immutable {@link Namespace} constant that represents the CHANGETRACKER namespace.
+	 */
+	public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
 	/** ct:staged-additions */
 	public static final IRI STAGED_ADDITIONS;
