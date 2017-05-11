@@ -75,6 +75,8 @@
 		<bundle dependency="true">mvn:commons-codec/commons-codec/1.10</bundle>
 	
 		<bundle dependency="true">wrap:mvn:it.unibo.alice.tuprolog/tuprolog/3.2.1</bundle>
+		<bundle dependency="true">mvn:it.uniroma2.art.lime/lime-model/${lime-api.version}</bundle>
+		<bundle dependency="true">mvn:it.uniroma2.art.lime/lime-profiler/${lime-api.version}</bundle>
 	
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
