@@ -40,6 +40,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationExcep
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
+import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -81,20 +82,21 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	 * @throws BadConfigurationException
 	 * @throws ClassNotFoundException
 	 * @throws IOException
+	 * @throws DatasetMetadataExporterException
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	public void export(HttpServletResponse oRes,
-			PluginSpecification exporterSpecification,
+	public void export(HttpServletResponse oRes, PluginSpecification exporterSpecification,
 			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
 			throws ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, IOException {
+			UnloadablePluginConfigurationException, IOException, DatasetMetadataExporterException {
 
 		exporterSpecification.expandDefaults();
 		DatasetMetadataExporter exporter = (DatasetMetadataExporter) exporterSpecification.instatiatePlugin();
 
-		Model metadata = exporter.produceDatasetMetadata(getProject(), getManagedConnection());
+		Model metadata = exporter.produceDatasetMetadata(getProject(), getManagedConnection(),
+				(IRI) getWorkingGraph());
 
 		dumpRepository(oRes, metadata, outputFormat);
 	}
