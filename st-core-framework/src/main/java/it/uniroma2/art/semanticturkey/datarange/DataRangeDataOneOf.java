@@ -7,18 +7,21 @@ import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 
 public class DataRangeDataOneOf extends DataRangeAbstract{
 	private List <Literal> literalList;
 	
-	public DataRangeDataOneOf(BNode bnode, List <Literal> literalList) {
+	public DataRangeDataOneOf(BNode bnode, List <Literal> literalList, RepositoryConnection conn) {
 		this.startingBNode = bnode;
 		this.literalList = literalList;
+		this.conn = conn;
 	}
 	
 	public List<Literal> getLiteralList(){
@@ -37,12 +40,14 @@ public class DataRangeDataOneOf extends DataRangeAbstract{
 			return statementsList;
 		}
 		
-		BNode oneOfBNode = SimpleValueFactory.getInstance().createBNode();
+		ValueFactory valueFactory = conn.getValueFactory();
+		
+		BNode oneOfBNode = valueFactory.createBNode();
 		//add the info: _:x rdf:type rdfs:Datatype .
-		statementsList.add(SimpleValueFactory.getInstance().createStatement(startingBNode, RDF.TYPE, RDFS.DATATYPE));
+		statementsList.add(valueFactory.createStatement(startingBNode, RDF.TYPE, RDFS.DATATYPE));
 		//add the info: _:x owl:oneOf _:y .
-		statementsList.add(SimpleValueFactory.getInstance().createStatement(startingBNode, OWL.ONEOF, oneOfBNode));
-		statementsList.add(SimpleValueFactory.getInstance().createStatement(oneOfBNode, RDF.TYPE, RDF.LIST));
+		statementsList.add(valueFactory.createStatement(startingBNode, OWL.ONEOF, oneOfBNode));
+		statementsList.add(valueFactory.createStatement(oneOfBNode, RDF.TYPE, RDF.LIST));
 		
 		//add the list of literal in the form: _:x owl:oneOf LIST
 		BNode lastBNode = oneOfBNode;
@@ -59,18 +64,20 @@ public class DataRangeDataOneOf extends DataRangeAbstract{
 	
 	protected BNode addToList(BNode bnode, Value value, List<Statement> statementsList, boolean firstAdd){
 		BNode lastBNode = bnode;
+		ValueFactory valueFactory = conn.getValueFactory();
 		if(!firstAdd){
-			BNode newBNode = SimpleValueFactory.getInstance().createBNode();
-			statementsList.add(SimpleValueFactory.getInstance().createStatement(lastBNode, RDF.REST, newBNode));
-			statementsList.add(SimpleValueFactory.getInstance().createStatement(newBNode, RDF.TYPE, RDF.LIST));
+			BNode newBNode = valueFactory.createBNode();
+			statementsList.add(valueFactory.createStatement(lastBNode, RDF.REST, newBNode));
+			statementsList.add(valueFactory.createStatement(newBNode, RDF.TYPE, RDF.LIST));
 			lastBNode = newBNode;
 		}
-		statementsList.add(SimpleValueFactory.getInstance().createStatement(lastBNode, RDF.FIRST, value));
+		statementsList.add(valueFactory.createStatement(lastBNode, RDF.FIRST, value));
 		return lastBNode;
 	}
 	
 	protected void closeList(BNode bnode, List<Statement> statementsList){
-		statementsList.add(SimpleValueFactory.getInstance().createStatement(bnode, RDF.REST, RDF.NIL));
+		ValueFactory valueFactory = conn.getValueFactory();
+		statementsList.add(valueFactory.createStatement(bnode, RDF.REST, RDF.NIL));
 		
 	}
 }

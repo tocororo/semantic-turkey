@@ -46,19 +46,19 @@ public class ParseDataRange {
 		//String nilString = SPARQLHelp.toSPARQL(RDF.NIL);
 		
 		// @formatter:off
-		String query = "SELECT ?firstBnodeInList ?bnodeInList ?literalValue ?nextBNode" + 
+		String query = "SELECT ?bnodeList ?bnodeInList ?literalValue ?nextBNode" + 
 						"\nWHERE{" +
 						
 						//do a subquery to obtain the main list (linked with owl:oneOf to the inputBNode)
 						// and the first element of the list
 						"\n{"+
-						"\nSELECT ?bnodeList ?firstBnodeInList "+
+						"\nSELECT ?bnodeList "+
 						"\nWHERE {" +
 						"\n?inputBNode 	a 	"+dataypeString+" . "+
-						"\n?inputBNode "+oneOfString+" ?bnodeList" +
-						//get the first element of the list
-						"\n?bnodeList "+restString+" ?firstBnodeInList ."+
-						"\n filter isBlank(?firstBnodeInList) " +
+						"\n?inputBNode "+oneOfString+" ?bnodeList ." +
+						//?gnodeList is the first element of the list (and the list itself, since this is how 
+						//list are in RDF)
+						"\n filter isBlank(?bnodeList) " +
 						"\n}" +
 						"\n}" +
 
@@ -75,6 +75,8 @@ public class ParseDataRange {
 						"\nfilter isBlank(?bnodeInList) " +
 						"\nfilter isLiteral(?literalValue)" +
 						"\n}";
+		
+		
 		// @formatter:on
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
@@ -89,7 +91,7 @@ public class ParseDataRange {
 		while(tupleQueryResult.hasNext()){
 			BindingSet bindingSet = tupleQueryResult.next();
 			if(firstBnodeInList==null){
-				firstBnodeInList = (BNode)bindingSet.getBinding("firstBnodeInList").getValue();
+				firstBnodeInList = (BNode)bindingSet.getBinding("bnodeList").getValue();
 			}
 			BNode bnodeInList = (BNode) bindingSet.getBinding("bnodeInList").getValue();
 			Literal  literalValue = (Literal) bindingSet.getBinding("literalValue").getValue();
@@ -100,6 +102,11 @@ public class ParseDataRange {
 				bnodeToNextBNode.put(bnodeInList, (BNode) nextBNode);
 			}
 			
+		}
+		
+		if(bnodeToNextBNode.isEmpty()){
+			//the query found no solution, so return and empty list
+			return new DataRangeDataOneOf(startingBNode, literalList, conn);
 		}
 		
 		//now construct the ordered list of Literal in the enumeration
@@ -115,11 +122,12 @@ public class ParseDataRange {
 			}
 		}
 		
-		return new DataRangeDataOneOf(startingBNode, literalList);
+		return new DataRangeDataOneOf(startingBNode, literalList, conn);
 	}
 	
 	
-	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements){
+	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements, 
+			RepositoryConnection conn){
 		//see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
 		
 		List<Literal> literalList = new ArrayList<>();
@@ -128,7 +136,7 @@ public class ParseDataRange {
 		// using the property OWL.ONEOF (and the input bnode should have the type RDFS.DATATYPE)
 		Optional<Resource> optionalRes = Models.objectResource(statements.filter(startingBNode, OWL.ONEOF, null));
 		if(!optionalRes.isPresent()){
-			return new DataRangeDataOneOf(startingBNode, literalList);
+			return new DataRangeDataOneOf(startingBNode, literalList, conn);
 		}
 		BNode listBNode = (BNode)optionalRes.get();
 		
@@ -143,7 +151,7 @@ public class ParseDataRange {
 			}
 		}
 		
-		return new DataRangeDataOneOf(startingBNode, literalList);
+		return new DataRangeDataOneOf(startingBNode, literalList, conn);
 		
 	}
 }

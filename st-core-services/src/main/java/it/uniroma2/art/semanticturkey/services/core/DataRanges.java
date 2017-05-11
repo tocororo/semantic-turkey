@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.rdf4j.model.BNode;
@@ -13,6 +14,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +24,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
 import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -48,33 +51,20 @@ public class DataRanges extends STServiceAdapter{
 		
 		List<Literal> literalList = Arrays.asList(literalsArray);
 		
-		DataRangeDataOneOf dataRangeDataOneOf = new DataRangeDataOneOf(bnode, literalList);
+		RepositoryConnection conn = getManagedConnection();
+		
+		DataRangeDataOneOf dataRangeDataOneOf = new DataRangeDataOneOf(bnode, literalList, conn);
 
 		List<Statement> triplesList = dataRangeDataOneOf.generateTriples();
 		
-		String baseURI = SPARQLHelp.toSPARQL(getWorkingGraph());
-		
-		String insertquery = "INSERT DATA {" + 
-				"\nGRAPH "+baseURI+" {";
-		for(Statement statement : triplesList) {
-			String subj = SPARQLHelp.toSPARQL(statement.getSubject());
-			String pred = SPARQLHelp.toSPARQL(statement.getPredicate());
-			String obj = SPARQLHelp.toSPARQL(statement.getObject());
-			insertquery += "\n"+subj+" "+pred+" "+obj+" .";
-		}
-		insertquery += "\n}" +
-				"\n}";
-
-		Update update = getManagedConnection().prepareUpdate(insertquery);
-		update.execute();
-		
+		conn.add(triplesList, getWorkingGraph());
 	}
 	
 	@STServiceOperation
 	@Read
-	public List<Literal> getLiteralEnumeration(BNode bnode){
+	public Collection<AnnotatedValue<Literal>> getLiteralEnumeration(BNode bnode){
 		logger.info("getLiteralEnumeration");
-		List<Literal> literalList = new ArrayList<Literal>();
+		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<AnnotatedValue<Literal>>();
 		
 		DataRangeDataOneOf dataOneOf = null;
 		DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(bnode, getManagedConnection());
@@ -86,14 +76,18 @@ public class DataRanges extends STServiceAdapter{
 			return literalList;
 		}
 		
-		literalList = dataOneOf.getLiteralList();
+		List<Literal> literalTempList = dataOneOf.getLiteralList();
+		
+		for(Literal literal : literalTempList){
+			literalList.add(new AnnotatedValue<Literal>(literal));
+		}
 		
 		return literalList;
 	}
 	
 	@STServiceOperation
 	@Write
-	public void addLiteralToEnumeration(BNode bNode, Literal literal){
+	public void addLiteralToEnumeration(BNode bnode, Literal literal){
 		//prepare a SPARQL update query, which takes the last element in the list (the ones having rdf:nil 
 		// at the value for rdf:rest) and 
 		
@@ -102,41 +96,48 @@ public class DataRanges extends STServiceAdapter{
 		String firstString = SPARQLHelp.toSPARQL(RDF.FIRST);
 		String restString = SPARQLHelp.toSPARQL(RDF.REST);
 		String nilString = SPARQLHelp.toSPARQL(RDF.NIL);
+		String typeString = SPARQLHelp.toSPARQL(RDF.TYPE);
+		String listString = SPARQLHelp.toSPARQL(RDF.LIST);
 		String literalString = SPARQLHelp.toSPARQL(literal);
 		
-		String baseURI = SPARQLHelp.toSPARQL(getWorkingGraph());
+		//String baseURI = SPARQLHelp.toSPARQL(getWorkingGraph());
 		
 		BNode newBnode = getManagedConnection().getValueFactory().createBNode();
 		//String newBnodeString = SPARQLHelp.toSPARQL(newBnode);
 		
 		String updateQuery = 
 				"DELETE {"+
-				"\n?lastElem "+restString+" "+nilString+" ."+
+				"\n GRAPH ?g {" +
+				"\n?lastBNode "+restString+" "+nilString+" ."+
+				"\n}" +
 				"\n}"+
-				"INSERT {"+
-				"\nGRAPH "+baseURI+"{"+
-				"\n?lastElem "+restString+" ?newBNode ."+
+				"\nINSERT {"+
+				"\nGRAPH ?g {"+
+				"\n?lastBNode "+restString+" ?newBNode ."+
+				"\n?newBNode "+typeString+" "+listString +" ."+
 				"\n?newBNode "+firstString+" "+literalString+" ." +
 				"\n?newBNode "+restString+" "+nilString+" ." + 
 				"\n}"+
 				"\n}"+
 				"WHERE {"+
+				"\nGRAPH ?g {" +
 				"\n?inputBNode 	a 	"+dataypeString+" . "+
 				"\n?inputBNode "+oneOfString+" ?bnodeList ." +
 				"\n?bnodeList "+restString+"* ?lastBNode ." +
 				"\n?lastBNode "+restString+" "+nilString+" ."+
-				"\n" +
+				"\n}" +
 				"\n}";
+		
 		Update update= getManagedConnection().prepareUpdate(updateQuery);
-		update.setBinding("inputBNode", bNode);
-		update.setBinding("newBnode", newBnode);
+		update.setBinding("inputBNode", bnode);
+		update.setBinding("newBNode", newBnode);
 		update.execute();
 	}
 	
 	
 	@STServiceOperation
 	@Read
-	public JsonNode hasLiteralInEnumeration(BNode bNode, Literal literal){
+	public JsonNode hasLiteralInEnumeration(BNode bnode, Literal literal){
 		//check if there is at least one element in the enumeration with the specified literal
 		// using a single SPARQL query
 		
@@ -156,7 +157,7 @@ public class DataRanges extends STServiceAdapter{
 				"\n?bnodeInList "+firstString+" "+literalString+" ."+
 				"\n}";
 		BooleanQuery booleanQuery = getManagedConnection().prepareBooleanQuery(query);
-		booleanQuery.setBinding("inputBNode", bNode);
+		booleanQuery.setBinding("inputBNode", bnode);
 		boolean booleanReturn = booleanQuery.evaluate();
 		
 		return JsonNodeFactory.instance.booleanNode(booleanReturn);
@@ -165,7 +166,7 @@ public class DataRanges extends STServiceAdapter{
 	
 	@STServiceOperation
 	@Write
-	public void removeLiteralFromEnumeration(BNode bNode, Literal literal){
+	public void removeLiteralFromEnumeration(BNode bnode, Literal literal){
 		//remove ALL the element of the list of owl:oneOf having the specified literal
 		
 		String oneOfString = SPARQLHelp.toSPARQL(OWL.ONEOF);
@@ -190,10 +191,11 @@ public class DataRanges extends STServiceAdapter{
 				"\n}"+
 
 				"\nINSERT {" +
-				//add the connection to the previous element to the next element of the list
+				//add the connection to the previous element to the next element of the list or 
+				// add the OWL.ONEOF between the next element and the inputBNode
 				"\nGRAPH "+baseURI+" {" +
-				"\n?prevBNodeInList "+restString+" nextBnodeInList ." +
-				"\n?datatypeBnode "+oneOfString+" nextBnodeInList ." +
+				"\n?prevBNodeInList "+restString+" ?nextBnodeInList ." +
+				"\n?datatypeBnode "+oneOfString+" ?nextBnodeInList ." +
 				"\n}" + 
 				"\n}" +
 
@@ -204,7 +206,7 @@ public class DataRanges extends STServiceAdapter{
 				"\n?bnodeList "+restString+"* ?bnodeInList ." +
 				"\n?bnodeInList "+firstString+" "+literalString+" ."+
 				
-				//get the next element (a normal elemento or rdf:nil)
+				//get the next element (a normal element or rdf:nil)
 				"\n?bnodeInList "+restString+" ?nextBnodeInList ." +
 				//if it is not the first element of the list
 				"\nOPTIONAL{?prevBNodeInList "+restString+" ?bnodeInList . }"+ 
@@ -213,7 +215,7 @@ public class DataRanges extends STServiceAdapter{
 				
 				"\n}";
 		Update update = getManagedConnection().prepareUpdate(updateQuery);
-		update.setBinding("inputBNode", bNode);
+		update.setBinding("inputBNode", bnode);
 		update.execute();
 				
 		
