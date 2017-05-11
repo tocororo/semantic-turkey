@@ -28,8 +28,11 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
+import org.eclipse.rdf4j.rio.turtle.TurtleWriter;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,8 +116,9 @@ public class DatasetMetadataExport extends STServiceAdapter {
 			throws IOException {
 		File tempServerFile = File.createTempFile("save", "." + outputFormat.getDefaultFileExtension());
 		try {
-			Rio.write(metadata, new FileOutputStream(tempServerFile), outputFormat);
-
+			RDFWriter rdfWriter = Rio.createWriter(outputFormat, new FileOutputStream(tempServerFile));
+			rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
+			Rio.write(metadata, rdfWriter);
 			oRes.setHeader("Content-Disposition",
 					"attachment; filename=save." + outputFormat.getDefaultFileExtension());
 			oRes.setContentType(outputFormat.getDefaultMIMEType());
