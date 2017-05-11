@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -11,6 +13,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
@@ -94,33 +97,49 @@ public class Preferences extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation
-	public void setActiveScheme(@Optional @LocallyDefined IRI scheme) throws IllegalStateException, STPropertyUpdateException {
-		if (scheme != null) {
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, scheme.stringValue(),
-					getProject(), UsersManager.getLoggedUser());
+	public void setActiveSchemes(@Optional @LocallyDefinedResources List<IRI> schemes) throws IllegalStateException, STPropertyUpdateException {
+		if (schemes != null && !schemes.isEmpty()) {
+			String value = "";
+			for (IRI s : schemes) {
+				value += s.stringValue() + ",";
+			}
+			value = value.substring(0, value.length()-1);
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES, value, getProject(),
+					UsersManager.getLoggedUser());
 		} else { // no scheme mode
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, null, getProject(),
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES, null, getProject(),
 					UsersManager.getLoggedUser());
 		}
 	}
 	
+	/**
+	 * @param projectName get this as parameter and not from getProject() since this method is useful also when
+	 * exploring external project (not the working one)
+	 * @return
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 * @throws ProjectAccessException
+	 */
 	@STServiceOperation
-	public AnnotatedValue<IRI> getActiveScheme(String projectName) throws IllegalStateException, STPropertyAccessException,
+	public Collection<AnnotatedValue<IRI>> getActiveSchemes(String projectName) throws IllegalStateException, STPropertyAccessException,
 			ProjectAccessException {
-		AnnotatedValue<IRI> scheme = null;
+		Collection<AnnotatedValue<IRI>> schemes = new ArrayList<>();
 		Project<?> project = ProjectManager.getProject(projectName);
 		if (project == null) {
 			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName 
 					+ ". It could be closed or not existing.");
 		}
-		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME,
+		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES,
 				ProjectManager.getProject(projectName), UsersManager.getLoggedUser());
 		if (value != null) {
-			scheme = new AnnotatedValue<IRI>(SimpleValueFactory.getInstance().createIRI(value));
+			String[] splitted = value.split(",");
+			SimpleValueFactory vf = SimpleValueFactory.getInstance();
+			for (String s : splitted) {
+				schemes.add(new AnnotatedValue<IRI>(vf.createIRI(s)));
+			}
 		}
-		return scheme;
+		return schemes;
 	}
-	
 	
 	
 	@STServiceOperation
@@ -176,9 +195,16 @@ public class Preferences extends STServiceAdapter {
 		preferencesNode.set(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, jsonFactory.booleanNode(showInst));
 		
 		//active_scheme
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEME, getProject(),
+		ArrayNode schemesArrayNode = jsonFactory.arrayNode();
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES, getProject(),
 				UsersManager.getLoggedUser());
-		preferencesNode.set(STPropertiesManager.PROP_ACTIVE_SCHEME, jsonFactory.textNode(value));
+		if (value != null) {
+			String[] splitted = value.split(",");
+			for (String s : splitted) {
+				schemesArrayNode.add(s);
+			}
+		}
+		preferencesNode.set(STPropertiesManager.PROP_ACTIVE_SCHEMES, schemesArrayNode);
 		
 		return preferencesNode;
 	}
