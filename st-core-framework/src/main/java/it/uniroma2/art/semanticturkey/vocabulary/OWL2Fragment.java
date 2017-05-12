@@ -24,6 +24,7 @@ public abstract class OWL2Fragment {
 	public static final IRI ASYMMETRICPROPERTY;
 	public static final IRI REFLEXIVEPROPERTY;
 	public static final IRI IRREFLEXIVEPROPERTY;
+	public static final IRI DEPRECATED;
 
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
@@ -31,5 +32,7 @@ public abstract class OWL2Fragment {
 		ASYMMETRICPROPERTY = vf.createIRI(NAMESPACE, "AsymmetricProperty");
 		REFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "ReflexiveProperty");
 		IRREFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "IrreflexiveProperty");
+		DEPRECATED = vf.createIRI(NAMESPACE, "deprecated ");
+		
 	}
 }

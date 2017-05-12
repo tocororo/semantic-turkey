@@ -1,17 +1,22 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 
 @STService
@@ -72,6 +77,15 @@ public class Resources extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
 	public void removeTriple(Resource resource, IRI property, Value value){
 		getManagedConnection().remove(resource, property, value, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	public void setDeprecated(@LocallyDefined IRI resource){
+		RepositoryConnection conn = getManagedConnection();
+		Literal literalTrue = conn.getValueFactory().createLiteral("true",XMLSchema.BOOLEAN);
+		conn.add(resource, OWL2Fragment.DEPRECATED, literalTrue, getWorkingGraph());
 	}
 
 }
