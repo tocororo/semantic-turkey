@@ -32,7 +32,7 @@ public abstract class OWL2Fragment {
 		ASYMMETRICPROPERTY = vf.createIRI(NAMESPACE, "AsymmetricProperty");
 		REFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "ReflexiveProperty");
 		IRREFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "IrreflexiveProperty");
-		DEPRECATED = vf.createIRI(NAMESPACE, "deprecated ");
+		DEPRECATED = vf.createIRI(NAMESPACE, "deprecated");
 		
 	}
 }
