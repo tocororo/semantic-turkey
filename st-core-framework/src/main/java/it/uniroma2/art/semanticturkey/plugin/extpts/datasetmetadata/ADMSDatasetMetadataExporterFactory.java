@@ -9,6 +9,10 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * Factory for the instantiation of {@link ADMSDatasetMetadataExporter}.
@@ -52,7 +56,20 @@ public class ADMSDatasetMetadataExporterFactory
 
 	@Override
 	public Object createInstance(PluginConfiguration conf) {
-		return new ADMSDatasetMetadataExporter();
+		return new ADMSDatasetMetadataExporter(ADMSDatasetMetadataExporterFactory.class.getName());
+	}
+	
+	@Override
+	public STProperties getProjectSettings(Project<?> project) throws STPropertyAccessException {
+		ADMSDatasetMetadataExporterSettings projectSettings = new ADMSDatasetMetadataExporterSettings();
+		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
+		return projectSettings;
+	}
+
+	@Override
+	public void storeProjectSettings(STProperties props) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

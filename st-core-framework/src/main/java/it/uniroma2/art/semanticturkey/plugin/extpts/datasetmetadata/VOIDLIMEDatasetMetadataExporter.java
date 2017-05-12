@@ -28,6 +28,13 @@ import it.uniroma2.art.semanticturkey.project.Project;
  */
 public class VOIDLIMEDatasetMetadataExporter implements DatasetMetadataExporter {
 
+	private String pluginId;
+
+	
+	public VOIDLIMEDatasetMetadataExporter(String pluginId) {
+		this.pluginId = pluginId;
+	}
+
 	@Override
 	public Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException {

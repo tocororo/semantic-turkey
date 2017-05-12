@@ -8,7 +8,10 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * Factory for the instantiation of {@link DCATDatasetMetadataExporter}.
@@ -52,7 +55,19 @@ public class DCATDatasetMetadataExporterFactory
 
 	@Override
 	public Object createInstance(PluginConfiguration conf) {
-		return new DCATDatasetMetadataExporter();
+		return new DCATDatasetMetadataExporter(DCATDatasetMetadataExporterFactory.class.getName());
 	}
 
+	@Override
+	public STProperties getProjectSettings(Project<?> project) throws STPropertyAccessException {
+		DCATDatasetMetadataExporterSettings projectSettings = new DCATDatasetMetadataExporterSettings();
+		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
+		return projectSettings;
+	}
+
+	@Override
+	public void storeProjectSettings(STProperties props) {
+		// TODO Auto-generated method stub
+		
+	}
 }

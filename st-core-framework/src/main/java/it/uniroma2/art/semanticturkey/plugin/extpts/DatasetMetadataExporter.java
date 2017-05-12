@@ -12,5 +12,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public interface DatasetMetadataExporter {
-	Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph) throws DatasetMetadataExporterException;
+
+	Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph)
+			throws DatasetMetadataExporterException;
 }
