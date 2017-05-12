@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +15,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -213,6 +213,45 @@ public class SKOSXL extends STServiceAdapter {
 		annotatedValue.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
 		//TODO compute show
 		return annotatedValue; 
+	}
+	
+	/**
+	 * Deletes a conceptScheme and the related xLabels
+	 * @param scheme
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
+	public void deleteConceptScheme(@LocallyDefined IRI scheme) {
+		String query = "DELETE {														\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		?s1 ?p1 ?scheme .												\n"
+				+ "		?scheme ?p2 ?o2 .												\n"
+				+ "		?o2 ?p3 ?o3 .													\n"
+				+ "		?s4 ?p4 ?o2 .													\n"
+				+ "	}																	\n"
+				+ "} WHERE {															\n"
+				+ "	BIND(URI('" + scheme.stringValue() + "') AS ?scheme)				\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		{ 																\n"
+				+ "			?s1 ?p1 ?scheme . 											\n"
+				+ "		} UNION {														\n"
+				+ "			?scheme ?p2 ?o2 . 											\n"
+				+ "			OPTIONAL {													\n"
+				+ "				FILTER(?p2 = 											\n"
+					+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL) + " || " 
+					+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL) + " || "
+					+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL) + ")"
+				+ "				?o2 ?p3 ?o3 .											\n"
+				+ "				?s4 ?p4 ?o2 .											\n"
+				+ "			}															\n"
+				+ "		}																\n"
+				+ "	}																	\n"
+				+ "}";
+		System.out.println(query);
+		RepositoryConnection repoConnection = getManagedConnection();
+		Update uq = repoConnection.prepareUpdate(query);
+		uq.execute();
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)

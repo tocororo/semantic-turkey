@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -461,6 +460,60 @@ public class SKOS extends STServiceAdapter {
 		annotatedValue.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
 		//TODO compute show
 		return annotatedValue; 
+	}
+	
+	/**
+	 * Checks if a ConceptScheme is empty. Useful before deleting a ConceptScheme.
+	 * @param scheme
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'R')")
+	public Boolean isSchemeEmpty(@LocallyDefined IRI scheme) {
+		String query = 
+				"ASK {																								\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " { 								\n"
+				+ "		{																							\n"
+				+ "			?prop " + NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF) + "* 						\n" 
+					+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME) + " . 		\n"
+				+ 			"?res ?prop " + NTriplesUtil.toNTriplesString(scheme) + " .								\n"
+				+ "		} UNION {																					\n"
+				+ "			?prop " + NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF) + "* 						\n" 
+					+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.HAS_TOP_CONCEPT) + " .	\n"
+				+ 			NTriplesUtil.toNTriplesString(scheme) + " ?prop ?res .									\n"
+				+ "		}																							\n"
+				+ "	}																								\n"
+				+ "}";
+		RepositoryConnection repoConnection = getManagedConnection();
+		return !repoConnection.prepareBooleanQuery(query).evaluate();
+	}
+	
+	/**
+	 * Deletes a ConceptScheme
+	 * @param scheme
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
+	public void deleteConceptScheme(@LocallyDefined IRI scheme) {
+		String query = 
+				"DELETE {																\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		?s1 ?p1 ?scheme .												\n"
+				+ "		?scheme ?p2 ?o2 .												\n"
+				+ "	}																	\n"
+				+ "} WHERE {															\n"
+				+ "	BIND(URI('" + scheme.stringValue() + "') AS ?scheme)				\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		{ ?s1 ?p1 ?scheme . }											\n"
+				+ "		UNION															\n"
+				+ "		{ ?scheme ?p2 ?o2 . }											\n"
+				+ "	}																	\n"
+				+ "}";
+		System.out.println(query);
+		RepositoryConnection repoConnection = getManagedConnection();
+		repoConnection.prepareUpdate(query);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
