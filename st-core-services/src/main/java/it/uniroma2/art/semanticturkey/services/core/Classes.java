@@ -85,8 +85,13 @@ public class Classes extends STServiceAdapter {
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
 					" prefix owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
 					" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
-					"                                                                             \n" +                                      
-					" SELECT ?resource ?attr_color WHERE {                                        \n" +                                                    
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
+                    "                                                                             \n" +                                      
+					//" SELECT ?resource ?attr_color {                                        \n" +                                                    
+					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+					" SELECT ?resource ?attr_color "+generateNatureSPARQLSelectPart()+" 			  \n" + 
+					" WHERE {																      \n" +
 					" 	  ?metaClass rdfs:subClassOf* owl:Class .                                 \n" +
 					"     ?resource a ?metaClass.                                                 \n" +
 					"     FILTER(isIRI(?resource))                                                \n" +
@@ -97,6 +102,11 @@ public class Classes extends STServiceAdapter {
 //					"         ?superClass2 a ?metaClass2 .                                        \n" +
 //					"         ?metaClass2 rdfs:subClassOf* rdfs:Class .                           \n" +
 					"     }                                                                       \n" +
+
+					//adding the nature in the query (will be replaced by the appropriate processor), 
+					//remember to change the SELECT as well
+					generateNatureSPARQLWherePart("?resource") +
+					
 					" }                                                                           \n" +
 					" GROUP BY ?resource ?attr_color                                              \n"                             
 					// @formatter:on
@@ -107,8 +117,13 @@ public class Classes extends STServiceAdapter {
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                       \n" +                          
 					" prefix owl: <http://www.w3.org/2002/07/owl#>                                    \n" +                          
 					" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                            \n" +                          
-					"                                                                                 \n" +                          
-					" SELECT ?resource ?attr_color WHERE {                                            \n" +
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          	  \n" +
+                    "                                                                                 \n" +                          
+					//" SELECT ?resource ?attr_color {                                            \n" +
+					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+					" SELECT ?resource ?attr_color "+generateNatureSPARQLSelectPart()+" 				  \n" + 
+					" WHERE {																          \n" +
 					" 	{                                                                             \n" +
 					" 		BIND(owl:Thing as ?resource)                                              \n" +
 					" 	} UNION {                                                                     \n" +
@@ -127,6 +142,12 @@ public class Classes extends STServiceAdapter {
 					" 			?metaClass2 rdfs:subClassOf* rdfs:Class .                             \n" +
 					"		}                                                                         \n" +
 					" 	}                                                                             \n" +
+					
+					//adding the nature in the query (will be replaced by the appropriate processor), 
+					//remember to change the SELECT as well
+					generateNatureSPARQLWherePart("?resource") +
+					
+					
 					" }                                                                               \n" +
 					" GROUP BY ?resource ?attr_color                                                  \n"
 					// @formatter:on
@@ -134,11 +155,24 @@ public class Classes extends STServiceAdapter {
 		} else {
 			qb = createQueryBuilder(
 				// @formatter:off
-				" SELECT ?resource ?attr_color WHERE {                                         \n " +                                                                              
-				"    ?resource rdfs:subClassOf " + RenderUtils.toSPARQL(superClass) + "      . \n " +
-				"    FILTER(isIRI(?resource))                                                  \n " +
-				" }                                                                            \n " +
-				" GROUP BY ?resource ?attr_color             		                           \n "
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
+				" prefix owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
+				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                         \n" +
+                //" SELECT ?resource ?attr_color {                                         	   \n " +                                                                              
+				//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+				" SELECT ?resource ?attr_color "+generateNatureSPARQLSelectPart()+" 			  \n" + 
+				" WHERE {																      \n" +
+				"    ?resource rdfs:subClassOf " + RenderUtils.toSPARQL(superClass) + "      .\n " +
+				"    FILTER(isIRI(?resource))                                                 \n " +
+				
+				//adding the nature in the query (will be replaced by the appropriate processor), 
+				//remember to change the SELECT as well
+				generateNatureSPARQLWherePart("?resource") +
+				
+				" }                                                                           \n " +
+				" GROUP BY ?resource ?attr_color             		                          \n "
 				// @formatter:on
 			);
 		}

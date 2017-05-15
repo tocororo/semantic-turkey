@@ -321,6 +321,47 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 				sertype);
 	}
 
+	
+	//TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
+	//variables being used: $st, $go, $dep and ?attr_nature
+	protected String generateNatureSPARQLSelectPart(){
+		
+		String sparqlPartText = "(group_concat(concat(str($st), \"-\", str($go), \"-\", "
+				+ "str($dep));separator=\" |_| \") as ?attr_nature) \n";
+		
+		return sparqlPartText;
+	}
+	
+	//TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
+	//variables being used: $st, $go, $t, $dep
+	//  prefixes needed: skos, owl, skosxl
+	protected String generateNatureSPARQLWherePart(String varName){
+		String sparqlPartText;
+		
+		if(!varName.startsWith("?")){
+			varName = "?"+varName;
+		}
+		sparqlPartText = 
+		" OPTIONAL { \n" +
+		"  values($st) {(skos:Concept)(owl:Class)(skosxl:Label)(skos:ConceptScheme)} \n" +
+		"  graph $go { \n" +
+		" "+varName+" a $t . \n" +
+		"  } \n" +
+		"  $t rdfs:subClassOf* $st \n" +
+		" } \n" + 
+		" OPTIONAL { \n" +
+		"	   BIND( \n" +
+		"	     IF(EXISTS {"+varName+" owl:Deprecated true}, \"true\", \n" +
+		"	      IF(EXISTS {"+varName+" a owl:DeprecatedClass}, \"true\", \n" +
+		"	       IF(EXISTS {"+varName+" a owl:DeprecatedProperty}, \"true\", \n" +
+		"	        \"false\"))) \n" +
+		"	   as $dep ) \n" +
+		"	 } \n" ;
+		
+		
+		return sparqlPartText;
+	}
+	
 	// Deprecated
 
 	@Override

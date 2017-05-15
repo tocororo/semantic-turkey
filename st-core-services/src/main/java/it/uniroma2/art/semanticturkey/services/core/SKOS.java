@@ -77,15 +77,20 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes) {
 		QueryBuilder qb;
-
+		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
 					// @formatter:off
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
                     "                                                                                    \n" +
-					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					//" SELECT ?resource ?attr_more {                                                \n" +
+					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+" 					 \n" + 
+					" WHERE {                                                \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
@@ -103,9 +108,14 @@ public class SKOS extends STServiceAdapter {
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
 					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
 					"     }                                                                              \n" +
+					
+					//adding the nature in the query (will be replaced by the appropriate processor), 
+					//remember to change the SELECT as well
+					generateNatureSPARQLWherePart("?resource") +
+					
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n";
-					// @formatter:on
+			// @formatter:on
 			qb = createQueryBuilder(query);
 		} else {
 			qb = createQueryBuilder(
@@ -113,14 +123,24 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
                     "                                                                                    \n" +
-					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					//" SELECT ?resource ?attr_more                                                 \n" +
+					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
+					" WHERE {																			 \n" + 
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     FILTER NOT EXISTS {?resource skos:broader|^skos:narrower []}                   \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
 					"     }                                                                              \n" +
+					
+					//adding the nature in the query (will be replaced by the appropriate processor), 
+					//remember to change the SELECT as well
+					generateNatureSPARQLWherePart("?resource") +
+					
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n"
 					// @formatter:on
@@ -145,8 +165,13 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
                     "                                                                                    \n" +
-					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					//" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+					" SELECT ?resource "+generateNatureSPARQLSelectPart()+"								 \n" + 
+					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
@@ -165,6 +190,11 @@ public class SKOS extends STServiceAdapter {
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
 					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
 					"     }                                                                              \n" +
+					
+					//adding the nature in the query (will be replaced by the appropriate processor), 
+					//remember to change the SELECT as well
+					generateNatureSPARQLWherePart("?resource") +
+					
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n";
 					// @formatter:on
@@ -176,14 +206,24 @@ public class SKOS extends STServiceAdapter {
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
                     "                                                                                    \n" +
-					" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					//" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
+					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource . } as ?attr_more ) \n" +
 					"     }                                                                              \n" +
+					
+					//adding the nature in the query (will be replaced by the appropriate processor), 
+					//remember to change the SELECT as well
+					generateNatureSPARQLWherePart("?resource") +
+					
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n"
 					// @formatter:on
