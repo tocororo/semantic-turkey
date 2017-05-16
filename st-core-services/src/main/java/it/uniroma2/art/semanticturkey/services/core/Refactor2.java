@@ -76,6 +76,7 @@ public class Refactor2 extends STServiceAdapter  {
 	
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#oldResource)+ ')', 'U')")
 	public void changeResourceURI(@LocallyDefined IRI oldResource, IRI newResource) throws DuplicatedResourceException {
 		RepositoryConnection conn = getManagedConnection();
 		//check if a resource with the new IRI already exists

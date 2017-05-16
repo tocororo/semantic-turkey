@@ -75,6 +75,7 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -145,6 +146,7 @@ public class ResourceView2 extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public Map<String, ResourceViewSection> getResourceView(Resource resource,
 			@Optional ResourcePosition resourcePosition) throws Exception {
 		try {

@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -212,6 +213,13 @@ public class STAuthorizationEvaluator {
 				.isAffirmative();
 	}
 	
+	/**
+	 * To use at support of isAuthorized like
+	 * @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'R')")
+	 * where individual is a method parameter name 
+	 * @param resource
+	 * @return
+	 */
 	public RDFResourceRolesEnum typeof(Resource resource) {
 		Repository repo = stServiceContext.getProject().getRepository();
 		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);

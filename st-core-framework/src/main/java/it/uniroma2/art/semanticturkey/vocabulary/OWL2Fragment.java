@@ -25,6 +25,7 @@ public abstract class OWL2Fragment {
 	public static final IRI REFLEXIVEPROPERTY;
 	public static final IRI IRREFLEXIVEPROPERTY;
 	public static final IRI DEPRECATED;
+	public static final IRI PROPERTY_DISJOINT_WITH;
 
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
@@ -33,6 +34,6 @@ public abstract class OWL2Fragment {
 		REFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "ReflexiveProperty");
 		IRREFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "IrreflexiveProperty");
 		DEPRECATED = vf.createIRI(NAMESPACE, "deprecated");
-		
+		PROPERTY_DISJOINT_WITH = vf.createIRI(NAMESPACE, "propertyDisjointWith ");
 	}
 }

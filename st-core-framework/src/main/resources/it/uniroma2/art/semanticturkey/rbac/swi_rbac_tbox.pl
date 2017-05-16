@@ -1,3 +1,7 @@
+% This file is the implementation of rbac_tbox.pl for swi prolog
+
+% It is kept for testing purpose only 
+
 capability(rdf(resource),"CD") :- write('fact : capability(rdf(resource),CD) | ').
 
 capability(rdf( lexicalization("en,it") ),"RU") :- write('fact : capability(rdf(lexicalization),RU) | ').

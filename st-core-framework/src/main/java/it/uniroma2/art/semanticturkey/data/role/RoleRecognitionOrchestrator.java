@@ -1,29 +1,21 @@
 package it.uniroma2.art.semanticturkey.data.role;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
-import it.uniroma2.art.semanticturkey.data.access.DataAccessException;
-import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
@@ -86,4 +78,33 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	public String getBindingVariable() {
 		return "resource";
 	}
+	
+	public static RDFResourceRolesEnum computeRole(IRI resource, RepositoryConnection repoConn) {
+		String query = 
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> \n" +
+				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> \n" +
+				"SELECT ?role WHERE { \n" +
+				"BIND(URI('" + resource.stringValue() + "') as ?resource) \n" +
+				"BIND(IF(EXISTS {?metaClass rdfs:subClassOf* skos:Concept . ?resource a ?metaClass .}, \"concept\", \n" +
+				"IF(EXISTS {?metaClass rdfs:subClassOf* skos:ConceptScheme . ?resource a ?metaClass . }, \"conceptScheme\", \n" +
+				"IF(EXISTS {?metaClass rdfs:subClassOf* skosxl:Label . ?resource a ?metaClass . }, \"xLabel\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* skos:OrderedCollection . ?resource a ?metaClass . }, \"skosOrderedCollection\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* skos:Collection . ?resource a ?metaClass . }, \"skosCollection\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* rdfs:Class . ?resource a ?metaClass . }, \"cls\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* owl:DatatypeProperty . ?resource a ?metaClass . }, \"datatypeProperty\", \n" + 
+                "IF(EXISTS {?metaClass rdfs:subClassOf* owl:OntologyProperty . ?resource a ?metaClass . }, \"ontologyProperty\", \n" + 
+                "IF(EXISTS {?metaClass rdfs:subClassOf* owl:AnnotationProperty . ?resource a ?metaClass . }, \"annotationProperty\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* owl:ObjectProperty . ?resource a ?metaClass . }, \"objectProperty\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* owl:DataRange . ?resource a ?metaClass . }, \"dataRange\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* rdf:Property . ?resource a ?metaClass . }, \"property\", \n" +
+                "IF(EXISTS {?metaClass rdfs:subClassOf* owl:Ontology . ?resource a ?metaClass . }, \"ontology\", \n" +
+				"\"individual\"))))))))))))) as ?role)}";
+		TupleQuery tq = repoConn.prepareTupleQuery(query);
+		RDFResourceRolesEnum role = RDFResourceRolesEnum.valueOf(tq.evaluate().next().getValue("role").stringValue());
+		return role;
+	}
+	
 }

@@ -495,6 +495,7 @@ public class Search extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resourceURI)+ ')', 'R')")
 	public Collection<AnnotatedValue<Resource>> getPathFromRoot(String role, IRI resourceURI, @Optional List<IRI> schemesIRI)
 			throws InvalidParameterException{
 		
