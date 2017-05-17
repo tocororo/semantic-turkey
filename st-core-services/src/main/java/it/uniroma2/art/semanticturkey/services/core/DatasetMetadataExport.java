@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
@@ -15,7 +14,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.slf4j.Logger;
@@ -55,12 +53,14 @@ public class DatasetMetadataExport extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(DatasetMetadataExport.class);
 
-	@STServiceOperation
-	@Read
-	public Collection<RDFFormat> getOutputFormats() throws Exception {
-		return RDFWriterRegistry.getInstance().getKeys();
-	}
-
+	/**
+	 * Returns the (project-level) settings for an exporter (including the part related to the extension
+	 * point).
+	 * 
+	 * @param exporterId
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	public ObjectNode getExporterSettings(String exporterId) throws STPropertyAccessException {
 		try {
