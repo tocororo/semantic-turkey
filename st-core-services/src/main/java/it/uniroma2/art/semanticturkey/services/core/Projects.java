@@ -99,12 +99,6 @@ public class Projects extends STServiceAdapterOLD {
 	public void deleteProject(ProjectConsumer consumer, String projectName)
 			throws ProjectDeletionException, IOException {
 		ProjectManager.deleteProject(projectName);
-		// delete the folder about project-user bindings
-		try {
-			ProjectUserBindingsManager.deletePUBindingsOfProject(ProjectManager.getProjectDescription(projectName));
-		} catch (ProjectAccessException | InvalidProjectNameException | ProjectInexistentException e) {
-			throw new ProjectDeletionException(e);
-		}
 	}
 
 	/**
