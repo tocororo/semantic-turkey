@@ -26,21 +26,6 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.configuration.AbstractPluginConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.ContentType;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfigurationParameter;
-import it.uniroma2.art.semanticturkey.plugin.configuration.RequiredConfigurationParameter;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -50,6 +35,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
+import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 @GenerateSTServiceController
 @Validated
@@ -60,19 +55,21 @@ public class Plugins extends STServiceAdapterOLD {
 
 	/**
 	 * Returns the available configuration options for a given plug-in
-	 * @param factoryID the identifier of the plug-in factory
+	 * 
+	 * @param factoryID
+	 *            the identifier of the plug-in factory
 	 * @return
 	 * @throws ConfParameterNotFoundException
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
-	public Response getPluginConfigurations(String factoryID) throws ConfParameterNotFoundException  {
-		PluginFactory<?> pluginFactory = PluginManager.getPluginFactory(factoryID);
-		
+	public Response getPluginConfigurations(String factoryID) throws ConfParameterNotFoundException {
+		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryID);
+
 		Collection<PluginConfiguration> mConfs = pluginFactory.getPluginConfigurations();
-		
+
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		
+
 		Element dataElement = response.getDataElement();
 
 		for (PluginConfiguration mConf : mConfs) {
@@ -105,7 +102,7 @@ public class Plugins extends STServiceAdapterOLD {
 
 		return response;
 	}
-	
+
 	/**
 	 * Returns the implementations of a given extension point
 	 * 
@@ -118,17 +115,17 @@ public class Plugins extends STServiceAdapterOLD {
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
 	public Response getAvailablePlugins(String extensionPoint) throws ConfParameterNotFoundException {
-		Collection<PluginFactory<?>> pluginFactoryCollection = PluginManager.getPluginFactories(extensionPoint);
-		
+		Collection<PluginFactory<?, ?, ?>> pluginFactoryCollection = PluginManager
+				.getPluginFactories(extensionPoint);
+
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element data = response.getDataElement();
-		
-			
-		for (PluginFactory<?> pluginFactory : pluginFactoryCollection) {
+
+		for (PluginFactory<?, ?, ?> pluginFactory : pluginFactoryCollection) {
 			Element pluginElement = XMLHelp.newElement(data, "plugin");
 			pluginElement.setAttribute("factoryID", pluginFactory.getClass().getName());
 		}
-		
+
 		return response;
 	}
 }

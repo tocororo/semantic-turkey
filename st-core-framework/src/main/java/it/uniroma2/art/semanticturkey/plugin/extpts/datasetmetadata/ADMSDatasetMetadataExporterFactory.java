@@ -3,28 +3,26 @@ package it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata;
 import java.util.Arrays;
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.plugin.AbstractPluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * Factory for the instantiation of {@link ADMSDatasetMetadataExporter}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class ADMSDatasetMetadataExporterFactory
-		implements PluginFactory<DatasetMetadataExporterConfiguration> {
+public class ADMSDatasetMetadataExporterFactory extends
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings>
+		implements
+		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings> {
 
-	@Override
-	public String getID() {
-		return this.getClass().getName();
+	public ADMSDatasetMetadataExporterFactory() {
+		super(DatasetMetadataExporter.class.getName());
 	}
 
 	@Override
@@ -56,20 +54,16 @@ public class ADMSDatasetMetadataExporterFactory
 
 	@Override
 	public Object createInstance(PluginConfiguration conf) {
-		return new ADMSDatasetMetadataExporter(ADMSDatasetMetadataExporterFactory.class.getName());
+		return new ADMSDatasetMetadataExporter(this);
+	}
+
+	@Override
+	protected ADMSDatasetMetadataExporterSettings buildProjectSettingsInternal() {
+		return new ADMSDatasetMetadataExporterSettings();
 	}
 	
 	@Override
-	public STProperties getProjectSettings(Project<?> project) throws STPropertyAccessException {
-		ADMSDatasetMetadataExporterSettings projectSettings = new ADMSDatasetMetadataExporterSettings();
-		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
-		return projectSettings;
+	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
+		return new DatasetMetadataExporterSettings();
 	}
-
-	@Override
-	public void storeProjectSettings(STProperties props) {
-		// TODO Auto-generated method stub
-		
-	}
-
 }

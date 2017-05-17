@@ -5,23 +5,21 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
+import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * A {@link DatasetMetadataExporter} for the <a href="https://www.w3.org/TR/vocab-dcat/">Data Catalog
  * Vocabulary (DCAT)</a>
  */
-public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
+public class DCATDatasetMetadataExporter extends
+		AbstractPlugin<DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings, DCATDatasetMetadataExporterFactory>
+		implements DatasetMetadataExporter {
 
-	private String pluginId;
-
-	public DCATDatasetMetadataExporter(String pluginId) {
-		this.pluginId = pluginId;
+	public DCATDatasetMetadataExporter(DCATDatasetMetadataExporterFactory factory) {
+		super(factory);
 	}
 
 	@Override

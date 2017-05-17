@@ -3,23 +3,28 @@ package it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata;
 import java.util.Arrays;
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.plugin.AbstractPluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * Factory for the instantiation of {@link DCATDatasetMetadataExporter}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class DCATDatasetMetadataExporterFactory
-		implements PluginFactory<DatasetMetadataExporterConfiguration> {
+public class DCATDatasetMetadataExporterFactory extends
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings>
+		implements
+		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings> {
+
+	
+	public DCATDatasetMetadataExporterFactory() {
+		super(DatasetMetadataExporter.class.getName());
+	}
 
 	@Override
 	public String getID() {
@@ -55,19 +60,16 @@ public class DCATDatasetMetadataExporterFactory
 
 	@Override
 	public Object createInstance(PluginConfiguration conf) {
-		return new DCATDatasetMetadataExporter(DCATDatasetMetadataExporterFactory.class.getName());
+		return new DCATDatasetMetadataExporter(this);
 	}
 
 	@Override
-	public STProperties getProjectSettings(Project<?> project) throws STPropertyAccessException {
-		DCATDatasetMetadataExporterSettings projectSettings = new DCATDatasetMetadataExporterSettings();
-		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
-		return projectSettings;
+	protected DCATDatasetMetadataExporterSettings buildProjectSettingsInternal() {
+		return new DCATDatasetMetadataExporterSettings();
 	}
 
 	@Override
-	public void storeProjectSettings(STProperties props) {
-		// TODO Auto-generated method stub
-		
+	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
+		return new DatasetMetadataExporterSettings();
 	}
 }

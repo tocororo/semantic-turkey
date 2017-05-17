@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * @author Andrea Turbati
@@ -47,7 +48,7 @@ public class PluginManager {
 	private static BundleContext m_felix = null;
 
 	private static boolean directAccessTest = false;
-	private static Collection<PluginFactory<?>> testPluginFactoryCls = new ArrayList<>();
+	private static Collection<PluginFactory<?, ?, ?>> testPluginFactoryCls = new ArrayList<>();
 
 	public static boolean isDirectAccessTest() {
 		return directAccessTest;
@@ -61,7 +62,7 @@ public class PluginManager {
 		m_felix = toSet;
 	}
 
-	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?>> impls) {
+	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?, ?, ?>> impls) {
 		testPluginFactoryCls = impls;
 	}
 
@@ -119,19 +120,21 @@ public class PluginManager {
 	}
 
 	// // New Methods
-	public static <T extends PluginConfiguration> PluginFactory<T> getPluginFactory(String factoryID) {
+	public static <T extends PluginConfiguration, Q extends STProperties, R extends STProperties> PluginFactory<T, Q, R> getPluginFactory(
+			String factoryID) {
 		// test preamble
 		if (isDirectAccessTest()) {
-			return (PluginFactory<T>) testPluginFactoryCls.stream().filter(pf->pf.getID().equals(factoryID)).findFirst().orElse(null);
+			return (PluginFactory<T, Q, R>) testPluginFactoryCls.stream()
+					.filter(pf -> pf.getID().equals(factoryID)).findFirst().orElse(null);
 		} else {
 			// real use
 			ServiceTracker tracker = new ServiceTracker(m_felix, PluginFactory.class.getName(), null);
 			tracker.open();
-			PluginFactory<T> repImpl = null;
+			PluginFactory<T, Q, R> repImpl = null;
 			Object[] services = tracker.getServices();
 			for (int i = 0; (services != null) && i < services.length; ++i) {
-				if (((PluginFactory<T>) services[i]).getID().equals(factoryID)) {
-					repImpl = (PluginFactory<T>) services[i];
+				if (((PluginFactory<T, Q, R>) services[i]).getID().equals(factoryID)) {
+					repImpl = (PluginFactory<T, Q, R>) services[i];
 					break;
 				}
 			}
@@ -140,7 +143,7 @@ public class PluginManager {
 		}
 	}
 
-	public static Collection<PluginFactory<?>> getPluginFactories(String extensionPoint) {
+	public static Collection<PluginFactory<?, ?, ?>> getPluginFactories(String extensionPoint) {
 		ServiceTracker tracker = null;
 		try {
 			tracker = new ServiceTracker(m_felix,
@@ -153,10 +156,10 @@ public class PluginManager {
 		}
 
 		tracker.open();
-		Collection<PluginFactory<?>> pluginFactories = new ArrayList<PluginFactory<?>>();
+		Collection<PluginFactory<?, ?, ?>> pluginFactories = new ArrayList<PluginFactory<?, ?, ?>>();
 		Object[] services = tracker.getServices();
 		for (int i = 0; (services != null) && i < services.length; ++i) {
-			pluginFactories.add((PluginFactory<?>) services[i]);
+			pluginFactories.add((PluginFactory<?, ?, ?>) services[i]);
 		}
 		tracker.close();
 		return pluginFactories;

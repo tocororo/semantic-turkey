@@ -6,8 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.DCATDatasetMetadataExporterSettings;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -574,20 +572,43 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Sets the values of project settings related to a plugin
+	 * Sets the values of project settings related to a plugin.
 	 * 
 	 * @param settings
 	 * @param project
 	 * @param pluginID
+	 * @param allowIncompletePropValueSet
 	 */
-	public static void setProjectSettings(STProperties settings, Project<? extends RDFModel> project,
-			String pluginID) throws STPropertyUpdateException {
+	public static void setProjectSettings(STProperties settings, Project<?> project, String pluginID,
+			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
 		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
 			File propFile = getProjectSettingsFile(project, pluginID);
 			settings.storeProperties(propFile);
 		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
 			throw new STPropertyUpdateException(e);
 		}
+	}
+
+	/**
+	 * Convenience overload of {@link #setProjectSettings(STProperties, Project, String, boolean)} that
+	 * disallows the storage of incomplete settings (i.e. missing values for required property).
+	 * 
+	 * @param settings
+	 * @param project
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setProjectSettings(STProperties settings, Project<?> project, String pluginID)
+			throws STPropertyUpdateException {
+		setProjectSettings(settings, project, pluginID, false);
 	}
 
 	/*

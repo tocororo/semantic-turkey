@@ -8,6 +8,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODATemplateBasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,19 +19,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * Factory for the instantiation of {@link CODAURIGenerator}.
  */
-public class CODAURIGeneratorFactory implements PluginFactory<CODAURIGeneratorConfiguration> {
+public class CODAURIGeneratorFactory
+		implements PluginFactory<CODAURIGeneratorConfiguration, STProperties, STProperties> {
 
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
-	
+
 	@Override
 	public String getID() {
 		return this.getClass().getName();
 	}
-	
+
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new CODATemplateBasedURIGeneratorConfiguration(), new CODAAnyURIGeneratorConfiguration());
+		return Arrays.<PluginConfiguration>asList(new CODATemplateBasedURIGeneratorConfiguration(),
+				new CODAAnyURIGeneratorConfiguration());
 	}
 
 	@Override
@@ -39,14 +42,15 @@ public class CODAURIGeneratorFactory implements PluginFactory<CODAURIGeneratorCo
 	}
 
 	@Override
-	public CODAURIGeneratorConfiguration createPluginConfiguration(String configType) throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-	 ClassNotFoundException {
+	public CODAURIGeneratorConfiguration createPluginConfiguration(String configType)
+			throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			ClassNotFoundException {
 		Class<?> clazz = Class.forName(configType);
-		
+
 		if (!CODATemplateBasedURIGeneratorConfiguration.class.isAssignableFrom(clazz)) {
 			throw new UnsupportedPluginConfigurationException();
 		}
-		
+
 		try {
 			return (CODAURIGeneratorConfiguration) clazz.newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
@@ -56,8 +60,8 @@ public class CODAURIGeneratorFactory implements PluginFactory<CODAURIGeneratorCo
 
 	@Override
 	public CODAURIGenerator createInstance(PluginConfiguration config) {
-		
-		return new CODAURIGenerator((CODAURIGeneratorConfiguration)config, codaCoreProviderFactory);
+
+		return new CODAURIGenerator((CODAURIGeneratorConfiguration) config, codaCoreProviderFactory);
 	}
 
 }

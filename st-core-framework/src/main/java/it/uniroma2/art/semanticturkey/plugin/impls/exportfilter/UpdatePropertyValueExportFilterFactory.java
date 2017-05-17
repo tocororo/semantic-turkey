@@ -9,6 +9,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.DeletePropertyValueExportFilterConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * Factory for the instantiation of {@link UpdatePropertyValueExportFilter}.
@@ -16,7 +17,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePrope
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class UpdatePropertyValueExportFilterFactory
-		implements PluginFactory<UpdatePropertyValueExportFilterConfiguration> {
+		implements PluginFactory<UpdatePropertyValueExportFilterConfiguration, STProperties, STProperties> {
 
 	@Override
 	public String getID() {
@@ -25,7 +26,7 @@ public class UpdatePropertyValueExportFilterFactory
 
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration> asList(new UpdatePropertyValueExportFilterConfiguration());
+		return Arrays.<PluginConfiguration>asList(new UpdatePropertyValueExportFilterConfiguration());
 	}
 
 	@Override

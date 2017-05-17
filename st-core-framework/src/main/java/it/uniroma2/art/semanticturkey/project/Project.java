@@ -258,7 +258,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			}
 
 			try {
-				PluginFactory<?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
+				PluginFactory<?, ?, ?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
 				PluginConfiguration uriGenConfig;
 
 				if (uriGenConfigType != null) {
@@ -289,7 +289,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			}
 
 			try {
-				PluginFactory<?> renderingEngineFactory = PluginManager
+				PluginFactory<?, ?, ?> renderingEngineFactory = PluginManager
 						.getPluginFactory(renderingEngineFactoryID);
 				PluginConfiguration renderingEngineConfig;
 
@@ -817,9 +817,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	 * @return
 	 * @throws RepositoryCreationException
 	 */
-	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess, @Nullable String repositoryId,
-			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
-			throws RepositoryCreationException {
+	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess,
+			@Nullable String repositoryId, PluginSpecification repoConfigurerSpecification,
+			String localRepostoryId) throws RepositoryCreationException {
 
 		RepositoryImplConfig localRepositoryImplConfig;
 

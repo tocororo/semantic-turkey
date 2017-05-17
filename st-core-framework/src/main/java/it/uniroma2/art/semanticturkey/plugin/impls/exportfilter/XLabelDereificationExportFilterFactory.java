@@ -8,6 +8,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XLabelDereificationExportFilterConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * Factory for the instantiation of {@link XLabelDereificationExportFilter}.
@@ -15,7 +16,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XLabelDerei
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class XLabelDereificationExportFilterFactory
-		implements PluginFactory<XLabelDereificationExportFilterConfiguration> {
+		implements PluginFactory<XLabelDereificationExportFilterConfiguration, STProperties, STProperties> {
 
 	@Override
 	public String getID() {
@@ -24,7 +25,7 @@ public class XLabelDereificationExportFilterFactory
 
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration> asList(new XLabelDereificationExportFilterConfiguration());
+		return Arrays.<PluginConfiguration>asList(new XLabelDereificationExportFilterConfiguration());
 	}
 
 	@Override

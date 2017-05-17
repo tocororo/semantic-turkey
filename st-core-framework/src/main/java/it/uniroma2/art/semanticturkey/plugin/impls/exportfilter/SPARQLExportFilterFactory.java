@@ -8,12 +8,15 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.SPARQLExportFilterConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * Factory for the instantiation of {@link SPARQLExportFilterTest}.
+ * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class SPARQLExportFilterFactory implements PluginFactory<SPARQLExportFilterConfiguration> {
+public class SPARQLExportFilterFactory
+		implements PluginFactory<SPARQLExportFilterConfiguration, STProperties, STProperties> {
 
 	@Override
 	public String getID() {
@@ -22,7 +25,7 @@ public class SPARQLExportFilterFactory implements PluginFactory<SPARQLExportFilt
 
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration> asList(new SPARQLExportFilterConfiguration());
+		return Arrays.<PluginConfiguration>asList(new SPARQLExportFilterConfiguration());
 	}
 
 	@Override

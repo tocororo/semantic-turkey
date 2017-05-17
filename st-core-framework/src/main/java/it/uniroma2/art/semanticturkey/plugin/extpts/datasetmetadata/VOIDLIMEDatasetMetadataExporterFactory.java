@@ -3,27 +3,26 @@ package it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata;
 import java.util.Arrays;
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.plugin.AbstractPluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * Factory for the instantiation of {@link VOIDLIMEDatasetMetadataExporter}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class VOIDLIMEDatasetMetadataExporterFactory
-		implements PluginFactory<DatasetMetadataExporterConfiguration> {
+public class VOIDLIMEDatasetMetadataExporterFactory extends
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings>
+		implements
+		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings> {
 
-	@Override
-	public String getID() {
-		return this.getClass().getName();
+	public VOIDLIMEDatasetMetadataExporterFactory() {
+		super(DatasetMetadataExporter.class.getName());
 	}
 
 	@Override
@@ -55,18 +54,21 @@ public class VOIDLIMEDatasetMetadataExporterFactory
 
 	@Override
 	public Object createInstance(PluginConfiguration conf) {
-		return new VOIDLIMEDatasetMetadataExporter(VOIDLIMEDatasetMetadataExporterFactory.class.getName());
+		return new VOIDLIMEDatasetMetadataExporter(this);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see it.uniroma2.art.semanticturkey.plugin.AbstractPluginFactory#buildProjectSettingsInternal()
+	 */
+	@Override
+	protected VOIDLIMEDatasetMetadataExporterSettings buildProjectSettingsInternal() {
+		return new VOIDLIMEDatasetMetadataExporterSettings();
 	}
 
 	@Override
-	public STProperties getProjectSettings(Project<?> project) throws STPropertyAccessException {
-		VOIDLIMEDatasetMetadataExporterSettings projectSettings = new VOIDLIMEDatasetMetadataExporterSettings();
-		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
-		return projectSettings;
-	}
-
-	@Override
-	public void storeProjectSettings(STProperties props) {
-		// TODO Auto-generated method stub
+	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
+		return new DatasetMetadataExporterSettings();
 	}
 }

@@ -17,35 +17,41 @@ import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.lime.profiler.ProfilerOptions;
+import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * A {@link DatasetMetadataExporter} for the
  * <a href="https://www.w3.org/2016/05/ontolex/#metadata-lime">Linguistic Metadata vocabulary (LIME)</a> and
  * the <a href="https://www.w3.org/TR/void/">Vocabulary of Interlinked Datasets (VoID)</a>
  */
-public class VOIDLIMEDatasetMetadataExporter implements DatasetMetadataExporter {
+public class VOIDLIMEDatasetMetadataExporter extends
+		AbstractPlugin<DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterFactory>
+		implements DatasetMetadataExporter {
 
-	private String pluginId;
-
-	
-	public VOIDLIMEDatasetMetadataExporter(String pluginId) {
-		this.pluginId = pluginId;
+	public VOIDLIMEDatasetMetadataExporter(VOIDLIMEDatasetMetadataExporterFactory factory) {
+		super(factory);
 	}
 
 	@Override
 	public Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph)
-			throws DatasetMetadataExporterException {
+			throws DatasetMetadataExporterException, STPropertyAccessException {
 		Repository tempMetadataRepository = new SailRepository(new MemoryStore());
 		tempMetadataRepository.initialize();
 		try {
 			try (RepositoryConnection metadataConnection = tempMetadataRepository.getConnection()) {
-				LIMEProfiler profiler = new LIMEProfiler(metadataConnection,
-						SimpleValueFactory.getInstance().createIRI("http://example.org/"), conn, dataGraph);
+				DatasetMetadataExporterSettings extensionPointSettings = getExtensionPointProjectSettings(
+						project);
+				VOIDLIMEDatasetMetadataExporterSettings pluginSettings = getClassLevelProjectSettings(
+						project);
+
+				LIMEProfiler profiler = new LIMEProfiler(metadataConnection, SimpleValueFactory.getInstance()
+						.createIRI(pluginSettings.dataset_description_base_uri), conn, dataGraph);
 				ProfilerOptions options = new ProfilerOptions();
-				options.setMainDatasetName("http://example.org/void.ttl#MyDataset");
+				options.setMainDatasetName(pluginSettings.dataset_iri);
 				try {
 					profiler.profile(options);
 				} catch (ProfilerException e) {

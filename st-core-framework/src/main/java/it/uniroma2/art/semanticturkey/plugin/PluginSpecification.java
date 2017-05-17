@@ -5,8 +5,6 @@ import java.util.Properties;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -48,7 +46,8 @@ public class PluginSpecification {
 
 	public Object instatiatePlugin() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, BadConfigurationException {
-		PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(factoryId);
+		PluginFactory<?, ?, ?> pluginFactory = PluginManager
+				.getPluginFactory(factoryId);
 
 		PluginConfiguration config;
 		if (configTypeHolder.isPresent()) {
@@ -66,7 +65,8 @@ public class PluginSpecification {
 
 	public void expandDefaults() throws ClassNotFoundException, BadConfigurationException,
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException {
-		PluginFactory<PluginConfiguration> pluginFactory = PluginManager.getPluginFactory(factoryId);
+		PluginFactory<?,?,?> pluginFactory = PluginManager
+				.getPluginFactory(factoryId);
 
 		if (!configTypeHolder.isPresent()) {
 			configTypeHolder = Optional

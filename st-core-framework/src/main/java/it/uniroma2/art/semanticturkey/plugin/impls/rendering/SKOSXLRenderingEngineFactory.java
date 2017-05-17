@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,13 +13,14 @@ import java.util.Collection;
 /**
  * Factory for the instantiation of {@link SKOSXLRenderingEngine}.
  */
-public class SKOSXLRenderingEngineFactory implements PluginFactory<SKOSXLRenderingEngineConfiguration> {
-	
+public class SKOSXLRenderingEngineFactory
+		implements PluginFactory<SKOSXLRenderingEngineConfiguration, STProperties, STProperties> {
+
 	@Override
 	public String getID() {
 		return this.getClass().getName();
 	}
-	
+
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
 		return Arrays.<PluginConfiguration>asList(new SKOSXLRenderingEngineConfiguration());
@@ -30,14 +32,15 @@ public class SKOSXLRenderingEngineFactory implements PluginFactory<SKOSXLRenderi
 	}
 
 	@Override
-	public SKOSXLRenderingEngineConfiguration createPluginConfiguration(String configType) throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-	 ClassNotFoundException {
+	public SKOSXLRenderingEngineConfiguration createPluginConfiguration(String configType)
+			throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			ClassNotFoundException {
 		Class<?> clazz = Class.forName(configType);
-		
+
 		if (!SKOSXLRenderingEngineConfiguration.class.isAssignableFrom(clazz)) {
 			throw new UnsupportedPluginConfigurationException();
 		}
-		
+
 		try {
 			return (SKOSXLRenderingEngineConfiguration) clazz.newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
@@ -47,7 +50,7 @@ public class SKOSXLRenderingEngineFactory implements PluginFactory<SKOSXLRenderi
 
 	@Override
 	public SKOSXLRenderingEngine createInstance(PluginConfiguration config) {
-		return new SKOSXLRenderingEngine((SKOSXLRenderingEngineConfiguration)config);
+		return new SKOSXLRenderingEngine((SKOSXLRenderingEngineConfiguration) config);
 	}
 
 }

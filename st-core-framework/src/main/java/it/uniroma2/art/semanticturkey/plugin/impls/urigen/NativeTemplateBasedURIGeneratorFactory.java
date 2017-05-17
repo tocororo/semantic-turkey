@@ -8,9 +8,10 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 public class NativeTemplateBasedURIGeneratorFactory
-		implements PluginFactory<NativeTemplateBasedURIGeneratorConfiguration> {
+		implements PluginFactory<NativeTemplateBasedURIGeneratorConfiguration, STProperties, STProperties> {
 
 	@Override
 	public String getID() {
@@ -19,7 +20,7 @@ public class NativeTemplateBasedURIGeneratorFactory
 
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration> asList(new NativeTemplateBasedURIGeneratorConfiguration());
+		return Arrays.<PluginConfiguration>asList(new NativeTemplateBasedURIGeneratorConfiguration());
 	}
 
 	@Override

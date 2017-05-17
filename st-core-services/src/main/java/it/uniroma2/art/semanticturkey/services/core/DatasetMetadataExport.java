@@ -21,25 +21,23 @@ import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -64,63 +62,65 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	}
 
 	@STServiceOperation
-	public JsonNode getExporterSettings(String exporterId) throws STPropertyAccessException {
+	public ObjectNode getExporterSettings(String exporterId) throws STPropertyAccessException {
 		try {
-			STProperties settings = PluginManager.getPluginFactory(exporterId)
-					.getProjectSettings(getProject());
+			PluginFactory<PluginConfiguration, STProperties, STProperties> pluginFactory = PluginManager
+					.getPluginFactory(exporterId);
 
-			ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
-			ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
-			objectNode.set("type", JsonNodeFactory.instance.textNode(settings.getClass().getName()));
-			objectNode.set("shortName", JsonNodeFactory.instance.textNode(settings.getShortName()));
-			objectNode.set("parameters", parameters);
+			STProperties extensionPointSettings = pluginFactory.getExtensonPointProjectSettings(getProject());
+			STProperties pluginSettings = pluginFactory.getProjectSettings(getProject());
 
-			for (String prop : settings.getProperties()) {
-				String parDescr = settings.getPropertyDescription(prop);
-				ObjectNode newPar = JsonNodeFactory.instance.objectNode();
-				parameters.add(newPar);
-				newPar.set("name", JsonNodeFactory.instance.textNode(prop));
-				newPar.set("description", JsonNodeFactory.instance.textNode(parDescr));
-				newPar.set("required",
-						JsonNodeFactory.instance.booleanNode(settings.isRequiredProperty(prop)));
-				String contentType = settings.getPropertyContentType(prop);
-				if (contentType != null)
-					newPar.set("type", JsonNodeFactory.instance.textNode(contentType));
-				Object parValue = settings.getPropertyValue(prop);
-				if (parValue != null) {
-					newPar.set("value", JsonNodeFactory.instance.textNode(parValue.toString()));
-				}
-			}
-
-			return objectNode;
+			ObjectNode rv = JsonNodeFactory.instance.objectNode();
+			rv.set("extensionPointSettings", serializeSTPropertiesToJSON(extensionPointSettings));
+			rv.set("pluginSettings", serializeSTPropertiesToJSON(pluginSettings));
+			return rv;
 		} catch (PropertyNotFoundException e) {
 			throw new STPropertyAccessException(e);
 		}
 	}
 
-	@STServiceOperation(method = RequestMethod.POST)
-	public void setExporterSettings(String exporterId, Map<String, Object> properties)
-			throws STPropertyAccessException, STPropertyUpdateException {
-		try {
-			STProperties settings = PluginManager.getPluginFactory(exporterId)
-					.getProjectSettings(getProject());
+	protected ObjectNode serializeSTPropertiesToJSON(STProperties settings) throws PropertyNotFoundException {
+		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
+		objectNode.set("type", JsonNodeFactory.instance.textNode(settings.getClass().getName()));
+		objectNode.set("shortName", JsonNodeFactory.instance.textNode(settings.getShortName()));
+		ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
+		objectNode.set("parameters", parameters);
 
-			for (Map.Entry<String, Object> entry : properties.entrySet()) {
-				String key = entry.getKey();
-				Object value = entry.getValue();
-
-				settings.setPropertyValue(key, value);
+		for (String prop : settings.getProperties()) {
+			String parDescr = settings.getPropertyDescription(prop);
+			ObjectNode newPar = JsonNodeFactory.instance.objectNode();
+			parameters.add(newPar);
+			newPar.set("name", JsonNodeFactory.instance.textNode(prop));
+			newPar.set("description", JsonNodeFactory.instance.textNode(parDescr));
+			newPar.set("required", JsonNodeFactory.instance.booleanNode(settings.isRequiredProperty(prop)));
+			String contentType = settings.getPropertyContentType(prop);
+			if (contentType != null)
+				newPar.set("type", JsonNodeFactory.instance.textNode(contentType));
+			Object parValue = settings.getPropertyValue(prop);
+			if (parValue != null) {
+				newPar.set("value", JsonNodeFactory.instance.textNode(parValue.toString()));
 			}
-
-			STPropertiesChecker settingsChecker = STPropertiesChecker.getModelConfigurationChecker(settings);
-			if (!settingsChecker.isValid()) {
-				throw new IllegalArgumentException(
-						"Settings not valid: " + settingsChecker.getErrorMessage());
-			}
-			STPropertiesManager.setProjectSettings(settings, getProject(), exporterId);
-		} catch (WrongPropertiesException e) {
-			throw new STPropertyAccessException(e);
 		}
+		return objectNode;
+	}
+
+	/**
+	 * Stores (project-level) settings for an exporter (including the part related to the extension point).
+	 * 
+	 * @param exporterId
+	 * @param extensionPointProperties
+	 * @param pluginProperties
+	 * @throws STPropertyAccessException
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void setExporterSettings(String exporterId, Map<String, Object> extensionPointProperties,
+			Map<String, Object> pluginProperties)
+			throws STPropertyAccessException, STPropertyUpdateException {
+		PluginFactory<PluginConfiguration, STProperties, STProperties> pluginFactory = PluginManager
+				.getPluginFactory(exporterId);
+		pluginFactory.storeExtensonPointProjectSettings(getProject(), extensionPointProperties);
+		pluginFactory.storeProjectSettings(getProject(), pluginProperties);
 	}
 
 	/**
@@ -138,6 +138,7 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 * @throws DatasetMetadataExporterException
+	 * @throws STPropertyAccessException
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -145,7 +146,8 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	public void export(HttpServletResponse oRes, PluginSpecification exporterSpecification,
 			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
 			throws ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, IOException, DatasetMetadataExporterException {
+			UnloadablePluginConfigurationException, IOException, DatasetMetadataExporterException,
+			STPropertyAccessException {
 
 		exporterSpecification.expandDefaults();
 		DatasetMetadataExporter exporter = (DatasetMetadataExporter) exporterSpecification.instatiatePlugin();

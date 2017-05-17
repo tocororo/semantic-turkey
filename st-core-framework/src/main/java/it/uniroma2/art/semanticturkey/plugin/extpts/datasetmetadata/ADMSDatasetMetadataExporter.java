@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
+import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -13,12 +14,12 @@ import it.uniroma2.art.semanticturkey.project.Project;
  * A {@link DatasetMetadataExporter} for the <a href="https://www.w3.org/TR/vocab-adms/">Asset Description
  * Metadata Schema (ADMS)</a>
  */
-public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
+public class ADMSDatasetMetadataExporter extends
+		AbstractPlugin<DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings, ADMSDatasetMetadataExporterFactory>
+		implements DatasetMetadataExporter {
 
-	private String pluginId;
-
-	public ADMSDatasetMetadataExporter(String pluginId) {
-		this.pluginId = pluginId;
+	public ADMSDatasetMetadataExporter(ADMSDatasetMetadataExporterFactory factory) {
+		super(factory);
 	}
 
 	@Override

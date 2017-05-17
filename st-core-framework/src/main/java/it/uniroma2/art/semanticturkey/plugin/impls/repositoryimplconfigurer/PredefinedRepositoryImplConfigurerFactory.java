@@ -12,14 +12,15 @@ import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNonPersistentInMemorySailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * Factory for the instantiation of {@link PredefinedRepositoryImplConfigurer}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class PredefinedRepositoryImplConfigurerFactory
-		implements PluginFactory<PredefinedRepositoryImplConfigurerConfiguration> {
+public class PredefinedRepositoryImplConfigurerFactory implements
+		PluginFactory<PredefinedRepositoryImplConfigurerConfiguration, STProperties, STProperties> {
 
 	@Override
 	public String getID() {
@@ -57,7 +58,8 @@ public class PredefinedRepositoryImplConfigurerFactory
 
 	@Override
 	public PredefinedRepositoryImplConfigurer createInstance(PluginConfiguration config) {
-		return new PredefinedRepositoryImplConfigurer((PredefinedRepositoryImplConfigurerConfiguration) config);
+		return new PredefinedRepositoryImplConfigurer(
+				(PredefinedRepositoryImplConfigurerConfiguration) config);
 	}
 
 }

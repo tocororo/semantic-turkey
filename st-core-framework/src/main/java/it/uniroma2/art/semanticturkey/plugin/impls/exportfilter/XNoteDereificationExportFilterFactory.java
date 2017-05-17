@@ -8,6 +8,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XNoteDereificationExportFilterConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * Factory for the instantiation of {@link XNoteDereificationExportFilter}.
@@ -15,7 +16,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XNoteDereif
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class XNoteDereificationExportFilterFactory
-		implements PluginFactory<XNoteDereificationExportFilterConfiguration> {
+		implements PluginFactory<XNoteDereificationExportFilterConfiguration, STProperties, STProperties> {
 
 	@Override
 	public String getID() {
@@ -24,7 +25,7 @@ public class XNoteDereificationExportFilterFactory
 
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration> asList(new XNoteDereificationExportFilterConfiguration());
+		return Arrays.<PluginConfiguration>asList(new XNoteDereificationExportFilterConfiguration());
 	}
 
 	@Override

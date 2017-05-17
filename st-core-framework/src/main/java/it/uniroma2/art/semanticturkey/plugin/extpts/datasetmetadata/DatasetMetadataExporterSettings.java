@@ -5,20 +5,19 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
-public class VOIDLIMEDatasetMetadataExporterSettings extends STPropertiesImpl implements STProperties {
+public class DatasetMetadataExporterSettings extends STPropertiesImpl implements STProperties {
 
 	@Override
 	public String getShortName() {
-		return "VOID/LIME Dataset Metadata Exporter Settings";
+		return "Common settings for dataset metadata exporter";
 	}
 
-	@STProperty(description = "Dataset Description base URI")
+	@STProperty(description = "Dataset Title")
 	@Required
-	public String dataset_description_base_uri;
+	public String dataset_title;
 	
-	@STProperty(description = "Dataset IRI")
+	@STProperty(description = "Dataset Description")
 	@Required
-	public String dataset_iri;
-	
-	// TODO: add other properties and their descriptions!!!!
+	public String dataset_description;
+
 }

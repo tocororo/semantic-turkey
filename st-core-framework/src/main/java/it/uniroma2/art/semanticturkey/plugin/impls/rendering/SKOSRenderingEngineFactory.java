@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,13 +13,14 @@ import java.util.Collection;
 /**
  * Factory for the instantiation of {@link SKOSRenderingEngine}.
  */
-public class SKOSRenderingEngineFactory implements PluginFactory<SKOSRenderingEngineConfiguration> {
-	
+public class SKOSRenderingEngineFactory
+		implements PluginFactory<SKOSRenderingEngineConfiguration, STProperties, STProperties> {
+
 	@Override
 	public String getID() {
 		return this.getClass().getName();
 	}
-	
+
 	@Override
 	public Collection<PluginConfiguration> getPluginConfigurations() {
 		return Arrays.<PluginConfiguration>asList(new SKOSRenderingEngineConfiguration());
@@ -30,14 +32,15 @@ public class SKOSRenderingEngineFactory implements PluginFactory<SKOSRenderingEn
 	}
 
 	@Override
-	public SKOSRenderingEngineConfiguration createPluginConfiguration(String configType) throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-	 ClassNotFoundException {
+	public SKOSRenderingEngineConfiguration createPluginConfiguration(String configType)
+			throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			ClassNotFoundException {
 		Class<?> clazz = Class.forName(configType);
-		
+
 		if (!SKOSRenderingEngineConfiguration.class.isAssignableFrom(clazz)) {
 			throw new UnsupportedPluginConfigurationException();
 		}
-		
+
 		try {
 			return (SKOSRenderingEngineConfiguration) clazz.newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
@@ -47,7 +50,7 @@ public class SKOSRenderingEngineFactory implements PluginFactory<SKOSRenderingEn
 
 	@Override
 	public SKOSRenderingEngine createInstance(PluginConfiguration config) {
-		return new SKOSRenderingEngine((SKOSRenderingEngineConfiguration)config);
+		return new SKOSRenderingEngine((SKOSRenderingEngineConfiguration) config);
 	}
 
 }
