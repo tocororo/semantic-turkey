@@ -327,7 +327,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	protected String generateNatureSPARQLSelectPart(){
 		
 		String sparqlPartText = "(group_concat(concat(str($st), \"-\", str($go), \"-\", "
-				+ "str($dep));separator=\" |_| \") as ?attr_nature) \n";
+				+ "str($dep));separator=\",\") as ?attr_nature) \n";
 		
 		return sparqlPartText;
 	}
