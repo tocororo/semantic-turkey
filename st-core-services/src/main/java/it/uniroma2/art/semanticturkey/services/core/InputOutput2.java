@@ -62,9 +62,9 @@ public class InputOutput2 extends STServiceAdapter {
 			if (rdfFormat == null) {
 				logger.debug("guessing format from extension of file to be loaded: " + rdfFormat);
 				rdfFormat = RDFFormat
-						.matchFileName(inputFile.getName(), RDFParserRegistry.getInstance().getKeys())
+						.matchFileName(inputFile.getOriginalFilename(), RDFParserRegistry.getInstance().getKeys())
 						.orElseThrow(() -> new IllegalArgumentException(
-								"Could not match a parser for file name: " + inputFile.getName()));
+								"Could not match a parser for file name: " + inputFile.getOriginalFilename()));
 			}
 
 			Set<IRI> failedImports = new HashSet<>();
