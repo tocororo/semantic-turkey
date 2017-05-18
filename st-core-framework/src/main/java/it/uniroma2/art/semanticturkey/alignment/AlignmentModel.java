@@ -41,13 +41,23 @@ import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
-public class AlignmentModel
-	{
+public class AlignmentModel {
 	
 	protected static Logger logger = LoggerFactory.getLogger(AlignmentModel.class);
 	
 	public enum Status {
 		accepted, rejected, error;
+	}
+	
+	//https://github.com/dozed/align-api-project/tree/master/procalign/src/main/java/fr/inrialpes/exmo/align/impl/rel
+	private static class AlignApiRelations {
+		public static String equivalent = "fr.inrialpes.exmo.align.impl.rel.EquivRelation";
+		public static String hasInstance = "fr.inrialpes.exmo.align.impl.rel.HasInstanceRelation";
+		public static String incompatible = "fr.inrialpes.exmo.align.impl.rel.IncompatRelation";
+		public static String instanceOf = "fr.inrialpes.exmo.align.impl.rel.InstaceOfRelation";
+//		public static String nonTransitiveImplication = "fr.inrialpes.exmo.align.impl.rel.NonTransitiveImplicationRelation";
+		public static String subsume = "fr.inrialpes.exmo.align.impl.rel.SubsumeRelation";
+		public static String subsumed = "fr.inrialpes.exmo.align.impl.rel.SubsumedRelation";
 	}
 	
 	private RepositoryConnection repoConnection;
@@ -63,9 +73,40 @@ public class AlignmentModel
 	public void add(File alignmentFile) throws AlignmentInitializationException {
 		try {
 			repoConnection.add(alignmentFile, Alignment.URI, RDFFormat.RDFXML);
+			normalize();
 		} catch (RDFParseException | RepositoryException | IOException e) {
 			throw new AlignmentInitializationException(e);
 		}
+	}
+	
+	/**
+	 * Align API format accept as relation also "a fully qualified classname of the relation implementation"
+	 * (http://alignapi.gforge.inria.fr/format.html) like "fr.inrialpes.exmo.align.impl.rel.EquivRelation".
+	 * This method replaces these classnames with the equivalent symbols.
+	 */
+	private void normalize() {
+		String query = "DELETE { ?cell <" + Alignment.RELATION + "> ?rel . } \n"
+				+ "INSERT { ?cell <" + Alignment.RELATION + "> ?newRel . } \n"
+				+ "WHERE { \n"
+				+ "?cell <" + Alignment.RELATION + "> ?rel . \n"
+				+ "FILTER( \n"
+				+ "str(?rel) = '" + AlignApiRelations.equivalent + "' || \n"
+				+ "str(?rel) = '" + AlignApiRelations.hasInstance + "' || \n"
+				+ "str(?rel) = '" + AlignApiRelations.incompatible + "' || \n"
+				+ "str(?rel) = '" + AlignApiRelations.instanceOf + "' || \n"
+				+ "str(?rel) = '" + AlignApiRelations.subsume + "' || \n"
+				+ "str(?rel) = '" + AlignApiRelations.subsumed + "'\n"
+				+ ") \n"
+				+ "BIND( \n"
+				+ "IF(str(?rel) = '" + AlignApiRelations.equivalent + "', '=', "
+				+ "IF(str(?rel) = '" + AlignApiRelations.hasInstance + "', 'HasInstance', "
+				+ "IF(str(?rel) = '" + AlignApiRelations.incompatible + "', '%', "
+				+ "IF(str(?rel) = '" + AlignApiRelations.instanceOf + "', 'InstanceOf', "
+				+ "IF(str(?rel) = '" + AlignApiRelations.subsume + "', '>', "
+				+ "IF(str(?rel) = '" + AlignApiRelations.subsumed + "', '<', "
+				+ "?rel)))))) AS ?newRel) \n"
+				+ "}";
+		repoConnection.prepareUpdate(query).execute();
 	}
 	
 	/**
@@ -240,32 +281,23 @@ public class AlignmentModel
 	 * @return
 	 */
 	public Cell getCell(IRI entity1, IRI entity2) {
-		String query = "SELECT ?relation ?measure ?prop ?status ?comment WHERE { "
+		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
+				+ "BIND(URI('" + entity1.stringValue() + "') AS ?entity1)"
+				+ "BIND(URI('" + entity2.stringValue() + "') AS ?entity2)"
 				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(entity1) + " . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(entity2) + " . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . "
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } }";
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
+				+ "ORDERBY ?entity1 ?entity2";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
 		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			BindingSet bs = result.next();
-			float measure = Float.parseFloat(bs.getValue("measure").stringValue());
-			String relation = bs.getValue("relation").stringValue();
-			Cell cell = new Cell(entity1, entity2, measure, relation);
-			if (bs.hasBinding("prop")) {
-				cell.setMappingProperty((IRI) bs.getValue("prop"));
-			}
-			if (bs.hasBinding("status")) {
-				cell.setStatus(Status.valueOf(bs.getValue("status").stringValue()));
-			}
-			if (bs.hasBinding("comment")) {
-				cell.setComment(bs.getValue("comment").stringValue());
-			}
-			return cell;
+		List<Cell> cells = getCellFromTupleResult(result);
+		if (!cells.isEmpty()) {
+			return cells.get(0);
 		}
 		return null;
 	}
@@ -275,7 +307,6 @@ public class AlignmentModel
 	 * @return
 	 */
 	public List<Cell> listCells() {
-		List<Cell> listCell = new ArrayList<>();
 		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
 				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . "
@@ -288,6 +319,32 @@ public class AlignmentModel
 				+ "ORDERBY ?entity1 ?entity2";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
 		TupleQueryResult result = tq.evaluate();
+		return getCellFromTupleResult(result);
+	}
+	
+	/**
+	 * Lists all <code>Cell</code>s with the given status
+	 * @return
+	 */
+	public List<Cell> listCellsByStatus(Status status) {
+		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
+				+ "BIND('" + status + "' AS ?status)"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . "
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . "
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
+				+ "ORDERBY ?entity1 ?entity2";
+		TupleQuery tq = repoConnection.prepareTupleQuery(query);
+		TupleQueryResult result = tq.evaluate();
+		return getCellFromTupleResult(result);
+	}
+	
+	private List<Cell> getCellFromTupleResult(TupleQueryResult result) {
+		List<Cell> listCell = new ArrayList<>();
 		while (result.hasNext()) {
 			BindingSet bs = result.next();
 			IRI entity1 = (IRI) bs.getValue("entity1");
@@ -300,41 +357,6 @@ public class AlignmentModel
 			}
 			if (bs.hasBinding("status")) {
 				cell.setStatus(Status.valueOf(bs.getValue("status").stringValue()));
-			}
-			if (bs.hasBinding("comment")) {
-				cell.setComment(bs.getValue("comment").stringValue());
-			}
-			listCell.add(cell);
-		}
-		return listCell;
-	}
-	
-	/**
-	 * Lists all <code>Cell</code>s with the given status
-	 * @return
-	 */
-	public List<Cell> listCellsByStatus(Status status) {
-		List<Cell> listCell = new ArrayList<>();
-		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?comment WHERE { "
-				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + status + "' . "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } }";
-		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			BindingSet bs = result.next();
-			IRI entity1 = (IRI) bs.getValue("entity1");
-			IRI entity2 = (IRI) bs.getValue("entity2");
-			float measure = Float.parseFloat(bs.getValue("measure").stringValue());
-			String relation = bs.getValue("relation").stringValue();
-			Cell cell = new Cell(entity1, entity2, measure, relation);
-			if (bs.hasBinding("prop")) {
-				cell.setMappingProperty((IRI) bs.getValue("prop"));
 			}
 			if (bs.hasBinding("comment")) {
 				cell.setComment(bs.getValue("comment").stringValue());

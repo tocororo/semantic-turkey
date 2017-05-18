@@ -205,8 +205,6 @@ public class Alignment extends STServiceAdapter {
 		memStore.setPersist(false);
 		Repository repository = new SailRepository(memStore);
 		repository.initialize();
-//		AlignmentRepositoryConnectionWrapper alignModel = new AlignmentRepositoryConnectionWrapper(repository);
-//		alignModel.add(inputServerFile, it.uniroma2.art.semanticturkey.vocabulary.Alignment.URI, RDFFormat.RDFXML);
 		AlignmentModel alignModel = new AlignmentModel();
 		alignModel.add(inputServerFile);
 		
@@ -214,10 +212,25 @@ public class Alignment extends STServiceAdapter {
 		modelsMap.put(token, alignModel);
 		
 		//check that one of the two aligned ontologies matches the current project ontology
-		String baseURI = getProject().getNewOntologyManager().getBaseURI();
+		String projectBaseURI = getProject().getNewOntologyManager().getBaseURI();
 		
-		if (!baseURI.equals(alignModel.getOnto1())){
-			if (baseURI.equals(alignModel.getOnto2())){
+		String onto1BaseURI = alignModel.getOnto1();
+		String onto2BaseURI = alignModel.getOnto2();
+		
+		//removes final / or # from baseURIs in order to avoid failing of the following check
+		//(one of the aligned ontologies must refers to the current open project)
+		if (projectBaseURI.endsWith("/") || projectBaseURI.endsWith("#")) {
+			projectBaseURI = projectBaseURI.substring(0, projectBaseURI.length()-1);
+		}
+		if (onto1BaseURI.endsWith("/") || onto1BaseURI.endsWith("#")) {
+			onto1BaseURI = onto1BaseURI.substring(0, onto1BaseURI.length()-1);
+		}
+		if (onto2BaseURI.endsWith("/") || onto2BaseURI.endsWith("#")) {
+			onto2BaseURI = onto2BaseURI.substring(0, onto2BaseURI.length()-1);
+		}
+		
+		if (!projectBaseURI.equals(alignModel.getOnto1())){
+			if (projectBaseURI.equals(alignModel.getOnto2())){
 				alignModel.reverse();
 			} else {
 				throw new AlignmentInitializationException("Failed to open and validate the given alignment file. "
