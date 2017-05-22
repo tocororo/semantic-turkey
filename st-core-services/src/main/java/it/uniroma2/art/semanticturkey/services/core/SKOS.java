@@ -170,7 +170,7 @@ public class SKOS extends STServiceAdapter {
                     "                                                                                    \n" +
 					//" SELECT ?resource ?attr_more WHERE {                                                \n" +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource "+generateNatureSPARQLSelectPart()+"								 \n" + 
+					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"								 \n" + 
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
