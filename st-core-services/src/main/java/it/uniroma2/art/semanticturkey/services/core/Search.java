@@ -798,7 +798,7 @@ public class Search extends STServiceAdapter {
 		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
 		
 		//if it is explicitly a topResource or if no path is returned while there was at least one 
-		// result from the SPARQL quey (this mean that all the paths contained at least one non-URI resource)
+		// result from the SPARQL query (this mean that all the paths contained at least one non-URI resource)
 		if(isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty() )){
 			//the input resource is a top resource for its role (concept, class or property)
 			pathFound = true;
@@ -809,7 +809,7 @@ public class Search extends STServiceAdapter {
 		}
 		
 		
-		for(int currentLength=1; currentLength<=maxLength && pathFound; ++currentLength){
+		for(int currentLength=1; currentLength<=maxLength && !pathFound; ++currentLength){
 			for(List<String> path : pathList){
 				if(currentLength != path.size()){
 					//it is not the right iteration to add this path
