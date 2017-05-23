@@ -11,8 +11,10 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +48,7 @@ public class History extends STServiceAdapter {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
-			TupleQuery query = conn.prepareTupleQuery(
+			String queryString =
 				// @formatter:off
 				" prefix cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                         \n" +
 				" prefix prov: <http://www.w3.org/ns/prov#>                                            \n" +
@@ -54,7 +56,10 @@ public class History extends STServiceAdapter {
 	            "                                                                                      \n" +
 				" select * {                                                                           \n" +
 				"    {select ?commit (COUNT(?successorCommit) as ?count) where {                       \n" +
-				"        cl:MASTER cl:tip ?latest .                                                    \n" +
+				( parentCommit != null ?
+						"        ?latest cl:parentCommit " + RenderUtils.toSPARQL(parentCommit) + " .\n"
+						:
+						"        cl:MASTER cl:tip ?latest .\n" ) +
 				"        ?latest cl:parentCommit* ?successorCommit .                                   \n" +
 				"        ?successorCommit cl:parentCommit* ?commit                                     \n" +
 				"     }                                                                                \n" +
@@ -75,7 +80,9 @@ public class History extends STServiceAdapter {
 				"    }                                                                                 \n" +
 				" }                                                                                    \n"
 				// @formatter:on
-			);
+				;
+			
+			TupleQuery query = conn.prepareTupleQuery(queryString);
 			query.setIncludeInferred(false);
 			List<CommitInfo> commitInfos = QueryResults.stream(query.evaluate()).map(bindingSet -> {
 				CommitInfo commitInfo = new CommitInfo();
