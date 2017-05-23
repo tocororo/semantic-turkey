@@ -1459,7 +1459,7 @@ public class ProjectManager {
 						.instatiatePlugin();
 				RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
 						.buildRepositoryImplConfig(backendSailImplConfig -> {
-							if (!historyEnabled)
+							if (supportRepositoryConfig == null)
 								return backendSailImplConfig;
 
 							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
@@ -1468,7 +1468,7 @@ public class ProjectManager {
 							changeTrackerSailConfig.setHistoryGraph(
 									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
 							changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
-
+							changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 							return changeTrackerSailConfig;
 						});
 				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
@@ -1501,6 +1501,7 @@ public class ProjectManager {
 								changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
 										.createIRI(defaultNamespace + "history"));
 								changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+								changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 
 								return changeTrackerSailConfig;
 							});

@@ -6,6 +6,7 @@ import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTr
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_REPOSITORY_ID;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_ENABLED;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
 
 import java.util.Collections;
@@ -40,7 +41,8 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	private Set<IRI> includeGraph;
 	private Set<IRI> excludeGraph;
 	private boolean interactiveNotifications;
-
+	private boolean validationEnabled;
+	
 	public ChangeTrackerConfig() {
 		this(null);
 	}
@@ -104,6 +106,14 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		this.interactiveNotifications = interactiveNotifications;
 	}
 
+	public boolean isValidationEnabled() {
+		return validationEnabled;
+	}
+
+	public void setValidationEnabled(boolean validationEnabled) {
+		this.validationEnabled = validationEnabled;
+	}
+
 	@Override
 	public Resource export(Model graph) {
 		Resource implNode = super.export(graph);
@@ -136,6 +146,8 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 			graph.add(implNode, EXCLUDE_GRAPH, g);
 		}
 
+		graph.add(implNode, VALIDATION_ENABLED, vf.createLiteral(validationEnabled));
+		
 		graph.add(implNode, INTERACTIVE_NOTIFICATIONS, vf.createLiteral(interactiveNotifications));
 
 		return implNode;
@@ -169,6 +181,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		});
 		excludeGraph = newExcludeGraph;
 
+		validationEnabled = graph.filter(implNode, VALIDATION_ENABLED,
+				SimpleValueFactory.getInstance().createLiteral(true)).isEmpty() ? false : true;
+
 		interactiveNotifications = graph.filter(implNode, INTERACTIVE_NOTIFICATIONS,
 				SimpleValueFactory.getInstance().createLiteral(true)).isEmpty() ? false : true;
 	}
@@ -201,5 +216,4 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	public void setServerURL(String serverURL) {
 		this.serverURL = serverURL;
 	}
-
 }

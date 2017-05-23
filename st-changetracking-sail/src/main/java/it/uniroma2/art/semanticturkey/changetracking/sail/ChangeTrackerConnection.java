@@ -61,7 +61,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private final UpdateHandler updateHandler;
 
 	private Literal startTime;
-
+	
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
 		super(wrappedCon);
 		this.sail = sail;
