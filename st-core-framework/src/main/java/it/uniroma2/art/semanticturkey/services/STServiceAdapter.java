@@ -351,7 +351,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		" } \n" + 
 		" OPTIONAL { \n" +
 		"	   BIND( \n" +
-		"	     IF(EXISTS {"+varName+" owl:Deprecated true}, \"true\", \n" +
+		"	     IF(EXISTS {"+varName+" owl:deprecated true}, \"true\", \n" +
 		"	      IF(EXISTS {"+varName+" a owl:DeprecatedClass}, \"true\", \n" +
 		"	       IF(EXISTS {"+varName+" a owl:DeprecatedProperty}, \"true\", \n" +
 		"	        \"false\"))) \n" +
