@@ -3,6 +3,9 @@ package it.uniroma2.art.semanticturkey.services.core.history;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 
 /**
@@ -42,6 +45,7 @@ public class CommitInfo {
 		this.subject = subject;
 	}
 
+	@JsonSerialize(converter=IRI2StringConverter.class)
 	public IRI getCommit() {
 		return commit;
 	}

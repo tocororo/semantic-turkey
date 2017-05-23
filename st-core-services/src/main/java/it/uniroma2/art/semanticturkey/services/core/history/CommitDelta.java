@@ -15,9 +15,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitDelta.CommitDeltaSerializer;
-import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
 
 /**
  * Delta associated with a commit.
