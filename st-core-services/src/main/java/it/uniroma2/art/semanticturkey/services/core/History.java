@@ -131,7 +131,6 @@ public class History extends STServiceAdapter {
 				" prefix prov: <http://www.w3.org/ns/prov#>                                 \n" +
                 "                                                                           \n" +
 				" select ?delta ?s ?p ?o ?c {                                               \n" +
-				"     cl:MASTER cl:tip ?commit .                                            \n" +
 				"     ?commit prov:generated ?m .                                           \n" +
 				"     ?m ?deltaProp ?q .                                                    \n" +
 				"     ?q cl:subject ?s .                                                    \n" +
@@ -148,6 +147,8 @@ public class History extends STServiceAdapter {
 
 			ValueFactory vf = SimpleValueFactory.getInstance();
 
+			query.setBinding("commit", commit);
+			
 			query.setBinding("deltaProp", CHANGELOG.ADDED_STATEMENT);
 			List<Statement> addedStatements = QueryResults.stream(query.evaluate()).map(bindingSet -> {
 				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),
