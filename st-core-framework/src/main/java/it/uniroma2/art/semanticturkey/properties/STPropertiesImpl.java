@@ -97,6 +97,7 @@ public abstract class STPropertiesImpl implements STProperties {
 			Collection<String> pars = getProperties();
 			for (String par : pars) {
 				Object value = getPropertyValue(par);
+				if (value == null) continue; // skip null values
 				props.setProperty(par, value.toString());
 			}
 			props.store(fileWriter, "list of properties");
