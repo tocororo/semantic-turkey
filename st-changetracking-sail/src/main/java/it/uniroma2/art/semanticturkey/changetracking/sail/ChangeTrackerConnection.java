@@ -31,6 +31,7 @@ import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.algebra.evaluation.iterator.CollectionIteration;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
@@ -61,7 +62,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private final UpdateHandler updateHandler;
 
 	private Literal startTime;
-	
+
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
 		super(wrappedCon);
 		this.sail = sail;
@@ -155,19 +156,18 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 			// Commits the metadata
 			IRI commitIRI;
-			IRI modifiedTriplesIRI;
-			
+
 			Resource previousTip = null;
 			Model commitMetadataModel = new LinkedHashModel();
 			boolean triplesUnknown = false;
-			
+
+			Literal generationTime = currentTimeAsLiteral();
+			Literal endTime = currentTimeAsLiteral();
+
 			try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
 				ValueFactory vf = metaRepoConn.getValueFactory();
 
 				metaRepoConn.begin();
-				
-				Literal generationTime = currentTimeAsLiteral();
-				Literal endTime = currentTimeAsLiteral();
 
 				// Gets the tip of MASTER:
 				// - if the history is empty, then there is no MASTER and its associated tip
@@ -231,16 +231,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					metaRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("triples-unknown"),
 							sail.metadataGraph);
 				} else {
-					modifiedTriplesIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
-					
-					metaRepoConn.add(modifiedTriplesIRI, RDF.TYPE, PROV.ENTITY, sail.metadataGraph);
-					stagingArea.getAddedStatements().forEach(
-							consumer.apply(modifiedTriplesIRI).apply(metaRepoConn).apply(CHANGELOG.ADDED_STATEMENT));
-					stagingArea.getRemovedStatements().forEach(
-							consumer.apply(modifiedTriplesIRI).apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
-					metaRepoConn.add(modifiedTriplesIRI, PROV.WAS_GENERATED_BY, commitIRI, sail.metadataGraph);
-					metaRepoConn.add(modifiedTriplesIRI, PROV.GENERATED_AT_TIME, generationTime, sail.metadataGraph);
-					metaRepoConn.add(commitIRI, PROV.GENERATED, modifiedTriplesIRI, sail.metadataGraph);
+					recordModifiedTriples(consumer, commitIRI, metaRepoConn, vf, generationTime);
 				}
 
 				if (previousTip != null) {
@@ -275,17 +266,15 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			} else {
 				try (RepositoryConnection metaRepoConn = sail.metadataRepo.getConnection()) {
 					ValueFactory vf = metaRepoConn.getValueFactory();
-	
+
 					metaRepoConn.begin();
-	
+
 					// If triples were unknown when the commit was first logged, then add that information now
-					// (note that in the meantime the triple store should have sent the necessary notifications)
-	
+					// (note that in the meantime the triple store should have sent the necessary
+					// notifications)
+
 					if (triplesUnknown) {
-						stagingArea.getAddedStatements().forEach(consumer.apply(commitIRI).apply(metaRepoConn)
-								.apply(CHANGELOG.ADDED_STATEMENT));
-						stagingArea.getRemovedStatements().forEach(consumer.apply(commitIRI)
-								.apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
+						recordModifiedTriples(consumer, commitIRI, metaRepoConn, vf, generationTime);
 					}
 					metaRepoConn.remove(commitIRI, CHANGELOG.STATUS, null, sail.metadataGraph);
 					metaRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("committed"),
@@ -307,6 +296,23 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		// the commit has been applied to the data repo
 	}
 
+	protected void recordModifiedTriples(
+			Function<IRI, Function<RepositoryConnection, Function<IRI, Consumer<? super Statement>>>> consumer,
+			IRI commitIRI, RepositoryConnection metaRepoConn, ValueFactory vf, Literal generationTime)
+			throws RepositoryException {
+		IRI modifiedTriplesIRI;
+		modifiedTriplesIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
+
+		metaRepoConn.add(modifiedTriplesIRI, RDF.TYPE, PROV.ENTITY, sail.metadataGraph);
+		stagingArea.getAddedStatements().forEach(
+				consumer.apply(modifiedTriplesIRI).apply(metaRepoConn).apply(CHANGELOG.ADDED_STATEMENT));
+		stagingArea.getRemovedStatements().forEach(
+				consumer.apply(modifiedTriplesIRI).apply(metaRepoConn).apply(CHANGELOG.REMOVED_STATEMENT));
+		metaRepoConn.add(modifiedTriplesIRI, PROV.WAS_GENERATED_BY, commitIRI, sail.metadataGraph);
+		metaRepoConn.add(modifiedTriplesIRI, PROV.GENERATED_AT_TIME, generationTime, sail.metadataGraph);
+		metaRepoConn.add(commitIRI, PROV.GENERATED, modifiedTriplesIRI, sail.metadataGraph);
+	}
+
 	protected Literal currentTimeAsLiteral() throws SailException {
 		GregorianCalendar calendar = new GregorianCalendar();
 		XMLGregorianCalendar currentDateTimeXML;
@@ -324,10 +330,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			metaRepoConn.begin();
 
 			if (!triplesUnknown) {
-				Update triplesRemoveUpdate = metaRepoConn.prepareUpdate(
-						"REMOVE { ?quad ?p ?o . } WHERE {?commit <" + CHANGELOG.ADDED_STATEMENT
+				Update triplesRemoveUpdate = metaRepoConn
+						.prepareUpdate("REMOVE { ?quad ?p ?o . } WHERE {?commit <" + PROV.GENERATED
+								+ "> ?modifiedTriples . ?modifiedTriples <" + CHANGELOG.ADDED_STATEMENT
 								+ ">|<" + CHANGELOG.REMOVED_STATEMENT + "> ?quad . }");
 				triplesRemoveUpdate.setBinding("commit", commitIRI);
+				SimpleDataset dataset = new SimpleDataset();
+				dataset.addDefaultRemoveGraph(sail.metadataGraph);
 				triplesRemoveUpdate.execute();
 			}
 
