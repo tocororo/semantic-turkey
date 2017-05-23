@@ -92,6 +92,9 @@ public class Projects extends STServiceAdapterOLD {
 		public final static String statusAttr = "status";
 		public final static String statusMsgAttr = "stMsg";
 		public final static String accessibleAttr = "accessible";
+		public final static String validationEnabled = "validationEnabled";
+		public final static String historyEnabled = "historyEnabled";
+
 	}
 
 	@GenerateSTServiceController
@@ -173,6 +176,9 @@ public class Projects extends STServiceAdapterOLD {
 					projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
 
 					projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
+
+					projElem.setAttribute(XMLNames.historyEnabled, Boolean.toString(((Project<?>) proj).isHistoryEnabled()));
+					projElem.setAttribute(XMLNames.validationEnabled, Boolean.toString(((Project<?>) proj).isValidationEnabled()));
 
 					projElem.setAttribute(XMLNames.statusAttr, "ok");
 
