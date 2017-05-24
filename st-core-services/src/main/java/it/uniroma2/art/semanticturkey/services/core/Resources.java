@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
@@ -27,7 +28,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf', 'U')")
-	public void updateTriple(Resource resource, IRI property, Value value, Value newValue){
+	public void updateTriple(@Subject Resource resource, IRI property, Value value, Value newValue){
 		logger.info("request to update a triple");
 		
 		getManagedConnection().remove(resource, property, value, getWorkingGraph());
@@ -75,14 +76,14 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
-	public void removeTriple(Resource resource, IRI property, Value value){
+	public void removeTriple(@Subject Resource resource, IRI property, Value value){
 		getManagedConnection().remove(resource, property, value, getWorkingGraph());
 	}
 	
 	
 	@STServiceOperation
 	@Write
-	public void setDeprecated(@LocallyDefined IRI resource){
+	public void setDeprecated(@LocallyDefined @Subject IRI resource){
 		RepositoryConnection conn = getManagedConnection();
 		Literal literalTrue = conn.getValueFactory().createLiteral("true",XMLSchema.BOOLEAN);
 		conn.add(resource, OWL2Fragment.DEPRECATED, literalTrue, getWorkingGraph());
