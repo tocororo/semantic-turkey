@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -38,7 +40,9 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.history.HistoryMetadataSupport;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -50,6 +54,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
@@ -407,6 +412,8 @@ public class SKOS extends STServiceAdapter {
 			newConceptIRI = newConcept;
 		}
 		
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newConceptIRI); //set subject for history
+		
 		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
 		if (conceptCls != null) {
 			conceptClass = conceptCls;
@@ -468,6 +475,8 @@ public class SKOS extends STServiceAdapter {
 			newSchemeIRI = newScheme;
 		}
 		
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newSchemeIRI); //set subject for history
+		
 		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
 		if (schemeCls != null) {
 			schemeClass = schemeCls;
@@ -501,6 +510,209 @@ public class SKOS extends STServiceAdapter {
 		//TODO compute show
 		return annotatedValue; 
 	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void setPrefLabel(@Subject IRI concept, @LanguageTaggedString Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		//check if there is always an existing prefLabel for the given language, in this case, delete it and
+		// set it as altLabel
+		String language = literal.getLanguage().get();
+		Resource graphs = getWorkingGraph();
+		RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, null, graphs);
+		while(repositoryResult.hasNext()){
+			Value value = repositoryResult.next().getObject();
+			if(value instanceof Literal){
+				Literal oldLiteral = (Literal) value;
+				String oldLanguage = oldLiteral.getLanguage().get();
+				if(oldLanguage.equals(language)){
+					modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+							org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, oldLiteral));
+					modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+							org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, oldLiteral));
+				}
+			}
+		}
+		
+		//add the desired label as prefLabel
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, literal));
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void addAltLabel(@Subject IRI concept, @LanguageTaggedString Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+							org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, literal));
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void addHiddenLabel(@Subject IRI concept, @LanguageTaggedString Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+							org.eclipse.rdf4j.model.vocabulary.SKOS.HIDDEN_LABEL, literal));
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void addBroaderConcept(@Subject IRI concept, IRI broaderConcept){
+		
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept));
+				
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void addConceptToScheme(@Subject IRI concept, IRI scheme){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, scheme));
+				
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void addTopConcept(@Subject IRI concept, IRI scheme){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
+				
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void removeConceptFromScheme(@Subject IRI concept, IRI scheme){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(scheme, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.HAS_TOP_CONCEPT, concept));
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, scheme));
+				
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void removePrefLabel(@Subject IRI concept, Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, literal));
+				
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void removeAltLabel(@Subject IRI concept, Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, literal));
+				
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Read
+	// TODO @PreAuthorize
+	public Collection<AnnotatedValue<Literal>> getAltLabels(IRI concept, String language){
+		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		Resource[] graphs = getUserNamedGraphs();
+		
+		RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, null, graphs);
+		 while(repositoryResult.hasNext()){
+			 Value value = repositoryResult.next().getObject();
+			 if(value instanceof Literal){
+				 AnnotatedValue<Literal> annotatedValue = new AnnotatedValue<Literal>((Literal)value);
+			 }
+		 }
+		return literalList;
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void removeBroaderConcept(@Subject IRI concept, IRI broaderConcept){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept));
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER, concept));
+		
+		
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void removeHiddenLabel(@Subject IRI concept, Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.HIDDEN_LABEL, literal));
+				
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
 	
 	/**
 	 * Checks if a ConceptScheme is empty. Useful before deleting a ConceptScheme.
@@ -536,7 +748,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
-	public void deleteConceptScheme(@LocallyDefined IRI scheme) {
+	public void deleteConceptScheme(@LocallyDefined @Subject IRI scheme) {
 		String query = 
 				"DELETE {																\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
@@ -551,9 +763,52 @@ public class SKOS extends STServiceAdapter {
 				+ "		{ ?scheme ?p2 ?o2 . }											\n"
 				+ "	}																	\n"
 				+ "}";
-		System.out.println(query);
 		RepositoryConnection repoConnection = getManagedConnection();
-		repoConnection.prepareUpdate(query);
+		repoConnection.prepareUpdate(query).execute();
+	}
+	
+	/**
+	 * Deletes a Concept
+	 * @param scheme
+	 * @throws DeniedOperationException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'D')")
+	public void deleteConcept(@Subject @LocallyDefined IRI concept) throws DeniedOperationException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		//first check if the concept has any narrower (or is it broader to any other concept)
+		
+		String query =
+			// @formatter:off
+			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+			"ASK {                                                                              \n" +
+			"	[] skos:broader|^skos:narrower ?concept                                         \n" +
+			"}                                                                                  \n";
+			// @formatter:on
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setBinding("concept", concept);
+		if(booleanQuery.evaluate()){
+			throw new DeniedOperationException(
+					"concept: " + concept.stringValue() + " has narrower concepts; delete them before");
+		}
+		
+		query = 
+				"DELETE {																\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		?s1 ?p1 ?concept .												\n"
+				+ "		?concept ?p2 ?o2 .												\n"
+				+ "	}																	\n"
+				+ "} WHERE {															\n"
+				+ "	BIND(URI('" + concept.stringValue() + "') AS ?concept)				\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		{ ?s1 ?p1 ?concept . }											\n"
+				+ "		UNION															\n"
+				+ "		{ ?concept ?p2 ?o2 . }											\n"
+				+ "	}																	\n"
+				+ "}";
+		repoConnection.prepareUpdate(query).execute();;
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
@@ -585,6 +840,8 @@ public class SKOS extends STServiceAdapter {
 			if (newCollection.equals(RDF.NIL)) { throw new IllegalArgumentException("Cannot create collection rdf:nil"); }
 			newCollectionRes = newCollection;
 		}
+		
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newCollectionRes); //set subject for history
 		
 		IRI collectionClass = collectionType;
 		if (collectionCls != null) {

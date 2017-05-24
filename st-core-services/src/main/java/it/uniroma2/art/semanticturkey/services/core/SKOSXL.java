@@ -36,6 +36,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.history.HistoryMetadataSupport;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -45,6 +46,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 
@@ -109,6 +111,8 @@ public class SKOSXL extends STServiceAdapter {
 		} else {
 			newConceptIRI = newConcept;
 		}
+		
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newConceptIRI); //set subject for history
 		
 		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
 		if (conceptCls != null) {
@@ -176,6 +180,8 @@ public class SKOSXL extends STServiceAdapter {
 			newSchemeIRI = newScheme;
 		}
 		
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newSchemeIRI); //set subject for history
+		
 		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
 		if (schemeCls != null) {
 			schemeClass = schemeCls;
@@ -222,7 +228,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
-	public void deleteConceptScheme(@LocallyDefined IRI scheme) {
+	public void deleteConceptScheme(@LocallyDefined @Subject IRI scheme) {
 		String query = "DELETE {														\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?scheme .												\n"
@@ -282,6 +288,8 @@ public class SKOSXL extends STServiceAdapter {
 		} else {
 			newCollectionRes = newCollection;
 		}
+		
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newCollectionRes); //set subject for history
 		
 		IRI collectionClass = collectionType;
 		if (collectionCls != null) {

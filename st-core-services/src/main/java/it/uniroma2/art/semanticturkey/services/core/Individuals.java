@@ -16,6 +16,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
@@ -64,7 +65,7 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'U')")
-	public void addType(@LocallyDefined Resource individual, @LocallyDefined Resource type) {
+	public void addType(@LocallyDefined @Subject Resource individual, @LocallyDefined Resource type) {
 		String query =
 				"INSERT DATA {					\n" +
 				"	GRAPH %graph% {				\n" +
@@ -87,7 +88,7 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'D')")
-	public void removeType(@LocallyDefined Resource individual, @LocallyDefined Resource type) {
+	public void removeType(@LocallyDefined @Subject Resource individual, @LocallyDefined Resource type) {
 		String query =
 				"DELETE WHERE {					\n" +
 				"	GRAPH %graph% {				\n" +
