@@ -177,8 +177,9 @@ public class DCATDatasetMetadataExporter extends
 				}
 				
 				String dataset_distribution = pluginSettings.dataset_distribution;
+				IRI dataset_distribution_iri = null;
 				if(dataset_distribution!=null && !dataset_distribution.isEmpty()){
-					IRI dataset_distribution_iri = valueFactory.createIRI(dataset_distribution);
+					dataset_distribution_iri = valueFactory.createIRI(dataset_distribution);
 					metadataModel.add(valueFactory.createStatement(dataset_distribution_iri, RDF.TYPE, DCAT.DISTRIBUTION));
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCAT.HAS_DISTRIBUTION, 
 							dataset_distribution_iri));
@@ -190,28 +191,30 @@ public class DCATDatasetMetadataExporter extends
 				/*IRI distributionIRI = valueFactory.createIRI(pluginSettings.distribution_iri);
 				metadataModel.add(valueFactory.createStatement(distributionIRI, RDF.TYPE, DCAT.DISTRIBUTION));
 				metadataModel.add(valueFactory.createStatement(distributionIRI, DCAT.DISTRIBUTION, distributionIRI));*/
+				IRI distributionIRI = dataset_distribution_iri;
+				
 				
 				String distribution_title = pluginSettings.distribution_title;
 				if(distribution_title!=null && !distribution_title.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.TITLE, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.TITLE, 
 							generateLiteralWithLang(distribution_title, valueFactory)));
 				}
 				
 				String distribution_description = pluginSettings.distribution_description;
 				if(distribution_description!=null && !distribution_description.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.DESCRIPTION, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.DESCRIPTION, 
 							generateLiteralWithLang(distribution_description, valueFactory)));
 				}
 				
 				String distribution_issued = pluginSettings.distribution_issued;
 				if(distribution_issued!=null && !distribution_issued.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.ISSUED, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.ISSUED, 
 							valueFactory.createLiteral(distribution_issued, XMLSchema.DATE)));
 				}
 				
 				String distribution_modified = pluginSettings.distribution_modified;
 				if(distribution_modified!=null && !distribution_modified.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.MODIFIED, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.MODIFIED, 
 							valueFactory.createLiteral(distribution_modified, XMLSchema.DATE)));
 				}
 				
@@ -220,7 +223,7 @@ public class DCATDatasetMetadataExporter extends
 				if(distribution_licence!=null && !distribution_licence.isEmpty()){
 					distribution_licence_iri = valueFactory.createIRI(distribution_licence);
 					metadataModel.add(valueFactory.createStatement(distribution_licence_iri, RDF.TYPE, DCTERMS.LICENSE_DOCUMENT));
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.LICENSE, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.LICENSE, 
 							distribution_licence_iri));
 				}
 				
@@ -248,37 +251,37 @@ public class DCATDatasetMetadataExporter extends
 				if(distribution_rights!=null && !distribution_rights.isEmpty()){
 					IRI distribution_rights_iri = valueFactory.createIRI(distribution_rights);
 					metadataModel.add(valueFactory.createStatement(distribution_rights_iri, RDF.TYPE, DCTERMS.RIGHTS_STATEMENT));
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.RIGHTS, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.RIGHTS, 
 							distribution_rights_iri));
 				}
 				
 				String distribution_access_url = pluginSettings.distribution_accessUrl;
 				if(distribution_access_url!=null && !distribution_access_url.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCAT.ACCESS_URL, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCAT.ACCESS_URL, 
 							valueFactory.createIRI(distribution_access_url)));
 				}
 				
 				String distribution_download_url = pluginSettings.distribution_downloadUrl;
 				if(distribution_download_url!=null && !distribution_download_url.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCAT.DOWNLOAD_URL, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCAT.DOWNLOAD_URL, 
 							valueFactory.createIRI(distribution_download_url)));
 				}
 				
 				String distribution_media_type = pluginSettings.distribution_mediaType;
 				if(distribution_media_type!=null && !distribution_media_type.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCAT.MEDIA_TYPE, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCAT.MEDIA_TYPE, 
 							valueFactory.createIRI(distribution_media_type)));
 				}
 				
 				String distribution_format = pluginSettings.distribution_format;
 				if(distribution_format!=null && !distribution_format.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.FORMAT, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.FORMAT, 
 							valueFactory.createIRI(distribution_format)));
 				}
 				
 				String distribution_byte_size = pluginSettings.distribution_byteSize;
 				if(distribution_byte_size!=null && !distribution_byte_size.isEmpty()){
-					metadataModel.add(valueFactory.createStatement(datasetIRI, DCAT.BYTE_SIZE, 
+					metadataModel.add(valueFactory.createStatement(distributionIRI, DCAT.BYTE_SIZE, 
 							valueFactory.createLiteral(distribution_byte_size, XMLSchema.DECIMAL)));
 				}
 				

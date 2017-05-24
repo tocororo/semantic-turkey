@@ -12,12 +12,12 @@ public class DatasetMetadataExporterSettings extends STPropertiesImpl implements
 		return "Common settings for dataset metadata exporter";
 	}
 
-	@STProperty(description = "Dataset Title")
+	/*@STProperty(description = "Dataset Title")
 	@Required
 	public String dataset_title;
 	
 	@STProperty(description = "Dataset Description")
 	@Required
 	public String dataset_description;
-
+	*/
 }
