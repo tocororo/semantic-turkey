@@ -39,7 +39,6 @@ public class ADMSDatasetMetadataExporterSettings extends STPropertiesImpl implem
 	public String asset_issued;
 
 	@STProperty(description = "Asset Modified")
-	@Required
 	public String asset_modified;
 
 	@STProperty(description = "Asset Keywords (comma separated)")
@@ -55,11 +54,9 @@ public class ADMSDatasetMetadataExporterSettings extends STPropertiesImpl implem
 	public String asset_theme;
 
 	@STProperty(description = "Asset Spatial")
-	@Required
 	public String asset_spatial;
 
 	@STProperty(description = "Asset Contact Point")
-	@Required
 	public String asset_contactPoint;
 
 	@STProperty(description = "Asset Landing Pages")
@@ -69,7 +66,6 @@ public class ADMSDatasetMetadataExporterSettings extends STPropertiesImpl implem
 	public String asset_landingPage_title;
 
 	@STProperty(description = "Asset Described By")
-	@Required
 	public String asset_describedBy;
 
 	@STProperty(description = "Asset Described By - Title")
@@ -77,101 +73,77 @@ public class ADMSDatasetMetadataExporterSettings extends STPropertiesImpl implem
 	public String asset_describedBy_title;
 
 	@STProperty(description = "Asset Page")
-	@Required
 	public String asset_page;
 
 	@STProperty(description = "Asset Page - Title")
-	@Required
 	public String asset_page_title;
 
 	@STProperty(description = "Asset Identifier")
-	@Required
 	public String asset_identifier;
 
 	@STProperty(description = "Asset Identifier - Notation (a rdfs:Literal which should be typed. )")
-	@Required
 	public String asset_identifier_notation;
 
 	@STProperty(description = "Asset Identifier - creator")
-	@Required
 	public String asset_identifie_creator;
 
 	@STProperty(description = "Asset Identifier - Scheme Agency")
-	@Required
 	public String asset_identifier_schemeAgency;
 
 	@STProperty(description = "Asset Temporal")
-	@Required
 	public String asset_temporal;
 
 	@STProperty(description = "Asset Temporal - Start Date")
-	@Required
 	public String asset_temporal_startDate;
 
 	@STProperty(description = "Asset Temporal - End Date")
-	@Required
 	public String asset_temporal_endDate;
 
 	@STProperty(description = "Asset Language (f an ISO 639-1 (two-letter) code is defined for language, "
 			+ "then its corresponding IRI should be used; if no ISO 639-1 code is defined, then IRI corresponding "
 			+ "to the ISO 639-2 (three-letter) code should be used. )")
-	@Required
 	public String asset_language;
 
 	@STProperty(description = "Asset Statuts")
-	@Required
 	public String asset_status;
 
 	@STProperty(description = "Asset Interoperability Level")
-	@Required
 	public String asset_interoperability_level;
 
 	@STProperty(description = "Asset Type")
-	@Required
 	public String asset_type;
 
 	@STProperty(description = "Asset Included Asset")
-	@Required
 	public String asset_includedAsset;
 
 	@STProperty(description = "Asset sample")
-	@Required
 	public String asset_sample;
 
 	@STProperty(description = "Asset traslation")
-	@Required
 	public String asset_traslation;
 
 	@STProperty(description = "Asset Prev")
-	@Required
 	public String asset_prev;
 
 	@STProperty(description = "Asset Last")
-	@Required
 	public String asset_last;
 
 	@STProperty(description = "Asset Next")
-	@Required
 	public String asset_next;
 
 	@STProperty(description = "Asset Relation")
-	@Required
 	public String asset_relation;
 
 	@STProperty(description = "Asset Distribution")
-	@Required
 	public String asset_distribution;
 
 	@STProperty(description = "Asset Publisher")
-	@Required
 	public String asset_publisher;
 
 	@STProperty(description = "Asset Publisher - Name")
-	@Required
 	public String asset_publisher_name;
 
 	@STProperty(description = "Asset Publisher - Type")
-	@Required
 	public String asset_publisher_type;
 
 	

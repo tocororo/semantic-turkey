@@ -143,9 +143,9 @@ public class ADMSDatasetMetadataExporter extends
 				String asset_contactPoint = pluginSettings.asset_contactPoint;
 				if(asset_contactPoint!=null && !asset_contactPoint.isEmpty()){
 					IRI asset_contactPoint_iri = valueFactory.createIRI(asset_contactPoint);
-					
 					metadataModel.add(valueFactory.createStatement(assetIRI, DCAT.CONTACT_POINT, 
 							asset_contactPoint_iri));
+					//TODO the dataset_contact_point is a VCARD, so deal with it
 				}
 
 				String asset_landingPage = pluginSettings.asset_landingPage;
@@ -248,7 +248,8 @@ public class ADMSDatasetMetadataExporter extends
 				String asset_language = pluginSettings.asset_language;
 				if(asset_language!=null && !asset_language.isEmpty()){
 					IRI asset_language_iri = valueFactory.createIRI(asset_language);
-					metadataModel.add(valueFactory.createStatement(assetIRI,DCTERMS.LINGUISTIC_SYSTEM, 
+					metadataModel.add(valueFactory.createStatement(asset_language_iri, RDF.TYPE, DCTERMS.LINGUISTIC_SYSTEM));
+					metadataModel.add(valueFactory.createStatement(assetIRI, DCTERMS.LANGUAGE, 
 							asset_language_iri));
 				}
 

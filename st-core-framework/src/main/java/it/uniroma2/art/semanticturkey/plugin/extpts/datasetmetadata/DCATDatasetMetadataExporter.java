@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -65,13 +66,13 @@ public class DCATDatasetMetadataExporter extends
 				String dataset_title = pluginSettings.dataset_title;
 				if(dataset_title!=null && !dataset_title.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.TITLE, 
-							valueFactory.createLiteral(dataset_title)));
+							generateLiteralWithLang(dataset_title, valueFactory)));
 				}
 				
 				String dataset_description = pluginSettings.dataset_description;
 				if(dataset_description!=null && !dataset_description.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.DESCRIPTION, 
-							valueFactory.createLiteral(dataset_description)));
+							generateLiteralWithLang(dataset_description, valueFactory)));
 				}
 				
 				String dataset_issued = pluginSettings.dataset_issued;
@@ -103,25 +104,41 @@ public class DCATDatasetMetadataExporter extends
 				
 				String dataset_language = pluginSettings.dataset_language;
 				if(dataset_language!=null && !dataset_language.isEmpty()){
+					IRI asset_language_iri = valueFactory.createIRI(dataset_language);
+					metadataModel.add(valueFactory.createStatement(asset_language_iri, RDF.TYPE, DCTERMS.LINGUISTIC_SYSTEM));
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.LANGUAGE, 
-							valueFactory.createLiteral(dataset_language)));
+							asset_language_iri));
 				}
 				
 				
 				String dataset_contact_point = pluginSettings.dataset_contactPoint;
 				if(dataset_contact_point!=null && !dataset_contact_point.isEmpty()){
+					IRI dataset_contact_point_iri = valueFactory.createIRI(dataset_contact_point);
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCAT.CONTACT_POINT, 
-							valueFactory.createIRI(dataset_contact_point)));
+							dataset_contact_point_iri));
 					//TODO the dataset_contact_point is a VCARD, so deal with it
 				}
 				
 				String dataset_temporal = pluginSettings.dataset_temporal;
+				IRI dataset_temporal_iri = null;
 				if(dataset_temporal!=null && !dataset_temporal.isEmpty()){
-					IRI dataset_temporal_iri = valueFactory.createIRI(dataset_temporal);
+					dataset_temporal_iri = valueFactory.createIRI(dataset_temporal);
 					metadataModel.add(valueFactory.createStatement(dataset_temporal_iri, RDF.TYPE, 
 							DCTERMS.PERIOD_OF_TIME));
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.TEMPORAL, 
 							dataset_temporal_iri));
+				}
+				
+				String dataset_temporal_startDate = pluginSettings.dataset_temporal_startDate;
+				if(dataset_temporal_iri!=null && dataset_temporal_startDate!=null && !dataset_temporal_startDate.isEmpty()){
+					metadataModel.add(valueFactory.createStatement(dataset_temporal_iri, valueFactory.createIRI("http://schema.org/startDate"), 
+							valueFactory.createLiteral(dataset_temporal_startDate, XMLSchema.DATE)));
+				}
+
+				String dataset_temporal_endDate = pluginSettings.dataset_temporal_endDate;
+				if(dataset_temporal_iri!=null && dataset_temporal_endDate!=null && !dataset_temporal_endDate.isEmpty()){
+					metadataModel.add(valueFactory.createStatement(dataset_temporal_iri, valueFactory.createIRI("http://schema.org/endDate"), 
+							valueFactory.createLiteral(dataset_temporal_endDate, XMLSchema.DATE)));
 				}
 				
 				String dataset_spatial = pluginSettings.dataset_spatial;
@@ -177,13 +194,13 @@ public class DCATDatasetMetadataExporter extends
 				String distribution_title = pluginSettings.distribution_title;
 				if(distribution_title!=null && !distribution_title.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.TITLE, 
-							valueFactory.createLiteral(distribution_title)));
+							generateLiteralWithLang(distribution_title, valueFactory)));
 				}
 				
 				String distribution_description = pluginSettings.distribution_description;
 				if(distribution_description!=null && !distribution_description.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.DESCRIPTION, 
-							valueFactory.createLiteral(distribution_description)));
+							generateLiteralWithLang(distribution_description, valueFactory)));
 				}
 				
 				String distribution_issued = pluginSettings.distribution_issued;
@@ -199,11 +216,32 @@ public class DCATDatasetMetadataExporter extends
 				}
 				
 				String distribution_licence = pluginSettings.distribution_licence;
+				IRI distribution_licence_iri = null;
 				if(distribution_licence!=null && !distribution_licence.isEmpty()){
-					IRI distribution_licence_iri = valueFactory.createIRI(distribution_licence);
+					distribution_licence_iri = valueFactory.createIRI(distribution_licence);
 					metadataModel.add(valueFactory.createStatement(distribution_licence_iri, RDF.TYPE, DCTERMS.LICENSE_DOCUMENT));
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.LICENSE, 
 							distribution_licence_iri));
+				}
+				
+				String distribution_licence_title = pluginSettings.distribution_licence_title;
+				if(distribution_licence_iri !=null && distribution_licence_title!=null && !distribution_licence_title.isEmpty()){
+					metadataModel.add(valueFactory.createStatement(distribution_licence_iri, DCTERMS.TITLE, 
+							generateLiteralWithLang(distribution_licence_title, valueFactory)));
+				}
+				
+				String distribution_licence_description = pluginSettings.distribution_licence_description;
+				if(distribution_licence_iri !=null && distribution_licence_description!=null && !distribution_licence_description.isEmpty()){
+					metadataModel.add(valueFactory.createStatement(distribution_licence_iri, DCTERMS.DESCRIPTION , 
+							generateLiteralWithLang(distribution_licence_description, valueFactory)));
+				}
+				
+				String distribution_licence_type = pluginSettings.distribution_licence_type;
+				if(distribution_licence_iri !=null && distribution_licence_type!=null && !distribution_licence_type.isEmpty()){
+					IRI distribution_licence_type_iri = valueFactory.createIRI(distribution_licence_type);
+					metadataModel.add(valueFactory.createStatement(distribution_licence_type_iri, RDF.TYPE, SKOS.CONCEPT));
+					metadataModel.add(valueFactory.createStatement(distribution_licence_iri, DCTERMS.TYPE, 
+							distribution_licence_type_iri));
 				}
 				
 				String distribution_rights = pluginSettings.distribution_rights;
@@ -261,6 +299,33 @@ public class DCATDatasetMetadataExporter extends
 		} finally {
 			tempMetadataRepository.shutDown();
 		}
+	}
+	
+	public Literal generateLiteralWithLang(String inputLiteral, ValueFactory valueFactory){
+		Literal literal;
+		
+		String[] inputSplit = inputLiteral.split("@");
+		String label;
+		if(inputSplit[0].startsWith("\"") && inputSplit[0].startsWith("\"")){
+			label = inputSplit[0].substring(1, inputSplit[0].length()-1);
+		} else{
+			label = inputSplit[0];
+		}
+		
+		if(inputSplit.length == 2){
+			literal = valueFactory.createLiteral(label, inputSplit[1]);
+		} else {
+			literal = valueFactory.createLiteral(label);
+		}
+		
+		return literal;
+	}
+	
+	public Literal generateLiteralWithType(String inputLiteral, ValueFactory valueFactory){
+		Literal literal;
+		String[] inputSplit = inputLiteral.split("^^");
+		literal = valueFactory.createLiteral(inputSplit[0], valueFactory.createIRI(inputSplit[1]));
+		return literal;
 	}
 
 }

@@ -53,6 +53,13 @@ public class DCATDatasetMetadataExporterSettings extends STPropertiesImpl implem
 	@STProperty(description = "Dataset Temporal: The temporal period that the dataset covers.")
 	public String dataset_temporal;
 
+	@STProperty(description = "Dataset Temporal - Start Date")
+	public String dataset_temporal_startDate;
+
+	@STProperty(description = "Dataset Temporal - End Date")
+	public String dataset_temporal_endDate;
+
+	
 	@STProperty(description = "Dataset Spatial: Spatial coverage of the dataset.")
 	public String dataset_spatial;
 
@@ -90,6 +97,15 @@ public class DCATDatasetMetadataExporterSettings extends STPropertiesImpl implem
 	
 	@STProperty(description = "Distribution Licence: This links to the license document under which the distribution is made available.")
 	public String distribution_licence;
+	
+	@STProperty(description = "Distribution Licence - Title")
+	public String distribution_licence_title;
+
+	@STProperty(description = "Distribution Licence - Description")
+	public String distribution_licence_description;
+
+	@STProperty(description = "Distribution Licence - type")
+	public String distribution_licence_type;
 	
 	@STProperty(description = "Distribution Rights: Information about rights held in and over the distribution.")
 	public String distribution_rights;
