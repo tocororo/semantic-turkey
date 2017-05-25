@@ -19,8 +19,10 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -255,6 +258,7 @@ public class Classes extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'C')")
 	public AnnotatedValue<IRI> createClass(@Subject @NotLocallyDefined IRI newClass, @LocallyDefined IRI superClass,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
@@ -284,8 +288,56 @@ public class Classes extends STServiceAdapter {
 		return annotatedValue; 
 	}
 	
+	/**
+	 * Deletes a class
+	 * @param cls
+	 * @throws DeniedOperationException 
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'D')")
+	public void deleteClass(@Subject @LocallyDefined IRI cls) throws DeniedOperationException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		//first check if the class has any subClasses or instances
+		
+		String query =
+			// @formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>		\n" +
+			"ASK {														\n" +
+			"	{ [] rdfs:subClassOf ?cls }								\n" +
+			"	UNION 													\n" +
+			"	{ [] rdf:type ?cls }									\n" +
+			"}															\n";
+			// @formatter:on
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setBinding("cls", cls);
+		if(booleanQuery.evaluate()){
+			throw new DeniedOperationException(
+					"Class: " + cls.stringValue() + " has sub class(es) or instance(s); delete them before");
+		}
+		
+		query = 
+				"DELETE {																\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		?s1 ?p1 ?cls .													\n"
+				+ "		?cls ?p2 ?o2 .													\n"
+				+ "	}																	\n"
+				+ "} WHERE {															\n"
+				+ "	BIND(URI('" + cls.stringValue() + "') AS ?cls)						\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		{ ?s1 ?p1 ?cls . }												\n"
+				+ "		UNION															\n"
+				+ "		{ ?cls ?p2 ?o2 . }												\n"
+				+ "	}																	\n"
+				+ "}";
+		repoConnection.prepareUpdate(query).execute();;
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	//TODO @@PreAuthorize
 	public AnnotatedValue<IRI> createInstance(@Subject @NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
@@ -324,6 +376,32 @@ public class Classes extends STServiceAdapter {
 		}
 		//TODO compute show
 		return annotatedValue; 
+	}
+	
+	/**
+	 * Deletes an instance
+	 * @param instance
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	//TODO @@PreAuthorize
+	public void deleteInstance(@Subject @LocallyDefined IRI instance) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		String query = 
+				"DELETE {																\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		?s1 ?p1 ?instance .												\n"
+				+ "		?instance ?p2 ?o2 .												\n"
+				+ "	}																	\n"
+				+ "} WHERE {															\n"
+				+ "	BIND(URI('" + instance.stringValue() + "') AS ?instance)			\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		{ ?s1 ?p1 ?instance . }											\n"
+				+ "		UNION															\n"
+				+ "		{ ?instance ?p2 ?o2 . }											\n"
+				+ "	}																	\n"
+				+ "}";
+		repoConnection.prepareUpdate(query).execute();;
 	}
 	
 }

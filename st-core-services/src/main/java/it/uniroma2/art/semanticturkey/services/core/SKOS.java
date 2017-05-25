@@ -663,23 +663,24 @@ public class SKOS extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation(method = RequestMethod.POST)
+	@STServiceOperation
 	@Read
 	// TODO @PreAuthorize
-	public Collection<AnnotatedValue<Literal>> getAltLabels(IRI concept, String language){
+	public Collection<AnnotatedValue<Literal>> getAltLabels(IRI concept, String language) {
 		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
 		RepositoryConnection repoConnection = getManagedConnection();
-		
+
 		Resource[] graphs = getUserNamedGraphs();
-		
-		RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(concept, 
+
+		RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, null, graphs);
-		 while(repositoryResult.hasNext()){
-			 Value value = repositoryResult.next().getObject();
-			 if(value instanceof Literal){
-				 AnnotatedValue<Literal> annotatedValue = new AnnotatedValue<Literal>((Literal)value);
-			 }
-		 }
+		while (repositoryResult.hasNext()) {
+			Value value = repositoryResult.next().getObject();
+			if (value instanceof Literal) {
+				AnnotatedValue<Literal> annotatedValue = new AnnotatedValue<Literal>((Literal) value);
+				literalList.add(annotatedValue);
+			}
+		}
 		return literalList;
 	}
 	

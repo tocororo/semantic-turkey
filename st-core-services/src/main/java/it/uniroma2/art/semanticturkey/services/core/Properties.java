@@ -15,9 +15,11 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -542,6 +545,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public AnnotatedValue<IRI> createProperty(
 			IRI propertyType, @Subject @NotLocallyDefined IRI newProperty, @Optional IRI superProperty,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
@@ -590,6 +594,50 @@ public class Properties extends STServiceAdapter {
 		//TODO compute show
 		return annotatedValue; 
 	}
+	
+	/**
+	 * Deletes a properties
+	 * @param property
+	 * @throws DeniedOperationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
+	public void deleteProperty(@Subject @LocallyDefined IRI property) throws DeniedOperationException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		//first check if the property has any sub property
+		String query =
+			// @formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>	\n" +
+			"ASK {													\n" +
+			"	[] rdfs:subPropertyOf ?property						\n" +
+			"}														\n";
+			// @formatter:on
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setBinding("property", property);
+		if(booleanQuery.evaluate()){
+			throw new DeniedOperationException(
+					"Property: " + property.stringValue() + " has sub property(ies); delete them before");
+		}
+		
+		query = 
+				"DELETE {																\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		?s1 ?p1 ?property .												\n"
+				+ "		?property ?p2 ?o2 .												\n"
+				+ "	}																	\n"
+				+ "} WHERE {															\n"
+				+ "	BIND(URI('" + property.stringValue() + "') AS ?property)			\n"
+				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				+ "		{ ?s1 ?p1 ?property . }											\n"
+				+ "		UNION															\n"
+				+ "		{ ?property ?p2 ?o2 . }											\n"
+				+ "	}																	\n"
+				+ "}";
+		repoConnection.prepareUpdate(query).execute();;
+	}
+	
 	
 	protected TypesAndRanges getRangeOnlyClasses(IRI property){
 		
