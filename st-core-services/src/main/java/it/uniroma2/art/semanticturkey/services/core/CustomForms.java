@@ -27,6 +27,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -219,15 +220,16 @@ public class CustomForms extends STServiceAdapter {
 				TupleQuery tq = repoConnection.prepareTupleQuery(query);
 				tq.setIncludeInferred(false);
 				tq.setBinding(cfGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
-				TupleQueryResult result = tq.evaluate();
-				//iterate over the results and create a map <userPrompt, value>
-				while (result.hasNext()) {
-					BindingSet bindingSet = result.next();
-					for (Entry<String, String> phUserPrompt : phUserPromptMap.entrySet()) {
-						String phId = phUserPrompt.getKey();
-						String userPrompt = phUserPrompt.getValue();
-						if (bindingSet.hasBinding(phId)) {
-							promptValuesMap.put(userPrompt, bindingSet.getValue(phId));
+				try (TupleQueryResult result = tq.evaluate()) {
+					//iterate over the results and create a map <userPrompt, value>
+					while (result.hasNext()) {
+						BindingSet bindingSet = result.next();
+						for (Entry<String, String> phUserPrompt : phUserPromptMap.entrySet()) {
+							String phId = phUserPrompt.getKey();
+							String userPrompt = phUserPrompt.getValue();
+							if (bindingSet.hasBinding(phId)) {
+								promptValuesMap.put(userPrompt, bindingSet.getValue(phId));
+							}
 						}
 					}
 				}
@@ -355,10 +357,13 @@ public class CustomForms extends STServiceAdapter {
 					GraphQuery gq = repoConnection.prepareGraphQuery(query);
 					gq.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
 					gq.setIncludeInferred(false);
-					int nStats = QueryResults.asModel(gq.evaluate()).size();
-					if (nStats > maxStats) {
-						maxStats = nStats;
-						bestCF = cf;
+					
+					try (GraphQueryResult result = gq.evaluate()) {
+						int nStats = QueryResults.asModel(result).size();
+						if (nStats > maxStats) {
+							maxStats = nStats;
+							bestCF = cf;
+						}
 					}
 				} catch (PRParserException e) {
 					//if one of the CF contains an error, catch the exception and continue checking the other CFs

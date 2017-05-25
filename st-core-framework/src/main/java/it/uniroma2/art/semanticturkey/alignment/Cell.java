@@ -85,5 +85,24 @@ public class Cell {
 			((Cell) cell).getRelation().equals(this.getRelation())
 		);
 	}
+	
+	@Override
+	public String toString() {
+		String toStr = "{ Entity1: " + entity1.stringValue() + ", " +
+				"Entity2: " + entity2.stringValue() + ", " +
+				"Relation: " + relation + ", " +
+				"Measure: " + measure;
+		if (status != null) {
+			toStr = toStr + "Status: " + status;
+		}
+		if (mappingProperty != null) {
+			toStr = toStr + ", MappingProperty: " + mappingProperty.stringValue();
+		}
+		if (comment != null) {
+			toStr = toStr + ", Comment: " + comment;
+		}
+		toStr = toStr + "}";
+		return toStr;
+	}
 
 }

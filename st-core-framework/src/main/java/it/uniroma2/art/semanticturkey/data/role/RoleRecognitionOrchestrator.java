@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.owlart.vocabulary.OWL;
@@ -103,8 +104,10 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
                 "IF(EXISTS {?metaClass rdfs:subClassOf* owl:Ontology . ?resource a ?metaClass . }, \"ontology\", \n" +
 				"\"individual\"))))))))))))) as ?role)}";
 		TupleQuery tq = repoConn.prepareTupleQuery(query);
-		RDFResourceRolesEnum role = RDFResourceRolesEnum.valueOf(tq.evaluate().next().getValue("role").stringValue());
-		return role;
+		try (TupleQueryResult result = tq.evaluate()) {
+			String roleValue = result.next().getValue("role").stringValue();
+			return RDFResourceRolesEnum.valueOf(roleValue);
+		}
 	}
 	
 }

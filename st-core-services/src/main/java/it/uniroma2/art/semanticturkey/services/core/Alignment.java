@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -13,10 +14,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -56,34 +60,19 @@ public class Alignment extends STServiceAdapter {
 	@Autowired
 	private STServiceContext stServiceContext;
 	
-	private static List<IRI> skosMappingRelations;
-	static {
-		skosMappingRelations = new ArrayList<>();
-		skosMappingRelations.add(org.eclipse.rdf4j.model.vocabulary.SKOS.MAPPING_RELATION);
-		skosMappingRelations.add(org.eclipse.rdf4j.model.vocabulary.SKOS.EXACT_MATCH);
-		skosMappingRelations.add(org.eclipse.rdf4j.model.vocabulary.SKOS.BROAD_MATCH);
-		skosMappingRelations.add(org.eclipse.rdf4j.model.vocabulary.SKOS.NARROW_MATCH);
-		skosMappingRelations.add(org.eclipse.rdf4j.model.vocabulary.SKOS.CLOSE_MATCH);
-		skosMappingRelations.add(org.eclipse.rdf4j.model.vocabulary.SKOS.RELATED_MATCH);
-	};
+	private static List<IRI> skosMappingRelations = Arrays.asList(
+			SKOS.MAPPING_RELATION, SKOS.EXACT_MATCH, SKOS.BROAD_MATCH,
+			SKOS.NARROW_MATCH, SKOS.CLOSE_MATCH, SKOS.RELATED_MATCH
+	);
 	
-	private static List<IRI> owlMappingRelations;
-	static {
-		owlMappingRelations = new ArrayList<>();
-		owlMappingRelations.add(OWL.SAMEAS);
-		owlMappingRelations.add(OWL.DIFFERENTFROM);
-		owlMappingRelations.add(OWL.ALLDIFFERENT);
-		owlMappingRelations.add(OWL.EQUIVALENTCLASS);
-		owlMappingRelations.add(OWL.DISJOINTWITH);
-		owlMappingRelations.add(RDFS.SUBCLASSOF);
-	};
+	private static List<IRI> owlMappingRelations = Arrays.asList(
+		OWL.SAMEAS, OWL.DIFFERENTFROM, OWL.ALLDIFFERENT,
+		OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF
+	);
 	
-	private static List<IRI> propertiesMappingRelations;
-	static {
-		propertiesMappingRelations = new ArrayList<>();
-		propertiesMappingRelations.add(OWL.EQUIVALENTPROPERTY);
-		propertiesMappingRelations.add(RDFS.SUBPROPERTYOF);
-	};
+	private static List<IRI> propertiesMappingRelations = Arrays.asList(
+		OWL.EQUIVALENTPROPERTY, RDFS.SUBPROPERTYOF
+	);
 	
 	//map that contain <id, context> pairs to handle multiple sessions
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
@@ -118,68 +107,18 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<IRI>> getMappingRelations(IRI resource, @Optional (defaultValue = "false") boolean allMappingProps) 
+	public Collection<AnnotatedValue<IRI>> getMappingProperties(IRI resource, @Optional (defaultValue = "false") boolean allMappingProps) 
 			throws ProjectInconsistentException {
-		Collection<AnnotatedValue<IRI>> mappingProps = new ArrayList<>();
-		if (allMappingProps) {
-			for (IRI prop : propertiesMappingRelations) {
-				AnnotatedValue<IRI> annValue = new AnnotatedValue<IRI>(prop);
-				annValue.setAttribute("show", getPropertyQName(prop));
-				mappingProps.add(annValue);
-			}
-			for (IRI prop : skosMappingRelations) {
-				AnnotatedValue<IRI> annValue = new AnnotatedValue<IRI>(prop);
-				annValue.setAttribute("show", getPropertyQName(prop));
-				mappingProps.add(annValue);
-			}
-			for (IRI prop : owlMappingRelations) {
-				AnnotatedValue<IRI> annValue = new AnnotatedValue<IRI>(prop);
-				annValue.setAttribute("show", getPropertyQName(prop));
-				mappingProps.add(annValue);
-			}
-		} else {
-			boolean isProperty = RDFResourceRolesEnum.isProperty(RoleRecognitionOrchestrator.computeRole(resource, getManagedConnection())); 
-			if (isProperty) { //is Property?
-				for (IRI prop : propertiesMappingRelations) {
-					AnnotatedValue<IRI> annValue = new AnnotatedValue<IRI>(prop);
-					annValue.setAttribute("show", getPropertyQName(prop));
-					mappingProps.add(annValue);
-				}
-			} else {
-				if (getProject().getModelType().getName().contains("SKOS")) { //SKOS or SKOSXL
-					for (IRI prop : skosMappingRelations) {
-						AnnotatedValue<IRI> annValue = new AnnotatedValue<IRI>(prop);
-						annValue.setAttribute("show", getPropertyQName(prop));
-						mappingProps.add(annValue);
-					}
-				} else { //OWL
-					for (IRI prop : owlMappingRelations) {
-						AnnotatedValue<IRI> annValue = new AnnotatedValue<IRI>(prop);
-						annValue.setAttribute("show", getPropertyQName(prop));
-						mappingProps.add(annValue);
-					}
-				}
-			}
+		List<IRI> props = getAvailableMappingProperties(resource, allMappingProps, getManagedConnection());
+		Collection<AnnotatedValue<IRI>> propColl = new ArrayList<>();
+		for (IRI p : props) {
+			AnnotatedValue<IRI> annValue = new AnnotatedValue<>(p);
+			annValue.setAttribute("show", getPropertyQName(p));
+			propColl.add(annValue);
 		}
-		return mappingProps;
+		return propColl;
 	}
 	
-	/**
-	 * Returns the qname of a property if a known namespace is found in its URI, the URI of the same property otherwise.
-	 * @param property
-	 * @return
-	 */
-	private String getPropertyQName(IRI property) {
-		RepositoryResult<Namespace> namespaces = getManagedConnection().getNamespaces();
-		while (namespaces.hasNext()) {
-			Namespace ns = namespaces.next();
-			if (ns.getName().equals(property.getNamespace())) {
-				return ns.getPrefix() + ":" + property.getLocalName();
-			}
-		}
-		return property.stringValue();
-	}
-
 	// SERVICES FOR ALIGNMENT VALIDATION
 	
 	/**
@@ -238,10 +177,19 @@ public class Alignment extends STServiceAdapter {
 			}
 		}
 		
+		alignModel.preProcess();
+		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode alignmentNode = jsonFactory.objectNode();
 		alignmentNode.set("onto1", jsonFactory.textNode(alignModel.getOnto1()));
 		alignmentNode.set("onto2", jsonFactory.textNode(alignModel.getOnto2()));
+		
+		ArrayNode unknownRelationsArrayNode = jsonFactory.arrayNode();
+		List<String> unknownRel = alignModel.getUnknownRelations();
+		for (String rel: unknownRel) {
+			unknownRelationsArrayNode.add(jsonFactory.textNode(rel));
+		}
+		alignmentNode.set("unknownRelations", unknownRelationsArrayNode);
 		return alignmentNode;
 	}
 	
@@ -306,9 +254,10 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#entity1)+ ', alignment)', 'C')")
-	public JsonNode acceptAlignment(IRI entity1, IRI entity2, String relation) {
+	public JsonNode acceptAlignment(IRI entity1, IRI entity2, String relation, @Optional IRI forcedProperty,
+			@Optional(defaultValue = "false") boolean setAsDefault) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.acceptAlignment(entity1, entity2, relation, getManagedConnection());
+		alignModel.acceptAlignment(entity1, entity2, relation, forcedProperty, setAsDefault, getManagedConnection());
 		Cell c = alignModel.getCell(entity1, entity2);
 		return createCellJsonNode(c);
 	}
@@ -353,7 +302,7 @@ public class Alignment extends STServiceAdapter {
 				IRI entity1 = cell.getEntity1();
 				IRI entity2 = cell.getEntity2();
 				String relation = cell.getRelation();
-				alignModel.acceptAlignment(entity1, entity2, relation, getManagedConnection());
+				alignModel.acceptAlignment(entity1, entity2, relation, null, false, getManagedConnection());
 				Cell updatedCell = alignModel.getCell(entity1, entity2);
 				cellsArrayNode.add(createCellJsonNode(updatedCell));
 			}
@@ -472,11 +421,14 @@ public class Alignment extends STServiceAdapter {
 		ArrayNode reportArrayNode = jsonFactory.arrayNode();
 		
 		RepositoryConnection repoConn = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		
 		List<Cell> acceptedCells = alignModel.listCellsByStatus(Status.accepted);
 		for (Cell cell : acceptedCells) {
-			repoConn.add(cell.getEntity1(), cell.getMappingProperty(), cell.getEntity2(), getWorkingGraph());
+			modelAdditions.add(cell.getEntity1(), cell.getMappingProperty(), cell.getEntity2());
 			ObjectNode cellNode = jsonFactory.objectNode();
 			cellNode.set("entity1", jsonFactory.textNode(cell.getEntity1().stringValue()));
 			cellNode.set("entity2", jsonFactory.textNode(cell.getEntity2().stringValue()));
@@ -491,10 +443,10 @@ public class Alignment extends STServiceAdapter {
 				try {
 					IRI entity1 = cell.getEntity1();
 					IRI entity2 = cell.getEntity2();
-					List<IRI> props = alignModel.suggestPropertiesForRelation(entity1, cell.getRelation(), repoConn);
+					List<IRI> props = alignModel.suggestPropertiesForRelation(entity1, cell.getRelation(), false, repoConn);
 					for (IRI p : props) {
-						if (repoConn.hasStatement(entity1, p, entity2, false, getWorkingGraph())){
-							repoConn.remove(entity1, p, entity2, getWorkingGraph());
+						if (repoConn.hasStatement(entity1, p, entity2, true, getWorkingGraph())){
+							modelRemovals.add(entity1, p, entity2);
 							ObjectNode cellNode = jsonFactory.objectNode();
 							cellNode.set("entity1", jsonFactory.textNode(cell.getEntity1().stringValue()));
 							cellNode.set("entity2", jsonFactory.textNode(cell.getEntity2().stringValue()));
@@ -506,6 +458,10 @@ public class Alignment extends STServiceAdapter {
 				} catch (InvalidAlignmentRelationException e) {} //in case of invalid relation, simply do nothing
 			}
 		}
+		
+		repoConn.add(modelAdditions, getWorkingGraph());
+		repoConn.remove(modelRemovals, getWorkingGraph());
+		
 		return reportArrayNode;
 	}
 	
@@ -515,7 +471,6 @@ public class Alignment extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
-	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public void exportAlignment(HttpServletResponse oRes) throws IOException {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
@@ -524,6 +479,7 @@ public class Alignment extends STServiceAdapter {
 		FileInputStream is = new FileInputStream(tempServerFile);
 		IOUtils.copy(is, oRes.getOutputStream());
 		oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
+		oRes.setContentType("application/xml");
 		oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
 		oRes.setContentLength((int) tempServerFile.length());
 		oRes.flushBuffer();
@@ -536,14 +492,23 @@ public class Alignment extends STServiceAdapter {
 	 * @param relation
 	 * @return
 	 * @throws InvalidAlignmentRelationException
+	 * @throws ProjectInconsistentException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<IRI>> listSuggestedProperties(IRI entity, String relation) throws InvalidAlignmentRelationException {
+	public Collection<AnnotatedValue<IRI>> getSuggestedProperties(IRI entity, String relation)
+			throws InvalidAlignmentRelationException, ProjectInconsistentException {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
-		List<IRI> props = alignmentModel.suggestPropertiesForRelation(entity, relation, getManagedConnection());
-		
+		List<IRI> props;
+		try {
+			props = alignmentModel.suggestPropertiesForRelation(entity, relation, false, getManagedConnection());
+		} catch (InvalidAlignmentRelationException e) { 
+			/* If it is not possible to find properties to suggest, (probably because the relation is not known)
+			 * returns all the mapping properties. */
+			props = getAvailableMappingProperties(entity, false, getManagedConnection());
+		}
+			
 		Collection<AnnotatedValue<IRI>> propColl = new ArrayList<>();
 		for (IRI p : props) {
 			AnnotatedValue<IRI> annValue = new AnnotatedValue<>(p);
@@ -551,6 +516,65 @@ public class Alignment extends STServiceAdapter {
 			propColl.add(annValue);
 		}
 		return propColl;
+	}
+	
+	/**
+	 * Returns a list of mapping properties
+	 * @param resource 
+	 * @param allMappingProps if true, returns all the known mapping properties, if false filters out the properties
+	 * 	not compatible with the resource and the project type
+	 * @param repoConn
+	 * @return
+	 * @throws ProjectInconsistentException
+	 */
+	private List<IRI> getAvailableMappingProperties(IRI resource, boolean allMappingProps, RepositoryConnection repoConn)
+			throws ProjectInconsistentException {
+		List<IRI> mappingProps = new ArrayList<>();
+		if (allMappingProps) {
+			for (IRI prop : propertiesMappingRelations) {
+				mappingProps.add(prop);
+			}
+			for (IRI prop : skosMappingRelations) {
+				mappingProps.add(prop);
+			}
+			for (IRI prop : owlMappingRelations) {
+				mappingProps.add(prop);
+			}
+		} else {
+			boolean isProperty = RDFResourceRolesEnum.isProperty(RoleRecognitionOrchestrator.computeRole(resource, repoConn)); 
+			if (isProperty) { //is Property?
+				for (IRI prop : propertiesMappingRelations) {
+					mappingProps.add(prop);
+				}
+			} else {
+				if (getProject().getModelType().getName().contains("SKOS")) { //SKOS or SKOSXL
+					for (IRI prop : skosMappingRelations) {
+						mappingProps.add(prop);
+					}
+				} else { //OWL
+					for (IRI prop : owlMappingRelations) {
+						mappingProps.add(prop);
+					}
+				}
+			}
+		}
+		return mappingProps;
+	}
+	
+	/**
+	 * Returns the qname of a property if a known namespace is found in its URI, the URI of the same property otherwise.
+	 * @param property
+	 * @return
+	 */
+	private String getPropertyQName(IRI property) {
+		RepositoryResult<Namespace> namespaces = getManagedConnection().getNamespaces();
+		while (namespaces.hasNext()) {
+			Namespace ns = namespaces.next();
+			if (ns.getName().equals(property.getNamespace())) {
+				return ns.getPrefix() + ":" + property.getLocalName();
+			}
+		}
+		return property.stringValue();
 	}
 	
 	private JsonNode createCellJsonNode(Cell c) {
@@ -582,9 +606,11 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public void closeSession() {
-		String token = stServiceContext.getSessionToken();
-		AlignmentModel align = modelsMap.get(token);
-		align.close();
-		modelsMap.remove(token);
+		if (stServiceContext.hasContextParameter("token")) {
+			String token = stServiceContext.getSessionToken();
+			AlignmentModel align = modelsMap.get(token);
+			align.close();
+			modelsMap.remove(token);
+		}
 	}
 }

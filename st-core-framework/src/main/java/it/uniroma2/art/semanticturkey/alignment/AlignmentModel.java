@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -49,16 +53,9 @@ public class AlignmentModel {
 		accepted, rejected, error;
 	}
 	
-	//https://github.com/dozed/align-api-project/tree/master/procalign/src/main/java/fr/inrialpes/exmo/align/impl/rel
-	private static class AlignApiRelations {
-		public static String equivalent = "fr.inrialpes.exmo.align.impl.rel.EquivRelation";
-		public static String hasInstance = "fr.inrialpes.exmo.align.impl.rel.HasInstanceRelation";
-		public static String incompatible = "fr.inrialpes.exmo.align.impl.rel.IncompatRelation";
-		public static String instanceOf = "fr.inrialpes.exmo.align.impl.rel.InstaceOfRelation";
-//		public static String nonTransitiveImplication = "fr.inrialpes.exmo.align.impl.rel.NonTransitiveImplicationRelation";
-		public static String subsume = "fr.inrialpes.exmo.align.impl.rel.SubsumeRelation";
-		public static String subsumed = "fr.inrialpes.exmo.align.impl.rel.SubsumedRelation";
-	}
+	private static List<String> knownRelations = Arrays.asList("=", ">", "<", "%", "HasInstance", "InstanceOf");
+	
+	private static Map<String, IRI> relationPropertyMap = new HashMap<>();
 	
 	private RepositoryConnection repoConnection;
 	
@@ -73,40 +70,42 @@ public class AlignmentModel {
 	public void add(File alignmentFile) throws AlignmentInitializationException {
 		try {
 			repoConnection.add(alignmentFile, Alignment.URI, RDFFormat.RDFXML);
-			normalize();
 		} catch (RDFParseException | RepositoryException | IOException e) {
 			throw new AlignmentInitializationException(e);
 		}
 	}
 	
 	/**
-	 * Align API format accept as relation also "a fully qualified classname of the relation implementation"
-	 * (http://alignapi.gforge.inria.fr/format.html) like "fr.inrialpes.exmo.align.impl.rel.EquivRelation".
-	 * This method replaces these classnames with the equivalent symbols.
+	 * Processes all the cells and stores the relations in a map that will stores the default mapping
+	 * properties for them
 	 */
-	private void normalize() {
-		String query = "DELETE { ?cell <" + Alignment.RELATION + "> ?rel . } \n"
-				+ "INSERT { ?cell <" + Alignment.RELATION + "> ?newRel . } \n"
-				+ "WHERE { \n"
-				+ "?cell <" + Alignment.RELATION + "> ?rel . \n"
-				+ "FILTER( \n"
-				+ "str(?rel) = '" + AlignApiRelations.equivalent + "' || \n"
-				+ "str(?rel) = '" + AlignApiRelations.hasInstance + "' || \n"
-				+ "str(?rel) = '" + AlignApiRelations.incompatible + "' || \n"
-				+ "str(?rel) = '" + AlignApiRelations.instanceOf + "' || \n"
-				+ "str(?rel) = '" + AlignApiRelations.subsume + "' || \n"
-				+ "str(?rel) = '" + AlignApiRelations.subsumed + "'\n"
-				+ ") \n"
-				+ "BIND( \n"
-				+ "IF(str(?rel) = '" + AlignApiRelations.equivalent + "', '=', "
-				+ "IF(str(?rel) = '" + AlignApiRelations.hasInstance + "', 'HasInstance', "
-				+ "IF(str(?rel) = '" + AlignApiRelations.incompatible + "', '%', "
-				+ "IF(str(?rel) = '" + AlignApiRelations.instanceOf + "', 'InstanceOf', "
-				+ "IF(str(?rel) = '" + AlignApiRelations.subsume + "', '>', "
-				+ "IF(str(?rel) = '" + AlignApiRelations.subsumed + "', '<', "
-				+ "?rel)))))) AS ?newRel) \n"
+	public void preProcess() {
+		String query = "SELECT DISTINCT ?relation WHERE { \n"
+				+ " ?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . \n"
+				+ " ?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . \n"
 				+ "}";
-		repoConnection.prepareUpdate(query).execute();
+		TupleQuery tq = repoConnection.prepareTupleQuery(query);
+		try (TupleQueryResult result = tq.evaluate()) {
+			while (result.hasNext()) {
+				String relation = result.next().getValue("relation").stringValue();
+				relationPropertyMap.put(relation, null);
+			}
+		}
+	}
+	
+	/**
+	 * Returns a list of unknown relations (classnames or not known symbols) used in the alignment 
+	 * @return
+	 */
+	public List<String> getUnknownRelations() {
+		List<String> unknownRel = new ArrayList<>();
+		Set<String> relations = relationPropertyMap.keySet();
+		for (String rel : relations) {
+			if (!knownRelations.contains(rel)) {
+				unknownRel.add(rel);
+			}
+		}
+		return unknownRel;
 	}
 	
 	/**
@@ -119,9 +118,10 @@ public class AlignmentModel {
 				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . "
 				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.LEVEL) + " ?level . }";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			return result.next().getValue("level").stringValue();
+		try (TupleQueryResult result = tq.evaluate()) {
+			if (result.hasNext()) {
+				return result.next().getValue("level").stringValue();
+			}
 		}
 		return null;
 	}
@@ -150,9 +150,10 @@ public class AlignmentModel {
 				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . "
 				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.XML) + " ?xml . }";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			return result.next().getValue("xml").stringValue().equals("yes");
+		try (TupleQueryResult result = tq.evaluate()) {
+			if (result.hasNext()) {
+				return result.next().getValue("xml").stringValue().equals("yes");
+			}
 		}
 		return false;
 	}
@@ -183,9 +184,10 @@ public class AlignmentModel {
 				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . "
 				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.TYPE) + " ?type . }";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			return result.next().getValue("type").stringValue();
+		try (TupleQueryResult result = tq.evaluate()) {
+			if (result.hasNext()) {
+				return result.next().getValue("type").stringValue();
+			}
 		}
 		return null;
 	}
@@ -215,9 +217,10 @@ public class AlignmentModel {
 				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . "
 				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO1) + " ?onto1 . }";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			return result.next().getValue("onto1").stringValue();
+		try (TupleQueryResult result = tq.evaluate()) {
+			if (result.hasNext()) {
+				return result.next().getValue("onto1").stringValue();
+			}
 		}
 		return null;
 	}
@@ -249,9 +252,10 @@ public class AlignmentModel {
 				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . "
 				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO2) + " ?onto2 . }";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		if (result.hasNext()) {
-			return result.next().getValue("onto2").stringValue();
+		try (TupleQueryResult result = tq.evaluate()) {
+			if (result.hasNext()) {
+				return result.next().getValue("onto2").stringValue();
+			}
 		}
 		return null;
 	}
@@ -289,15 +293,17 @@ public class AlignmentModel {
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . "
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . } "
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
 				+ "ORDERBY ?entity1 ?entity2";
+		logger.debug(query);
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		List<Cell> cells = getCellFromTupleResult(result);
-		if (!cells.isEmpty()) {
-			return cells.get(0);
+		try (TupleQueryResult result = tq.evaluate()) {
+			List<Cell> cells = getCellFromTupleResult(result);
+			if (!cells.isEmpty()) {
+				return cells.get(0);
+			}
 		}
 		return null;
 	}
@@ -317,9 +323,11 @@ public class AlignmentModel {
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . } "
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
 				+ "ORDERBY ?entity1 ?entity2";
+		logger.debug(query);
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		return getCellFromTupleResult(result);
+		try (TupleQueryResult result = tq.evaluate()) {
+			return getCellFromTupleResult(result);
+		}
 	}
 	
 	/**
@@ -339,8 +347,9 @@ public class AlignmentModel {
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
 				+ "ORDERBY ?entity1 ?entity2";
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
-		TupleQueryResult result = tq.evaluate();
-		return getCellFromTupleResult(result);
+		try (TupleQueryResult result = tq.evaluate()) {
+			return getCellFromTupleResult(result);
+		}
 	}
 	
 	private List<Cell> getCellFromTupleResult(TupleQueryResult result) {
@@ -497,17 +506,28 @@ public class AlignmentModel {
 	 * @param relation
 	 * @param projRepoConn repository connection of the ontology, used to check if relation is valid respect entity1
 	 * @return
+	 * @throws InvalidAlignmentRelationException 
 	 */
-	public void acceptAlignment(IRI entity1, IRI entity2, String relation, RepositoryConnection projRepoConn) {
+	public void acceptAlignment(IRI entity1, IRI entity2, String relation, IRI forcedProperty, boolean setAsDefault, 
+			RepositoryConnection projRepoConn) {
 		String query;
+		IRI prop;
+		
 		try {
-			List<IRI> suggProps = suggestPropertiesForRelation(entity1, relation, projRepoConn);
-			//in case of no exception add the accepted status and the suggested property to the alignment cell
-			IRI sProp = suggProps.get(0);
+			if (forcedProperty != null) { //if property is provided, accept the alignment with this one
+				prop = forcedProperty;
+				if (setAsDefault) {
+					relationPropertyMap.put(relation, forcedProperty);
+				}
+			} else { //otherwise infer the mapping proprety from relation
+				List<IRI> suggProps = suggestPropertiesForRelation(entity1, relation, true, projRepoConn);
+				prop = suggProps.get(0);
+			}
+
 			query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . "
 					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . "
 					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } "
-					+ "INSERT { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " " + NTriplesUtil.toNTriplesString(sProp) + " . "
+					+ "INSERT { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " " + NTriplesUtil.toNTriplesString(prop) + " . "
 					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.accepted + "' . }"
 					+ "WHERE { ?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
 					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(entity1) + " . "
@@ -529,6 +549,7 @@ public class AlignmentModel {
 					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
 					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
 		}
+		
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -544,7 +565,7 @@ public class AlignmentModel {
 		for (Cell c : cells){
 			String query;
 			try {
-				List<IRI> suggProps = suggestPropertiesForRelation(c.getEntity1(), c.getRelation(), projRepoConn);
+				List<IRI> suggProps = suggestPropertiesForRelation(c.getEntity1(), c.getRelation(), true, projRepoConn);
 				//in case of no exception add the accepted status and the suggested property to the alignment cell
 				IRI sProp = suggProps.get(0);
 				query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . "
@@ -679,11 +700,13 @@ public class AlignmentModel {
 	 * 
 	 * @param entity 
 	 * @param relation
-	 * @param @param projRepoConn repository connectionof the ontology
+	 * @param withDefault if cannot infer a property, determine if consider an eventual
+	 * 	default property assigned to the relation
+	 * @param projRepoConn repository connectionof the ontology
 	 * @return
 	 * @throws InvalidAlignmentRelationException 
 	 */
-	public List<IRI> suggestPropertiesForRelation(IRI entity, String relation, RepositoryConnection projRepoConn) 
+	public List<IRI> suggestPropertiesForRelation(IRI entity, String relation, boolean withDefault, RepositoryConnection projRepoConn) 
 			throws InvalidAlignmentRelationException {
 		List<IRI> suggested = new ArrayList<>();
 		RDFResourceRolesEnum roleEnum = RoleRecognitionOrchestrator.computeRole(entity, projRepoConn);
@@ -758,9 +781,17 @@ public class AlignmentModel {
 			}
 		}
 		if (suggested.isEmpty()) {
-			throw new InvalidAlignmentRelationException("Not possible to convert relation "
-					+ relation + " for entity " + entity.stringValue() + ". Possible reasons: "
-							+ "unknown relation or unknown type of entity.");
+			if (withDefault) {
+				IRI defaultProp = relationPropertyMap.get(relation);
+				if (defaultProp != null) {
+					suggested.add(defaultProp);
+				}
+			}
+			if (suggested.isEmpty()) {
+				throw new InvalidAlignmentRelationException("Not possible to convert relation "
+						+ relation + " for entity " + entity.stringValue() + ". Possible reasons: "
+								+ "unknown relation or unknown type of entity.");
+			}
 		}
 		return suggested;
 	}
