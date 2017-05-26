@@ -80,13 +80,13 @@
 	
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
-			override="true">
+			override="false">
 			mvn:it.uniroma2.art.semanticturkey/st-console/${project.version}
 		</configfile>
 		
         
          <!-- Load all configuration files from mvn local repository -->
-		<configfile finalname="/etc/${project.groupId}.cfg" override="true">
+		<configfile finalname="/etc/${project.groupId}.cfg" override="false">
 			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/cfg/st
 		</configfile>
 	</feature>

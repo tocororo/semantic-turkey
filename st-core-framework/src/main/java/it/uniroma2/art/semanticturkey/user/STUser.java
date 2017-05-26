@@ -11,10 +11,11 @@ import java.util.Date;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
@@ -214,26 +215,27 @@ public class STUser implements UserDetails {
 		return Config.getEmailAdminAddress().equals(email);
 	}
 	
-	public JSONObject getAsJSONObject() throws JSONException {
-		JSONObject userJson = new JSONObject();
-		userJson.put("email", email);
-		userJson.put("givenName", givenName);
-		userJson.put("familyName", familyName);
+	public ObjectNode getAsJsonObject() {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode userJson = jsonFactory.objectNode();
+		userJson.set("email", jsonFactory.textNode(email));
+		userJson.set("givenName", jsonFactory.textNode(givenName));
+		userJson.set("familyName", jsonFactory.textNode(familyName));
 		if (birthday != null) {
-			userJson.put("birthday", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday));
+			userJson.set("birthday", jsonFactory.textNode(new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday)));
 		} else {
-			userJson.put("birthday", birthday); //empty field
+			userJson.set("birthday", null); //empty field
 		}
-		userJson.put("gender", gender);
-		userJson.put("country", country);
-		userJson.put("address", address);
+		userJson.set("gender", jsonFactory.textNode(gender));
+		userJson.set("country", jsonFactory.textNode(country));
+		userJson.set("address", jsonFactory.textNode(address));
 		//skip test registrationDate != null because registrationDate is automatically set during registration
-		userJson.put("registrationDate", new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(registrationDate));
-		userJson.put("affiliation", affiliation);
-		userJson.put("url", url);
-		userJson.put("phone", phone);
-		userJson.put("status", status);
-		userJson.put("admin", isAdmin());
+		userJson.set("registrationDate", jsonFactory.textNode(new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(registrationDate)));
+		userJson.set("affiliation", jsonFactory.textNode(affiliation));
+		userJson.set("url", jsonFactory.textNode(url));
+		userJson.set("phone", jsonFactory.textNode(phone));
+		userJson.set("status", jsonFactory.textNode(status.name()));
+		userJson.set("admin", jsonFactory.booleanNode(isAdmin()));
 		
 		return userJson;
 	}

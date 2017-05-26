@@ -7,14 +7,12 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
-import it.uniroma2.art.semanticturkey.servlet.JSONResponseREPLY;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.user.STUser;
 
 /**
@@ -34,16 +32,11 @@ public class STAuthenticationSuccessHandler extends SimpleUrlAuthenticationSucce
 		ServletOutputStream out = response.getOutputStream();
 		
 		STUser loggedUser = (STUser) authentication.getPrincipal();
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode responseNode = jsonFactory.objectNode();
+		responseNode.set("result", loggedUser.getAsJsonObject());
 		
-		JSONResponseREPLY jsonResp = (JSONResponseREPLY) ServletUtilities.getService()
-				.createReplyResponse("login", RepliesStatus.ok, SerializationType.json);
-		try {
-			jsonResp.getDataElement().put("user", loggedUser.getAsJSONObject());
-		} catch (JSONException e) {
-			throw new ServletException(e);
-		}
-		
-		out.print(jsonResp.toString());
+		out.print(responseNode.toString());
 		
 	}
 }

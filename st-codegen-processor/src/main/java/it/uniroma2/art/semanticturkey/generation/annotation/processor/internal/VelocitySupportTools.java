@@ -20,6 +20,7 @@ public class VelocitySupportTools {
 
 	public static final String OPTIONAL_QUALIFIED_NAME = "it.uniroma2.art.semanticturkey.services.annotations.Optional";
 	public static final String HTTPSERVLETRESPONSE_QUALIFIED_NAME = "javax.servlet.http.HttpServletResponse";
+	public static final String HTTPSERVLETREQUEST_QUALIFIED_NAME = "javax.servlet.http.HttpServletRequest";
 	public static final String DEFAULT_VALUE = "defaultValue";
 	private Types typeUtils;
 	private Elements elementUtils;
@@ -52,6 +53,9 @@ public class VelocitySupportTools {
 			String qname = ((QualifiedNameable) parameterTypeAsElement).getQualifiedName().toString();
 
 			if (qname.equals(HTTPSERVLETRESPONSE_QUALIFIED_NAME)) {
+				return false;
+			}
+			if (qname.equals(HTTPSERVLETREQUEST_QUALIFIED_NAME)) {
 				return false;
 			}
 		}

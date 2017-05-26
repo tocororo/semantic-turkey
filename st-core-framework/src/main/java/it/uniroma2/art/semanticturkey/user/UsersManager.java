@@ -113,10 +113,30 @@ public class UsersManager {
 	 * @param email
 	 * @throws IOException
 	 */
-	public static void deleteUser(String email) throws IOException {
-		userList.remove(getUserByEmail(email));
+	public static void deleteUser(STUser user) throws IOException {
+		userList.remove(user);
 		// delete its folder from server data
-		FileUtils.deleteDirectory(getUserFolder(email));
+		FileUtils.deleteDirectory(getUserFolder(user.getEmail()));
+		// delete the bindings
+		ProjectUserBindingsManager.deletePUBindingsOfUser(user);
+	}
+	
+	/**
+	 * Updates the password of the given user and returns it updated
+	 * 
+	 * @param user
+	 * @param newValue
+	 * @return
+	 * @throws IOException
+	 */
+	public static STUser updateUserPassword(STUser user, String newPassword) throws IOException {
+		user = getUserByEmail(user.getEmail());
+		String crypted = new BCryptPasswordEncoder().encode(newPassword);
+		System.out.println("from " + newPassword + " to " + crypted);
+		user.setPassword(crypted);
+//		user.setPassword(new BCryptPasswordEncoder().encode(newPassword));
+		createOrUpdateUserDetailsFolder(user);
+		return user;
 	}
 
 	/**

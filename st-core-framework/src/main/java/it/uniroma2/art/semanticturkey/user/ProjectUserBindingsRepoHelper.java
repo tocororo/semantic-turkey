@@ -124,11 +124,21 @@ public class ProjectUserBindingsRepoHelper {
 		tupleLoop: while (result.hasNext()) {
 			BindingSet tuple = result.next();
 
-			AbstractProject project = getProjectFromIRI((IRI) tuple.getValue(BINDING_PROJECT));
+			IRI projIRI = (IRI) tuple.getValue(BINDING_PROJECT);
+			AbstractProject project = getProjectFromIRI(projIRI);
 			if (project == null) { //there is a binding that references a no more existing project
-				continue; // => bingind ignored
+				logger.warn("Invalid binding: IRI " + projIRI.stringValue() + " references to a not existing project."
+						+ " Project-User bindings with this project will be ignored");
+				continue; // => binding ignored
 			}
-			STUser user = getUserFromIRI((IRI) tuple.getValue(BINDING_USER));
+			
+			IRI userIRI = (IRI) tuple.getValue(BINDING_USER);
+			STUser user = UsersManager.getUserByIRI(userIRI);
+			if (user == null) { //there is a binding that references a no more existing user
+				logger.warn("Invalid binding: IRI " + userIRI.stringValue() + " references to a not existing user."
+						+ " Project-User bindings with this user will be ignored");
+				continue; // => binding ignored
+			}
 			
 			ProjectUserBinding puBinding = new ProjectUserBinding(project, user);
 			
@@ -212,15 +222,6 @@ public class ProjectUserBindingsRepoHelper {
 				+ " references to a not existing project");
 			return null;
 		}
-	}
-	
-	private STUser getUserFromIRI(IRI userIRI) {
-		STUser user = UsersManager.getUserByIRI(userIRI);
-		if (user == null) {
-			throw new IllegalStateException("Invalid binding: IRI " + userIRI.stringValue()
-				+ " references to a not existing user. Project-User bindings with this project will be ignored");
-		}
-		return user;
 	}
 	
 	private Role getRoleFromIRI(IRI roleIRI) {
