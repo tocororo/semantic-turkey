@@ -2,7 +2,9 @@ package it.uniroma2.art.semanticturkey.history;
 
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.AbstractAdvisingBeanPostProcessor;
+import org.springframework.aop.support.ComposablePointcut;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -10,6 +12,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import it.uniroma2.art.semanticturkey.aop.STServiceOperationPointcut;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 
 /**
  * A convenient {@link BeanPostProcessor} implementation that advises eligible beans (i.e. Semantic Turkey
@@ -28,7 +31,8 @@ public class HistoryMetadataPostProcessor extends AbstractAdvisingBeanPostProces
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		Pointcut pointcut = new STServiceOperationPointcut();
+		Pointcut pointcut = new ComposablePointcut(new STServiceOperationPointcut())
+				.intersection(new AnnotationMatchingPointcut(Write.class));
 		HistoryMetadataInterceptor advice = applicationContext.getAutowireCapableBeanFactory()
 				.createBean(HistoryMetadataInterceptor.class);
 		this.advisor = new DefaultPointcutAdvisor(pointcut, advice);
