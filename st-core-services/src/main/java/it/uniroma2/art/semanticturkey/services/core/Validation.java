@@ -7,7 +7,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
@@ -17,6 +16,7 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
@@ -106,13 +106,13 @@ public class Validation extends STServiceAdapter {
 		}
 	}
 
-	@STServiceOperation
+	@STServiceOperation(method=RequestMethod.POST)
 	@Write
 	public void accept(IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit, CHANGETRACKER.VALIDATION);
 	}
 	
-	@STServiceOperation
+	@STServiceOperation(method=RequestMethod.POST)
 	@Write
 	public void reject(IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit, CHANGETRACKER.VALIDATION);
