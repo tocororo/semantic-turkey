@@ -19,6 +19,8 @@ public abstract class ChangeTrackerSchema {
 
 	public static final IRI INTERACTIVE_NOTIFICATIONS;
 	
+	public static final IRI VALIDATION_GRAPH;
+
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -30,5 +32,6 @@ public abstract class ChangeTrackerSchema {
 		EXCLUDE_GRAPH = vf.createIRI(NAMESPACE, "excludeGraph");
 		VALIDATION_ENABLED = vf.createIRI(NAMESPACE, "validationEnabled");
 		INTERACTIVE_NOTIFICATIONS = vf.createIRI(NAMESPACE, "interactiveNotifications");
+		VALIDATION_GRAPH = vf.createIRI(NAMESPACE, "validationGraph");
 	}
 }

@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -8,17 +7,13 @@ import java.util.stream.Collectors;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import org.eclipse.rdf4j.common.io.FileUtil;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
@@ -30,12 +25,8 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
-import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
@@ -43,9 +34,6 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
-import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +42,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
@@ -64,71 +51,7 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class ChangeTrackerTest {
-
-	private static final String HISTORY_REPO_ID = "test-history";
-	private static final String HISTORY_NS = "http://example.org/history#";
-	private static final IRI HISTORY_GRAPH = SimpleValueFactory.getInstance()
-			.createIRI("http://example.org/history");
-
-	private LocalRepositoryManager repositoryManager;
-
-	private Repository dataRepo;
-	private Repository historyRepo;
-
-	private static final Namespace ns = new SimpleNamespace("ex", "http://example.org/");
-
-	private static final String TEST_REPOSITORY_MANAGER_BASE = "target/test-repositories/";
-
-	private static final IRI graphA;
-	private static final IRI graphB;
-	private static final IRI socrates;
-	private static final IRI plato;
-	private static final boolean PRINT_HISTORY = true;
-
-	static {
-		ValueFactory vf = SimpleValueFactory.getInstance();
-		graphA = vf.createIRI(ns.getName(), "graph-A");
-		graphB = vf.createIRI(ns.getName(), "graph-B");
-		socrates = vf.createIRI(ns.getName(), "socrates");
-		plato = vf.createIRI(ns.getName(), "plato");
-	}
-
-	@Before
-	public void setup() {
-		File baseRepoManagerDir = new File(TEST_REPOSITORY_MANAGER_BASE);
-		if (baseRepoManagerDir.exists()) {
-			FileUtil.deltree(baseRepoManagerDir);
-		}
-		baseRepoManagerDir.mkdirs();
-
-		repositoryManager = new LocalRepositoryManager(baseRepoManagerDir);
-		repositoryManager.initialize();
-
-		repositoryManager.addRepositoryConfig(
-				new RepositoryConfig(HISTORY_REPO_ID, new SailRepositoryConfig(new NativeStoreConfig())));
-
-		historyRepo = repositoryManager.getRepository(HISTORY_REPO_ID);
-		RepositoryRegistry.getInstance().addRepository(HISTORY_REPO_ID, historyRepo);
-		Repositories.consume(historyRepo, conn->{
-			conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
-			conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
-		});
-		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
-		trackerConfig.setHistoryRepositoryID(HISTORY_REPO_ID);
-		trackerConfig.setHistoryNS(HISTORY_NS);
-		trackerConfig.setHistoryGraph(HISTORY_GRAPH);
-
-		repositoryManager.addRepositoryConfig(
-				new RepositoryConfig("test-data", new SailRepositoryConfig(trackerConfig)));
-		dataRepo = repositoryManager.getRepository("test-data");
-
-	}
-
-	@After
-	public void teardown() {
-		repositoryManager.shutDown();
-	}
+public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 	protected void testSkeleton(TestCommitStrategy strategy) {
 		assertTrue(0 == Repositories.get(historyRepo, historyConn -> historyConn.size()));

@@ -44,6 +44,15 @@ public abstract class CHANGETRACKER {
 	/** ct:commit-metadata */
 	public static final IRI COMMIT_METADATA;
 
+	/** ct:validation */
+	public static final IRI VALIDATION;
+
+	/** ct:accept */
+	public static final IRI ACCEPT;
+
+	/** ct:reject */
+	public static final IRI REJECT;
+
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 		
@@ -55,5 +64,9 @@ public abstract class CHANGETRACKER {
 		EXCLUDE_GRAPH = vf.createIRI(NAMESPACE, "excludeGraph");
 		
 		COMMIT_METADATA = vf.createIRI(NAMESPACE, "commit-metadata");
+		
+		VALIDATION = vf.createIRI(NAMESPACE, "validation");
+		ACCEPT = vf.createIRI(NAMESPACE, "accept");
+		REJECT = vf.createIRI(NAMESPACE, "reject");
 	}
 }

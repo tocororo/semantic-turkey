@@ -19,7 +19,7 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 
 /**
  * A {@link NotifyingSail} keeping track of changes to an underlying {@code Sail}. Each commit containing at
- * least one relevant update is recorded into the <i>history repository</i>. The representation of the history
+ * least one relevant update is recorded into the <i>support repository</i>. The representation of the history
  * conforms to the vocabulary {@link CHANGELOG}.
  * <p>
  * A change is recorded only if it is an effective update to the underlying data: i.e. either adding a triple
@@ -52,6 +52,13 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * commit in the history repository, the client may identify the commit via the IRI
  * {@link CHANGETRACKER#COMMIT_METADATA}: when the commit metadata is written into the history, this
  * identifier will be replace with the actual identifier of the commit.
+ * <p>
+ * When validation is enabled, write operations are first logged inside the validation graph (in the support
+ * repository) and applied to the staging graphs (in the core repository).
+ * <p>
+ * To accept/reject a previous transaction, it is sufficient to write in the context
+ * {@link CHANGETRACKER#VALIDATION}, as follows:
+ * {@code conn.add(commitIRI, CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT | CHANGETRACKER.ACCEPT, CHANGETRACKER.VALIDATION)}
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
@@ -59,24 +66,29 @@ public class ChangeTracker extends NotifyingSailWrapper {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
 
-	final Repository metadataRepo;
+	final Repository supportRepo;
 	final String metadataNS;
-	final IRI metadataGraph;
+	final IRI historyGraph;
+	final IRI validationGraph;
 
 	final Model graphManagement;
 
+	final boolean validationEnabled;
 	final boolean interactiveNotifications;
 
 	public ChangeTracker(Repository metadataRepo, String metadataNS, IRI metadataGraph, Set<IRI> includeGraph,
-			Set<IRI> excludeGraph, boolean interactiveNotifications) {
-		this.metadataRepo = metadataRepo;
+			Set<IRI> excludeGraph, boolean validationEnabled, boolean interactiveNotifications,
+			IRI validationGraph) {
+		this.supportRepo = metadataRepo;
 		this.metadataNS = metadataNS;
-		this.metadataGraph = metadataGraph;
+		this.historyGraph = metadataGraph;
 		this.graphManagement = new LinkedHashModel();
 		includeGraph.forEach(
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH, g));
 		excludeGraph.forEach(
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.EXCLUDE_GRAPH, g));
+		this.validationEnabled = validationEnabled;
+		this.validationGraph = validationGraph;
 		this.interactiveNotifications = interactiveNotifications;
 	}
 

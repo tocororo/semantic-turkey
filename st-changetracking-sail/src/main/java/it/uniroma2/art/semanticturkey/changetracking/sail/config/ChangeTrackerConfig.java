@@ -3,11 +3,12 @@ package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.EXCLUDE_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_NS;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_REPOSITORY_ID;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_ENABLED;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_ENABLED;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_GRAPH;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	private Set<IRI> excludeGraph;
 	private boolean interactiveNotifications;
 	private boolean validationEnabled;
+	private IRI validationGraph;
 	
 	public ChangeTrackerConfig() {
 		this(null);
@@ -56,6 +58,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		includeGraph = Collections.emptySet();
 		excludeGraph = Collections.singleton(SESAME.NIL);
 		interactiveNotifications = false;
+		validationGraph = null;
 	}
 
 	public String getHistoryRepositoryID() {
@@ -113,6 +116,14 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	public void setValidationEnabled(boolean validationEnabled) {
 		this.validationEnabled = validationEnabled;
 	}
+	
+	public IRI getValidationGraph() {
+		return validationGraph;
+	}
+	
+	public void setValidationGraph(IRI validationGraph) {
+		this.validationGraph = validationGraph;
+	}
 
 	@Override
 	public Resource export(Model graph) {
@@ -137,6 +148,13 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		} else {
 			graph.add(implNode, HISTORY_GRAPH, SESAME.NIL);
 		}
+		
+		if (validationGraph != null) {
+			graph.add(implNode, VALIDATION_GRAPH, validationGraph);
+		} else {
+			graph.add(implNode, VALIDATION_GRAPH, SESAME.NIL);
+		}
+
 
 		for (IRI g : includeGraph) {
 			graph.add(implNode, INCLUDE_GRAPH, g);
@@ -180,6 +198,8 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 			}
 		});
 		excludeGraph = newExcludeGraph;
+		Models.objectIRI(graph.filter(implNode, VALIDATION_GRAPH, null))
+		.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setValidationGraph);
 
 		validationEnabled = graph.filter(implNode, VALIDATION_ENABLED,
 				SimpleValueFactory.getInstance().createLiteral(true)).isEmpty() ? false : true;
@@ -206,6 +226,10 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 		if (excludeGraph == null) {
 			throw new SailConfigException("Null exclude graph for " + getType() + " Sail.");
+		}
+		
+		if (validationEnabled && validationGraph == null) {
+			throw new SailConfigException("Validation enabled but no validation graph is specified");
 		}
 	}
 

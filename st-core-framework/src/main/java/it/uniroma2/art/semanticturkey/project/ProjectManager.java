@@ -216,14 +216,15 @@ public class ProjectManager {
 
 		if (isOpen(projectName))
 			throw new ProjectDeletionException("cannot delete a project while it is open");
-		
-		//delete the folders about project-user bindings
+
+		// delete the folders about project-user bindings
 		try {
 			ProjectUserBindingsManager.deletePUBindingsOfProject(getProjectDescription(projectName));
-		} catch (ProjectAccessException | InvalidProjectNameException | ProjectInexistentException |IOException e) {
+		} catch (ProjectAccessException | InvalidProjectNameException | ProjectInexistentException
+				| IOException e) {
 			throw new ProjectDeletionException(e);
 		}
-		
+
 		if (!Utilities.deleteDir(projectDir))
 			throw new ProjectDeletionException("unable to delete project: " + projectName);
 	}
@@ -1469,6 +1470,10 @@ public class ProjectManager {
 									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
 							changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
 							changeTrackerSailConfig.setValidationEnabled(validationEnabled);
+							if (validationEnabled) {
+								changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
+										.createIRI(defaultNamespace + "validation"));
+							}
 							return changeTrackerSailConfig;
 						});
 				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
@@ -1502,6 +1507,10 @@ public class ProjectManager {
 										.createIRI(defaultNamespace + "history"));
 								changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
 								changeTrackerSailConfig.setValidationEnabled(validationEnabled);
+								if (validationEnabled) {
+									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
+											.createIRI(defaultNamespace + "validation"));
+								}
 
 								return changeTrackerSailConfig;
 							});

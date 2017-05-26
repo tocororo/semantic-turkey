@@ -53,8 +53,9 @@ public class ChangeTrackerFactory implements SailFactory {
 		IRI metadataGraph = config2.getHistoryGraph();
 		Set<IRI> includeGraph = config2.getIncludeGraph();
 		Set<IRI> excludeGraph = config2.getExcludeGraph();
+		boolean validationEnabled = config2.isValidationEnabled();
 		boolean interactiveNotifications = config2.isInteractiveNotifications();
-
+		IRI validationGraph = config2.getValidationGraph();
 		Repository metadataRepo;
 
 		if (serverURL != null) {
@@ -63,12 +64,12 @@ public class ChangeTrackerFactory implements SailFactory {
 			metadataRepo = RepositoryRegistry.getInstance().getRepository(metadataRepoId);
 		}
 		logger.debug(
-				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {} // interactiveNotifications = {}",
+				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {} // validationEnabled = {} // interactiveNotifications = {} // validationGraph = {}",
 				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,
-				interactiveNotifications);
+				validationEnabled, interactiveNotifications, validationGraph);
 
 		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,
-				interactiveNotifications);
+				validationEnabled, interactiveNotifications, validationGraph);
 	}
 
 }
