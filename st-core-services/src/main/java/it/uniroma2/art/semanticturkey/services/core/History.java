@@ -4,17 +4,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.impl.TreeModel;
+import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,10 +79,16 @@ public class History extends STServiceAdapter {
 				"    optional {                                                                        \n" +
 				"       ?commit dcterms:subject ?subject                                               \n" +
 				"    }                                                                                 \n" +
+				"    optional {                                                                        \n" +
+				"       ?commit prov:startedAtTime ?startTime                                          \n" +
+				"    }                                                                                 \n" +
+				"    optional {                                                                        \n" +
+				"       ?commit prov:endedAtTime ?endTime                                              \n" +
+				"    }                                                                                 \n" +
 				" }                                                                                    \n"
 				// @formatter:on
-				;
-			
+			;
+
 			TupleQuery query = conn.prepareTupleQuery(queryString);
 			query.setIncludeInferred(false);
 			List<CommitInfo> commitInfos = QueryResults.stream(query.evaluate()).map(bindingSet -> {
@@ -112,6 +119,19 @@ public class History extends STServiceAdapter {
 							(Resource) bindingSet.getValue("subject"));
 					commitInfo.setSubject(subject);
 				}
+
+				if (bindingSet.hasBinding("startTime")) {
+					commitInfo.setStartTime(
+							Literals.getCalendarValue((Literal) bindingSet.getValue("startTime"), null)
+									.toGregorianCalendar());
+				}
+
+				if (bindingSet.hasBinding("endTime")) {
+					commitInfo.setEndTime(
+							Literals.getCalendarValue((Literal) bindingSet.getValue("endTime"), null)
+									.toGregorianCalendar());
+				}
+
 				return commitInfo;
 			}).collect(Collectors.toList());
 
@@ -148,7 +168,7 @@ public class History extends STServiceAdapter {
 			ValueFactory vf = SimpleValueFactory.getInstance();
 
 			query.setBinding("commit", commit);
-			
+
 			query.setBinding("deltaProp", CHANGELOG.ADDED_STATEMENT);
 			List<Statement> addedStatements = QueryResults.stream(query.evaluate()).map(bindingSet -> {
 				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),

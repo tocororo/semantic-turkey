@@ -1,9 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.core.history;
 
+import java.util.GregorianCalendar;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -18,6 +21,8 @@ public class CommitInfo {
 	private AnnotatedValue<IRI> user;
 	private AnnotatedValue<IRI> operation;
 	private AnnotatedValue<Resource> subject;
+	private GregorianCalendar startTime;
+	private GregorianCalendar endTime;
 
 	
 	
@@ -54,4 +59,21 @@ public class CommitInfo {
 		this.commit = commit;
 	}
 
+	public void setStartTime(GregorianCalendar startTime) {
+		this.startTime = startTime;
+	}
+
+	@JsonFormat(shape=Shape.STRING)
+	public GregorianCalendar getStartTime() {
+		return startTime;
+	}
+	
+	public void setEndTime(GregorianCalendar endTime) {
+		this.endTime = endTime;
+	}
+
+	@JsonFormat(shape=Shape.STRING)
+	public GregorianCalendar getEndTime() {
+		return endTime;
+	}
 }
