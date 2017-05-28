@@ -4,7 +4,7 @@ import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.AbstractAdvisingBeanPostProcessor;
 import org.springframework.aop.support.ComposablePointcut;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
-import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
+import org.springframework.aop.support.annotation.AnnotationMethodMatcher;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -32,7 +32,7 @@ public class HistoryMetadataPostProcessor extends AbstractAdvisingBeanPostProces
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		Pointcut pointcut = new ComposablePointcut(new STServiceOperationPointcut())
-				.intersection(new AnnotationMatchingPointcut(Write.class));
+				.intersection(new AnnotationMethodMatcher(Write.class));
 		HistoryMetadataInterceptor advice = applicationContext.getAutowireCapableBeanFactory()
 				.createBean(HistoryMetadataInterceptor.class);
 		this.advisor = new DefaultPointcutAdvisor(pointcut, advice);
