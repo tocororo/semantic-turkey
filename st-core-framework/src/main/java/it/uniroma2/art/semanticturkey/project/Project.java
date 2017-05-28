@@ -132,6 +132,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
 
+	public static final String CREATION_DATE_PROP = "creationDate";
+	public static final String MODIFICATION_DATE_PROP = "creationDate";
+
 	public static final String VERSIONS_PROP = "versions";
 
 	public static final String DEFAULT_REPOSITORY_LOCATION_PROP = "defaultRepositoryLocation";

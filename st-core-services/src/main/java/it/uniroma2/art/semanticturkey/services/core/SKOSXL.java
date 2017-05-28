@@ -49,6 +49,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
+import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * This class provides services for manipulating SKOSXL constructs.
@@ -112,6 +113,7 @@ public class SKOSXL extends STServiceAdapter {
 			newConceptIRI = newConcept;
 		}
 		
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI); // set created for versioning
 		HistoryMetadataSupport.currentOperationMetadata().setSubject(newConceptIRI); //set subject for history
 		
 		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
@@ -180,6 +182,7 @@ public class SKOSXL extends STServiceAdapter {
 			newSchemeIRI = newScheme;
 		}
 		
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newSchemeIRI); // set created for versioning
 		HistoryMetadataSupport.currentOperationMetadata().setSubject(newSchemeIRI); //set subject for history
 		
 		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
@@ -289,6 +292,7 @@ public class SKOSXL extends STServiceAdapter {
 			newCollectionRes = newCollection;
 		}
 		
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newCollectionRes); // set created for versioning
 		HistoryMetadataSupport.currentOperationMetadata().setSubject(newCollectionRes); //set subject for history
 		
 		IRI collectionClass = collectionType;
