@@ -417,20 +417,26 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 	public void deactivate() throws ModelUpdateException {
 		try {
-			getPrimordialOntModel().close();
+			if (repositoryManager.hasRepositoryConfig("support")) {
+				RepositoryRegistry.getInstance().removeRepository(getName() + "-support");
+			}
 		} finally {
 			try {
-				repositoryManager.shutDown();
+				getPrimordialOntModel().close();
 			} finally {
-				// try {
-				// if (newOntManager != null) {
-				// newOntManager.getRepository().shutDown();
-				// }
-				// } finally {
-				// if (supportOntManager != null) {
-				// supportOntManager.getRepository().shutDown();
-				// }
-				// }
+				try {
+					repositoryManager.shutDown();
+				} finally {
+					// try {
+					// if (newOntManager != null) {
+					// newOntManager.getRepository().shutDown();
+					// }
+					// } finally {
+					// if (supportOntManager != null) {
+					// supportOntManager.getRepository().shutDown();
+					// }
+					// }
+				}
 			}
 		}
 	}

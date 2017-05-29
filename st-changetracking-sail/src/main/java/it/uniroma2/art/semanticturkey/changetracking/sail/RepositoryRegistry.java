@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.sail.NotifyingSail;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
 
@@ -35,5 +34,9 @@ public class RepositoryRegistry {
 		Repository repo = repos.get(id);
 
 		return repo;
+	}
+
+	public synchronized void removeRepository(String id) {
+		repos.remove(id);
 	}
 }
