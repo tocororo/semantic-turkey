@@ -130,7 +130,8 @@
 					
 				<beans:bean id="StringToMapConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToMapConverter" />
-
+				<beans:bean id="StringToValueMapConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToValueMapConverter" />
 			</beans:list>
 		</beans:property>
 	</beans:bean>

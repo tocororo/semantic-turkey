@@ -58,8 +58,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
  * @author Armando Stellato
  * 
  */
-@Component
-
+@Component("SPARQLOld")
 public class SPARQL extends ServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(SPARQL.class);
