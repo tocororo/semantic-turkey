@@ -31,6 +31,7 @@ import java.io.IOException;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -65,7 +66,7 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
-			
+
 			ValueFactory vf = conn.getValueFactory();
 
 			IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
@@ -93,23 +94,26 @@ public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<
 							RDFFormat.RDFXML, owlBaseURI);
 				}
 
-				if (SKOSModel.class.isAssignableFrom(getModelType())) {
+				if (SKOSModel.class.isAssignableFrom(getModelType())
+						&& !conn.hasStatement(null, null, null, false, skosBaseURI)) {
 					logger.debug("Loading SKOS vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("skos.rdf"), skosBaseURI.stringValue(),
 							RDFFormat.RDFXML, skosBaseURI);
 				}
 
-				if (SKOSXLModel.class.isAssignableFrom(getModelType())) {
+				if (SKOSXLModel.class.isAssignableFrom(getModelType())
+						&& !conn.hasStatement(null, null, null, false, skosxlBaseURI)) {
 					logger.debug("Loading SKOS-XL vocabulary...");
 					conn.add(OntologyManager.class.getResourceAsStream("skos-xl.rdf"),
 							skosxlBaseURI.stringValue(), RDFFormat.RDFXML, skosxlBaseURI);
+					conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
 				}
 			} catch (RepositoryException | IOException e) {
 				throw new ModelCreationException(e);
 			} catch (ProjectInconsistentException e) {
 				throw new ModelCreationException(e);
 			}
-			
+
 			logger.debug("About to commit the loaded triples");
 			conn.commit();
 			logger.debug("Triples loaded");
