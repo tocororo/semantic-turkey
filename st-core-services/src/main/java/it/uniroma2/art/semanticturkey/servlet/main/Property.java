@@ -1345,7 +1345,7 @@ public class Property extends ResourceOld {
 			while (domainClasses.streamOpen()) {
 				ARTResource domainClass = domainClasses.getNext();
 				if (domainClass.isURIResource())
-					ClsOld.recursiveCreateClassesXMLTree(getProject(), domainClass.asURIResource(), dataElement);
+					ClsOld.recursiveCreateClassesXMLTree(getProject(), ontModel, domainClass.asURIResource(), dataElement);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getDomainClassesTreeRequest, e);
@@ -1371,7 +1371,7 @@ public class Property extends ResourceOld {
 			while (rangeClasses.streamOpen()) {
 				ARTResource rangeClass = rangeClasses.getNext();
 				if (rangeClass.isURIResource())
-					ClsOld.recursiveCreateClassesXMLTree(getProject(), rangeClass.asURIResource(), dataElement);
+					ClsOld.recursiveCreateClassesXMLTree(getProject(), ontModel, rangeClass.asURIResource(), dataElement);
 			}
 		} catch (ModelAccessException e) {
 			return ServletUtilities.getService().createExceptionResponse(Req.getRangeClassesTreeRequest, e);

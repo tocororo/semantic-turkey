@@ -833,7 +833,7 @@ public class ClsOld extends ResourceOld {
 			filtIt = Iterators.filter(namedClassesIt, rootUserClsPred);
 			while (filtIt.hasNext()) {
 				ARTURIResource cls = filtIt.next().asURIResource();
-				recursiveCreateClassesXMLTree(getProject(), cls, dataElement, graphs);
+				recursiveCreateClassesXMLTree(getProject(), ontModel, cls, dataElement, graphs);
 			}
 			namedClassesIt.close();
 		} catch (ModelAccessException e) {
@@ -867,9 +867,8 @@ public class ClsOld extends ResourceOld {
 	 * @throws DOMException
 	 * @throws ModelAccessException
 	 */
-	public static void recursiveCreateClassesXMLTree(Project<?> project, ARTURIResource cls, Element element,
+	public static void recursiveCreateClassesXMLTree(Project<?> project, RDFModel ontModel, ARTURIResource cls, Element element,
 			ARTResource... graphs) throws DOMException, ModelAccessException {
-		RDFModel ontModel = project.getOWLModel();
 		Element classElement = XMLHelp.newElement(element, "Class");
 		boolean deleteForbidden = ServletUtilities.getService().checkReadOnly(cls, project);
 		classElement.setAttribute("name", ontModel.getQName(cls.getURI()));
@@ -889,7 +888,7 @@ public class ClsOld extends ResourceOld {
 		Element subClassesElem = XMLHelp.newElement(classElement, "SubClasses");
 		while (namedSubClassesIterator.hasNext()) {
 			ARTURIResource subClass = namedSubClassesIterator.next().asURIResource();
-			recursiveCreateClassesXMLTree(project, subClass, subClassesElem, graphs);
+			recursiveCreateClassesXMLTree(project, ontModel, subClass, subClassesElem, graphs);
 		}
 		subClassesIterator.close();
 	}

@@ -93,6 +93,7 @@ import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
@@ -113,7 +114,6 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsum
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
@@ -230,7 +230,7 @@ public class ResourceView2 extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
-			@Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException {
+			@Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException, ProjectInconsistentException {
 		if (resourcePosition == null) {
 			resourcePosition = resource != null
 					? resourceLocator.locateResource(getProject(), getRepository(), resource)
@@ -278,13 +278,13 @@ public class ResourceView2 extends STServiceAdapter {
 
 	// TODO place this method into a better place
 	public static List<IRI> getLexicalizationPropertiesHelper(Resource resource,
-			ResourcePosition resourcePosition) {
+			ResourcePosition resourcePosition) throws ProjectInconsistentException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
-			RDFModel ontModel = hostingProject.getPrimordialOntModel();
-			if (ontModel instanceof SKOSXLModel) {
+			Class<?> modelType = hostingProject.getModelType();
+			if (SKOSXLModel.class.isAssignableFrom(modelType)) {
 				return Arrays.asList(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
-			} else if (ontModel instanceof SKOSModel) {
+			} else if (SKOSModel.class.isAssignableFrom(modelType)) {
 				return Arrays.asList(SKOS.PREF_LABEL, SKOS.ALT_LABEL, SKOS.HIDDEN_LABEL);
 			} else {
 				return Arrays.asList(RDFS.LABEL);

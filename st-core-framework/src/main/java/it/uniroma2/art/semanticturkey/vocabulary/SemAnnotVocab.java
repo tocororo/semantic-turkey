@@ -28,7 +28,7 @@ package it.uniroma2.art.semanticturkey.vocabulary;
 
 import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.models.RDFModel;
+import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 
 /**
  * @author Armando Stellato
@@ -89,24 +89,24 @@ public class SemAnnotVocab {
 		public static ARTURIResource TextualAnnotation;
 		public static ARTURIResource ImageAnnotation;
 
-		public static void initialize(RDFModel repo) throws VocabularyInitializationException {
+		public static void initialize() throws VocabularyInitializationException {
+			SemanticAnnotation = VocabUtilities.nodeFactory
+					.createURIResource(SemAnnotVocab.SemanticAnnotation);
+			RangeAnnotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.RangeAnnotation);
+			annotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.annotation);
+			WebPage = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.WebPage);
+			url = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.url);
+			location = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.location);
+			text = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.text);
+			title = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.title);
+			range = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.range);
+			TextualAnnotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.TextualAnnotation);
+			ImageAnnotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.ImageAnnotation);
+			topic = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.topic);
 
-			SemanticAnnotation = repo.createURIResource(SemAnnotVocab.SemanticAnnotation);
-			RangeAnnotation = repo.createURIResource(SemAnnotVocab.RangeAnnotation);
-			annotation = repo.createURIResource(SemAnnotVocab.annotation);
-			WebPage = repo.createURIResource(SemAnnotVocab.WebPage);
-			url = repo.createURIResource(SemAnnotVocab.url);
-			location = repo.createURIResource(SemAnnotVocab.location);
-			text = repo.createURIResource(SemAnnotVocab.text);
-			title = repo.createURIResource(SemAnnotVocab.title);
-			range = repo.createURIResource(SemAnnotVocab.range);
-			TextualAnnotation = repo.createURIResource(SemAnnotVocab.TextualAnnotation);
-			ImageAnnotation = repo.createURIResource(SemAnnotVocab.ImageAnnotation);
-			topic = repo.createURIResource(SemAnnotVocab.topic);
-
-			if (SemanticAnnotation == null || RangeAnnotation == null || annotation == null
-					|| WebPage == null || url == null || location == null || text == null || title == null
-					|| range == null || TextualAnnotation == null || ImageAnnotation == null || topic == null)
+			if (SemanticAnnotation == null || RangeAnnotation == null || annotation == null || WebPage == null
+					|| url == null || location == null || text == null || title == null || range == null
+					|| TextualAnnotation == null || ImageAnnotation == null || topic == null)
 				throw new VocabularyInitializationException(
 						"Problems occurred in initializing the Semantic Annotation ontology vocabulary");
 

@@ -34,6 +34,7 @@ import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 import java.io.File;
 import java.net.URISyntaxException;
 
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.mortbay.http.HttpServer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -124,8 +125,8 @@ public class SemanticTurkey implements BundleActivator {
 	/**
 	 * this method builds up the HTTP Server in charge of replying to user requests
 	 */
-	public static void initializeVocabularies(RDFModel repo) throws VocabularyInitializationException {
-		SemAnnotVocab.Res.initialize(repo);
+	public static void initializeVocabularies(RepositoryConnection conn) throws VocabularyInitializationException {
+		SemAnnotVocab.Res.initialize();
 	}
 
 	public void start(BundleContext arg0) throws Exception {

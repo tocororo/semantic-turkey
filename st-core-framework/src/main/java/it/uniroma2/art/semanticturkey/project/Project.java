@@ -59,6 +59,7 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
@@ -333,21 +334,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 
 			String modelType = getProperty(PROJECT_MODEL_TYPE);
 
-			if (OWLModel.class.getName().equals(modelType)) {
-				primordialOntModel = (MODELTYPE) new OWLModelRDF4JImpl(
-						new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
-			} else if (SKOSModel.class.getName().equals(modelType)) {
-				primordialOntModel = (MODELTYPE) new SKOSModelRDF4JImpl(
-						new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
-			} else if (SKOSXLModel.class.getName().equals(modelType)) {
-				primordialOntModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
-						new NonClosingBaseRDFModelRDF4JImpl(newOntManager.getRepository(), false, false));
-			} else {
-				throw new ProjectAccessException("Unsupport model type: " + modelType);
-			}
-
-			primordialOntModel.setBaseURI(baseURI);
-
 			if (rdf4jRepo != null) {
 				repositoryTransactionManager = new RDF4JRepositoryTransactionManager(rdf4jRepo);
 			}
@@ -358,38 +344,45 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 				logger.info("generating defaultNamespace from baseuri: " + defaultNamespace);
 			}
 
-			// retrieves the default namespace (in case it is persisted somehow by the triple store
-			// if it is null (non persisted) or different from the one stored in the project (well, that would
-			// be really weird), it sets it again as an initialization step
-			String liveGotNS = getPrimordialOntModel().getDefaultNamespace();
-			if (liveGotNS == null || !liveGotNS.equals(defaultNamespace)) {
-				logger.debug(
-						"activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
-				getPrimordialOntModel().setDefaultNamespace(defaultNamespace);
-				logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
-						+ defaultNamespace);
-				logger.info("activation of project: " + getName() + ": defaultnamespace set to@@@@ : "
-						+ getPrimordialOntModel().getDefaultNamespace());
-				// it may seem strange that ST is reporting the msg:
-				// "a mapping already exists for" <def namespace here of the current project>
-				// this is due to a non-properly managed def namespace in owlart sesame implementation
-				// it seems last sesame versions are persisting the namespace prefix mapping. In this case,
-				// there should be no need of writing explicitly a further variable (as it does at least until
-				// owlart-sesame2 version 1.1), containing the default namespace. What happens is that
-				// the liveGotNS is null, though actually sesame has the right namespace associated to the
-				// empty prefix "".
-				// in future implementations of sesame2, the default namespace should be only inferable from
-				// the "" prefix, and no redundanc should be present
+			try (RepositoryConnection conn = coreRepository.getConnection()) {
+				// retrieves the default namespace (in case it is persisted somehow by the triple store
+				// if it is null (non persisted) or different from the one stored in the project (well, that
+				// would
+				// be really weird), it sets it again as an initialization step
+				String liveGotNS = conn.getNamespace("");
+				if (liveGotNS == null || !liveGotNS.equals(defaultNamespace)) {
+					logger.debug(
+							"activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
+					conn.setNamespace("", defaultNamespace);
+					logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
+							+ defaultNamespace);
+					logger.info("activation of project: " + getName() + ": defaultnamespace set to@@@@ : "
+							+ conn.getNamespace(""));
+					// it may seem strange that ST is reporting the msg:
+					// "a mapping already exists for" <def namespace here of the current project>
+					// this is due to a non-properly managed def namespace in owlart sesame implementation
+					// it seems last sesame versions are persisting the namespace prefix mapping. In this
+					// case,
+					// there should be no need of writing explicitly a further variable (as it does at least
+					// until
+					// owlart-sesame2 version 1.1), containing the default namespace. What happens is that
+					// the liveGotNS is null, though actually sesame has the right namespace associated to the
+					// empty prefix "".
+					// in future implementations of sesame2, the default namespace should be only inferable
+					// from
+					// the "" prefix, and no redundanc should be present
+				}
+
+				newOntManager.declareApplicationOntology(
+						SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.NAMESPACE), false, true);
+
+				// nsPrefixMappingsPersistence must have been already created by constructor of Project
+				// subclasses
+				newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
+
+				SemanticTurkey.initializeVocabularies(conn);
+				logger.info("defaultnamespace set to: " + defaultNamespace);
 			}
-
-			newOntManager.declareApplicationOntology(
-					SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.NAMESPACE), false, true);
-
-			// nsPrefixMappingsPersistence must have been already created by constructor of Project subclasses
-			newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
-
-			SemanticTurkey.initializeVocabularies(getPrimordialOntModel());
-			logger.info("defaultnamespace set to: " + defaultNamespace);
 		} catch (Exception e) {
 			try {
 				if (repositoryManager != null && repositoryManager.isInitialized()) {
@@ -726,7 +719,27 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		if (isModelBoundToThread()) {
 			throw new IllegalStateException("Model already bound to thread");
 		}
-		MODELTYPE forkedModel = (MODELTYPE) getPrimordialOntModel().forkModel();
+		
+		MODELTYPE forkedModel;
+
+		try {
+			String modelType = getModelType().getName();
+			if (OWLModel.class.getName().equals(modelType)) {
+				forkedModel = (MODELTYPE) new OWLModelRDF4JImpl(
+						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
+			} else if (SKOSModel.class.getName().equals(modelType)) {
+				forkedModel = (MODELTYPE) new SKOSModelRDF4JImpl(
+						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
+			} else if (SKOSXLModel.class.getName().equals(modelType)) {
+				forkedModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
+						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
+			} else {
+				throw new ModelCreationException("Unsupport model type: " + modelType);
+			}
+		} catch (ProjectInconsistentException | SailException | RepositoryException | VocabularyInitializationException e) {
+			throw new ModelCreationException(e);
+		}
+		
 		modelHolder.set(forkedModel);
 		logger.debug("Fork model {} producing new model {}", getPrimordialOntModel(), forkedModel);
 	}
@@ -736,11 +749,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		MODELTYPE model = modelHolder.get();
 
 		if (model == null) {
-			if (0 == 0)
-				throw new RuntimeException("Could not obtain thread-bound model");
-			logger.warn("Implicit access to primordial model");
-			// throw new IllegalStateException("No model has been bound to the current thread");
-			return getPrimordialOntModel();
+			throw new RuntimeException("Could not obtain thread-bound model");
 		}
 
 		return model;
@@ -915,69 +924,36 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 }
 
-class NonClosingBaseRDFModelRDF4JImpl extends BaseRDFModelRDF4JImpl {
-	private NonClosingBaseRDFModelRDF4JImpl delegate;
+class ProjectAwareBaseRDFModel extends BaseRDFModelRDF4JImpl {
+	private Project<?> project;
 
-	public NonClosingBaseRDFModelRDF4JImpl(Repository repo, boolean rdfsReasoning,
+	public ProjectAwareBaseRDFModel(Project<?> project, Repository repo, boolean rdfsReasoning,
 			boolean directTypeReasoning) throws SailException, RepositoryException, ModelCreationException {
 		super(repo, rdfsReasoning, directTypeReasoning);
-	}
-
-	public NonClosingBaseRDFModelRDF4JImpl(Repository repo, boolean rdfsReasoning,
-			boolean directTypeReasoning, NonClosingBaseRDFModelRDF4JImpl delegate)
-			throws SailException, RepositoryException, ModelCreationException {
-		super(repo, rdfsReasoning, directTypeReasoning);
-		this.delegate = delegate;
-	}
-
-	@Override
-	public void close() throws ModelUpdateException {
-		repConn.close();
+		this.project = project;
 	}
 
 	@Override
 	public BaseRDFModelRDF4JImpl forkModel() throws ModelCreationException {
-		if (this.getClass() != NonClosingBaseRDFModelRDF4JImpl.class) {
-			throw new IllegalStateException("The model class '" + this.getClass().getName()
-					+ "' seems not properly override forkModel()");
-		}
-
-		return new NonClosingBaseRDFModelRDF4JImpl(localrepository, rdfsReasoning, directTypeReasoning, this);
+		throw new UnsupportedOperationException("This model does not support forking");
+	}
+	
+	@Override
+	public void close() throws ModelUpdateException {
+		getRDF4JRepositoryConnection().close(); // Only close the connection (leave the repository open)
 	}
 
 	@Override
 	public void setBaseURI(String uri) throws ModelUpdateException {
-		if (delegate != null) {
-			delegate.setBaseURI(uri);
-		} else {
-			super.setBaseURI(uri);
+		try {
+			project.setBaseURI(uri);
+		} catch (ProjectUpdateException e) {
+			throw new ModelUpdateException(e);
 		}
 	}
 
 	@Override
 	public String getBaseURI() {
-		if (delegate != null) {
-			return delegate.getBaseURI();
-		} else {
-			return super.getBaseURI();
-		}
-	}
-
-	@Override
-	public void setDefaultNamespace(String namespace) throws ModelUpdateException {
-		if (delegate != null) {
-			delegate.setDefaultNamespace(namespace);
-		} else {
-			super.setDefaultNamespace(namespace);
-		}
-	}
-
-	@Override
-	public String getDefaultNamespace() throws RuntimeException {
-		try {
-			return getNSForPrefix("");
-		} catch (ModelAccessException e) {
-			throw new RuntimeException(e);
-		}
+		return project.getBaseURI();
 	}
 }

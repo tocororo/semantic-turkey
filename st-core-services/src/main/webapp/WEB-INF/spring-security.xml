@@ -1,15 +1,13 @@
 <beans:beans xmlns="http://www.springframework.org/schema/security"
-	xmlns:beans="http://www.springframework.org/schema/beans"
-	xmlns:osgi="http://www.springframework.org/schema/osgi"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:osgi="http://www.springframework.org/schema/osgi"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
 	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
 	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
 	http://www.springframework.org/schema/security
 	http://www.springframework.org/schema/security/spring-security-3.1.xsd
 	http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd">
-	
+
 	<!-- Retrieves the ResourceLocator -->
 	<osgi:reference id="resourceLocator"
 		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
@@ -17,65 +15,73 @@
 	<!-- Retrieves the DatasetMetadataRepository -->
 	<osgi:reference id="datasetMetadataRepository"
 		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
-	
-	<!--
-	Overrides the default entry point of authentication. As default Spring-Security redirects to login page 
-	 -->
+
+	<!-- Overrides the default entry point of authentication. As default Spring-Security 
+		redirects to login page -->
 	<http entry-point-ref="authEntryPoint" use-expressions="true">
-		<!-- Tells the login request url (it must be a POST) and the parameters username and password
-		and specifies the handler for successful and failed login -->
-		<form-login 
+		<!-- Tells the login request url (it must be a POST) and the parameters 
+			username and password and specifies the handler for successful and failed 
+			login -->
+		<form-login
 			login-processing-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/login"
-			username-parameter="email"
-			password-parameter="password"
+			username-parameter="email" password-parameter="password"
 			authentication-success-handler-ref="authSuccessHandler"
-			authentication-failure-handler-ref="authFailHandler"/>
-			
-		<!-- Tells the handler for denied access (when user requests an url which for has not enough permission) -->
-		<access-denied-handler ref="accessDeniedHandler"/>
-	
-		<!-- Tells the logout request url (GET)
-		and specifies the handler for successful logout -->			
-		<logout 
-			logout-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/logout"
-			delete-cookies="JSESSIONID"
-			success-handler-ref="logoutSuccessHandler"/>
-	
+			authentication-failure-handler-ref="authFailHandler" />
+
+		<!-- Tells the handler for denied access (when user requests an url which 
+			for has not enough permission) -->
+		<access-denied-handler ref="accessDeniedHandler" />
+
+		<!-- Tells the logout request url (GET) and specifies the handler for successful 
+			logout -->
+		<logout logout-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/logout"
+			delete-cookies="JSESSIONID" success-handler-ref="logoutSuccessHandler" />
+
 		<!-- http://docs.spring.io/spring-security/site/docs/3.1.x/reference/el-access.html -->
-		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUser" access="permitAll" />
-		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser" access="permitAll" />
-		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/forgotPassword" access="permitAll" />
-		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/resetPassword" access="permitAll" />
-		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**" access="isAuthenticated()" />
+		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUser"
+			access="permitAll" />
+		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser"
+			access="permitAll" />
+		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/forgotPassword"
+			access="permitAll" />
+		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/resetPassword"
+			access="permitAll" />
+		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
+			access="isAuthenticated()" />
 		<intercept-url pattern="/resources/stserver/**" access="isAuthenticated()" />
-		<!-- <intercept-url pattern="" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" /> -->
-		
+		<!-- <intercept-url pattern="" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" 
+			/> -->
+
 		<!-- validity: 30 days -->
-		<!-- user-service-ref not strictly needed (if there is just one UserDetailsService implementation
-		it should be automatically selected) -->
-		<remember-me
-			key="vocbench_rememberme_key"
-			token-validity-seconds="2592000" 
-			user-service-ref="stUserDetailsService"
-			authentication-success-handler-ref="authSuccessHandler"/> 
-		
-		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS headers to responses -->
+		<!-- user-service-ref not strictly needed (if there is just one UserDetailsService 
+			implementation it should be automatically selected) -->
+		<remember-me key="vocbench_rememberme_key"
+			token-validity-seconds="2592000" user-service-ref="stUserDetailsService"
+			authentication-success-handler-ref="authSuccessHandler" />
+
+		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS 
+			headers to responses -->
 		<custom-filter position="CHANNEL_FILTER" ref="corsFilter" />
 	</http>
 
 	<authentication-manager>
 		<!-- with UserDetailsService bean and password encoder -->
 		<authentication-provider user-service-ref="stUserDetailsService">
-			<password-encoder ref="bCryptPasswordEncoder"/>
+			<password-encoder ref="bCryptPasswordEncoder" />
 		</authentication-provider>
 	</authentication-manager>
-	
+
 	<global-method-security pre-post-annotations="enabled"></global-method-security>
-	
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security"/>
-	
-	<beans:bean class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext" />
-	
+
+	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security" />
+
+	<beans:bean
+		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext" />
+
 	<beans:bean id="conversionService"
 		class="org.springframework.context.support.ConversionServiceFactoryBean">
 		<beans:property name="converters">
@@ -114,7 +120,7 @@
 					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JResourceConverter" />
 				<beans:bean id="StringToRDF4JValueConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter" />
-					
+
 				<beans:bean id="StringToPluginSpecificationConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter" />
 				<beans:bean id="StringToFilteringStepConverter"
@@ -127,23 +133,31 @@
 
 				<beans:bean id="StringToRepositoryAccessConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToRepositoryAccessConverter" />
-					
+
 				<beans:bean id="StringToMapConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToMapConverter" />
-				<beans:bean id="StringToValueMapConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToValueMapConverter" />
+					class="it.uniroma2.art.semanticturkey.converters.StringToMapGenericConverter">
+					<beans:constructor-arg value="conversionService" />
+				</beans:bean>
 			</beans:list>
 		</beans:property>
 	</beans:bean>
-	
-	<beans:bean id="corsFilter" class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
-	<beans:bean id="stUserDetailsService" class="it.uniroma2.art.semanticturkey.security.STUserDetailsService"/>
-	<beans:bean id="authEntryPoint" class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint"/>
-	<beans:bean id="authSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationSuccessHandler"/>
-	<beans:bean id="authFailHandler" class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler"/>
-	<beans:bean id="accessDeniedHandler" class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler"/>
-	<beans:bean id="logoutSuccessHandler" class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler"/>
-	
-	<beans:bean id='bCryptPasswordEncoder' class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder'/>
-	
+
+	<beans:bean id="corsFilter"
+		class="it.uniroma2.art.semanticturkey.security.CORSFilter" />
+	<beans:bean id="stUserDetailsService"
+		class="it.uniroma2.art.semanticturkey.security.STUserDetailsService" />
+	<beans:bean id="authEntryPoint"
+		class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint" />
+	<beans:bean id="authSuccessHandler"
+		class="it.uniroma2.art.semanticturkey.security.STAuthenticationSuccessHandler" />
+	<beans:bean id="authFailHandler"
+		class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler" />
+	<beans:bean id="accessDeniedHandler"
+		class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler" />
+	<beans:bean id="logoutSuccessHandler"
+		class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler" />
+
+	<beans:bean id='bCryptPasswordEncoder'
+		class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder' />
+
 </beans:beans>
