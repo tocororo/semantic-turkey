@@ -72,7 +72,7 @@ public class SKOSXL extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(SKOSXL.class);
 	
-	protected static enum XLabelCreationMode {
+	public static enum XLabelCreationMode {
 		bnode, uri
 	};
 	

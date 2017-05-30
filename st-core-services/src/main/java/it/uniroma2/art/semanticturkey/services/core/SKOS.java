@@ -761,14 +761,14 @@ public class SKOS extends STServiceAdapter {
 		}
 	}
 	
-	protected boolean hasElementInList(Resource collection, Resource element, RepositoryConnection repoConnection){
+	protected boolean hasElementInList(Resource list, Resource element, RepositoryConnection repoConnection){
 		Resource[] graphs = getUserNamedGraphs();
-		if(repoConnection.hasStatement(collection, RDF.FIRST, element, false, graphs)){
+		if(repoConnection.hasStatement(list, RDF.FIRST, element, false, graphs)){
 			return true;
-		} else if(repoConnection.hasStatement(collection, RDF.FIRST, RDF.NIL, false, graphs)){
+		} else if(repoConnection.hasStatement(list, RDF.FIRST, RDF.NIL, false, graphs)){
 			return false;
 		} else{
-			try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(collection, RDF.REST, null, graphs)){
+			try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(list, RDF.REST, null, graphs)){
 				return hasElementInList((Resource) repositoryResult.next().getObject(), element, repoConnection);
 			}
 		}
@@ -855,6 +855,21 @@ public class SKOS extends STServiceAdapter {
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
 				org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, scheme));
 				
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
+	public void removeTopConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(scheme, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.HAS_TOP_CONCEPT, concept));
+		
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
 	
@@ -976,10 +991,12 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
 	public void deleteConceptScheme(@LocallyDefined @Subject IRI scheme) {
 		String query = 
-				"DELETE {																\n"
+				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n"
+				+ "DELETE {																\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?scheme .												\n"
 				+ "		?scheme ?p2 ?o2 .												\n"
+				+ "		?xlabel ?prop ?value .											\n"
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
 				+ "	BIND(URI('" + scheme.stringValue() + "') AS ?scheme)				\n"
@@ -987,6 +1004,11 @@ public class SKOS extends STServiceAdapter {
 				+ "		{ ?s1 ?p1 ?scheme . }											\n"
 				+ "		UNION															\n"
 				+ "		{ ?scheme ?p2 ?o2 . }											\n"
+				+ "		UNION															\n"
+				+ "		{ "
+				+ "			?scheme skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?xlabel .	\n"
+				+ "			?xlabel ?prop ?value . 										\n"	
+				+ "		}																\n"
 				+ "	}																	\n"
 				+ "}";
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -1021,20 +1043,31 @@ public class SKOS extends STServiceAdapter {
 		}
 		
 		query = 
-				"DELETE {																\n"
-				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n"
+				+ "DELETE {																\n"
+				+ "	GRAPH ?g {															\n"
 				+ "		?s1 ?p1 ?concept .												\n"
 				+ "		?concept ?p2 ?o2 .												\n"
+				+ "		?xlabel ?prop ?value .											\n"
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
-				+ "	BIND(URI('" + concept.stringValue() + "') AS ?concept)				\n"
-				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
+				//+ "	BIND(URI('" + concept.stringValue() + "') AS ?concept)			\n"
+				+ "	GRAPH ?g {															\n"
 				+ "		{ ?s1 ?p1 ?concept . }											\n"
 				+ "		UNION															\n"
 				+ "		{ ?concept ?p2 ?o2 . }											\n"
+				+ "		UNION															\n"
+				+ "		{ "
+				+ "			?concept skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?xlabel .	\n"
+				+ "			?xlabel ?prop ?value . 										\n"	
+				+ "		}																\n"
 				+ "	}																	\n"
 				+ "}";
-		repoConnection.prepareUpdate(query).execute();;
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("g", getWorkingGraph());
+		update.setBinding("concept", concept);
+		
+		update.execute();
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
