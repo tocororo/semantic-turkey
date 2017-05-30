@@ -55,7 +55,6 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
@@ -185,7 +184,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private URIGenerator uriGenerator;
 	private RenderingEngine renderingEngine;
 
-	private MODELTYPE primordialOntModel;
 	private final ThreadLocal<MODELTYPE> modelHolder;
 	private RDF4JRepositoryTransactionManager repositoryTransactionManager;
 	protected RepositoryConfig coreRepoConfig;
@@ -415,21 +413,17 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			}
 		} finally {
 			try {
-				getPrimordialOntModel().close();
+				repositoryManager.shutDown();
 			} finally {
-				try {
-					repositoryManager.shutDown();
-				} finally {
-					// try {
-					// if (newOntManager != null) {
-					// newOntManager.getRepository().shutDown();
-					// }
-					// } finally {
-					// if (supportOntManager != null) {
-					// supportOntManager.getRepository().shutDown();
-					// }
-					// }
-				}
+				// try {
+				// if (newOntManager != null) {
+				// newOntManager.getRepository().shutDown();
+				// }
+				// } finally {
+				// if (supportOntManager != null) {
+				// supportOntManager.getRepository().shutDown();
+				// }
+				// }
 			}
 		}
 	}
@@ -694,10 +688,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		}
 	}
 
-	public MODELTYPE getPrimordialOntModel() {
-		return primordialOntModel;
-	}
-
 	public RDFModel unbindModelFromThread() throws ModelUpdateException {
 		RDFModel oldModel = modelHolder.get();
 		modelHolder.remove();
@@ -720,18 +710,18 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			throw new IllegalStateException("Model already bound to thread");
 		}
 		
-		MODELTYPE forkedModel;
+		MODELTYPE threadBoundModel;
 
 		try {
 			String modelType = getModelType().getName();
 			if (OWLModel.class.getName().equals(modelType)) {
-				forkedModel = (MODELTYPE) new OWLModelRDF4JImpl(
+				threadBoundModel = (MODELTYPE) new OWLModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			} else if (SKOSModel.class.getName().equals(modelType)) {
-				forkedModel = (MODELTYPE) new SKOSModelRDF4JImpl(
+				threadBoundModel = (MODELTYPE) new SKOSModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			} else if (SKOSXLModel.class.getName().equals(modelType)) {
-				forkedModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
+				threadBoundModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			} else {
 				throw new ModelCreationException("Unsupport model type: " + modelType);
@@ -740,8 +730,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			throw new ModelCreationException(e);
 		}
 		
-		modelHolder.set(forkedModel);
-		logger.debug("Fork model {} producing new model {}", getPrimordialOntModel(), forkedModel);
+		modelHolder.set(threadBoundModel);
 	}
 
 	@Deprecated
