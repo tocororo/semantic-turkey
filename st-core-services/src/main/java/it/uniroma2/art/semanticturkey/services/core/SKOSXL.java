@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,9 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -42,6 +47,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -65,6 +71,10 @@ import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 public class SKOSXL extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(SKOSXL.class);
+	
+	protected static enum XLabelCreationMode {
+		bnode, uri
+	};
 	
 	@Autowired
 	private CustomFormManager cfManager;
@@ -504,6 +514,358 @@ public class SKOSXL extends STServiceAdapter {
 		}
 
 		return generateIRI(URIGenerator.Roles.xLabel, args);
+	}
+	
+	
+	@STServiceOperation
+	@Read
+	// TODO @PreAuthorize
+	public Collection<AnnotatedValue<Resource>> getPrefLabel(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
+		Collection<AnnotatedValue<Resource>> resultsList = new ArrayList<>();
+		
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = "SELECT ?prefLabel ?label" +
+				"\nWHERE{" + 
+				"?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?prefLabel ." +
+				"?prefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?label ." +
+				"\n}";
+		// @formatter:on
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		tupleQuery.setBinding("concept", concept);
+		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
+			BindingSet bindingSet = queryResult.next();
+			Resource prefLabel = (Resource) bindingSet.getBinding("prefLabel").getValue();
+			Literal label = (Literal) bindingSet.getBinding("label").getValue();
+			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
+				annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+				if(label.getLanguage().isPresent()){
+					annotatedValue.setAttribute("lang", label.getLanguage().get());
+				}
+				annotatedValue.setAttribute("show", label.getLabel());
+				resultsList.add(annotatedValue);
+			}
+		}
+		return resultsList;
+	}
+	
+	@STServiceOperation
+	@Read
+	// TODO @PreAuthorize
+	public Collection<AnnotatedValue<Resource>> getAltXLabels(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
+		Collection<AnnotatedValue<Resource>> resultsList = new ArrayList<>();
+		
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = "SELECT ?prefLabel ?label" +
+				"\nWHERE{" + 
+				"?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" ?prefLabel ." +
+				"?prefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?label ." +
+				"\n}";
+		// @formatter:on
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		tupleQuery.setBinding("concept", concept);
+		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
+			BindingSet bindingSet = queryResult.next();
+			Resource prefLabel = (Resource) bindingSet.getBinding("prefLabel").getValue();
+			Literal label = (Literal) bindingSet.getBinding("label").getValue();
+			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
+				annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+				if(label.getLanguage().isPresent()){
+					annotatedValue.setAttribute("lang", label.getLanguage().get());
+				}
+				annotatedValue.setAttribute("show", label.getLabel());
+				resultsList.add(annotatedValue);
+			}
+		}
+		return resultsList;
+	}
+	
+	@STServiceOperation
+	@Read
+	// TODO @PreAuthorize
+	public Collection<AnnotatedValue<Resource>> getHiddenXLabels(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
+		Collection<AnnotatedValue<Resource>> resultsList = new ArrayList<>();
+		
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = "SELECT ?prefLabel ?label" +
+				"\nWHERE{" + 
+				"?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL)+" ?prefLabel ." +
+				"?prefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?label ." +
+				"\n}";
+		// @formatter:on
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		tupleQuery.setBinding("concept", concept);
+		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
+			BindingSet bindingSet = queryResult.next();
+			Resource prefLabel = (Resource) bindingSet.getBinding("prefLabel").getValue();
+			Literal label = (Literal) bindingSet.getBinding("label").getValue();
+			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
+				annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+				if(label.getLanguage().isPresent()){
+					annotatedValue.setAttribute("lang", label.getLanguage().get());
+				}
+				annotatedValue.setAttribute("show", label.getLabel());
+				resultsList.add(annotatedValue);
+			}
+		}
+		return resultsList;
+	}
+	
+	/**
+	 * this service adds an alternative label to a concept 
+	 * 
+	 * 
+	 * @param concept
+	 * @param literal
+	 * @param mode
+	 *            bnode or uri: if uri a URI generator is used to create the URI for the xlabel
+	 * @return
+	 * @throws URIGenerationException 
+	 */
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void addAltLabel(@LocallyDefined @Subject IRI concept, Literal literal, XLabelCreationMode mode) 
+			throws URIGenerationException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		Resource xlabel;
+		if (mode == XLabelCreationMode.bnode) {
+			xlabel = repoConnection.getValueFactory().createBNode();
+		} else{
+			xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL);
+		}
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, xlabel));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
+				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	/**
+	 * this service adds an hidden label to a concept 
+	 * 
+	 * 
+	 * @param concept
+	 * @param literal
+	 * @param mode
+	 *            bnode or uri: if uri a URI generator is used to create the URI for the xlabel
+	 * @return
+	 * @throws URIGenerationException 
+	 */
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void addHiddenLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal, 
+			XLabelCreationMode mode) throws URIGenerationException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		
+		Resource xlabel;
+		if (mode == XLabelCreationMode.bnode) {
+			xlabel = repoConnection.getValueFactory().createBNode();
+		} else{
+			xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL);
+		}
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL, xlabel));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
+				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void prefToAtlLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xlabel));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+				org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, xlabel));
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal,
+			XLabelCreationMode mode) throws URIGenerationException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		
+		String lang = literal.getLanguage().get();
+		
+		//check if there is already a prefLabel for the given language (take it form the input literal)
+		// @formatter:off
+		String query = "select ?oldPrefLabel " +
+					"\nWHERE{" +
+					"\n?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?oldPrefLabel ."+
+					"\n?oldPrefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?oldLabel ."+
+					"\nFILTER{lang(?oldLabel) = \""+lang+"\"}"+
+					"\n}";
+		// @formatter:on
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		tupleQuery.setBinding("concept", concept);
+		try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
+			if(tupleQueryResult.hasNext()){
+				//if there is already a prefLabel, change it to altLabel
+				Resource oldPrefLabel = (Resource) tupleQueryResult.next().getBinding("oldPrefLabel");
+				modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, oldPrefLabel));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, oldPrefLabel));
+			}
+			
+			Resource xlabel;
+			if (mode == XLabelCreationMode.bnode) {
+				xlabel = repoConnection.getValueFactory().createBNode();
+			} else{
+				xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
+			}
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xlabel));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
+		}
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void removePrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = "DELETE {" +
+				"\nGRAPH ?g {?xlabel ?p1 ?o1 . }"+
+				"\nGRAPH ?g {?s2 ?p2 ?xlabel . }"+
+				"\n}" + 
+				"\nWHERE{" +
+				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?xlabel .}}" +
+				
+				"{GRAPH ?g {?xlabel ?p1 ?o1 .}}" +
+				"\nUNION" +
+				"{GRAPH ?g {?s2 ?p2 ?xlabel  .}}" +
+				
+				"\n}";
+		// @formatter:on
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("concept", concept);
+		update.setBinding("xlabel", xlabel);
+		update.setBinding("g", getWorkingGraph());
+		update.execute();
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void removeAltLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = "DELETE {" +
+				"\nGRAPH ?g {?xlabel ?p1 ?o1 . }"+
+				"\nGRAPH ?g {?s2 ?p2 ?xlabel . }"+
+				"\n}" + 
+				"\nWHERE{" +
+				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" ?xlabel .}}" +
+				
+				"{GRAPH ?g {?xlabel ?p1 ?o1 .}}" +
+				"\nUNION" +
+				"{GRAPH ?g {?s2 ?p2 ?xlabel  .}}" +
+				
+				"\n}";
+		// @formatter:on
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("concept", concept);
+		update.setBinding("xlabel", xlabel);
+		update.setBinding("g", getWorkingGraph());
+		update.execute();
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void removeHiddenLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = "DELETE {" +
+				"\nGRAPH ?g {?xlabel ?p1 ?o1 . }"+
+				"\nGRAPH ?g {?s2 ?p2 ?xlabel . }"+
+				"\n}" + 
+				"\nWHERE{" +
+				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL)+" ?xlabel .}}" +
+				
+				"{GRAPH ?g {?xlabel ?p1 ?o1 .}}" +
+				"\nUNION" +
+				"{GRAPH ?g {?s2 ?p2 ?xlabel  .}}" +
+				
+				"\n}";
+		// @formatter:on
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("concept", concept);
+		update.setBinding("xlabel", xlabel);
+		update.setBinding("?g", getWorkingGraph());
+		update.execute();
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	// TODO @PreAuthorize
+	public void changeLabelInfo(@LocallyDefined @Subject Resource xlabel, @LanguageTaggedString Literal literal){
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		// @formatter:off
+		String query = 
+				"DELETE {"+
+				"\nGRAPH ?g {?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?oldLiteral .}" +
+				"\n}"+
+						
+				"INSERT {"+
+				"\nGRAPH ?g {?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+NTriplesUtil.toNTriplesString(literal)+" .}" +
+				"\n}"+
+				
+				"\nWHERE{"+
+				"?s ?p ?xlabel ." +
+				"\nOPTIONAL{" +
+				"\nGRAPH ?g {?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?oldLiteral .}" +
+				"\n}" +
+				"\n}";
+		// @formatter:on
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("?g", getWorkingGraph());
+		update.setBinding("xlabel", xlabel);
+		update.execute();
+		
 	}
 	
 	/**
