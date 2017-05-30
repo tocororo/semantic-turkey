@@ -633,7 +633,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void addAltLabel(@LocallyDefined @Subject IRI concept, Literal literal, XLabelCreationMode mode) 
@@ -667,7 +667,7 @@ public class SKOSXL extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void addHiddenLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal, 
@@ -690,7 +690,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void prefToAtlLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
@@ -708,7 +708,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal,
@@ -754,7 +754,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void removePrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
@@ -782,7 +782,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void removeAltLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
@@ -810,7 +810,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void removeHiddenLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
@@ -838,7 +838,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
 	public void changeLabelInfo(@LocallyDefined @Subject Resource xlabel, @LanguageTaggedString Literal literal){
