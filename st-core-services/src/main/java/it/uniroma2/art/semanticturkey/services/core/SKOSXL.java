@@ -555,7 +555,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	// TODO @PreAuthorize
-	public Collection<AnnotatedValue<Resource>> getAltXLabels(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
+	public Collection<AnnotatedValue<Resource>> getAltLabels(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
 		Collection<AnnotatedValue<Resource>> resultsList = new ArrayList<>();
 		
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -590,7 +590,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	// TODO @PreAuthorize
-	public Collection<AnnotatedValue<Resource>> getHiddenXLabels(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
+	public Collection<AnnotatedValue<Resource>> getHiddenLabels(@LocallyDefined IRI concept, @Optional(defaultValue="*") String lang){
 		Collection<AnnotatedValue<Resource>> resultsList = new ArrayList<>();
 		
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -650,6 +650,8 @@ public class SKOSXL extends STServiceAdapter {
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, xlabel));
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
+				RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -683,6 +685,8 @@ public class SKOSXL extends STServiceAdapter {
 		}
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL, xlabel));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
+				RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
 		
@@ -725,7 +729,7 @@ public class SKOSXL extends STServiceAdapter {
 					"\nWHERE{" +
 					"\n?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?oldPrefLabel ."+
 					"\n?oldPrefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?oldLabel ."+
-					"\nFILTER{lang(?oldLabel) = \""+lang+"\"}"+
+					"\nFILTER(lang(?oldLabel) = \""+lang+"\")"+
 					"\n}";
 		// @formatter:on
 		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
@@ -734,7 +738,7 @@ public class SKOSXL extends STServiceAdapter {
 		try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
 			if(tupleQueryResult.hasNext()){
 				//if there is already a prefLabel, change it to altLabel
-				Resource oldPrefLabel = (Resource) tupleQueryResult.next().getBinding("oldPrefLabel");
+				Resource oldPrefLabel = (Resource) tupleQueryResult.next().getValue("oldPrefLabel");
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, oldPrefLabel));
 				modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, oldPrefLabel));
 			}
@@ -746,6 +750,7 @@ public class SKOSXL extends STServiceAdapter {
 				xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
 			}
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xlabel));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
 		}
 		
@@ -766,7 +771,7 @@ public class SKOSXL extends STServiceAdapter {
 				"\nGRAPH ?g {?s2 ?p2 ?xlabel . }"+
 				"\n}" + 
 				"\nWHERE{" +
-				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?xlabel .}}" +
+				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?xlabel .}" +
 				
 				"{GRAPH ?g {?xlabel ?p1 ?o1 .}}" +
 				"\nUNION" +
@@ -794,7 +799,7 @@ public class SKOSXL extends STServiceAdapter {
 				"\nGRAPH ?g {?s2 ?p2 ?xlabel . }"+
 				"\n}" + 
 				"\nWHERE{" +
-				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" ?xlabel .}}" +
+				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" ?xlabel .}" +
 				
 				"{GRAPH ?g {?xlabel ?p1 ?o1 .}}" +
 				"\nUNION" +
@@ -822,7 +827,7 @@ public class SKOSXL extends STServiceAdapter {
 				"\nGRAPH ?g {?s2 ?p2 ?xlabel . }"+
 				"\n}" + 
 				"\nWHERE{" +
-				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL)+" ?xlabel .}}" +
+				"GRAPH ?g {?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL)+" ?xlabel .}" +
 				
 				"{GRAPH ?g {?xlabel ?p1 ?o1 .}}" +
 				"\nUNION" +
