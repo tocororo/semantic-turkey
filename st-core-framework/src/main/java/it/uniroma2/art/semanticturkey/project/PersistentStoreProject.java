@@ -29,12 +29,16 @@ package it.uniroma2.art.semanticturkey.project;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
@@ -66,6 +70,8 @@ public class PersistentStoreProject extends Project {
 
 			ValueFactory vf = conn.getValueFactory();
 
+			Set<Resource> contexts = QueryResults.asSet(conn.getContextIDs());
+
 			IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
 			IRI rdfsBaseURI = vf.createIRI("http://www.w3.org/2000/01/rdf-schema");
 			IRI owlBaseURI = vf.createIRI("http://www.w3.org/2002/07/owl");
@@ -73,19 +79,20 @@ public class PersistentStoreProject extends Project {
 			IRI skosxlBaseURI = vf.createIRI("http://www.w3.org/2008/05/skos-xl");
 
 			try {
-				if (!conn.hasStatement(null, null, null, false, rdfBaseURI)) {
+				if (!contexts.contains(rdfBaseURI)) {
+					
 					logger.debug("Loading RDF vocabulary...");
 					conn.add(OntologyManager.class.getResource("rdf.rdf"), rdfBaseURI.stringValue(),
 							RDFFormat.RDFXML, rdfBaseURI);
 				}
 
-				if (!conn.hasStatement(null, null, null, false, rdfsBaseURI)) {
+				if (!contexts.contains(rdfsBaseURI)) {
 					logger.debug("Loading RDFS vocabulary...");
 					conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
 							RDFFormat.RDFXML, rdfsBaseURI);
 				}
 
-				if (!conn.hasStatement(null, null, null, false, owlBaseURI)) {
+				if (!contexts.contains(owlBaseURI)) {
 					logger.debug("Loading OWL vocabulary...");
 					conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
 							RDFFormat.RDFXML, owlBaseURI);
@@ -96,13 +103,13 @@ public class PersistentStoreProject extends Project {
 						|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
 						|| Objects.equals(getModel(), SKOS_MODEL);
 
-				if (isSKOS && !conn.hasStatement(null, null, null, false, skosBaseURI)) {
+				if (isSKOS && !contexts.contains(skosBaseURI)) {
 					logger.debug("Loading SKOS vocabulary...");
 					conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
 							RDFFormat.RDFXML, skosBaseURI);
 				}
 
-				if (isSKOSXL && !conn.hasStatement(null, null, null, false, skosxlBaseURI)) {
+				if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
 					logger.debug("Loading SKOS-XL vocabulary...");
 					conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
 							RDFFormat.RDFXML, skosxlBaseURI);

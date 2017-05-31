@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -54,7 +53,7 @@ public class Projects2 extends STServiceAdapter {
 			String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
-			@Optional PluginSpecification renderingEngineSpecification) throws ProjectInconsistentException,
+			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationProperty, @Optional IRI creationDateProperty, @Optional IRI modificationDateProperty) throws ProjectInconsistentException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
@@ -77,7 +76,7 @@ public class Projects2 extends STServiceAdapter {
 		Project proj = ProjectManager.createProject(consumer, projectName, model,
 				lexicalizationModel, baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
-				uriGeneratorSpecification, renderingEngineSpecification);
+				uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty, modificationDateProperty);
 
 		STUser loggedUser = UsersManager.getLoggedUser();
 		// TODO is correct to assign administrator role to the user that creates project?

@@ -1198,8 +1198,8 @@ public class ProjectManager {
 		 * @param accessLevel
 		 * @param lockLevel
 		 */
-		public void addProject(Project project, ProjectConsumer consumer,
-				ProjectACL.AccessLevel accessLevel, ProjectACL.LockLevel lockLevel) {
+		public void addProject(Project project, ProjectConsumer consumer, ProjectACL.AccessLevel accessLevel,
+				ProjectACL.LockLevel lockLevel) {
 			// TODO foresee a check for existing project (it should not exist, so in case throw an exception)
 			projects.put(project.getName(), project);
 			Map<ProjectConsumer, ProjectACL.AccessLevel> accessStatusMap = new HashMap<ProjectConsumer, ProjectACL.AccessLevel>();
@@ -1223,8 +1223,8 @@ public class ProjectManager {
 		 * @param accessLevel
 		 * @param lockLevel
 		 */
-		public void addConsumer(Project project, ProjectConsumer consumer,
-				ProjectACL.AccessLevel accessLevel, ProjectACL.LockLevel lockLevel) {
+		public void addConsumer(Project project, ProjectConsumer consumer, ProjectACL.AccessLevel accessLevel,
+				ProjectACL.LockLevel lockLevel) {
 			if (!projects.containsKey(project.getName()))
 				throw new IllegalProjectStatusException("project " + project
 						+ " does not seem to be open, thus a new consumer cannot be added to it");
@@ -1381,17 +1381,17 @@ public class ProjectManager {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 
-	public static Project createProject(ProjectConsumer consumer, String projectName,
-			IRI model, IRI lexicalizationModel, String baseURI, boolean historyEnabled,
-			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
+	public static Project createProject(ProjectConsumer consumer, String projectName, IRI model,
+			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
+			RepositoryAccess repositoryAccess, String coreRepoID,
 			PluginSpecification coreRepoSailConfigurerSpecification, String supportRepoID,
 			PluginSpecification supportRepoSailConfigurerSpecification,
-			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, BadConfigurationException, PUBindingException,
-			RBACException {
+			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
+			IRI creationDateProperty, IRI modificationDateProperty) throws InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
+			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
+			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			BadConfigurationException, PUBindingException, RBACException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1582,27 +1582,27 @@ public class ProjectManager {
 					baseURI, defaultNamespace, historyEnabled, validationEnabled,
 					RepositoryLocation.fromRepositoryAccess(repositoryAccess), coreRepoID,
 					coreRepositoryConfig, supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
-					renderingEngineSpecification);
+					renderingEngineSpecification, creationDateProperty, modificationDateProperty);
 
 		} catch (Exception e) {
 			Utilities.deleteDir(projectDir); // if something fails, deletes everything
 			logger.debug("directory: " + projectDir + " deleted due to project creation fail");
 			throw e;
 		}
-		Project project = accessProject(consumer, projectName, AccessLevel.RW,
-				LockLevel.NO);
+		Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 		// TODO this has to be removed, once all references to currentProject have been removed from ST
 		// (filters etc..)
 		// setCurrentProject(project);
 		return project;
 	}
 
-	private static void prepareProjectFiles(ProjectConsumer consumer,
-			String projectName, IRI model, IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
+	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, IRI model,
+			IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
 			RepositoryLocation defaultRepositoryLocation, String coreRepoID, RepositoryConfig coreRepoConfig,
 			String supportRepoID, RepositoryConfig supportRepoConfig,
-			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification)
+			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
+			IRI creationDateProperty, IRI modificationDateProperty)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1630,13 +1630,24 @@ public class ProjectManager {
 			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
 			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
 			out.write(Project.MODEL_PROP + "=" + escape(model.stringValue()) + "\n");
-			out.write(Project.LEXICALIZATION_MODEL_PROP + "=" + escape(lexicalizationModel.stringValue()) + "\n");
+			out.write(Project.LEXICALIZATION_MODEL_PROP + "=" + escape(lexicalizationModel.stringValue())
+					+ "\n");
 			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
 			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
 			out.write(ProjectACL.ACL + "="
 					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW) + "\n");
 			out.write(Project.DEFAULT_REPOSITORY_LOCATION_PROP + "="
 					+ escape(defaultRepositoryLocation.toString()));
+
+			if (creationDateProperty != null) {
+				out.write(Project.CREATION_DATE_PROP + "=" + escape(creationDateProperty.stringValue()));
+			}
+
+			if (modificationDateProperty != null) {
+				out.write(Project.MODIFICATION_DATE_PROP + "="
+						+ escape(modificationDateProperty.stringValue()));
+			}
+
 			out.close();
 
 			logger.debug("project creation: all project properties have been stored");
