@@ -716,6 +716,44 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
+	public void altToPrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		//check if there is already a prefLabel for the given language (take it from the input xlabel)
+		// @formatter:off
+		String query = "select ?oldPrefLabel " +
+					"\nWHERE{" +
+					"\n?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+"?xlabel ."+
+					"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?label ."+
+					"\nBIND(lang(?label) AS ?lang)"+
+					"\n?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" ?oldPrefLabel ."+
+					"\n?oldPrefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?oldLabel ."+
+					"\nFILTER(lang(oldLabel) = ?lang)"+
+					"\n}";
+		// @formatter:on
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		tupleQuery.setBinding("concept", concept);
+		tupleQuery.setBinding("xlabel", xlabel);
+		try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
+			if(tupleQueryResult.hasNext()){
+				//if there is already a prefLabel, change it to altLabel
+				Resource oldPrefLabel = (Resource) tupleQueryResult.next().getValue("oldPrefLabel");
+				modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, oldPrefLabel));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, oldPrefLabel));
+			}
+			modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, xlabel));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xlabel));
+		}
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	// TODO @PreAuthorize
 	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal,
 			XLabelCreationMode mode) throws URIGenerationException{
 		RepositoryConnection repoConnection = getManagedConnection();
