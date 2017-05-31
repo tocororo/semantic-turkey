@@ -762,7 +762,7 @@ public class SKOSXL extends STServiceAdapter {
 		
 		String lang = literal.getLanguage().get();
 		
-		//check if there is already a prefLabel for the given language (take it form the input literal)
+		//check if there is already a prefLabel for the given language (take it from the input literal)
 		// @formatter:off
 		String query = "select ?oldPrefLabel " +
 					"\nWHERE{" +

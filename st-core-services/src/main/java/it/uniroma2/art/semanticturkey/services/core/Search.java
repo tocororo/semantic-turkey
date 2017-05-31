@@ -506,19 +506,20 @@ public class Search extends STServiceAdapter {
 		if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
 			superResourceVar = "broader";
 			superSuperResourceVar = "broaderOfBroader";
+			String inSchemeOrTopConcept = "<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">";
 			//@formatter:off
 			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
 					"\nWHERE{" +
 					"\n{" + 
 					"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )+ ?broader .";
 			if (schemesIRI != null && schemesIRI.size()==1) {
-				query += "\n?broader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemesIRI.get(0).stringValue() + "> ."+
+				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
 						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> ." +
 						"\n}";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
-				query += "\n?broader <" + SKOS.IN_SCHEME.stringValue() + "> ?scheme1 ."+
+				query += "\n?broader " + inSchemeOrTopConcept + " ?scheme1 ."+
 						filterWithOrValues(schemesIRI, "?scheme1") +
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
@@ -529,9 +530,9 @@ public class Search extends STServiceAdapter {
 			query += "\nOPTIONAL{" +
 					"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader .";
 			if (schemesIRI != null && schemesIRI.size()==1) {
-				query += "\n?broaderOfBroader <" + SKOS.IN_SCHEME.stringValue() + "> <" + schemesIRI.get(0).stringValue() + "> . ";
+				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
-				query += "\n?broaderOfBroader <" + SKOS.IN_SCHEME.stringValue() + "> ?scheme3 . "+
+				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " ?scheme3 . "+
 				filterWithOrValues(schemesIRI, "?scheme3");
 			}
 			query +="\n}" + 
