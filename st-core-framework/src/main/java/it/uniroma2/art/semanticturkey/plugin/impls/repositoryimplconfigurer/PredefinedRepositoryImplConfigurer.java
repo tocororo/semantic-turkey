@@ -8,11 +8,10 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
-import org.eclipse.rdf4j.repository.config.AbstractRepositoryImplConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositoryFactory;
 import org.eclipse.rdf4j.sail.Sail;
-import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.eclipse.rdf4j.sail.inferencer.fc.config.DirectTypeHierarchyInferencerConfig;
 import org.eclipse.rdf4j.sail.inferencer.fc.config.ForwardChainingRDFSInferencerConfig;
@@ -120,19 +119,30 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 
 			graphdbConfig.parse(model, implNode);
 
+			SailImplConfig sailImplConfig = graphdbConfig;
+			
+			boolean decorationApplied = false;
+			if (backendDecorator != null) {
+				SailImplConfig sailImplConfig2 = backendDecorator.apply(sailImplConfig);
+				
+				if (sailImplConfig2 != null && sailImplConfig2 != sailImplConfig) {
+					decorationApplied = true;
+				}
+				
+				sailImplConfig = sailImplConfig2;
+			}
+
 			String gdbRepoType;
 			if (config instanceof GraphDBFreeConfigurerConfiguration) {
 				graphdbConfig.setType("graphdb:FreeSail");
-				gdbRepoType = "graphdb:FreeSailRepository";
+				if (decorationApplied) {
+					gdbRepoType = SailRepositoryFactory.REPOSITORY_TYPE;
+				} else {
+					gdbRepoType = "graphdb:FreeSailRepository";
+				}
 			} else {
 				throw new IllegalArgumentException(
 						"Could not recognize GraphDB Sail Type from config object: " + config.getClass());
-			}
-			
-			SailImplConfig sailImplConfig = graphdbConfig;
-			
-			if (backendDecorator != null) {
-				sailImplConfig = backendDecorator.apply(sailImplConfig);
 			}
 
 			
