@@ -1000,7 +1000,8 @@ public class SKOS extends STServiceAdapter {
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?scheme .												\n"
 				+ "		?scheme ?p2 ?o2 .												\n"
-				+ "		?xlabel ?prop ?value .											\n"
+				+ "		?o2 ?p3 ?o3														\n"	
+				+ "		?s4 ?p4 ?o2														\n"	
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
 				+ "	BIND(URI('" + scheme.stringValue() + "') AS ?scheme)				\n"
@@ -1009,10 +1010,17 @@ public class SKOS extends STServiceAdapter {
 				+ "		UNION															\n"
 				+ "		{ ?scheme ?p2 ?o2 . }											\n"
 				+ "		UNION															\n"
+				
 				+ "		{ "
-				+ "			?scheme skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?xlabel .	\n"
-				+ "			?xlabel ?prop ?value . 										\n"	
+				+ "			?scheme ?p2 ?o2 . 											\n"
+				+ "			FILTER(?p2 = 												\n"
+				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL) + " || " 
+				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL) + " || "
+				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL) + ")"
+				+ "			?o2 ?p3 ?o3 .												\n"
+				+ "			?s4 ?p4 ?o2 .												\n"
 				+ "		}																\n"
+				
 				+ "	}																	\n"
 				+ "}";
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -1052,6 +1060,11 @@ public class SKOS extends STServiceAdapter {
 				+ "	GRAPH ?g {															\n"
 				+ "		?s1 ?p1 ?concept .												\n"
 				+ "		?concept ?p2 ?o2 .												\n"
+				+ "		?o2 ?p3 ?o3														\n"	
+				+ "		?s4 ?p4 ?o2														\n"	
+				
+				
+				
 				+ "		?xlabel ?prop ?value .											\n"
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
@@ -1061,10 +1074,17 @@ public class SKOS extends STServiceAdapter {
 				+ "		UNION															\n"
 				+ "		{ ?concept ?p2 ?o2 . }											\n"
 				+ "		UNION															\n"
+				
 				+ "		{ "
-				+ "			?concept skosxl:prefLabel|skosxl:altLabel|skosxl:hiddenLabel ?xlabel .	\n"
-				+ "			?xlabel ?prop ?value . 										\n"	
+				+ "			?concept ?p2 ?o2 . 											\n"
+				+ "			FILTER(?p2 = 												\n"
+				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL) + " || " 
+				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL) + " || "
+				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL) + ")"
+				+ "			?o2 ?p3 ?o3 .												\n"
+				+ "			?s4 ?p4 ?o2 .												\n"
 				+ "		}																\n"
+				
 				+ "	}																	\n"
 				+ "}";
 		Update update = repoConnection.prepareUpdate(query);
