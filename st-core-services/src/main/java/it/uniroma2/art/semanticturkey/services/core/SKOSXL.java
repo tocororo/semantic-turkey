@@ -65,6 +65,7 @@ import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
  * Whould be better move this method in a STSKOSServiceAdapter (that extends STServiceAdapter)? 
  * 
  * @author Tiziano
+ * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
  *
  */
 @STService

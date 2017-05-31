@@ -657,26 +657,19 @@ public class SKOS extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
 		//first check if the orderedCollection as any element (check SKOS.MEMBERLIST)
-		
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
-		if(list.equals(RDF.NIL)){
-			//the ordered collection is empty, so create a list, having just one element, the input one 
-			BNode newBnode = createElementInList(element, RDF.NIL, repoConnection, modelAdditions);
-			modelRemovals.add(repoConnection.getValueFactory().createStatement(collection, 
-					org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, RDF.NIL));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(collection, 
-					org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, newBnode));
-		}
-		else{
+		if(!list.equals(RDF.NIL)){
 			boolean found = hasElementInList(list, element, repoConnection);
 			if(found){
 				throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
 						+ collection.stringValue());
 			}
-			addInPositionToSKOSOrderedCollection(list, element, repoConnection, 1, modelAdditions, modelRemovals);
 		}
+		//if the list was empty, then list=RDF.NIL otherwise list is the first element, it does not matter
+		// for the rest of the code
+		addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
+		
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
@@ -691,6 +684,10 @@ public class SKOS extends STServiceAdapter {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
+		if(index<1){
+			throw new IllegalArgumentException("The postion should be a positive value bigger than 0");
+		}
+		
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
 		if(list.equals(RDF.NIL)){
 			//the collection is empty, so if the index is not 1, then the operation cannot be completed
@@ -698,18 +695,16 @@ public class SKOS extends STServiceAdapter {
 				throw new IllegalArgumentException("The collection is empty, so the element can be added just"
 						+ " in position 1");
 			}
-			addInPositionToSKOSOrderedCollection(list, element, repoConnection, 1, modelAdditions, modelRemovals);
+			addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
 		}
-		else{
-			if(index<1){
-				throw new IllegalArgumentException("The postion should be a positive value bigger than 0");
-			}
-			
-			boolean found = hasElementInList(list, element, repoConnection);
-			if(found){
-				throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
-						+ collection.stringValue());
-			}
+		boolean found = hasElementInList(list, element, repoConnection);
+		if(found){
+			throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
+					+ collection.stringValue());
+		}
+		if(index==1){
+			addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
+		} else{
 			addInPositionToSKOSOrderedCollection(list, element, repoConnection, index, modelAdditions, modelRemovals);
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -765,7 +760,7 @@ public class SKOS extends STServiceAdapter {
 		Resource[] graphs = getUserNamedGraphs();
 		if(repoConnection.hasStatement(list, RDF.FIRST, element, false, graphs)){
 			return true;
-		} else if(repoConnection.hasStatement(list, RDF.FIRST, RDF.NIL, false, graphs)){
+		} else if(repoConnection.hasStatement(list, RDF.REST, RDF.NIL, false, graphs)){
 			return false;
 		} else{
 			try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(list, RDF.REST, null, graphs)){
@@ -774,27 +769,36 @@ public class SKOS extends STServiceAdapter {
 		}
 	}
 	
+	protected void addFirstToOrderedCollection(Resource element, Resource collection, 
+			RepositoryConnection repoConnection, Model modelAdditions, Model modelRemovals){
+		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
+		BNode newBnode = createElementInList(element, list, repoConnection, modelAdditions);
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(collection, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, list));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(collection, 
+				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, newBnode));
+	}
+	
 	protected void addInPositionToSKOSOrderedCollection(Resource list, Resource element, 
 			RepositoryConnection repoConnection, int pos, Model modelAdditions, Model modelRemovals) {
 		Resource []graphs = getUserNamedGraphs();
 		
-		Resource oldNext;
+		Resource next;
 		try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(list, RDF.REST, null, false, graphs)){
-			oldNext = (Resource)repositoryResult.next().getObject();
+			next = (Resource)repositoryResult.next().getObject();
 		}
-		
-		int currentPos = pos-1;
-		if(currentPos == 0){
+		--pos;
+		if(pos == 1){
 			// add the element in this position
-			modelRemovals.add(repoConnection.getValueFactory().createStatement(list, RDF.REST, oldNext));
+			modelRemovals.add(repoConnection.getValueFactory().createStatement(list, RDF.REST, next));
 			
-			BNode newBNode = createElementInList(element, oldNext, repoConnection, modelAdditions);
+			BNode newBNode = createElementInList(element, next, repoConnection, modelAdditions);
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(list, RDF.REST, newBNode));
 		} else{
-			if(oldNext.equals(RDF.NIL)){
+			if(next.equals(RDF.NIL)){
 				throw new IllegalArgumentException("the collection does not have enough elements");
 			}
-			addInPositionToSKOSOrderedCollection(oldNext, element, repoConnection, currentPos, modelAdditions, modelRemovals);
+			addInPositionToSKOSOrderedCollection(next, element, repoConnection, pos, modelAdditions, modelRemovals);
 		}
 	}
 	
@@ -818,7 +822,7 @@ public class SKOS extends STServiceAdapter {
 		}
 	}
 	
-	protected Resource getElemPrev(Resource list, Resource element, RepositoryConnection repoConnection){
+	protected Resource getPrevElem(Resource list, Resource element, RepositoryConnection repoConnection){
 		Resource[] graphs = getUserNamedGraphs();
 		try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(list, RDF.REST, null, graphs)){
 			Resource next = (Resource)repositoryResult.next().getObject();
@@ -826,14 +830,14 @@ public class SKOS extends STServiceAdapter {
 				//the element was not found, so return null
 				return null;
 			}
-			try(RepositoryResult<Statement> repositoryResultNext = repoConnection.getStatements(list, 
+			try(RepositoryResult<Statement> repositoryResultNext = repoConnection.getStatements(next, 
 					RDF.FIRST, null, graphs)){
 				if(repositoryResultNext.next().getObject().equals(element)){
 					//element found, so return the list (which is the previous element to the one we were 
 					//looking for)
 					return list;
 				} else{
-					return getElemPrev(next, element, repoConnection);
+					return getPrevElem(next, element, repoConnection);
 				}
 				
 			}
@@ -1436,7 +1440,7 @@ public class SKOS extends STServiceAdapter {
 			throw new DeniedOperationException("collection: " + collection.stringValue() + " is empty");
 		}
 		//check if the desired element is the first one of the list
-		if(repoConnection.hasStatement(collection, RDF.FIRST, element, false, graphs)){
+		if(repoConnection.hasStatement(list, RDF.FIRST, element, false, graphs)){
 			//the element is the first one of the list
 			modelRemovals.add(repoConnection.getValueFactory().createStatement(collection, 
 					org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, list));
@@ -1453,7 +1457,7 @@ public class SKOS extends STServiceAdapter {
 			}
 		} else{
 			// the desired element is not the first one, so search for it
-			Resource prevElem = getElemPrev(list, element, repoConnection);
+			Resource prevElem = getPrevElem(list, element, repoConnection);
 			//prev element is the element before the one we were looking for
 			try(RepositoryResult<Statement>repositoryResult = repoConnection.getStatements(prevElem, RDF.REST, null, false, graphs)){
 				Resource desiredElement = (Resource) repositoryResult.next().getObject();
@@ -1462,14 +1466,12 @@ public class SKOS extends STServiceAdapter {
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElement, RDF.FIRST, element));
 				//get the next element to the one we have just found
 				try(RepositoryResult<Statement>repositoryResult2 = repoConnection.getStatements(desiredElement, RDF.REST, null, false, graphs)){
-					Resource next = (Resource) repositoryResult.next().getObject();
-					modelRemovals.add(repoConnection.getValueFactory().createStatement(prevElem, RDF.REST, next));
-					
+					Resource next = (Resource) repositoryResult2.next().getObject();
+					modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElement, RDF.REST, next));
+					modelAdditions.add(repoConnection.getValueFactory().createStatement(prevElem, RDF.REST, next));
 				}
 			}
-			
 		}
-		
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
