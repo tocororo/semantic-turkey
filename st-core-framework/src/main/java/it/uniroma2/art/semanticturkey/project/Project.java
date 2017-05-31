@@ -35,12 +35,14 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
 import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -64,14 +66,14 @@ import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.SKOSModel;
 import it.uniroma2.art.owlart.models.SKOSXLModel;
-import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
-import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.models.conf.ModelConfiguration;
 import it.uniroma2.art.owlart.rdf4jimpl.models.BaseRDFModelRDF4JImpl;
 import it.uniroma2.art.owlart.rdf4jimpl.models.OWLModelRDF4JImpl;
 import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSModelRDF4JImpl;
 import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSXLModelRDF4JImpl;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
+import it.uniroma2.art.owlart.vocabulary.OWL;
+import it.uniroma2.art.owlart.vocabulary.SKOS;
+import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
@@ -106,6 +108,18 @@ import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
 
+	public static final IRI OWL_MODEL = SimpleValueFactory.getInstance()
+			.createIRI("http://www.w3.org/2002/07/owl");
+	public static final IRI SKOS_MODEL = SimpleValueFactory.getInstance()
+			.createIRI("http://www.w3.org/2004/02/skos/core");
+
+	public static final IRI RDF_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
+			.createIRI("http://www.w3.org/2000/01/rdf-schema");
+	public static final IRI SKOS_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
+			.createIRI("http://www.w3.org/2004/02/skos/core");
+	public static final IRI SKOSXL_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
+			.createIRI("http://www.w3.org/2008/05/skos-xl");
+
 	protected File infoSTPFile;
 	protected File renderingConfigFile;
 	protected File uriGenConfigFile;
@@ -113,7 +127,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	protected OntologyManager newOntManager;
 	protected OntologyManagerImpl supportOntManager;
 
-	Class<? extends ModelConfiguration> modelConfigClass;
+	protected IRI model;
+	protected IRI lexicalizationModel;
 
 	public static final String INFOFILENAME = "project.info";
 
@@ -125,7 +140,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public static final String BASEURI_PROP = "baseURI";
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String PROJECT_TYPE = "ProjectType";
-	public static final String PROJECT_MODEL_TYPE = "ModelType";
+	public static final String MODEL_PROP = "model";
+	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
 
 	public static final String PLUGINS_PROP = "plugins";
 
@@ -167,7 +183,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		reservedProperties.add(BASEURI_PROP);
 		reservedProperties.add(DEF_NS_PROP);
 		reservedProperties.add(PROJECT_TYPE);
-		reservedProperties.add(PROJECT_MODEL_TYPE);
+		reservedProperties.add(MODEL_PROP);
+		reservedProperties.add(LEXICALIZATION_MODEL_PROP);
 		reservedProperties.add(PLUGINS_PROP);
 		reservedProperties.add(HISTORY_ENABLED_PROP);
 		reservedProperties.add(VALIDATION_ENABLED_PROP);
@@ -220,6 +237,14 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			FileInputStream propFileInStream = new FileInputStream(infoSTPFile);
 			stp_properties.load(propFileInStream);
 			propFileInStream.close();
+			
+			model = SimpleValueFactory.getInstance()
+					.createIRI(Objects.requireNonNull(stp_properties.getProperty(MODEL_PROP),
+							"Project property \"" + MODEL_PROP + "\" must not be null"));
+			lexicalizationModel = SimpleValueFactory.getInstance()
+					.createIRI(Objects.requireNonNull(stp_properties.getProperty(LEXICALIZATION_MODEL_PROP),
+							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
+
 			acl = new ProjectACL(this);
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
@@ -231,8 +256,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 
 	void activate() throws ProjectIncompatibleException, ProjectInconsistentException, ModelCreationException,
-			ProjectUpdateException, UnavailableResourceException, UnsupportedModelConfigurationException,
-			UnloadableModelConfigurationException, ProjectAccessException {
+			ProjectUpdateException, UnavailableResourceException, ProjectAccessException {
 		try {
 			repositoryManager = new LocalRepositoryManager(_projectDir);
 			repositoryManager.initialize();
@@ -287,7 +311,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			String renderingEngineConfigType = getProperty(RENDERING_ENGINE_CONFIGURATION_TYPE_PROP);
 
 			if (renderingEngineFactoryID == null) {
-				renderingEngineFactoryID = determineBestRenderingEngine(getModelType());
+				renderingEngineFactoryID = determineBestRenderingEngine(lexicalizationModel);
 			}
 
 			try {
@@ -329,8 +353,6 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			} catch (IllegalStateException e) {
 				// not an RDF4J repostory
 			}
-
-			String modelType = getProperty(PROJECT_MODEL_TYPE);
 
 			if (rdf4jRepo != null) {
 				repositoryTransactionManager = new RDF4JRepositoryTransactionManager(rdf4jRepo);
@@ -396,10 +418,10 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		updateTimeStamp();
 	}
 
-	public static String determineBestRenderingEngine(Class<? extends RDFModel> modelType) {
-		if (modelType == SKOSModel.class) {
+	public static String determineBestRenderingEngine(IRI lexicalizationModel) {
+		if (lexicalizationModel.stringValue().equals("http://www.w3.org/2004/02/skos/core")) {
 			return SKOSRenderingEngineFactory.class.getName();
-		} else if (modelType == SKOSXLModel.class) {
+		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2008/05/skos-xl")) {
 			return SKOSXLRenderingEngineFactory.class.getName();
 		} else {
 			return RDFSRenderingEngineFactory.class.getName();
@@ -446,12 +468,14 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return Long.parseLong(stp_properties.getProperty(TIMESTAMP_PROP));
 	}
 
-	// casting is checked internally
-	@SuppressWarnings("unchecked")
-	public Class<MODELTYPE> getModelType() throws ProjectInconsistentException {
-		return (Class<MODELTYPE>) getClassTypedProperty(Project.PROJECT_MODEL_TYPE, RDFModel.class);
+	public IRI getModel() {
+		return model;
 	}
-
+	
+	public IRI getLexicalizationModel() {
+		return lexicalizationModel;
+	}
+	
 	@SuppressWarnings("unchecked")
 	private <T> Class<? extends T> getClassTypedProperty(String propertyName, Class<T> definingClass)
 			throws ProjectInconsistentException {
@@ -709,27 +733,27 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		if (isModelBoundToThread()) {
 			throw new IllegalStateException("Model already bound to thread");
 		}
-		
+
 		MODELTYPE threadBoundModel;
 
+		String modelType = computeModelConfigType();
+		
 		try {
-			String modelType = getModelType().getName();
-			if (OWLModel.class.getName().equals(modelType)) {
-				threadBoundModel = (MODELTYPE) new OWLModelRDF4JImpl(
-						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
-			} else if (SKOSModel.class.getName().equals(modelType)) {
-				threadBoundModel = (MODELTYPE) new SKOSModelRDF4JImpl(
-						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
-			} else if (SKOSXLModel.class.getName().equals(modelType)) {
+			if (modelType.equals(SKOSXLModel.class.getName())) {
 				threadBoundModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
+			} else if (modelType.equals(SKOSModel.class.getName())) {
+				threadBoundModel = (MODELTYPE) new SKOSModelRDF4JImpl(
+						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			} else {
-				throw new ModelCreationException("Unsupport model type: " + modelType);
+				threadBoundModel = (MODELTYPE) new OWLModelRDF4JImpl(
+						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			}
-		} catch (ProjectInconsistentException | SailException | RepositoryException | VocabularyInitializationException e) {
+		} catch (SailException | RepositoryException
+				| VocabularyInitializationException e) {
 			throw new ModelCreationException(e);
 		}
-		
+
 		modelHolder.set(threadBoundModel);
 	}
 
@@ -911,6 +935,16 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	public RepositoryLocation getDefaultRepositoryLocation() {
 		return defaultRepositoryLocation;
 	}
+
+	public String computeModelConfigType() {
+		if (lexicalizationModel.equals(SKOSXL_LEXICALIZATION_MODEL)) {
+			return SKOSXL.class.getName();
+		} else if (model.equals(SKOS_MODEL) || lexicalizationModel.equals(SKOS_MODEL)) {
+			return SKOS.class.getName();
+		} else {
+			return OWL.class.getName();
+		}
+	}
 }
 
 class ProjectAwareBaseRDFModel extends BaseRDFModelRDF4JImpl {
@@ -926,7 +960,7 @@ class ProjectAwareBaseRDFModel extends BaseRDFModelRDF4JImpl {
 	public BaseRDFModelRDF4JImpl forkModel() throws ModelCreationException {
 		throw new UnsupportedOperationException("This model does not support forking");
 	}
-	
+
 	@Override
 	public void close() throws ModelUpdateException {
 		getRDF4JRepositoryConnection().close(); // Only close the connection (leave the repository open)

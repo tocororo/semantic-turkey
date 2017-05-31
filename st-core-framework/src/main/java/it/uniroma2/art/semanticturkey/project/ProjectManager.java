@@ -50,6 +50,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
@@ -65,7 +66,6 @@ import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
 import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
@@ -686,38 +686,6 @@ public class ProjectManager {
 			InvalidProjectNameException, ProjectInexistentException, ProjectInconsistentException {
 		String propValue = getRequiredProjectProperty(projectName, Project.PROJECT_TYPE);
 		return Enum.valueOf(ProjectType.class, propValue);
-	}
-
-	/**
-	 * gets the model type for the project. It is not applicable for the main project, which is anyway assumed
-	 * to be always a {@link OWLModel}
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws IOException
-	 * @throws ClassNotFoundException
-	 * @throws IllegalClassFormatException
-	 * @throws ProjectInexistentException
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectAccessException
-	 * @throws ProjectInconsistentException
-	 * @throws FileNotFoundException
-	 */
-	// this warning is already checked through the "isAssignableFrom" "if test"
-	public static Class<? extends RDFModel> getProjectModelType(String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ProjectInconsistentException {
-		try {
-			String propValue = getRequiredProjectProperty(projectName, Project.PROJECT_MODEL_TYPE);
-			return deserializeModelType(propValue);
-		} catch (ClassNotFoundException e) {
-			throw new ProjectAccessException("class for model type defined in project: " + projectName
-					+ " is not available among current model classes");
-		} catch (IllegalClassFormatException e) {
-			throw new ProjectAccessException(e);
-		} catch (IOException e) {
-			throw new ProjectAccessException(e);
-		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1414,7 +1382,7 @@ public class ProjectManager {
 	}
 
 	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
+			IRI model, IRI lexicalizationModel, String baseURI, boolean historyEnabled,
 			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
 			PluginSpecification coreRepoSailConfigurerSpecification, String supportRepoID,
 			PluginSpecification supportRepoSailConfigurerSpecification,
@@ -1508,8 +1476,8 @@ public class ProjectManager {
 								changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
 								changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 								if (validationEnabled) {
-									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
-											.createIRI(defaultNamespace + "validation"));
+									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory
+											.getInstance().createIRI(defaultNamespace + "validation"));
 								}
 
 								return changeTrackerSailConfig;
@@ -1610,8 +1578,8 @@ public class ProjectManager {
 				}
 			}
 
-			prepareProjectFiles(consumer, projectName, modelType, projType, projectDir, baseURI,
-					defaultNamespace, historyEnabled, validationEnabled,
+			prepareProjectFiles(consumer, projectName, model, lexicalizationModel, projType, projectDir,
+					baseURI, defaultNamespace, historyEnabled, validationEnabled,
 					RepositoryLocation.fromRepositoryAccess(repositoryAccess), coreRepoID,
 					coreRepositoryConfig, supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
 					renderingEngineSpecification);
@@ -1629,8 +1597,8 @@ public class ProjectManager {
 		return project;
 	}
 
-	private static <MODELTYPE extends RDFModel> void prepareProjectFiles(ProjectConsumer consumer,
-			String projectName, Class<MODELTYPE> modelType, ProjectType type, File projectDir, String baseURI,
+	private static void prepareProjectFiles(ProjectConsumer consumer,
+			String projectName, IRI model, IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
 			RepositoryLocation defaultRepositoryLocation, String coreRepoID, RepositoryConfig coreRepoConfig,
 			String supportRepoID, RepositoryConfig supportRepoConfig,
@@ -1661,7 +1629,8 @@ public class ProjectManager {
 			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
 			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
 			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
-			out.write(Project.PROJECT_MODEL_TYPE + "=" + modelType.getName() + "\n");
+			out.write(Project.MODEL_PROP + "=" + escape(model.stringValue()) + "\n");
+			out.write(Project.LEXICALIZATION_MODEL_PROP + "=" + escape(lexicalizationModel.stringValue()) + "\n");
 			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
 			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
 			out.write(ProjectACL.ACL + "="

@@ -44,6 +44,7 @@ import it.uniroma2.art.semanticturkey.alignment.Cell;
 import it.uniroma2.art.semanticturkey.alignment.InvalidAlignmentRelationException;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -547,7 +548,7 @@ public class Alignment extends STServiceAdapter {
 					mappingProps.add(prop);
 				}
 			} else {
-				if (getProject().getModelType().getName().contains("SKOS")) { //SKOS or SKOSXL
+				if (getProject().getModel().equals(Project.SKOS_MODEL)) { //SKOS or SKOSXL
 					for (IRI prop : skosMappingRelations) {
 						mappingProps.add(prop);
 					}

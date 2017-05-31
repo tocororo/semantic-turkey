@@ -88,7 +88,9 @@ public class Projects extends STServiceAdapterOLD {
 		public final static String ontMgrAttr = "ontmgr";
 		public final static String typeAttr = "type";
 		public final static String ontoTypeAttr = "ontoType";
-		public final static String modelConfigAttr = "modelConfigType";
+		public final static String modelAttr = "model";
+		public final static String lexicalizationModelAttr = "lexicalizationModel";
+
 		public final static String statusAttr = "status";
 		public final static String statusMsgAttr = "stMsg";
 		public final static String accessibleAttr = "accessible";
@@ -166,14 +168,17 @@ public class Projects extends STServiceAdapterOLD {
 			if (absProj instanceof Project<?>) {
 				Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
 				try {
-					projElem.setAttribute(XMLNames.ontoTypeAttr,
-							((Project<?>) proj).getModelType().getName());
+					projElem.setAttribute(XMLNames.modelAttr,
+							((Project<?>) proj).getModel().stringValue());
+					projElem.setAttribute(XMLNames.lexicalizationModelAttr,
+							((Project<?>) proj).getModel().stringValue());
+					
+					// TODO: temporary fix to make UI work until it is updated
+					projElem.setAttribute("modelConfigType", ((Project<?>) proj).computeModelConfigType());
+
+					
 					String ontMgr = "";
 					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
-
-					String mConfID = "";
-
-					projElem.setAttribute(XMLNames.modelConfigAttr, mConfID);
 
 					projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
 

@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Properties;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,9 +47,9 @@ public class Projects2 extends STServiceAdapter {
 	// TODO understand how to specify remote repository / different sail configurations
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
-	public JsonNode createProject(ProjectConsumer consumer, String projectName,
-			Class<? extends RDFModel> modelType, String baseURI, boolean historyEnabled,
-			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
+	public JsonNode createProject(ProjectConsumer consumer, String projectName, IRI model,
+			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
+			RepositoryAccess repositoryAccess, String coreRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification coreRepoSailConfigurerSpecification,
 			String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
@@ -65,7 +66,7 @@ public class Projects2 extends STServiceAdapter {
 
 		// If no rendering engine has been configured, guess the best one based on the model type
 		if (renderingEngineSpecification == null) {
-			String renderingEngineFactoryID = Project.determineBestRenderingEngine(modelType);
+			String renderingEngineFactoryID = Project.determineBestRenderingEngine(lexicalizationModel);
 			renderingEngineSpecification = new PluginSpecification(renderingEngineFactoryID, null,
 					new Properties());
 		}
@@ -73,17 +74,17 @@ public class Projects2 extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, modelType,
-				baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
+		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, model,
+				lexicalizationModel, baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
 				uriGeneratorSpecification, renderingEngineSpecification);
-		
+
 		STUser loggedUser = UsersManager.getLoggedUser();
-		//TODO is correct to assign administrator role to the user that creates project?
-		//if not how do I handle the administrator role since the role is related to a project?
-		ProjectUserBindingsManager.addRoleToPUBinding(
-				loggedUser, proj, RBACManager.DefaultRole.ADMINISTRATOR);
-		
+		// TODO is correct to assign administrator role to the user that creates project?
+		// if not how do I handle the administrator role since the role is related to a project?
+		ProjectUserBindingsManager.addRoleToPUBinding(loggedUser, proj,
+				RBACManager.DefaultRole.ADMINISTRATOR);
+
 		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
 		objectNode.set("type", JsonNodeFactory.instance.textNode(proj.getType()));
 

@@ -83,8 +83,6 @@ import com.google.common.collect.Sets;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.SKOSModel;
-import it.uniroma2.art.owlart.models.SKOSXLModel;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -281,10 +279,9 @@ public class ResourceView2 extends STServiceAdapter {
 			ResourcePosition resourcePosition) throws ProjectInconsistentException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
-			Class<?> modelType = hostingProject.getModelType();
-			if (SKOSXLModel.class.isAssignableFrom(modelType)) {
+			if (hostingProject.getLexicalizationModel().equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 				return Arrays.asList(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
-			} else if (SKOSModel.class.isAssignableFrom(modelType)) {
+			} else if (hostingProject.getLexicalizationModel().equals(Project.SKOS_LEXICALIZATION_MODEL)) {
 				return Arrays.asList(SKOS.PREF_LABEL, SKOS.ALT_LABEL, SKOS.HIDDEN_LABEL);
 			} else {
 				return Arrays.asList(RDFS.LABEL);

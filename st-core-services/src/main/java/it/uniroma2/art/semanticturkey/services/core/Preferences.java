@@ -179,13 +179,9 @@ public class Preferences extends STServiceAdapter {
 		//show_instances_number
 		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, getProject(),
 				UsersManager.getLoggedUser());
-		boolean showInst;
-		try {
-			//default: false in skos, true in owl
-			showInst = getProject().getModelType().getName().contains("SKOS") ? false : true;
-		} catch (ProjectInconsistentException e) {
-			showInst = true;
-		}
+
+		//default: false in skos, true in owl
+		boolean showInst = getProject().getModel().equals(Project.SKOS_MODEL) ? false : true;
 		if (value != null) {
 			showInst = Boolean.parseBoolean(value);
 		} else { //property not set => set default
