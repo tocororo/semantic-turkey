@@ -20,7 +20,7 @@ public class CustomFormModel {
 	private Collection<FormCollection> formCollections;
 	private Collection<CustomForm> customForms;
 	
-	private Project<?> project;
+	private Project project;
 	
 	/**
 	 * Creates CustomFormModel at system level
@@ -41,7 +41,7 @@ public class CustomFormModel {
 	 * @throws CustomFormParseException
 	 * @throws CustomFormInitializationException 
 	 */
-	public CustomFormModel(Project<?> project, CustomFormModel systemCFModel) throws CustomFormParseException, CustomFormInitializationException {
+	public CustomFormModel(Project project, CustomFormModel systemCFModel) throws CustomFormParseException, CustomFormInitializationException {
 		
 		this.project = project;
 		

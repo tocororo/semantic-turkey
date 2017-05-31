@@ -15,7 +15,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
 
 public interface StatementConsumer {
-	Map<String, ResourceViewSection> consumeStatements(Project<?> project, ResourcePosition resourcePosition,
+	Map<String, ResourceViewSection> consumeStatements(Project project, ResourcePosition resourcePosition,
 			Resource resource, Model statements, Set<Statement> processedStatements, Resource workingGraph,
 			Map<Resource, Map<String, Value>> resource2attributes,
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel);

@@ -27,7 +27,7 @@ public class STServiceAdapterOLD implements STService, NewStyleService {
 		return stServiceContext.getProject().getOWLModel();
 	}
 	
-	public Project<? extends RDFModel> getProject() {
+	public Project getProject() {
 		return stServiceContext.getProject();
 	}
 

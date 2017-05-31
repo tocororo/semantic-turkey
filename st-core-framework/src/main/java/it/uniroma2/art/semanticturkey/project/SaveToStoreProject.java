@@ -45,7 +45,7 @@ import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 
-public class SaveToStoreProject<MODELTYPE extends RDFModel> extends Project<MODELTYPE> {
+public class SaveToStoreProject extends Project {
 
 	protected final static String triplesFileName = "triples.nt";
 	File triplesFile;

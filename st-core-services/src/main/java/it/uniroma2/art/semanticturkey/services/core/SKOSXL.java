@@ -235,7 +235,10 @@ public class SKOSXL extends STServiceAdapter {
 		return annotatedValue; 
 	}
 	
-	
+	/**
+	 * Deletes a conceptScheme and the related xLabels
+	 * @param scheme
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'C')")

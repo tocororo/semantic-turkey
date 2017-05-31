@@ -42,7 +42,7 @@ public class ADMSDatasetMetadataExporter extends
 	}
 
 	@Override
-	public Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph)
+	public Model produceDatasetMetadata(Project project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException {
 		
 		Repository tempMetadataRepository = new SailRepository(new MemoryStore());

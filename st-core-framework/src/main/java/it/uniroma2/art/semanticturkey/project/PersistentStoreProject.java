@@ -38,12 +38,11 @@ import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 
-public class PersistentStoreProject<MODELTYPE extends RDFModel> extends Project<MODELTYPE> {
+public class PersistentStoreProject extends Project {
 
 	PersistentStoreProject(String projectName, File projectDir) throws ProjectCreationException {
 		super(projectName, projectDir);

@@ -10,7 +10,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
@@ -44,7 +43,7 @@ public class LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor imple
 
 				logger.debug("uses project");
 
-				Project<? extends RDFModel> project = ProjectManager.getProject(projectName);
+				Project project = ProjectManager.getProject(projectName);
 
 				if (project == null) {
 					logger.warn("Project not open: " + projectName);
@@ -74,7 +73,7 @@ public class LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor imple
 
 				logger.debug("uses project");
 
-				Project<? extends RDFModel> project = ProjectManager.getProject(projectName);
+				Project project = ProjectManager.getProject(projectName);
 
 				if (project == null) {
 					logger.warn(
@@ -99,7 +98,7 @@ public class LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor imple
 		if (shouldManage(handler)) {
 			String projectName = request.getParameter("ctx_project");
 			if (projectName != null) {
-				Project<?> project = ProjectManager.getProject(projectName);
+				Project project = ProjectManager.getProject(projectName);
 				if (project != null) {
 					try {
 						project.unbindModelFromThread();

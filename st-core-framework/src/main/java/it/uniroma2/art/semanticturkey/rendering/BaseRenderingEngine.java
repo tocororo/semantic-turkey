@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 
 import it.uniroma2.art.owlart.model.ARTLiteral;
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -98,7 +97,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	 * @param currentProject
 	 * @return
 	 */
-	private Set<String> computeLanguages(Project<?> currentProject) {
+	private Set<String> computeLanguages(Project currentProject) {
 		StringBuffer sb = new StringBuffer();
 		Matcher m = propPattern.matcher(languages);
 		String languagesPropValue = null;
@@ -127,7 +126,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project<?> currentProject) {
+	public GraphPattern getGraphPattern(Project currentProject) {
 		StringBuilder gp = new StringBuilder();
 		getGraphPatternInternal(gp);
 
@@ -157,7 +156,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
 		Repository rep = currentProject.getRepository();
 
 		HashMap<String, String> ns2prefix = new HashMap<>();

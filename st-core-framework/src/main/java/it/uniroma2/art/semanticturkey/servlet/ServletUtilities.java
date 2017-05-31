@@ -23,6 +23,20 @@
 
 package it.uniroma2.art.semanticturkey.servlet;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -41,25 +55,10 @@ import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 /**Classe che contiene le utilities per le servlet, oltre ad alcuni metodi di supporto la maggior parte dei metodi
  * dichiarati aggiungono elementi xml al documento che costituiscono le risposte alle servlet invocate da client*/
@@ -591,14 +590,14 @@ public class ServletUtilities {
 	}
 
 	// TODO I should change this!!!
-	public boolean checkReadOnly(ARTURIResource res, Project<?> project) {
+	public boolean checkReadOnly(ARTURIResource res, Project project) {
 		return (
 		// if other namespace than default one, then it is imported, thus write only
 		!(checkWritable(res, project)));
 	}
 
 	// TODO I should change this!!!
-	public boolean checkWritable(ARTURIResource res, Project<?> project) {
+	public boolean checkWritable(ARTURIResource res, Project project) {
 		return (
 		// if other namespace than default one, then it is imported, thus write only
 		res.getNamespace().equals(project.getDefaultNamespace()));

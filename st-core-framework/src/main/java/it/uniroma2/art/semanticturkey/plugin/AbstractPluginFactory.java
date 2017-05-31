@@ -47,50 +47,50 @@ public abstract class AbstractPluginFactory<T extends PluginConfiguration, Q ext
 	 * project.Project)
 	 */
 	@Override
-	public R getProjectSettings(Project<?> project) throws STPropertyAccessException {
+	public R getProjectSettings(Project project) throws STPropertyAccessException {
 		R projectSettings = buildProjectSettingsInternal();
 		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
 		return projectSettings;
 	};
 
 	@Override
-	public Q getExtensonPointProjectSettings(Project<?> project) throws STPropertyAccessException {
+	public Q getExtensonPointProjectSettings(Project project) throws STPropertyAccessException {
 		Q projectSettings = buildExtensionPointProjectSettingsInternal();
 		STPropertiesManager.getProjectSettings(projectSettings, project, extensionPointId);
 		return projectSettings;
 	}
 
 	@Override
-	public void storeProjectSettings(Project<?> project, Map<String, Object> settings)
+	public void storeProjectSettings(Project project, Map<String, Object> settings)
 			throws STPropertyUpdateException, STPropertyAccessException {
 		storeProjectSettingInternal(project, settings, this::buildProjectSettingsInternal, getID());
 	}
 
 	@Override
-	public void storeProjectSettings(Project<?> project, STProperties settings)
+	public void storeProjectSettings(Project project, STProperties settings)
 			throws STPropertyUpdateException {
 		storeProjectSettingInternal(project, settings, getID());
 	}
 
 	@Override
-	public void storeExtensonPointProjectSettings(Project<?> project, Map<String, Object> settings)
+	public void storeExtensonPointProjectSettings(Project project, Map<String, Object> settings)
 			throws STPropertyUpdateException, STPropertyAccessException {
 		storeProjectSettingInternal(project, settings, this::buildExtensionPointProjectSettingsInternal,
 				extensionPointId);
 	}
 
 	@Override
-	public void storeExtensonPointProjectSettings(Project<?> project, STProperties settings)
+	public void storeExtensonPointProjectSettings(Project project, STProperties settings)
 			throws STPropertyUpdateException {
 		storeProjectSettingInternal(project, settings, extensionPointId);
 	}
 
-	public void storeProjectSettingInternal(Project<?> project, STProperties settings, String pluginId)
+	public void storeProjectSettingInternal(Project project, STProperties settings, String pluginId)
 			throws STPropertyUpdateException {
 		STPropertiesManager.setProjectSettings(settings, project, getID());
 	}
 
-	public void storeProjectSettingInternal(Project<?> project, Map<String, Object> settings,
+	public void storeProjectSettingInternal(Project project, Map<String, Object> settings,
 			Supplier<? extends STProperties> propertiesSupplier, String pluginId)
 			throws STPropertyUpdateException, STPropertyAccessException {
 		try {

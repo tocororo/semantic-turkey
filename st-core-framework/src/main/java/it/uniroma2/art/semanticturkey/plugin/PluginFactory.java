@@ -67,7 +67,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	default R getExtensonPointProjectSettings(Project<?> project) throws STPropertyAccessException {
+	default R getExtensonPointProjectSettings(Project project) throws STPropertyAccessException {
 		return null;
 	};
 
@@ -78,7 +78,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @param settings
 	 * @throws STPropertyUpdateException
 	 */
-	default void storeExtensonPointProjectSettings(Project<?> project, STProperties settings)
+	default void storeExtensonPointProjectSettings(Project project, STProperties settings)
 			throws STPropertyUpdateException {
 	}
 
@@ -90,7 +90,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @throws STPropertyUpdateException
 	 * @throws STPropertyAccessException
 	 */
-	default void storeExtensonPointProjectSettings(Project<?> project, Map<String, Object> settings)
+	default void storeExtensonPointProjectSettings(Project project, Map<String, Object> settings)
 			throws STPropertyUpdateException, STPropertyAccessException {
 	}
 
@@ -102,7 +102,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	default Q getProjectSettings(Project<?> project) throws STPropertyAccessException {
+	default Q getProjectSettings(Project project) throws STPropertyAccessException {
 		return null;
 	};
 
@@ -113,7 +113,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @param settings
 	 * @throws STPropertyUpdateException
 	 */
-	default void storeProjectSettings(Project<?> project, STProperties settings)
+	default void storeProjectSettings(Project project, STProperties settings)
 			throws STPropertyUpdateException {
 	}
 
@@ -125,7 +125,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @throws STPropertyUpdateException
 	 * @throws STPropertyAccessException
 	 */
-	default void storeProjectSettings(Project<?> project, Map<String, Object> settings)
+	default void storeProjectSettings(Project project, Map<String, Object> settings)
 			throws STPropertyUpdateException, STPropertyAccessException {
 	}
 }

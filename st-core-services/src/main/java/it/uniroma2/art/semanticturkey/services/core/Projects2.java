@@ -74,7 +74,7 @@ public class Projects2 extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		Project<? extends RDFModel> proj = ProjectManager.createProject(consumer, projectName, model,
+		Project proj = ProjectManager.createProject(consumer, projectName, model,
 				lexicalizationModel, baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
 				uriGeneratorSpecification, renderingEngineSpecification);

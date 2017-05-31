@@ -50,7 +50,7 @@ public class NoSystemResourcePredicate implements Predicate<ARTResource> {
 		return new NoSystemResourcePredicate(ontManager);
 	}
 	
-	public static NoSystemResourcePredicate getPredicate(Project<?> project) {
+	public static NoSystemResourcePredicate getPredicate(Project project) {
 		return getPredicate(project.getNewOntologyManager());
 	}
 	

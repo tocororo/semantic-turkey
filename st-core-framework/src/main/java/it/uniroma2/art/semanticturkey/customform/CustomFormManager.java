@@ -64,7 +64,7 @@ public class CustomFormManager {
 	 * initialize at system level)
 	 * @param projectName
 	 */
-	public void registerCustomFormModelOfProject(Project<?> project) {
+	public void registerCustomFormModelOfProject(Project project) {
 		try {
 			CustomFormModel cfModel = new CustomFormModel(project, cfModelMap.get(SYSTEM_LEVEL_ID));
 			cfModelMap.put(project.getName(), cfModel);
@@ -79,7 +79,7 @@ public class CustomFormManager {
 	 * Deregisters the CustomForm structure for the given project
 	 * @param projectName
 	 */
-	public void unregisterCustomFormModelOfProject(Project<?> project) {
+	public void unregisterCustomFormModelOfProject(Project project) {
 		cfModelMap.remove(project.getName());
 	}
 	
@@ -95,7 +95,7 @@ public class CustomFormManager {
 	 * @param project
 	 * @return
 	 */
-	public Collection<FormsMapping> getProjectFormMappings(Project<?> project) {
+	public Collection<FormsMapping> getProjectFormMappings(Project project) {
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel == null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
 			return Collections.emptyList();
@@ -127,7 +127,7 @@ public class CustomFormManager {
 	 * @param fallback
 	 * @return
 	 */
-	public boolean getReplace(Project<?> project, IRI resource, boolean fallback) {
+	public boolean getReplace(Project project, IRI resource, boolean fallback) {
 		boolean replace = false;
 		
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
@@ -156,7 +156,7 @@ public class CustomFormManager {
 	 * Returns all the {@link FormCollection}s at system and project level
 	 * @return
 	 */
-	public Collection<FormCollection> getFormCollections(Project<?> project) {
+	public Collection<FormCollection> getFormCollections(Project project) {
 		Collection<FormCollection> formCollections = new ArrayList<>();
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -175,7 +175,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @return
 	 */
-	public FormCollection getFormCollection(Project<?> project, IRI resource) {
+	public FormCollection getFormCollection(Project project, IRI resource) {
 		FormCollection fc = null;
 		//look only at project level since the mappings between resource and FC at system level are just
 		//default/suggestion that are copied at project level in order to be editable
@@ -192,7 +192,7 @@ public class CustomFormManager {
 	 * @param formCollId
 	 * @return
 	 */
-	public FormCollection getFormCollection(Project<?> project, String formCollId){
+	public FormCollection getFormCollection(Project project, String formCollId){
 		FormCollection fc = null;
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -253,7 +253,7 @@ public class CustomFormManager {
 	 * Returns all the {@link FormCollection}s in the given project
 	 * @return
 	 */
-	public Collection<FormCollection> getProjectFormCollections(Project<?> project) {
+	public Collection<FormCollection> getProjectFormCollections(Project project) {
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
 			return cfModel.getFormCollections();
@@ -268,7 +268,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @return
 	 */
-	public FormCollection getProjectFormCollection(Project<?> project, IRI resource) {
+	public FormCollection getProjectFormCollection(Project project, IRI resource) {
 		FormCollection fc = null;
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -283,7 +283,7 @@ public class CustomFormManager {
 	 * @param formCollId
 	 * @return
 	 */
-	public FormCollection getProjectFormCollection(Project<?> project, String formCollId){
+	public FormCollection getProjectFormCollection(Project project, String formCollId){
 		FormCollection fc = null;
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -298,7 +298,7 @@ public class CustomFormManager {
 	 * Returns all the {@link CustomForm}s at system and project level
 	 * @return
 	 */
-	public Collection<CustomForm> getCustomForms(Project<?> project) {
+	public Collection<CustomForm> getCustomForms(Project project) {
 		Collection<CustomForm> customForms = new ArrayList<>();
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -317,7 +317,7 @@ public class CustomFormManager {
 	 * @param customFormId
 	 * @return
 	 */
-	public CustomForm getCustomForm(Project<?> project, String customFormId){
+	public CustomForm getCustomForm(Project project, String customFormId){
 		CustomForm cf = null; 
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -339,7 +339,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @return
 	 */
-	public Collection<CustomForm> getCustomForms(Project<?> project, IRI resource){
+	public Collection<CustomForm> getCustomForms(Project project, IRI resource){
 		Collection<CustomForm> customForms = new ArrayList<>();
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -400,7 +400,7 @@ public class CustomFormManager {
 	 * Returns all the {@link CustomForm}s for the given project
 	 * @return
 	 */
-	public Collection<CustomForm> getProjectCustomForms(Project<?> project) {
+	public Collection<CustomForm> getProjectCustomForms(Project project) {
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
 			return cfModel.getCustomForms();
@@ -416,7 +416,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @return
 	 */
-	public Collection<CustomForm> getProjectCustomForms(Project<?> project, IRI resource){
+	public Collection<CustomForm> getProjectCustomForms(Project project, IRI resource){
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
 			return cfModel.getCustomFormForResource(resource);
@@ -431,7 +431,7 @@ public class CustomFormManager {
 	 * @param customFormId
 	 * @return
 	 */
-	public CustomForm getProjectCustomForm(Project<?> project, String customFormId){
+	public CustomForm getProjectCustomForm(Project project, String customFormId){
 		CustomForm cf = null;
 		CustomFormModel cfModel = cfModelMap.get(project.getName());
 		if (cfModel != null) { //check necessary to avoid Exception in case the initialization of the CustomFormModel failed
@@ -445,7 +445,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @return
 	 */
-	public Collection<CustomFormGraph> getAllCustomFormGraphs(Project<?> project, IRI resource){
+	public Collection<CustomFormGraph> getAllCustomFormGraphs(Project project, IRI resource){
 		Collection<CustomFormGraph> cFormsGraph = new ArrayList<>();
 		/* Here look for CF only at project level. Since I retrieve all CFGraph in two steps
 		 * - FormCollection of the given resource
@@ -465,7 +465,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @return
 	 */
-	public boolean existsCustomFormGraphForResource(Project<?> project, IRI resource){
+	public boolean existsCustomFormGraphForResource(Project project, IRI resource){
 		return (!getAllCustomFormGraphs(project, resource).isEmpty());
 	}
 	
@@ -486,7 +486,7 @@ public class CustomFormManager {
 	 * @return 
 	 * @throws CustomFormException
 	 */
-	public FormsMapping addFormsMapping(Project<?> project, IRI resource, FormCollection formColl, boolean replace) throws CustomFormException {
+	public FormsMapping addFormsMapping(Project project, IRI resource, FormCollection formColl, boolean replace) throws CustomFormException {
 		FormsMapping formMapping = cfModelMap.get(project.getName()).addFormsMapping(resource, formColl, replace);
 		return formMapping;
 	}
@@ -500,7 +500,7 @@ public class CustomFormManager {
 	 * @return
 	 * @throws DuplicateIdException 
 	 */
-	public FormCollection createFormCollection(Project<?> project, String id) throws DuplicateIdException {
+	public FormCollection createFormCollection(Project project, String id) throws DuplicateIdException {
 		//check if a FormCollection with the same ID already exists at system level
 		if (cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(id) != null) {
 			throw new DuplicateIdException("A FormCollection with id '" + id + "' already exists at system level");
@@ -523,7 +523,7 @@ public class CustomFormManager {
 	 * @return
 	 * @throws DuplicateIdException 
 	 */
-	public CustomForm createCustomForm(Project<?> project, String type, String id, String name, String description, String ref, List<IRI> showPropChain)
+	public CustomForm createCustomForm(Project project, String type, String id, String name, String description, String ref, List<IRI> showPropChain)
 			throws DuplicateIdException {
 		//check if a FormCollection with the same ID already exists at system level
 		if (cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(id) != null) {
@@ -539,7 +539,7 @@ public class CustomFormManager {
 	
 	// FORM MAPPING
 	
-	public void setReplace(Project<?> project, IRI resource, boolean replace) throws CustomFormException {
+	public void setReplace(Project project, IRI resource, boolean replace) throws CustomFormException {
 		cfModelMap.get(project.getName()).setReplace(resource, replace);
 	}
 	
@@ -549,7 +549,7 @@ public class CustomFormManager {
 	 * @param resource
 	 * @param project
 	 */
-	public void removeFormsMapping(Project<?> project, IRI resource) {
+	public void removeFormsMapping(Project project, IRI resource) {
 		cfModelMap.get(project.getName()).removeFormsMapping(resource);
 	}
 	
@@ -559,13 +559,13 @@ public class CustomFormManager {
 	 * Removes a {@link FormCollection} from the configuration of the given project and its file from file-system
 	 * @param formCollId
 	 */
-	public void deleteFormCollection(Project<?> project, FormCollection formColl) {
+	public void deleteFormCollection(Project project, FormCollection formColl) {
 		cfModelMap.get(project.getName()).deleteFormCollection(formColl);
 	}
 	
 	// CUSTOM FORM
 	
-	public void updateCustomForm(Project<?> project, CustomForm customForm, String name, String description, String ref, List<IRI> showPropChain) {
+	public void updateCustomForm(Project project, CustomForm customForm, String name, String description, String ref, List<IRI> showPropChain) {
 		cfModelMap.get(project.getName()).updateCustomForm(customForm, name, description, ref, showPropChain);
 	}
 	
@@ -574,7 +574,7 @@ public class CustomFormManager {
 	 * @param customForm
 	 * @param deleteEmptyColl if true deletes FormCollection that are left empty after the deletion
 	 */
-	public void deleteCustomForm(Project<?> project, CustomForm customForm, boolean deleteEmptyColl)  {
+	public void deleteCustomForm(Project project, CustomForm customForm, boolean deleteEmptyColl)  {
 		cfModelMap.get(project.getName()).deleteCustomForm(customForm, deleteEmptyColl);
 	}
 	
@@ -584,7 +584,7 @@ public class CustomFormManager {
 	 * @param formColl
 	 * @param customForm
 	 */
-	public void addFormToCollection(Project<?> project, FormCollection formColl, CustomForm customForm) {
+	public void addFormToCollection(Project project, FormCollection formColl, CustomForm customForm) {
 		cfModelMap.get(project.getName()).addFormToCollection(formColl, customForm);
 	}
 	
@@ -594,7 +594,7 @@ public class CustomFormManager {
 	 * @param formColl
 	 * @param customForms
 	 */
-	public void addFormsToCollection(Project<?> project, FormCollection formColl, Collection<CustomForm> customForms) {
+	public void addFormsToCollection(Project project, FormCollection formColl, Collection<CustomForm> customForms) {
 		cfModelMap.get(project.getName()).addFormsToCollection(formColl, customForms);
 	}
 	
@@ -604,7 +604,7 @@ public class CustomFormManager {
 	 * @param formColl
 	 * @param customForm
 	 */
-	public void removeFormFromCollection(Project<?> project, FormCollection formColl, CustomForm customForm) {
+	public void removeFormFromCollection(Project project, FormCollection formColl, CustomForm customForm) {
 		cfModelMap.get(project.getName()).removeFormFromCollection(formColl, customForm);
 	}
 	
@@ -617,7 +617,7 @@ public class CustomFormManager {
 	 * Returns the customForms folder for the given project, or at system level if projectName is <code>null</code>
 	 * @return
 	 */
-	public static File getCustomFormsFolder(Project<?> project){
+	public static File getCustomFormsFolder(Project project){
 		if (project == null) {
 			return new File(Resources.getSystemDir() + File.separator + CUSTOM_FORMS_FOLDER_NAME); 
 		} else {
@@ -629,7 +629,7 @@ public class CustomFormManager {
 	 * Returns the formCollections folder for the given project, or at system level if projectName is <code>null</code>
 	 * @return
 	 */
-	public static File getFormCollectionsFolder(Project<?> project){
+	public static File getFormCollectionsFolder(Project project){
 		return new File(getCustomFormsFolder(project) + File.separator + FORM_COLLECTIONS_FOLDER_NAME);
 	}
 	
@@ -637,7 +637,7 @@ public class CustomFormManager {
 	 * Returns the forms folder for the given project, or at system level if projectName is <code>null</code>
 	 * @return
 	 */
-	public static File getFormsFolder(Project<?> project){
+	public static File getFormsFolder(Project project){
 		return new File(getCustomFormsFolder(project) + File.separator + FORMS_FOLDER_NAME);
 	}
 	

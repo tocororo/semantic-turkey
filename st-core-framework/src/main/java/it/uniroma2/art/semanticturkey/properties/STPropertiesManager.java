@@ -74,7 +74,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreference(String propName, Project<?> project, STUser user)
+	public static String getProjectPreference(String propName, Project project, STUser user)
 			throws STPropertyAccessException {
 		return getProjectPreference(propName, project, user, CORE_PLUGIN_ID);
 	}
@@ -92,7 +92,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreference(String propName, Project<?> project, STUser user,
+	public static String getProjectPreference(String propName, Project project, STUser user,
 			String pluginID) throws STPropertyAccessException {
 		// PP: project-preference: user-project -> default(pp,project) -> default(pp,user) ->
 		// default(pp,system)
@@ -119,7 +119,7 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreference(String propName, String propValue, Project<?> project,
+	public static void setProjectPreference(String propName, String propValue, Project project,
 			STUser user) throws STPropertyUpdateException {
 		setProjectPreference(propName, propValue, project, user, CORE_PLUGIN_ID);
 	}
@@ -134,7 +134,7 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreference(String propName, String propValue, Project<?> project,
+	public static void setProjectPreference(String propName, String propValue, Project project,
 			STUser user, String pluginID) throws STPropertyUpdateException {
 		try {
 			File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
@@ -157,7 +157,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreferenceDefault(String propName, Project<?> project)
+	public static String getProjectPreferenceDefault(String propName, Project project)
 			throws STPropertyAccessException {
 		return getProjectPreferenceDefault(propName, project, CORE_PLUGIN_ID);
 	}
@@ -170,7 +170,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreferenceDefault(String propName, Project<?> project, String pluginID)
+	public static String getProjectPreferenceDefault(String propName, Project project, String pluginID)
 			throws STPropertyAccessException {
 		return loadProperties(getProjectPreferencesDefaultsFile(project, pluginID)).getProperty(propName);
 	}
@@ -182,7 +182,7 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreferenceDefault(String propName, String propValue, Project<?> project)
+	public static void setProjectPreferenceDefault(String propName, String propValue, Project project)
 			throws STPropertyUpdateException {
 		setProjectPreferenceDefault(propName, propValue, project, CORE_PLUGIN_ID);
 	}
@@ -195,7 +195,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreferenceDefault(String propName, String propValue, Project<?> project,
+	public static void setProjectPreferenceDefault(String propName, String propValue, Project project,
 			String pluginID) throws STPropertyUpdateException {
 		try {
 			File propFile = getProjectPreferencesDefaultsFile(project, pluginID);
@@ -484,7 +484,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectSetting(String propName, Project<?> project)
+	public static String getProjectSetting(String propName, Project project)
 			throws STPropertyAccessException {
 		return getProjectSetting(propName, project, CORE_PLUGIN_ID);
 	}
@@ -499,7 +499,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectSetting(String propName, Project<?> project, String pluginID)
+	public static String getProjectSetting(String propName, Project project, String pluginID)
 			throws STPropertyAccessException {
 		// PS: project-settings: project -> default(ps, system)
 		String value;
@@ -524,7 +524,7 @@ public class STPropertiesManager {
 	 * @param pluginId
 	 * @throws STPropertyAccessException
 	 */
-	public static void getProjectSettings(STProperties projectSettings, Project<?> project, String pluginID)
+	public static void getProjectSettings(STProperties projectSettings, Project project, String pluginID)
 			throws STPropertyAccessException {
 		Properties defaultStoredProperties = loadProperties(getSystemProjectSettingsDefaultsFile(pluginID));
 		Properties storedProperties = loadProperties(getProjectSettingsFile(project, pluginID));
@@ -545,7 +545,7 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectSetting(String propName, String propValue, Project<?> project)
+	public static void setProjectSetting(String propName, String propValue, Project project)
 			throws STPropertyUpdateException {
 		setProjectSetting(propName, propValue, project, CORE_PLUGIN_ID);
 	}
@@ -559,7 +559,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectSetting(String propName, String propValue, Project<?> project,
+	public static void setProjectSetting(String propName, String propValue, Project project,
 			String pluginID) throws STPropertyUpdateException {
 		try {
 			File propFile = getProjectSettingsFile(project, pluginID);
@@ -579,7 +579,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @param allowIncompletePropValueSet
 	 */
-	public static void setProjectSettings(STProperties settings, Project<?> project, String pluginID,
+	public static void setProjectSettings(STProperties settings, Project project, String pluginID,
 			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
 		try {
 			if (!allowIncompletePropValueSet) {
@@ -606,7 +606,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectSettings(STProperties settings, Project<?> project, String pluginID)
+	public static void setProjectSettings(STProperties settings, Project project, String pluginID)
 			throws STPropertyUpdateException {
 		setProjectSettings(settings, project, pluginID, false);
 	}
@@ -842,7 +842,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getProjectPreferencesDefaultsFile(Project<?> project, String pluginID)
+	private static File getProjectPreferencesDefaultsFile(Project project, String pluginID)
 			throws STPropertyAccessException {
 		try {
 			File propFile = new File(getProjectPropertyFolder(project, pluginID) + File.separator
@@ -865,7 +865,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getProjectSettingsFile(Project<?> project, String pluginID)
+	private static File getProjectSettingsFile(Project project, String pluginID)
 			throws STPropertyAccessException {
 		try {
 			File propFile = new File(getProjectPropertyFolder(project, pluginID) + File.separator
@@ -937,7 +937,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getPUBindingsPreferencesFile(Project<?> project, STUser user, String pluginID)
+	private static File getPUBindingsPreferencesFile(Project project, STUser user, String pluginID)
 			throws STPropertyAccessException {
 		try {
 			File propFile = new File(getPUBindingPropertyFolder(project, user, pluginID) + File.separator
@@ -980,7 +980,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getProjectPropertyFolder(Project<?> project, String pluginID) {
+	private static File getProjectPropertyFolder(Project project, String pluginID) {
 		File prefFolder = new File(Resources.getProjectsDir() + File.separator + project.getName()
 				+ File.separator + "plugins" + File.separator + pluginID);
 		if (!prefFolder.exists()) {
@@ -1014,7 +1014,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getPUBindingPropertyFolder(Project<?> project, STUser user, String pluginID) {
+	private static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
 		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserEmail(user.getEmail()) + File.separator + "plugins"
 				+ File.separator + pluginID);

@@ -29,7 +29,7 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 
 	@Override
-	public GraphPattern getGraphPattern(Project<?> currentProject) {
+	public GraphPattern getGraphPattern(Project currentProject) {
 		return GraphPatternBuilder.create().projection(ProjectionElementBuilder.variable("dummy")).pattern("")
 				.graphPattern();
 	}
@@ -40,7 +40,7 @@ public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
 		Map<Value, Literal> rv = new HashMap<>();
 
 		try {

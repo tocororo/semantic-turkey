@@ -55,7 +55,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		if (consumerParameter == null || consumerParameter.equals(ProjectConsumer.SYSTEM.getName())) {
 			return ProjectConsumer.SYSTEM;
 		} else {
-			Project<?> project = ProjectManager.getProject(consumerParameter);
+			Project project = ProjectManager.getProject(consumerParameter);
 
 			if (project == null) {
 				throw new InvalidContextException(
@@ -68,9 +68,9 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	}
 
 	@Override
-	public Project<?> getProject() {
+	public Project getProject() {
 		String projectParameter = request.getParameter(HTTP_PARAM_PROJECT);
-		Project<?> project;
+		Project project;
 
 		if (projectParameter == null) {
 			if (Config.isSingleProjectMode())
@@ -127,7 +127,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 	@Deprecated
 	@Override
-	public Project<?> getProject(int index) {
+	public Project getProject(int index) {
 		String projectPar;
 		if (index == 0) {
 			projectPar = HTTP_PARAM_PROJECT;

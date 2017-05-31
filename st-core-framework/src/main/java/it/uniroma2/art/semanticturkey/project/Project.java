@@ -106,7 +106,7 @@ import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
-public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProject {
+public abstract class Project extends AbstractProject {
 
 	public static final IRI OWL_MODEL = SimpleValueFactory.getInstance()
 			.createIRI("http://www.w3.org/2002/07/owl");
@@ -201,7 +201,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	private URIGenerator uriGenerator;
 	private RenderingEngine renderingEngine;
 
-	private final ThreadLocal<MODELTYPE> modelHolder;
+	private final ThreadLocal<RDFModel> modelHolder;
 	private RDF4JRepositoryTransactionManager repositoryTransactionManager;
 	protected RepositoryConfig coreRepoConfig;
 	protected RepositoryConfig supportRepoConfig;
@@ -734,19 +734,19 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 			throw new IllegalStateException("Model already bound to thread");
 		}
 
-		MODELTYPE threadBoundModel;
+		RDFModel threadBoundModel;
 
-		String modelType = computeModelConfigType();
+		String modelType = computeOntoType();
 		
 		try {
 			if (modelType.equals(SKOSXLModel.class.getName())) {
-				threadBoundModel = (MODELTYPE) new SKOSXLModelRDF4JImpl(
+				threadBoundModel = new SKOSXLModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			} else if (modelType.equals(SKOSModel.class.getName())) {
-				threadBoundModel = (MODELTYPE) new SKOSModelRDF4JImpl(
+				threadBoundModel = new SKOSModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			} else {
-				threadBoundModel = (MODELTYPE) new OWLModelRDF4JImpl(
+				threadBoundModel = new OWLModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			}
 		} catch (SailException | RepositoryException
@@ -758,8 +758,8 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	}
 
 	@Deprecated
-	public MODELTYPE getOntModel() {
-		MODELTYPE model = modelHolder.get();
+	public RDFModel getOntModel() {
+		RDFModel model = modelHolder.get();
 
 		if (model == null) {
 			throw new RuntimeException("Could not obtain thread-bound model");
@@ -771,7 +771,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 	@Deprecated
 	// TODO this should really only be in OWLModel and SKOSModel Projects
 	public OWLModel getOWLModel() {
-		MODELTYPE model = getOntModel();
+		RDFModel model = getOntModel();
 
 		if (model instanceof SKOSModel) {
 			return ((SKOSModel) model).getOWLModel();
@@ -936,7 +936,7 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 		return defaultRepositoryLocation;
 	}
 
-	public String computeModelConfigType() {
+	public String computeOntoType() {
 		if (lexicalizationModel.equals(SKOSXL_LEXICALIZATION_MODEL)) {
 			return SKOSXL.class.getName();
 		} else if (model.equals(SKOS_MODEL) || lexicalizationModel.equals(SKOS_MODEL)) {
@@ -948,9 +948,9 @@ public abstract class Project<MODELTYPE extends RDFModel> extends AbstractProjec
 }
 
 class ProjectAwareBaseRDFModel extends BaseRDFModelRDF4JImpl {
-	private Project<?> project;
+	private Project project;
 
-	public ProjectAwareBaseRDFModel(Project<?> project, Repository repo, boolean rdfsReasoning,
+	public ProjectAwareBaseRDFModel(Project project, Repository repo, boolean rdfsReasoning,
 			boolean directTypeReasoning) throws SailException, RepositoryException, ModelCreationException {
 		super(repo, rdfsReasoning, directTypeReasoning);
 		this.project = project;

@@ -16,9 +16,9 @@ public interface STServiceContext {
 	
 	ProjectConsumer getProjectConsumer();
 	
-	Project<?> getProject();
+	Project getProject();
 
-	Project<?> getProject(int index);
+	Project getProject(int index);
 
 	ARTResource getWGraph();
 

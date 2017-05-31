@@ -22,7 +22,7 @@ public abstract class STServiceContextUtils {
 	 * @return
 	 */
 	public static Repository getRepostory(STServiceContext stServiceContext) {
-		Project<?> project = stServiceContext.getProject();
+		Project project = stServiceContext.getProject();
 		String versionId = stServiceContext.getVersion();
 
 		if (versionId != null) {

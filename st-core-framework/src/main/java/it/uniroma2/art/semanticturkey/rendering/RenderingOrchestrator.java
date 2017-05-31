@@ -33,11 +33,11 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
  */
 public class RenderingOrchestrator implements RenderingEngine {
 
-	private Project<?> project;
+	private Project project;
 	private ResourcePosition resourcePosition;
 	private RenderingEngine baseRenderingEngine;
 
-	public RenderingOrchestrator(Project<?> project, ResourcePosition resourcePosition,
+	public RenderingOrchestrator(Project project, ResourcePosition resourcePosition,
 			RenderingEngine baseRenderingEngine) {
 				this.project = project;
 				this.resourcePosition = resourcePosition;
@@ -49,7 +49,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 	 * 
 	 * @return
 	 */
-	public static RenderingEngine buildInstance(Project<?> project, ResourcePosition resourcePosition) {
+	public static RenderingEngine buildInstance(Project project, ResourcePosition resourcePosition) {
 		RenderingEngine baseRenderingEngine = getRenderingEngine(resourcePosition);
 		return new RenderingOrchestrator(project, resourcePosition, baseRenderingEngine);
 	}
@@ -62,7 +62,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 	 */
 	private static RenderingEngine getRenderingEngine(ResourcePosition subjectPosition) {
 		if (subjectPosition instanceof LocalResourcePosition) {
-			Project<?> project = ((LocalResourcePosition) (subjectPosition)).getProject();
+			Project project = ((LocalResourcePosition) (subjectPosition)).getProject();
 			RDFModel ontModel = project.getOntModel();
 			return project.getRenderingEngine();
 		} else if ((subjectPosition instanceof RemoteResourcePosition)) {
@@ -75,7 +75,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project<?> currentProject) {
+	public GraphPattern getGraphPattern(Project currentProject) {
 		return baseRenderingEngine.getGraphPattern(currentProject);
 	}
 
@@ -85,7 +85,7 @@ public class RenderingOrchestrator implements RenderingEngine {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project<?> project, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(Project project, List<BindingSet> resultTable) {
 		return baseRenderingEngine.processBindings(project, resultTable);
 	}
 

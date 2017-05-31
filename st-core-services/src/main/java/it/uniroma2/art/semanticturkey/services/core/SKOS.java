@@ -1622,12 +1622,12 @@ class CollectionsMoreProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project<?> currentProject) {
+	public GraphPattern getGraphPattern(Project currentProject) {
 		return graphPattern;
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
 		return null;
 	}
 };

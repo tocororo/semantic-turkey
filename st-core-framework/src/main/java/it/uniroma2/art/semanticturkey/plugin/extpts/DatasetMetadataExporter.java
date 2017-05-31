@@ -15,6 +15,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
  */
 public interface DatasetMetadataExporter extends Plugin {
 
-	Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph)
+	Model produceDatasetMetadata(Project project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException, STPropertyAccessException;
 }

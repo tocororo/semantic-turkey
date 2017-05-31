@@ -22,11 +22,11 @@ import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException
  */
 public class VersionManager {
 
-	private Project<?> project;
+	private Project project;
 	private List<VersionInfo> versionInfoList;
 	private List<VersionInfo> immutableVersionInfoList;
 
-	public VersionManager(Project<?> project) throws JsonParseException, JsonMappingException, IOException {
+	public VersionManager(Project project) throws JsonParseException, JsonMappingException, IOException {
 		this.project = project;
 		String versionsProperty = project.getProperty(Project.VERSIONS_PROP);
 		if (versionsProperty == null) {

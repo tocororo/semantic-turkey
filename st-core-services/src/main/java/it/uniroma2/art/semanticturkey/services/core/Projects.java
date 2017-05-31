@@ -26,7 +26,6 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -165,30 +164,30 @@ public class Projects extends STServiceAdapterOLD {
 
 		for (AbstractProject absProj : projects) {
 			Element projElem = XMLHelp.newElement(dataElem, XMLNames.projectTag, absProj.getName());
-			if (absProj instanceof Project<?>) {
-				Project<? extends RDFModel> proj = (Project<? extends RDFModel>) absProj;
+			if (absProj instanceof Project) {
+				Project proj = (Project) absProj;
 				try {
 					projElem.setAttribute(XMLNames.modelAttr,
-							((Project<?>) proj).getModel().stringValue());
+							((Project) proj).getModel().stringValue());
 					projElem.setAttribute(XMLNames.lexicalizationModelAttr,
-							((Project<?>) proj).getModel().stringValue());
+							((Project) proj).getModel().stringValue());
 					
 					// TODO: temporary fix to make UI work until it is updated
-					projElem.setAttribute("modelConfigType", ((Project<?>) proj).computeModelConfigType());
+					projElem.setAttribute("ontoType", ((Project) proj).computeOntoType());
 
 					
 					String ontMgr = "";
 					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
 
-					projElem.setAttribute(XMLNames.typeAttr, ((Project<?>) proj).getType());
+					projElem.setAttribute(XMLNames.typeAttr, ((Project) proj).getType());
 
-					projElem.setAttribute(XMLNames.historyEnabled, Boolean.toString(((Project<?>) proj).isHistoryEnabled()));
-					projElem.setAttribute(XMLNames.validationEnabled, Boolean.toString(((Project<?>) proj).isValidationEnabled()));
+					projElem.setAttribute(XMLNames.historyEnabled, Boolean.toString(((Project) proj).isHistoryEnabled()));
+					projElem.setAttribute(XMLNames.validationEnabled, Boolean.toString(((Project) proj).isValidationEnabled()));
 
 					projElem.setAttribute(XMLNames.statusAttr, "ok");
 
 					projElem.setAttribute(XMLNames.openAttr,
-							Boolean.toString(ProjectManager.isOpen((Project<?>) absProj)));
+							Boolean.toString(ProjectManager.isOpen((Project) absProj)));
 
 					if (consumer != null) {
 						ProjectManager.AccessResponse access = ProjectManager.checkAccessibility(consumer,
@@ -241,12 +240,12 @@ public class Projects extends STServiceAdapterOLD {
 		if (!ProjectManager.isOpen(project))
 			throw new IllegalAccessException("the project has to be open first in order to be saved!");
 
-		Project<?> projectInstance = ProjectManager.getProject(project);
+		Project projectInstance = ProjectManager.getProject(project);
 
-		if (!(projectInstance instanceof SaveToStoreProject<?>))
+		if (!(projectInstance instanceof SaveToStoreProject))
 			throw new IllegalAccessException("non-sense request: this is not a saveable project!");
 
-		((SaveToStoreProject<?>) projectInstance).save();
+		((SaveToStoreProject) projectInstance).save();
 	}
 
 	/*
@@ -458,7 +457,7 @@ public class Projects extends STServiceAdapterOLD {
 	public void setProjectProperty(String projectName, String propName, String propValue)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project<?> project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		project.setProperty(propName, propValue);
 	}
 
@@ -504,8 +503,8 @@ public class Projects extends STServiceAdapterOLD {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 
 		for (AbstractProject absProj : projects) {
-			if (absProj instanceof Project<?>) {
-				Project<? extends RDFModel> project = (Project<? extends RDFModel>) absProj;
+			if (absProj instanceof Project) {
+				Project project = (Project) absProj;
 				Element projectElement = XMLHelp.newElement(dataElem, "project");
 				projectElement.setAttribute("name", project.getName());
 
@@ -529,8 +528,8 @@ public class Projects extends STServiceAdapterOLD {
 				}
 				// ACL for other ProjectConsumer
 				for (AbstractProject absCons : consumers) {
-					if (absCons instanceof Project<?>) {
-						Project<? extends RDFModel> cons = (Project<? extends RDFModel>) absCons;
+					if (absCons instanceof Project) {
+						Project cons = (Project) absCons;
 						consumerElement = XMLHelp.newElement(projectElement, "consumer");
 						consumerElement.setAttribute("name", cons.getName());
 						aclForConsumer = projectAcl.getAccessLevelForConsumer(cons);
@@ -576,7 +575,7 @@ public class Projects extends STServiceAdapterOLD {
 	public void updateAccessLevel(String projectName, String consumerName, AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project<RDFModel> project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
 	}
 
@@ -596,7 +595,7 @@ public class Projects extends STServiceAdapterOLD {
 	public void updateLockLevel(String projectName, LockLevel lockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project<RDFModel> project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		project.getACL().setLockableWithLevel(lockLevel);
 	}
 

@@ -867,7 +867,7 @@ public class ClsOld extends ResourceOld {
 	 * @throws DOMException
 	 * @throws ModelAccessException
 	 */
-	public static void recursiveCreateClassesXMLTree(Project<?> project, RDFModel ontModel, ARTURIResource cls, Element element,
+	public static void recursiveCreateClassesXMLTree(Project project, RDFModel ontModel, ARTURIResource cls, Element element,
 			ARTResource... graphs) throws DOMException, ModelAccessException {
 		Element classElement = XMLHelp.newElement(element, "Class");
 		boolean deleteForbidden = ServletUtilities.getService().checkReadOnly(cls, project);

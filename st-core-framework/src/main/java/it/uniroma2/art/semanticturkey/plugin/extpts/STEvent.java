@@ -23,9 +23,9 @@
 
 package it.uniroma2.art.semanticturkey.plugin.extpts;
 
-import it.uniroma2.art.semanticturkey.servlet.ServiceRequest;
-
 import java.util.EventObject;
+
+import it.uniroma2.art.semanticturkey.servlet.ServiceRequest;
 
 /**
  * @author Andrea Turbati, Armando Stellato

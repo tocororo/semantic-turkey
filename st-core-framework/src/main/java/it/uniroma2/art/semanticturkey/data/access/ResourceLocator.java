@@ -71,7 +71,7 @@ public class ResourceLocator {
 	 * @throws ModelAccessException
 	 * @throws ProjectAccessException
 	 */
-	public ResourcePosition locateResource(Project<?> project, Repository projectRepository,
+	public ResourcePosition locateResource(Project project, Repository projectRepository,
 			Resource resource, AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
 			throws ModelAccessException, ProjectAccessException {
 		if (resource instanceof BNode) {
@@ -95,7 +95,7 @@ public class ResourceLocator {
 			if (!ProjectManager.isOpen(abstrProj.getName()))
 				continue;
 
-			Project<?> proj = ProjectManager.getProject(abstrProj.getName());
+			Project proj = ProjectManager.getProject(abstrProj.getName());
 
 			AccessResponse accessResponse = ProjectManager.checkAccessibility(project, proj,
 					requestedAccessLevel, requestedLockLevel);
@@ -106,7 +106,7 @@ public class ResourceLocator {
 			String ns = proj.getDefaultNamespace();
 
 			if (ns.equals(iriResource.getNamespace())) {
-				return new LocalResourcePosition((Project<?>) proj);
+				return new LocalResourcePosition((Project) proj);
 			}
 		}
 
@@ -130,7 +130,7 @@ public class ResourceLocator {
 	 * @throws ProjectAccessException
 	 * @throws ModelAccessException
 	 */
-	public ResourcePosition locateResource(Project<?> project, Repository projectRepository,
+	public ResourcePosition locateResource(Project project, Repository projectRepository,
 			Resource resource) throws ModelAccessException, ProjectAccessException {
 		return locateResource(project, projectRepository, resource, AccessLevel.R, LockLevel.NO);
 	}

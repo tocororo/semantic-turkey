@@ -147,7 +147,7 @@ public class ProjectUserBindingsManager {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
-			if (abstrProj instanceof Project<?>) {
+			if (abstrProj instanceof Project) {
 				createPUBinding(new ProjectUserBinding(abstrProj, user));
 			}
 		}

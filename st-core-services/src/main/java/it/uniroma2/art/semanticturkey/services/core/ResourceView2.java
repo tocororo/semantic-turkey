@@ -139,7 +139,7 @@ public class ResourceView2 extends STServiceAdapter {
 	@Autowired
 	private CustomFormManager customFormManager;
 
-	private ThreadLocal<Map<Project<?>, RepositoryConnection>> projectConnectionHolder = ThreadLocal
+	private ThreadLocal<Map<Project, RepositoryConnection>> projectConnectionHolder = ThreadLocal
 			.withInitial(HashMap::new);
 
 	@STServiceOperation
@@ -148,7 +148,7 @@ public class ResourceView2 extends STServiceAdapter {
 	public Map<String, ResourceViewSection> getResourceView(Resource resource,
 			@Optional ResourcePosition resourcePosition) throws Exception {
 		try {
-			Project<? extends RDFModel> project = getProject();
+			Project project = getProject();
 			Resource workingGraph = getWorkingGraph();
 
 			SimpleValueFactory vf = SimpleValueFactory.getInstance();
@@ -278,7 +278,7 @@ public class ResourceView2 extends STServiceAdapter {
 	public static List<IRI> getLexicalizationPropertiesHelper(Resource resource,
 			ResourcePosition resourcePosition) throws ProjectInconsistentException {
 		if (resourcePosition instanceof LocalResourcePosition) {
-			Project<?> hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
+			Project hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
 			if (hostingProject.getLexicalizationModel().equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 				return Arrays.asList(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
 			} else if (hostingProject.getLexicalizationModel().equals(Project.SKOS_LEXICALIZATION_MODEL)) {
@@ -518,7 +518,7 @@ public class ResourceView2 extends STServiceAdapter {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 
-			Project<?> resourceHoldingProject = localResourcePosition.getProject();
+			Project resourceHoldingProject = localResourcePosition.getProject();
 
 			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
 					resourceHoldingProject);
@@ -672,7 +672,7 @@ public class ResourceView2 extends STServiceAdapter {
 	}
 
 	private RepositoryConnection acquireManagedConnectionToProject(ProjectConsumer consumer,
-			Project<?> resourceHoldingProject) throws ProjectAccessException {
+			Project resourceHoldingProject) throws ProjectAccessException {
 		if (consumer.equals(resourceHoldingProject)) {
 			return getManagedConnection();
 		} else {
@@ -694,7 +694,7 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 	public static final QueryBuilderProcessor INSTANCE = new XLabelLiteralFormQueryProcessor();
 
 	@Override
-	public GraphPattern getGraphPattern(Project<?> currentProject) {
+	public GraphPattern getGraphPattern(Project currentProject) {
 		return GraphPatternBuilder.create().prefix("skosxl", SKOSXL.NAMESPACE)
 				.pattern("?resource skosxl:literalForm ?literalForm . FILTER(isLITERAL(?literalForm))")
 				.projection(ProjectionElementBuilder.variable("literalForm")).graphPattern();
@@ -706,7 +706,7 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project<?> currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
 		return resultTable.stream().filter(bs -> bs.getValue("literalForm") != null).collect(
 				groupingBy(bs -> bs.getValue("resource"), mapping(bs -> (Literal) bs.getValue("literalForm"),
 						reducing(null, (v1, v2) -> v1 != null ? v1 : v2))));

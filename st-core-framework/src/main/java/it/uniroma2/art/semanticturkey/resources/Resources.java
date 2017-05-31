@@ -385,7 +385,7 @@ public class Resources {
 		projectUserBindingsDir.mkdir();
 
 		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
-			if (abstrProj instanceof Project<?>) {
+			if (abstrProj instanceof Project) {
 				for (STUser user : UsersManager.listUsers()) {
 					ProjectUserBinding puBinding = new ProjectUserBinding(abstrProj, user);
 					if (user.getEmail().equals("admin@vocbench.com")) {

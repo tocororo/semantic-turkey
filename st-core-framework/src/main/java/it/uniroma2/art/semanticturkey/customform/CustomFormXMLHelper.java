@@ -139,7 +139,7 @@ public class CustomFormXMLHelper {
 	 * @param systemCustomForms
 	 * @return
 	 */
-	public static Collection<CustomForm> loadProjectCustomForms(Project<?> project, Collection<CustomForm> systemCustomForms) {
+	public static Collection<CustomForm> loadProjectCustomForms(Project project, Collection<CustomForm> systemCustomForms) {
 		File formsFolder = CustomFormManager.getFormsFolder(project);
 		logger.debug("Loading CustomForms.");
 		Collection<CustomForm> customForms = new ArrayList<>();
@@ -172,7 +172,7 @@ public class CustomFormXMLHelper {
 	 * @param projectCustomForms
 	 * @return
 	 */
-	public static Collection<FormCollection> loadProjectFormCollections(Project<?> project,
+	public static Collection<FormCollection> loadProjectFormCollections(Project project,
 			Collection<CustomForm> projectCustomForms, Collection<CustomForm> systemCustomForms) {
 		//Custom Form at project and system level (used to check if a FC points to a not existing CF) 
 		Collection<CustomForm> mergedCustomForms = new ArrayList<>(); 
@@ -206,7 +206,7 @@ public class CustomFormXMLHelper {
 		return formCollections;
 	}
 	
-	public static Collection<FormsMapping> loadProjectFormsMapping(Project<?> project,
+	public static Collection<FormsMapping> loadProjectFormsMapping(Project project,
 			Collection<FormCollection> projectFormCollections, Collection<FormCollection> systemFormCollections) throws CustomFormParseException {
 		File cfConfigFile = new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME);
 		//FormCollections at project and system level (used to check if a mapping points to a not existing FC) 

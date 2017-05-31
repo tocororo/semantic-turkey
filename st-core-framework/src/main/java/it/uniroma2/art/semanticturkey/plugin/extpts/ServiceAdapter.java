@@ -419,7 +419,7 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return model.listNamedGraphs();
 	}
 
-	protected Project<? extends RDFModel> getProject() {
+	protected Project getProject() {
 		return serviceContext.getProject();
 	}
 

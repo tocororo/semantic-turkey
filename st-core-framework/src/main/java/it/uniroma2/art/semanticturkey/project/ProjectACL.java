@@ -74,7 +74,7 @@ public class ProjectACL {
 	private Map<String, AccessLevel> acl = new HashMap<String, ProjectACL.AccessLevel>();
 	private LockLevel lockLevel;
 
-	private Project<?> project;
+	private Project project;
 
 	public static final String ACL = "acl.acl";
 	public static final String LOCKLEVEL = "acl.lockLevel";
@@ -86,7 +86,7 @@ public class ProjectACL {
 	 * @param aclSerialization
 	 * @param lockLevelSerialization
 	 */
-	ProjectACL(Project<?> project) {
+	ProjectACL(Project project) {
 		this.project = project;
 		String aclSerialization = project.getProperty(ACL);
 		String lockLevelSerialization = project.getProperty(LOCKLEVEL);

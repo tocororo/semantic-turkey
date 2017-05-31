@@ -34,7 +34,6 @@ import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.owlart.model.NodeFilters;
 import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.rdf4jimpl.RDF4JARTResourceFactory;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
@@ -92,7 +91,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		return txManager;
 	}
 
-	public Project<? extends RDFModel> getProject() {
+	public Project getProject() {
 		return stServiceContext.getProject();
 	}
 
@@ -136,7 +135,6 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	protected Collection<AnnotatedValue<Resource>> retrieveResources(String queryString) {
 		RepositoryConnection repoConn = getManagedConnection();
-		ValueFactory vf = repoConn.getValueFactory();
 
 		TupleQuery query = repoConn.prepareTupleQuery(queryString);
 

@@ -10,7 +10,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -121,7 +120,7 @@ public class STAuthorizationEvaluator {
 		
 		STUser loggedUser = UsersManager.getLoggedUser();
 		Collection<Role> userRoles = getRoles(loggedUser);
-		Project<?> targetForRBAC = getTargetForRBAC();
+		Project targetForRBAC = getTargetForRBAC();
 		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
@@ -189,14 +188,14 @@ public class STAuthorizationEvaluator {
 		return Collections.emptyList();
 	}
 
-	private Project<?> getTargetForRBAC() {
+	private Project getTargetForRBAC() {
 		if (stServiceContext.hasContextParameter("project")) {
-			Project<?> project = stServiceContext.getProject();
+			Project project = stServiceContext.getProject();
 			ProjectConsumer consumer = stServiceContext.getProjectConsumer();
 			if (consumer.equals(ProjectConsumer.SYSTEM)) {
 				return project;
 			} else {
-				return (Project<?>) consumer;
+				return (Project) consumer;
 			}
 		} else {
 			return null;
@@ -208,7 +207,7 @@ public class STAuthorizationEvaluator {
 		if (ProjectConsumer.SYSTEM.equals(consumer)) {
 			return true;
 		}
-		Project<?> project = stServiceContext.getProject();
+		Project project = stServiceContext.getProject();
 		return ProjectManager.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
 				.isAffirmative();
 	}

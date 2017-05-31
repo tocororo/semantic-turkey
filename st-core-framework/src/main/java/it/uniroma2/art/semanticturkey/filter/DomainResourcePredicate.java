@@ -53,7 +53,7 @@ public class DomainResourcePredicate implements Predicate<ARTResource> {
 		return new DomainResourcePredicate(ontManager);
 	}
 	
-	public static DomainResourcePredicate getPredicate(Project<?> project) {
+	public static DomainResourcePredicate getPredicate(Project project) {
 		return getPredicate(project.getNewOntologyManager());
 	}
 

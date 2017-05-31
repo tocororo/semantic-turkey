@@ -42,7 +42,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project<?> currentProject) {
+	public GraphPattern getGraphPattern(Project currentProject) {
 		return GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE).prefix("rdfs", RDFS.NAMESPACE).prefix("owl", OWL.NAMESPACE)
 				.prefix("skos", SKOS.NAMESPACE).prefix("skosxl", SKOSXL.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_role"))
 				.pattern(
@@ -71,7 +71,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project<?> project, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(Project project, List<BindingSet> resultTable) {
 		return null;
 	}
 

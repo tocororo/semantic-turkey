@@ -252,7 +252,7 @@ public class Administration extends STServiceAdapter {
 		ArrayNode rolesArrayNode = jsonFactory.arrayNode();
 		Collection<Role> roles;
 		if (projectName != null) {
-			Project<?> project = ProjectManager.getProjectDescription(projectName);
+			Project project = ProjectManager.getProjectDescription(projectName);
 			roles = RBACManager.getRoles(project);
 		} else {
 			roles = RBACManager.getRoles(null);
@@ -282,7 +282,7 @@ public class Administration extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode capabilitiesArrayNode = jsonFactory.arrayNode();
 		if (projectName != null) {
-			Project<?> project = ProjectManager.getProjectDescription(projectName);
+			Project project = ProjectManager.getProjectDescription(projectName);
 			for (Term c: RBACManager.getRoleCapabilities(project, role)) {
 				capabilitiesArrayNode.add(c.toString());
 			}
@@ -316,7 +316,7 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'D')")
 	public void deleteRole(String roleName) throws PUBindingException {
-		Project<?> project = null;
+		Project project = null;
 		if (stServiceContext.hasContextParameter("project")) {
 			project = getProject();
 		}
@@ -338,7 +338,7 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public void exportRole(HttpServletResponse oRes, String roleName) throws RBACException, IOException {
-		Project<?> project = null;
+		Project project = null;
 		if (stServiceContext.hasContextParameter("project")) {
 			project = getProject();
 		}

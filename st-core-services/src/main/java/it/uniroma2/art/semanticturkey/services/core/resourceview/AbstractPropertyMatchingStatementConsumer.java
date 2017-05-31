@@ -78,7 +78,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Map<String, ResourceViewSection> consumeStatements(Project<?> project,
+	public Map<String, ResourceViewSection> consumeStatements(Project project,
 			ResourcePosition resourcePosition, Resource resource, Model statements,
 			Set<Statement> processedStatements, Resource workingGraph,
 			Map<Resource, Map<String, Value>> resource2attributes,

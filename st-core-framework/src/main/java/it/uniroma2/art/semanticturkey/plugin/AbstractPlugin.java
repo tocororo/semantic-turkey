@@ -16,11 +16,11 @@ public class AbstractPlugin<Q extends STProperties, R extends STProperties, T ex
 		this.factory = factory;
 	}
 
-	protected Q getExtensionPointProjectSettings(Project<?> project) throws STPropertyAccessException {
+	protected Q getExtensionPointProjectSettings(Project project) throws STPropertyAccessException {
 		return factory.getExtensonPointProjectSettings(project);
 	}
 
-	protected R getClassLevelProjectSettings(Project<?> project) throws STPropertyAccessException {
+	protected R getClassLevelProjectSettings(Project project) throws STPropertyAccessException {
 		return factory.getProjectSettings(project);
 	}
 

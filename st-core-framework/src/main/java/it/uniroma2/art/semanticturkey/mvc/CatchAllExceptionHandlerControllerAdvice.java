@@ -1,11 +1,5 @@
 package it.uniroma2.art.semanticturkey.mvc;
 
-import it.uniroma2.art.semanticturkey.constraints.MsgInterpolationVariables;
-import it.uniroma2.art.semanticturkey.servlet.JSONResponse;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.hibernate.validator.method.MethodConstraintViolation;
@@ -19,6 +13,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.w3c.dom.Document;
+
+import it.uniroma2.art.semanticturkey.constraints.MsgInterpolationVariables;
+import it.uniroma2.art.semanticturkey.servlet.JSONResponse;
+import it.uniroma2.art.semanticturkey.servlet.Response;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 /**
  * ControllerAdvice that handles the exception thrown by Semantic Turkey services (published using the MVC

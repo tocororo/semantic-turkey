@@ -28,7 +28,7 @@ public class StringToResourcePositionConverter implements Converter<String, Reso
 	public ResourcePosition convert(String resourcePositionString) {
 		if (resourcePositionString.startsWith(LOCAL_PREFIX)) {
 			String projectName = resourcePositionString.substring(LOCAL_PREFIX.length());
-			Project<?> project = ProjectManager.getProject(projectName);
+			Project project = ProjectManager.getProject(projectName);
 			
 			if (project == null) {
 				throw new IllegalArgumentException(String.format("The project used in a local resource position does not exist: %s", projectName));

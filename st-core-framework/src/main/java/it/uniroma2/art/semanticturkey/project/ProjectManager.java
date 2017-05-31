@@ -179,7 +179,7 @@ public class ProjectManager {
 			} else { // case of using a consumer
 				try {
 					proj = getProjectDescription(projDir.getName());
-					if (((Project<?>) proj).getACL().hasInACL(consumer))
+					if (((Project) proj).getACL().hasInACL(consumer))
 						projects.add(proj);
 				} catch (Exception e) {
 					// if a project is corrupted, it is simply cut from the list of available projects
@@ -229,11 +229,11 @@ public class ProjectManager {
 			throw new ProjectDeletionException("unable to delete project: " + projectName);
 	}
 
-	private static <MODELTYPE extends RDFModel> Project<MODELTYPE> activateProject(String projectName)
+	private static Project activateProject(String projectName)
 			throws ProjectCreationException, ProjectInconsistentException, ProjectUpdateException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			UnsupportedModelConfigurationException, UnloadableModelConfigurationException {
-		Project<MODELTYPE> proj = getProjectDescription(projectName);
+		Project proj = getProjectDescription(projectName);
 
 		try {
 			logger.debug("project " + projectName + " initialized as a " + proj.getType() + " project");
@@ -271,7 +271,7 @@ public class ProjectManager {
 	 * @param projectName
 	 * @return
 	 */
-	public static Project<? extends RDFModel> getProject(String projectName) {
+	public static Project getProject(String projectName) {
 		return openProjects.getProject(projectName);
 	}
 
@@ -293,7 +293,7 @@ public class ProjectManager {
 			return ProjectConsumer.SYSTEM;
 		}
 
-		Project<?> project = openProjects.getProject(consumerName);
+		Project project = openProjects.getProject(consumerName);
 		if (project != null)
 			return project;
 		else
@@ -382,7 +382,7 @@ public class ProjectManager {
 					"project " + projectName + " is not open, and thus cannot be exported");
 		}
 
-		Project<?> project = openProjects.getProject(projectName);
+		Project project = openProjects.getProject(projectName);
 
 		File tempDir = Resources.createTempDir();
 		Utilities.copy(project.infoSTPFile, new File(tempDir, project.infoSTPFile.getName()));
@@ -436,7 +436,7 @@ public class ProjectManager {
 		// String ontManagerID = stp_properties.getProperty(Project.ONTOLOGY_MANAGER_ID_PROP);
 		// logger.info("type: " + projectType);
 
-		Project<? extends RDFModel> newProj;
+		Project newProj;
 		try {
 			newProj = activateProject(name);
 			try {
@@ -474,7 +474,7 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 */
-	public static <MODELTYPE extends RDFModel> Project<MODELTYPE> getProjectDescription(String projectName)
+	public static Project getProjectDescription(String projectName)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		logger.info("opening project: " + projectName);
 
@@ -482,16 +482,16 @@ public class ProjectManager {
 
 		logger.debug("project dir: " + projectDir);
 
-		Project<MODELTYPE> proj;
+		Project proj;
 
 		ProjectType type;
 		try {
 			type = getProjectType(projectName);
 			logger.debug("project type:" + type);
 			if (type == ProjectType.continousEditing)
-				proj = new PersistentStoreProject<MODELTYPE>(projectName, projectDir);
+				proj = new PersistentStoreProject(projectName, projectDir);
 			else
-				proj = new SaveToStoreProject<MODELTYPE>(projectName, projectDir);
+				proj = new SaveToStoreProject(projectName, projectDir);
 			logger.info("created project description for: " + proj);
 			return proj;
 		} catch (Exception e) {
@@ -857,7 +857,7 @@ public class ProjectManager {
 		}
 	}
 
-	public static AccessResponse checkAccessibility(ProjectConsumer consumer, Project<?> project,
+	public static AccessResponse checkAccessibility(ProjectConsumer consumer, Project project,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel) {
 
 		ProjectACL acl = project.getACL();
@@ -920,12 +920,12 @@ public class ProjectManager {
 	 * @throws PUBindingException
 	 * @throws RBACException
 	 */
-	public static Project<? extends RDFModel> accessProject(ProjectConsumer consumer, String projectName,
+	public static Project accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, PUBindingException, RBACException {
 
-		Project<?> project = getProjectDescription(projectName);
+		Project project = getProjectDescription(projectName);
 
 		AccessResponse accessResponse = checkAccessibility(consumer, project, requestedAccessLevel,
 				requestedLockLevel);
@@ -982,14 +982,14 @@ public class ProjectManager {
 	public static void disconnectFromProject(ProjectConsumer consumer, String projectName)
 			throws ModelUpdateException {
 
-		Project<?> project = openProjects.getProject(projectName);
+		Project project = openProjects.getProject(projectName);
 
 		// only in case the consumer is SYSTEM, the projects consumed by the given project are disconnected in
 		// turn
 		if (consumer == ProjectConsumer.SYSTEM) {
-			Set<Project<?>> accessedProjects = openProjects.listAccessedProjects(project);
+			Set<Project> accessedProjects = openProjects.listAccessedProjects(project);
 			System.out.println("accessed projects set: " + accessedProjects);
-			for (Project<?> accessedProject : accessedProjects) {
+			for (Project accessedProject : accessedProjects) {
 				System.out.println("accessed project: " + accessedProject);
 				disconnectFromProject(project, accessedProject.getName());
 			}
@@ -1003,7 +1003,7 @@ public class ProjectManager {
 
 	}
 
-	public static boolean isOpen(Project<?> project) {
+	public static boolean isOpen(Project project) {
 		return openProjects.isOpen(project);
 	}
 
@@ -1011,7 +1011,7 @@ public class ProjectManager {
 		return openProjects.isOpen(project);
 	}
 
-	private static void tearDownProject(Project<?> project) throws ModelUpdateException {
+	private static void tearDownProject(Project project) throws ModelUpdateException {
 		logger.debug("closing project: " + project);
 		project.deactivate();
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
@@ -1032,7 +1032,7 @@ public class ProjectManager {
 	 */
 	public static AccessLevel getAccessedLevel(String projectName, ProjectConsumer consumer)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
-		Project<RDFModel> project = getProjectDescription(projectName);
+		Project project = getProjectDescription(projectName);
 		if (isOpen(project)) {// look for the consumer only if the project is open
 			AccessLevel accessLevel = openProjects.getAccessStatusMap(project).get(consumer);
 			if (accessLevel != null) { // accessLevel could be null because project could be open but not from
@@ -1079,7 +1079,7 @@ public class ProjectManager {
 	 */
 	public static LockLevel getLockingLevel(String projectName, ProjectConsumer consumer)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
-		Project<RDFModel> project = getProjectDescription(projectName);
+		Project project = getProjectDescription(projectName);
 		if (openProjects.isLockedBy(project, consumer)) {
 			return openProjects.getLockLevel(project);
 		} else {
@@ -1118,15 +1118,15 @@ public class ProjectManager {
 		// project is open)
 		// the third map returns the lock status; note that a "no lock" is represented by a LockStatus pair
 		// with <null, LockLevel.NO>
-		private Map<String, Project<? extends RDFModel>> projects = new HashMap<String, Project<?>>();
-		private Map<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>> projectsAccessStatus = new HashMap<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>>();
-		private Map<Project<?>, LockStatus> projectsLockStatus = new HashMap<Project<?>, LockStatus>();
+		private Map<String, Project> projects = new HashMap<String, Project>();
+		private Map<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>> projectsAccessStatus = new HashMap<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>>();
+		private Map<Project, LockStatus> projectsLockStatus = new HashMap<Project, LockStatus>();
 
-		public Project<? extends RDFModel> getProject(String projectName) {
+		public Project getProject(String projectName) {
 			return projects.get(projectName);
 		}
 
-		public Map<ProjectConsumer, ProjectACL.AccessLevel> getAccessStatusMap(Project<?> project) {
+		public Map<ProjectConsumer, ProjectACL.AccessLevel> getAccessStatusMap(Project project) {
 			return projectsAccessStatus.get(project);
 		}
 
@@ -1137,7 +1137,7 @@ public class ProjectManager {
 		 * @param project
 		 * @return
 		 */
-		public ProjectACL.AccessLevel getAccessStatus(Project<?> project) {
+		public ProjectACL.AccessLevel getAccessStatus(Project project) {
 			for (ProjectACL.AccessLevel accessLevel : getAccessStatusMap(project).values()) {
 				if (accessLevel == ProjectACL.AccessLevel.RW)
 					return ProjectACL.AccessLevel.RW;
@@ -1145,15 +1145,15 @@ public class ProjectManager {
 			return ProjectACL.AccessLevel.R;
 		}
 
-		public ProjectACL.LockLevel getLockLevel(Project<?> project) {
+		public ProjectACL.LockLevel getLockLevel(Project project) {
 			return projectsLockStatus.get(project).getLockLevel();
 		}
 
-		public ProjectConsumer getLockingConsumer(Project<?> project) {
+		public ProjectConsumer getLockingConsumer(Project project) {
 			return projectsLockStatus.get(project).getConsumer();
 		}
 
-		public boolean isLockedBy(Project<?> project, ProjectConsumer consumer) {
+		public boolean isLockedBy(Project project, ProjectConsumer consumer) {
 			return (consumer.equals(getLockingConsumer(project)));
 		}
 
@@ -1165,7 +1165,7 @@ public class ProjectManager {
 		 * @param project
 		 * @return
 		 */
-		public boolean isNotConsumed(Project<?> project) {
+		public boolean isNotConsumed(Project project) {
 			return projectsAccessStatus.get(project).isEmpty();
 		}
 
@@ -1178,7 +1178,7 @@ public class ProjectManager {
 		 * @param consumer
 		 * @param lockLevel
 		 */
-		public void setLock(Project<?> project, ProjectConsumer consumer, ProjectACL.LockLevel lockLevel) {
+		public void setLock(Project project, ProjectConsumer consumer, ProjectACL.LockLevel lockLevel) {
 			// this check ensures that the written consumer is null in case of a NO lock
 			if (lockLevel == LockLevel.NO)
 				unlock(project);
@@ -1186,7 +1186,7 @@ public class ProjectManager {
 				projectsLockStatus.put(project, new LockStatus(consumer, lockLevel));
 		}
 
-		public void unlock(Project<?> project) {
+		public void unlock(Project project) {
 			projectsLockStatus.put(project, new LockStatus(null, LockLevel.NO));
 		}
 
@@ -1198,7 +1198,7 @@ public class ProjectManager {
 		 * @param accessLevel
 		 * @param lockLevel
 		 */
-		public void addProject(Project<?> project, ProjectConsumer consumer,
+		public void addProject(Project project, ProjectConsumer consumer,
 				ProjectACL.AccessLevel accessLevel, ProjectACL.LockLevel lockLevel) {
 			// TODO foresee a check for existing project (it should not exist, so in case throw an exception)
 			projects.put(project.getName(), project);
@@ -1208,7 +1208,7 @@ public class ProjectManager {
 			setLock(project, consumer, lockLevel);
 		}
 
-		public void removeProject(Project<?> project) {
+		public void removeProject(Project project) {
 			projects.remove(project.getName());
 			projectsAccessStatus.remove(project);
 			projectsLockStatus.remove(project);
@@ -1223,7 +1223,7 @@ public class ProjectManager {
 		 * @param accessLevel
 		 * @param lockLevel
 		 */
-		public void addConsumer(Project<?> project, ProjectConsumer consumer,
+		public void addConsumer(Project project, ProjectConsumer consumer,
 				ProjectACL.AccessLevel accessLevel, ProjectACL.LockLevel lockLevel) {
 			if (!projects.containsKey(project.getName()))
 				throw new IllegalProjectStatusException("project " + project
@@ -1236,7 +1236,7 @@ public class ProjectManager {
 			// TODO add a consistency check here to verify that there is not already another lock
 		}
 
-		public void removeConsumer(Project<?> project, ProjectConsumer consumer) {
+		public void removeConsumer(Project project, ProjectConsumer consumer) {
 			if (!projects.containsKey(project.getName()))
 				throw new IllegalProjectStatusException("project " + project
 						+ " does not seem to be open, thus a consumer cannot be removed from it. Actually, there should be no consumer for it!");
@@ -1261,9 +1261,9 @@ public class ProjectManager {
 		 * @param consumer
 		 * @return
 		 */
-		public Set<Project<?>> listAccessedProjects(ProjectConsumer consumer) {
-			HashSet<Project<?>> accessedProjects = new HashSet<Project<?>>();
-			for (Entry<Project<?>, Map<ProjectConsumer, ProjectACL.AccessLevel>> mapEntry : projectsAccessStatus
+		public Set<Project> listAccessedProjects(ProjectConsumer consumer) {
+			HashSet<Project> accessedProjects = new HashSet<Project>();
+			for (Entry<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>> mapEntry : projectsAccessStatus
 					.entrySet()) {
 				if (mapEntry.getValue().keySet().contains(consumer))
 					accessedProjects.add(mapEntry.getKey());
@@ -1275,7 +1275,7 @@ public class ProjectManager {
 			return projects.containsKey(projectName);
 		}
 
-		public boolean isOpen(Project<?> project) {
+		public boolean isOpen(Project project) {
 			return isOpen(project.getName());
 		}
 
@@ -1327,9 +1327,9 @@ public class ProjectManager {
 	 * SINGLE PROJECT METHODS, WRAPPING THE ABOVE METHODS
 	 */
 
-	private static Project<? extends RDFModel> _currentProject;
+	private static Project _currentProject;
 
-	private static <MODELTYPE extends RDFModel> void setCurrentProject(Project<MODELTYPE> proj) {
+	private static void setCurrentProject(Project proj) {
 		_currentProject = proj;
 	}
 
@@ -1338,7 +1338,7 @@ public class ProjectManager {
 	 * 
 	 * @return
 	 */
-	public static Project<? extends RDFModel> getCurrentProject() {
+	public static Project getCurrentProject() {
 		return _currentProject;
 	}
 
@@ -1360,10 +1360,10 @@ public class ProjectManager {
 	 * @throws RBACException
 	 * @throws PUBindingException
 	 */
-	public static Project<? extends RDFModel> openProject(String projectName)
+	public static Project openProject(String projectName)
 			throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException,
 			ForbiddenProjectAccessException, PUBindingException, RBACException {
-		Project<? extends RDFModel> project;
+		Project project;
 		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
 		setCurrentProject(project);
 		return project;
@@ -1381,7 +1381,7 @@ public class ProjectManager {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 
-	public static Project<? extends RDFModel> createProject(ProjectConsumer consumer, String projectName,
+	public static Project createProject(ProjectConsumer consumer, String projectName,
 			IRI model, IRI lexicalizationModel, String baseURI, boolean historyEnabled,
 			boolean validationEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
 			PluginSpecification coreRepoSailConfigurerSpecification, String supportRepoID,
@@ -1589,7 +1589,7 @@ public class ProjectManager {
 			logger.debug("directory: " + projectDir + " deleted due to project creation fail");
 			throw e;
 		}
-		Project<? extends RDFModel> project = accessProject(consumer, projectName, AccessLevel.RW,
+		Project project = accessProject(consumer, projectName, AccessLevel.RW,
 				LockLevel.NO);
 		// TODO this has to be removed, once all references to currentProject have been removed from ST
 		// (filters etc..)

@@ -51,7 +51,7 @@ public class VOIDLIMEDatasetMetadataExporter extends
 	}
 
 	@Override
-	public Model produceDatasetMetadata(Project<?> project, RepositoryConnection conn, IRI dataGraph)
+	public Model produceDatasetMetadata(Project project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException, STPropertyAccessException {
 		LIMERepositoryWrapper tempMetadataRepository = new LIMERepositoryWrapper(new SailRepository(new MemoryStore()));
 		tempMetadataRepository.initialize();

@@ -12,10 +12,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -124,7 +122,7 @@ public class Preferences extends STServiceAdapter {
 	public Collection<AnnotatedValue<IRI>> getActiveSchemes(String projectName) throws IllegalStateException, STPropertyAccessException,
 			ProjectAccessException {
 		Collection<AnnotatedValue<IRI>> schemes = new ArrayList<>();
-		Project<?> project = ProjectManager.getProject(projectName);
+		Project project = ProjectManager.getProject(projectName);
 		if (project == null) {
 			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName 
 					+ ". It could be closed or not existing.");
