@@ -34,8 +34,8 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 
@@ -846,13 +846,13 @@ public class ICV extends STServiceAdapterOLD {
 			ModelAccessException, MalformedQueryException {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		String q = "SELECT ?resource ?label ?lang ?type WHERE {\n"
+		String q = "SELECT ?resource ?type ?prefLabel ?altLabel ?literalForm ?lang WHERE {\n"
 				+ "?resource a ?type .\n"
-				+ "?resource <" + SKOSXL.PREFLABEL + "> ?xlabel1 .\n"
-				+ "?resource <" + SKOSXL.ALTLABEL + "> ?xlabel2 .\n"
-				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?label .\n"
-				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?label .\n"
-				+ "bind(lang(?label) as ?lang) . }";
+				+ "?resource <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
+				+ "?resource <" + SKOSXL.ALTLABEL + "> ?altLabel .\n"
+				+ "?prefLabel <" + SKOSXL.LITERALFORM + "> ?literalForm .\n"
+				+ "?altLabel <" + SKOSXL.LITERALFORM + "> ?literalForm .\n"
+				+ "bind(lang(?literalForm) as ?lang) . }";
 		logger.info("query [listResourcesWithOverlappedSKOSXLLabel]:\n" + q);
 		OWLModel model = getOWLModel();
 		TupleQuery query = model.createTupleQuery(q);
@@ -860,20 +860,35 @@ public class ICV extends STServiceAdapterOLD {
 		while (itTupleBinding.hasNext()){
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
+			ARTURIResource type = tb.getBinding("type").getBoundValue().asURIResource();
+			ARTResource prefLabel = tb.getBinding("prefLabel").getBoundValue().asResource();
+			ARTResource altLabel = tb.getBinding("altLabel").getBoundValue().asResource();
+			String literalForm = tb.getBinding("literalForm").getBoundValue().getNominalValue();
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+			
 			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
-			if (type.equals(SKOS.CONCEPT)) {
+			if (type.equals(SKOS.Res.CONCEPT)) {
 				role = RDFResourceRolesEnum.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.Res.CONCEPTSCHEME)) {
 				role = RDFResourceRolesEnum.conceptScheme;
+			} else if (type.equals(SKOS.Res.COLLECTION)) {
+				role = RDFResourceRolesEnum.skosCollection;
+			} else if (type.equals(SKOS.Res.ORDEREDCOLLECTION)) {
+				role = RDFResourceRolesEnum.skosOrderedCollection;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
-			STRDFURI uriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(recordElem, uriElem);
-			STRDFLiteral labelElem = STRDFNodeFactory.createSTRDFLiteral(model.createLiteral(label, lang), true);
-			RDFXMLHelp.addRDFNode(recordElem, labelElem);
+			STRDFURI resUriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
+			RDFXMLHelp.addRDFNode(recordElem, resUriElem);
+			
+			STRDFResource resPrefLabel = STRDFNodeFactory.createSTRDFResource(prefLabel, RDFResourceRolesEnum.xLabel, true, literalForm);
+			Element prefLabelElem = XMLHelp.newElement(recordElem, "prefLabel");
+			Element resPrefLabelElem = RDFXMLHelp.addRDFNode(prefLabelElem, resPrefLabel);
+			resPrefLabelElem.setAttribute("lang", lang);
+			
+			STRDFResource resAltLabel = STRDFNodeFactory.createSTRDFResource(altLabel, RDFResourceRolesEnum.xLabel, true, literalForm);
+			Element altLabelElem = XMLHelp.newElement(recordElem, "altLabel");
+			Element resAltLabelElem = RDFXMLHelp.addRDFNode(altLabelElem, resAltLabel);
+			resAltLabelElem.setAttribute("lang", lang);
 		}
 		return response;
 	}
