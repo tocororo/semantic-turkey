@@ -25,6 +25,7 @@ import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -78,6 +79,7 @@ public class SPARQL extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
 	public JsonNode evaluateQuery(String query, @Optional(defaultValue = "SPARQL") QueryLanguage ql,
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
@@ -164,6 +166,7 @@ public class SPARQL extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'U')")
 	public void executeUpdate(String query, @Optional(defaultValue = "SPARQL") QueryLanguage ql,
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
