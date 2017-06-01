@@ -112,7 +112,8 @@ public class SKOS extends STServiceAdapter {
 			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
-					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
+					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
+					"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 
@@ -181,7 +182,8 @@ public class SKOS extends STServiceAdapter {
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
-					"     ?resource skos:inScheme ?scheme.                                               \n" +
+					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
+					"     ?resource ?subPropInScheme ?scheme .                                             \n" +
 					"FILTER (";
 			boolean first=true;
 			for(IRI scheme : schemes){
@@ -194,7 +196,8 @@ public class SKOS extends STServiceAdapter {
 			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource .                   \n" +
-					"                       ?aNarrowerConcept skos:inScheme ?scheme . } as ?attr_more )  \n" +
+					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
+					"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 
