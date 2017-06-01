@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,57 +28,36 @@ public class Resources extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'U')")
-	public void updateTriple(@Subject Resource resource, IRI property, Value value, Value newValue){
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'U')")
+	public void updateTriple(@Subject Resource subject, IRI property, Value value, Value newValue){
 		logger.info("request to update a triple");
+		RepositoryConnection repoConnection = getManagedConnection();
 		
-		getManagedConnection().remove(resource, property, value, getWorkingGraph());
-		getManagedConnection().add(resource, property, newValue, getWorkingGraph());
-		
-		//OLD version, using SPARQL, so the Bnodes should not be used
-		/*
-		if(resource instanceof BNode){
-			//TODO check if this is the right exception
-			throw new InvalidParameterException("the resource parameter must be a URI");
-		}
-		String resourceString = SPARQLHelp.toSPARQL(resource);
-
-		String propertyString = SPARQLHelp.toSPARQL(property);
-		
-		if(value instanceof BNode){
-			//TODO check if this is the right exception
-			throw new InvalidParameterException("the value parameter must be a URI or a Literal");
-		}
-		String valueString = SPARQLHelp.toSPARQL(value);
-		
-		if(newValue instanceof BNode){
-			//TODO check if this is the right exception
-			throw new InvalidParameterException("the newValue parameter must be a URI or a Literal");
-		}
-		String newValueString = SPARQLHelp.toSPARQL(newValue);
-		
-		// @formatter:off
-		String updateQuery = 
-				//remove
-				"DELETE DATA { \n"+
-				resourceString+" "+propertyString+" "+valueString+"\n" +		
-				"}; \n" +
-				//add
-				"INSERT DATA {\n" +
-				resourceString+" "+propertyString+" "+newValueString+"\n" +		
-				"}";
-		// @formatter:on
-		
-		Update update = getManagedConnection().prepareUpdate(updateQuery);
+		String query = "DELETE DATA {GRAPH ?g {?subject ?property ?value .}}" +
+				"INSERT DATA {GRAPH ?g {?subject ?property ?newValue .} } ;" ;
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("g", getWorkingGraph());
+		update.setBinding("subject", subject);
+		update.setBinding("property", property);
+		update.setBinding("value", value);
+		update.setBinding("newValue", newValue);
 		update.execute();
-		*/
+		
 	}
 	
 	@STServiceOperation
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
-	public void removeTriple(@Subject Resource resource, IRI property, Value value){
-		getManagedConnection().remove(resource, property, value, getWorkingGraph());
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
+	public void removeValue(@LocallyDefined @Subject Resource subject, @LocallyDefined IRI property, Value value){
+		getManagedConnection().remove(subject, property, value, getWorkingGraph());
+	}
+	
+	
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'C')")
+	public void addValue(@LocallyDefined @Subject Resource subject, @LocallyDefined IRI property, Value value){
+		getManagedConnection().add(subject, property, value, getWorkingGraph());
 	}
 	
 	
