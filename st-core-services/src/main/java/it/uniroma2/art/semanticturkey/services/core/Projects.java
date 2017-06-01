@@ -170,7 +170,7 @@ public class Projects extends STServiceAdapterOLD {
 					projElem.setAttribute(XMLNames.modelAttr,
 							((Project) proj).getModel().stringValue());
 					projElem.setAttribute(XMLNames.lexicalizationModelAttr,
-							((Project) proj).getModel().stringValue());
+							((Project) proj).getLexicalizationModel().stringValue());
 					
 					// TODO: temporary fix to make UI work until it is updated
 					projElem.setAttribute("ontoType", ((Project) proj).computeOntoType());

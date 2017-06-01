@@ -80,16 +80,19 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 @STService
 public class CustomForms extends STServiceAdapter {
@@ -117,7 +120,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void executeForm(Resource subject, IRI predicate, String customFormId, Map<String, Object> userPromptMap)
+	public void addValueThroughCustomRange(@Subject @Modified Resource subject, IRI predicate, String customFormId, Map<String, Object> userPromptMap)
 			throws CODAException, ProjectInconsistentException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
@@ -134,7 +137,9 @@ public class CustomForms extends STServiceAdapter {
 				//link the generated graph with the resource
 				List<ARTTriple> insertTriples = updates.getInsertTriples();
 				if (!insertTriples.isEmpty()) {
-					modelAdditions.add(subject, predicate, detectGraphEntry(insertTriples));
+					Resource graphEntry = detectGraphEntry(insertTriples);
+					VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set created for versioning
+					modelAdditions.add(subject, predicate, graphEntry);
 					for (ARTTriple t : insertTriples){
 						modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
 					}
