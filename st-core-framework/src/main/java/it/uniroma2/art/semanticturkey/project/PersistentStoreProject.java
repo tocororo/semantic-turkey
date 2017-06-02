@@ -66,7 +66,7 @@ public class PersistentStoreProject extends Project {
 		newOntManager.startOntModel(getBaseURI(), null, null);
 
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
-			// conn.begin();
+			 conn.begin();
 
 			ValueFactory vf = conn.getValueFactory();
 
@@ -78,6 +78,8 @@ public class PersistentStoreProject extends Project {
 			IRI skosBaseURI = vf.createIRI("http://www.w3.org/2004/02/skos/core");
 			IRI skosxlBaseURI = vf.createIRI("http://www.w3.org/2008/05/skos-xl");
 
+			boolean isSKOSXL = false;
+			
 			try {
 				if (!contexts.contains(rdfBaseURI)) {
 					
@@ -98,7 +100,7 @@ public class PersistentStoreProject extends Project {
 							RDFFormat.RDFXML, owlBaseURI);
 				}
 
-				boolean isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
+				isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
 				boolean isSKOS = isSKOSXL
 						|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
 						|| Objects.equals(getModel(), SKOS_MODEL);
@@ -113,14 +115,17 @@ public class PersistentStoreProject extends Project {
 					logger.debug("Loading SKOS-XL vocabulary...");
 					conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
 							RDFFormat.RDFXML, skosxlBaseURI);
-					conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
 				}
 			} catch (RepositoryException | IOException e) {
 				throw new ModelCreationException(e);
 			}
 
 			logger.debug("About to commit the loaded triples");
-			// conn.commit();
+			conn.commit();
+			
+			if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
+				conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
+			}
 			logger.debug("Triples loaded");
 		}
 	}
