@@ -53,7 +53,7 @@ public class Projects2 extends STServiceAdapter {
 			String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
-			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationProperty, @Optional IRI creationDateProperty, @Optional IRI modificationDateProperty) throws ProjectInconsistentException,
+			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationDateProperty, @Optional IRI modificationDateProperty) throws ProjectInconsistentException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
