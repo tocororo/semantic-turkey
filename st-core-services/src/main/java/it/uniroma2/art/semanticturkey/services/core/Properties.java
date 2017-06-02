@@ -725,7 +725,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C)")
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public void setDataRange(@LocallyDefined @Subject IRI property, List <Literal> literals){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
