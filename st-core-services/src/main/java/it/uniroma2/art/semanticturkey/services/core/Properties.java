@@ -671,7 +671,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addPropertyDomain(@LocallyDefined @Subject IRI property, @LocallyDefined IRI domain){
+	public void addPropertyDomain(@LocallyDefined @Subject IRI property, @LocallyDefined Resource domain){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		
@@ -684,7 +684,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removePropertyDomain(@LocallyDefined @Subject IRI property, @LocallyDefined IRI domain){
+	public void removePropertyDomain(@LocallyDefined @Subject IRI property, @LocallyDefined Resource domain){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -697,7 +697,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addPropertyRange(@LocallyDefined @Subject IRI property, @LocallyDefined IRI range){
+	public void addPropertyRange(@LocallyDefined @Subject IRI property, Resource range){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		
@@ -710,7 +710,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removePropertyRange(@LocallyDefined @Subject IRI property, @LocallyDefined IRI range){
+	public void removePropertyRange(@LocallyDefined @Subject IRI property, Resource range){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		

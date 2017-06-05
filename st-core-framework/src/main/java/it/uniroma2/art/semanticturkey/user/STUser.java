@@ -211,6 +211,7 @@ public class STUser implements UserDetails {
 	}
 	
 	public boolean isAdmin() {
+		//check every time in order to returns the correct boolean even if the admin email address changes
 		return Config.getEmailAdminAddress().equals(email);
 	}
 	

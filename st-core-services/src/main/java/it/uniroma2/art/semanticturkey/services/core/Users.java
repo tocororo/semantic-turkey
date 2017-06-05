@@ -245,7 +245,11 @@ public class Users extends STServiceAdapter {
 			throw new UserException("Cannot update the email for the user " + email + ". The email " + newEmail + 
 					" is already used by another user");
 		}
+		boolean wasAdmin = user.isAdmin(); 
 		user = UsersManager.updateUserEmail(user, newEmail);
+		if (wasAdmin) { //if user was admin, update the admin email in the configuration file
+			Config.setEmailAdminAddress(user.getEmail());
+		}
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
