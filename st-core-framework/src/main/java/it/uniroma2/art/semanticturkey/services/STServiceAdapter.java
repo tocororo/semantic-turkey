@@ -26,7 +26,6 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
@@ -55,7 +54,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryConnectionHolder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.tx.STServiceInvocaton;
