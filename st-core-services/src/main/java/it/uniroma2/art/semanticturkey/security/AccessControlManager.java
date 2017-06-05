@@ -14,14 +14,14 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
-import it.uniroma2.art.semanticturkey.user.UserCreationException;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @Component
 public class AccessControlManager {
 	
 	@PostConstruct
-	public void init() throws UserCreationException, RDFParseException, RepositoryException,
+	public void init() throws UserException, RDFParseException, RepositoryException,
 		IOException, ProjectAccessException, RoleCreationException, PUBindingException, RBACException {
 		
 		//init users manager so it loads users and roles from ST data

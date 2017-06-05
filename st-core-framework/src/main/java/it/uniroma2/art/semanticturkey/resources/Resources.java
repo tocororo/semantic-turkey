@@ -46,10 +46,7 @@ import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
-import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UserCreationException;
-import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
@@ -183,11 +180,7 @@ public class Resources {
 				systemDir.mkdirs();
 			}
 			if (!usersDir.exists()) {
-				try {
-					initializeUsersFileStructure();
-				} catch (UserCreationException | ProjectAccessException | RoleCreationException e) {
-					throw new STInitializationException(e);
-				}
+				usersDir.mkdir();
 			}
 			if (!projectUserBindingsDir.exists()) {
 				try {
@@ -338,14 +331,13 @@ public class Resources {
 			
 			initializeCustomFormFileStructure();
 			initializeRoles();
-						
+			
 			try {
-				initializeUsersFileStructure();
 				initializePUBindingFileStructure();
-			} catch (UserCreationException | ProjectAccessException | RoleCreationException | PUBindingException e) {
+			} catch (ProjectAccessException | PUBindingException e) {
 				throw new STInitializationException(e);
 			}
-			
+						
 		} else
 			throw new STInitializationException("Unable to create the main data folder");
 	}
@@ -354,23 +346,6 @@ public class Resources {
 		return OSGiPath;
 	}
 	
-	
-	/**
-	 * Initializes a folders structure with a users/ folder containing
-	 * - roles.ttl: file that defines two default roles: ADMIN and USER 
-	 * - a folder for a default admin user containing its user details file.
-	 * @throws UserCreationException
-	 * @throws ProjectAccessException 
-	 * @throws RoleCreationException 
-	 * @throws IOException 
-	 */
-	private static void initializeUsersFileStructure() throws UserCreationException, ProjectAccessException, RoleCreationException {
-		usersDir.mkdir();
-		// create and register admin user
-		STUser admin = new STUser("admin@vocbench.com", "admin", "Admin", "Admin");
-		admin.setStatus(UserStatus.ACTIVE);
-		UsersManager.registerUser(admin);
-	}
 	
 	/**
 	 * Initializes a folders structure with a pu_binding folder containing 

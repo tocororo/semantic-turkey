@@ -310,7 +310,7 @@ public class ProjectUserBindingsManager {
 	 * @return
 	 */
 	public static File getPUBindingsFolder(AbstractProject project, STUser user) {
-		return new File(getProjBindingsFolder(project) + File.separator + STUser.encodeUserEmail(user.getEmail()));
+		return new File(getProjBindingsFolder(project) + File.separator + STUser.encodeUserIri(user.getIRI()));
 	}
 	
 	/**
@@ -323,7 +323,7 @@ public class ProjectUserBindingsManager {
 		Collection<File> projBindFolders = getAllProjBindingsFolders();
 		//get all subfolder of "pu_binding/<projectName>" folder (one subfolder for each user)
 		for (File projFolder : projBindFolders) {
-			userBindingsFolders.add(new File(projFolder, STUser.encodeUserEmail(user.getEmail())));
+			userBindingsFolders.add(new File(projFolder, STUser.encodeUserIri(user.getIRI())));
 		}
 		return userBindingsFolders;
 	}
@@ -335,7 +335,7 @@ public class ProjectUserBindingsManager {
 	 */
 	private static File getPUBindingDetailsFile(ProjectUserBinding puBinding) {
 		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + puBinding.getProject().getName() 
-			+ File.separator + STUser.encodeUserEmail(puBinding.getUser().getEmail()));
+			+ File.separator + STUser.encodeUserIri(puBinding.getUser().getIRI()));
 		if (!bindingFolder.exists()) {
 			bindingFolder.mkdirs();
 		}

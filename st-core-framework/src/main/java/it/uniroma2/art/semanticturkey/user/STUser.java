@@ -43,7 +43,6 @@ public class STUser implements UserDetails {
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
 	public STUser(String email, String password, String givenName, String familyName) {
-//		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, encodeUserEmail(email));
 		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email);
 		this.iri = iri;
 		this.email = email;
@@ -219,6 +218,7 @@ public class STUser implements UserDetails {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode userJson = jsonFactory.objectNode();
 		userJson.set("email", jsonFactory.textNode(email));
+		userJson.set("iri", jsonFactory.textNode(iri.stringValue()));
 		userJson.set("givenName", jsonFactory.textNode(givenName));
 		userJson.set("familyName", jsonFactory.textNode(familyName));
 		if (birthday != null) {
@@ -265,14 +265,17 @@ public class STUser implements UserDetails {
 		return s;
 	}
 	
-	public static String encodeUserEmail(String email) {
-		String encodedEMail = "";
+	public static String encodeUserIri(IRI iri) {
+		String fileNameCompliantCharacters = "([^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-])+";
+		String replaced = iri.stringValue();
+		replaced = replaced.substring(replaced.indexOf("://")+3);
+		replaced = replaced.replaceAll(fileNameCompliantCharacters, ".");
 		try {
-			encodedEMail = URLEncoder.encode(email, "UTF-8");
+			replaced = URLEncoder.encode(replaced, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
-		return encodedEMail;
+		return replaced;
 	}
 
 }

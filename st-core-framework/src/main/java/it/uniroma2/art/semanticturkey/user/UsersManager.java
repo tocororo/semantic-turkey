@@ -47,23 +47,20 @@ public class UsersManager {
 	 * Registers a user
 	 * 
 	 * @param user
-	 * @throws UserCreationException
+	 * @throws UserException
 	 * @throws IOException
 	 */
-	public static void registerUser(STUser user) throws UserCreationException {
-		if (getUserByEmail(user.getEmail()) != null) {
-			throw new UserCreationException(
-					"E-mail address " + user.getEmail() + " already used by another user");
-		} else {
-			user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
-			user.setRegistrationDate(new Date());
-			try {
-				userList.add(user);
-				createOrUpdateUserDetailsFolder(user); // serialize user detials
-			} catch (IOException e) {
-				throw new UserCreationException(e);
-			}
+	public static void registerUser(STUser user) throws UserException {
+		if (getUserByIRI(user.getIRI()) != null) {
+			throw new UserException("IRI " + user.getIRI().stringValue() + " already used by another user");
 		}
+		if (getUserByEmail(user.getEmail()) != null) {
+			throw new UserException("E-mail address " + user.getEmail() + " already used by another user");
+		}
+		user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
+		user.setRegistrationDate(new Date());
+		userList.add(user);
+		createOrUpdateUserDetailsFolder(user); // serialize user detials
 	}
 
 	/**
@@ -116,7 +113,7 @@ public class UsersManager {
 	public static void deleteUser(STUser user) throws IOException {
 		userList.remove(user);
 		// delete its folder from server data
-		FileUtils.deleteDirectory(getUserFolder(user.getEmail()));
+		FileUtils.deleteDirectory(getUserFolder(user));
 		// delete the bindings
 		ProjectUserBindingsManager.deletePUBindingsOfUser(user);
 	}
@@ -129,8 +126,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserPassword(STUser user, String newPassword) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserPassword(STUser user, String newPassword) throws UserException {
 		String crypted = new BCryptPasswordEncoder().encode(newPassword);
 		System.out.println("from " + newPassword + " to " + crypted);
 		user.setPassword(crypted);
@@ -147,8 +143,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserGivenName(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserGivenName(STUser user, String newValue) throws UserException {
 		user.setGivenName(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -162,9 +157,22 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserFamilyName(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserFamilyName(STUser user, String newValue) throws UserException {
 		user.setFamilyName(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
+	 * Updates the email of the given user and returns it updated
+	 * 
+	 * @param user
+	 * @param newValue
+	 * @return
+	 * @throws IOException
+	 */
+	public static STUser updateUserEmail(STUser user, String newValue) throws UserException {
+		user.setEmail(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}
@@ -177,8 +185,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserPhone(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserPhone(STUser user, String newValue) throws UserException {
 		user.setPhone(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -193,8 +200,7 @@ public class UsersManager {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	public static STUser updateUserBirthday(STUser user, String newValue) throws IOException, ParseException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserBirthday(STUser user, String newValue) throws UserException, ParseException {
 		user.setBirthday(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -208,8 +214,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserGender(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserGender(STUser user, String newValue) throws UserException {
 		user.setGender(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -223,8 +228,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserCountry(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserCountry(STUser user, String newValue) throws UserException {
 		user.setCountry(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -238,8 +242,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserAddress(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserAddress(STUser user, String newValue) throws UserException {
 		user.setAddress(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -253,8 +256,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserAffiliation(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserAffiliation(STUser user, String newValue) throws UserException {
 		user.setAffiliation(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -268,8 +270,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserUrl(STUser user, String newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserUrl(STUser user, String newValue) throws UserException {
 		user.setUrl(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -283,8 +284,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserStatus(STUser user, UserStatus newValue) throws IOException {
-		user = getUserByEmail(user.getEmail());
+	public static STUser updateUserStatus(STUser user, UserStatus newValue) throws UserException {
 		user.setStatus(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -297,12 +297,16 @@ public class UsersManager {
 	 * @param user
 	 * @throws IOException
 	 */
-	private static void createOrUpdateUserDetailsFolder(STUser user) throws IOException {
-		// creates a temporary not persistent repository
-		UsersRepoHelper tempUserRepoHelper = new UsersRepoHelper();
-		tempUserRepoHelper.insertUser(user);
-		tempUserRepoHelper.saveUserDetailsFile(getUserDetailsFile(user.getEmail()));
-		tempUserRepoHelper.shutDownRepository();
+	private static void createOrUpdateUserDetailsFolder(STUser user) throws UserException {
+		try {
+			// creates a temporary not persistent repository
+			UsersRepoHelper tempUserRepoHelper = new UsersRepoHelper();
+			tempUserRepoHelper.insertUser(user);
+			tempUserRepoHelper.saveUserDetailsFile(getUserDetailsFile(user));
+			tempUserRepoHelper.shutDownRepository();
+		} catch (IOException e) {
+			throw new UserException(e);
+		}
 	}
 
 	/**
@@ -327,8 +331,8 @@ public class UsersManager {
 	 * @param userEmail
 	 * @return
 	 */
-	public static File getUserFolder(String userEmail) {
-		return new File(Resources.getUsersDir() + File.separator + STUser.encodeUserEmail(userEmail));
+	public static File getUserFolder(STUser user) {
+		return new File(Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI()));
 	}
 	
 	/**
@@ -355,8 +359,8 @@ public class UsersManager {
 	 * @param userEmail
 	 * @return
 	 */
-	private static File getUserDetailsFile(String userEmail) {
-		File userFolder = new File(Resources.getUsersDir() + File.separator + STUser.encodeUserEmail(userEmail));
+	private static File getUserDetailsFile(STUser user) {
+		File userFolder = new File(Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI()));
 		if (!userFolder.exists()) {
 			userFolder.mkdir();
 		}

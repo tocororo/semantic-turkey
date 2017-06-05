@@ -17,6 +17,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,7 +47,7 @@ import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UserCreationException;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
@@ -57,19 +58,33 @@ public class Users extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Users.class);
 	
 	/**
-	 * Returns response containing a json representation of the logged user.
-	 * An empty data element if no user is logged.
+	 * If there are no registered users return an empty response;
+	 * If there is a user logged, returns a user object that is a json representation of the logged user.
+	 * If there is no logged user, returns an empty user object
 	 */	
 	@STServiceOperation
 	public JsonNode getUser() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+//		ObjectNode userNode = jsonFactory.objectNode();
+//		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//		if (!(auth instanceof AnonymousAuthenticationToken)) {//if there's a user authenticated
+//			STUser loggedUser = (STUser) auth.getPrincipal();
+//			userNode = loggedUser.getAsJsonObject();
+//		}
+//		return userNode;
+		ObjectNode respNode = jsonFactory.objectNode();
 		ObjectNode userNode = jsonFactory.objectNode();
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (!(auth instanceof AnonymousAuthenticationToken)) {//if there's a user authenticated
 			STUser loggedUser = (STUser) auth.getPrincipal();
 			userNode = loggedUser.getAsJsonObject();
+			respNode.set("user", userNode);
+		} else {
+			if (!UsersManager.listUsers().isEmpty()) { //check if there is at least a user registered
+				respNode.set("user", userNode); //set an empty node as "user"
+			}
 		}
-		return userNode;
+		return respNode;
 	}
 	
 	/**
@@ -135,11 +150,16 @@ public class Users extends STServiceAdapter {
 	 * @throws PUBindingException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void registerUser(String email, String password, String givenName, String familyName,
+	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String birthday, @Optional String gender, @Optional String country, @Optional String address,
 			@Optional String affiliation, @Optional String url, @Optional String phone)
-					throws ProjectAccessException, UserCreationException, ParseException, PUBindingException {
-		STUser user = new STUser(email, password, givenName, familyName);
+					throws ProjectAccessException, UserException, ParseException, PUBindingException {
+		STUser user;
+		if (iri != null) {
+			user = new STUser(iri, email, password, givenName, familyName);
+		} else {
+			user = new STUser(email, password, givenName, familyName);
+		}
 		if (birthday != null) {
 			user.setBirthday(birthday);
 		}
@@ -161,6 +181,12 @@ public class Users extends STServiceAdapter {
 		if (phone != null) {
 			user.setPhone(phone);
 		}
+		//if this is the first registered user, it means that it is the first access, 
+		//so set it as admin (TODO I'm not sure this is completely safe, check it) 
+		if (UsersManager.listUsers().isEmpty()) {
+			Config.setEmailAdminAddress(email);
+			user.setStatus(UserStatus.ACTIVE);
+		}
 		UsersManager.registerUser(user);
 		ProjectUserBindingsManager.createPUBindingsOfUser(user);
 		
@@ -181,7 +207,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserGivenName(String email, String givenName) throws IOException {
+	public ObjectNode updateUserGivenName(String email, String givenName) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserGivenName(user, givenName);
 		updateUserInSecurityContext(user);
@@ -196,9 +222,30 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserFamilyName(String email, String familyName) throws IOException {
+	public ObjectNode updateUserFamilyName(String email, String familyName) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserFamilyName(user, familyName);
+		updateUserInSecurityContext(user);
+		return user.getAsJsonObject();
+	}
+	
+	/**
+	 * Update email of the given user.
+	 * @param email
+	 * @param newEmail
+	 * @return
+	 * @throws IOException 
+	 * @throws UserException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public ObjectNode updateUserEmail(String email, String newEmail) throws IOException, UserException {
+		STUser user = UsersManager.getUserByEmail(email);
+		//check if there is already a user that uses the newEmail
+		if (UsersManager.getUserByEmail(newEmail) != null) {
+			throw new UserException("Cannot update the email for the user " + email + ". The email " + newEmail + 
+					" is already used by another user");
+		}
+		user = UsersManager.updateUserFamilyName(user, newEmail);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -211,7 +258,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserPhone(@RequestParam("email") String email, @RequestParam("phone") String phone) throws IOException {
+	public ObjectNode updateUserPhone(@RequestParam("email") String email, @RequestParam("phone") String phone) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
@@ -227,7 +274,7 @@ public class Users extends STServiceAdapter {
 	 * @throws ParseException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws IOException, ParseException {
+	public ObjectNode updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws UserException, ParseException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserBirthday(user, birthday);
 		updateUserInSecurityContext(user);
@@ -242,7 +289,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserGender(@RequestParam("email") String email, @RequestParam("gender") String gender) throws IOException {
+	public ObjectNode updateUserGender(@RequestParam("email") String email, @RequestParam("gender") String gender) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserGender(user, gender);
 		updateUserInSecurityContext(user);
@@ -257,7 +304,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserCountry(@RequestParam("email") String email, @RequestParam("country") String country) throws IOException {
+	public ObjectNode updateUserCountry(@RequestParam("email") String email, @RequestParam("country") String country) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserCountry(user, country);
 		updateUserInSecurityContext(user);
@@ -272,7 +319,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserAddress(@RequestParam("email") String email, @RequestParam("address") String address) throws IOException {
+	public ObjectNode updateUserAddress(@RequestParam("email") String email, @RequestParam("address") String address) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
@@ -287,7 +334,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserAffiliation(@RequestParam("email") String email, @RequestParam("affiliation") String affiliation) throws IOException {
+	public ObjectNode updateUserAffiliation(@RequestParam("email") String email, @RequestParam("affiliation") String affiliation) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
@@ -302,7 +349,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserUrl(@RequestParam("email") String email, @RequestParam("url") String url) throws IOException {
+	public ObjectNode updateUserUrl(@RequestParam("email") String email, @RequestParam("url") String url) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserUrl(user, url);
 		updateUserInSecurityContext(user);
@@ -321,7 +368,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
 	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
-			throws IOException, PUBindingException  {
+			throws UserException, PUBindingException  {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new PUBindingException("Cannot disable current logged user");
 		}
@@ -425,7 +472,6 @@ public class Users extends STServiceAdapter {
 			String text = "Dear " + givenName + " " + familyName + ","
 					+ "\nthank you for registering as a user of VocBench 3."
 					+ " Your request has been received. Please wait for the administrator to approve it."
-					+ " You will be informed when you can start to login in the system."
 					+ " After approval, you can log into VocBench with the e-mail " + toEmail + " and your chosen password."
 					+ "\nThanks for your interest."
 					+ "\nIf you want to unregister, please send an email with your e-mail address and the subject:"

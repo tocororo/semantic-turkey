@@ -998,7 +998,7 @@ public class STPropertiesManager {
 	 */
 	private static File getUserPropertyFolder(STUser user, String pluginID) {
 		File prefFolder = new File(
-				Resources.getUsersDir() + File.separator + STUser.encodeUserEmail(user.getEmail())
+				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
 						+ File.separator + "plugins" + File.separator + pluginID);
 		if (!prefFolder.exists()) {
 			prefFolder.mkdirs();
@@ -1016,7 +1016,7 @@ public class STPropertiesManager {
 	 */
 	private static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
 		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
-				+ File.separator + STUser.encodeUserEmail(user.getEmail()) + File.separator + "plugins"
+				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
 		if (!prefFolder.exists()) {
 			prefFolder.mkdirs();
