@@ -110,7 +110,6 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	
 	@Override
 	public void close() throws SailException {
-		System.out.println("######## Close connection: " + this.toString() + " (" + sail.connectionCount.decrementAndGet() + ")");
 		try {
 			super.close();
 		} finally {
