@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -80,7 +81,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 		return "resource";
 	}
 	
-	public static RDFResourceRolesEnum computeRole(IRI resource, RepositoryConnection repoConn) {
+	public static RDFResourceRolesEnum computeRole(Resource resource, RepositoryConnection repoConn) {
 		String query = 
 				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
@@ -88,7 +89,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> \n" +
 				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> \n" +
 				"SELECT ?role WHERE { \n" +
-				"BIND(URI('" + resource.stringValue() + "') as ?resource) \n" +
+				"BIND(?tempResource as ?resource) \n" +
 				"BIND(IF(EXISTS {?metaClass rdfs:subClassOf* skos:Concept . ?resource a ?metaClass .}, \"concept\", \n" +
 				"IF(EXISTS {?metaClass rdfs:subClassOf* skos:ConceptScheme . ?resource a ?metaClass . }, \"conceptScheme\", \n" +
 				"IF(EXISTS {?metaClass rdfs:subClassOf* skosxl:Label . ?resource a ?metaClass . }, \"xLabel\", \n" +
@@ -104,6 +105,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
                 "IF(EXISTS {?metaClass rdfs:subClassOf* owl:Ontology . ?resource a ?metaClass . }, \"ontology\", \n" +
 				"\"individual\"))))))))))))) as ?role)}";
 		TupleQuery tq = repoConn.prepareTupleQuery(query);
+		tq.setBinding("tempResource", resource);
 		try (TupleQueryResult result = tq.evaluate()) {
 			String roleValue = result.next().getValue("role").stringValue();
 			return RDFResourceRolesEnum.valueOf(roleValue);

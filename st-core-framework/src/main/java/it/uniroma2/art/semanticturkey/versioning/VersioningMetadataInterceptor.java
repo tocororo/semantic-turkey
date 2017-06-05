@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -15,7 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.aop.MethodInvocationUtilities;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
@@ -38,15 +41,17 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 
-		Optional<Resource> createdResource = MethodInvocationUtilities
-				.getValueOfFirstAnnotatedParameter(invocation, Created.class, Resource.class);
-		Optional<Resource> modifiedResource = MethodInvocationUtilities
-				.getValueOfFirstAnnotatedParameter(invocation, Modified.class, Resource.class);
+		Optional<ImmutablePair<Resource, Created>> createdResource = MethodInvocationUtilities
+				.getFirstAnnotatedArgument(invocation, Created.class, Resource.class);
+		Optional<ImmutablePair<Resource, Modified>> modifiedResource = MethodInvocationUtilities
+				.getFirstAnnotatedArgument(invocation, Modified.class, Resource.class);
 
 		VersioningMetadata versioningMetadata = VersioningMetadataSupport.currentVersioningMetadata();
 
-		createdResource.ifPresent(versioningMetadata::addCreatedResource);
-		modifiedResource.ifPresent(versioningMetadata::addModifiedResource);
+		createdResource
+				.ifPresent(p -> versioningMetadata.addCreatedResource(p.getLeft(), p.getRight().role()));
+		modifiedResource
+				.ifPresent(p -> versioningMetadata.addModifiedResource(p.getLeft(), p.getRight().role()));
 
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -93,16 +98,22 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 
 					if (creationDateProp != null) {
 						IRI creationDatePropIRI = vf.createIRI(creationDateProp);
-						for (Resource r : versioningMetadata.getCreatedResources()) {
-							conn.add(r, creationDatePropIRI, currentTime, workingGraph);
+						for (ImmutablePair<Resource, RDFResourceRolesEnum> r : versioningMetadata
+								.getCreatedResources()) {
+							if (determineNecessityOfMetadata(conn, r)) {
+								conn.add(r.getLeft(), creationDatePropIRI, currentTime, workingGraph);
+							}
 						}
 					}
 
 					if (modificationDateProp != null) {
 						IRI modificationDatePropIRI = vf.createIRI(modificationDateProp);
-						for (Resource r : versioningMetadata.getModifiedResources()) {
-							conn.remove(r, modificationDatePropIRI, null, workingGraph);
-							conn.add(r, modificationDatePropIRI, currentTime, workingGraph);
+						for (ImmutablePair<Resource, RDFResourceRolesEnum> r : versioningMetadata
+								.getModifiedResources()) {
+							if (determineNecessityOfMetadata(conn, r)) {
+								conn.remove(r.getLeft(), modificationDatePropIRI, null, workingGraph);
+								conn.add(r.getLeft(), modificationDatePropIRI, currentTime, workingGraph);
+							}
 						}
 					}
 
@@ -127,4 +138,15 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 
 		return rv;
 	}
+
+	private static boolean determineNecessityOfMetadata(RepositoryConnection conn,
+			ImmutablePair<Resource, RDFResourceRolesEnum> r) {
+		RDFResourceRolesEnum role = r.getRight();
+		if (role == RDFResourceRolesEnum.undetermined) {
+			role = RoleRecognitionOrchestrator.computeRole(r.getLeft(), conn);
+		}
+	
+		return true;
+	}
+
 }
