@@ -2,15 +2,18 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.joining;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -22,6 +25,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +41,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -53,6 +58,8 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
 /**
  * This class provides services for manipulating OWL/RDFS classes.
@@ -404,7 +411,209 @@ public class Classes extends STServiceAdapter {
 		repoConnection.prepareUpdate(query).execute();;
 	}
 	
+	
+	/**
+	 * adds an rdfs:superClassOf relationship between two resources (already defined in the ontology)
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	public void addSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(cls, RDFS.SUBCLASSOF, supercls));
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	/**
+	 * removes the rdfs:superClassOf relationship between two resources (already defined in the ontology)
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
+	public void removeSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(cls, RDFS.SUBCLASSOF, supercls));
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	/**
+	 * Adds the OWL.INTERSECTIONOF to the description of the class <code>cls</code> using the supplied array 
+	 * of Manchester expressions to generate the property values.
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	public void addIntersectionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
+			throws ManchesterParserException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Model modelAdditions = new LinkedHashModel();
+		addCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, clsDescriptions, modelAdditions, repoConnection, 
+				prefixToNamespacesMap);
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	/**
+	 * Removes an axiom identified by the property <code>OWL.INTERSECTIONOF</code> based on the collection 
+	 * identified by <code>collectionNode</code> from the description of the class identified by <code>cls</code>.
+	 */ 
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
+	public void removeIntersectionOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
+			throws ManchesterParserException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		removeCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, collectionBNode, modelRemovals, repoConnection);
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	
+	/**
+	 * Adds the OWL.UNIONOF to the description of the class <code>cls</code> using the supplied array 
+	 * of Manchester expressions to generate the property values.
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	public void addUnionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
+			throws ManchesterParserException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Model modelAdditions = new LinkedHashModel();
+		addCollectionBasedClassAxiom(cls, OWL.UNIONOF, clsDescriptions, modelAdditions, repoConnection, 
+				prefixToNamespacesMap);
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	/**
+	 * Removes an axiom identified by the property <code>OWL.UNIONOF</code> based on the collection 
+	 * identified by <code>collectionNode</code> from the description of the class identified by <code>cls</code>.
+	 */ 
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
+	public void removeUnionOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
+			throws ManchesterParserException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		removeCollectionBasedClassAxiom(cls, OWL.UNIONOF, collectionBNode, modelRemovals, repoConnection);
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	/**
+	 * Enumerates (via <code>owl:oneOf</code>) all and only members of the class <code>cls</code>, which
+	 * are provided by the parameter <code>individuals</code>
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	public void addOneOf(@LocallyDefined @Subject IRI cls, List<IRI> individuals) 
+			throws ManchesterParserException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+		createAndAddList(cls, OWL.ONEOF, individuals, modelAdditions, repoConnection);
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
+	
+	/**
+	 * Removes the enumeration <code>collectionNode</code> from the description of the class
+	 * <code>cls</code>
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
+	public void removeOneOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
+			throws ManchesterParserException{
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+		removeCollectionBasedClassAxiom(cls, OWL.ONEOF, collectionBNode, modelRemovals, repoConnection);
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	
+	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, List<String> clsDescriptions, 
+			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap) 
+					throws ManchesterParserException{
+		List<Resource> bnodeList = new ArrayList<>();
+		if(clsDescriptions == null || clsDescriptions.size() == 0){
+			throw new IllegalArgumentException("the list of expression cannot be empty");
+		}
+		//generate all the triple associated to each clsDescription
+		for(String clsDesc : clsDescriptions){
+			ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(clsDesc, 
+					repoConnection.getValueFactory(), prefixToNamespacesMap);
+			List<Statement> statList = new ArrayList<>();
+			//it is possible to cast the Resource to a BNode, because the input mci should have a bnode as 
+			// starting element
+			BNode newBnode = (BNode) ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, 
+					repoConnection.getValueFactory());
+			modelAdditions.addAll(statList);
+			//add the generated BNode into a list
+			bnodeList.add(newBnode);
+		}
+		
+		//now add all the generated bnode in a list, which is linked to the input cls with the property axiomProp
+		createAndAddList(cls, axiomProp,bnodeList, modelAdditions, repoConnection);
+	}
+	
+	private void createAndAddList(IRI cls, IRI prop, List<? extends Resource> elemForList, Model modelAdditions, 
+			RepositoryConnection repoConnection ){
+		BNode elemInList = repoConnection.getValueFactory().createBNode();
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(cls, prop, elemInList));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.FIRST, 
+				elemForList.get(0)));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.TYPE, RDF.LIST));
+		for(int i=1; i<elemForList.size(); ++i){
+			BNode nextBNode = repoConnection.getValueFactory().createBNode();
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.REST, nextBNode));
+			elemInList = nextBNode;
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.FIRST, 
+					elemForList.get(i)));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.TYPE, RDF.LIST));
+		}
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.REST, RDF.NIL));
+	}
+	
+	private void removeCollectionBasedClassAxiom(IRI cls, IRI prop, BNode collectionBNode, 
+		Model modelRemovals, RepositoryConnection repoConnection) 
+			throws ManchesterParserException{
+		//iterate over the list, using its first element, collectionBNode, to get all the elements to 
+		// remove them
+		BNode elemInList = collectionBNode;
+		while(!elemInList.equals(RDF.NIL)){
+			modelRemovals.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.TYPE, RDF.LIST));
+			try(RepositoryResult<Statement> repositoryResult = 
+					repoConnection.getStatements(elemInList, RDF.FIRST, null, getWorkingGraph())){
+				Resource first = (Resource) repositoryResult.next();
+				modelRemovals.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.FIRST, first));
+				
+			}
+			try(RepositoryResult<Statement> repositoryResult = 
+					repoConnection.getStatements(elemInList, RDF.REST, null, getWorkingGraph())){
+				Resource next = (Resource) repositoryResult.next();
+				modelRemovals.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.REST, next));
+				elemInList = (BNode) next;
+			}
+		}
+		//remove the triple linking the cls to the list
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(cls, prop, collectionBNode));
+	}
+	
+	
 }
+
+	
+	
+
 
 class ClassesMoreProcessor implements QueryBuilderProcessor {
 
