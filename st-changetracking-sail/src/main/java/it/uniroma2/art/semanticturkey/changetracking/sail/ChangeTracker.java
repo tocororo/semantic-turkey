@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -76,6 +77,8 @@ public class ChangeTracker extends NotifyingSailWrapper {
 	final boolean validationEnabled;
 	final boolean interactiveNotifications;
 
+	AtomicInteger connectionCount = new AtomicInteger(0);
+	
 	public ChangeTracker(Repository metadataRepo, String metadataNS, IRI metadataGraph, Set<IRI> includeGraph,
 			Set<IRI> excludeGraph, boolean validationEnabled, boolean interactiveNotifications,
 			IRI validationGraph) {
@@ -107,6 +110,7 @@ public class ChangeTracker extends NotifyingSailWrapper {
 		logger.debug("Obtaining new connection");
 		NotifyingSailConnection delegate = super.getConnection();
 		ChangeTrackerConnection connection = new ChangeTrackerConnection(delegate, this);
+		System.out.println("@@@@@@@@ Get connection: " + connection.toString() + " (" + connectionCount.incrementAndGet() + ")");
 		return connection;
 	}
 

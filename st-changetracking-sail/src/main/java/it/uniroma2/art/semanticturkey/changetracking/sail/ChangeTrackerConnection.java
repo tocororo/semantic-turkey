@@ -60,7 +60,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
 
-	private final SailConnectionListener connectionListener;
+	private SailConnectionListener connectionListener;
 	private final ChangeTracker sail;
 	private final StagingArea stagingArea;
 	private Model connectionLocalGraphManagement;
@@ -78,6 +78,16 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		this.stagingArea = new StagingArea();
 		this.connectionLocalGraphManagement = null;
 
+		readonlyHandler = new FlagUpdateHandler();
+		validatableOpertionHandler = new LoggingUpdateHandler();
+		validationEnabled = sail.validationEnabled;
+		if (connectionListener != null) {
+			removeConnectionListener(connectionListener);
+		}
+		initializeListener();
+	}
+	
+	public void initializeListener() {
 		this.connectionListener = new SailConnectionListener() {
 
 			@Override
@@ -95,12 +105,24 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			}
 
 		};
-		getWrappedConnection().addConnectionListener(connectionListener);
-		readonlyHandler = new FlagUpdateHandler();
-		validatableOpertionHandler = new LoggingUpdateHandler();
-		validationEnabled = sail.validationEnabled;
+		addConnectionListener(connectionListener);
+	}
+	
+	@Override
+	public void close() throws SailException {
+		System.out.println("######## Close connection: " + this.toString() + " (" + sail.connectionCount.decrementAndGet() + ")");
+		try {
+			super.close();
+		} finally {
+			removeConnectionListener(connectionListener);
+		}
 	}
 
+	@Override
+	public void begin() throws SailException {
+		begin(sail.getDefaultIsolationLevel());
+	}
+	
 	@Override
 	public void begin(IsolationLevel level) throws SailException {
 		super.begin(level);

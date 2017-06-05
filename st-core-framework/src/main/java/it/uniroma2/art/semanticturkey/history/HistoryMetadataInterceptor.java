@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryConnectionHolder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
 
@@ -82,14 +83,10 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 						return;
 
 					Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
-					RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
-							.getResource(repository);
+					RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository, false);
 
-					if (connHolder != null && connHolder.hasConnection()) {
-						RepositoryConnection conn = connHolder.getConnection();
-						Model rdfOperationMetadata = operationMetadata.toRDF();
-						conn.add(rdfOperationMetadata, CHANGETRACKER.COMMIT_METADATA);
-					}
+					Model rdfOperationMetadata = operationMetadata.toRDF();
+					conn.add(rdfOperationMetadata, CHANGETRACKER.COMMIT_METADATA);
 				}
 
 				@Override

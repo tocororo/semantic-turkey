@@ -21,7 +21,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryConnectionHolder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
@@ -80,39 +80,32 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 						return;
 
 					Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
-					RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
-							.getResource(repository);
+					RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository, false);
 
-					if (connHolder != null && connHolder.hasConnection()) {
+					ValueFactory vf = conn.getValueFactory();
 
-						RepositoryConnection conn = connHolder.getConnection();
+					Literal currentTime = vf.createLiteral(new Date());
 
-						ValueFactory vf = conn.getValueFactory();
+					Resource workingGraph = RDF4JMigrationUtils.convert2rdf4j(stServiceContext.getWGraph());
 
-						Literal currentTime = vf.createLiteral(new Date());
+					// Usually, we expect either one created resource or one modified resource, so
+					// there should be no need of complex buffering techiniques
 
-						Resource workingGraph = RDF4JMigrationUtils
-								.convert2rdf4j(stServiceContext.getWGraph());
-
-						// Usually, we expect either one created resource or one modified resource, so
-						// there should be no need of complex buffering techiniques
-
-						if (creationDateProp != null) {
-							IRI creationDatePropIRI = vf.createIRI(creationDateProp);
-							for (Resource r : versioningMetadata.getCreatedResources()) {
-								conn.add(r, creationDatePropIRI, currentTime, workingGraph);
-							}
+					if (creationDateProp != null) {
+						IRI creationDatePropIRI = vf.createIRI(creationDateProp);
+						for (Resource r : versioningMetadata.getCreatedResources()) {
+							conn.add(r, creationDatePropIRI, currentTime, workingGraph);
 						}
-
-						if (modificationDateProp != null) {
-							IRI modificationDatePropIRI = vf.createIRI(modificationDateProp);
-							for (Resource r : versioningMetadata.getModifiedResources()) {
-								conn.remove(r, modificationDatePropIRI, null, workingGraph);
-								conn.add(r, modificationDatePropIRI, currentTime, workingGraph);
-							}
-						}
-
 					}
+
+					if (modificationDateProp != null) {
+						IRI modificationDatePropIRI = vf.createIRI(modificationDateProp);
+						for (Resource r : versioningMetadata.getModifiedResources()) {
+							conn.remove(r, modificationDatePropIRI, null, workingGraph);
+							conn.add(r, modificationDatePropIRI, currentTime, workingGraph);
+						}
+					}
+
 				}
 
 				@Override

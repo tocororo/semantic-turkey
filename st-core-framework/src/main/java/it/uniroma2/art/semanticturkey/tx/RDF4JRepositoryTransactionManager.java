@@ -31,23 +31,25 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 	private static final long serialVersionUID = -3096599710354974784L;
 
 	private static final Logger logger = LoggerFactory.getLogger(RDF4JRepositoryTransactionManager.class);
-	
+
 	private static class RDF4JRepositoryTransactionObject {
 
-		private RDF4JRepositoryConnectionHolder conHolder;
-		private boolean newConnectionHolder;
-		
-		public void setRDF4JRepositoryConnectionHolder(RDF4JRepositoryConnectionHolder conHolder, boolean newConnectionHolder) {
-			this.conHolder = conHolder;
-			this.newConnectionHolder = newConnectionHolder;
+		private RepositoryConnection connection;
+
+		public RDF4JRepositoryTransactionObject(RepositoryConnection connection) {
+			this.connection = connection;
 		}
 
-		public RDF4JRepositoryConnectionHolder getRDF4JRepositoryConnectionHolder() {
-			return this.conHolder;
+		public boolean hasConnection() {
+			return connection != null;
 		}
 
-		public boolean isNewConnectionHolder() {
-			return newConnectionHolder;
+		public void setConnection(RepositoryConnection newConnection) {
+			this.connection = newConnection;
+		}
+
+		public RepositoryConnection getConnection() {
+			return connection;
 		}
 	}
 
@@ -60,14 +62,21 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 
 	@Override
 	protected Object doGetTransaction() throws TransactionException {
-		RDF4JRepositoryTransactionObject txObject = new RDF4JRepositoryTransactionObject();
+		// RDF4JRepositoryTransactionObject txObject = new RDF4JRepositoryTransactionObject();
 
-		RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
+		// RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder)
+		// TransactionSynchronizationManager
+		// .getResource(this.repository);
+
+		RepositoryConnection conn = (RepositoryConnection) TransactionSynchronizationManager
 				.getResource(this.repository);
 
-		txObject.setRDF4JRepositoryConnectionHolder(connHolder, false);
-
-		return txObject;
+		return new RDF4JRepositoryTransactionObject(conn);
+		//
+		//
+		// txObject.setRDF4JRepositoryConnectionHolder(connHolder, false);
+		//
+		// return txObject;
 	}
 
 	@Override
@@ -77,40 +86,25 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 
 		try {
 			logger.debug("Inside doBegin");
-			boolean newConnHolder = false;
 
-			if (txObject.getRDF4JRepositoryConnectionHolder() == null
-					|| txObject.getRDF4JRepositoryConnectionHolder().isSynchronizedWithTransaction()) {
-				conn = this.repository.getConnection();
-				logger.debug("New connection: {}", conn);
-				txObject.setRDF4JRepositoryConnectionHolder(
-						new RDF4JRepositoryConnectionHolder(conn), true);
-				newConnHolder = true;
+			if (txObject.hasConnection()) {
+				throw new CannotCreateTransactionException("Transaction already started for the repository");
 			}
-
-			txObject.getRDF4JRepositoryConnectionHolder().setSynchronizedWithTransaction(true);
-			conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
 
 			logger.debug("About to begin");
 
+			conn = repository.getConnection();
+
 			conn.begin();
 
-			txObject.getRDF4JRepositoryConnectionHolder().setTransactionActive(true);
+			txObject.setConnection(conn);
 
-			int timeout = determineTimeout(definition);
+			TransactionSynchronizationManager.bindResource(this.repository, conn);
 
-			if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-				txObject.getRDF4JRepositoryConnectionHolder().setTimeoutInSeconds(timeout);
-			}
-			if (newConnHolder) {
-				TransactionSynchronizationManager.bindResource(this.repository,
-						txObject.getRDF4JRepositoryConnectionHolder());
-			}
-			
 			logger.debug("Begun");
 
 		} catch (Throwable e) {
-			RDF4JRepositoryUtils.releaseConnection(conn, repository);
+			conn.close();
 			throw new CannotCreateTransactionException("Could not open RDF4J Connection for transaction", e);
 		}
 	}
@@ -119,7 +113,7 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 	protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
 		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) status
 				.getTransaction();
-		RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
+		RepositoryConnection conn = txObject.getConnection();
 
 		try {
 			logger.debug("About to commit");
@@ -133,7 +127,7 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 	protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
 		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) status
 				.getTransaction();
-		RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
+		RepositoryConnection conn = txObject.getConnection();
 
 		try {
 			logger.debug("About to rollback");
@@ -148,14 +142,13 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 		logger.debug("Inside doCleanupAfterCompletion");
 
 		RDF4JRepositoryTransactionObject txObject = (RDF4JRepositoryTransactionObject) transaction;
-
-		if (txObject.isNewConnectionHolder()) {
-			logger.debug("About to release connection");
+		try {
 			TransactionSynchronizationManager.unbindResource(this.repository);
-			RepositoryConnection conn = txObject.getRDF4JRepositoryConnectionHolder().getConnection();
-			RDF4JRepositoryUtils.releaseConnection(conn, this.repository);
+
+		} finally {
+			RepositoryConnection conn = txObject.getConnection();
+			conn.close();
 		}
-		txObject.getRDF4JRepositoryConnectionHolder().clear();
 	}
 
 }

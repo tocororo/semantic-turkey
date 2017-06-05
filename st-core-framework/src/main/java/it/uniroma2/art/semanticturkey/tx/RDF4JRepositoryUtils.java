@@ -6,7 +6,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.event.base.InterceptingRepositoryConnectionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
@@ -20,7 +19,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class RDF4JRepositoryUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RDF4JRepositoryUtils.class);
-	
+
 	/**
 	 * Returns a connection to a RDF4J Repository. This method is aware of a connection already bound to the
 	 * thread, e.g. by {@link RDF4JRepositoryTransactionManager}.
@@ -29,35 +28,18 @@ public class RDF4JRepositoryUtils {
 	 * @return
 	 */
 	public static RepositoryConnection getConnection(Repository repository) {
-		RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
+		return getConnection(repository, true);
+	}
+
+	public static RepositoryConnection getConnection(Repository repository, boolean canCreate) {
+		RepositoryConnection conn = (RepositoryConnection) TransactionSynchronizationManager
 				.getResource(repository);
 
-		if (connHolder != null
-				&& (connHolder.hasConnection() || connHolder.isSynchronizedWithTransaction())) {
-			connHolder.requested();
-			if (!connHolder.hasConnection()) {
-				connHolder.setConnection(repository.getConnection());
-			}
-			return RDF4JRepositoryUtils.wrapConnection(connHolder.getConnection());
-		}
-
-		RepositoryConnection conn = repository.getConnection();
-
-		if (TransactionSynchronizationManager.isSynchronizationActive()) {
-
-			RDF4JRepositoryConnectionHolder holderToUse = connHolder;
-
-			if (holderToUse == null) {
-				holderToUse = new RDF4JRepositoryConnectionHolder(conn);
+		if (conn == null || !conn.isOpen()) {
+			if (canCreate) {
+				conn = repository.getConnection();
 			} else {
-				holderToUse.setConnection(conn);
-			}
-			holderToUse.requested();
-			TransactionSynchronizationManager
-					.registerSynchronization(new ConnectionSynchronization(holderToUse, repository));
-			holderToUse.setSynchronizedWithTransaction(true);
-			if (holderToUse != connHolder) {
-				TransactionSynchronizationManager.bindResource(repository, holderToUse);
+				throw new IllegalStateException("No connection is bound to the thread");
 			}
 		}
 
@@ -77,11 +59,10 @@ public class RDF4JRepositoryUtils {
 			return;
 
 		if (repository != null) {
-			RDF4JRepositoryConnectionHolder connHolder = (RDF4JRepositoryConnectionHolder) TransactionSynchronizationManager
+			RepositoryConnection txConn = (RepositoryConnection) TransactionSynchronizationManager
 					.getResource(repository);
 
-			if (connHolder != null && connectionEquals(connHolder.getConnection(), repoConn)) {
-				connHolder.released();
+			if (txConn != null && txConn.isOpen() && connectionEquals(txConn, repoConn)) {
 				return;
 			}
 		}
@@ -114,7 +95,7 @@ public class RDF4JRepositoryUtils {
 	 * @param connection
 	 * @return
 	 */
-	private static RepositoryConnection wrapConnection(RepositoryConnection connection) {
+	public static RepositoryConnection wrapConnection(RepositoryConnection connection) {
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			if (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
 				connection = wrapReadOnlyConnection(connection);
@@ -124,7 +105,7 @@ public class RDF4JRepositoryUtils {
 		}
 		return connection;
 	}
-	
+
 	public static RepositoryConnection wrapReadOnlyConnection(RepositoryConnection connection) {
 		InterceptingRepositoryConnectionWrapper wrappedConnection = new InterceptingRepositoryConnectionWrapper(
 				connection.getRepository(), connection);
@@ -132,46 +113,4 @@ public class RDF4JRepositoryUtils {
 				new ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor());
 		return wrappedConnection;
 	}
-
-	private static class ConnectionSynchronization implements TransactionSynchronization {
-
-		private RDF4JRepositoryConnectionHolder connHolder;
-		private Repository rdf4jRepository;
-
-		public ConnectionSynchronization(RDF4JRepositoryConnectionHolder connHolder,
-				Repository rdf4jRepository) {
-			this.connHolder = connHolder;
-			this.rdf4jRepository = rdf4jRepository;
-		}
-
-		@Override
-		public void suspend() {
-		}
-
-		@Override
-		public void resume() {
-		}
-
-		@Override
-		public void flush() {
-		}
-
-		@Override
-		public void beforeCommit(boolean readOnly) {
-		}
-
-		@Override
-		public void beforeCompletion() {
-		}
-
-		@Override
-		public void afterCommit() {
-		}
-
-		@Override
-		public void afterCompletion(int status) {
-		}
-
-	}
-
 }
