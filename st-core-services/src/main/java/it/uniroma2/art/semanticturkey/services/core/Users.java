@@ -245,7 +245,7 @@ public class Users extends STServiceAdapter {
 			throw new UserException("Cannot update the email for the user " + email + ". The email " + newEmail + 
 					" is already used by another user");
 		}
-		user = UsersManager.updateUserFamilyName(user, newEmail);
+		user = UsersManager.updateUserEmail(user, newEmail);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
