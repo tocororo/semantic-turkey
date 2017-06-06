@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -519,7 +518,8 @@ public class CustomFormXMLHelper {
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (TransformerException | ParserConfigurationException | FileNotFoundException e) {
+			result.getOutputStream().close();
+		} catch (TransformerException | ParserConfigurationException | IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -554,7 +554,8 @@ public class CustomFormXMLHelper {
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException | FileNotFoundException e) {
+			result.getOutputStream().close();
+		} catch (ParserConfigurationException | TransformerException | IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -598,7 +599,8 @@ public class CustomFormXMLHelper {
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException | FileNotFoundException e) {
+			result.getOutputStream().close();
+		} catch (ParserConfigurationException | TransformerException | IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -640,7 +642,8 @@ public class CustomFormXMLHelper {
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(new FileOutputStream(file));
 			transformer.transform(source, result);
-		} catch (ParserConfigurationException | TransformerException | FileNotFoundException e) {
+			result.getOutputStream().close();
+		} catch (ParserConfigurationException | TransformerException | IOException e) {
 			e.printStackTrace();
 		}
 	}

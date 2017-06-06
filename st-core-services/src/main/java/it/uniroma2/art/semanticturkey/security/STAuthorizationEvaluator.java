@@ -1,8 +1,8 @@
 package it.uniroma2.art.semanticturkey.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.Resource;
@@ -177,15 +177,20 @@ public class STAuthorizationEvaluator {
 	 * @return
 	 */
 	private Collection<Role> getRoles(STUser user) {
+		Collection<Role> roles = new ArrayList<>();
+		if (user.isAdmin()) {
+			//administration role is a cross project role, so it checked independently from the project accessed
+			roles.add(RBACManager.DefaultRole.ADMINISTRATOR);
+		}
 		AbstractProject project = getTargetForRBAC();
 		if (project != null) {
 			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 			//puBinding could be null if user tries to access a 2nd project from the project in which is logged
 			if (puBinding != null) {
-				return puBinding.getRoles();
+				roles.addAll(puBinding.getRoles());
 			}
 		}
-		return Collections.emptyList();
+		return roles;
 	}
 
 	private Project getTargetForRBAC() {
