@@ -4,6 +4,7 @@ import it.uniroma2.art.semanticturkey.mvc.IntrospectableController;
 import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.services.STService;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
 import it.uniroma2.art.semanticturkey.servlet.HttpServiceRequestWrapper;
@@ -296,6 +297,11 @@ public class LegacyServiceController implements ApplicationContextAware, Introsp
 	@Override
 	public ServiceSpecies getServiceSpecies() {
 		return ServiceSpecies.OldStyle;
+	}
+	
+	@Override
+	public STService getService() {
+		return null;
 	}
 
 }

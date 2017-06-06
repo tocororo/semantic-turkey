@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.mvc;
 
+import it.uniroma2.art.semanticturkey.services.STService;
 import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
 
 /**
@@ -12,4 +13,5 @@ import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
  */
 public interface IntrospectableController {
 	ServiceSpecies getServiceSpecies();
+	STService getService();
 }

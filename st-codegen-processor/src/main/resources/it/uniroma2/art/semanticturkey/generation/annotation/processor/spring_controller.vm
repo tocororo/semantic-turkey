@@ -42,6 +42,11 @@ public class ${generatedClassSimpleName}
 		return ServiceSpecies.speciesOf(serviceBean);
 	}
 	
+	@Override
+	public ${classSimpleName} getService() {
+		return context.getBean(${classSimpleName}.class);
+	}
+	
 #*
 	For each service method to be published, generate a method in the controller
 *###
@@ -99,18 +104,18 @@ Response<${method.returnType}>
 	{
 	
 #if($tools.isMappedToVoid($method))
-		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		${classSimpleName} fun = getService();
 		fun.${method.simpleName}(${subarg});
 #else
 #if($tools.isVoidMethod($method))
 		String body;
 
-		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		${classSimpleName} fun = getService();
 		fun.${method.simpleName}(${subarg});		
 		body = ServletUtilities.getService().createReplyResponse($tools.toStringLiteral($path.toString()), RepliesStatus.ok, SerializationType.json).getResponseContent();
 #else
 		
-		${classSimpleName} fun = (${classSimpleName}) context.getBean(${classSimpleName}.class);
+		${classSimpleName} fun = getService();
 		${method.returnType} body = fun.${method.simpleName}(${subarg});
 #end
 		HttpHeaders responseHeaders = new HttpHeaders();

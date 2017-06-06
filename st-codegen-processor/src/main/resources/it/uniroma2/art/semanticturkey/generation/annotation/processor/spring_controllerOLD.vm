@@ -40,6 +40,11 @@ public class ${generatedClassSimpleName}
 		return ServiceSpecies.speciesOf(serviceBean);
 	}
 	
+	@Override
+	public ${classSimpleName} getService() {
+		return context.getBean(${classSimpleName}.class);
+	}
+	
 #*
 	For each service method to be published, generate a method in the controller
 *###
