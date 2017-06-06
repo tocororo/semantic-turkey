@@ -440,8 +440,9 @@ public class Classes extends STServiceAdapter {
 	
 	
 	/**
-	 * Adds the OWL.INTERSECTIONOF to the description of the class <code>cls</code> using the supplied array 
-	 * of Manchester expressions to generate the property values.
+	 * Adds the OWL.INTERSECTIONOF to the description of the class <code>cls</code> using the supplied array, 
+	 * <code>clsDescriptions</code> of Manchester expressions to generate the property values. In  
+	 * <code>clsDescriptions</code> each element of the array could be a single classIRI
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -475,8 +476,9 @@ public class Classes extends STServiceAdapter {
 	
 	
 	/**
-	 * Adds the OWL.UNIONOF to the description of the class <code>cls</code> using the supplied array 
-	 * of Manchester expressions to generate the property values.
+	 * Adds the OWL.UNIONOF to the description of the class <code>cls</code> using the supplied array, 
+	 * <code>clsDescriptions</code> of Manchester expressions to generate the property values. In  
+	 * <code>clsDescriptions</code> each element of the array could be a single classIRI
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -543,26 +545,39 @@ public class Classes extends STServiceAdapter {
 	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, List<String> clsDescriptions, 
 			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap) 
 					throws ManchesterParserException{
-		List<Resource> bnodeList = new ArrayList<>();
+		List<Resource> resourceList = new ArrayList<>();
 		if(clsDescriptions == null || clsDescriptions.size() == 0){
 			throw new IllegalArgumentException("the list of expression cannot be empty");
 		}
 		//generate all the triple associated to each clsDescription
 		for(String clsDesc : clsDescriptions){
-			ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(clsDesc, 
-					repoConnection.getValueFactory(), prefixToNamespacesMap);
-			List<Statement> statList = new ArrayList<>();
-			//it is possible to cast the Resource to a BNode, because the input mci should have a bnode as 
-			// starting element
-			BNode newBnode = (BNode) ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, 
-					repoConnection.getValueFactory());
-			modelAdditions.addAll(statList);
-			//add the generated BNode into a list
-			bnodeList.add(newBnode);
+			//check if clsDesc is a single IRI or a manchester expression
+			boolean isIRI = false;
+			if(clsDesc.startsWith("<") && clsDesc.endsWith(">")){
+				String clsDescCleaned = clsDesc.substring(1, clsDesc.length()-1);
+				if(!clsDescCleaned.contains("<") && !clsDescCleaned.contains(">")){
+					//this means that it is a single IRI (and not something like "<...> and <...>"
+					IRI clsDescIRI = repoConnection.getValueFactory().createIRI(clsDescCleaned);
+					isIRI = true;
+					resourceList.add(clsDescIRI);
+				}
+			}
+			if(!isIRI){
+				ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(clsDesc, 
+						repoConnection.getValueFactory(), prefixToNamespacesMap);
+				List<Statement> statList = new ArrayList<>();
+				//it is possible to cast the Resource to a BNode, because the input mci should have a bnode as 
+				// starting element
+				BNode newBnode = (BNode) ManchesterSyntaxUtils.parseManchesterExpr(mci, statList, 
+						repoConnection.getValueFactory());
+				modelAdditions.addAll(statList);
+				//add the generated BNode into a list
+				resourceList.add(newBnode);
+			}
 		}
 		
 		//now add all the generated bnode in a list, which is linked to the input cls with the property axiomProp
-		createAndAddList(cls, axiomProp,bnodeList, modelAdditions, repoConnection);
+		createAndAddList(cls, axiomProp,resourceList, modelAdditions, repoConnection);
 	}
 	
 	private void createAndAddList(IRI cls, IRI prop, List<? extends Resource> elemForList, Model modelAdditions, 
