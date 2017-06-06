@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -56,6 +57,8 @@ import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.sail.SailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.MapMaker;
 
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
@@ -202,7 +205,7 @@ public abstract class Project extends AbstractProject {
 	private RenderingEngine renderingEngine;
 
 	private final ThreadLocal<RDFModel> modelHolder;
-	private RDF4JRepositoryTransactionManager repositoryTransactionManager;
+	private Map<Repository, RDF4JRepositoryTransactionManager> repository2TransactionManager;
 	protected RepositoryConfig coreRepoConfig;
 	protected RepositoryConfig supportRepoConfig;
 	private LocalRepositoryManager repositoryManager;
@@ -260,7 +263,6 @@ public abstract class Project extends AbstractProject {
 		try {
 			repositoryManager = new LocalRepositoryManager(_projectDir);
 			repositoryManager.initialize();
-
 			Repository supportRepository = repositoryManager.getRepository("support");
 
 			if (supportRepository != null) {
@@ -351,11 +353,12 @@ public abstract class Project extends AbstractProject {
 			try {
 				rdf4jRepo = getRepository();
 			} catch (IllegalStateException e) {
-				// not an RDF4J repostory
+				// not an RDF4J repository
 			}
 
 			if (rdf4jRepo != null) {
-				repositoryTransactionManager = new RDF4JRepositoryTransactionManager(rdf4jRepo);
+				repository2TransactionManager = new MapMaker().weakKeys().makeMap();
+				repository2TransactionManager.put(rdf4jRepo, new RDF4JRepositoryTransactionManager(rdf4jRepo));
 			}
 
 			String defaultNamespace = getDefaultNamespace();
@@ -791,12 +794,8 @@ public abstract class Project extends AbstractProject {
 		return newOntManager.getRepository();
 	}
 
-	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager() {
-		if (repositoryTransactionManager != null) {
-			return repositoryTransactionManager;
-		} else {
-			throw new IllegalStateException("Not an RDF4J project");
-		}
+	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager(Repository repository) {
+		return repository2TransactionManager.computeIfAbsent(repository, RDF4JRepositoryTransactionManager::new);
 	}
 
 	public String toString() {

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 
 /**
  * A {@code FactoryBean} that is used to instantiate the {@link RDF4JRepositoryTransactionManager} managing
@@ -20,7 +21,8 @@ public class RDF4JRepositoryTransactionManagerFactoryBean
 
 	@Override
 	public RDF4JRepositoryTransactionManager getObject() throws Exception {
-		return stContext.getProject().getRepositoryTransactionManager();
+		return stContext.getProject()
+				.getRepositoryTransactionManager(STServiceContextUtils.getRepostory(stContext));
 	}
 
 	@Override
