@@ -54,6 +54,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 @STService
 public class Alignment extends STServiceAdapter {
@@ -67,12 +68,11 @@ public class Alignment extends STServiceAdapter {
 	);
 	
 	private static List<IRI> owlMappingRelations = Arrays.asList(
-		OWL.SAMEAS, OWL.DIFFERENTFROM, OWL.ALLDIFFERENT,
-		OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF
+		OWL.SAMEAS, OWL.DIFFERENTFROM, OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF
 	);
 	
 	private static List<IRI> propertiesMappingRelations = Arrays.asList(
-		OWL.EQUIVALENTPROPERTY, RDFS.SUBPROPERTYOF
+		OWL.EQUIVALENTPROPERTY, OWL2Fragment.PROPERTY_DISJOINT_WITH, RDFS.SUBPROPERTYOF
 	);
 	
 	//map that contain <id, context> pairs to handle multiple sessions
