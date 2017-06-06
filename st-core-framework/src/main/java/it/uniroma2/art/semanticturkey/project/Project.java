@@ -149,7 +149,7 @@ public abstract class Project extends AbstractProject {
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
 
 	public static final String CREATION_DATE_PROP = "creationDate";
-	public static final String MODIFICATION_DATE_PROP = "creationDate";
+	public static final String MODIFICATION_DATE_PROP = "modificationDate";
 
 	public static final String VERSIONS_PROP = "versions";
 

@@ -1637,15 +1637,15 @@ public class ProjectManager {
 			out.write(ProjectACL.ACL + "="
 					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW) + "\n");
 			out.write(Project.DEFAULT_REPOSITORY_LOCATION_PROP + "="
-					+ escape(defaultRepositoryLocation.toString()));
+					+ escape(defaultRepositoryLocation.toString()) + "\n");
 
 			if (creationDateProperty != null) {
-				out.write(Project.CREATION_DATE_PROP + "=" + escape(creationDateProperty.stringValue()));
+				out.write(Project.CREATION_DATE_PROP + "=" + escape(creationDateProperty.stringValue()) + "\n");
 			}
 
 			if (modificationDateProperty != null) {
 				out.write(Project.MODIFICATION_DATE_PROP + "="
-						+ escape(modificationDateProperty.stringValue()));
+						+ escape(modificationDateProperty.stringValue()) + "\n");
 			}
 
 			out.close();
