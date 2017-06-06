@@ -415,7 +415,7 @@ public class Classes extends STServiceAdapter {
 	/**
 	 * adds an rdfs:superClassOf relationship between two resources (already defined in the ontology)
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
 	public void addSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
@@ -428,7 +428,7 @@ public class Classes extends STServiceAdapter {
 	/**
 	 * removes the rdfs:superClassOf relationship between two resources (already defined in the ontology)
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
@@ -443,7 +443,7 @@ public class Classes extends STServiceAdapter {
 	 * Adds the OWL.INTERSECTIONOF to the description of the class <code>cls</code> using the supplied array 
 	 * of Manchester expressions to generate the property values.
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
 	public void addIntersectionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
@@ -461,7 +461,7 @@ public class Classes extends STServiceAdapter {
 	 * Removes an axiom identified by the property <code>OWL.INTERSECTIONOF</code> based on the collection 
 	 * identified by <code>collectionNode</code> from the description of the class identified by <code>cls</code>.
 	 */ 
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeIntersectionOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
@@ -478,7 +478,7 @@ public class Classes extends STServiceAdapter {
 	 * Adds the OWL.UNIONOF to the description of the class <code>cls</code> using the supplied array 
 	 * of Manchester expressions to generate the property values.
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
 	public void addUnionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
@@ -496,7 +496,7 @@ public class Classes extends STServiceAdapter {
 	 * Removes an axiom identified by the property <code>OWL.UNIONOF</code> based on the collection 
 	 * identified by <code>collectionNode</code> from the description of the class identified by <code>cls</code>.
 	 */ 
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeUnionOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
@@ -512,7 +512,7 @@ public class Classes extends STServiceAdapter {
 	 * Enumerates (via <code>owl:oneOf</code>) all and only members of the class <code>cls</code>, which
 	 * are provided by the parameter <code>individuals</code>
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
 	public void addOneOf(@LocallyDefined @Subject IRI cls, List<IRI> individuals) 
@@ -528,7 +528,7 @@ public class Classes extends STServiceAdapter {
 	 * Removes the enumeration <code>collectionNode</code> from the description of the class
 	 * <code>cls</code>
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeOneOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
