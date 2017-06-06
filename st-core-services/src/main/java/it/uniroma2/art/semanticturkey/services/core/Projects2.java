@@ -51,7 +51,9 @@ public class Projects2 extends STServiceAdapter {
 			String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
-			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationDateProperty, @Optional IRI modificationDateProperty) throws ProjectInconsistentException,
+			@Optional PluginSpecification renderingEngineSpecification, @Optional(defaultValue="<http://purl.org/dc/terms/created>") IRI creationDateProperty,
+			@Optional(defaultValue="<http://purl.org/dc/terms/modified>") IRI modificationDateProperty,
+			@Optional(defaultValue = "resource") String[] updateForRoles) throws ProjectInconsistentException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
@@ -71,10 +73,11 @@ public class Projects2 extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		Project proj = ProjectManager.createProject(consumer, projectName, model,
-				lexicalizationModel, baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
+		Project proj = ProjectManager.createProject(consumer, projectName, model, lexicalizationModel,
+				baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
-				uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty, modificationDateProperty);
+				uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
+				modificationDateProperty, updateForRoles);
 
 		STUser loggedUser = UsersManager.getLoggedUser();
 

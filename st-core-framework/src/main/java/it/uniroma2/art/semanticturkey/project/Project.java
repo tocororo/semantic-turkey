@@ -32,6 +32,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +40,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -80,6 +83,7 @@ import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
@@ -133,6 +137,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI model;
 	protected IRI lexicalizationModel;
 
+	protected Set<RDFResourceRole> updateForRoles;
+
 	public static final String INFOFILENAME = "project.info";
 
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
@@ -145,7 +151,7 @@ public abstract class Project extends AbstractProject {
 	public static final String PROJECT_TYPE = "ProjectType";
 	public static final String MODEL_PROP = "model";
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
-
+	public static final String UPDATE_FOR_ROLES_PROP = "updateForRoles";
 	public static final String PLUGINS_PROP = "plugins";
 
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
@@ -240,7 +246,7 @@ public abstract class Project extends AbstractProject {
 			FileInputStream propFileInStream = new FileInputStream(infoSTPFile);
 			stp_properties.load(propFileInStream);
 			propFileInStream.close();
-			
+
 			model = SimpleValueFactory.getInstance()
 					.createIRI(Objects.requireNonNull(stp_properties.getProperty(MODEL_PROP),
 							"Project property \"" + MODEL_PROP + "\" must not be null"));
@@ -248,6 +254,13 @@ public abstract class Project extends AbstractProject {
 					.createIRI(Objects.requireNonNull(stp_properties.getProperty(LEXICALIZATION_MODEL_PROP),
 							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
 
+			String updateForRolesString = com.google.common.base.Objects
+					.firstNonNull(stp_properties.getProperty(UPDATE_FOR_ROLES_PROP), "resource");
+
+			updateForRoles = Arrays.stream(updateForRolesString.split(",")).map(String::trim)
+					.filter(s -> !s.isEmpty())
+					.map(s -> s.equals("resource") ? RDFResourceRole.undetermined.name() : s)
+					.map(RDFResourceRole::valueOf).collect(Collectors.toSet());
 			acl = new ProjectACL(this);
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
@@ -358,7 +371,8 @@ public abstract class Project extends AbstractProject {
 
 			if (rdf4jRepo != null) {
 				repository2TransactionManager = new MapMaker().weakKeys().makeMap();
-				repository2TransactionManager.put(rdf4jRepo, new RDF4JRepositoryTransactionManager(rdf4jRepo));
+				repository2TransactionManager.put(rdf4jRepo,
+						new RDF4JRepositoryTransactionManager(rdf4jRepo));
 			}
 
 			String defaultNamespace = getDefaultNamespace();
@@ -474,11 +488,11 @@ public abstract class Project extends AbstractProject {
 	public IRI getModel() {
 		return model;
 	}
-	
+
 	public IRI getLexicalizationModel() {
 		return lexicalizationModel;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private <T> Class<? extends T> getClassTypedProperty(String propertyName, Class<T> definingClass)
 			throws ProjectInconsistentException {
@@ -740,7 +754,7 @@ public abstract class Project extends AbstractProject {
 		RDFModel threadBoundModel;
 
 		String modelType = computeOntoType();
-		
+
 		try {
 			if (modelType.equals(SKOSXLModel.class.getName())) {
 				threadBoundModel = new SKOSXLModelRDF4JImpl(
@@ -752,8 +766,7 @@ public abstract class Project extends AbstractProject {
 				threadBoundModel = new OWLModelRDF4JImpl(
 						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
 			}
-		} catch (SailException | RepositoryException
-				| VocabularyInitializationException e) {
+		} catch (SailException | RepositoryException | VocabularyInitializationException e) {
 			throw new ModelCreationException(e);
 		}
 
@@ -795,7 +808,8 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager(Repository repository) {
-		return repository2TransactionManager.computeIfAbsent(repository, RDF4JRepositoryTransactionManager::new);
+		return repository2TransactionManager.computeIfAbsent(repository,
+				RDF4JRepositoryTransactionManager::new);
 	}
 
 	public String toString() {
@@ -933,6 +947,17 @@ public abstract class Project extends AbstractProject {
 
 	public RepositoryLocation getDefaultRepositoryLocation() {
 		return defaultRepositoryLocation;
+	}
+
+	/**
+	 * Returns the set of {@link RDFResourceRole}s for which version metadata (i.e. creation/modification
+	 * date) should be updated. The value {@link RDFResourceRole#undetermined} is used to represent any
+	 * "resource", since the latter is not an explicit role.
+	 * 
+	 * @return
+	 */
+	public Set<RDFResourceRole> getUpdateForRoles() {
+		return Collections.unmodifiableSet(updateForRoles);
 	}
 
 	public String computeOntoType() {

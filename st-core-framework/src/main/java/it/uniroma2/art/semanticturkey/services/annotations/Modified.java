@@ -7,7 +7,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 
 /**
  * Indicates in the context of a service operation that the annotated parameter holds an RDF resource, which
@@ -22,9 +22,9 @@ import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 public @interface Modified {
 	/**
 	 * The role of the resource. If the role is not known a-priori, leave it to the default value
-	 * {@link RDFResourceRolesEnum#undetermined}
+	 * {@link RDFResourceRole#undetermined}
 	 * 
 	 * @return
 	 */
-	RDFResourceRolesEnum role() default RDFResourceRolesEnum.undetermined;
+	RDFResourceRole role() default RDFResourceRole.undetermined;
 }

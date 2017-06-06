@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.IllegalClassFormatException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -48,7 +49,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -72,6 +75,7 @@ import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -1387,11 +1391,12 @@ public class ProjectManager {
 			PluginSpecification coreRepoSailConfigurerSpecification, String supportRepoID,
 			PluginSpecification supportRepoSailConfigurerSpecification,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			IRI creationDateProperty, IRI modificationDateProperty) throws InvalidProjectNameException,
-			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
-			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			BadConfigurationException, PUBindingException, RBACException {
+			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
+			ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, BadConfigurationException, PUBindingException,
+			RBACException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1406,6 +1411,11 @@ public class ProjectManager {
 		if (!projectDir.mkdir())
 			throw new DuplicatedResourceException("project: " + projectName
 					+ " already exists; choose a different project name for a new project");
+
+		if (!Arrays.stream(updateForRoles)
+				.allMatch(s -> "resource".equals(s) || EnumUtils.isValidEnum(RDFResourceRole.class, s))) {
+			throw new ProjectCreationException("One or more roles to be updated are illegal");
+		}
 
 		try {
 
@@ -1582,7 +1592,8 @@ public class ProjectManager {
 					baseURI, defaultNamespace, historyEnabled, validationEnabled,
 					RepositoryLocation.fromRepositoryAccess(repositoryAccess), coreRepoID,
 					coreRepositoryConfig, supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
-					renderingEngineSpecification, creationDateProperty, modificationDateProperty);
+					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
+					updateForRoles);
 
 		} catch (Exception e) {
 			Utilities.deleteDir(projectDir); // if something fails, deletes everything
@@ -1602,7 +1613,7 @@ public class ProjectManager {
 			RepositoryLocation defaultRepositoryLocation, String coreRepoID, RepositoryConfig coreRepoConfig,
 			String supportRepoID, RepositoryConfig supportRepoConfig,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			IRI creationDateProperty, IRI modificationDateProperty)
+			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1640,13 +1651,17 @@ public class ProjectManager {
 					+ escape(defaultRepositoryLocation.toString()) + "\n");
 
 			if (creationDateProperty != null) {
-				out.write(Project.CREATION_DATE_PROP + "=" + escape(creationDateProperty.stringValue()) + "\n");
+				out.write(
+						Project.CREATION_DATE_PROP + "=" + escape(creationDateProperty.stringValue()) + "\n");
 			}
 
 			if (modificationDateProperty != null) {
 				out.write(Project.MODIFICATION_DATE_PROP + "="
 						+ escape(modificationDateProperty.stringValue()) + "\n");
 			}
+
+			out.write(Project.UPDATE_FOR_ROLES_PROP + "="
+					+ escape(Arrays.stream(updateForRoles).collect(Collectors.joining(","))) + "\n");
 
 			out.close();
 

@@ -12,12 +12,14 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.aop.MethodInvocationUtilities;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -35,6 +37,8 @@ import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
  */
 public class VersioningMetadataInterceptor implements MethodInterceptor {
 
+	private static final Logger logger = LoggerFactory.getLogger(VersioningMetadataInterceptor.class);
+	
 	@Autowired
 	private STServiceContext stServiceContext;
 
@@ -98,7 +102,7 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 
 					if (creationDateProp != null) {
 						IRI creationDatePropIRI = vf.createIRI(creationDateProp);
-						for (ImmutablePair<Resource, RDFResourceRolesEnum> r : versioningMetadata
+						for (ImmutablePair<Resource, RDFResourceRole> r : versioningMetadata
 								.getCreatedResources()) {
 							if (determineNecessityOfMetadata(conn, r)) {
 								conn.add(r.getLeft(), creationDatePropIRI, currentTime, workingGraph);
@@ -108,7 +112,7 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 
 					if (modificationDateProp != null) {
 						IRI modificationDatePropIRI = vf.createIRI(modificationDateProp);
-						for (ImmutablePair<Resource, RDFResourceRolesEnum> r : versioningMetadata
+						for (ImmutablePair<Resource, RDFResourceRole> r : versioningMetadata
 								.getModifiedResources()) {
 							if (determineNecessityOfMetadata(conn, r)) {
 								conn.remove(r.getLeft(), modificationDatePropIRI, null, workingGraph);
@@ -139,14 +143,29 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 		return rv;
 	}
 
-	private static boolean determineNecessityOfMetadata(RepositoryConnection conn,
-			ImmutablePair<Resource, RDFResourceRolesEnum> r) {
-		RDFResourceRolesEnum role = r.getRight();
-		if (role == RDFResourceRolesEnum.undetermined) {
-			role = RoleRecognitionOrchestrator.computeRole(r.getLeft(), conn);
+	private boolean determineNecessityOfMetadata(RepositoryConnection conn,
+			ImmutablePair<Resource, RDFResourceRole> r) {
+
+		RDFResourceRole role = r.getRight();
+
+		logger.debug("Given role: {}", role);
+
+		if (role == RDFResourceRole.undetermined) {
+			role = RDFResourceRole.valueOf(RoleRecognitionOrchestrator.computeRole(r.getLeft(), conn).name());
 		}
-	
-		return true;
+
+		logger.debug("After computation role: {}", role);
+
+		for (RDFResourceRole updatableRole : stServiceContext.getProject().getUpdateForRoles()) {
+			if (RDFResourceRole.subsumes(updatableRole, role, true)) {
+				logger.debug("Role {} is subsumed by role {}", role, updatableRole);
+				return true;
+			}
+		}
+
+		logger.debug("Do not update");
+
+		return false;
 	}
 
 }
