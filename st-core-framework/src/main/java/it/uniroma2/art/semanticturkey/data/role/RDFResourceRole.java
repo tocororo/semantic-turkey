@@ -68,8 +68,24 @@ public enum RDFResourceRole {
 		map.put(skosOrderedCollection, SKOS.ORDERED_COLLECTION);
 	}
 
+	public IRI getIRI() {
+		return map.get(this);
+	}
+
 	public boolean subsumes(RDFResourceRole role) {
 		return subsumes(this, role);
+	}
+
+	public boolean isProperty() {
+		return isProperty(this);
+	}
+
+	public boolean isClass() {
+		return isClass(this);
+	}
+
+	public boolean isSkosCollection() {
+		return isSkosCollection(this);
 	}
 
 	public static boolean subsumes(RDFResourceRole subsumer, RDFResourceRole subsumee) {
@@ -98,8 +114,16 @@ public enum RDFResourceRole {
 		return false;
 	}
 
-	public IRI getIRI() {
-		return map.get(this);
+	public static boolean isProperty(RDFResourceRole role) {
+		return subsumes(property, role);
+	}
+
+	public static boolean isClass(RDFResourceRole role) {
+		return ((role == cls) || (role == dataRange));
+	}
+
+	public static boolean isSkosCollection(RDFResourceRole role) {
+		return ((role == skosCollection) || (role == skosOrderedCollection));
 	}
 
 }

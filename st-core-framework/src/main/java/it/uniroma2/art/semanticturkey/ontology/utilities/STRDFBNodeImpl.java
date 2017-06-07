@@ -28,18 +28,18 @@ package it.uniroma2.art.semanticturkey.ontology.utilities;
 
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTBNode;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 
 
 public class STRDFBNodeImpl extends STRDFResourceImpl implements STRDFResource {
 
-	RDFResourceRolesEnum role;
+	RDFResourceRole role;
 	
-	STRDFBNodeImpl(ARTBNode node, RDFResourceRolesEnum role, boolean explicit) {
+	STRDFBNodeImpl(ARTBNode node, RDFResourceRole role, boolean explicit) {
 		super(node, role, explicit);
 	}
 	
-	STRDFBNodeImpl(ARTBNode node, RDFResourceRolesEnum role, boolean explicit, String show) {
+	STRDFBNodeImpl(ARTBNode node, RDFResourceRole role, boolean explicit, String show) {
 		super(node, role, explicit, show);
 	}
 	

@@ -25,6 +25,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -125,7 +126,7 @@ public class SKOSXL extends STServiceAdapter {
 			Literal label = (Literal) bindingSet.getBinding("label").getValue();
 			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
 				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
-				annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+				annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 				if(label.getLanguage().isPresent()){
 					annotatedValue.setAttribute("lang", label.getLanguage().get());
 				}
@@ -160,7 +161,7 @@ public class SKOSXL extends STServiceAdapter {
 			Literal label = (Literal) bindingSet.getBinding("label").getValue();
 			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
 				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
-				annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+				annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 				if(label.getLanguage().isPresent()){
 					annotatedValue.setAttribute("lang", label.getLanguage().get());
 				}
@@ -195,7 +196,7 @@ public class SKOSXL extends STServiceAdapter {
 			Literal label = (Literal) bindingSet.getBinding("label").getValue();
 			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
 				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
-				annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+				annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 				if(label.getLanguage().isPresent()){
 					annotatedValue.setAttribute("lang", label.getLanguage().get());
 				}

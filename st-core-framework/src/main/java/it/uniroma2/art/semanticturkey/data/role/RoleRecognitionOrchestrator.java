@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.data.role;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -14,7 +13,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.owlart.vocabulary.OWL;
 import it.uniroma2.art.owlart.vocabulary.RDF;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
@@ -81,7 +79,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 		return "resource";
 	}
 	
-	public static RDFResourceRolesEnum computeRole(Resource resource, RepositoryConnection repoConn) {
+	public static RDFResourceRole computeRole(Resource resource, RepositoryConnection repoConn) {
 		String query = 
 				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
@@ -108,7 +106,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 		tq.setBinding("tempResource", resource);
 		try (TupleQueryResult result = tq.evaluate()) {
 			String roleValue = result.next().getValue("role").stringValue();
-			return RDFResourceRolesEnum.valueOf(roleValue);
+			return RDFResourceRole.valueOf(roleValue);
 		}
 	}
 	

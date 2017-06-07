@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
@@ -40,6 +39,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
@@ -455,7 +455,7 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newConceptIRI);
-		annotatedValue.setAttribute("role", RDFResourceRolesEnum.concept.name());
+		annotatedValue.setAttribute("role", RDFResourceRole.concept.name());
 		//TODO compute show
 		return annotatedValue; 
 	}
@@ -506,7 +506,7 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newSchemeIRI);
-		annotatedValue.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
+		annotatedValue.setAttribute("role", RDFResourceRole.conceptScheme.name());
 		//TODO compute show
 		return annotatedValue; 
 	}
@@ -1205,9 +1205,9 @@ public class SKOS extends STServiceAdapter {
 		
 		AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(newCollectionRes);
 		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosCollection.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.skosCollection.name());
 		} else { //ORDERED
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosOrderedCollection.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.skosOrderedCollection.name());
 		}
 		//TODO compute show
 		return annotatedValue; 

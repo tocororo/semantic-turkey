@@ -28,18 +28,18 @@ package it.uniroma2.art.semanticturkey.ontology.utilities;
 
 import it.uniroma2.art.owlart.io.RDFNodeSerializer;
 import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 
 
 public class STRDFURIImpl extends STRDFResourceImpl implements STRDFURI {
 
-	RDFResourceRolesEnum role;
+	RDFResourceRole role;
 	
-	STRDFURIImpl(ARTURIResource node, RDFResourceRolesEnum role, boolean explicit) {
+	STRDFURIImpl(ARTURIResource node, RDFResourceRole role, boolean explicit) {
 		super(node, role, explicit);
 	}
 	
-	STRDFURIImpl(ARTURIResource node, RDFResourceRolesEnum role, boolean explicit, String show) {
+	STRDFURIImpl(ARTURIResource node, RDFResourceRole role, boolean explicit, String show) {
 		super(node, role, explicit, show);
 	}
 	

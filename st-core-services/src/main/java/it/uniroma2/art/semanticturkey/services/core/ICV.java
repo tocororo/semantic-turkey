@@ -22,9 +22,9 @@ import it.uniroma2.art.owlart.query.TupleBindings;
 import it.uniroma2.art.owlart.query.TupleBindingsIterator;
 import it.uniroma2.art.owlart.query.TupleQuery;
 import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
@@ -446,11 +446,11 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
 			
@@ -497,11 +497,11 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
 			
@@ -542,11 +542,11 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			result.add(STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI()));
 		}
@@ -584,11 +584,11 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			result.add(STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI()));
 		}
@@ -702,11 +702,11 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			
@@ -716,7 +716,7 @@ public class ICV extends STServiceAdapterOLD {
 			
 			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
 			ARTURIResource labelPred = tb.getBinding("labelPred").getBoundValue().asURIResource();
-			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRolesEnum.annotationProperty, true, model.getQName(labelPred.getURI()));
+			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRole.annotationProperty, true, model.getQName(labelPred.getURI()));
 			RDFXMLHelp.addRDFNode(predicateElem, stPredicate);
 			
 			Element objectElem = XMLHelp.newElement(recordElem, "object");
@@ -759,11 +759,11 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			
@@ -773,13 +773,13 @@ public class ICV extends STServiceAdapterOLD {
 			
 			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
 			ARTURIResource labelPred = tb.getBinding("labelPred").getBoundValue().asURIResource();
-			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRolesEnum.objectProperty, true, model.getQName(labelPred.getURI()));
+			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRole.objectProperty, true, model.getQName(labelPred.getURI()));
 			RDFXMLHelp.addRDFNode(predicateElem, stPredicate);
 			
 			Element objectElem = XMLHelp.newElement(recordElem, "object");
 			ARTResource label = tb.getBinding("xlabel").getBoundValue().asResource();
 			ARTLiteral literalForm = tb.getBinding("literalForm").getBoundValue().asLiteral();
-			STRDFResource stObject = STRDFNodeFactory.createSTRDFResource(label, RDFResourceRolesEnum.xLabel, true, literalForm.getLabel());
+			STRDFResource stObject = STRDFNodeFactory.createSTRDFResource(label, RDFResourceRole.xLabel, true, literalForm.getLabel());
 			RDFXMLHelp.addRDFNode(objectElem, stObject);
 		}
 		return response;
@@ -816,11 +816,11 @@ public class ICV extends STServiceAdapterOLD {
 			String label = tb.getBinding("label").getBoundValue().getNominalValue();
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
 			String type = tb.getBinding("type").getBoundValue().getNominalValue();
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			STRDFURI uriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
@@ -866,26 +866,26 @@ public class ICV extends STServiceAdapterOLD {
 			String literalForm = tb.getBinding("literalForm").getBoundValue().getNominalValue();
 			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
 			
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.concept;
+			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.Res.CONCEPT)) {
-				role = RDFResourceRolesEnum.concept;
+				role = RDFResourceRole.concept;
 			} else if (type.equals(SKOS.Res.CONCEPTSCHEME)) {
-				role = RDFResourceRolesEnum.conceptScheme;
+				role = RDFResourceRole.conceptScheme;
 			} else if (type.equals(SKOS.Res.COLLECTION)) {
-				role = RDFResourceRolesEnum.skosCollection;
+				role = RDFResourceRole.skosCollection;
 			} else if (type.equals(SKOS.Res.ORDEREDCOLLECTION)) {
-				role = RDFResourceRolesEnum.skosOrderedCollection;
+				role = RDFResourceRole.skosOrderedCollection;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			STRDFURI resUriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
 			RDFXMLHelp.addRDFNode(recordElem, resUriElem);
 			
-			STRDFResource resPrefLabel = STRDFNodeFactory.createSTRDFResource(prefLabel, RDFResourceRolesEnum.xLabel, true, literalForm);
+			STRDFResource resPrefLabel = STRDFNodeFactory.createSTRDFResource(prefLabel, RDFResourceRole.xLabel, true, literalForm);
 			Element prefLabelElem = XMLHelp.newElement(recordElem, "prefLabel");
 			Element resPrefLabelElem = RDFXMLHelp.addRDFNode(prefLabelElem, resPrefLabel);
 			resPrefLabelElem.setAttribute("lang", lang);
 			
-			STRDFResource resAltLabel = STRDFNodeFactory.createSTRDFResource(altLabel, RDFResourceRolesEnum.xLabel, true, literalForm);
+			STRDFResource resAltLabel = STRDFNodeFactory.createSTRDFResource(altLabel, RDFResourceRole.xLabel, true, literalForm);
 			Element altLabelElem = XMLHelp.newElement(recordElem, "altLabel");
 			Element resAltLabelElem = RDFXMLHelp.addRDFNode(altLabelElem, resAltLabel);
 			resAltLabelElem.setAttribute("lang", lang);
@@ -1006,7 +1006,7 @@ public class ICV extends STServiceAdapterOLD {
 			TupleBindings tb = itTupleBinding.next();
 			ARTNode xlabelNode = tb.getBinding("xlabel").getBoundValue();
 			result.add(STRDFNodeFactory.createSTRDFResource(
-					xlabelNode.asResource(), RDFResourceRolesEnum.xLabel, true, xlabelNode.getNominalValue()));
+					xlabelNode.asResource(), RDFResourceRole.xLabel, true, xlabelNode.getNominalValue()));
 		}
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		RDFXMLHelp.addRDFNodes(response, result);

@@ -26,13 +26,13 @@
   */
 package it.uniroma2.art.semanticturkey.ontology.utilities;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 
 
 public interface STRDFResource extends STRDFNode {
 
-	RDFResourceRolesEnum getRole();
+	RDFResourceRole getRole();
 	
-	void setRole(RDFResourceRolesEnum role);	
+	void setRole(RDFResourceRole role);	
 	
 }

@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
@@ -292,7 +291,7 @@ public class Classes extends STServiceAdapter {
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newClass);
-		annotatedValue.setAttribute("role", RDFResourceRolesEnum.cls.name());
+		annotatedValue.setAttribute("role", RDFResourceRole.cls.name());
 		//TODO compute show
 		return annotatedValue; 
 	}
@@ -371,17 +370,17 @@ public class Classes extends STServiceAdapter {
 		
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newInstance);
 		if (cls.equals(SKOS.CONCEPT)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.concept.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.concept.name());
 		} else if (cls.equals(SKOS.CONCEPT_SCHEME)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.conceptScheme.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.conceptScheme.name());
 		} else if (cls.equals(SKOS.COLLECTION)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosCollection.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.skosCollection.name());
 		} else if (cls.equals(SKOS.ORDERED_COLLECTION)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.skosOrderedCollection.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.skosOrderedCollection.name());
 		} else if (cls.equals(SKOSXL.LABEL)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.xLabel.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 		} else {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.individual.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.individual.name());
 		}
 		//TODO compute show
 		return annotatedValue; 

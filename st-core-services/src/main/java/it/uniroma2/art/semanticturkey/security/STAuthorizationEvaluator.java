@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -224,7 +224,7 @@ public class STAuthorizationEvaluator {
 	 * @param resource
 	 * @return
 	 */
-	public RDFResourceRolesEnum typeof(Resource resource) {
+	public RDFResourceRole typeof(Resource resource) {
 		Repository repo = stServiceContext.getProject().getRepository();
 		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
@@ -243,7 +243,7 @@ public class STAuthorizationEvaluator {
 			qb.processRole();
 			Collection<AnnotatedValue<Resource>> res = qb.runQuery();
 			Value role = res.iterator().next().getAttributes().get("role");
-			RDFResourceRolesEnum roleEnum = RDFResourceRolesEnum.valueOf(role.stringValue());
+			RDFResourceRole roleEnum = RDFResourceRole.valueOf(role.stringValue());
 			return roleEnum;
 		} finally {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);

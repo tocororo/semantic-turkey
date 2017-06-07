@@ -36,12 +36,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
 import it.uniroma2.art.semanticturkey.alignment.Cell;
 import it.uniroma2.art.semanticturkey.alignment.InvalidAlignmentRelationException;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -542,7 +542,7 @@ public class Alignment extends STServiceAdapter {
 				mappingProps.add(prop);
 			}
 		} else {
-			boolean isProperty = RDFResourceRolesEnum.isProperty(RoleRecognitionOrchestrator.computeRole(resource, repoConn)); 
+			boolean isProperty = RDFResourceRole.isProperty(RoleRecognitionOrchestrator.computeRole(resource, repoConn)); 
 			if (isProperty) { //is Property?
 				for (IRI prop : propertiesMappingRelations) {
 					mappingProps.add(prop);

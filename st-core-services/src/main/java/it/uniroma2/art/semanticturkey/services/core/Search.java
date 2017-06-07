@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -73,17 +74,17 @@ public class Search extends STServiceAdapter {
 		
 		for(int i=0; i<rolesArray.length; ++i){
 			//TODO remove the RDFResourceRolesEnum from the owlart and find an equivalent in RDF4J
-			if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.cls.name())){
+			if(rolesArray[i].toLowerCase().equals(RDFResourceRole.cls.name())){
 				isClassWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())){
 				isConceptWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.conceptScheme.name().toLowerCase())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())){
 				isConceptSchemeWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.individual.name().toLowerCase())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.individual.name().toLowerCase())){
 				isInstanceWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())){
 				isPropertyWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
 				isCollectionWanted = true;
 			} 
 		}
@@ -92,12 +93,12 @@ public class Search extends STServiceAdapter {
 				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
 			
 			String msg = "the serch roles should be at least one of: "+
-					RDFResourceRolesEnum.cls.name()+", "+
-					RDFResourceRolesEnum.concept.name()+", "+
-					RDFResourceRolesEnum.conceptScheme.name()+", "+
-					RDFResourceRolesEnum.individual+", "+
-					RDFResourceRolesEnum.property.name() +" or "+
-					RDFResourceRolesEnum.skosCollection.name();
+					RDFResourceRole.cls.name()+", "+
+					RDFResourceRole.concept.name()+", "+
+					RDFResourceRole.conceptScheme.name()+", "+
+					RDFResourceRole.individual+", "+
+					RDFResourceRole.property.name() +" or "+
+					RDFResourceRole.skosCollection.name();
 			//TODO change the exception (previously was a fail)
 			throw new IllegalArgumentException(msg);
 			
@@ -241,7 +242,7 @@ public class Search extends STServiceAdapter {
 			}
 
 			// TODO, explicit set to true
-			RDFResourceRolesEnum role = null;
+			RDFResourceRole role = null;
 			//since there are more than one element in the input role array, see the resource
 			String type = tupleBindings.getBinding("type").getValue().stringValue();
 			
@@ -256,7 +257,7 @@ public class Search extends STServiceAdapter {
 				}
 			}
 			
-			if(role.equals(RDFResourceRolesEnum.cls)){
+			if(role.equals(RDFResourceRole.cls)){
 				if(otherResourcesMap.containsKey(value.stringValue())){
 					//the class was already added
 					continue;
@@ -265,7 +266,7 @@ public class Search extends STServiceAdapter {
 				// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
 				// when the parent class is Owl:Thing the service filters out those classes with 
 				// NoLanguageResourcePredicate)
-				if(role.equals(RDFResourceRolesEnum.cls)){
+				if(role.equals(RDFResourceRole.cls)){
 					String resNamespace = value.stringValue();
 					if(resNamespace.equals(XMLSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
 							|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
@@ -274,7 +275,7 @@ public class Search extends STServiceAdapter {
 				}
 				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
 				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-			} else if(role.equals(RDFResourceRolesEnum.individual)){
+			} else if(role.equals(RDFResourceRole.individual)){
 				//there a special section for the individual, since an individual can belong to more than a
 				// class, so the result set could have more tuple regarding a single individual, this way
 				// should speed up the process
@@ -284,15 +285,15 @@ public class Search extends STServiceAdapter {
 				}
 				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
 				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-			} else if(role.equals(RDFResourceRolesEnum.property) || 
-					role.equals(RDFResourceRolesEnum.annotationProperty) || 
-					role.equals(RDFResourceRolesEnum.datatypeProperty) || 
-					role.equals(RDFResourceRolesEnum.objectProperty) || 
-					role.equals(RDFResourceRolesEnum.ontologyProperty) ) {
+			} else if(role.equals(RDFResourceRole.property) || 
+					role.equals(RDFResourceRole.annotationProperty) || 
+					role.equals(RDFResourceRole.datatypeProperty) || 
+					role.equals(RDFResourceRole.objectProperty) || 
+					role.equals(RDFResourceRole.ontologyProperty) ) {
 				//check if the property was already added before (with a different type)
 				if(propertyMap.containsKey(value.stringValue())){
 					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(value.stringValue());
-					if(prevValueTypeAndShow.getRole().equals(RDFResourceRolesEnum.property)){
+					if(prevValueTypeAndShow.getRole().equals(RDFResourceRole.property)){
 						//the previous value was property, now it has a different role, so replace the old 
 						// one with the new one
 						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
@@ -338,9 +339,9 @@ public class Search extends STServiceAdapter {
 	private class ValueTypeAndShow{
 		IRI resource  = null;
 		String show = null;
-		RDFResourceRolesEnum role = null;
+		RDFResourceRole role = null;
 		
-		public ValueTypeAndShow(IRI resource, String show, RDFResourceRolesEnum role) {
+		public ValueTypeAndShow(IRI resource, String show, RDFResourceRole role) {
 			this.resource = resource;
 			this.show = show;
 			this.role = role;
@@ -354,7 +355,7 @@ public class Search extends STServiceAdapter {
 			return show;
 		}
 
-		public RDFResourceRolesEnum getRole() {
+		public RDFResourceRole getRole() {
 			return role;
 		}
 		
@@ -503,7 +504,7 @@ public class Search extends STServiceAdapter {
 		
 		String query = null;
 		String superResourceVar = null, superSuperResourceVar = null;
-		if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name().toLowerCase())){
+		if(role.toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())){
 			superResourceVar = "broader";
 			superSuperResourceVar = "broaderOfBroader";
 			String inSchemeOrTopConcept = "<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">";
@@ -573,7 +574,7 @@ public class Search extends STServiceAdapter {
 					
 			query+="\n}";
 			//@formatter:on
-		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.property.name().toLowerCase())){
+		} else if(role.toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())){
 			superResourceVar = "superProperty";
 			superSuperResourceVar = "superSuperProperty";
 			//@formatter:off
@@ -599,7 +600,7 @@ public class Search extends STServiceAdapter {
 					"\n}" +
 					"\n}";
 			//@formatter:on
-		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.cls.name().toLowerCase())) {
+		} else if(role.toLowerCase().equals(RDFResourceRole.cls.name().toLowerCase())) {
 			superResourceVar = "superClass";
 			superSuperResourceVar = "superSuperClass";
 			//@formatter:off
@@ -660,7 +661,7 @@ public class Search extends STServiceAdapter {
 					"\n}";
 			//@formatter:on
 		*/
-		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
+		} else if(role.toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
 			superResourceVar = "superCollection";
 			superSuperResourceVar = "superSuperCollection";
 			String complexPropPath = "(<"+SKOS.MEMBER.stringValue()+"> | (<"+SKOS.MEMBER_LIST.stringValue()+">/<"+RDF.REST.stringValue()+">*/<"+RDF.FIRST.stringValue()+">))";
@@ -772,7 +773,7 @@ public class Search extends STServiceAdapter {
 				// it cannot be the first element of a path
 				continue;
 			}
-			if(role.toLowerCase().equals(RDFResourceRolesEnum.concept.name())){
+			if(role.toLowerCase().equals(RDFResourceRole.concept.name())){
 				//the role is a concept, so check it an input scheme was passed, if so, if it is not a 
 				// top concept (for that particular scheme) then pass to the next concept
 				if(schemesIRI!=null && !resourceForHierarchy.isTopConcept){
@@ -1112,32 +1113,32 @@ public class Search extends STServiceAdapter {
 		}
 	}
 	
-	private RDFResourceRolesEnum getRoleFromType(String typeURI){
-		RDFResourceRolesEnum role;
+	private RDFResourceRole getRoleFromType(String typeURI){
+		RDFResourceRole role;
 		if(typeURI.equals(OWL.CLASS.stringValue()) || typeURI.equals(RDFS.CLASS.stringValue()) ){
-			role = RDFResourceRolesEnum.cls;
+			role = RDFResourceRole.cls;
 		} else if(typeURI.equals(RDF.PROPERTY.stringValue())){
-			role = RDFResourceRolesEnum.property;
+			role = RDFResourceRole.property;
 		} else if(typeURI.equals(OWL.OBJECTPROPERTY.stringValue())){
-			role = RDFResourceRolesEnum.objectProperty;
+			role = RDFResourceRole.objectProperty;
 		} else if(typeURI.equals(OWL.DATATYPEPROPERTY.stringValue())){
-			role = RDFResourceRolesEnum.datatypeProperty;
+			role = RDFResourceRole.datatypeProperty;
 		} else if(typeURI.equals(OWL.ANNOTATIONPROPERTY.stringValue())){
-			role = RDFResourceRolesEnum.annotationProperty;
+			role = RDFResourceRole.annotationProperty;
 		} else if(typeURI.equals(OWL.ONTOLOGYPROPERTY.stringValue())){
-			role = RDFResourceRolesEnum.ontologyProperty;
+			role = RDFResourceRole.ontologyProperty;
 		}  else if(typeURI.equals(SKOS.CONCEPT.stringValue())){
-			role = RDFResourceRolesEnum.concept;
+			role = RDFResourceRole.concept;
 		} else if(typeURI.equals(SKOS.COLLECTION.stringValue())){
-			role = RDFResourceRolesEnum.skosCollection;
+			role = RDFResourceRole.skosCollection;
 		} else if(typeURI.equals(SKOS.ORDERED_COLLECTION.stringValue())){
-			role = RDFResourceRolesEnum.skosOrderedCollection;
+			role = RDFResourceRole.skosOrderedCollection;
 		} else if(typeURI.equals(SKOSXL.LABEL.stringValue())){
-			role = RDFResourceRolesEnum.xLabel;
+			role = RDFResourceRole.xLabel;
 		} else if(typeURI.equals(SKOS.CONCEPT_SCHEME.stringValue())){
-			role = RDFResourceRolesEnum.conceptScheme;
+			role = RDFResourceRole.conceptScheme;
 		} else {
-			role = RDFResourceRolesEnum.individual;
+			role = RDFResourceRole.individual;
 		} 
 		
 		return role;

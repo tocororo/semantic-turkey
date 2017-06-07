@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
@@ -586,15 +585,15 @@ public class Properties extends STServiceAdapter {
 		
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newProperty);
 		if (propertyType.equals(OWL.OBJECTPROPERTY)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.objectProperty.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.objectProperty.name());
 		} else if (propertyType.equals(OWL.DATATYPEPROPERTY)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.datatypeProperty.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.datatypeProperty.name());
 		} else if (propertyType.equals(OWL.ANNOTATIONPROPERTY)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.annotationProperty.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.annotationProperty.name());
 		} else if (propertyType.equals(OWL.ONTOLOGYPROPERTY)) {
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.ontologyProperty.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.ontologyProperty.name());
 		} else { //rdf:Property
-			annotatedValue.setAttribute("role", RDFResourceRolesEnum.property.name());
+			annotatedValue.setAttribute("role", RDFResourceRole.property.name());
 		}
 		//TODO compute show
 		return annotatedValue; 

@@ -7,6 +7,7 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.navigation.RDFIterator;
 import it.uniroma2.art.owlart.utilities.RDFIterators;
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNode;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
 import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
@@ -37,7 +38,7 @@ public class PredicateObjectsListFactory {
 	 * @return
 	 * @throws ModelAccessException
 	 */
-	public static PredicateObjectsList createPredicateObjectsList(RDFModel model, RDFResourceRolesEnum role,
+	public static PredicateObjectsList createPredicateObjectsList(RDFModel model, RDFResourceRole role,
 			RDFIterator<ARTStatement> inferredStats, RDFIterator<ARTStatement> explicitStatementsIterator)
 			throws ModelAccessException {
 
@@ -75,8 +76,10 @@ public class PredicateObjectsListFactory {
 
 		return new PredicateObjectsListImpl(art2STRDFPredicates, resultPredicateObjectValues);
 	}
-	
-	public static PredicateObjectsList createPredicateObjectsList(Map<ARTURIResource, STRDFResource> art2STRDFPredicates, Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues) {
-		return new PredicateObjectsListImpl(art2STRDFPredicates, resultPredicateObjectValues);	
+
+	public static PredicateObjectsList createPredicateObjectsList(
+			Map<ARTURIResource, STRDFResource> art2STRDFPredicates,
+			Multimap<ARTURIResource, STRDFNode> resultPredicateObjectValues) {
+		return new PredicateObjectsListImpl(art2STRDFPredicates, resultPredicateObjectValues);
 	}
 }

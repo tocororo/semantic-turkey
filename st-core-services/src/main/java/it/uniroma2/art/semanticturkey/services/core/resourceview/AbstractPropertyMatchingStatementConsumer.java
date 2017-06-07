@@ -12,9 +12,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -31,10 +31,10 @@ import com.google.common.collect.Sets;
 
 import it.uniroma2.art.owlart.rdf4jimpl.model.ARTURIResourceRDF4JImpl;
 import it.uniroma2.art.owlart.vocabulary.RDF;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
@@ -218,7 +218,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
 
-			annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
+			annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 			addRole(annotatedPredicate, resource2attributes);
 			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
 					null, statements);

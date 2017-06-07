@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
@@ -709,9 +710,9 @@ public class AlignmentModel {
 	public List<IRI> suggestPropertiesForRelation(IRI entity, String relation, boolean withDefault, RepositoryConnection projRepoConn) 
 			throws InvalidAlignmentRelationException {
 		List<IRI> suggested = new ArrayList<>();
-		RDFResourceRolesEnum roleEnum = RoleRecognitionOrchestrator.computeRole(entity, projRepoConn);
+		RDFResourceRole roleEnum = RoleRecognitionOrchestrator.computeRole(entity, projRepoConn);
 		
-		if (RDFResourceRolesEnum.isProperty(roleEnum)) {
+		if (RDFResourceRole.isProperty(roleEnum)) {
 			if (relation.equals("=")) {
 				suggested.add(OWL.EQUIVALENTPROPERTY);
 				suggested.add(OWL.SAMEAS);
@@ -730,7 +731,7 @@ public class AlignmentModel {
 						+ "assert a triple with the target resource as the subject, "
 						+ "which is advisable not to do");
 			}
-		} else if (roleEnum.equals(RDFResourceRolesEnum.concept)){
+		} else if (roleEnum.equals(RDFResourceRole.concept)){
 			if (relation.equals("=")) {
 				suggested.add(SKOS.EXACT_MATCH);
 				suggested.add(SKOS.CLOSE_MATCH);
@@ -746,7 +747,7 @@ public class AlignmentModel {
 			} else if (relation.equals("HasInstance")) {
 				suggested.add(SKOS.NARROW_MATCH);
 			}
-		} else if (roleEnum.equals(RDFResourceRolesEnum.cls)) {
+		} else if (roleEnum.equals(RDFResourceRole.cls)) {
 			if (relation.equals("=")) {
 				suggested.add(OWL.EQUIVALENTCLASS);
 				suggested.add(OWL.SAMEAS);
@@ -765,7 +766,7 @@ public class AlignmentModel {
 						+ "to assert a triple with the target resource as the subject, "
 						+ "which is advisable not to do");
 			}
-		} else if (roleEnum.equals(RDFResourceRolesEnum.individual)) {
+		} else if (roleEnum.equals(RDFResourceRole.individual)) {
 			if (relation.equals("=")) {
 				suggested.add(OWL.SAMEAS);
 			} else if (relation.equals(">") || relation.equals("<")) {

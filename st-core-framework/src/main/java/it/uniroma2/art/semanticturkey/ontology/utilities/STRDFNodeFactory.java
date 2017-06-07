@@ -29,6 +29,8 @@ package it.uniroma2.art.semanticturkey.ontology.utilities;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.w3c.dom.DOMException;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTBNode;
 import it.uniroma2.art.owlart.model.ARTLiteral;
@@ -38,10 +40,8 @@ import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.utilities.RDFRenderer;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFTypesEnum;
-
-import org.w3c.dom.DOMException;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 
 /**
  * <p>
@@ -124,7 +124,7 @@ public class STRDFNodeFactory {
 	 * @param show
 	 * @return
 	 */
-	public static STRDFURI createSTRDFURI(ARTURIResource node, RDFResourceRolesEnum role, boolean explicit,
+	public static STRDFURI createSTRDFURI(ARTURIResource node, RDFResourceRole role, boolean explicit,
 			String show) {
 		return new STRDFURIImpl(node, role, explicit, show);
 	}
@@ -156,7 +156,7 @@ public class STRDFNodeFactory {
 	 * @return
 	 * @throws ModelAccessException
 	 */
-	public static STRDFURI createSTRDFURI(RDFModel model, ARTURIResource resource, RDFResourceRolesEnum role,
+	public static STRDFURI createSTRDFURI(RDFModel model, ARTURIResource resource, RDFResourceRole role,
 			boolean explicit, boolean rendering) throws ModelAccessException {
 		STRDFURI stURI = createSTRDFURI(resource.asURIResource(), role, explicit, null);
 		if (rendering)
@@ -173,10 +173,10 @@ public class STRDFNodeFactory {
 	 * @param role
 	 *            if <code>true</code>, the <code>role</code> field of the resource is retrieved through the
 	 *            <code>model<code>
-	 * @param explicit
-	 * @param rendering
-	 *            if <code>true</code>, the <code>show</code> field of the resource is calculated through the prefixMapping
-	 *            of the <code>model</code>
+	 * &#64;param explicit
+	 * &#64;param rendering
+	 *            if <code>true</code>, the <code>show</code> field of the resource is calculated through the
+	 *            prefixMapping of the <code>model</code>
 	 * @return
 	 * @throws ModelAccessException
 	 */
@@ -184,13 +184,13 @@ public class STRDFNodeFactory {
 			boolean explicit, boolean rendering) throws ModelAccessException {
 		STRDFURI stURI = createSTRDFURI(resource.asURIResource(), null, explicit, null);
 		if (role)
-			stURI.setRole(ModelUtilities.getResourceRole(resource, model));
+			stURI.setRole(RDFResourceRole.valueOf(ModelUtilities.getResourceRole(resource, model).name()));
 		if (rendering)
 			stURI.setRendering(model.getQName(resource.getURI()));
 		return stURI;
 	}
 
-	public static STRDFBNodeImpl createSTRDFBNode(ARTBNode node, RDFResourceRolesEnum role, boolean explicit,
+	public static STRDFBNodeImpl createSTRDFBNode(ARTBNode node, RDFResourceRole role, boolean explicit,
 			String show) {
 		return new STRDFBNodeImpl(node, role, explicit, show);
 	}
@@ -209,13 +209,13 @@ public class STRDFNodeFactory {
 	 * <li>plainLiteral</li>
 	 * <li>typedLiteral</li>
 	 * </ul>
-	 * then additional information, such as the node <em>role</em> ({@link RDFResourceRolesEnum}), can be
+	 * then additional information, such as the node <em>role</em> ({@link RDFResourceRole}), can be
 	 * optionally added<br/>
 	 * an optional <code>rendering</code> argument enables for a rendered visualization of the node<br/>
 	 * <br/>
-	 * <em>Note: of the above options, only the <code>role</code> requires further retrieval operations. For this
-	 * reason, it should be used with care, only when the nature of the resource is known to be variable and
-	 * the user is interested in knowing it</em><br/>
+	 * <em>Note: of the above options, only the <code>role</code> requires further retrieval operations. For
+	 * this reason, it should be used with care, only when the nature of the resource is known to be variable
+	 * and the user is interested in knowing it</em><br/>
 	 * <br/>
 	 * 
 	 * 
@@ -227,7 +227,7 @@ public class STRDFNodeFactory {
 	 *            the node which is being described
 	 * @param role
 	 *            when <code>true</code>, if the node is a resource, it tells the role of the resource (cls,
-	 *            ontology, property...). see {@link RDFResourceRolesEnum}
+	 *            ontology, property...). see {@link RDFResourceRole}
 	 * @param explicit
 	 *            is automatically assigned to the explicit attribute of the STRDFNode resource to be created
 	 * @param rendering
@@ -274,14 +274,15 @@ public class STRDFNodeFactory {
 			boolean explicit, boolean rendering) throws DOMException, ModelAccessException {
 
 		if (role)
-			return createSTRDFResource(model, node, ModelUtilities.getResourceRole(node.asResource(), model),
+			return createSTRDFResource(model, node,
+					RDFResourceRole.valueOf(ModelUtilities.getResourceRole(node.asResource(), model).name()),
 					explicit, rendering);
 
 		return createSTRDFResource(model, node, null, explicit, rendering);
 	}
 
-	public static STRDFResource createSTRDFResource(ARTResource node, RDFResourceRolesEnum role,
-			boolean explicit, String show) throws DOMException, ModelAccessException {
+	public static STRDFResource createSTRDFResource(ARTResource node, RDFResourceRole role, boolean explicit,
+			String show) throws DOMException, ModelAccessException {
 		STRDFResource stRes;
 		if (node.isURIResource()) {
 			// uri
@@ -294,9 +295,8 @@ public class STRDFNodeFactory {
 		return stRes;
 	}
 
-	public static STRDFResource createSTRDFResource(RDFModel model, ARTResource node,
-			RDFResourceRolesEnum role, boolean explicit, boolean rendering) throws DOMException,
-			ModelAccessException {
+	public static STRDFResource createSTRDFResource(RDFModel model, ARTResource node, RDFResourceRole role,
+			boolean explicit, boolean rendering) throws DOMException, ModelAccessException {
 		STRDFResource stRes;
 		if (node.isURIResource()) {
 			// uri

@@ -23,6 +23,13 @@
 
 package it.uniroma2.art.semanticturkey.ontology.utilities;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Element;
+
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -31,18 +38,11 @@ import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.navigation.RDFIterator;
 import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.owlart.utilities.RDFRenderer;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.owlart.vocabulary.RDFTypesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.ontology.model.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Element;
 
 /**
  * This class has nothing to do with the RDFXML standard for serializing RDF graphs.<br/>
@@ -65,7 +65,7 @@ public class RDFXMLHelp {
 	 * <li>plainLiteral</li>
 	 * <li>typedLiteral</li>
 	 * </ul>
-	 * then additional information, such as the node <em>role</em> ({@link RDFResourceRolesEnum}), can be
+	 * then additional information, such as the node <em>role</em> ({@link RDFResourceRole}), can be
 	 * optionally added<br/>
 	 * an optional <code>rendering</code> argument enables for a rendered visualization of the node<br/>
 	 * <br/>
@@ -83,7 +83,7 @@ public class RDFXMLHelp {
 	 *            the node which is being described
 	 * @param role
 	 *            when <code>true</code>, if the node is a resource, it tells the role of the resource (cls,
-	 *            ontology, property...). see {@link RDFResourceRolesEnum}
+	 *            ontology, property...). see {@link RDFResourceRole}
 	 * @param rendering
 	 *            If true, it provides a human readable representation of the node
 	 *            <ul>
@@ -138,7 +138,7 @@ public class RDFXMLHelp {
 	}
 
 	public static Element addRDFURIResource(Element parent, RDFModel model, ARTURIResource resource,
-			RDFResourceRolesEnum role, boolean rendering) throws DOMException, ModelAccessException {
+			RDFResourceRole role, boolean rendering) throws DOMException, ModelAccessException {
 		Element nodeElement = XMLHelp.newElement(parent, RDFTypesEnum.uri.toString());
 		String uri = resource.asURIResource().getURI();
 		nodeElement.setTextContent(uri);
@@ -165,7 +165,7 @@ public class RDFXMLHelp {
 			nodeElement = XMLHelp.newElement(parent, RDFTypesEnum.bnode.toString());
 		}
 		nodeElement.setTextContent(node.getARTNode().getNominalValue());
-		RDFResourceRolesEnum role = node.getRole();
+		RDFResourceRole role = node.getRole();
 		if (role != null)
 			nodeElement.setAttribute("role", role.toString());
 

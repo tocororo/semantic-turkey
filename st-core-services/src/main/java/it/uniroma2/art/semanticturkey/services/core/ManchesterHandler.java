@@ -16,7 +16,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -202,7 +202,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		
 		
 		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(newBnode);
-		annBNode.setAttribute("role", RDFResourceRolesEnum.cls.name());
+		annBNode.setAttribute("role", RDFResourceRole.cls.name());
 		
 		return annBNode;
 	}
@@ -281,7 +281,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		conn.add(statList, getWorkingGraph());
 		
 		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(bnode);
-		annBNode.setAttribute("role", RDFResourceRolesEnum.cls.name());
+		annBNode.setAttribute("role", RDFResourceRole.cls.name());
 		
 		return annBNode;
 	}

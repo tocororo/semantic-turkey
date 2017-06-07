@@ -82,14 +82,13 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -185,7 +184,7 @@ public class ResourceView2 extends STServiceAdapter {
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
 			AbstractStatementConsumer.addRole(annotatedResource, resource2attributes);
 
-			RDFResourceRolesEnum resourceRole = RDFResourceRolesEnum
+			RDFResourceRole resourceRole = RDFResourceRole
 					.valueOf(annotatedResource.getAttributes().get("role").stringValue());
 
 			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
@@ -258,12 +257,12 @@ public class ResourceView2 extends STServiceAdapter {
 			}
 			predAttrs.put("show", vf.createLiteral(show));
 
-			RDFResourceRolesEnum role = RDFResourceRolesEnum.property;
+			RDFResourceRole role = RDFResourceRole.property;
 
 			if (annotationProps.contains(pred)) {
-				role = RDFResourceRolesEnum.annotationProperty;
+				role = RDFResourceRole.annotationProperty;
 			} else if (objectProps.contains(pred)) {
-				role = RDFResourceRolesEnum.objectProperty;
+				role = RDFResourceRole.objectProperty;
 			}
 
 			predAttrs.put("role", vf.createLiteral(role.toString()));

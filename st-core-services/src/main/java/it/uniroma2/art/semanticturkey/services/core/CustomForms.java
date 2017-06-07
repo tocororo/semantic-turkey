@@ -61,7 +61,6 @@ import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
@@ -76,6 +75,7 @@ import it.uniroma2.art.semanticturkey.customform.FormsMapping;
 import it.uniroma2.art.semanticturkey.customform.SessionFormData;
 import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -250,7 +250,7 @@ public class CustomForms extends STServiceAdapter {
 					IRI predResource = vf.createIRI(repoConnection.getNamespace(""), promptValue.getKey());
 					
 					AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predResource);
-					annotatedPredicate.setAttribute("role", RDFResourceRolesEnum.property.toString());
+					annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 					annotatedPredicate.setAttribute("explicit", true);
 					annotatedPredicate.setAttribute("show", promptValue.getKey());
 					

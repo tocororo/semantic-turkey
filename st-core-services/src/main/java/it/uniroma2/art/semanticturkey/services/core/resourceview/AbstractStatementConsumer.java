@@ -30,7 +30,7 @@ import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
@@ -40,7 +40,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	public static final String UNKNOWN_OWL_AXIOM = "unknown OWL axiom";
 	
 	private static final Literal DEFAULT_ROLE = SimpleValueFactory.getInstance()
-			.createLiteral(RDFResourceRolesEnum.undetermined.toString());
+			.createLiteral(RDFResourceRole.undetermined.toString());
 
 	public static Literal computeRole(Map<Resource, Map<String, Value>> resource2attributes,
 			Resource resource) {
