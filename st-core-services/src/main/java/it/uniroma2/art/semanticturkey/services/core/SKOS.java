@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Update;
@@ -509,7 +510,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'C')")
 	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -546,7 +547,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'C')")
 	public void addAltLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -559,7 +560,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'C')")
 	public void addHiddenLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -572,7 +573,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void addBroaderConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI broaderConcept){
 		
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -587,7 +588,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addConceptToScheme(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -601,7 +602,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addTopConcept(@Subject IRI concept, @LocallyDefined IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -839,7 +840,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
 	public void removeConceptFromScheme(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -856,7 +857,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public void removeTopConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -872,7 +873,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'D')")
 	public void removePrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -886,7 +887,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'D')")
 	public void removeAltLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -900,7 +901,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'R')")
 	public Collection<AnnotatedValue<Literal>> getAltLabels(@LocallyDefined IRI concept, String language){
 		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -922,7 +923,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public void removeBroaderConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI broaderConcept){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -939,7 +940,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'D')")
 	public void removeHiddenLabel(@LocallyDefined @Subject IRI concept, Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -992,8 +993,8 @@ public class SKOS extends STServiceAdapter {
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?scheme .												\n"
 				+ "		?scheme ?p2 ?o2 .												\n"
-				+ "		?o2 ?p3 ?o3														\n"	
-				+ "		?s4 ?p4 ?o2														\n"	
+				+ "		?o2 ?p3 ?o3	.													\n"	
+				+ "		?s4 ?p4 ?o2	.													\n"	
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
 				+ "	BIND(URI('" + scheme.stringValue() + "') AS ?scheme)				\n"
@@ -1006,9 +1007,9 @@ public class SKOS extends STServiceAdapter {
 				+ "		{ "
 				+ "			?scheme ?p2 ?o2 . 											\n"
 				+ "			FILTER(?p2 = 												\n"
-				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL) + " || " 
-				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL) + " || "
-				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL) + ")"
+				+ NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " || 				  " 
+				+ NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) + " || 				  "
+				+ NTriplesUtil.toNTriplesString(SKOSXL.HIDDEN_LABEL) + ")				  "
 				+ "			?o2 ?p3 ?o3 .												\n"
 				+ "			?s4 ?p4 ?o2 .												\n"
 				+ "		}																\n"
@@ -1052,11 +1053,8 @@ public class SKOS extends STServiceAdapter {
 				+ "	GRAPH ?g {															\n"
 				+ "		?s1 ?p1 ?concept .												\n"
 				+ "		?concept ?p2 ?o2 .												\n"
-				+ "		?o2 ?p3 ?o3														\n"	
-				+ "		?s4 ?p4 ?o2														\n"	
-				
-				
-				
+				+ "		?o2 ?p3 ?o3	.													\n"	
+				+ "		?s4 ?p4 ?o2	.													\n"	
 				+ "		?xlabel ?prop ?value .											\n"
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
@@ -1070,9 +1068,9 @@ public class SKOS extends STServiceAdapter {
 				+ "		{ "
 				+ "			?concept ?p2 ?o2 . 											\n"
 				+ "			FILTER(?p2 = 												\n"
-				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL) + " || " 
-				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL) + " || "
-				+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL) + ")"
+				+ NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " || 				  " 
+				+ NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) + " || 				  "
+				+ NTriplesUtil.toNTriplesString(SKOSXL.HIDDEN_LABEL) + ")				  "
 				+ "			?o2 ?p3 ?o3 .												\n"
 				+ "			?s4 ?p4 ?o2 .												\n"
 				+ "		}																\n"
@@ -1213,7 +1211,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'D')")
 	public void deleteCollection(@Subject @LocallyDefined Resource collection) throws DeniedOperationException{
 		
 		RepositoryConnection repConn = getManagedConnection();
@@ -1306,7 +1304,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'D')")
 	public void deleteOrderedCollection(@Subject @LocallyDefined Resource collection) throws DeniedOperationException{
 		
 		RepositoryConnection repConn = getManagedConnection();
@@ -1576,14 +1574,14 @@ public class SKOS extends STServiceAdapter {
 		IRI lexModel = getProject().getLexicalizationModel();
 		IRI xLabelIRI = null;
 		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
-			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.RDFS.LABEL, label);
+			modelAdditions.add(resource, RDFS.LABEL, label);
 		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
 			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		} else{ //Project.SKOSXL_LEXICALIZATION_MODEL
-			xLabelIRI = generateXLabelIRI(resource, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
-			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xLabelIRI);
-			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
-			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
+			xLabelIRI = generateXLabelIRI(resource, label, SKOSXL.PREF_LABEL);
+			modelAdditions.add(resource, SKOSXL.PREF_LABEL, xLabelIRI);
+			modelAdditions.add(xLabelIRI, RDF.TYPE, SKOSXL.LABEL);
+			modelAdditions.add(xLabelIRI, SKOSXL.LITERAL_FORM, label);
 		}
 		return xLabelIRI;
 	}
@@ -1595,32 +1593,24 @@ public class SKOS extends STServiceAdapter {
 					throws ProjectInconsistentException, CODAException, CustomFormException{
 		IRI lexModel = getProject().getLexicalizationModel();
 		
-		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
-		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
+		StandardForm stdForm = new StandardForm();
+		stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
+		
+		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+		
+		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 			if (label != null) {
 				stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
 		} else{ //Project.SKOSXL_LEXICALIZATION_MODEL
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
 			if (xLabelIRI != null) {
 				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabelIRI.stringValue());
 				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
-			
 		}
+		enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
 	}
 	
 	
