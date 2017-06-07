@@ -23,6 +23,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -51,7 +52,7 @@ public class Preferences extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 * @throws STPropertyAccessException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	public void setLanguages(Collection<String> languages)
 			throws STPropertyUpdateException, STPropertyAccessException {
 		String value = "*";
@@ -69,7 +70,7 @@ public class Preferences extends STServiceAdapter {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	public void setShowFlags(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
 		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, show+"", getProject(),
 			UsersManager.getLoggedUser());
@@ -81,7 +82,7 @@ public class Preferences extends STServiceAdapter {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	public void setShowInstancesNumb(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
 		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, show+"", getProject(),
 			UsersManager.getLoggedUser());
@@ -94,7 +95,7 @@ public class Preferences extends STServiceAdapter {
 	 * @throws IllegalStateException
 	 * @throws STPropertyUpdateException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	public void setActiveSchemes(@Optional @LocallyDefinedResources List<IRI> schemes) throws IllegalStateException, STPropertyUpdateException {
 		if (schemes != null && !schemes.isEmpty()) {
 			String value = "";

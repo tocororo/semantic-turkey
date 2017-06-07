@@ -324,15 +324,15 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	//variables being used: $st, $go, $dep and ?attr_nature
 	protected String generateNatureSPARQLSelectPart(){
 		
-		String sparqlPartText = "(group_concat(concat(str($st), \"|_|\", str($go), \"|_|\", "
-				+ "str($dep));separator=\",\") as ?attr_nature) \n";
+		String sparqlPartText = "(group_concat(concat(str($st), \",\", str($go), \",\", "
+				+ "str($dep));separator=\"|_|\") as ?attr_nature) \n";
 		
 		return sparqlPartText;
 	}
 	
 	//TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
 	//variables being used: $st, $go, $t, $dep
-	//  prefixes needed: skos, owl, skosxl
+	//  prefixes needed: skos, owl, skosxl, rdfs
 	protected String generateNatureSPARQLWherePart(String varName){
 		String sparqlPartText;
 		
@@ -341,7 +341,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		}
 		sparqlPartText = 
 		" OPTIONAL { \n" +
-		"  values($st) {(skos:Concept)(owl:Class)(skosxl:Label)(skos:ConceptScheme)} \n" +
+		"  values($st) {(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)} \n" +
 		"  graph $go { \n" +
 		" "+varName+" a $t . \n" +
 		"  } \n" +
