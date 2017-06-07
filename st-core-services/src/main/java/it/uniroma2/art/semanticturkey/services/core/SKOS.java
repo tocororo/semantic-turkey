@@ -426,8 +426,9 @@ public class SKOS extends STServiceAdapter {
 		
 		modelAdditions.add(newConceptIRI, RDF.TYPE, conceptClass);
 		
+		IRI xLabelIRI = null;
 		if (label != null) { //?conc skos:prefLabel ?label
-			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
+			xLabelIRI = createLabelUsingLexicalizationModel(newConceptIRI, label, modelAdditions);
 		}
 		for(IRI conceptScheme : conceptSchemes){
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
@@ -442,14 +443,8 @@ public class SKOS extends STServiceAdapter {
 		
 		//CustomForm further info
 		if (customFormId != null && userPromptMap != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newConceptIRI.stringValue());
-			if (label != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
-				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			enrichWithCustomFormUsingLexicalizationModel(newConceptIRI, label, repoConnection, modelAdditions, modelRemovals,
+					userPromptMap, customFormId, xLabelIRI);
 		}
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -489,23 +484,17 @@ public class SKOS extends STServiceAdapter {
 		}
 		
 		modelAdditions.add(newSchemeIRI, RDF.TYPE, schemeClass);
-		
+		IRI xLabelIRI = null;
 		if (label != null) {
-			modelAdditions.add(newSchemeIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
+			xLabelIRI = createLabelUsingLexicalizationModel(newSchemeIRI, label, modelAdditions);
 		}
 
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		//CustomForm further info
 		if (customFormId != null && userPromptMap != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newSchemeIRI.stringValue());
-			if (label != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
-				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			enrichWithCustomFormUsingLexicalizationModel(newSchemeIRI, label, repoConnection, modelAdditions, modelRemovals,
+					userPromptMap, customFormId, xLabelIRI);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -1157,9 +1146,9 @@ public class SKOS extends STServiceAdapter {
 		} else {
 			throw new IllegalAccessException(collectionType.stringValue() + " is not a valid collection type");
 		}
-		
+		IRI xLabelIRI = null;
 		if (label != null) {
-			modelAdditions.add(newCollectionRes, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
+			xLabelIRI = createLabelUsingLexicalizationModel(newCollectionRes, label, modelAdditions);
 		}
 		
 		if (containingCollection != null) {
@@ -1204,14 +1193,8 @@ public class SKOS extends STServiceAdapter {
 		
 		//CustomForm further info
 		if (customFormId != null && userPromptMap != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newCollectionRes.stringValue());
-			if (label != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
-				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			enrichWithCustomFormUsingLexicalizationModel(newCollectionRes, label, repoConnection, modelAdditions, 
+					modelRemovals, userPromptMap, customFormId, xLabelIRI);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -1583,6 +1566,107 @@ public class SKOS extends STServiceAdapter {
 			return list;
 		}
 	}
+	
+	/**
+	 * In case of SKOSXL_LEXICALIZATION_MODEL it return the xLabelIRI, null in other cases
+	 * @throws URIGenerationException 
+	 */
+	private IRI createLabelUsingLexicalizationModel(Resource resource, Literal label, Model modelAdditions) 
+			throws URIGenerationException{
+		IRI lexModel = getProject().getLexicalizationModel();
+		IRI xLabelIRI = null;
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
+			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.RDFS.LABEL, label);
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
+			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
+		} else{ //Project.SKOSXL_LEXICALIZATION_MODEL
+			xLabelIRI = generateXLabelIRI(resource, label, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
+			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xLabelIRI);
+			modelAdditions.add(xLabelIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL);
+			modelAdditions.add(xLabelIRI, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, label);
+		}
+		return xLabelIRI;
+	}
+	
+	
+	private void enrichWithCustomFormUsingLexicalizationModel(Resource resource, Literal label, 
+			RepositoryConnection repoConnection, Model modelAdditions, Model modelRemovals, 
+			Map<String, Object> userPromptMap, String customFormId, IRI xLabelIRI) 
+					throws ProjectInconsistentException, CODAException, CustomFormException{
+		IRI lexModel = getProject().getLexicalizationModel();
+		
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
+			if (label != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
+				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
+			}
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+		} else{ //Project.SKOSXL_LEXICALIZATION_MODEL
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
+			if (xLabelIRI != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabelIRI.stringValue());
+				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
+				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
+			}
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			
+		}
+	}
+	
+	
+	/**
+	 * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. The actual
+	 * generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the
+	 * current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will
+	 * be provided with the following:
+	 * <ul>
+	 * <li><code>xLabel</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>lexicalForm</code>,
+	 * <code>lexicalizedResource</code> and <code>type</code> (each, if not <code>null</code>)</li>
+	 * </ul>
+	 * 
+	 * All arguments should be not <code>null</code>, but in the end is the specific implementation of the
+	 * extension point that would complain about the absence of one of these theoretically mandatory
+	 * parameters.
+	 * 
+	 * @param lexicalForm
+	 *            the textual content of the label
+	 * @param lexicalizedResource
+	 *            the resource to which the label will be attached to
+	 * @param lexicalizationProperty
+	 *            the property used for attaching the label
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public IRI generateXLabelIRI(Resource lexicalizedResource, Literal lexicalForm,
+			IRI lexicalizationProperty) throws URIGenerationException {
+		Map<String, Value> args = new HashMap<>();
+
+		if (lexicalizedResource != null) {
+			args.put(URIGenerator.Parameters.lexicalizedResource, lexicalizedResource);
+		}
+
+		if (lexicalForm != null) {
+			args.put(URIGenerator.Parameters.lexicalForm, lexicalForm);
+		}
+
+		if (lexicalizationProperty != null) {
+			args.put(URIGenerator.Parameters.lexicalizationProperty, lexicalizationProperty);
+		}
+
+		return generateIRI(URIGenerator.Roles.xLabel, args);
+	}
+	
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
 		Method m = SKOS.class.getMethod("getNarrowerConcepts", Resource.class, Resource.class,

@@ -124,7 +124,7 @@ public abstract class Project extends AbstractProject {
 	public static final IRI SKOS_MODEL = SimpleValueFactory.getInstance()
 			.createIRI("http://www.w3.org/2004/02/skos/core");
 
-	public static final IRI RDF_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
+	public static final IRI RDFS_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
 			.createIRI("http://www.w3.org/2000/01/rdf-schema");
 	public static final IRI SKOS_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
 			.createIRI("http://www.w3.org/2004/02/skos/core");
