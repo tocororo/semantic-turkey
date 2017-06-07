@@ -43,6 +43,7 @@ import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.history.HistoryMetadataSupport;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
@@ -394,6 +395,7 @@ public class SKOS extends STServiceAdapter {
 	 * @throws ProjectInconsistentException
 	 * @throws CustomFormException
 	 * @throws CODAException
+	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -403,7 +405,8 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
-					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
+					CODAException, UnsupportedLexicalizationModelException {
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -464,7 +467,8 @@ public class SKOS extends STServiceAdapter {
 			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#ConceptScheme") IRI schemeCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
-					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException {
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException,
+					CODAException, UnsupportedLexicalizationModelException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -1093,7 +1097,8 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Collection") IRI collectionCls,
 			@Optional(defaultValue = "false") boolean bnodeCreationMode,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
-					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, IllegalAccessException {
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, 
+					IllegalAccessException, UnsupportedLexicalizationModelException {
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -1568,20 +1573,24 @@ public class SKOS extends STServiceAdapter {
 	/**
 	 * In case of SKOSXL_LEXICALIZATION_MODEL it return the xLabelIRI, null in other cases
 	 * @throws URIGenerationException 
+	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	private IRI createLabelUsingLexicalizationModel(Resource resource, Literal label, Model modelAdditions) 
-			throws URIGenerationException{
+			throws URIGenerationException, UnsupportedLexicalizationModelException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		IRI xLabelIRI = null;
-		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
+		if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 			modelAdditions.add(resource, RDFS.LABEL, label);
-		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
+		} else if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
 			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
-		} else{ //Project.SKOSXL_LEXICALIZATION_MODEL
+		} else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 			xLabelIRI = generateXLabelIRI(resource, label, SKOSXL.PREF_LABEL);
 			modelAdditions.add(resource, SKOSXL.PREF_LABEL, xLabelIRI);
 			modelAdditions.add(xLabelIRI, RDF.TYPE, SKOSXL.LABEL);
 			modelAdditions.add(xLabelIRI, SKOSXL.LITERAL_FORM, label);
+		} else {
+			throw new UnsupportedLexicalizationModelException(lexModel.stringValue() +
+					" is not a valid lexicalization model");
 		}
 		return xLabelIRI;
 	}

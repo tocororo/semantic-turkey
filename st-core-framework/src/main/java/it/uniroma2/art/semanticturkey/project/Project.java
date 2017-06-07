@@ -96,6 +96,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.RepositoryCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
@@ -257,6 +258,11 @@ public abstract class Project extends AbstractProject {
 			lexicalizationModel = SimpleValueFactory.getInstance()
 					.createIRI(Objects.requireNonNull(stp_properties.getProperty(LEXICALIZATION_MODEL_PROP),
 							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
+			if (!Arrays.asList(RDFS_LEXICALIZATION_MODEL, SKOS_LEXICALIZATION_MODEL, SKOSXL_LEXICALIZATION_MODEL)
+					.contains(lexicalizationModel)) {
+				throw new UnsupportedLexicalizationModelException(lexicalizationModel.stringValue() +
+						" is not a valid lexicalization model");
+			}
 
 			String updateForRolesString = com.google.common.base.Objects
 					.firstNonNull(stp_properties.getProperty(UPDATE_FOR_ROLES_PROP), "resource");
@@ -269,7 +275,7 @@ public abstract class Project extends AbstractProject {
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
 					.map(RepositoryLocation::fromString).orElse(null);
-		} catch (IOException e1) {
+		} catch (IOException | UnsupportedLexicalizationModelException e1) {
 			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
 			throw new ProjectCreationException(e1);
 		}
