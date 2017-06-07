@@ -785,15 +785,11 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					} else if (CHANGETRACKER.REJECT.equals(pred)) {
 						QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, (IRI) obj,
 								sail.validationGraph)).forEach(s -> {
-									addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
-											s.getContext());
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingAddGraph(s.getContext()));
 								});
 						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
 								sail.validationGraph)).forEach(s -> {
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											s.getContext());
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingRemoveGraph(s.getContext()));
 								});

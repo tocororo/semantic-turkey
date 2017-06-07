@@ -39,8 +39,8 @@ public abstract class AbstractChangeTrackerTest {
 
 	protected LocalRepositoryManager repositoryManager;
 
-	protected Repository dataRepo;
-	protected Repository historyRepo;
+	protected Repository coreRepo;
+	protected Repository supportRepo;
 
 	protected static final Namespace ns = new SimpleNamespace("ex", "http://example.org/");
 
@@ -84,9 +84,9 @@ public abstract class AbstractChangeTrackerTest {
 		repositoryManager.addRepositoryConfig(
 				new RepositoryConfig(HISTORY_REPO_ID, new SailRepositoryConfig(new NativeStoreConfig())));
 
-		historyRepo = repositoryManager.getRepository(HISTORY_REPO_ID);
-		RepositoryRegistry.getInstance().addRepository(HISTORY_REPO_ID, historyRepo);
-		Repositories.consume(historyRepo, conn -> {
+		supportRepo = repositoryManager.getRepository(HISTORY_REPO_ID);
+		RepositoryRegistry.getInstance().addRepository(HISTORY_REPO_ID, supportRepo);
+		Repositories.consume(supportRepo, conn -> {
 			conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
 			conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
 		});
@@ -105,7 +105,7 @@ public abstract class AbstractChangeTrackerTest {
 
 		repositoryManager.addRepositoryConfig(
 				new RepositoryConfig("test-data", new SailRepositoryConfig(trackerConfig)));
-		dataRepo = repositoryManager.getRepository("test-data");
+		coreRepo = repositoryManager.getRepository("test-data");
 
 	}
 

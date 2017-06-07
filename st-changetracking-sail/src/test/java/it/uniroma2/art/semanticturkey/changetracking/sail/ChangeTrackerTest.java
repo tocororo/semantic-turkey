@@ -54,12 +54,12 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 	protected void testSkeleton(TestCommitStrategy strategy) {
-		assertTrue(0 == Repositories.get(historyRepo, historyConn -> historyConn.size()));
+		assertTrue(0 == Repositories.get(supportRepo, historyConn -> historyConn.size()));
 
 		Model expectedAdditions = strategy.expectedAdditions();
 		Model expectedRemovals = strategy.expectedRemovals();
 
-		Repositories.consume(dataRepo, conn -> {
+		Repositories.consume(coreRepo, conn -> {
 			assertEquals(
 					QueryResults.asList(conn.getStatements(null, null, null, CHANGETRACKER.STAGED_ADDITIONS)),
 					Collections.emptyList());
@@ -83,19 +83,19 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 		});
 
 		if (strategy.shouldIncreaseHistory()) {
-			assertFalse(0 == Repositories.get(historyRepo, historyConn -> historyConn.size()));
+			assertFalse(0 == Repositories.get(supportRepo, historyConn -> historyConn.size()));
 		} else {
-			assertTrue(0 == Repositories.get(historyRepo, historyConn -> historyConn.size()));
+			assertTrue(0 == Repositories.get(supportRepo, historyConn -> historyConn.size()));
 		}
 
 		if (strategy.shouldIncreaseData()) {
-			assertFalse(0 == Repositories.get(dataRepo, historyConn -> historyConn.size()));
+			assertFalse(0 == Repositories.get(coreRepo, historyConn -> historyConn.size()));
 		} else {
-			assertTrue(0 == Repositories.get(dataRepo, historyConn -> historyConn.size()));
+			assertTrue(0 == Repositories.get(coreRepo, historyConn -> historyConn.size()));
 		}
 
 		if (strategy.shouldIncreaseHistory()) {
-			Repositories.consume(historyRepo, conn -> {
+			Repositories.consume(supportRepo, conn -> {
 				conditionalPrintHistory(conn);
 				Optional<Resource> tipHolder = HistoryRepositories.getTip(conn, HISTORY_GRAPH);
 
@@ -265,7 +265,7 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 	@Test
 	public void testTwoCommits() {
 
-		assertTrue(0 == Repositories.get(historyRepo, historyConn -> historyConn.size()));
+		assertTrue(0 == Repositories.get(supportRepo, historyConn -> historyConn.size()));
 
 		// --- first commit --//
 
@@ -274,7 +274,7 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 		Model expectedRemovals1 = new LinkedHashModel();
 
-		Repositories.consume(dataRepo, conn -> {
+		Repositories.consume(coreRepo, conn -> {
 			assertEquals(
 					QueryResults.asList(conn.getStatements(null, null, null, CHANGETRACKER.STAGED_ADDITIONS)),
 					Collections.emptyList());
@@ -293,9 +293,9 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 					expectedRemovals1));
 		});
 
-		assertFalse(0 == Repositories.get(historyRepo, historyConn -> historyConn.size()));
+		assertFalse(0 == Repositories.get(supportRepo, historyConn -> historyConn.size()));
 
-		Resource firstCommit = Repositories.get(historyRepo, conn -> {
+		Resource firstCommit = Repositories.get(supportRepo, conn -> {
 			Optional<Resource> tipHolder = HistoryRepositories.getTip(conn, HISTORY_GRAPH);
 
 			assertTrue(tipHolder.isPresent());
@@ -323,7 +323,7 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 		Model expectedRemovals2 = new LinkedHashModel();
 		expectedRemovals2.add(socrates, RDF.TYPE, FOAF.PERSON, graphA);
 
-		Repositories.consume(dataRepo, conn -> {
+		Repositories.consume(coreRepo, conn -> {
 			assertEquals(
 					QueryResults.asList(conn.getStatements(null, null, null, CHANGETRACKER.STAGED_ADDITIONS)),
 					Collections.emptyList());
@@ -342,9 +342,9 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 					expectedRemovals2));
 		});
 
-		assertEquals(Long.valueOf(0), (Long) Repositories.get(dataRepo, conn -> conn.size()));
+		assertEquals(Long.valueOf(0), (Long) Repositories.get(coreRepo, conn -> conn.size()));
 
-		Resource secondCommit = Repositories.get(historyRepo, conn -> {
+		Resource secondCommit = Repositories.get(supportRepo, conn -> {
 			Optional<Resource> tipHolder = HistoryRepositories.getTip(conn, HISTORY_GRAPH);
 
 			assertTrue(tipHolder.isPresent());
@@ -368,11 +368,11 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 			return tip;
 		});
 		
-		Repositories.consume(historyRepo, conn -> {
+		Repositories.consume(supportRepo, conn -> {
 			conditionalPrintHistory(conn);
 		});
 		
-		Repositories.consume(historyRepo, conn -> {
+		Repositories.consume(supportRepo, conn -> {
 			Optional<Resource> parentHolder = HistoryRepositories.getParent(conn, secondCommit,
 					HISTORY_GRAPH);
 
@@ -450,7 +450,7 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 	@Test
 	public void testReadDefaultInclusionsAndExclusions() {
-		Repositories.consume(dataRepo, conn -> {
+		Repositories.consume(coreRepo, conn -> {
 			Set<Value> defaultInclusions = QueryResults
 					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH,
 							null, CHANGETRACKER.GRAPH_MANAGEMENT))
