@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -734,7 +735,7 @@ public class Properties extends STServiceAdapter {
 		BNode datarange = repoConnection.getValueFactory().createBNode();
 		
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.RANGE, datarange));
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDF.TYPE, OWL2Fragment.DATARANGE));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, RDF.TYPE, RDFS.DATATYPE));
 		
 		//if values is null or empty, create an empty RDF List
 		if(literals == null || literals.isEmpty()){

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -31,6 +32,9 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
+import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
+import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
@@ -93,7 +97,12 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			RepositoryConnection repoConn) {
 
 		if (resource instanceof BNode) {
-			if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.CLASS, true)
+			if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.DATATYPE, true)) {
+				DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration((BNode)resource, repoConn);
+				if (dataRangeAbstract instanceof DataRangeDataOneOf) {
+					return ((DataRangeDataOneOf) dataRangeAbstract).getLiteralList().stream().map(NTriplesUtil::toNTriplesString).collect(Collectors.joining(", ", "{", "}"));
+				}
+			} else if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.CLASS, true)
 					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.CLASS, true)
 					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.RESTRICTION, true)) {
 				Map<String, String> namespaceToprefixMap = QueryResults.stream(repoConn.getNamespaces())

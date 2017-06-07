@@ -24,27 +24,26 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class ParseDataRange {
 
-	
-	
-	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, RepositoryConnection conn){
-		//see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
+	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, RepositoryConnection conn) {
+		// see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
 
 		List<Literal> literalList = new ArrayList<>();
-		//IRI typeOfDataRange=null;
-		//BNode bnodeForDataOneOf=null;
-		
-		//use a sparql query to obtain all the literal associated to the input bnode with the property 
+		// IRI typeOfDataRange=null;
+		// BNode bnodeForDataOneOf=null;
+
+		// use a sparql query to obtain all the literal associated to the input bnode with the property
 		// owl:oneOf and check that the input bnode has rdfs:Datatype as its own type
-		
+
 		String oneOfString = SPARQLHelp.toSPARQL(OWL.ONEOF);
 		String dataypeString = SPARQLHelp.toSPARQL(RDFS.DATATYPE);
 		String firstrString = SPARQLHelp.toSPARQL(RDF.FIRST);
 		String restString = SPARQLHelp.toSPARQL(RDF.REST);
-		//String nilString = SPARQLHelp.toSPARQL(RDF.NIL);
-		
+		// String nilString = SPARQLHelp.toSPARQL(RDF.NIL);
+
 		// @formatter:off
 		String query = "SELECT ?bnodeList ?bnodeInList ?literalValue ?nextBNode" + 
 						"\nWHERE{" +
@@ -81,77 +80,77 @@ public class ParseDataRange {
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		tupleQuery.setBinding("inputBNode", startingBNode);
-		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-		
-		//create two temp maps
-		Map <BNode, Literal> bnodeToLiteralMap = new HashMap<>();
-		Map <BNode, BNode> bnodeToNextBNode = new HashMap<>();
-		BNode firstBnodeInList=null;
-		
-		while(tupleQueryResult.hasNext()){
-			BindingSet bindingSet = tupleQueryResult.next();
-			if(firstBnodeInList==null){
-				firstBnodeInList = (BNode)bindingSet.getBinding("bnodeList").getValue();
+
+		// create two temp maps
+		Map<BNode, Literal> bnodeToLiteralMap = new HashMap<>();
+		Map<BNode, BNode> bnodeToNextBNode = new HashMap<>();
+		BNode firstBnodeInList = null;
+
+		try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+
+			while (tupleQueryResult.hasNext()) {
+				BindingSet bindingSet = tupleQueryResult.next();
+				if (firstBnodeInList == null) {
+					firstBnodeInList = (BNode) bindingSet.getBinding("bnodeList").getValue();
+				}
+				BNode bnodeInList = (BNode) bindingSet.getBinding("bnodeInList").getValue();
+				Literal literalValue = (Literal) bindingSet.getBinding("literalValue").getValue();
+				Value nextBNode = bindingSet.getBinding("nextBNode").getValue();
+				bnodeToLiteralMap.put(bnodeInList, literalValue);
+				if (nextBNode instanceof BNode) {
+					// exclude the last element, which has as next the rdf:nil, that is not a bnode
+					bnodeToNextBNode.put(bnodeInList, (BNode) nextBNode);
+				}
+
 			}
-			BNode bnodeInList = (BNode) bindingSet.getBinding("bnodeInList").getValue();
-			Literal  literalValue = (Literal) bindingSet.getBinding("literalValue").getValue();
-			Value nextBNode = bindingSet.getBinding("nextBNode").getValue();
-			bnodeToLiteralMap.put(bnodeInList, literalValue);
-			if(nextBNode instanceof BNode){
-				//exclude the last element, which has as next the rdf:nil, that is not a bnode
-				bnodeToNextBNode.put(bnodeInList, (BNode) nextBNode);
-			}
-			
 		}
-		
-		if(bnodeToNextBNode.isEmpty()){
-			//the query found no solution, so return and empty list
+
+		if (bnodeToNextBNode.isEmpty()) {
+			// the query found no solution, so return and empty list
 			return new DataRangeDataOneOf(startingBNode, literalList, conn);
 		}
-		
-		//now construct the ordered list of Literal in the enumeration
+
+		// now construct the ordered list of Literal in the enumeration
 		boolean stop = false;
 		BNode lastBNodeConsidered = firstBnodeInList;
-		while(!stop){
+		while (!stop) {
 			Literal literal = bnodeToLiteralMap.get(lastBNodeConsidered);
 			lastBNodeConsidered = bnodeToNextBNode.get(lastBNodeConsidered);
 			literalList.add(literal);
-			if(lastBNodeConsidered == null){
-				//the last element, in not in the map, since its next is rdf:nil
+			if (lastBNodeConsidered == null) {
+				// the last element, in not in the map, since its next is rdf:nil
 				stop = true;
 			}
 		}
-		
+
 		return new DataRangeDataOneOf(startingBNode, literalList, conn);
 	}
-	
-	
-	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements, 
-			RepositoryConnection conn){
-		//see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
-		
+
+	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements,
+			RepositoryConnection conn) {
+		// see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
+
 		List<Literal> literalList = new ArrayList<>();
-		
-		//consult the input repository to obtain all the RDF Literals in the List linked to the input BNode
+
+		// consult the input repository to obtain all the RDF Literals in the List linked to the input BNode
 		// using the property OWL.ONEOF (and the input bnode should have the type RDFS.DATATYPE)
-		Optional<Resource> optionalRes = Models.objectResource(statements.filter(startingBNode, OWL.ONEOF, null));
-		if(!optionalRes.isPresent()){
+		Optional<Resource> optionalRes = Models
+				.objectResource(statements.filter(startingBNode, OWL.ONEOF, null));
+		if (!optionalRes.isPresent()) {
 			return new DataRangeDataOneOf(startingBNode, literalList, conn);
 		}
-		BNode listBNode = (BNode)optionalRes.get();
-		
-		
-		for(Value value : RDFCollections.asValues(statements, listBNode, new ArrayList<Value>()) ){
-			if(value instanceof Literal){
+		BNode listBNode = (BNode) optionalRes.get();
+
+		for (Value value : RDFCollections.asValues(statements, listBNode, new ArrayList<Value>())) {
+			if (value instanceof Literal) {
 				literalList.add((Literal) value);
-			}
-			else{
-				//TODO
-				//the element in the list is not a literal, this should never happen, decide what to do
+			} else {
+				// TODO
+				// the element in the list is not a literal, this should never happen, decide what to do
 			}
 		}
-		
+
 		return new DataRangeDataOneOf(startingBNode, literalList, conn);
-		
+
 	}
 }

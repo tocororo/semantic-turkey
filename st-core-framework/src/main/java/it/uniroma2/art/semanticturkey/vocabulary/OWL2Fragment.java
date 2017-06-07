@@ -36,6 +36,6 @@ public abstract class OWL2Fragment {
 		IRREFLEXIVEPROPERTY = vf.createIRI(NAMESPACE, "IrreflexiveProperty");
 		DEPRECATED = vf.createIRI(NAMESPACE, "deprecated");
 		PROPERTY_DISJOINT_WITH = vf.createIRI(NAMESPACE, "propertyDisjointWith ");
-		DATARANGE = vf.createIRI(NAMESPACE, "datarange");
+		DATARANGE = vf.createIRI(NAMESPACE, "DataRange");
 	}
 }
