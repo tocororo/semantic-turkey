@@ -57,7 +57,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 /**
  * @author Armando Stellato
  */
-@Component
+@Component(value="OntManagerOLD")
 public class OntManager extends ServiceAdapter {
 	protected static Logger logger = LoggerFactory.getLogger(OntManager.class);
 
