@@ -56,11 +56,10 @@ import it.uniroma2.art.semanticturkey.utilities.Utilities;
  */
 public class Resources {
 
-	private static final String _installConfigurationFilePathName = "install.cfg";
-	// private static final String _sourceUserDirectoryRelPathName = "/components/data";
 	private static final String _ontLibraryDirLocalName = "ontlibrary";
 	private static final String _ontTempDirLocalName = "ont-temp";
 	private static final String _ontMirrorDirDefaultLocationLocalName = "ontologiesMirror";
+	private static final String _ontMirrorFileName = "OntologiesMirror.properties";
 	private static final String _projectsDirName = "projects";
 	private static final String _systemDirName = "system";
 	private static final String _usersDirName = "users";
@@ -147,7 +146,7 @@ public class Resources {
 		ontMirrorDirDefaultLocation = new File(userDirectory, _ontMirrorDirDefaultLocationLocalName);
 		owlDefinitionFile = new File(ontLibraryDir, "owl.rdfs");
 		annotOntologyFile = new File(ontLibraryDir, "annotation.owl");
-		ontologiesMirrorFile = new File(userDirectory, "OntologiesMirror.xml");
+		ontologiesMirrorFile = new File(userDirectory, _ontMirrorFileName);
 		projectsDir = new File(userDirectory, _projectsDirName);
 		systemDir = new File(userDirectory, _systemDirName);
 		usersDir = new File(userDirectory, _usersDirName);
@@ -318,7 +317,7 @@ public class Resources {
 					|| !new File(usrPath, _systemDirName).mkdirs()
 					|| !new File(usrPath, _usersDirName).mkdirs()
 					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
-					|| !new File(usrPath + "/OntologiesMirror.xml").createNewFile())
+					|| !new File(usrPath + _ontMirrorFileName).createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
