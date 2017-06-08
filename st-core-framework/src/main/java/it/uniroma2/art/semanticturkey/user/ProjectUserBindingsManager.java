@@ -259,6 +259,19 @@ public class ProjectUserBindingsManager {
 	}
 	
 	/**
+	 * Returns true if user has right to access the project (if it has any role in the given project or if it is admin)
+	 * @param user
+	 * @param project
+	 * @return
+	 */
+	public static boolean hasUserAccessToProject(STUser user, Project project) {
+		if (user.isAdmin()) {
+			return true;
+		}
+		return !getPUBinding(user, project).getRoles().isEmpty();
+	}
+	
+	/**
 	 * Creates a folder for the given project-user bidning and serializes the details about it in a file.
 	 * If the folder is already created, simply update the info in the details file.
 	 * @throws PUBindingException 

@@ -198,6 +198,11 @@ public class ProjectACL {
 		acl.put(consumer.getName(), reqAccessLevel);
 		saveACL();
 	}
+	
+	public void revokeAccess(ProjectConsumer consumer) throws ProjectUpdateException, ReservedPropertyUpdateException {
+		acl.remove(consumer.getName());
+		saveACL();
+	}
 
 	public void setLockableWithLevel(LockLevel lockLevel) throws ProjectUpdateException,
 			ReservedPropertyUpdateException {

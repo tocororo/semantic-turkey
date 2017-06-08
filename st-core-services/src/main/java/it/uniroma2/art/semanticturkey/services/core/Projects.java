@@ -19,7 +19,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -50,7 +49,6 @@ import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -146,76 +144,76 @@ public class Projects extends STServiceAdapterOLD {
 		ProjectManager.disconnectFromProject(consumer, projectName);
 	}
 
-	@SuppressWarnings("unchecked")
-	@GenerateSTServiceController
-	// @AutoRendering
-//	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
-	public Response listProjects(@Optional ProjectConsumer consumer,
-			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
-			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel)
-			throws ProjectAccessException {
-
-		logger.debug("listProjects, asked by consumer: " + consumer);
-		Collection<AbstractProject> projects;
-
-		projects = ProjectManager.listProjects(consumer);
-		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = resp.getDataElement();
-
-		for (AbstractProject absProj : projects) {
-			Element projElem = XMLHelp.newElement(dataElem, XMLNames.projectTag, absProj.getName());
-			if (absProj instanceof Project) {
-				Project proj = (Project) absProj;
-				try {
-					projElem.setAttribute(XMLNames.modelAttr,
-							((Project) proj).getModel().stringValue());
-					projElem.setAttribute(XMLNames.lexicalizationModelAttr,
-							((Project) proj).getLexicalizationModel().stringValue());
-					
-					// TODO: temporary fix to make UI work until it is updated
-					projElem.setAttribute("ontoType", ((Project) proj).computeOntoType());
-
-					
-					String ontMgr = "";
-					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
-
-					projElem.setAttribute(XMLNames.typeAttr, ((Project) proj).getType());
-
-					projElem.setAttribute(XMLNames.historyEnabled, Boolean.toString(((Project) proj).isHistoryEnabled()));
-					projElem.setAttribute(XMLNames.validationEnabled, Boolean.toString(((Project) proj).isValidationEnabled()));
-
-					projElem.setAttribute(XMLNames.statusAttr, "ok");
-
-					projElem.setAttribute(XMLNames.openAttr,
-							Boolean.toString(ProjectManager.isOpen((Project) absProj)));
-
-					if (consumer != null) {
-						ProjectManager.AccessResponse access = ProjectManager.checkAccessibility(consumer,
-								proj, requestedAccessLevel, requestedLockLevel);
-
-						projElem.setAttribute(XMLNames.accessibleAttr,
-								Boolean.toString(access.isAffirmative()));
-
-						if (!access.isAffirmative())
-							projElem.setAttribute("accessibilityFault", access.getMsg());
-
-					}
-
-				} catch (DOMException e) {
-					projElem.setAttribute(XMLNames.statusAttr, "error");
-					projElem.setAttribute(XMLNames.statusMsgAttr,
-							"problem when building XML response for this project");
-				} catch (ProjectInconsistentException e) {
-					projElem.setAttribute(XMLNames.statusAttr, "error");
-					projElem.setAttribute(XMLNames.statusMsgAttr, e.getMessage());
-				}
-
-			} else
-				// proj instanceof CorruptedProject
-				projElem.setAttribute(XMLNames.statusAttr, "corrupted");
-		}
-		return resp;
-	}
+//	@SuppressWarnings("unchecked")
+//	@GenerateSTServiceController
+//	// @AutoRendering
+////	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+//	public Response listProjects(@Optional ProjectConsumer consumer,
+//			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+//			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel)
+//			throws ProjectAccessException {
+//
+//		logger.debug("listProjects, asked by consumer: " + consumer);
+//		Collection<AbstractProject> projects;
+//
+//		projects = ProjectManager.listProjects(consumer);
+//		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
+//		Element dataElem = resp.getDataElement();
+//
+//		for (AbstractProject absProj : projects) {
+//			Element projElem = XMLHelp.newElement(dataElem, XMLNames.projectTag, absProj.getName());
+//			if (absProj instanceof Project) {
+//				Project proj = (Project) absProj;
+//				try {
+//					projElem.setAttribute(XMLNames.modelAttr,
+//							((Project) proj).getModel().stringValue());
+//					projElem.setAttribute(XMLNames.lexicalizationModelAttr,
+//							((Project) proj).getLexicalizationModel().stringValue());
+//					
+//					// TODO: temporary fix to make UI work until it is updated
+//					projElem.setAttribute("ontoType", ((Project) proj).computeOntoType());
+//
+//					
+//					String ontMgr = "";
+//					projElem.setAttribute(XMLNames.ontMgrAttr, ontMgr);
+//
+//					projElem.setAttribute(XMLNames.typeAttr, ((Project) proj).getType());
+//
+//					projElem.setAttribute(XMLNames.historyEnabled, Boolean.toString(((Project) proj).isHistoryEnabled()));
+//					projElem.setAttribute(XMLNames.validationEnabled, Boolean.toString(((Project) proj).isValidationEnabled()));
+//
+//					projElem.setAttribute(XMLNames.statusAttr, "ok");
+//
+//					projElem.setAttribute(XMLNames.openAttr,
+//							Boolean.toString(ProjectManager.isOpen((Project) absProj)));
+//
+//					if (consumer != null) {
+//						ProjectManager.AccessResponse access = ProjectManager.checkAccessibility(consumer,
+//								proj, requestedAccessLevel, requestedLockLevel);
+//
+//						projElem.setAttribute(XMLNames.accessibleAttr,
+//								Boolean.toString(access.isAffirmative()));
+//
+//						if (!access.isAffirmative())
+//							projElem.setAttribute("accessibilityFault", access.getMsg());
+//
+//					}
+//
+//				} catch (DOMException e) {
+//					projElem.setAttribute(XMLNames.statusAttr, "error");
+//					projElem.setAttribute(XMLNames.statusMsgAttr,
+//							"problem when building XML response for this project");
+//				} catch (ProjectInconsistentException e) {
+//					projElem.setAttribute(XMLNames.statusAttr, "error");
+//					projElem.setAttribute(XMLNames.statusMsgAttr, e.getMessage());
+//				}
+//
+//			} else
+//				// proj instanceof CorruptedProject
+//				projElem.setAttribute(XMLNames.statusAttr, "corrupted");
+//		}
+//		return resp;
+//	}
 
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
@@ -459,124 +457,6 @@ public class Projects extends STServiceAdapterOLD {
 			ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = ProjectManager.getProjectDescription(projectName);
 		project.setProperty(propName, propValue);
-	}
-
-	// TODO
-	@SuppressWarnings("unchecked")
-	/**
-	 * Returns the access statuses for every project-consumer combination. Returns a response with a set of
-	 * <code>project</code> elements containing <code>consumer</code> elements and a <code>lock</code>
-	 * element. Each <code>project</code> element has a single attribute: its <code>name</code>. The
-	 * <code>consumer</code> elements have the following attributes:
-	 * <ul>
-	 * <li><code>name</code>: consumer's name</li>
-	 * <li><code>availableACLLevel</code>: ACL given from the project to the consumer</li>
-	 * <li><code>acquiredACLLevel</code>: The access level with which the consumer accesses the project (only
-	 * specified if the project is accessed by the consumer)</li>
-	 * </ul>
-	 * The <code>lock</code> element has the following attributes:
-	 * <ul>
-	 * <li><code>availableLockLevel</code>: lock level exposed by the project</li>
-	 * <li><code>lockingConsumer</code></li>: name of the consumer that locks the project. Specified only if
-	 * there is a consumer locking the current project.
-	 * <li><code>acquiredLockLevel</code>: lock level which with a consumer is locking the project (optional
-	 * as the previous</li>
-	 * </ul>
-	 * 
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectInexistentException
-	 * @throws ProjectAccessException
-	 * @throws IOException
-	 * @throws ForbiddenProjectAccessException
-	 */
-	@GenerateSTServiceController
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
-	public Response getAccessStatusMap() throws InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException, ForbiddenProjectAccessException {
-
-		XMLResponseREPLY resp = createReplyResponse(RepliesStatus.ok);
-		Element dataElem = resp.getDataElement();
-
-		Collection<AbstractProject> projects = ProjectManager.listProjects();
-
-		for (AbstractProject absProj : projects) {
-			if (absProj instanceof Project) {
-				Project project = (Project) absProj;
-				Element projectElement = XMLHelp.newElement(dataElem, "project");
-				projectElement.setAttribute("name", project.getName());
-
-				Collection<AbstractProject> consumers = ProjectManager.listProjects();
-				consumers.remove(project);// remove itself from its possible consumers
-
-				ProjectACL projectAcl = ProjectManager.getProjectDescription(project.getName()).getACL();
-
-				// status for SYSTEM
-				ProjectConsumer consumer = ProjectConsumer.SYSTEM;
-				Element consumerElement = XMLHelp.newElement(projectElement, "consumer");
-				consumerElement.setAttribute("name", consumer.getName());
-				AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
-				String acl = "R";
-				if (aclForConsumer != null)
-					acl = aclForConsumer.name();
-				consumerElement.setAttribute("availableACLLevel", acl);
-				AccessLevel accessedLevel = ProjectManager.getAccessedLevel(project.getName(), consumer);
-				if (accessedLevel != null) {
-					consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
-				}
-				// ACL for other ProjectConsumer
-				for (AbstractProject absCons : consumers) {
-					if (absCons instanceof Project) {
-						Project cons = (Project) absCons;
-						consumerElement = XMLHelp.newElement(projectElement, "consumer");
-						consumerElement.setAttribute("name", cons.getName());
-						aclForConsumer = projectAcl.getAccessLevelForConsumer(cons);
-						acl = "R";
-						if (aclForConsumer != null)
-							acl = aclForConsumer.name();
-						consumerElement.setAttribute("availableACLLevel", acl);
-						accessedLevel = ProjectManager.getAccessedLevel(project.getName(), cons);
-						if (accessedLevel != null) {
-							consumerElement.setAttribute("acquiredACLLevel", accessedLevel.name());
-						}
-					}
-				}
-				// LOCK for the project
-				Element lockElement = XMLHelp.newElement(projectElement, "lock");
-				lockElement.setAttribute("availableLockLevel", projectAcl.getLockLevel().name());
-				ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
-				if (lockingConsumer != null) { // the project could be not locked by any consumer
-					lockElement.setAttribute("lockingConsumer", lockingConsumer.getName());
-					lockElement.setAttribute("acquiredLockLevel",
-							ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name());
-				}
-			}
-		}
-		return resp;
-	}
-
-	/**
-	 * Updates the access level granted by the project with the given <code>projectName</code> to the given
-	 * consumer
-	 * 
-	 * @param projectName
-	 * @param consumer
-	 * @param accessLevel
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectInexistentException
-	 * @throws ProjectAccessException
-	 * @throws ProjectUpdateException
-	 * @throws ReservedPropertyUpdateException
-	 */
-	@GenerateSTServiceController
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
-	public void updateAccessLevel(String projectName, String consumerName, AccessLevel accessLevel)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project project = ProjectManager.getProjectDescription(projectName);
-		project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
 	}
 
 	/**
