@@ -97,7 +97,7 @@ public class CustomFormGraph extends CustomForm {
 			RDFModelNotSetException {
 		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds){
@@ -175,7 +175,7 @@ public class CustomFormGraph extends CustomForm {
 		Map<String, String> phPromptMap = new HashMap<String, String>(); //placeholderId-userPrompt
 		//crete the PEARL model
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		//here iterate over the rules of the pearl. This is not necessary since a CRE has only one rule (I could get directly the first ruleId)
@@ -217,7 +217,7 @@ public class CustomFormGraph extends CustomForm {
 	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException, RDFModelNotSetException {
 		String entryPoint = "";
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
 		if (prRulesIt.hasNext()) {
@@ -244,7 +244,7 @@ public class CustomFormGraph extends CustomForm {
 		StringBuilder sb = new StringBuilder();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
 		if (prRulesIt.hasNext()) {
@@ -346,7 +346,7 @@ public class CustomFormGraph extends CustomForm {
 			// run coda with the given pearl and the cas just created.
 			// System.out.println("pearl:\t" + getRef());
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+			codaCore.setProjectionRulesModel(pearlStream);
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -410,7 +410,7 @@ public class CustomFormGraph extends CustomForm {
 			
 			// run coda with the given pearl and the cas just created.
 			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+			codaCore.setProjectionRulesModel(pearlStream);
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -477,7 +477,7 @@ public class CustomFormGraph extends CustomForm {
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		//init the projection rules model with the pearl
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds){
