@@ -1017,7 +1017,7 @@ public class CustomForms extends STServiceAdapter {
 		if (formType.equals(CustomForm.Types.graph.toString())) {
 			try {
 				InputStream pearlStream = new ByteArrayInputStream(pearl.getBytes(StandardCharsets.UTF_8));
-				codaCore.setProjectionRulesModelAndParseIt(pearlStream);
+				codaCore.setProjectionRulesModel(pearlStream);
 				//setProjectionRulesModelAndParseIt didn't throw exception, so pearl is valid
 				return JsonNodeFactory.instance.booleanNode(true);
 			} catch (PRParserException e) {
