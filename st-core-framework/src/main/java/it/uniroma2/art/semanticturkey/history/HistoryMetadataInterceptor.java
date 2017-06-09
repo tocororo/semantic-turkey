@@ -80,6 +80,10 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 					if (readOnly)
 						return;
 
+					if (!stServiceContext.getProject().isHistoryEnabled()
+							&& !stServiceContext.getProject().isValidationEnabled())
+						return;
+
 					Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
 					RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository, false);
 
@@ -103,7 +107,6 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 		} finally {
 			HistoryMetadataSupport.removeOperationMetadata();
 		}
-		System.out.println("OPERTION STARTED!!!!");
 
 		return rv;
 	}
