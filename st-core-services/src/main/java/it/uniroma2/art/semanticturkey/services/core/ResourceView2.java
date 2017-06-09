@@ -447,7 +447,8 @@ public class ResourceView2 extends STServiceAdapter {
 			qb.processRole();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
 			qb.setBinding("subjectResource", resource);
-
+			qb.setIncludeInferred(true);
+			
 			Collection<BindingSet> bindingSets = qb.runQuery(
 					acquireManagedConnectionToProject(getProject(), localResourcePosition.getProject()),
 					QueryResultsProcessors.toBindingSets());

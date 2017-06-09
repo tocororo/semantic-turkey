@@ -55,6 +55,8 @@ public class QueryBuilder {
 	private final BiMap<QueryBuilderProcessor, GraphPatternBinding> attachedProcessorsGraphPatternBinding;
 	private final Map<String, Value> bindingSet;
 
+	private boolean includeInferred;
+
 	/**
 	 * Constructs a {@code QueryBuilder} for a service backed by a given (tuple) query.
 	 * 
@@ -70,6 +72,7 @@ public class QueryBuilder {
 		this.roleRecognitionOrchestrator = null;
 		this.qnameProcessor = null;
 		this.attachedProcessorsGraphPatternBinding = HashBiMap.create();
+		this.includeInferred = false;
 	}
 
 	/**
@@ -212,7 +215,7 @@ public class QueryBuilder {
 		logger.debug(enrichedQueryString);
 
 		TupleQuery query = conn.prepareTupleQuery(enrichedQueryString);
-		query.setIncludeInferred(false);
+		query.setIncludeInferred(includeInferred);
 
 		bindingSet.forEach(query::setBinding);
 
@@ -336,6 +339,16 @@ public class QueryBuilder {
 		}
 
 		return out;
+	}
+
+	/**
+	 * Sets whether inferred statements should be considered during query evaluation. By default, this
+	 * property is <code>false</code>.
+	 * 
+	 * @param includeInferred
+	 */
+	public void setIncludeInferred(boolean includeInferred) {
+		this.includeInferred = includeInferred;
 	}
 }
 
