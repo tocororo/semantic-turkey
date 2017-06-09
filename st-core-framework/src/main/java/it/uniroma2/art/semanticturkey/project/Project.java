@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -258,10 +259,11 @@ public abstract class Project extends AbstractProject {
 			lexicalizationModel = SimpleValueFactory.getInstance()
 					.createIRI(Objects.requireNonNull(stp_properties.getProperty(LEXICALIZATION_MODEL_PROP),
 							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
-			if (!Arrays.asList(RDFS_LEXICALIZATION_MODEL, SKOS_LEXICALIZATION_MODEL, SKOSXL_LEXICALIZATION_MODEL)
+			if (!Arrays
+					.asList(RDFS_LEXICALIZATION_MODEL, SKOS_LEXICALIZATION_MODEL, SKOSXL_LEXICALIZATION_MODEL)
 					.contains(lexicalizationModel)) {
-				throw new UnsupportedLexicalizationModelException(lexicalizationModel.stringValue() +
-						" is not a valid lexicalization model");
+				throw new UnsupportedLexicalizationModelException(
+						lexicalizationModel.stringValue() + " is not a valid lexicalization model");
 			}
 
 			String updateForRolesString = com.google.common.base.Objects
@@ -1000,8 +1002,8 @@ public abstract class Project extends AbstractProject {
 					}
 				}
 
-				HTTPRepositoryConfig localRepositoryImplConfig2 = new HTTPRepositoryConfig(
-						repositoryAccess2.getServerURL().toString());
+				HTTPRepositoryConfig localRepositoryImplConfig2 = new HTTPRepositoryConfig(Protocol
+						.getRepositoryLocation(repositoryAccess2.getServerURL().toString(), repositoryId));
 				localRepositoryImplConfig2.setUsername(repositoryAccess2.getUsername());
 				localRepositoryImplConfig2.setPassword(repositoryAccess2.getPassword());
 				localRepositoryImplConfig = localRepositoryImplConfig2;
