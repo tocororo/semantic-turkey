@@ -2,8 +2,8 @@ package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.EXCLUDE_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_GRAPH;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_NS;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_REPOSITORY_ID;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.METADATA_NS;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SUPPORT_REPOSITORY_ID;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
@@ -35,8 +35,8 @@ import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
  */
 public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
-	private String historyRepositoryID;
-	private String historyNS;
+	private String supportRepositoryID;
+	private String metadataNS;
 	private String serverURL;
 	private IRI historyGraph;
 	private Set<IRI> includeGraph;
@@ -52,8 +52,8 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	public ChangeTrackerConfig(SailImplConfig delegate) {
 		super(ChangeTrackerFactory.SAIL_TYPE, delegate);
 		serverURL = null;
-		historyRepositoryID = null;
-		historyNS = null;
+		supportRepositoryID = null;
+		metadataNS = null;
 		historyGraph = null;
 		includeGraph = Collections.emptySet();
 		excludeGraph = Collections.singleton(SESAME.NIL);
@@ -61,20 +61,20 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		validationGraph = null;
 	}
 
-	public String getHistoryRepositoryID() {
-		return historyRepositoryID;
+	public String getSupportRepositoryID() {
+		return supportRepositoryID;
 	}
 
-	public void setHistoryRepositoryID(String historyRepositoryID) {
-		this.historyRepositoryID = historyRepositoryID;
+	public void setSupportRepositoryID(String supportRepositoryID) {
+		this.supportRepositoryID = supportRepositoryID;
 	}
 
-	public String getHistoryNS() {
-		return historyNS;
+	public String getMetadataNS() {
+		return metadataNS;
 	}
 
-	public void setHistoryNS(String metadataNS) {
-		this.historyNS = metadataNS;
+	public void setMetadataNS(String metadataNS) {
+		this.metadataNS = metadataNS;
 	}
 
 	public IRI getHistoryGraph() {
@@ -135,12 +135,12 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 			graph.add(implNode, SERVER_URL, vf.createLiteral(serverURL));
 		}
 
-		if (historyRepositoryID != null) {
-			graph.add(implNode, HISTORY_REPOSITORY_ID, vf.createLiteral(historyRepositoryID));
+		if (supportRepositoryID != null) {
+			graph.add(implNode, SUPPORT_REPOSITORY_ID, vf.createLiteral(supportRepositoryID));
 		}
 
-		if (historyNS != null) {
-			graph.add(implNode, HISTORY_NS, vf.createLiteral(historyNS));
+		if (metadataNS != null) {
+			graph.add(implNode, METADATA_NS, vf.createLiteral(metadataNS));
 		}
 
 		if (historyGraph != null) {
@@ -176,9 +176,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		super.parse(graph, implNode);
 
 		Models.objectString(graph.filter(implNode, SERVER_URL, null)).ifPresent(this::setServerURL);
-		Models.objectString(graph.filter(implNode, HISTORY_REPOSITORY_ID, null))
-				.ifPresent(this::setHistoryRepositoryID);
-		Models.objectString(graph.filter(implNode, HISTORY_NS, null)).ifPresent(this::setHistoryNS);
+		Models.objectString(graph.filter(implNode, SUPPORT_REPOSITORY_ID, null))
+				.ifPresent(this::setSupportRepositoryID);
+		Models.objectString(graph.filter(implNode, METADATA_NS, null)).ifPresent(this::setMetadataNS);
 		Models.objectIRI(graph.filter(implNode, HISTORY_GRAPH, null))
 				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setHistoryGraph);
 		Set<IRI> newIncludeGraph = new HashSet<IRI>();
@@ -212,12 +212,12 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	public void validate() throws SailConfigException {
 		super.validate();
 
-		if (historyRepositoryID == null) {
-			throw new SailConfigException("No history repository set for " + getType() + " Sail.");
+		if (supportRepositoryID == null) {
+			throw new SailConfigException("No support repository set for " + getType() + " Sail.");
 		}
 
-		if (historyNS == null) {
-			throw new SailConfigException("No history namespace set for " + getType() + " Sail.");
+		if (metadataNS == null) {
+			throw new SailConfigException("No metadata namespace set for " + getType() + " Sail.");
 		}
 
 		if (includeGraph == null) {

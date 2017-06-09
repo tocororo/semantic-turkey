@@ -3,10 +3,6 @@ package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.config.SailConfigException;
 import org.eclipse.rdf4j.sail.config.SailFactory;
@@ -15,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
-import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
 
 /**
  * Factory for {@link ChangeTracker}.
@@ -45,30 +40,17 @@ public class ChangeTrackerFactory implements SailFactory {
 
 		ChangeTrackerConfig config2 = (ChangeTrackerConfig) config;
 
-		ValueFactory vf = SimpleValueFactory.getInstance();
-
 		String serverURL = config2.getServerURL();
-		String metadataRepoId = config2.getHistoryRepositoryID();
-		String metadataNS = config2.getHistoryNS();
+		String metadataRepoId = config2.getSupportRepositoryID();
+		String metadataNS = config2.getMetadataNS();
 		IRI metadataGraph = config2.getHistoryGraph();
 		Set<IRI> includeGraph = config2.getIncludeGraph();
 		Set<IRI> excludeGraph = config2.getExcludeGraph();
 		boolean validationEnabled = config2.isValidationEnabled();
 		boolean interactiveNotifications = config2.isInteractiveNotifications();
 		IRI validationGraph = config2.getValidationGraph();
-		Repository metadataRepo;
-
-		if (serverURL != null) {
-			metadataRepo = new HTTPRepository(serverURL, metadataRepoId);
-		} else {
-			metadataRepo = RepositoryRegistry.getInstance().getRepository(metadataRepoId);
-		}
-		logger.debug(
-				"Created new ChangeTracker // metadataRepoId = {} // metadataRepo = {} // metadataNS = {} // metadataGraph = {} // includeGraph = {} // excludeGraph = {} // validationEnabled = {} // interactiveNotifications = {} // validationGraph = {}",
-				metadataRepoId, metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,
-				validationEnabled, interactiveNotifications, validationGraph);
-
-		return new ChangeTracker(metadataRepo, metadataNS, metadataGraph, includeGraph, excludeGraph,
+		
+		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph, excludeGraph,
 				validationEnabled, interactiveNotifications, validationGraph);
 	}
 

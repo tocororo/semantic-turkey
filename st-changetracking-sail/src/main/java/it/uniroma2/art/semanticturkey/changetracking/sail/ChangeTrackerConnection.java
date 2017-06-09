@@ -185,6 +185,9 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			// Checks if there are requested (validatable) operations to log
 			if (!validatableOpertionHandler.isReadOnly()) {
 				try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
+					
+					supportRepoConn.begin();
+					
 					IRI validatableCommit = supportRepoConn.getValueFactory().createIRI(sail.metadataNS,
 							UUID.randomUUID().toString());
 					IRI validatableModifiedTriples = supportRepoConn.getValueFactory()
@@ -207,6 +210,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					validatableOpertionHandler.getRemovals()
 							.forEach(consumer2.apply(validatableModifiedTriples).apply(supportRepoConn)
 									.apply(CHANGELOG.REMOVED_STATEMENT));
+					
+					supportRepoConn.commit();
 				}
 			}
 		}

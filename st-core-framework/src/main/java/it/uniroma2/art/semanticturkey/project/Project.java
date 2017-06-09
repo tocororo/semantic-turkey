@@ -87,7 +87,6 @@ import it.uniroma2.art.owlart.vocabulary.SKOS;
 import it.uniroma2.art.owlart.vocabulary.SKOSXL;
 import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
-import it.uniroma2.art.semanticturkey.changetracking.sail.RepositoryRegistry;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -291,7 +290,6 @@ public abstract class Project extends AbstractProject {
 			Repository supportRepository = repositoryManager.getRepository("support");
 
 			if (supportRepository != null) {
-				RepositoryRegistry.getInstance().addRepository(getName() + "-support", supportRepository);
 				supportOntManager = new OntologyManagerImpl(supportRepository);
 			}
 
@@ -529,23 +527,17 @@ public abstract class Project extends AbstractProject {
 
 	public void deactivate() throws ModelUpdateException {
 		try {
-			if (repositoryManager.hasRepositoryConfig("support")) {
-				RepositoryRegistry.getInstance().removeRepository(getName() + "-support");
-			}
+			repositoryManager.shutDown();
 		} finally {
-			try {
-				repositoryManager.shutDown();
-			} finally {
-				// try {
-				// if (newOntManager != null) {
-				// newOntManager.getRepository().shutDown();
-				// }
-				// } finally {
-				// if (supportOntManager != null) {
-				// supportOntManager.getRepository().shutDown();
-				// }
-				// }
-			}
+			// try {
+			// if (newOntManager != null) {
+			// newOntManager.getRepository().shutDown();
+			// }
+			// } finally {
+			// if (supportOntManager != null) {
+			// supportOntManager.getRepository().shutDown();
+			// }
+			// }
 		}
 	}
 

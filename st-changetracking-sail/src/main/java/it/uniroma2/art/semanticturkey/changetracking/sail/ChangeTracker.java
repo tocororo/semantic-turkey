@@ -1,13 +1,17 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
+import org.eclipse.rdf4j.repository.http.HTTPRepository;
+import org.eclipse.rdf4j.repository.sail.config.RepositoryResolver;
+import org.eclipse.rdf4j.repository.sail.config.RepositoryResolverClient;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -63,26 +67,32 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class ChangeTracker extends NotifyingSailWrapper {
+public class ChangeTracker extends NotifyingSailWrapper implements RepositoryResolverClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
 
-	final Repository supportRepo;
+	final String supportRepoId;
+	final String serverURL;
 	final String metadataNS;
 	final IRI historyGraph;
 	final IRI validationGraph;
+
+	Repository supportRepo;
 
 	final Model graphManagement;
 
 	final boolean validationEnabled;
 	final boolean interactiveNotifications;
 
-	public ChangeTracker(Repository metadataRepo, String metadataNS, IRI metadataGraph, Set<IRI> includeGraph,
-			Set<IRI> excludeGraph, boolean validationEnabled, boolean interactiveNotifications,
-			IRI validationGraph) {
-		this.supportRepo = metadataRepo;
+	private RepositoryResolver repositoryResolver;
+
+	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
+			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean validationEnabled,
+			boolean interactiveNotifications, IRI validationGraph) {
+		this.serverURL = serverURL;
+		this.supportRepoId = supportRepoId;
 		this.metadataNS = metadataNS;
-		this.historyGraph = metadataGraph;
+		this.historyGraph = historyGraph;
 		this.graphManagement = new LinkedHashModel();
 		includeGraph.forEach(
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH, g));
@@ -96,11 +106,28 @@ public class ChangeTracker extends NotifyingSailWrapper {
 	@Override
 	public void initialize() throws SailException {
 		super.initialize();
+		if (serverURL != null) {
+			supportRepo = new HTTPRepository(serverURL, supportRepoId);
+		} else {
+			supportRepo = new RepositoryWrapper(repositoryResolver.getRepository(supportRepoId)) {
+				@Override
+				public void shutDown() throws RepositoryException {
+					// Ignore shutdown of the referenced repository
+				}
+			};
+		}
 	}
 
 	@Override
 	public void shutDown() throws SailException {
-		super.shutDown();
+		try {
+			if (supportRepo != null) {
+				supportRepo.shutDown();
+				supportRepo = null;
+			}
+		} finally {
+			super.shutDown();
+		}
 	}
 
 	@Override
@@ -109,6 +136,11 @@ public class ChangeTracker extends NotifyingSailWrapper {
 		NotifyingSailConnection delegate = super.getConnection();
 		ChangeTrackerConnection connection = new ChangeTrackerConnection(delegate, this);
 		return connection;
+	}
+
+	@Override
+	public void setRepositoryResolver(RepositoryResolver resolver) {
+		repositoryResolver = resolver;
 	}
 
 }

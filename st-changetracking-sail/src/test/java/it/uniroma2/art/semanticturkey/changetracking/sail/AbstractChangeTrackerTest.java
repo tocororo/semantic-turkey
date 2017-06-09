@@ -85,14 +85,13 @@ public abstract class AbstractChangeTrackerTest {
 				new RepositoryConfig(HISTORY_REPO_ID, new SailRepositoryConfig(new NativeStoreConfig())));
 
 		supportRepo = repositoryManager.getRepository(HISTORY_REPO_ID);
-		RepositoryRegistry.getInstance().addRepository(HISTORY_REPO_ID, supportRepo);
 		Repositories.consume(supportRepo, conn -> {
 			conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
 			conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
 		});
 		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
-		trackerConfig.setHistoryRepositoryID(HISTORY_REPO_ID);
-		trackerConfig.setHistoryNS(HISTORY_NS);
+		trackerConfig.setSupportRepositoryID(HISTORY_REPO_ID);
+		trackerConfig.setMetadataNS(HISTORY_NS);
 		
 		if (requiresValidation) {
 			trackerConfig.setValidationEnabled(true);

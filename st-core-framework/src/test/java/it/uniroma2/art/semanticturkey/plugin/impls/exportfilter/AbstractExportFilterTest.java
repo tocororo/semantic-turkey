@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,6 +32,8 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
 import it.uniroma2.art.semanticturkey.tx.ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Abstract base class of tests for implementation of {@link ExportFilter}. To test a specific implementation,

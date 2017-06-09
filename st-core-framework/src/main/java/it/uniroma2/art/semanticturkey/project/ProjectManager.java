@@ -1443,10 +1443,10 @@ public class ProjectManager {
 
 							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
 									backendSailImplConfig);
-							changeTrackerSailConfig.setHistoryRepositoryID(projectName + "-support");
+							changeTrackerSailConfig.setSupportRepositoryID(supportRepoID);
 							changeTrackerSailConfig.setHistoryGraph(
 									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
-							changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+							changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
 							changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 							if (validationEnabled) {
 								changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
@@ -1478,12 +1478,10 @@ public class ProjectManager {
 
 								ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
 										backendSailImplConfig);
-								changeTrackerSailConfig
-										.setServerURL(remoteRepositoryAccess.getServerURL().toString());
-								changeTrackerSailConfig.setHistoryRepositoryID(supportRepoID);
+								changeTrackerSailConfig.setSupportRepositoryID(supportRepoID);
 								changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
 										.createIRI(defaultNamespace + "history"));
-								changeTrackerSailConfig.setHistoryNS(defaultNamespace + "history#");
+								changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
 								changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 								if (validationEnabled) {
 									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory
