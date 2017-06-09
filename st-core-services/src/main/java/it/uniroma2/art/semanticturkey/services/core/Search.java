@@ -1069,13 +1069,13 @@ public class Search extends STServiceAdapter {
 		if(languages.length==1 && languages[0].equals("*")){
 			//all languages are selected, so no filter should apply, do nothing
 		} else{
-			query = "FITLER(";
+			query = "FILTER(";
 			boolean first = true;
 			for(String lang : languages){
 				//iterate over the languages
 				if(!first){
 					query += " || ";
-				} query += "lang("+variable+") = \""+lang+"\")";
+				} query += "lang("+variable+") = \""+lang+"\"";
 				first = false;
 			}
 			query += ")";
