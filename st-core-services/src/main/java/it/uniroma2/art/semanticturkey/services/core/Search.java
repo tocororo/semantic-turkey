@@ -28,12 +28,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -53,7 +58,17 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
-			String searchMode, @Optional String lang, @Optional List<IRI> schemes)  {
+			String searchMode, @Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException  {
+		
+		//it can be null, * or a list of languages
+		String languagesPropValue = STPropertiesManager.getProjectPreference(
+			       STPropertiesManager.PROP_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+		String [] langArray;
+		if(languagesPropValue == null){
+			langArray = new String[]{"*"};
+		} else{
+			langArray = languagesPropValue.split(",");
+		}
 		
 		boolean isClassWanted = false;
 		boolean isConceptWanted = false;
@@ -63,7 +78,6 @@ public class Search extends STServiceAdapter {
 		boolean isCollectionWanted = false;
 		
 		String searchModeSelected = null;
-		
 		
 		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
 		
@@ -142,7 +156,7 @@ public class Search extends STServiceAdapter {
 		query+="\n}" +
 			"\n}";
 			
-		//now examine the rdf:label and/or skos:xlabel/skosxl:label
+		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
 		
 		
@@ -164,6 +178,7 @@ public class Search extends STServiceAdapter {
 					"\n}"+
 					"\nUNION";
 		}
+		
 		
 		//search in the rdfs:label
 		query+="\n{" +
@@ -187,26 +202,24 @@ public class Search extends STServiceAdapter {
 					searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
 					"\n}";
 		}
-		
-		//if language was specified, try to take first the literalForm for that language and then,
-		// if it has not such value, the skosLabel (always considering just the prefLabel)
-		// the language is used only to return the concept/collection with the labels in the desired 
-		// language and it is not used to filter a resource
-		if((isConceptWanted || isConceptSchemeWanted || isCollectionWanted)&& lang!=null && lang.length()>0){
-			query+="\nOPTIONAL" +
-					"\n{" +
-					"\n?resource <"+SKOSXL.PREF_LABEL.stringValue()+"> ?skosPrefLabel ." +
-					"\n?skosPrefLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?show ." +
-					"\nFILTER(lang(?show) = \""+lang+"\")"+
-					"\n}" +
-					"\nOPTIONAL" +
-					"\n{" +
-					"\n?resource <"+SKOS.PREF_LABEL.stringValue()+"> ?show ." +
-					"\nFILTER(lang(?show) = \""+lang+"\")"+
-					"\n}";
+		//according to the Lexicalization Model, prepare the show considering one of the following properties:
+		// - rdfs:label (Project.RDFS_LEXICALIZATION_MODEL)
+		// - skos:prefLabel (Project.SKOS_LEXICALIZATION_MODEL)
+		// - skosxl:prefLabel -> skosxl:literalForm (Project.SKOSXL_LEXICALIZATION_MODEL)
+		IRI lexModel = getProject().getLexicalizationModel();
+		query+="\nOPTIONAL" +
+				"\n{";
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
+			query+="\n?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?show .";
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
+			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?show .";
+		} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
+			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?skosPrefLabel ." +
+					"\nskosPrefLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) +" ?show .";
 		}
-		
-		query+="\n}";
+		query+=filterAccordingToLanguage("?show", langArray) +
+				"\n}"+
+				"\n}";
 		//@formatter:on
 		
 		logger.debug("query = "+query);
@@ -241,21 +254,12 @@ public class Search extends STServiceAdapter {
 				continue;
 			}
 
-			// TODO, explicit set to true
 			RDFResourceRole role = null;
+			boolean isProp = false;
 			//since there are more than one element in the input role array, see the resource
 			String type = tupleBindings.getBinding("type").getValue().stringValue();
 			
 			role = getRoleFromType(type);
-			
-			String show = null;
-			if(tupleBindings.hasBinding("show")){
-				Value showRes = tupleBindings.getBinding("show").getValue();
-				show = showRes.stringValue();
-				if(showRes instanceof Literal && ((Literal)showRes).getLanguage().isPresent()){
-					show += " ("+((Literal)showRes).getLanguage().get()+")";
-				}
-			}
 			
 			if(role.equals(RDFResourceRole.cls)){
 				if(otherResourcesMap.containsKey(value.stringValue())){
@@ -266,14 +270,12 @@ public class Search extends STServiceAdapter {
 				// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
 				// when the parent class is Owl:Thing the service filters out those classes with 
 				// NoLanguageResourcePredicate)
-				if(role.equals(RDFResourceRole.cls)){
-					String resNamespace = value.stringValue();
-					if(resNamespace.equals(XMLSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
-							|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
-						continue;
-					}
+				String resNamespace = value.stringValue();
+				if(resNamespace.equals(XMLSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
+						|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
+					continue;
 				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
 				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 			} else if(role.equals(RDFResourceRole.individual)){
 				//there a special section for the individual, since an individual can belong to more than a
@@ -283,31 +285,46 @@ public class Search extends STServiceAdapter {
 					//the individual was already added
 					continue;
 				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
 				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 			} else if(role.equals(RDFResourceRole.property) || 
 					role.equals(RDFResourceRole.annotationProperty) || 
 					role.equals(RDFResourceRole.datatypeProperty) || 
 					role.equals(RDFResourceRole.objectProperty) || 
 					role.equals(RDFResourceRole.ontologyProperty) ) {
+				isProp = true;
 				//check if the property was already added before (with a different type)
 				if(propertyMap.containsKey(value.stringValue())){
 					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(value.stringValue());
 					if(prevValueTypeAndShow.getRole().equals(RDFResourceRole.property)){
 						//the previous value was property, now it has a different role, so replace the old 
 						// one with the new one
-						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
 						propertyMap.put(value.stringValue(), valueTypeAndShow);
 					}
 				} else{
 					//the property map did not have a previous value, so add this one without any checking
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
 					propertyMap.put(value.stringValue(), valueTypeAndShow);
 				}
 			} else{
 				//it is a concept, a conceptScheme or a collection, just add it to the otherMap
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, show, role);
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
 				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
+			}
+			
+			if(tupleBindings.hasBinding("show")){
+				Value showRes = tupleBindings.getBinding("show").getValue();
+				if(showRes instanceof Literal){
+					//check if the show belong to a property or to another type
+					if(isProp){
+						propertyMap.get(value.stringValue()).addShow((Literal) showRes);
+					} else{
+						//is not a property
+						otherResourcesMap.get(value.stringValue()).addShow((Literal) showRes);
+					}
+				}
+				
 			}
 		}
 		
@@ -317,8 +334,8 @@ public class Search extends STServiceAdapter {
 			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
 			annotatedValue.setAttribute("explicit", true);
 			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShow());
+			if(valueTypeAndShow.isShowPresent()){
+				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
 			} 
 			results.add(annotatedValue);
 		}
@@ -327,8 +344,8 @@ public class Search extends STServiceAdapter {
 			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
 			annotatedValue.setAttribute("explicit", true);
 			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent() && !valueTypeAndShow.getShow().isEmpty()){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShow());
+			if(valueTypeAndShow.isShowPresent() ){
+				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
 			} 
 			results.add(annotatedValue);
 		}
@@ -338,29 +355,61 @@ public class Search extends STServiceAdapter {
 	
 	private class ValueTypeAndShow{
 		IRI resource  = null;
-		String show = null;
+		//String show = null;
+		List<Literal> showList = null;
 		RDFResourceRole role = null;
 		
-		public ValueTypeAndShow(IRI resource, String show, RDFResourceRole role) {
+		public ValueTypeAndShow(IRI resource, RDFResourceRole role) {
 			this.resource = resource;
-			this.show = show;
 			this.role = role;
+			this.showList = new ArrayList<Literal>();
+		}
+		
+		public void addShow(Literal show){
+			if(!showList.contains(show)){
+				showList.add(show);
+			}
+		}
+		
+		public void addShowList(List<Literal> showList){
+			for(Literal literal : showList){
+				if(!this.showList.contains(literal)){
+					this.showList.add(literal);
+				}
+			}
 		}
 
 		public IRI getResource() {
 			return resource;
 		}
 
-		public String getShow() {
-			return show;
+		public List<Literal> getShowList() {
+			return showList;
 		}
+		
+		public String getShowAsString(){
+			boolean first = true;
+			String showAsString = "";
+			for(Literal literal : showList){
+				if(!first){
+					showAsString+=", ";
+				}
+				showAsString+=literal.getLabel();
+				if(literal.getLanguage().isPresent()){
+					showAsString+="("+literal.getLanguage().get()+")";
+				}
+				first = false;
+			}
+			return showAsString;
+		}
+		
 
 		public RDFResourceRole getRole() {
 			return role;
 		}
 		
 		public boolean isShowPresent(){
-			if(show != null){
+			if(!showList.isEmpty()){
 				return true;
 			}
 			return false;
@@ -1012,6 +1061,25 @@ public class Search extends STServiceAdapter {
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
 		}
 		
+		return query;
+	}
+	
+	private String filterAccordingToLanguage(String variable, String[] languages){
+		String query = "";
+		if(languages.length==1 && languages[0].equals("*")){
+			//all languages are selected, so no filter should apply, do nothing
+		} else{
+			query = "FITLER(";
+			boolean first = true;
+			for(String lang : languages){
+				//iterate over the languages
+				if(!first){
+					query += " || ";
+				} query += "lang("+variable+") = \""+lang+"\")";
+				first = false;
+			}
+			query += ")";
+		}
 		return query;
 	}
 	
