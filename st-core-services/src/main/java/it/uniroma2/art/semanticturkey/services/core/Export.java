@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +34,8 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import com.google.common.collect.Lists;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
@@ -88,11 +91,12 @@ public class Export extends STServiceAdapter {
 	 *            would fail, so that available information is not silently ignored
 	 * @throws Exception
 	 */
-	@STServiceOperation(method=RequestMethod.POST)
+	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
 			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
+			@Optional(defaultValue = "false") boolean includeInferred,
 			@Optional(defaultValue = "TRIG") RDFFormat outputFormat,
 			@Optional(defaultValue = "false") boolean force) throws Exception {
 
@@ -120,7 +124,7 @@ public class Export extends STServiceAdapter {
 
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy
-			dumpRepository(oRes, getManagedConnection(), graphs, outputFormat);
+			dumpRepository(oRes, getManagedConnection(), graphs, includeInferred, outputFormat);
 		} else {
 			// Translates numeric graph references to graph names
 			IRI[][] step2graphs = computeGraphsForStep(graphs, filteringSteps);
@@ -134,8 +138,10 @@ public class Export extends STServiceAdapter {
 				workingRepository.initialize();
 
 				try (RepositoryConnection workingRepositoryConnection = workingRepository.getConnection()) {
-					// Copies all graphs from the source repository to the working repository
-					sourceRepositoryConnection.export(new RDFInserter(workingRepositoryConnection));
+					// Copies all graphs from the source repository to the working repository (including the
+					// null context, when inference is enabled)
+					sourceRepositoryConnection.exportStatements(null, null, null, includeInferred,
+							new RDFInserter(workingRepositoryConnection));
 
 					// Applies each filter
 					for (int i = 0; i < filteringSteps.length; i++) {
@@ -147,7 +153,7 @@ public class Export extends STServiceAdapter {
 								stepGraphs);
 					}
 					// Dumps the working repository (i.e. the filtered repository)
-					dumpRepository(oRes, workingRepositoryConnection, graphs, outputFormat);
+					dumpRepository(oRes, workingRepositoryConnection, graphs, includeInferred, outputFormat);
 				}
 			} finally {
 				workingRepository.shutDown();
@@ -182,8 +188,7 @@ public class Export extends STServiceAdapter {
 					IRI g = stepGraphs[j];
 
 					if (!exportedGraphs.contains(g)) {
-						throw new IllegalArgumentException(
-								"Filtered graph " + g + " was not exported");
+						throw new IllegalArgumentException("Filtered graph " + g + " was not exported");
 					}
 
 					step2graphs[i][j] = g;
@@ -196,22 +201,33 @@ public class Export extends STServiceAdapter {
 
 	/**
 	 * Dumps the provided graphs to the servlet response. It is assumed that the array of graphs has already
-	 * been expanded, so an empty array is interpreted as a <i>no graph</i>.
+	 * been expanded, so an empty array is interpreted as a <i>no graph</i>. Additionally, if
+	 * {@code includeNullContext} is {@code true}, then also the {@code null} context is copied.
 	 * 
 	 * @param oRes
 	 * @param filteredRepositoryConnection
 	 * @param expandedGraphs
+	 * @param includeNullContext
 	 * @param outputFormat
 	 * @throws IOException
 	 */
 	private void dumpRepository(HttpServletResponse oRes, RepositoryConnection filteredRepositoryConnection,
-			Resource[] expandedGraphs, RDFFormat outputFormat) throws IOException {
+			Resource[] expandedGraphs, boolean includeNullContext, RDFFormat outputFormat)
+			throws IOException {
 		File tempServerFile = File.createTempFile("save", "." + outputFormat.getDefaultFileExtension());
 		try {
 			if (expandedGraphs.length != 0) {
+				Resource[] outputGraphs;
+				if (includeNullContext) {
+					List<Resource> tempList = Lists.newArrayList(expandedGraphs);
+					tempList.add(null);
+					outputGraphs = tempList.toArray(new Resource[tempList.size()]);
+				} else {
+					outputGraphs = expandedGraphs;
+				}
 				try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
-					filteredRepositoryConnection.export(Rio.createWriter(outputFormat, tempServerFileStream),
-							expandedGraphs);
+					filteredRepositoryConnection.exportStatements(null, null, null, includeNullContext,
+							Rio.createWriter(outputFormat, tempServerFileStream), outputGraphs);
 				}
 			} else {
 				Rio.write(new LinkedHashModel(), new FileOutputStream(tempServerFile), outputFormat);
