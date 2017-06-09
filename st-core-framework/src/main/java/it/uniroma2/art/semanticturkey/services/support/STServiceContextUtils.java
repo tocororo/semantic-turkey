@@ -3,7 +3,7 @@ package it.uniroma2.art.semanticturkey.services.support;
 import org.eclipse.rdf4j.repository.Repository;
 
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectUtils;
+import it.uniroma2.art.semanticturkey.project.VersionInfo;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
@@ -26,8 +26,10 @@ public abstract class STServiceContextUtils {
 		String versionId = stServiceContext.getVersion();
 
 		if (versionId != null) {
-			Repository repo = project.getRepositoryManager()
-					.getRepository(ProjectUtils.computeVersionRepository(versionId));
+			String repoId = project.getVersionManager().getVersion(versionId)
+					.map(VersionInfo::getRepositoryId)
+					.orElseThrow(() -> new InvalidContextException("Not a dumped version: " + versionId));
+			Repository repo = project.getRepositoryManager().getRepository(repoId);
 			if (repo == null) {
 				throw new InvalidContextException("No repository for version: " + versionId);
 			}
