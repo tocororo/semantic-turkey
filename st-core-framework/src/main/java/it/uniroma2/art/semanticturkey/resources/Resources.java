@@ -317,7 +317,7 @@ public class Resources {
 					|| !new File(usrPath, _systemDirName).mkdirs()
 					|| !new File(usrPath, _usersDirName).mkdirs()
 					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
-					|| !new File(usrPath + _ontMirrorFileName).createNewFile())
+					|| !new File(usrPath,_ontMirrorFileName).createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
