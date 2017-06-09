@@ -26,7 +26,9 @@ import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
 import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
@@ -43,11 +45,16 @@ public class DataRanges extends STServiceAdapter{
 	
 	private static Logger logger = LoggerFactory.getLogger(DataRanges.class);
 
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void createLiteralEnumeration(BNode bnode, Literal [] literalsArray) {
+	// TODO @PreAuthorize
+	public AnnotatedValue<BNode> createLiteralEnumeration(@Optional BNode bnode, Literal [] literalsArray) {
 		
 		logger.info("createLiteralEnumeration");
+		
+		if(bnode==null){
+			bnode = getManagedConnection().getValueFactory().createBNode();
+		}
 		
 		List<Literal> literalList = Arrays.asList(literalsArray);
 		
@@ -58,10 +65,14 @@ public class DataRanges extends STServiceAdapter{
 		List<Statement> triplesList = dataRangeDataOneOf.generateTriples();
 		
 		conn.add(triplesList, getWorkingGraph());
+		
+		AnnotatedValue<BNode> annotatedValue = new AnnotatedValue<BNode>(bnode);
+		return annotatedValue;
 	}
 	
 	@STServiceOperation
 	@Read
+	// TODO @PreAuthorize
 	public Collection<AnnotatedValue<Literal>> getLiteralEnumeration(BNode bnode){
 		logger.info("getLiteralEnumeration");
 		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<AnnotatedValue<Literal>>();
@@ -85,8 +96,9 @@ public class DataRanges extends STServiceAdapter{
 		return literalList;
 	}
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	// TODO @PreAuthorize
 	public void addLiteralToEnumeration(BNode bnode, Literal literal){
 		//prepare a SPARQL update query, which takes the last element in the list (the ones having rdf:nil 
 		// at the value for rdf:rest) and 
@@ -137,6 +149,7 @@ public class DataRanges extends STServiceAdapter{
 	
 	@STServiceOperation
 	@Read
+	// TODO @PreAuthorize
 	public JsonNode hasLiteralInEnumeration(BNode bnode, Literal literal){
 		//check if there is at least one element in the enumeration with the specified literal
 		// using a single SPARQL query
@@ -164,8 +177,9 @@ public class DataRanges extends STServiceAdapter{
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	// TODO @PreAuthorize
 	public void removeLiteralFromEnumeration(BNode bnode, Literal literal){
 		//remove ALL the element of the list of owl:oneOf having the specified literal
 		
