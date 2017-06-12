@@ -60,7 +60,7 @@ public class DataRanges extends STServiceAdapter{
 		
 		RepositoryConnection conn = getManagedConnection();
 		
-		DataRangeDataOneOf dataRangeDataOneOf = new DataRangeDataOneOf(bnode, literalList, conn);
+		DataRangeDataOneOf dataRangeDataOneOf = new DataRangeDataOneOf(bnode, literalList, conn.getValueFactory());
 
 		List<Statement> triplesList = dataRangeDataOneOf.generateTriples();
 		

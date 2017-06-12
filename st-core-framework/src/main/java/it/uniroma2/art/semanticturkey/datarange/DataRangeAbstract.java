@@ -4,13 +4,13 @@ import java.util.List;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.model.ValueFactory;
 
 public abstract class DataRangeAbstract {
 	
 	protected BNode startingBNode;
 	
-	RepositoryConnection conn;
+	ValueFactory vf;
 	
 	public BNode getBNode(){
 		return startingBNode;

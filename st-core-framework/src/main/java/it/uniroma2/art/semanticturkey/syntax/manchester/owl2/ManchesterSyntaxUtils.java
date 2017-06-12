@@ -363,6 +363,16 @@ public class ManchesterSyntaxUtils {
 		
 	}
 	
+	public static String getManchExprFromBNode(BNode bnode, Map<String, String> namespaceToPrefixMap, 
+			boolean getPrefixName, Resource[] graphs, List<Statement> tripleList, 
+			boolean useUppercaseSyntax, Model model) throws NotClassAxiomException {
+		ManchesterClassInterface mci = getManchClassFromBNode(bnode, graphs, tripleList, model);
+		if (mci != null) {
+			return mci.getManchExpr(namespaceToPrefixMap, getPrefixName, useUppercaseSyntax);
+		}
+		return "";
+	}
+	
 	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode,
 			Resource[] graphs, List<Statement> tripleList, Model model) throws NotClassAxiomException {
 		//get all the triples having the input bnode as subject

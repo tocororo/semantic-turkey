@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -107,7 +108,7 @@ public class ParseDataRange {
 
 		if (bnodeToNextBNode.isEmpty()) {
 			// the query found no solution, so return and empty list
-			return new DataRangeDataOneOf(startingBNode, literalList, conn);
+			return new DataRangeDataOneOf(startingBNode, literalList, conn.getValueFactory());
 		}
 
 		// now construct the ordered list of Literal in the enumeration
@@ -123,11 +124,10 @@ public class ParseDataRange {
 			}
 		}
 
-		return new DataRangeDataOneOf(startingBNode, literalList, conn);
+		return new DataRangeDataOneOf(startingBNode, literalList, conn.getValueFactory());
 	}
 
-	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements,
-			RepositoryConnection conn) {
+	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, Model statements) {
 		// see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
 
 		List<Literal> literalList = new ArrayList<>();
@@ -137,7 +137,7 @@ public class ParseDataRange {
 		Optional<Resource> optionalRes = Models
 				.objectResource(statements.filter(startingBNode, OWL.ONEOF, null));
 		if (!optionalRes.isPresent()) {
-			return new DataRangeDataOneOf(startingBNode, literalList, conn);
+			return new DataRangeDataOneOf(startingBNode, literalList, SimpleValueFactory.getInstance());
 		}
 		BNode listBNode = (BNode) optionalRes.get();
 
@@ -150,7 +150,7 @@ public class ParseDataRange {
 			}
 		}
 
-		return new DataRangeDataOneOf(startingBNode, literalList, conn);
+		return new DataRangeDataOneOf(startingBNode, literalList, SimpleValueFactory.getInstance());
 
 	}
 }

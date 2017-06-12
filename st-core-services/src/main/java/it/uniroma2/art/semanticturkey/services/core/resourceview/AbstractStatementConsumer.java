@@ -16,20 +16,12 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.util.Connections;
-import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
@@ -38,11 +30,12 @@ import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 
 public abstract class AbstractStatementConsumer implements StatementConsumer {
-	
+
 	public static final String UNKNOWN_OWL_AXIOM = "unknown OWL axiom";
-	
+
 	private static final Literal DEFAULT_ROLE = SimpleValueFactory.getInstance()
 			.createLiteral(RDFResourceRole.undetermined.toString());
 
@@ -60,7 +53,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 		if (resource instanceof BNode) {
 			return "_:" + resource.stringValue();
 		} else {
-			String prefix = ns2prefixMapping.get(((IRI) resource).getLocalName());
+			String prefix = ns2prefixMapping.get(((IRI) resource).getNamespace());
 
 			if (prefix == null) {
 				return resource.stringValue();
@@ -76,61 +69,41 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 
 	public static String computeShow(Resource resource, Map<Resource, Map<String, Value>> resource2attributes,
 			Model statements) {
-		Repository repository = new SailRepository(new MemoryStore());
-		repository.initialize();
-		try {
-			Repositories.consume(repository, repoConn -> {
-				repoConn.add(statements);
-				statements.getNamespaces().forEach(ns -> {
-					repoConn.setNamespace(ns.getPrefix(), ns.getName());
-				});
-			});
-			return Repositories.get(repository, repoConn -> {
-				return computeShow(resource, resource2attributes, repoConn);
-			});
-		} finally {
-			repository.shutDown();
-		}
-	}
-
-	public static String computeShow(Resource resource, Map<Resource, Map<String, Value>> resource2attributes,
-			RepositoryConnection repoConn) {
-
+		Map<String, String> namespaceToprefixMap = statements.getNamespaces().stream()
+				.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 		if (resource instanceof BNode) {
-			if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.DATATYPE, true)) {
-				DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration((BNode)resource, repoConn);
+			if (statements.contains(resource, RDF.TYPE, RDFS.DATATYPE)) {
+				DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration((BNode) resource,
+						statements);
 				if (dataRangeAbstract instanceof DataRangeDataOneOf) {
-					return ((DataRangeDataOneOf) dataRangeAbstract).getLiteralList().stream().map(NTriplesUtil::toNTriplesString).collect(Collectors.joining(", ", "{", "}"));
+					return ((DataRangeDataOneOf) dataRangeAbstract).getLiteralList().stream()
+							.map(lit -> TurtleHelp.serializeLiteral(lit, namespaceToprefixMap))
+							.collect(Collectors.joining(", ", "{", "}"));
 				}
-			} else if (repoConn.hasStatement(resource, RDF.TYPE, RDFS.CLASS, true)
-					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.CLASS, true)
-					|| repoConn.hasStatement(resource, RDF.TYPE, OWL.RESTRICTION, true)) {
-				Map<String, String> namespaceToprefixMap = QueryResults.stream(repoConn.getNamespaces())
-						.collect(toMap(Namespace::getName, Namespace::getPrefix,
-								(v1, v2) -> v1 != null ? v1 : v2));
+			} else if (statements.contains(resource, RDF.TYPE, RDFS.CLASS)
+					|| statements.contains(resource, RDF.TYPE, OWL.CLASS)
+					|| statements.contains(resource, RDF.TYPE, OWL.RESTRICTION)) {
 				String expr;
 				try {
-					expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource,
-							namespaceToprefixMap, true, new Resource[0], null, true, repoConn);
+					expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource, namespaceToprefixMap,
+							true, new Resource[0], null, true, statements);
 					if (expr != null && !expr.isEmpty()) {
-						if(expr.startsWith("(") && expr.endsWith("")){
-							//remove the starting '(' and the end ')' 
-							expr = expr.substring(1, expr.length()-1).trim();
+						if (expr.startsWith("(") && expr.endsWith("")) {
+							// remove the starting '(' and the end ')'
+							expr = expr.substring(1, expr.length() - 1).trim();
 						}
 					}
 				} catch (NotClassAxiomException e) {
-					//there was a problem parsing the expression, so report it
+					// there was a problem parsing the expression, so report it
 					expr = UNKNOWN_OWL_AXIOM;
 				}
 				return expr;
-			} else if (repoConn.hasStatement(resource, RDF.TYPE, RDF.LIST, true)) {
-				Model statements = new LinkedHashModel();
-				Connections.getRDFCollection(repoConn, resource, statements);
+			} else if (statements.contains(resource, RDF.TYPE, RDF.LIST)) {
 				ArrayList<Value> values = RDFCollections.asValues(statements, resource, new ArrayList<>());
 
 				return values.stream().map(v -> {
 					if (v instanceof Resource) {
-						return computeShow((Resource) v, resource2attributes, repoConn);
+						return computeShow((Resource) v, resource2attributes, statements);
 					} else {
 						return NTriplesUtil.toNTriplesString(v);
 					}
@@ -147,10 +120,10 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			}
 		}
 
-		Map<String, String> ns2prefixMap = QueryResults.stream(repoConn.getNamespaces())
-				.collect(toMap(Namespace::getName, Namespace::getPrefix, (x, y) -> x));
-
+		Map<String, String> ns2prefixMap = statements.getNamespaces().stream()
+				.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 		return computeDefaultShow(resource, ns2prefixMap);
+
 	}
 
 	public static void addShowOrRenderXLabelOrCRE(AnnotatedValue<? extends Resource> annotatedResource,
