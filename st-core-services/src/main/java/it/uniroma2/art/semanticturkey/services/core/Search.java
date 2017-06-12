@@ -383,7 +383,7 @@ public class Search extends STServiceAdapter {
 				}
 				showAsString+=literal.getLabel();
 				if(literal.getLanguage().isPresent()){
-					showAsString+="("+literal.getLanguage().get()+")";
+					showAsString+=" ("+literal.getLanguage().get()+")";
 				}
 				first = false;
 			}
