@@ -202,23 +202,7 @@ public class Search extends STServiceAdapter {
 					searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
 					"\n}";
 		}
-		//according to the Lexicalization Model, prepare the show considering one of the following properties:
-		// - rdfs:label (Project.RDFS_LEXICALIZATION_MODEL)
-		// - skos:prefLabel (Project.SKOS_LEXICALIZATION_MODEL)
-		// - skosxl:prefLabel -> skosxl:literalForm (Project.SKOSXL_LEXICALIZATION_MODEL)
-		IRI lexModel = getProject().getLexicalizationModel();
-		query+="\nOPTIONAL" +
-				"\n{";
-		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
-			query+="\n?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?show .";
-		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
-			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?show .";
-		} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?skosPrefLabel ." +
-					"\nskosPrefLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) +" ?show .";
-		}
-		query+=filterAccordingToLanguage("?show", langArray) +
-				"\n}"+
+		query+=addShowPart("?show", langArray)+
 				"\n}";
 		//@formatter:on
 		
@@ -238,13 +222,11 @@ public class Search extends STServiceAdapter {
 			}
 		}
 		tupleQuery.setDataset(dataset);
-
 		
 		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
 		
 		Map<String, ValueTypeAndShow> propertyMap = new HashMap<String, ValueTypeAndShow>();
 		Map<String, ValueTypeAndShow> otherResourcesMap = new HashMap<String, ValueTypeAndShow>();
-		
 		
 		while (tupleBindingsIterator.hasNext()) {
 			BindingSet tupleBindings = tupleBindingsIterator.next();
@@ -262,10 +244,6 @@ public class Search extends STServiceAdapter {
 			role = getRoleFromType(type);
 			
 			if(role.equals(RDFResourceRole.cls)){
-				if(otherResourcesMap.containsKey(value.stringValue())){
-					//the class was already added
-					continue;
-				}
 				//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
 				// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
 				// when the parent class is Owl:Thing the service filters out those classes with 
@@ -275,18 +253,19 @@ public class Search extends STServiceAdapter {
 						|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
 					continue;
 				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
+				if(!otherResourcesMap.containsKey(value.stringValue())){
+					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
+					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
+				}
+				
 			} else if(role.equals(RDFResourceRole.individual)){
 				//there a special section for the individual, since an individual can belong to more than a
 				// class, so the result set could have more tuple regarding a single individual, this way
 				// should speed up the process
-				if(otherResourcesMap.containsKey(value.stringValue())){
-					//the individual was already added
-					continue;
+				if(!otherResourcesMap.containsKey(value.stringValue())){
+					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
+					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 				}
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
 			} else if(role.equals(RDFResourceRole.property) || 
 					role.equals(RDFResourceRole.annotationProperty) || 
 					role.equals(RDFResourceRole.datatypeProperty) || 
@@ -318,13 +297,16 @@ public class Search extends STServiceAdapter {
 				if(showRes instanceof Literal){
 					//check if the show belong to a property or to another type
 					if(isProp){
-						propertyMap.get(value.stringValue()).addShow((Literal) showRes);
+						if(!propertyMap.get(value.stringValue()).hasShowValue((Literal) showRes)) {
+							propertyMap.get(value.stringValue()).addShow((Literal) showRes);
+						}
 					} else{
 						//is not a property
-						otherResourcesMap.get(value.stringValue()).addShow((Literal) showRes);
+						if(!otherResourcesMap.get(value.stringValue()).hasShowValue((Literal) showRes)){
+							otherResourcesMap.get(value.stringValue()).addShow((Literal) showRes);
+						}
 					}
 				}
-				
 			}
 		}
 		
@@ -383,6 +365,11 @@ public class Search extends STServiceAdapter {
 			return resource;
 		}
 
+		
+		public boolean hasShowValue(Literal show){
+			return showList.contains(show);
+		}
+		
 		public List<Literal> getShowList() {
 			return showList;
 		}
@@ -422,7 +409,17 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString, boolean useLocalName, 
-			boolean useURI, String searchMode, @Optional String lang) {
+			boolean useURI, String searchMode, @Optional String lang) throws IllegalStateException, STPropertyAccessException {
+		
+		//it can be null, * or a list of languages
+		String languagesPropValue = STPropertiesManager.getProjectPreference(
+			       STPropertiesManager.PROP_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+		String [] langArray;
+		if(languagesPropValue == null){
+			langArray = new String[]{"*"};
+		} else{
+			langArray = languagesPropValue.split(",");
+		}
 		
 		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
 		
@@ -454,9 +451,10 @@ public class Search extends STServiceAdapter {
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
-		query+="\nSELECT DISTINCT ?resource" +
+		query+="\nSELECT DISTINCT ?resource ?type" +
 			"\nWHERE{" + 
 			"\n ?resource a <"+cls.stringValue()+"> . " +
+			"\n ?resource a ?type . " +
 			"\n}" +
 			"\n}";
 			
@@ -490,6 +488,9 @@ public class Search extends STServiceAdapter {
 				"\n}";
 
 		
+		//add the show part in SPARQL query
+		query+=addShowPart("?show", langArray);
+		
 		query+="\n}";
 		//@formatter:on
 		
@@ -510,36 +511,44 @@ public class Search extends STServiceAdapter {
 		
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
 		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
-		List<String> addedIndividualList = new ArrayList<String>();
+		//List<String> addedIndividualList = new ArrayList<String>();
+		Map<String, ValueTypeAndShow> individualsMap = new HashMap<String, ValueTypeAndShow>();
 		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
-			Value resourceURI = bindingSet.getBinding("resource").getValue();
+			Value resourceURI = bindingSet.getValue("resource");
 
 			if (!(resourceURI instanceof IRI)) {
 				continue;
 			}
-
-			if(addedIndividualList.contains(resourceURI.stringValue())){
-				//the individual was already added
-				continue;
+			
+			if(!individualsMap.containsKey(resourceURI.stringValue())){
+				String type = bindingSet.getBinding("type").getValue().stringValue();
+				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) resourceURI, getRoleFromType(type));
+				individualsMap.put(resourceURI.stringValue(), valueTypeAndShow);
 			}
-			addedIndividualList.add(resourceURI.stringValue());
 			
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI)resourceURI);
-			annotatedValue.setAttribute("explicit", true);
-			
-			String show = null;
 			if(bindingSet.hasBinding("show")){
-				Value showRes = bindingSet.getBinding("show").getValue();
-				show = showRes.stringValue();
-				if(showRes instanceof Literal && ((Literal)showRes).getLanguage().isPresent()){
-					show += " ("+((Literal)showRes).getLanguage().get()+")";
+				Value showRes = bindingSet.getValue("show");
+				if(showRes instanceof Literal){
+					if(!individualsMap.get(resourceURI.stringValue()).hasShowValue((Literal) showRes)){
+						individualsMap.get(resourceURI.stringValue()).addShow((Literal) showRes);
+					}
 				}
-				annotatedValue.setAttribute("show", show);
 			}
-			results.add(annotatedValue);
-			
 		}
+		
+		for(String key : individualsMap.keySet()){
+			ValueTypeAndShow valueTypeAndShow = individualsMap.get(key);
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
+			annotatedValue.setAttribute("explicit", true);
+			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
+			if(valueTypeAndShow.isShowPresent()){
+				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
+			} 
+			results.add(annotatedValue);
+		}
+		
+		
 		return results;
 	}
 
@@ -1063,6 +1072,29 @@ public class Search extends STServiceAdapter {
 		
 		return query;
 	}
+	
+	private String addShowPart(String variable, String[] langArray){
+		//according to the Lexicalization Model, prepare the show considering one of the following properties:
+		// - rdfs:label (Project.RDFS_LEXICALIZATION_MODEL)
+		// - skos:prefLabel (Project.SKOS_LEXICALIZATION_MODEL)
+		// - skosxl:prefLabel -> skosxl:literalForm (Project.SKOSXL_LEXICALIZATION_MODEL)
+		IRI lexModel = getProject().getLexicalizationModel();
+		String query="\nOPTIONAL" +
+				"\n{";
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
+			query+="\n?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?show .";
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
+			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?show .";
+		} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
+			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?skosPrefLabel ." +
+					"\nskosPrefLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) +" ?show .";
+		}
+		query+=filterAccordingToLanguage("?show", langArray) +
+				"\n}";
+		
+		return query;
+	}
+	
 	
 	private String filterAccordingToLanguage(String variable, String[] languages){
 		String query = "";
