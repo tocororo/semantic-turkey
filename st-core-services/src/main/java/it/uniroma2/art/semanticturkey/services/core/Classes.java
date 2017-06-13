@@ -219,10 +219,16 @@ public class Classes extends STServiceAdapter {
 		StringBuilder sb = new StringBuilder();
 		sb.append(
 				// @formatter:off
-				" SELECT ?resource WHERE {												\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +                                      
+				" prefix owl: <http://www.w3.org/2002/07/owl#>							\n" +                                      
+				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>					\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {		\n" +
 				"     VALUES(?resource) {");
 		sb.append(Arrays.stream(classList).map(iri -> "(" + RenderUtils.toSPARQL(iri) + ")").collect(joining()));
 		sb.append("}													 				\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				"} 																		\n" +
 				" GROUP BY ?resource													\n"
 				// @formatter:on
