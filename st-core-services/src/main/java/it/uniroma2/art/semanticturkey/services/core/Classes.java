@@ -94,8 +94,8 @@ public class Classes extends STServiceAdapter {
 			qb = createQueryBuilder(
 					// @formatter:off
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
-					" prefix owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
-					" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
 					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
                     "                                                                             \n" +                                      
@@ -113,7 +113,6 @@ public class Classes extends STServiceAdapter {
 					"         ?superClass2 a ?metaClass2 .                                        \n" +
 					"         ?metaClass2 rdfs:subClassOf* rdfs:Class .                           \n" +
 					"     }                                                                       \n" +
-
 					//adding the nature in the query (will be replaced by the appropriate processor), 
 					//remember to change the SELECT as well
 					generateNatureSPARQLWherePart("?resource") +
@@ -257,10 +256,16 @@ public class Classes extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getInstances(@LocallyDefined IRI cls) {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
-				" SELECT ?resource ?attr_color WHERE {                                         \n " +                                                                              
-				"    ?resource a ?cls .                                                        \n " +
-				" }                                                                            \n " +
-				" GROUP BY ?resource ?attr_color             		                           \n "
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>							\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
+				" SELECT ?resource ?attr_color " + generateNatureSPARQLSelectPart() + " WHERE {	\n " +                                                                              
+				"    ?resource a ?cls .															\n " +
+				generateNatureSPARQLWherePart("?resource") +
+				" }																				\n " +
+				" GROUP BY ?resource ?attr_color												\n "
 				// @formatter:on
 		);
 		qb.processRole();

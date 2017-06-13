@@ -87,10 +87,13 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	?propertyType	.							\n" +
 				"     FILTER (?propertyType = rdf:Property || " +
 				"				?propertyType = owl:ObjectProperty ||" +
@@ -98,6 +101,7 @@ public class Properties extends STServiceAdapter {
 				"				?propertyType = owl:AnnotationProperty ||" +
 				"				?propertyType = owl:OntologyProperty  )						\n" +
 				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
@@ -122,8 +126,11 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
 				" SELECT ?resource WHERE {													\n" +
 				"     ?resource 	rdf:type	rdf:Property	.							\n" +
@@ -152,9 +159,11 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
 				" SELECT ?resource WHERE {													\n" +
 				"     ?resource 	rdf:type	owl:ObjectProperty	.						\n" +
@@ -183,9 +192,11 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
 				" SELECT ?resource WHERE {													\n" +
 				"     ?resource 	rdf:type	owl:DatatypeProperty .						\n" +
@@ -214,13 +225,16 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:AnnotationProperty  .					\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
@@ -245,13 +259,16 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:OntologyProperty .						\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
@@ -279,16 +296,19 @@ public class Properties extends STServiceAdapter {
 		StringBuilder sb = new StringBuilder();
 		sb.append(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																		\n" +
-				" SELECT ?resource WHERE {												\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {		\n" +
 				"     VALUES(?resource) {");
 		for(int i=0; i<propList.length; ++i){
 			sb.append("(<"+propList[i].stringValue()+">)");
 		}
 		sb.append("}													 				\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				"} 																		\n" +
 				" GROUP BY ?resource													\n"
 				// @formatter:on
@@ -310,13 +330,16 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																						\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {						\n" +
 				"     ?resource 	rdfs:subPropertyOf	?superProperty .								\n" +
 				" }																						\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" GROUP BY ?resource															\n"
 				// @formatter:on
 		);

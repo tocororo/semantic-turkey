@@ -253,13 +253,16 @@ public class SKOS extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getAllSchemes() {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                       \n" +
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                      \n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                 \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "                                                                           \n" +
-				" SELECT ?resource WHERE {                                                  \n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?conceptSchemeSubClass rdfs:subClassOf* skos:ConceptScheme .          \n" +
 				"     ?resource rdf:type ?conceptSchemeSubClass .                           \n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }                                                                         \n" +
 				" GROUP BY ?resource                                                        \n"
 				// @formatter:on
@@ -303,11 +306,13 @@ public class SKOS extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getRootCollections() {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                        \n" +
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                       \n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                  \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "                                                                            \n" +
-				" SELECT DISTINCT ?resource WHERE {                                          \n" +
+				" SELECT DISTINCT ?resource " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
                 "   ?collectionSubClass rdfs:subClassOf* skos:Collection .                   \n" +
 				"   ?resource rdf:type ?collectionSubClass.                                  \n" +
 				"   FILTER NOT EXISTS {                                                      \n" +
@@ -316,6 +321,7 @@ public class SKOS extends STServiceAdapter {
 				" 	FILTER NOT EXISTS {                                                      \n" +
 				" 	  [] skos:memberList/rdf:rest*/rdf:first ?resource .                     \n" +
 				" 	}                                                                        \n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }                                                                          \n" +
 				" GROUP BY ?resource                                                         \n"
 				// @formatter:on
@@ -333,11 +339,13 @@ public class SKOS extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getNestedCollections(@LocallyDefined Resource container) {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
-				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                        \n" +
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                       \n" +
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                  \n" +
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "                                                                            \n" +
-                " SELECT ?resource (COUNT(DISTINCT ?mid) AS ?index) WHERE {                  \n" +
+                " SELECT ?resource (COUNT(DISTINCT ?mid) AS ?index) " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
 				"   {                                                                        \n" +
                 //for the skos:Collection
 				" 	  FILTER NOT EXISTS {?container skos:memberList [] }                     \n" +
@@ -350,6 +358,7 @@ public class SKOS extends STServiceAdapter {
 				" 	  ?node rdf:first ?resource .                                            \n" +
 				"   }                                                                        \n" +
 				" 	FILTER EXISTS { ?resource rdf:type/rdfs:subClassOf* skos:Collection . }  \n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }                                                                          \n" +
 				" GROUP BY ?resource                                                         \n" +
 				" ORDER BY ?index                                                            \n"
