@@ -44,6 +44,9 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
+import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
+import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
@@ -1129,6 +1132,32 @@ public class Properties extends STServiceAdapter {
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
+	public Collection<AnnotatedValue<Literal>> getDatarangeLiterals(BNode datarange){
+		logger.info("getLiteralEnumeration");
+		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<AnnotatedValue<Literal>>();
+		
+		DataRangeDataOneOf dataOneOf = null;
+		DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(datarange, getManagedConnection());
+		if(dataRangeAbstract instanceof DataRangeDataOneOf){
+			dataOneOf = (DataRangeDataOneOf) dataRangeAbstract;
+		} else{
+			//There was an error, since the bnode is not the expected datarange (ONEOF)
+			//TODO decide what to do, at the moment, return an empty list
+			return literalList;
+		}
+		
+		List<Literal> literalTempList = dataOneOf.getLiteralList();
+		
+		for(Literal literal : literalTempList){
+			literalList.add(new AnnotatedValue<Literal>(literal));
+		}
+		
+		return literalList;
 	}
 	
 	
