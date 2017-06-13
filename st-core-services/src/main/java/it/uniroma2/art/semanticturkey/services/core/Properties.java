@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -19,7 +20,9 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -785,6 +788,117 @@ public class Properties extends STServiceAdapter {
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
+	
+	/**
+	 * It deletes all the triple representing the old datarange. It removes also the triple linking the 
+	 * property and the datarange
+	 * @param property
+	 * @param datarange
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
+	public void removeDataranges(@LocallyDefined @Subject IRI property, @LocallyDefined BNode datarange){
+		RepositoryConnection repoConnection = getManagedConnection();
+		//prepare a SPARQL update to remove 
+		// @formatter:off
+		String query="DELETE {"+
+				"GRAPH ?workingGraph {\n" +
+				"\n?property ?predicate ?datarange ." +
+				"\n?datarange "+NTriplesUtil.toNTriplesString(RDF.TYPE)+" "+NTriplesUtil.toNTriplesString(RDFS.DATATYPE) +" ."+
+				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
+				"\n?elemInList ?p ?o ."+
+				"\n}" +
+				"\n}" +
+				"\nWHERE{"+
+				"\nGRAPH ?workingGraph {\n" +
+				"\n?property ?predicate ?datarange ." +
+				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
+				//get the first element of the list
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
+				//get all the element of the list
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+"+ ?elemInList ."+
+				//get all the info for regarding each element of the list (OPTIONL because the last is RDF.REST
+				// which is not the subject of any triple)
+				"\nOPTIONAL{" +
+				"\n?elemInList ?p ?o ."+
+				"\n}"+
+				"\n}" +
+				"\n}";
+		// @formatter:on
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("?workingGraph", getWorkingGraph());
+		update.setBinding("?property", property);
+		update.setBinding("?datarange", datarange);
+		update.execute();
+	}
+	
+	
+	/**
+	 * Update the current RDF list associated to the RDFS.DATATYPE by deleting the old one and create 
+	 * a new RDF:List using the input one. The BNode representing the old one is maintain and used in the 
+	 * the one 
+	 * @param datarange
+	 * @param literals
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'U')")
+	public void updateDataranges(@Subject @LocallyDefined BNode datarange, List <Literal> literals){
+		RepositoryConnection repoConnection = getManagedConnection();
+		//prepare a SPARQL update to remove the old list
+		// @formatter:off
+		String query="DELETE {"+
+				"GRAPH ?workingGraph {\n" +
+				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
+				"\n?elemInList ?p ?o ."+
+				"\n}" +
+				"\n}" +
+				"\nWHERE{"+
+				"\nGRAPH ?workingGraph {\n" +
+				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
+				//get the first element of the list
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
+				//get all the element of the list
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+"+ ?elemInList ."+
+				//get all the info for regarding each element of the list (OPTIONL because the last is RDF.REST
+				// which is not the subject of any triple)
+				"\nOPTIONAL{" +
+				"\n?elemInList ?p ?o ."+
+				"\n}"+
+				"\n}" +
+				"\n}";
+		// @formatter:on
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("?workingGraph", getWorkingGraph());
+		update.setBinding("?datarange", datarange);
+		update.execute();
+		
+		//now add the new list
+		Model modelAdditions = new LinkedHashModel();
+		//if values is null or empty, create an empty RDF List
+		if(literals == null || literals.isEmpty()){
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
+		} else{
+			BNode tempList = repoConnection.getValueFactory().createBNode();
+			//add the first element to the list
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
+			//iteration on the other elements of the list
+			for(int i=1; i<literals.size(); ++i){
+				BNode newTempList = repoConnection.getValueFactory().createBNode();
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST, literals.get(i)));
+				tempList = newTempList;
+			}
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
+		}
+ 		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+	
 	
 	@STServiceOperation
 	@Write
