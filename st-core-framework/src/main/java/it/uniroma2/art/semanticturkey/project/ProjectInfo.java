@@ -6,6 +6,8 @@ public class ProjectInfo {
 	
 	private final String name;
 	private final boolean open;
+	private final String baseURI;
+	private final String defaultNamespace;
 	private final String model;
 	private final String lexicalizationModel;
 	private final String type;
@@ -14,10 +16,13 @@ public class ProjectInfo {
 	private final AccessResponse accessible;
 	private final ProjectStatus status;
 	
-	public ProjectInfo(String name, boolean open, String model, String lexicalizationModel, String type, 
+	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
+			String model, String lexicalizationModel, String type, 
 			boolean historyEnabled, boolean validationEnabled, AccessResponse accessible, ProjectStatus status) {
 		this.name = name;
 		this.open = open;
+		this.baseURI = baseURI;
+		this.defaultNamespace = defaultNamespace;
 		this.model = model;
 		this.lexicalizationModel = lexicalizationModel;
 		this.type = type;
@@ -33,6 +38,14 @@ public class ProjectInfo {
 	
 	public boolean isOpen() {
 		return open;
+	}
+	
+	public String getBaseURI() {
+		return this.baseURI;
+	}
+	
+	public String getDefaultNamespace() {
+		return this.defaultNamespace;
 	}
 	
 	public String getModel() {

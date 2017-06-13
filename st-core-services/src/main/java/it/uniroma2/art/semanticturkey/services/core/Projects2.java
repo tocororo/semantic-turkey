@@ -127,6 +127,8 @@ public class Projects2 extends STServiceAdapter {
 		
 		for (AbstractProject absProj : projects) {
 			String name = absProj.getName();
+			String baseURI = null;
+			String defaultNamespace = null;
 			String model = null;
 			String lexicalizationModel = null;
 			String type = null;
@@ -139,6 +141,8 @@ public class Projects2 extends STServiceAdapter {
 			if (absProj instanceof Project) {
 				Project proj = (Project) absProj;
 					
+				baseURI = proj.getBaseURI();
+				defaultNamespace = proj.getDefaultNamespace();
 				model = proj.getModel().stringValue();
 				lexicalizationModel = proj.getLexicalizationModel().stringValue();
 				historyEnabled = proj.isHistoryEnabled();
@@ -159,8 +163,8 @@ public class Projects2 extends STServiceAdapter {
 				CorruptedProject proj = (CorruptedProject) absProj;
 				status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 			}
-			ProjectInfo projInfo = new ProjectInfo(
-					name, open, model, lexicalizationModel, type, historyEnabled, validationEnabled, access, status);
+			ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
+					type, historyEnabled, validationEnabled, access, status);
 			listProjInfo.add(projInfo);
 		}
 				
