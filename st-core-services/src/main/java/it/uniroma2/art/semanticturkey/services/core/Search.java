@@ -1087,7 +1087,7 @@ public class Search extends STServiceAdapter {
 			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?show .";
 		} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?skosPrefLabel ." +
-					"\nskosPrefLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) +" ?show .";
+					"\n?skosPrefLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) +" ?show .";
 		}
 		query+=filterAccordingToLanguage("?show", langArray) +
 				"\n}";
