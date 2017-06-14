@@ -51,7 +51,6 @@ import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 
 public class CustomFormGraph extends CustomForm {
@@ -470,7 +469,6 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws ResourceInitializationException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException 
-	 * @throws ModelAccessException 
 	 */
 	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore) 
 			throws ResourceInitializationException, PRParserException, RDFModelNotSetException {

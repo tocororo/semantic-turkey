@@ -23,7 +23,6 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
-import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 

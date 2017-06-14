@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
-import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -52,7 +51,7 @@ public class InputOutput2 extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'C')")
 	public Collection<OntologyImport> loadRDF(MultipartFile inputFile, String baseURI,
 			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws FileNotFoundException, IOException, UnsupportedRDFFormatException {
+			throws FileNotFoundException, IOException {
 
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File inputServerFile = File.createTempFile("loadRDF", inputFile.getOriginalFilename());

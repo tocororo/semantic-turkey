@@ -26,10 +26,6 @@
  */
 package it.uniroma2.art.semanticturkey.exceptions;
 
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.vocabulary.RDFTypesEnum;
-
-
 public class ManchesterSyntaxRuntimeException extends RuntimeException {
 
 

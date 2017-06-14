@@ -9,13 +9,6 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.rdf4jimpl.model.ARTResourceRDF4JImpl;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -73,7 +66,7 @@ public class ResourceLocator {
 	 */
 	public ResourcePosition locateResource(Project project, Repository projectRepository,
 			Resource resource, AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
-			throws ModelAccessException, ProjectAccessException {
+			throws ProjectAccessException {
 		if (resource instanceof BNode) {
 			return new LocalResourcePosition(project); // TODOprojectRepository: implement a better condition
 		}
@@ -131,7 +124,7 @@ public class ResourceLocator {
 	 * @throws ModelAccessException
 	 */
 	public ResourcePosition locateResource(Project project, Repository projectRepository,
-			Resource resource) throws ModelAccessException, ProjectAccessException {
+			Resource resource) throws ProjectAccessException {
 		return locateResource(project, projectRepository, resource, AccessLevel.R, LockLevel.NO);
 	}
 }

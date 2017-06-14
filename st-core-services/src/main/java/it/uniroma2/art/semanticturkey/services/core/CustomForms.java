@@ -58,9 +58,6 @@ import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
@@ -112,9 +109,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @param customFormId
 	 * @return
 	 * @throws CODAException
-	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
-	 * @throws ModelUpdateException
 	 * @throws ProjectionRuleModelNotSet
 	 * @throws UnassignableFeaturePathException
 	 */
@@ -192,9 +187,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @param resource
 	 * @param predicate
 	 * @return
-	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
-	 * @throws ModelAccessException
 	 * @throws RDFModelNotSetException
 	 * @throws PRParserException
 	 */
@@ -711,11 +704,9 @@ public class CustomForms extends STServiceAdapter {
 	 * Returns a serialization representing the form of the CurtomForm with the given id
 	 * @param id
 	 * @return
-	 * @throws UnavailableResourceException
 	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
-	 * @throws ModelAccessException 
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
@@ -1006,8 +997,6 @@ public class CustomForms extends STServiceAdapter {
      * Determines also the nature of the pearl parameter
 	 * @return
 	 * @throws ProjectInconsistentException 
-	 * @throws UnavailableResourceException 
-	 * @throws ModelAccessException 
 	 * @throws RDFModelNotSetException 
 	 * @throws CustomFormException 
 	 */

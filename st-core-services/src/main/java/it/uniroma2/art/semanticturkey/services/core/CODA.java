@@ -19,7 +19,6 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
 import it.uniroma2.art.coda.provisioning.ParameterDescription;
 import it.uniroma2.art.coda.provisioning.SignatureDescription;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -35,7 +34,7 @@ public class CODA extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public JsonNode listConverterContracts()
-			throws UnavailableResourceException, ProjectInconsistentException {
+			throws ProjectInconsistentException {
 		CODACore codaCore = null;
 		try {
 			codaCore = getInitializedCodaCore(getManagedConnection());
