@@ -188,7 +188,6 @@ public class Classes extends STServiceAdapter {
 		}
 		qb.process(ClassesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.process(FixedRoleProcessor.INSTANCE, "resource", "attr_role");
-//		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		if (numInst) {
@@ -234,7 +233,6 @@ public class Classes extends STServiceAdapter {
 		);
 		qb = createQueryBuilder(sb.toString());
 		qb.process(ClassesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		if (numInst) {
@@ -268,7 +266,6 @@ public class Classes extends STServiceAdapter {
 				" GROUP BY ?resource ?attr_color												\n "
 				// @formatter:on
 		);
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		qb.setBinding("cls", cls);

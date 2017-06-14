@@ -155,7 +155,6 @@ public class SKOS extends STServiceAdapter {
 					// @formatter:on
 			);
 		}
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -240,7 +239,6 @@ public class SKOS extends STServiceAdapter {
 					// @formatter:on
 			);
 		}
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		qb.setBinding("concept", concept);
@@ -267,7 +265,6 @@ public class SKOS extends STServiceAdapter {
 				" GROUP BY ?resource                                                        \n"
 				// @formatter:on
 		);
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -327,7 +324,6 @@ public class SKOS extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.process(CollectionsMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -365,7 +361,6 @@ public class SKOS extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.process(CollectionsMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		qb.setBinding("container", container);

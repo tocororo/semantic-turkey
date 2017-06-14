@@ -10,7 +10,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -22,7 +21,6 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,7 +111,6 @@ public class Properties extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -138,15 +135,15 @@ public class Properties extends STServiceAdapter {
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	rdf:Property	.							\n" +
 				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -171,15 +168,15 @@ public class Properties extends STServiceAdapter {
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:ObjectProperty	.						\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -204,15 +201,15 @@ public class Properties extends STServiceAdapter {
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
-				" SELECT ?resource WHERE {													\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:DatatypeProperty .						\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -246,7 +243,6 @@ public class Properties extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -280,7 +276,6 @@ public class Properties extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -321,7 +316,6 @@ public class Properties extends STServiceAdapter {
 		);
 		qb = createQueryBuilder(sb.toString());
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
@@ -350,7 +344,6 @@ public class Properties extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
-		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
 		qb.setBinding("superProperty", superProperty);
