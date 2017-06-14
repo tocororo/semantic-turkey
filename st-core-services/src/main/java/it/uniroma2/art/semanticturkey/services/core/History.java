@@ -95,8 +95,9 @@ public class History extends STServiceAdapter {
 			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
 			BindingSet bindingSet = QueryResults.singleResult(tupleQuery.evaluate());
-			long tipRevisionNumber = ((Literal) bindingSet.getValue("tipRevisionNumber")).longValue();
 			long commitCount = ((Literal) bindingSet.getValue("commitCount")).longValue();
+			long tipRevisionNumber = commitCount != 0
+					? ((Literal) bindingSet.getValue("tipRevisionNumber")).longValue() : -1;
 
 			return new PaginationInfo(tipRevisionNumber,
 					(commitCount / limit) + (commitCount % limit == 0 ? 0 : 1));
