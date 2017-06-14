@@ -1,7 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.Collection;
+import static java.util.stream.Collectors.toMap;
 
+import java.util.Map;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -9,40 +15,31 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.QueryEvaluationException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedQueryLanguageException;
-import it.uniroma2.art.owlart.model.ARTLiteral;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.query.MalformedQueryException;
-import it.uniroma2.art.owlart.query.TupleBindings;
-import it.uniroma2.art.owlart.query.TupleBindingsIterator;
-import it.uniroma2.art.owlart.query.TupleQuery;
-import it.uniroma2.art.owlart.query.Update;
-import it.uniroma2.art.owlart.vocabulary.SKOS;
-import it.uniroma2.art.owlart.vocabulary.SKOSXL;
+
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFXMLHelp;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFLiteral;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFNodeFactory;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFResource;
-import it.uniroma2.art.semanticturkey.ontology.utilities.STRDFURI;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 
 @GenerateSTServiceController
 @Validated
 @Component
-public class ICV extends STServiceAdapterOLD {
+public class ICV extends STServiceAdapter {
 	
 	protected static Logger logger = LoggerFactory.getLogger(ICV.class);
 	
@@ -61,73 +58,72 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listDanglingConcepts(ARTURIResource scheme, @Optional (defaultValue="0") Integer limit) throws UnsupportedQueryLanguageException,
-			ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response listDanglingConcepts(IRI scheme, @Optional (defaultValue="0") Integer limit)  {
+		RepositoryConnection conn = getManagedConnection();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
-		OWLModel model = getOWLModel();
 		//nested query
 		String q = "SELECT ?concept ?count WHERE { \n"
 				//this counts records
 				+ "{ SELECT (COUNT (*) AS ?count) WHERE{\n"
-				+ "BIND(<" + scheme.getURI() + "> as ?scheme)"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
 				+ "{?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1  . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
 				+ "} {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} } }"
 				//this retrieves data
 				+ "{ SELECT ?concept ?scheme WHERE{\n"
-				+ "BIND(<" + scheme.getURI() + "> as ?scheme)"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
 				+ "{?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1  . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
 				+ "} {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} } ORDER BY ?concept";
 		if (limit > 0)
 			q = q + " LIMIT " + limit; //for client-side performance issue
 		q = q + "} }";
 		logger.info("query [listDanglingConcepts]:\n" + q);
-		
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		collectionElem.setAttribute("count", "0");//default (if query return result, in the next while it's override
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String count = tb.getBinding("count").getBoundValue().getNominalValue();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String count = tb.getBinding("count").getValue().stringValue();
 			collectionElem.setAttribute("count", count);
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
+			String concept = tb.getBinding("concept").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(collectionElem, "record");
 			recordElem.setAttribute("concept", concept);
 		}
@@ -145,8 +141,8 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listCyclicConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listCyclicConcepts()  {
+		RepositoryConnection conn = getManagedConnection();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?top ?n1 ?n2 WHERE{\n"
@@ -166,16 +162,16 @@ public class ICV extends STServiceAdapterOLD {
 				+ "} UNION {\n"
 				+ "?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
 				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?top .\n"
-				+ "?top (<" + SKOS.TOPCONCEPTOF + "> | ^ <" + SKOS.HASTOPCONCEPT + ">)+ ?scheme .} }";
+				+ "?top (<" + SKOS.TOP_CONCEPT_OF + "> | ^ <" + SKOS.HAS_TOP_CONCEPT + ">)+ ?scheme .} }";
 		logger.info("query [listCyclicConcepts]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String topCyclicConcept = tb.getBinding("top").getBoundValue().getNominalValue();
-			String node1 = tb.getBinding("n1").getBoundValue().getNominalValue();
-			String node2 = tb.getBinding("n2").getBoundValue().getNominalValue();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String topCyclicConcept = tb.getBinding("top").getValue().stringValue();
+			String node1 = tb.getBinding("n1").getValue().stringValue();
+			String node2 = tb.getBinding("n2").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("topCyclicConcept", topCyclicConcept);
 			recordElem.setAttribute("node1", node1);
@@ -194,23 +190,23 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'R')")
-	public Response listConceptSchemesWithNoTopConcept() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptSchemesWithNoTopConcept() {
+		RepositoryConnection conn = getManagedConnection();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?conceptScheme WHERE {\n"
-				+ "?conceptScheme a <" + SKOS.CONCEPTSCHEME + "> .\n"
+				+ "?conceptScheme a <" + SKOS.CONCEPT_SCHEME + "> .\n"
 				+ "FILTER NOT EXISTS { {\n"
-				+ "?conceptScheme <" + SKOS.HASTOPCONCEPT + "> ?topConcept .\n"
+				+ "?conceptScheme <" + SKOS.HAS_TOP_CONCEPT + "> ?topConcept .\n"
 				+ "} UNION {\n"
-				+ "?topConcept <" + SKOS.TOPCONCEPTOF + "> ?conceptScheme . } } }";
+				+ "?topConcept <" + SKOS.TOP_CONCEPT_OF + "> ?conceptScheme . } } }";
 		logger.info("query [listConceptSchemesWithNoTopConcept]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String conceptScheme = tb.getBinding("conceptScheme").getBoundValue().getNominalValue();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String conceptScheme = tb.getBinding("conceptScheme").getValue().stringValue();
 			XMLHelp.newElement(dataElement, "conceptScheme", conceptScheme);
 		}
 		return response;
@@ -226,35 +222,35 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithNoScheme(@Optional (defaultValue="0") Integer limit) throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithNoScheme(@Optional (defaultValue="0") Integer limit){
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
-		OWLModel model = getOWLModel();
+		RepositoryConnection conn = getManagedConnection();
 		//nested query
 		String q = "SELECT ?concept ?count WHERE { \n"
 				//this counts records
 				+ "{ SELECT (COUNT (?concept) AS ?count) WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "FILTER NOT EXISTS { ?concept <" + SKOS.INSCHEME + "> ?scheme . }"
+				+ "FILTER NOT EXISTS { ?concept <" + SKOS.IN_SCHEME + "> ?scheme . }"
 				+ "\n}\n}"
 				//this retrieves data
 				+ "{ SELECT ?concept WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "FILTER NOT EXISTS { ?concept <" + SKOS.INSCHEME + "> ?scheme . } }";
+				+ "FILTER NOT EXISTS { ?concept <" + SKOS.IN_SCHEME + "> ?scheme . } }";
 		if (limit > 0)
 			q = q + "\nLIMIT " + limit; //for client-side performance issue
 		q = q + "\n}\n}";
 		logger.info("query [listConceptsWithNoScheme]:\n" + q);
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		collectionElem.setAttribute("count", "0");//default (if query return result, in the next while it's override
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String count = tb.getBinding("count").getBoundValue().getNominalValue();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String count = tb.getBinding("count").getValue().stringValue();
 			collectionElem.setAttribute("count", count);
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
+			String concept = tb.getBinding("concept").getValue().stringValue();
 			XMLHelp.newElement(collectionElem, "concept", concept);
 		}
 		return response;
@@ -270,22 +266,22 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listTopConceptsWithBroader() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listTopConceptsWithBroader(){
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?concept ?scheme WHERE {\n"
-				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
-				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
 		logger.info("query [listTopConceptsWithBroader]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String scheme = tb.getBinding("scheme").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept = tb.getBinding("concept").getValue().stringValue();
+			String scheme = tb.getBinding("scheme").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
 			recordElem.setAttribute("scheme", scheme);
@@ -303,8 +299,7 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listHierarchicallyRedundantConcepts() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listHierarchicallyRedundantConcepts(){
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?narrower ?broader WHERE{\n"
@@ -313,13 +308,14 @@ public class ICV extends STServiceAdapterOLD {
 				+ "?middle <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "FILTER(?narrower != ?middle)\n}";
 		logger.info("query [listHierarchicallyRedundantConcepts]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String narrower = tb.getBinding("narrower").getBoundValue().getNominalValue();
-			String broader = tb.getBinding("broader").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String narrower = tb.getBinding("narrower").getValue().stringValue();
+			String broader = tb.getBinding("broader").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("broader", broader);
 			recordElem.setAttribute("narrower", narrower);
@@ -340,27 +336,27 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithSameSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithSameSKOSPrefLabel() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept1 ?concept2 ?label ?lang WHERE {\n"
 				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
 				+ "?concept2 a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept1 <" + SKOS.PREFLABEL + "> ?label .\n"
-				+ "?concept2 <" + SKOS.PREFLABEL + "> ?label .\n"
+				+ "?concept1 <" + SKOS.PREF_LABEL + "> ?label .\n"
+				+ "?concept2 <" + SKOS.PREF_LABEL + "> ?label .\n"
 				+ "bind(lang(?label) as ?lang)\n"
 				+ "FILTER (str(?concept1) < str(?concept2)) }";
 		logger.info("query [listConceptsWithSameSKOSPrefLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept1 = tb.getBinding("concept1").getBoundValue().getNominalValue();
-			String concept2 = tb.getBinding("concept2").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept1 = tb.getBinding("concept1").getValue().stringValue();
+			String concept2 = tb.getBinding("concept2").getValue().stringValue();
+			String label = tb.getBinding("label").getValue().stringValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept1", concept1);
 			recordElem.setAttribute("concept2", concept2);
@@ -381,30 +377,30 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithSameSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithSameSKOSXLPrefLabel() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept1 ?concept2 ?label1 ?lang WHERE {\n"
 				+ "?concept1 a <" + SKOS.CONCEPT + "> .\n"
 				+ "?concept2 a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept1 <" + SKOSXL.PREFLABEL + "> ?xlabel1 .\n"
-				+ "?concept2 <" + SKOSXL.PREFLABEL + "> ?xlabel2 .\n"
-				+ "?xlabel1 <" + SKOSXL.LITERALFORM + "> ?label1 .\n"
-				+ "?xlabel2 <" + SKOSXL.LITERALFORM + "> ?label2 .\n"
+				+ "?concept1 <" + SKOSXL.PREF_LABEL + "> ?xlabel1 .\n"
+				+ "?concept2 <" + SKOSXL.PREF_LABEL + "> ?xlabel2 .\n"
+				+ "?xlabel1 <" + SKOSXL.LITERAL_FORM + "> ?label1 .\n"
+				+ "?xlabel2 <" + SKOSXL.LITERAL_FORM + "> ?label2 .\n"
 				+ "FILTER (?label1 = ?label2)\n"
 				+ "FILTER (str(?concept1) < str(?concept2))\n"
 				+ "bind(lang(?label1) as ?lang) }";
 		logger.info("query [listConceptsWithSameSKOSXLPrefLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept1 = tb.getBinding("concept1").getBoundValue().getNominalValue();
-			String concept2 = tb.getBinding("concept2").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label1").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept1 = tb.getBinding("concept1").getValue().stringValue();
+			String concept2 = tb.getBinding("concept2").getValue().stringValue();
+			String label = tb.getBinding("label1").getValue().stringValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept1", concept1);
 			recordElem.setAttribute("concept2", concept2);
@@ -424,39 +420,40 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithOnlySKOSAltLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithOnlySKOSAltLabel() {
 		String q = "SELECT DISTINCT ?resource ?lang ?type WHERE {\n"
 				+ "{ ?resource a <" + SKOS.CONCEPT + "> . } \n"
 				+ "UNION \n"
-				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . } \n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . } \n"
 				+ "?resource a ?type . \n"
-				+ "?resource <" + SKOS.ALTLABEL + "> ?alt .\n"
+				+ "?resource <" + SKOS.ALT_LABEL + "> ?alt .\n"
 				+ "bind (lang(?alt) as ?lang) .\n"
 				+ "FILTER NOT EXISTS {\n"
-				+ "?resource <" + SKOS.PREFLABEL + "> ?pref .\n"
+				+ "?resource <" + SKOS.PREF_LABEL + "> ?pref .\n"
 				+ "FILTER (lang(?pref) = ?lang) } }";
 		logger.info("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String type = tb.getBinding("type").getValue().stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			
 			Element recordElem = XMLHelp.newElement(dataElem, "record");
-			STRDFURI uriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(recordElem, uriElem);
+			
+			addResourceToElement(recordElem, resource, role, resource.stringValue());
+			
 			XMLHelp.newElement(recordElem, "lang", lang);
 		}
 		return response;
@@ -473,41 +470,42 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithOnlySKOSXLAltLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithOnlySKOSXLAltLabel() {
 		String q = "SELECT DISTINCT ?resource ?lang ?type WHERE { \n"
 				+ "{ ?resource a <" + SKOS.CONCEPT + "> . } \n"
 				+ "UNION \n"
-				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . } \n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . } \n"
 				+ "?resource a ?type . \n"
-				+ "?resource <" + SKOSXL.ALTLABEL + "> ?alt . \n"
-				+ "?alt <" + SKOSXL.LITERALFORM + "> ?literalFormAlt . \n"
+				+ "?resource <" + SKOSXL.ALT_LABEL + "> ?alt . \n"
+				+ "?alt <" + SKOSXL.LITERAL_FORM + "> ?literalFormAlt . \n"
 				+ "bind (lang(?literalFormAlt) as ?lang) . \n"
 				+ "FILTER NOT EXISTS { \n"
-				+ "?resource <" + SKOSXL.PREFLABEL + "> ?pref . \n"
-				+ "?pref <" + SKOSXL.LITERALFORM + "> ?literalFormPref . \n"
+				+ "?resource <" + SKOSXL.PREF_LABEL + "> ?pref . \n"
+				+ "?pref <" + SKOSXL.LITERAL_FORM + "> ?literalFormPref . \n"
 				+ "FILTER (lang(?literalFormPref) = ?lang) } }";
 		logger.info("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElem = response.getDataElement();
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String type = tb.getBinding("type").getValue().stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			
 			Element recordElem = XMLHelp.newElement(dataElem, "record");
-			STRDFURI uriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(recordElem, uriElem);
+			
+			addResourceToElement(recordElem, resource, role, resource.stringValue());
+			
 			XMLHelp.newElement(recordElem, "lang", lang);
 		}
 		return response;
@@ -523,35 +521,35 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithNoSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithNoSKOSPrefLabel() {
 		String q = "SELECT ?resource ?type WHERE {\n"
 				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
 				+ " UNION \n"
-				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . }\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
 				+ "?resource a ?type . \n"
 				+ "FILTER NOT EXISTS {\n"
-				+ "?resource <" + SKOS.PREFLABEL + "> ?prefLabel .\n"
+				+ "?resource <" + SKOS.PREF_LABEL + "> ?prefLabel .\n"
 				+ "} }";
 		logger.info("query [listResourcesWithNoSKOSPrefLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		Collection<STRDFURI> result = STRDFNodeFactory.createEmptyURICollection();
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		Element collectionElement = XMLHelp.newElement(dataElement, "collection");
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String type = tb.getBinding("type").getValue().stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
-			result.add(STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI()));
+			addResourceToElement(collectionElement, resource, role, resource.stringValue());
 		}
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		RDFXMLHelp.addRDFNodes(response, result);
 		return response;
 	}
 	
@@ -565,35 +563,35 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithNoSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException,
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithNoSKOSXLPrefLabel()  {
 		String q = "SELECT ?resource ?type WHERE {\n"
 				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
 				+ " UNION \n"
-				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . }\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
 				+ "?resource a ?type . \n"
 				+ "FILTER NOT EXISTS {\n"
-				+ "?resource <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
+				+ "?resource <" + SKOSXL.PREF_LABEL + "> ?prefLabel .\n"
 				+ "} }";
 		logger.info("query [listResourcesWithNoSKOSXLPrefLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		Collection<STRDFURI> result = STRDFNodeFactory.createEmptyURICollection();
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
+		Element dataElement = response.getDataElement();
+		Element collectionElement = XMLHelp.newElement(dataElement, "collection");
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String type = tb.getBinding("type").getValue().stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
-			result.add(STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI()));
+			addResourceToElement(collectionElement, resource, role, resource.stringValue());
 		}
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		RDFXMLHelp.addRDFNodes(response, result);
 		return response;
 	}
 	
@@ -607,24 +605,24 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithMultipleSKOSPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithMultipleSKOSPrefLabel() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.PREFLABEL + "> ?label1.\n"
-				+ "?concept <" + SKOS.PREFLABEL + "> ?label2.\n"
+				+ "?concept <" + SKOS.PREF_LABEL + "> ?label1.\n"
+				+ "?concept <" + SKOS.PREF_LABEL + "> ?label2.\n"
 				+ "FILTER ( ?label1 != ?label2 && lang(?label1) = lang(?label2) )\n"
 				+ "bind(lang(?label1) as ?lang) }";
 		logger.info("query [listConceptsWithMultipleSKOSPrefLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept = tb.getBinding("concept").getValue().stringValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
 			recordElem.setAttribute("lang", lang);
@@ -642,26 +640,26 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithMultipleSKOSXLPrefLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithMultipleSKOSXLPrefLabel() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?label1 .\n"
-				+ "?concept <" + SKOSXL.PREFLABEL + "> ?label2 .\n"
-				+ "?label1 <" + SKOSXL.LITERALFORM + "> ?lit1 .\n"
-				+ "?label2 <" + SKOSXL.LITERALFORM + "> ?lit2 .\n"
+				+ "?concept <" + SKOSXL.PREF_LABEL + "> ?label1 .\n"
+				+ "?concept <" + SKOSXL.PREF_LABEL + "> ?label2 .\n"
+				+ "?label1 <" + SKOSXL.LITERAL_FORM + "> ?lit1 .\n"
+				+ "?label2 <" + SKOSXL.LITERAL_FORM + "> ?lit2 .\n"
 				+ "bind(lang(?lit1) as ?lang)\n"
 				+ "FILTER ( ?label1 != ?label2 && lang(?lit1) = lang(?lit2) ) }";
 		logger.info("query [listConceptsWithMultipleSKOSXLPrefLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept = tb.getBinding("concept").getValue().stringValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
 			recordElem.setAttribute("lang", lang);
@@ -680,49 +678,47 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithNoLanguageTagSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithNoLanguageTagSKOSLabel() {
 		String q = "SELECT ?resource ?labelPred ?label ?type WHERE {\n"
 				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
 				+ "UNION \n"
-				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . }\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
 				+ "?resource a ?type \n"
-				+ "{ bind(<" + SKOS.PREFLABEL + "> as ?labelPred)}\n"
+				+ "{ bind(<" + SKOS.PREF_LABEL + "> as ?labelPred)}\n"
 				+ "UNION\n"
-				+ "{bind(<" + SKOS.ALTLABEL + "> as ?labelPred)}\n"
+				+ "{bind(<" + SKOS.ALT_LABEL + "> as ?labelPred)}\n"
 				+ "?resource ?labelPred ?label .\n"
 				+ "FILTER (lang(?label) = '') }";
 		logger.info("query [listResourcesWithNoLanguageTagSKOSLabel]:\n" + q);
-		OWLModel model = getOWLModel();
+		RepositoryConnection conn = getManagedConnection();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String type = tb.getBinding("type").getValue().stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			
 			Element resourceElem = XMLHelp.newElement(recordElem, "resource");
-			STRDFURI stResource = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(resourceElem, stResource);
+			addResourceToElement(resourceElem, resource, role, resource.stringValue());
 			
 			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
-			ARTURIResource labelPred = tb.getBinding("labelPred").getBoundValue().asURIResource();
-			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRole.annotationProperty, true, model.getQName(labelPred.getURI()));
-			RDFXMLHelp.addRDFNode(predicateElem, stPredicate);
+			IRI labelPred = (IRI) tb.getValue("labelPred");
+			addResourceToElement(predicateElem, labelPred, RDFResourceRole.annotationProperty, 
+					TurtleHelp.toQname(labelPred, ns2PrefixMapping(conn)));
 			
 			Element objectElem = XMLHelp.newElement(recordElem, "object");
-			ARTLiteral label = tb.getBinding("label").getBoundValue().asLiteral();
-			STRDFLiteral stObject = STRDFNodeFactory.createSTRDFLiteral(label, true, label.getLabel());
-			RDFXMLHelp.addRDFNode(objectElem, stObject);
+			Literal label = (Literal) tb.getValue("label");
+			addLiteralToElement(objectElem, label);
 		}
 		return response;
 	}
@@ -738,49 +734,47 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithNoLanguageTagSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithNoLanguageTagSKOSXLLabel() {
 		String q = "SELECT ?resource ?labelPred ?xlabel ?literalForm ?type WHERE {\n"
 				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
 				+ "UNION \n"
-				+ "{ ?resource a <" + SKOS.CONCEPTSCHEME + "> . }\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
 				+ "?resource a ?type . \n"
 				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
 				+ "?resource ?labelPred ?xlabel .\n"
-				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?literalForm .\n"
+				+ "?xlabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
 				+ "FILTER (lang(?literalForm)= '') }";
 		logger.info("query [listConceptsWithNoLanguageTagSKOSXLLabel]:\n" + q);
-		OWLModel model = getOWLModel();
+		RepositoryConnection conn = getManagedConnection();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String type = tb.getBinding("type").getValue().stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			
 			Element resourceElem = XMLHelp.newElement(recordElem, "resource");
-			STRDFURI stResource = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(resourceElem, stResource);
+			addResourceToElement(resourceElem, resource, role, resource.stringValue());
 			
 			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
-			ARTURIResource labelPred = tb.getBinding("labelPred").getBoundValue().asURIResource();
-			STRDFURI stPredicate = STRDFNodeFactory.createSTRDFURI(labelPred, RDFResourceRole.objectProperty, true, model.getQName(labelPred.getURI()));
-			RDFXMLHelp.addRDFNode(predicateElem, stPredicate);
+			IRI labelPred = (IRI) tb.getValue("labelPred");
+			addResourceToElement(predicateElem, labelPred, RDFResourceRole.objectProperty,
+					TurtleHelp.toQname(labelPred, ns2PrefixMapping(conn)) );
 			
 			Element objectElem = XMLHelp.newElement(recordElem, "object");
-			ARTResource label = tb.getBinding("xlabel").getBoundValue().asResource();
-			ARTLiteral literalForm = tb.getBinding("literalForm").getBoundValue().asLiteral();
-			STRDFResource stObject = STRDFNodeFactory.createSTRDFResource(label, RDFResourceRole.xLabel, true, literalForm.getLabel());
-			RDFXMLHelp.addRDFNode(objectElem, stObject);
+			Resource label = (Resource) tb.getValue("xlabel");
+			Literal literalForm = (Literal) tb.getValue("literalForm");
+			addResourceToElement(objectElem, label, RDFResourceRole.xLabel,  literalForm.getLabel());
 		}
 		return response;
 		
@@ -797,36 +791,35 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithOverlappedSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithOverlappedSKOSLabel()  {
 		String q = "SELECT ?resource ?label ?lang ?type WHERE {\n"
 				+ "?resource a ?type .\n"
-				+ "?resource <" + SKOS.PREFLABEL + "> ?label .\n"
-				+ "?resource <" + SKOS.ALTLABEL + "> ?label .\n"
+				+ "?resource <" + SKOS.PREF_LABEL + "> ?label .\n"
+				+ "?resource <" + SKOS.ALT_LABEL + "> ?label .\n"
 				+ "bind(lang(?label) as ?lang) . }";
 		logger.info("query [listResourcesWithOverlappedSKOSLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
-			String type = tb.getBinding("type").getBoundValue().getNominalValue();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			String label = tb.getValue("label").stringValue();
+			String lang = tb.getValue("lang").stringValue();
+			String type = tb.getValue("type").stringValue();
 			RDFResourceRole role = RDFResourceRole.concept;
 			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
-			STRDFURI uriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(recordElem, uriElem);
-			STRDFLiteral labelElem = STRDFNodeFactory.createSTRDFLiteral(model.createLiteral(label, lang), true);
-			RDFXMLHelp.addRDFNode(recordElem, labelElem);
+			addResourceToElement(recordElem,resource, role, resource.stringValue());
+			
+			addLiteralToElement(recordElem, conn.getValueFactory().createLiteral(label, lang));
 		}
 		return response;
 	}
@@ -842,52 +835,50 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesWithOverlappedSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listResourcesWithOverlappedSKOSXLLabel()  {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?resource ?type ?prefLabel ?altLabel ?literalForm ?lang WHERE {\n"
 				+ "?resource a ?type .\n"
-				+ "?resource <" + SKOSXL.PREFLABEL + "> ?prefLabel .\n"
-				+ "?resource <" + SKOSXL.ALTLABEL + "> ?altLabel .\n"
-				+ "?prefLabel <" + SKOSXL.LITERALFORM + "> ?literalForm .\n"
-				+ "?altLabel <" + SKOSXL.LITERALFORM + "> ?literalForm .\n"
+				+ "?resource <" + SKOSXL.PREF_LABEL + "> ?prefLabel .\n"
+				+ "?resource <" + SKOSXL.ALT_LABEL + "> ?altLabel .\n"
+				+ "?prefLabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
+				+ "?altLabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
 				+ "bind(lang(?literalForm) as ?lang) . }";
 		logger.info("query [listResourcesWithOverlappedSKOSXLLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			ARTURIResource resource = tb.getBinding("resource").getBoundValue().asURIResource();
-			ARTURIResource type = tb.getBinding("type").getBoundValue().asURIResource();
-			ARTResource prefLabel = tb.getBinding("prefLabel").getBoundValue().asResource();
-			ARTResource altLabel = tb.getBinding("altLabel").getBoundValue().asResource();
-			String literalForm = tb.getBinding("literalForm").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			IRI resource = (IRI) tb.getValue("resource");
+			IRI type = (IRI) tb.getValue("type");
+			Resource prefLabel = (Resource) tb.getValue("prefLabel");
+			Resource altLabel = (Resource) tb.getValue("altLabel");
+			String literalForm = tb.getValue("literalForm").stringValue();
+			String lang = tb.getValue("lang").stringValue();
 			
 			RDFResourceRole role = RDFResourceRole.concept;
-			if (type.equals(SKOS.Res.CONCEPT)) {
+			if (type.equals(SKOS.CONCEPT)) {
 				role = RDFResourceRole.concept;
-			} else if (type.equals(SKOS.Res.CONCEPTSCHEME)) {
+			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
 				role = RDFResourceRole.conceptScheme;
-			} else if (type.equals(SKOS.Res.COLLECTION)) {
+			} else if (type.equals(SKOS.COLLECTION)) {
 				role = RDFResourceRole.skosCollection;
-			} else if (type.equals(SKOS.Res.ORDEREDCOLLECTION)) {
+			} else if (type.equals(SKOS.ORDERED_COLLECTION)) {
 				role = RDFResourceRole.skosOrderedCollection;
 			}
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
-			STRDFURI resUriElem = STRDFNodeFactory.createSTRDFURI(resource, role, true, resource.getURI());
-			RDFXMLHelp.addRDFNode(recordElem, resUriElem);
+			addResourceToElement(recordElem, resource, role, resource.stringValue());
+
 			
-			STRDFResource resPrefLabel = STRDFNodeFactory.createSTRDFResource(prefLabel, RDFResourceRole.xLabel, true, literalForm);
 			Element prefLabelElem = XMLHelp.newElement(recordElem, "prefLabel");
-			Element resPrefLabelElem = RDFXMLHelp.addRDFNode(prefLabelElem, resPrefLabel);
+			Element resPrefLabelElem = addResourceToElement(prefLabelElem, prefLabel, RDFResourceRole.xLabel, literalForm);
 			resPrefLabelElem.setAttribute("lang", lang);
 			
-			STRDFResource resAltLabel = STRDFNodeFactory.createSTRDFResource(altLabel, RDFResourceRole.xLabel, true, literalForm);
 			Element altLabelElem = XMLHelp.newElement(recordElem, "altLabel");
-			Element resAltLabelElem = RDFXMLHelp.addRDFNode(altLabelElem, resAltLabel);
+			Element resAltLabelElem = addResourceToElement(altLabelElem, altLabel, RDFResourceRole.xLabel, literalForm);
 			resAltLabelElem.setAttribute("lang", lang);
 		}
 		return response;
@@ -905,28 +896,28 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithExtraWhitespaceInSKOSLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithExtraWhitespaceInSKOSLabel() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE {\n"
-				+ "{ bind(<" + SKOS.PREFLABEL + "> as ?labelPred)}\n"
+				+ "{ bind(<" + SKOS.PREF_LABEL + "> as ?labelPred)}\n"
 				+ "UNION\n"
-				+ "{bind(<" + SKOS.ALTLABEL + "> as ?labelPred)}\n"
+				+ "{bind(<" + SKOS.ALT_LABEL + "> as ?labelPred)}\n"
 				+ "?concept ?labelPred ?skoslabel .\n"
 				+ "bind(str(?skoslabel) as ?label)\n"
 				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 				+ "bind(lang(?skoslabel) as ?lang) }";
 		logger.info("query [listConceptsWithExtraWhitespaceInSKOSLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String labelPred = tb.getBinding("labelPred").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept = tb.getBinding("concept").getValue().stringValue();
+			String labelPred = tb.getBinding("labelPred").getValue().stringValue();
+			String label = tb.getBinding("label").getValue().stringValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
 			recordElem.setAttribute("labelPred", labelPred);
@@ -948,29 +939,29 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Response listConceptsWithExtraWhitespaceInSKOSXLLabel() throws QueryEvaluationException, UnsupportedQueryLanguageException, 
-			ModelAccessException, MalformedQueryException {
+	public Response listConceptsWithExtraWhitespaceInSKOSXLLabel() {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		String q = "SELECT ?concept ?labelPred ?label ?lang WHERE {\n"
-				+ "{ bind(<" + SKOSXL.PREFLABEL + "> as ?labelPred)}\n"
+				+ "{ bind(<" + SKOSXL.PREF_LABEL + "> as ?labelPred)}\n"
 				+ "UNION\n"
-				+ "{bind(<" + SKOSXL.ALTLABEL + "> as ?labelPred)}\n"
+				+ "{bind(<" + SKOSXL.ALT_LABEL + "> as ?labelPred)}\n"
 				+ "?concept ?labelPred ?xlabel .\n"
-				+ "?xlabel <" + SKOSXL.LITERALFORM + "> ?litForm .\n"
+				+ "?xlabel <" + SKOSXL.LITERAL_FORM + "> ?litForm .\n"
 				+ "bind(str(?litForm) as ?label)\n"
 				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 				+ "bind(lang(?litForm) as ?lang) }";
 		logger.info("query [listConceptsWithExtraWhitespaceInSKOSXLLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String concept = tb.getBinding("concept").getBoundValue().getNominalValue();
-			String labelPred = tb.getBinding("labelPred").getBoundValue().getNominalValue();
-			String label = tb.getBinding("label").getBoundValue().getNominalValue();
-			String lang = tb.getBinding("lang").getBoundValue().getNominalValue();
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String concept = tb.getBinding("concept").getValue().stringValue();
+			String labelPred = tb.getBinding("labelPred").getValue().stringValue();
+			String label = tb.getBinding("label").getValue().stringValue();
+			String lang = tb.getBinding("lang").getValue().stringValue();
 			Element recordElem = XMLHelp.newElement(dataElement, "record");
 			recordElem.setAttribute("concept", concept);
 			recordElem.setAttribute("labelPred", labelPred);
@@ -990,26 +981,25 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(xLabel)', 'R')")
-	public Response listDanglingXLabels() throws UnsupportedQueryLanguageException, ModelAccessException,
-			MalformedQueryException, QueryEvaluationException {
+	public Response listDanglingXLabels() {
 		String q = "SELECT ?xlabel WHERE {\n"
 				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
 				+ "FILTER NOT EXISTS {\n" 
-				+ "?concept <" + SKOSXL.PREFLABEL + "> | <" + SKOSXL.ALTLABEL + "> | <" + SKOSXL.HIDDENLABEL + "> ?xlabel.\n"
+				+ "?concept <" + SKOSXL.PREF_LABEL + "> | <" + SKOSXL.ALT_LABEL + "> | <" + SKOSXL.HIDDEN_LABEL + "> ?xlabel.\n"
 				+ "} }";
 		logger.info("query [listDanglingXLabels]:\n" + q);
-		OWLModel model = getOWLModel();
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
-		Collection<STRDFResource> result = STRDFNodeFactory.createEmptyResourceCollection();
-		while (itTupleBinding.hasNext()) {
-			TupleBindings tb = itTupleBinding.next();
-			ARTNode xlabelNode = tb.getBinding("xlabel").getBoundValue();
-			result.add(STRDFNodeFactory.createSTRDFResource(
-					xlabelNode.asResource(), RDFResourceRole.xLabel, true, xlabelNode.getNominalValue()));
-		}
+		RepositoryConnection conn = getManagedConnection();
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		RDFXMLHelp.addRDFNodes(response, result);
+		Element dataElement = response.getDataElement();
+		Element collectionElement = XMLHelp.newElement(dataElement, "collection");
+		while (tupleQueryResult.hasNext()) {
+			BindingSet tb = tupleQueryResult.next();
+			Resource xlabelNode = (Resource) tb.getValue("xlabel");
+			addResourceToElement(collectionElement, xlabelNode, RDFResourceRole.xLabel, xlabelNode.stringValue());
+		}
 		return response;
 	}
 	
@@ -1017,12 +1007,11 @@ public class ICV extends STServiceAdapterOLD {
 	
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Response listResourcesURIWithSpace(@Optional (defaultValue="0") Integer limit) throws QueryEvaluationException,
-		UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException {
+	public Response listResourcesURIWithSpace(@Optional (defaultValue="0") Integer limit)  {
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element collectionElem = XMLHelp.newElement(dataElement, "collection");
-		OWLModel model = getOWLModel();
+		RepositoryConnection conn = getManagedConnection();
 		//nested query
 		String q = "SELECT ?resource ?count WHERE { \n"+
 				//this counts records
@@ -1049,14 +1038,15 @@ public class ICV extends STServiceAdapterOLD {
 				q = q + "\nLIMIT " + limit; //for client-side performance issue
 		q = q + "\n} \n}";
 		logger.info("query [listResourcesURIWithSpace]:\n" + q);
-		TupleQuery query = model.createTupleQuery(q);
-		TupleBindingsIterator itTupleBinding = query.evaluate(false);
+		TupleQuery query = conn.prepareTupleQuery(q);
+		query.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = query.evaluate();
 		collectionElem.setAttribute("count", "0");//default (if query return result, in the next while it's override
-		while (itTupleBinding.hasNext()){
-			TupleBindings tb = itTupleBinding.next();
-			String count = tb.getBinding("count").getBoundValue().getNominalValue();
+		while (tupleQueryResult.hasNext()){
+			BindingSet tb = tupleQueryResult.next();
+			String count = tb.getBinding("count").getValue().stringValue();
 			collectionElem.setAttribute("count", count);
-			String resource = tb.getBinding("resource").getBoundValue().getNominalValue();
+			String resource = tb.getBinding("resource").getValue().stringValue();
 			XMLHelp.newElement(collectionElem, "resource", resource);
 		}
 		return response;
@@ -1075,37 +1065,36 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
-	public Response setAllDanglingAsTopConcept(ARTURIResource scheme) 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response setAllDanglingAsTopConcept(IRI scheme) {
 		String q = "INSERT {\n"
-				+ "GRAPH <" + getWorkingGraph().getNominalValue() + ">\n"
-				+ "{ ?concept <" + SKOS.TOPCONCEPTOF + "> <" + scheme.getURI() + "> }\n"
+				+ "GRAPH <" + getWorkingGraph().stringValue() + ">\n"
+				+ "{ ?concept <" + SKOS.TOP_CONCEPT_OF + "> <" + scheme.stringValue() + "> }\n"
 				+ "} WHERE {\n"
-				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
 				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
 				+ "} {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} }";
 		logger.info("query [setAllDanglingAsTopConcept]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1121,37 +1110,36 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
-	public Response setBroaderForAllDangling(ARTURIResource scheme, ARTURIResource broader) 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response setBroaderForAllDangling(IRI scheme, IRI broader) {
 		String q = "INSERT {\n"
-				+ "GRAPH <" + getWorkingGraph().getNominalValue() + ">\n"
-				+ "{ ?concept <" + SKOS.BROADER + "> <" + broader.getURI() + "> }\n"
+				+ "GRAPH <" + getWorkingGraph().stringValue() + ">\n"
+				+ "{ ?concept <" + SKOS.BROADER + "> <" + broader.stringValue() + "> }\n"
 				+ "} WHERE {\n"
-				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
 				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
 				+ "} {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} }";
 		logger.info("query [setBroaderForAllDangling]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1166,35 +1154,34 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
-	public Response removeAllDanglingFromScheme(ARTURIResource scheme) 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
-		String q = "DELETE { ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
+	public Response removeAllDanglingFromScheme(IRI scheme) {
+		String q = "DELETE { ?concept <" + SKOS.IN_SCHEME + "> <" + scheme.stringValue() + "> }\n"
 				+ "WHERE {\n"
-				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
 				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
 				+ "} {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "}\n}";
 		logger.info("query [removeAllDanglingFromScheme]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1209,39 +1196,38 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'D')")
-	public Response deleteAllDanglingConcepts(ARTURIResource scheme) 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response deleteAllDanglingConcepts(IRI scheme) {
 		String q = "DELETE { "
 				+ "?concept ?p1 ?o .\n"
 				+ "?s ?p2 ?concept \n"
 				+ "} WHERE {\n"
-				+ "BIND(<" + scheme.getURI() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept }\n"
+				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
+				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
+				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
 				+ "OPTIONAL { ?concept ?p1 ?o . }\n"
 				+ "OPTIONAL { ?s ?p2 ?concept . }\n"
 				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.INSCHEME + "> ?scheme  . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
 				+ "} {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
 				+ "} UNION {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.INSCHEME + "> ?scheme .\n"
+				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.INSCHEME + "> ?scheme . }\n"
+				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "}\n}";
 		logger.info("query [deleteAllDanglingConcepts]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1256,18 +1242,17 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, scheme)', 'C')")
-	public Response addAllConceptsToScheme(ARTURIResource scheme) 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response addAllConceptsToScheme(IRI scheme) {
 		String q = "INSERT {\n"
-				+ "GRAPH <" + getWorkingGraph().getNominalValue() + ">\n"
-				+ "{ ?concept <" + SKOS.INSCHEME + "> <" + scheme.getURI() + "> }\n"
+				+ "GRAPH <" + getWorkingGraph().stringValue() + ">\n"
+				+ "{ ?concept <" + SKOS.IN_SCHEME + "> <" + scheme.stringValue() + "> }\n"
 				+ "} WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "FILTER NOT EXISTS { ?concept <" + SKOS.INSCHEME + "> ?scheme . } }";
+				+ "FILTER NOT EXISTS { ?concept <" + SKOS.IN_SCHEME + "> ?scheme . } }";
 		logger.info("query [addAllConceptsToScheme]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1283,20 +1268,19 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
-	public Response removeBroadersToConcept(ARTURIResource concept, ARTURIResource scheme)
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response removeBroadersToConcept(IRI concept, IRI scheme) {
 		String q = "DELETE {\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broader .\n"
 				+ "?broader <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "} WHERE {\n"
-				+ "BIND (<" + concept.getURI() + "> as ?concept) \n"
-				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+				+ "BIND (<" + concept.stringValue() + "> as ?concept) \n"
+				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
-				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
 		logger.info("query [removeBroadersToConcept]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1311,19 +1295,18 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
-	public Response removeBroadersToAllConcepts()  
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response removeBroadersToAllConcepts() {
 		String q = "DELETE {\n"
 				+ "?concept <" + SKOS.BROADER + "> ?broader .\n"
 				+ "?broader <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "} WHERE {\n"
-				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
-				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
 		logger.info("query [removeBroadersToAllConcepts]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1337,19 +1320,18 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
-	public Response removeAllAsTopConceptsWithBroader() 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response removeAllAsTopConceptsWithBroader() {
 		String q = "DELETE {\n"
-				+ "?concept <" + SKOS.TOPCONCEPTOF + "> ?scheme .\n"
-				+ "?scheme <" + SKOS.HASTOPCONCEPT + "> ?concept .\n"
+				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme .\n"
+				+ "?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept .\n"
 				+ "} WHERE {\n"
-				+ "?concept <" + SKOS.TOPCONCEPTOF + "> | ^<" + SKOS.HASTOPCONCEPT + "> ?scheme .\n"
+				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
    				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
-   				+ "?broader <" + SKOS.INSCHEME + "> ?scheme . }";
+   				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
 		logger.info("query [removeAllAsTopConceptsWithBroader]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1363,8 +1345,7 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
-	public Response removeAllHierarchicalRedundancy() 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response removeAllHierarchicalRedundancy() {
 		String q = "DELETE {\n"
 				+ "?narrower <" + SKOS.BROADER + "> ?broader .\n"
 				+ "?broader <" + SKOS.NARROWER + "> ?narrower .\n"
@@ -1374,9 +1355,9 @@ public class ICV extends STServiceAdapterOLD {
 				+ "?middle <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "FILTER(?narrower != ?middle) }";
 		logger.info("query [removeAllHierarchicalRedundancy]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1390,8 +1371,7 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(xLabel)', 'D')")
-	public Response deleteAllDanglingXLabel() 
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response deleteAllDanglingXLabel() {
 		String q = "DELETE {\n"
 				+ "?s ?p1 ?xlabel .\n"
 				+ "?xlabel ?p2 ?o .\n"
@@ -1400,12 +1380,12 @@ public class ICV extends STServiceAdapterOLD {
 				+ "OPTIONAL { ?s ?p1 ?xlabel . }\n"
 				+ "OPTIONAL { ?xlabel ?p2 ?o . }\n"
 				+ "FILTER NOT EXISTS {\n"
-				+ "?concept <" + SKOSXL.PREFLABEL + "> | <" + SKOSXL.ALTLABEL + "> | <" + SKOSXL.HIDDENLABEL + "> ?xlabel.\n"
+				+ "?concept <" + SKOSXL.PREF_LABEL + "> | <" + SKOSXL.ALT_LABEL + "> | <" + SKOSXL.HIDDEN_LABEL + "> ?xlabel.\n"
 				+ "} }";
 		logger.info("query [deleteAllDanglingXLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 	
@@ -1422,30 +1402,77 @@ public class ICV extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, lexicalization)', 'C')")
-	public Response setDanglingXLabel(ARTURIResource concept, ARTURIResource xlabelPred, ARTResource xlabel)
-			throws UnsupportedQueryLanguageException, ModelAccessException, MalformedQueryException, QueryEvaluationException {
+	public Response setDanglingXLabel(IRI concept, IRI xlabelPred, Resource xlabel) {
 		String q = "";
-		if (xlabelPred.equals(SKOSXL.Res.PREFLABEL)) {
+		if (xlabelPred.equals(SKOSXL.PREF_LABEL)) {
 			q = "DELETE {\n"
-					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> ?oldPrefLabel\n"
+					+ "<" + concept.stringValue() + "> <" + SKOSXL.PREF_LABEL + "> ?oldPrefLabel\n"
 					+ "} INSERT {\n"
 					+ "GRAPH <" + getWorkingGraph() + "> {\n"
-					+ "<" + concept.getURI() + "> <" + SKOSXL.ALTLABEL + "> ?oldPrefLabel .\n"
-					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> <" + xlabel.getNominalValue() + "> . }\n"
+					+ "<" + concept.stringValue() + "> <" + SKOSXL.ALT_LABEL + "> ?oldPrefLabel .\n"
+					+ "<" + concept.stringValue() + "> <" + SKOSXL.PREF_LABEL + "> <" + xlabel.stringValue() + "> . }\n"
 					+ "} WHERE {\nOPTIONAL {\n"
-					+ "<" + concept.getURI() + "> <" + SKOSXL.PREFLABEL + "> ?oldPrefLabel \n"
+					+ "<" + concept.stringValue() + "> <" + SKOSXL.PREF_LABEL + "> ?oldPrefLabel \n"
 					+ "} }";
 		} else { //altLabel or hiddenLabel
 			q = "INSERT DATA {\n"
 					+ "GRAPH <" + getWorkingGraph() + "> {\n"
-					+ "<" + concept.getURI() + "> <" + xlabelPred.getURI() + "> <" + xlabel.getNominalValue() + "> \n"
+					+ "<" + concept.stringValue() + "> <" + xlabelPred.stringValue() + "> <" + xlabel.stringValue() + "> \n"
 					+ "}\n}";
 		}
 		logger.info("query [setDanglingXLabel]:\n" + q);
-		OWLModel model = getOWLModel();
-		Update update = model.createUpdateQuery(q);
-		update.evaluate(false);
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(q);
+		update.execute();
 		return createReplyResponse(RepliesStatus.ok);
 	}
 
+	
+	private Element addResourceToElement(Element parent, Resource resource, RDFResourceRole role, String show){
+		Element nodeElement;
+		if(resource instanceof IRI){
+			nodeElement = XMLHelp.newElement(parent, "uri");
+		} else { // (node.isBlank())
+			nodeElement = XMLHelp.newElement(parent, "bnode");
+		}
+		nodeElement.setTextContent(resource.stringValue());
+		if (role != null)
+			nodeElement.setAttribute("role", role.toString());
+		if (show != null)
+			nodeElement.setAttribute("show", show);
+		//explicit is set to true
+		nodeElement.setAttribute("explicit", Boolean.toString(true));
+		
+		//OLD
+		//serializeMap(nodeElement, node);
+		
+		return nodeElement;
+	}
+	
+	private Element addLiteralToElement(Element parent, Literal literal){
+		Element nodeElement;
+		if(literal.getLanguage().isPresent()){
+			nodeElement = XMLHelp.newElement(parent, "plainLiteral");
+			nodeElement.setAttribute("lang", literal.getLanguage().get());
+		} else if(literal.getDatatype()==null){
+			nodeElement = XMLHelp.newElement(parent, "plainLiteral");
+		} else{
+			nodeElement = XMLHelp.newElement(parent, "typedLiteral");
+			nodeElement.setAttribute("type", literal.getDatatype().stringValue());
+		}
+		nodeElement.setTextContent(literal.stringValue());
+		//explicit is set to true
+		nodeElement.setAttribute("explicit", Boolean.toString(true));
+		
+		//OLD
+		//serializeMap(nodeElement, node);
+
+		return nodeElement;
+	}
+	
+	private static Map<String, String> ns2PrefixMapping(RepositoryConnection conn){
+		return QueryResults.stream(conn.getNamespaces()).collect(
+				toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
+	}
+	
 }
