@@ -184,25 +184,22 @@ public class Search extends STServiceAdapter {
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
 				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
-				"\n}";
-
-		//if you are searching among concepts or collections, search in the skos:prefLabel/altLabel and 
-		// skosxl:prefLabel/altLabel
-		
-		if(isConceptWanted || isConceptSchemeWanted || isCollectionWanted ){
-			query+="\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?skosLabel ."+
-					searchModePrepareQuery("?skosLabel", searchString, searchModeSelected) +
-					"\n}" +
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
-					searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
-					"\n}";
-		}
-		query+=addShowPart("?show", langArray)+
+				"\n}"+
+		//search in skos:prefLabel and skos:altLabel
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?skosLabel ."+
+				searchModePrepareQuery("?skosLabel", searchString, searchModeSelected) +
+				"\n}" +
+				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
+				searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
+				"\n}"+
+		//add the show part according to the Lexicalization Model
+				addShowPart("?show", langArray)+
 				"\n}";
 		//@formatter:on
 		
