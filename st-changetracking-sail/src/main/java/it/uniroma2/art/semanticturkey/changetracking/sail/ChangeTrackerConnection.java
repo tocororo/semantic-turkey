@@ -27,7 +27,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
@@ -191,6 +190,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 					supportRepoConn.begin();
 
+					Model validatableCommitMetadataModel = new LinkedHashModel();
+
 					IRI validatableCommit = supportRepoConn.getValueFactory().createIRI(sail.metadataNS,
 							UUID.randomUUID().toString());
 					IRI validatableModifiedTriples = supportRepoConn.getValueFactory()
@@ -206,6 +207,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 							sail.validationGraph);
 					supportRepoConn.add(validatableModifiedTriples, PROV.WAS_GENERATED_BY, validatableCommit,
 							sail.validationGraph);
+
+					generateCommitMetadataModel(validatableCommit, validatableCommitMetadataModel);
+
+					if (!validatableCommitMetadataModel.isEmpty()) {
+						supportRepoConn.add(validatableCommitMetadataModel, sail.validationGraph);
+
+					}
 
 					validatableOpertionHandler.getAdditions()
 							.forEach(consumer2.apply(validatableModifiedTriples).apply(supportRepoConn)
@@ -306,22 +314,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 				commitIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
 
-				stagingArea.getCommitMetadataModel().stream().map(st -> {
-					Resource s = st.getSubject();
-					IRI p = st.getPredicate();
-					Value o = st.getObject();
-
-					boolean refactorS = s.equals(CHANGETRACKER.COMMIT_METADATA);
-					boolean refactorP = p.equals(CHANGETRACKER.COMMIT_METADATA);
-					boolean refactorO = o.equals(CHANGETRACKER.COMMIT_METADATA);
-
-					if (refactorS || refactorP || refactorO) {
-						return SimpleValueFactory.getInstance().createStatement(refactorS ? commitIRI : s,
-								refactorP ? commitIRI : p, refactorO ? commitIRI : o);
-					} else {
-						return st;
-					}
-				}).forEach(commitMetadataModel::add);
+				generateCommitMetadataModel(commitIRI, commitMetadataModel);
 
 				supporRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.historyGraph);
 				supporRepoConn.add(commitIRI, PROV.STARTED_AT_TIME, startTime, sail.historyGraph);
@@ -404,6 +397,25 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or not
 		// the commit has been applied to the data repo
+	}
+
+	protected void generateCommitMetadataModel(IRI commitIRI, Collection<? super Statement> model) {
+		stagingArea.getCommitMetadataModel().stream().map(st -> {
+			Resource s = st.getSubject();
+			IRI p = st.getPredicate();
+			Value o = st.getObject();
+
+			boolean refactorS = s.equals(CHANGETRACKER.COMMIT_METADATA);
+			boolean refactorP = p.equals(CHANGETRACKER.COMMIT_METADATA);
+			boolean refactorO = o.equals(CHANGETRACKER.COMMIT_METADATA);
+
+			if (refactorS || refactorP || refactorO) {
+				return SimpleValueFactory.getInstance().createStatement(refactorS ? commitIRI : s,
+						refactorP ? commitIRI : p, refactorO ? commitIRI : o);
+			} else {
+				return st;
+			}
+		}).forEach(model::add);
 	}
 
 	protected void recordModifiedTriples(

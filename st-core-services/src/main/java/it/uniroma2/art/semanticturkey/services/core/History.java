@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,25 +10,19 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -39,7 +32,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitDelta;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitInfo;
 import it.uniroma2.art.semanticturkey.services.core.history.Page;
-import it.uniroma2.art.semanticturkey.services.core.history.PaginationInfo;
+import it.uniroma2.art.semanticturkey.services.core.history.HistoryPaginationInfo;
+import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
@@ -61,13 +55,13 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	public PaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
+	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional String timeLowerBound, @Optional String timeUpperBound,
 			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
-		IRI historyGraph = obtainHistoryGraph(getManagedConnection());
+		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
 
-		String timeBoundsSPARQLFilter = computeTimeBoundsSPARQLFilter(timeLowerBound, timeUpperBound);
-		String operationSPARQLFilter = computeOperationSPARQLFilter(operationFilter);
+		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound, timeUpperBound);
+		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
@@ -99,7 +93,7 @@ public class History extends STServiceAdapter {
 			long tipRevisionNumber = commitCount != 0
 					? ((Literal) bindingSet.getValue("tipRevisionNumber")).longValue() : -1;
 
-			return new PaginationInfo(tipRevisionNumber,
+			return new HistoryPaginationInfo(tipRevisionNumber,
 					(commitCount / limit) + (commitCount % limit == 0 ? 0 : 1));
 		}
 	}
@@ -113,13 +107,13 @@ public class History extends STServiceAdapter {
 			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
 			@Optional(defaultValue = "0") long page, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
 
-		IRI historyGraph = obtainHistoryGraph(getManagedConnection());
+		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
 
-		String operationSPARQLFilter = computeOperationSPARQLFilter(operationFilter);
+		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
 
-		String orderBySPARQLFragment = computeOrderBySPARQLFragment(operationSorting, timeSorting);
+		String orderBySPARQLFragment = SupportRepositoryUtils.computeOrderBySPARQLFragment(operationSorting, timeSorting);
 
-		String timeBoundsSPARQLFilter = computeTimeBoundsSPARQLFilter(timeLowerBound, timeUpperBound);
+		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound, timeUpperBound);
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
@@ -205,90 +199,6 @@ public class History extends STServiceAdapter {
 				return commitInfo;
 			}).collect(Collectors.toList());
 		}
-	}
-
-	protected static String computeTimeBoundsSPARQLFilter(String timeLowerBound, String timeUpperBound)
-			throws IllegalArgumentException {
-		String timeLowerBoundSPARQLFilter;
-		if (timeLowerBound != null) {
-			if (!XMLDatatypeUtil.isValidDateTime(timeLowerBound)) {
-				throw new IllegalArgumentException(
-						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeLowerBound);
-			}
-
-			timeLowerBoundSPARQLFilter = "FILTER(?endTime >= " + RenderUtils.toSPARQL(
-					SimpleValueFactory.getInstance().createLiteral(timeLowerBound, XMLSchema.DATETIME))
-					+ ")\n";
-
-		} else {
-			timeLowerBoundSPARQLFilter = "";
-		}
-
-		String timeUpperBoundSPARQLFilter;
-		if (timeUpperBound != null) {
-			if (!XMLDatatypeUtil.isValidDateTime(timeUpperBound)) {
-				throw new IllegalArgumentException(
-						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeUpperBound);
-			}
-
-			timeUpperBoundSPARQLFilter = "FILTER(?endTime <= " + RenderUtils.toSPARQL(
-					SimpleValueFactory.getInstance().createLiteral(timeUpperBound, XMLSchema.DATETIME))
-					+ ")\n";
-
-		} else {
-			timeUpperBoundSPARQLFilter = "";
-		}
-
-		return timeLowerBoundSPARQLFilter + timeUpperBoundSPARQLFilter;
-	}
-
-	protected String computeOrderBySPARQLFragment(SortingDirection operationSorting,
-			SortingDirection timeSorting) {
-		String orderBy = "";
-
-		switch (operationSorting) {
-		case Ascending:
-			orderBy += " ASC(?operation)";
-			break;
-		case Descending:
-			orderBy += " DESC(?operation)";
-			break;
-		default:
-		}
-
-		switch (timeSorting) {
-		case Ascending:
-			orderBy += " ASC(?revisionNumber)";
-			break;
-		case Descending:
-			orderBy += " DESC(?revisionNumber)";
-			break;
-		default:
-		}
-
-		if (!orderBy.isEmpty()) {
-			orderBy = "ORDER BY " + orderBy + "\n";
-		}
-		return orderBy;
-	}
-
-	protected static String computeOperationSPARQLFilter(IRI[] operationFilter) {
-		String operationSPARQLFilter = operationFilter.length != 0
-				? "FILTER(?operation IN " + Arrays.stream(operationFilter).map(RenderUtils::toSPARQL)
-						.collect(Collectors.joining(", ", "(", ")")) + ")\n"
-				: "";
-		return operationSPARQLFilter;
-	}
-
-	protected static IRI obtainHistoryGraph(RepositoryConnection coreRepoConnection)
-			throws IllegalStateException, QueryEvaluationException, RepositoryException {
-		IRI historyGraph = Models
-				.objectIRI(
-						QueryResults.asModel(coreRepoConnection.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT,
-								CHANGETRACKER.HISTORY_GRAPH, null, CHANGETRACKER.GRAPH_MANAGEMENT)))
-				.orElseThrow(() -> new IllegalStateException(
-						"Could not obtain the history graph. Perhaps this project is without history"));
-		return historyGraph;
 	}
 
 	@STServiceOperation
