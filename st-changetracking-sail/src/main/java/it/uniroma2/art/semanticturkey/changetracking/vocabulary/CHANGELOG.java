@@ -23,7 +23,8 @@ import org.eclipse.rdf4j.model.vocabulary.SESAME;
  *			prov:agent <http://semanticturkey.uniroma2.it/ns/users/TestUser> ;
  *			prov:hadRole <http://semanticturkey.uniroma2.it/ns/tracking/performer> .
  *		] ;
- *		cl:status "committed" .
+ *		cl:status "committed" ;
+ * 		cl:revisionNumber "0"^^xsd:integer .
  *
  *	<http://example.org/history#72de0bd1-b132-4ec1-aa36-859df633d910> cl:addedStatement <http://example.org/history#b3213db9-d52b-4985-9fbe-5201d1173785> ;
  *		a prov:Entity ;
@@ -45,8 +46,9 @@ import org.eclipse.rdf4j.model.vocabulary.SESAME;
  *			prov:hadRole <http://semanticturkey.uniroma2.it/ns/tracking/performer> .
  *		] ;
  * 		cl:status "committed" ;
+ * 		cl:revisionNumber "1"^^xsd:integer ;
  *		cl:parentCommit <http://example.org/history#fec31f27-00b2-4a21-ac0f-e1d72ae90f4a> .
-
+ *
  *	<http://example.org/history#4480a891-17f4-4dc9-965a-7ce1aa877b14> a prov:Entity ;
  *		prov:generatedAtTime "2017-05-09T22:39:51.761+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
  *		prov:wasGeneratedBy <http://example.org/history#7d1110b5-8542-430a-b940-7d0868d204d3> ;
@@ -122,6 +124,8 @@ public abstract class CHANGELOG {
 	public static final IRI MASTER;
 	public static final IRI TIP;
 
+	public static final IRI REVISION_NUMBER;
+
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -140,5 +144,7 @@ public abstract class CHANGELOG {
 
 		MASTER = vf.createIRI(NAMESPACE, "MASTER");
 		TIP = vf.createIRI(NAMESPACE, "tip");
+
+		REVISION_NUMBER = vf.createIRI(NAMESPACE, "revisionNumber");
 	}
 }

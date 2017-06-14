@@ -584,6 +584,22 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 			}
 		});
 	}
+	
+	@Test
+	public void testReadHistoryValidationGraphs() {
+		Repositories.consume(coreRepo, conn -> {
+			IRI historyGraph = Models.objectIRI(QueryResults
+					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.HISTORY_GRAPH,
+							null, CHANGETRACKER.GRAPH_MANAGEMENT))).get();
+			IRI validationGraph = Models.objectIRI(QueryResults
+					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.VALIDATION_GRAPH,
+							null, CHANGETRACKER.GRAPH_MANAGEMENT))).orElse(null);
+
+			assertEquals(HISTORY_GRAPH, historyGraph);
+			assertEquals(null, validationGraph);
+		});
+	}
+
 
 	@Test
 	public void testCommitMetadata1() {

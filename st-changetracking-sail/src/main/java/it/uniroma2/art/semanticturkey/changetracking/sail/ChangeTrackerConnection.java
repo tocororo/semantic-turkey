@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +27,8 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -86,7 +89,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		}
 		initializeListener();
 	}
-	
+
 	public void initializeListener() {
 		this.connectionListener = new SailConnectionListener() {
 
@@ -107,7 +110,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		};
 		addConnectionListener(connectionListener);
 	}
-	
+
 	@Override
 	public void close() throws SailException {
 		try {
@@ -121,7 +124,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	public void begin() throws SailException {
 		begin(sail.getDefaultIsolationLevel());
 	}
-	
+
 	@Override
 	public void begin(IsolationLevel level) throws SailException {
 		super.begin(level);
@@ -185,9 +188,9 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			// Checks if there are requested (validatable) operations to log
 			if (!validatableOpertionHandler.isReadOnly()) {
 				try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
-					
+
 					supportRepoConn.begin();
-					
+
 					IRI validatableCommit = supportRepoConn.getValueFactory().createIRI(sail.metadataNS,
 							UUID.randomUUID().toString());
 					IRI validatableModifiedTriples = supportRepoConn.getValueFactory()
@@ -210,7 +213,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					validatableOpertionHandler.getRemovals()
 							.forEach(consumer2.apply(validatableModifiedTriples).apply(supportRepoConn)
 									.apply(CHANGELOG.REMOVED_STATEMENT));
-					
+
 					supportRepoConn.commit();
 				}
 			}
@@ -242,7 +245,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			// Commits the metadata
 			IRI commitIRI;
 
-			Resource previousTip = null;
+			Resource previousTip;
+			BigInteger revisionNumber = BigInteger.ZERO;
 			Model commitMetadataModel = new LinkedHashModel();
 			boolean triplesUnknown = false;
 
@@ -282,6 +286,22 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 								"Could not commit the changeset metadata, since there is a pending commit: "
 										+ previousTip);
 					}
+
+					BigInteger lastRevisionNumber = Models.objectLiteral(QueryResults.asModel(supporRepoConn
+							.getStatements(previousTip, CHANGELOG.REVISION_NUMBER, null, sail.historyGraph)))
+							.map(lit -> {
+								try {
+									return new BigInteger(lit.getLabel());
+								} catch (NumberFormatException e) {
+									throw new SailException(
+											"Current tip has an illegal revision number: " + lit.getLabel());
+								}
+							}).orElseThrow(() -> new SailException(
+									"Current tip does not have a revision number: " + previousTip));
+
+					revisionNumber = lastRevisionNumber.add(BigInteger.ONE);
+				} else {
+					previousTip = null;
 				}
 
 				commitIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
@@ -306,6 +326,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				supporRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.historyGraph);
 				supporRepoConn.add(commitIRI, PROV.STARTED_AT_TIME, startTime, sail.historyGraph);
 				supporRepoConn.add(commitIRI, PROV.ENDED_AT_TIME, endTime, sail.historyGraph);
+				supporRepoConn.add(commitIRI, CHANGELOG.REVISION_NUMBER,
+						supporRepoConn.getValueFactory().createLiteral(revisionNumber), sail.historyGraph);
 
 				if (!commitMetadataModel.isEmpty()) {
 					supporRepoConn.add(commitMetadataModel, sail.historyGraph);

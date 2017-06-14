@@ -94,13 +94,22 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		this.metadataNS = metadataNS;
 		this.historyGraph = historyGraph;
 		this.graphManagement = new LinkedHashModel();
+		this.validationEnabled = validationEnabled;
+		this.validationGraph = validationGraph;
+		this.interactiveNotifications = interactiveNotifications;
+
 		includeGraph.forEach(
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH, g));
 		excludeGraph.forEach(
 				g -> graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.EXCLUDE_GRAPH, g));
-		this.validationEnabled = validationEnabled;
-		this.validationGraph = validationGraph;
-		this.interactiveNotifications = interactiveNotifications;
+		if (historyGraph != null) {
+			graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.HISTORY_GRAPH, historyGraph);
+		}
+
+		if (validationGraph != null) {
+			graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.VALIDATION_GRAPH,
+					validationGraph);
+		}
 	}
 
 	@Override

@@ -35,6 +35,12 @@ public abstract class CHANGETRACKER {
 	/** ct:graph-management */
 	public static final IRI GRAPH_MANAGEMENT;
 	
+	/** ct:history-graph */
+	public static final IRI HISTORY_GRAPH;
+
+	/** ct:validation-graph */
+	public static final IRI VALIDATION_GRAPH;
+	
 	/** ct:includeGraph */
 	public static final IRI INCLUDE_GRAPH;
 	
@@ -62,7 +68,9 @@ public abstract class CHANGETRACKER {
 		GRAPH_MANAGEMENT = vf.createIRI(NAMESPACE, "graph-management");
 		INCLUDE_GRAPH = vf.createIRI(NAMESPACE, "includeGraph");
 		EXCLUDE_GRAPH = vf.createIRI(NAMESPACE, "excludeGraph");
-		
+		HISTORY_GRAPH = vf.createIRI(NAMESPACE, "history-graph");
+		VALIDATION_GRAPH = vf.createIRI(NAMESPACE, "validation-graph");
+
 		COMMIT_METADATA = vf.createIRI(NAMESPACE, "commit-metadata");
 		
 		VALIDATION = vf.createIRI(NAMESPACE, "validation");

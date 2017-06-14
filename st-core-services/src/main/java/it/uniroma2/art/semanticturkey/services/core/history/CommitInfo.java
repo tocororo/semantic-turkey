@@ -63,7 +63,7 @@ public class CommitInfo {
 		this.startTime = startTime;
 	}
 
-	@JsonFormat(shape=Shape.STRING)
+	@JsonFormat(shape=Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 	public GregorianCalendar getStartTime() {
 		return startTime;
 	}
@@ -72,7 +72,7 @@ public class CommitInfo {
 		this.endTime = endTime;
 	}
 
-	@JsonFormat(shape=Shape.STRING)
+	@JsonFormat(shape=Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 	public GregorianCalendar getEndTime() {
 		return endTime;
 	}

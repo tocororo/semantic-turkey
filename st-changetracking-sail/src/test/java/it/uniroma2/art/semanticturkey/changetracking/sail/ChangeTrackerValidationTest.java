@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -21,6 +22,7 @@ import org.junit.Test;
 
 import com.google.common.collect.Sets;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
@@ -33,6 +35,22 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class ChangeTrackerValidationTest extends AbstractChangeTrackerTest {
+
+	@Test
+	@RequiresValidation
+	public void testReadHistoryValidationGraphs() {
+		Repositories.consume(coreRepo, conn -> {
+			IRI historyGraph = Models.objectIRI(QueryResults
+					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.HISTORY_GRAPH,
+							null, CHANGETRACKER.GRAPH_MANAGEMENT))).get();
+			IRI validationGraph = Models.objectIRI(QueryResults
+					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.VALIDATION_GRAPH,
+							null, CHANGETRACKER.GRAPH_MANAGEMENT))).orElse(null);
+
+			assertEquals(HISTORY_GRAPH, historyGraph);
+			assertEquals(VALIDATION_GRAPH, validationGraph);
+		});
+	}
 
 	@Test
 	@RequiresValidation
