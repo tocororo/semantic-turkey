@@ -1443,7 +1443,7 @@ public class ProjectManager {
 
 							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
 									backendSailImplConfig);
-							changeTrackerSailConfig.setSupportRepositoryID(supportRepoID);
+							changeTrackerSailConfig.setSupportRepositoryID("support");
 							changeTrackerSailConfig.setHistoryGraph(
 									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
 							changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
