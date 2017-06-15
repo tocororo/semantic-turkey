@@ -99,9 +99,8 @@ public class Classes extends STServiceAdapter {
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
 					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
                     "                                                                             \n" +                                      
-					//" SELECT ?resource ?attr_color {                                        \n" +                                                    
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource ?attr_color "+generateNatureSPARQLSelectPart()+" 			  \n" + 
+					" SELECT ?resource "+generateNatureSPARQLSelectPart()+" 			 		  \n" + 
 					" WHERE {																      \n" +
 					" 	  ?metaClass rdfs:subClassOf* owl:Class .                                 \n" +
 					"     ?resource a ?metaClass.                                                 \n" +
@@ -118,7 +117,7 @@ public class Classes extends STServiceAdapter {
 					generateNatureSPARQLWherePart("?resource") +
 					
 					" }                                                                           \n" +
-					" GROUP BY ?resource ?attr_color                                              \n"                             
+					" GROUP BY ?resource			                                              \n"                             
 					// @formatter:on
 			);
 		} else if (RDFS.RESOURCE.equals(superClass)) {
@@ -130,9 +129,8 @@ public class Classes extends STServiceAdapter {
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
 					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          	  \n" +
                     "                                                                                 \n" +                          
-					//" SELECT ?resource ?attr_color {                                            \n" +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource ?attr_color "+generateNatureSPARQLSelectPart()+" 				  \n" + 
+					" SELECT ?resource "+generateNatureSPARQLSelectPart()+" 						  \n" + 
 					" WHERE {																          \n" +
 					" 	{                                                                             \n" +
 					" 		BIND(owl:Thing as ?resource)                                              \n" +
@@ -159,7 +157,7 @@ public class Classes extends STServiceAdapter {
 					
 					
 					" }                                                                               \n" +
-					" GROUP BY ?resource ?attr_color                                                  \n"
+					" GROUP BY ?resource 			                                                  \n"
 					// @formatter:on
 			);
 		} else {
@@ -170,9 +168,8 @@ public class Classes extends STServiceAdapter {
 				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                         \n" +
-                //" SELECT ?resource ?attr_color {                                         	   \n " +                                                                              
 				//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-				" SELECT ?resource ?attr_color "+generateNatureSPARQLSelectPart()+" 			  \n" + 
+				" SELECT ?resource "+generateNatureSPARQLSelectPart()+" 			 		 \n" + 
 				" WHERE {																      \n" +
 				"    ?resource rdfs:subClassOf " + RenderUtils.toSPARQL(superClass) + "      .\n " +
 				"    FILTER(isIRI(?resource))                                                 \n " +
@@ -182,7 +179,7 @@ public class Classes extends STServiceAdapter {
 				generateNatureSPARQLWherePart("?resource") +
 				
 				" }                                                                           \n " +
-				" GROUP BY ?resource ?attr_color             		                          \n "
+				" GROUP BY ?resource			             		                          \n "
 				// @formatter:on
 			);
 		}
@@ -259,11 +256,11 @@ public class Classes extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
-				" SELECT ?resource ?attr_color " + generateNatureSPARQLSelectPart() + " WHERE {	\n " +                                                                              
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n " +                                                                              
 				"    ?resource a ?cls .															\n " +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																				\n " +
-				" GROUP BY ?resource ?attr_color												\n "
+				" GROUP BY ?resource 															\n "
 				// @formatter:on
 		);
 		qb.processRendering();

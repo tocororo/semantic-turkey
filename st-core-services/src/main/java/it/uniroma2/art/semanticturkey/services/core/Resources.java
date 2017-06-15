@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,14 +34,23 @@ public class Resources extends STServiceAdapter {
 		logger.info("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
 		
-		String query = "DELETE DATA {GRAPH ?g {?subject ?property ?value .}}" +
-				"INSERT DATA {GRAPH ?g {?subject ?property ?newValue .} } ;" ;
+		String query = 
+				"DELETE DATA {								\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?value .		\n"
+				+ "		}									\n"
+				+ "};										\n"
+				+ "INSERT DATA {							\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?newValue .	\n"
+				+ "		}									\n"
+				+ "}" ;
+		query = query.replace("?g", NTriplesUtil.toNTriplesString(getWorkingGraph()));
+		query = query.replace("?subject", NTriplesUtil.toNTriplesString(subject));
+		query = query.replace("?property", NTriplesUtil.toNTriplesString(property));
+		query = query.replace("?value", NTriplesUtil.toNTriplesString(value));
+		query = query.replace("?newValue", NTriplesUtil.toNTriplesString(newValue));
 		Update update = repoConnection.prepareUpdate(query);
-		update.setBinding("g", getWorkingGraph());
-		update.setBinding("subject", subject);
-		update.setBinding("property", property);
-		update.setBinding("value", value);
-		update.setBinding("newValue", newValue);
 		update.execute();
 		
 	}
