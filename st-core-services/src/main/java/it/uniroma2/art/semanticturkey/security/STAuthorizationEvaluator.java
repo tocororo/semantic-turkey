@@ -51,9 +51,6 @@ public class STAuthorizationEvaluator {
 	@Autowired
 	private STServiceContext stServiceContext;
 
-	@Autowired
-	AccessControlManager acMgr;
-	
 	/**
 	 * To use like follow:
 	 * <code>

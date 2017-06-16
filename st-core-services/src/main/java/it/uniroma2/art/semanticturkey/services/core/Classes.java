@@ -350,7 +350,7 @@ public class Classes extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	//TODO @@PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'C')")
 	public AnnotatedValue<IRI> createInstance(@Subject @NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
@@ -397,7 +397,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	//TODO @@PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'D')")
 	public void deleteInstance(@Subject @LocallyDefined IRI instance) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		String query = 
