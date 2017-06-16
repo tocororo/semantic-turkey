@@ -525,7 +525,7 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	public void deactivate() throws ModelUpdateException {
+	public void deactivate() {
 		try {
 			repositoryManager.shutDown();
 		} finally {
@@ -659,7 +659,7 @@ public abstract class Project extends AbstractProject {
 
 	public void setBaseURI(String baseURI) throws ProjectUpdateException {
 		try {
-			getOntModel().setBaseURI(baseURI);
+			//getOntModel().setBaseURI(baseURI);
 			newOntManager.setBaseURI(baseURI);
 			stp_properties.setProperty(BASEURI_PROP, baseURI);
 			updateProjectProperties();

@@ -95,8 +95,10 @@ public class VersioningMetadataInterceptor implements MethodInterceptor {
 
 					Literal currentTime = vf.createLiteral(new Date());
 
-					Resource workingGraph = RDF4JMigrationUtils.convert2rdf4j(stServiceContext.getWGraph());
+					//Resource workingGraph = RDF4JMigrationUtils.convert2rdf4j(stServiceContext.getWGraph());
+					Resource workingGraph = stServiceContext.getWGraph();
 
+					
 					// Usually, we expect either one created resource or one modified resource, so
 					// there should be no need of complex buffering techiniques
 

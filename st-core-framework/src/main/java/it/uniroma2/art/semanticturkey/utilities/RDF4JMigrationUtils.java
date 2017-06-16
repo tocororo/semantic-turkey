@@ -1,7 +1,10 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -11,6 +14,8 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
+
+import com.google.common.collect.Lists;
 
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.owlart.model.ARTNode;
@@ -33,6 +38,16 @@ public abstract class RDF4JMigrationUtils {
 		String nominalValue = resource.getNominalValue();
 		return resource.isBlank() ? vf.createBNode(nominalValue) : vf.createIRI(nominalValue);
 	}
+	
+	public static Resource[] convert2rdf4j(ARTResource[] resourceArray) {
+		List<Resource> resourceList = new ArrayList<>();
+		for(ARTResource resource : resourceArray){
+			String nominalValue = resource.getNominalValue();
+			resourceList.add(resource.isBlank() ? vf.createBNode(nominalValue) : vf.createIRI(nominalValue));
+		}
+		return resourceList.toArray(new Resource[resourceList.size()]);
+	}
+	
 
 	public static Map<String, Value> convert2rdf4j(Map<String, ARTNode> map) {
 		Map<String, Value> rv = new HashMap<>();
@@ -50,6 +65,14 @@ public abstract class RDF4JMigrationUtils {
 
 	public static ARTResource convert2art(Resource resource) {
 		return fact.rdf4jResource2ARTResource(resource);
+	}
+	
+	public static ARTResource[] convert2art(Resource[] resourceArray) {
+		List<ARTResource> artResources = new ArrayList<>();
+		for(Resource resource : resourceArray){
+			artResources.add(fact.rdf4jResource2ARTResource(resource));
+		}
+		return artResources.toArray(new ARTResource[artResources.size()]);
 	}
 
 	public static ARTNode convert2art(Value value) {

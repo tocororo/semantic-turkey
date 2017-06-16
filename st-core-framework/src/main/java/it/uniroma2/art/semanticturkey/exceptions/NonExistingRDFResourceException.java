@@ -2,6 +2,8 @@ package it.uniroma2.art.semanticturkey.exceptions;
 
 import java.util.Arrays;
 
+import org.eclipse.rdf4j.model.Resource;
+
 import it.uniroma2.art.owlart.model.ARTResource;
 
 public class NonExistingRDFResourceException extends Exception {
@@ -16,12 +18,20 @@ public class NonExistingRDFResourceException extends Exception {
 	 * 
 	 * @param uri
 	 */
-	public NonExistingRDFResourceException(ARTResource resource) {
-		super("resource: " + resource + " does not exist");
+	public NonExistingRDFResourceException(Resource resource) {
+		super("resource: " + resource.stringValue() + " does not exist");
 	}
 	
-	public NonExistingRDFResourceException(ARTResource resource, ARTResource[] graphs) {
-		super("resource: " + resource + " does not exist in graphs: " + Arrays.toString(graphs));
-	}	
+	public NonExistingRDFResourceException(Resource resource, Resource[] graphs) {
+		super("resource: " + resource.stringValue() + " does not exist in graphs: " + Arrays.toString(graphs));
+	}
+	
+	public NonExistingRDFResourceException(String message){
+		super(message);
+	}
+
+	public NonExistingRDFResourceException(ARTResource res, ARTResource[] graphs) {
+		super("resource: " + res + " does not exist in graphs: " + Arrays.toString(graphs));
+	}
 	
 }

@@ -145,7 +145,7 @@ public class DatasetMetadataRepository {
 					xPath.evaluate("dereferenceable[1]/text()", datasetElement, XPathConstants.STRING));
 
 			result.put(datasetBaseURI, new DatasetMetadata(datasetBaseURI, datasetTitle, null,
-					sparqlEndpoint, dereferenceable, null, RDFS.Res.URI));
+					sparqlEndpoint, dereferenceable, null));
 		}
 
 		return result;

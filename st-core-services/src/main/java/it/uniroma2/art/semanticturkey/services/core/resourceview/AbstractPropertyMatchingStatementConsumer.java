@@ -23,14 +23,13 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.owlart.rdf4jimpl.model.ARTURIResourceRDF4JImpl;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -110,7 +109,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		}
 
 		for (IRI predicate : relevantProperties) {
-			if (STVocabUtilities.isHiddenResource(new ARTURIResourceRDF4JImpl(predicate),
+			if (STVocabUtilities.isHiddenResource(predicate,
 					project.getNewOntologyManager())) {
 				continue;
 			}
@@ -139,7 +138,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 							Resource top = topContext.getResource();
 							Set<Resource> cumulativeGraphs = topContext.getCumulativeGraphs();
 
-							if (RDF.Res.NIL.equals(top))
+							if (RDF.NIL.equals(top))
 								continue;
 
 							if (alreadExpandedCollections.contains(top))

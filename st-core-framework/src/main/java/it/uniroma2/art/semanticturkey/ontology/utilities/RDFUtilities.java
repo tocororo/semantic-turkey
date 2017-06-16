@@ -23,19 +23,21 @@
 
 package it.uniroma2.art.semanticturkey.ontology.utilities;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.RDF;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
-import it.uniroma2.art.owlart.vocabulary.RDFTypesEnum;
-import it.uniroma2.art.owlart.vocabulary.XmlSchema;
+//import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+//import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+//import it.uniroma2.art.owlart.model.ARTResource;
+//import it.uniroma2.art.owlart.model.ARTURIResource;
+//import it.uniroma2.art.owlart.model.NodeFilters;
+//import it.uniroma2.art.owlart.models.OWLModel;
+//import it.uniroma2.art.owlart.models.RDFModel;
+//import it.uniroma2.art.owlart.vocabulary.OWL;
+//import it.uniroma2.art.owlart.vocabulary.RDF;
+//import it.uniroma2.art.owlart.vocabulary.RDFS;
 import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
+import it.uniroma2.art.semanticturkey.utilities.XmlSchemaUtils;
+import it.uniroma2.art.semanticturkey.vocabulary.RDFTypesEnum;
 
 import java.util.Set;
 
@@ -67,7 +69,7 @@ public class RDFUtilities {
 	 * @throws ModelAccessException
 	 * @throws IncompatibleRangeException
 	 */
-	public static RDFTypesEnum getRangeType(OWLModel model, ARTURIResource property,
+	/*public static RDFTypesEnum getRangeType(OWLModel model, ARTURIResource property,
 			Set<ARTResource> rangesSet) throws ModelAccessException, IncompatibleRangeException {
 
 		logger.debug("determining range type for property: " + property);
@@ -87,7 +89,7 @@ public class RDFUtilities {
 		logger.debug("determing range type by checking range: " + range);
 
 		if (range.isURIResource()) {
-			if (XmlSchema.Res.isXMLDatatype(range.asURIResource()))
+			if (XmlSchemaUtils.isXMLDatatype(RDF4JMigrationUtils.convert2rdf4j(range.asURIResource())))
 				return getInferredAndCompatiblePropertyRange(model, property,
 						RDFTypesEnum.typedLiteral);
 			if (range.equals(RDF.Res.PLAINLITERAL))
@@ -102,18 +104,18 @@ public class RDFUtilities {
 			return getInferredAndCompatiblePropertyRange(model, property, RDFTypesEnum.literal);
 
 		return RDFTypesEnum.resource;
-	}
+	}*/
 
-	private static RDFTypesEnum getRangeTypeSpecialCase(ARTURIResource property) {
+	/*private static RDFTypesEnum getRangeTypeSpecialCase(ARTURIResource property) {
 		if (property.equals(OWL.Res.VERSIONINFO) || property.equals(RDFS.Res.LABEL)
 				|| property.equals(RDFS.Res.COMMENT))
 			return RDFTypesEnum.plainLiteral;
 		if (property.equals(RDFS.Res.SEEALSO) || property.equals(RDFS.Res.ISDEFINEDBY))
 			return RDFTypesEnum.resource;
 		return null;
-	}
+	}*/
 
-	private static RDFTypesEnum getInferredAndCompatiblePropertyRange(OWLModel model,
+	/*private static RDFTypesEnum getInferredAndCompatiblePropertyRange(OWLModel model,
 			ARTURIResource property, RDFTypesEnum suggestedType) throws ModelAccessException,
 			IncompatibleRangeException {
 		if (suggestedType == RDFTypesEnum.undetermined) {
@@ -131,10 +133,10 @@ public class RDFUtilities {
 		logger.debug("no contraint from given property, using range type inferred from range object: "
 				+ suggestedType);
 		return suggestedType;
-	}
+	}*/
 
-	public static ARTResource retrieveResource(RDFModel model, String URI_ID, RDFTypesEnum type)
-			throws ModelAccessException, UnavailableResourceException {
+	/*public static ARTResource retrieveResource(RDFModel model, String URI_ID, RDFTypesEnum type)
+			throws NonExistingRDFResourceException {
 		ARTResource res;
 		if (type == RDFTypesEnum.uri) {
 			res = model.retrieveURIResource(URI_ID);
@@ -146,8 +148,8 @@ public class RDFUtilities {
 		if (res != null)
 			return res;
 		else
-			throw new UnavailableResourceException("resource identified with: " + URI_ID
+			throw new NonExistingRDFResourceException("resource identified with: " + URI_ID
 					+ " is not availabe in the RDF repository");
-	}
+	}*/
 
 }

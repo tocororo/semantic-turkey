@@ -33,6 +33,7 @@ import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -66,7 +67,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	static void startUpdatesCheckAndRepair() {
+	static void startUpdatesCheckAndRepair() throws ProjectAccessException {
 
 		// this method has been deactivated, it was originally invoked in the last "else" branch of the
 		// Resources.initializeUserResources(...) method
@@ -119,10 +120,11 @@ public class UpdateRoutines {
 	 * 
 	 * this checks that if main-project exists, and, in case copies it as any other project in the projects
 	 * directory
+	 * @throws ProjectAccessException 
 	 * 
 	 * @throws IOException
 	 */
-	private static void align_from_071_to_072() {
+	private static void align_from_071_to_072() throws ProjectAccessException {
 		String mainProjectName = "project-main";
 		File mainProjDir = new File(Resources.getSemTurkeyDataDir(), mainProjectName);
 
@@ -147,8 +149,6 @@ public class UpdateRoutines {
 				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: strangely, the main project does not exist, while it has been previously checked for existence");
 			} catch (DuplicatedResourceException e) {
 				logger.error("unable to copy main project to normal project wasMainProject cause a project with this name already exists");
-			} catch (UnavailableResourceException e) {
-				e.printStackTrace();
 			} catch (ProjectInconsistentException e) {
 				logger.error("unable to repair old main project, because it is in an inconsistent state even for its original Semantic Turkey version");
 			}

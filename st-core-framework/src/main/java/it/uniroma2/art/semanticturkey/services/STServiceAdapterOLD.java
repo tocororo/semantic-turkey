@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services;
 
+import org.eclipse.rdf4j.model.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.owlart.exceptions.ModelAccessException;
@@ -15,6 +16,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 public class STServiceAdapterOLD implements STService, NewStyleService {
 
@@ -31,11 +33,11 @@ public class STServiceAdapterOLD implements STService, NewStyleService {
 		return stServiceContext.getProject();
 	}
 
-	public ARTResource[] getUserNamedGraphs() {
+	public Resource[] getUserNamedGraphs() {
 		return stServiceContext.getRGraphs();
 	}
 	
-	public ARTResource getWorkingGraph() {
+	public Resource getWorkingGraph() {
 		return stServiceContext.getWGraph();
 	}
 	
@@ -50,7 +52,7 @@ public class STServiceAdapterOLD implements STService, NewStyleService {
 	protected ARTURIResource retrieveExistingURIResource(RDFModel model, String qname)
 			throws NonExistingRDFResourceException, ModelAccessException {
 		ARTURIResource res = RDFNodeSerializer.createURI(model, qname);
-		ARTResource[] graphs = stServiceContext.getRGraphs();
+		ARTResource[] graphs = RDF4JMigrationUtils.convert2art(stServiceContext.getRGraphs());
 		if (model.existsResource(res, graphs))
 			return res;
 		throw new NonExistingRDFResourceException(res, graphs);

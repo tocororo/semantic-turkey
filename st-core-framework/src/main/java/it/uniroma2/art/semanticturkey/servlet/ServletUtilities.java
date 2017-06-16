@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -51,7 +52,6 @@ import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
 import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
 import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
 import it.uniroma2.art.owlart.vocabulary.RDF;
-import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -382,7 +382,7 @@ public class ServletUtilities {
 	public XMLResponseREPLY createBooleanResponse(String request, boolean resp) {
 		XMLResponseREPLY response = (XMLResponseREPLY) createReplyResponse(request, RepliesStatus.ok,
 				SerializationType.xml);
-		Element booleanValueElement = createValueElement(response, XmlSchema.BOOLEAN);
+		Element booleanValueElement = createValueElement(response, XMLSchema.BOOLEAN.stringValue());
 		booleanValueElement.setTextContent(Boolean.toString(resp));
 		return response;
 	}
@@ -397,7 +397,7 @@ public class ServletUtilities {
 	public XMLResponseREPLY createIntegerResponse(String request, int value) {
 		XMLResponseREPLY response = (XMLResponseREPLY) createReplyResponse(request, RepliesStatus.ok,
 				SerializationType.xml);
-		Element integerValueElement = createValueElement(response, XmlSchema.INTEGER);
+		Element integerValueElement = createValueElement(response, XMLSchema.INTEGER.stringValue());
 		integerValueElement.setTextContent(Integer.toString(value));
 		return response;
 	}

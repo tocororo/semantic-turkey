@@ -16,8 +16,6 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 
 /**
@@ -79,19 +77,17 @@ public interface OntologyManager {
 	 * @param prefix
 	 * @param namespace
 	 * @throws NSPrefixMappingUpdateException
-	 * @throws ModelUpdateException
 	 */
 	void setNSPrefixMapping(String prefix, String namespace)
-			throws NSPrefixMappingUpdateException, ModelUpdateException;
+			throws NSPrefixMappingUpdateException;
 
 	/**
 	 * Removes all prefix declarations for the supplied <code>namespace</code>
 	 * 
 	 * @param namespace
 	 * @throws NSPrefixMappingUpdateException
-	 * @throws ModelUpdateException
 	 */
-	void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException, ModelUpdateException;
+	void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException;
 
 	// Add an ontology import from various sources (local file, mirror, web)
 
@@ -105,12 +101,10 @@ public interface OntologyManager {
 	 * @param failedImports
 	 * @throws MalformedURLException
 	 * @throws RDF4JException
-	 * @throws ModelUpdateException
-	 * @throws OntologyManagerException
 	 */
 	void addOntologyImportFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, RDF4JException, ModelUpdateException, OntologyManagerException;
+			throws MalformedURLException, RDF4JException;
 
 	/**
 	 * Imports an ontology from the ontology mirror
@@ -120,13 +114,12 @@ public interface OntologyManager {
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
 	void addOntologyImportFromMirror(String baseURI, String mirFileString,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, ModelUpdateException, RDF4JException, OntologyManagerException;
+			throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Imports an ontology from the web
@@ -137,13 +130,12 @@ public interface OntologyManager {
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
 	void addOntologyImportFromWeb(String baseUriToBeImported, String url, @Nullable RDFFormat rdfFormat,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, ModelUpdateException, RDF4JException, OntologyManagerException;
+			throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Imports an ontology from the web and copies it to the ontology mirror
@@ -155,25 +147,22 @@ public interface OntologyManager {
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
 	void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
 			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports)
-			throws MalformedURLException, ModelUpdateException, RDF4JException, OntologyManagerException;
+			throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Removes an ontology import
 	 * 
 	 * @param uriToBeRemoved
 	 * @throws IOException
-	 * @throws ModelUpdateException
-	 * @throws ModelAccessException
 	 */
 	void removeOntologyImport(String uriToBeRemoved)
-			throws IOException, ModelUpdateException, ModelAccessException;
+			throws IOException;
 
 	// Ontology import status
 
@@ -196,14 +185,13 @@ public interface OntologyManager {
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws ImportManagementException
 	 * @throws RDF4JException
 	 * @throws IOException
 	 */
 	void downloadImportedOntologyFromWeb(String baseURI, String altURL,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, ModelUpdateException, ImportManagementException, RDF4JException,
+			throws MalformedURLException, ImportManagementException, RDF4JException,
 			IOException;
 
 	/**
@@ -214,7 +202,6 @@ public interface OntologyManager {
 	 * @param toLocalFile
 	 * @param transitiveImportAllowance
 	 * @param failedImports
-	 * @throws ModelUpdateException
 	 * @throws ImportManagementException
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
@@ -222,7 +209,7 @@ public interface OntologyManager {
 	 */
 	void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws ModelUpdateException, ImportManagementException, RDF4JException, MalformedURLException,
+			throws ImportManagementException, RDF4JException, MalformedURLException,
 			IOException;
 
 	/**
@@ -234,14 +221,13 @@ public interface OntologyManager {
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws ImportManagementException
 	 * @throws RDF4JException
 	 * @throws IOException
 	 */
 	void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, ModelUpdateException, ImportManagementException, RDF4JException,
+			throws MalformedURLException, ImportManagementException, RDF4JException,
 			IOException;
 
 	// Application/Support ontologies management
@@ -311,12 +297,11 @@ public interface OntologyManager {
 	 * @param baseURI
 	 * @param toLocalFile
 	 * @throws ImportManagementException
-	 * @throws ModelUpdateException
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
 	void mirrorOntology(String baseURI, String toLocalFile)
-			throws ImportManagementException, ModelUpdateException, RDF4JException, OntologyManagerException;
+			throws ImportManagementException, RDF4JException, OntologyManagerException;
 
 	// Management operations
 
@@ -324,11 +309,8 @@ public interface OntologyManager {
 	 * Initializes mapping persistence
 	 * 
 	 * @param nsPrefixMappingsPersistence
-	 * @throws ModelUpdateException
-	 * @throws ModelAccessException
 	 */
-	void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappingsPersistence)
-			throws ModelUpdateException, ModelAccessException;
+	void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappingsPersistence);
 
 	/**
 	 * Returns the underlying {@link Repository}

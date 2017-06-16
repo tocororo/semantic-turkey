@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
@@ -8,7 +7,6 @@ import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepositoryWriting
 import it.uniroma2.art.semanticturkey.resources.DuplicateDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
@@ -48,7 +46,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
 	public void addDatasetMetadata(String baseURI, String title, String sparqlEndpoint, boolean dereferenceable) throws DuplicateDatasetMetadataException, DatasetMetadataRepositoryWritingException {
 		
-		DatasetMetadata meta = new DatasetMetadata(baseURI, title, null, sparqlEndpoint, dereferenceable, null, null);
+		DatasetMetadata meta = new DatasetMetadata(baseURI, title, null, sparqlEndpoint, dereferenceable, null);
 		
 		if (meta.getBaseURI() == null) {
 			throw new IllegalArgumentException("Invalid base URI: " + baseURI);
@@ -98,7 +96,7 @@ public class MetadataRegistry extends STServiceAdapterOLD {
 			newSparqlEndpoint = null;
 		}
 		
-		DatasetMetadata meta = new DatasetMetadata(newBaseURI, newTitle, null, newSparqlEndpoint, newDereferenceable, null, null);
+		DatasetMetadata meta = new DatasetMetadata(newBaseURI, newTitle, null, newSparqlEndpoint, newDereferenceable, null);
 		
 		synchronized (datasetMetadataRepository) {
 			datasetMetadataRepository.replaceDatasetMetadata(baseURI, meta);

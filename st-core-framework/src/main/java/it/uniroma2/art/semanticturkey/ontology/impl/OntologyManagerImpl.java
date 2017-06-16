@@ -45,10 +45,6 @@ import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.models.PrefixMapping;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.ontology.ImportMethod;
 import it.uniroma2.art.semanticturkey.ontology.ImportModality;
@@ -58,6 +54,7 @@ import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
+import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
 import it.uniroma2.art.semanticturkey.resources.OntFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
@@ -228,7 +225,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	public void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
 			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports)
-			throws MalformedURLException, ModelUpdateException, RDF4JException, OntologyManagerException {
+			throws MalformedURLException, RDF4JException, OntologyManagerException {
 		try (RepositoryConnection conn = repository.getConnection()) {
 			conn.begin();
 
@@ -479,12 +476,12 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	@Override
 	public void removeOntologyImport(String uriToBeRemoved)
-			throws IOException, ModelUpdateException, ModelAccessException {
+			throws IOException {
 		removeOntologyImport(uriToBeRemoved, ImportModality.USER);
 	}
 
 	public void removeOntologyImport(String uriToBeRemoved, ImportModality mod)
-			throws IOException, ModelUpdateException, ModelAccessException {
+			throws IOException {
 		try (RepositoryConnection conn = repository.getConnection()) {
 			conn.begin();
 
@@ -591,7 +588,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void downloadImportedOntologyFromWeb(String baseURI, String altURL,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws ModelUpdateException, ImportManagementException, RDF4JException, IOException {
+			throws ImportManagementException, RDF4JException, IOException {
 		try (RepositoryConnection conn = repository.getConnection()) {
 			conn.begin();
 
@@ -612,7 +609,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws ModelUpdateException, ImportManagementException, RDF4JException, MalformedURLException,
+			throws ImportManagementException, RDF4JException, MalformedURLException,
 			IOException {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 
@@ -635,7 +632,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws ModelUpdateException, ImportManagementException, RDF4JException, IOException {
+			throws ImportManagementException, RDF4JException, IOException {
 		File inputFile = new File(fromLocalFilePath);
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 
@@ -669,7 +666,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	@Override
 	public void mirrorOntology(String baseURI, String toLocalFile)
-			throws ImportManagementException, ModelUpdateException, OntologyManagerException {
+			throws ImportManagementException, OntologyManagerException {
 		try (RepositoryConnection conn = repository.getConnection()) {
 			if (!conn.hasStatement(null, null, null, false, conn.getValueFactory().createIRI(baseURI))) {
 				throw new OntologyManagerException("Could not mirror an ontology not loaded: " + baseURI);
@@ -732,7 +729,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	@Override
 	public void removeNSPrefixMapping(String namespace)
-			throws NSPrefixMappingUpdateException, ModelUpdateException {
+			throws NSPrefixMappingUpdateException {
 		try {
 			nsPrefixMappings.removeNSPrefixMapping(namespace);
 			Repositories.consume(repository, conn -> {
@@ -794,8 +791,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	 * @throws ModelAccessException
 	 * @throws ModelUpdateException
 	 */
-	private void setNsPrefix(String namespace, String prefix, boolean overwrite)
-			throws ModelAccessException, ModelUpdateException {
+	private void setNsPrefix(String namespace, String prefix, boolean overwrite){
 		Repositories.consume(repository, conn -> {
 			String oldPrefix = QueryResults.stream(conn.getNamespaces())
 					.filter(ns -> ns.getName().equals(namespace)).findAny().map(Namespace::getPrefix)
@@ -808,7 +804,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	// TODO Pay attention this is not being invoked by any method! check metadata ones!
 	public void setNSPrefixMapping(String prefix, String namespace)
-			throws NSPrefixMappingUpdateException, ModelUpdateException {
+			throws NSPrefixMappingUpdateException {
 		Repositories.consume(repository, conn -> conn.setNamespace(prefix, namespace));
 		nsPrefixMappings.setNSPrefixMapping(namespace, prefix);
 	}
@@ -824,8 +820,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappings)
-			throws ModelUpdateException, ModelAccessException {
+	public void initializeMappingsPersistence(NSPrefixMappings nsPrefixMappings) {
 		this.nsPrefixMappings = nsPrefixMappings;
 		// owlModel nsPrefixMapping regeneration from persistenceNSPrefixMapping
 		Map<String, String> nsPrefixMapTable = nsPrefixMappings.getNSPrefixMappingTable();

@@ -40,7 +40,6 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.owlart.vocabulary.RDFResourceRolesEnum;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;

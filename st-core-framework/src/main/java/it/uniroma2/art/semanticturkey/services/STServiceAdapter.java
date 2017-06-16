@@ -59,6 +59,7 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.tx.STServiceInvocaton;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
 /**
@@ -97,17 +98,19 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	}
 
 	public Resource[] getUserNamedGraphs() {
-		List<ARTResource> rGraphs = Arrays.asList(stServiceContext.getRGraphs());
+		List<Resource> rGraphs = Arrays.asList(stServiceContext.getRGraphs());
 
-		if (rGraphs.contains(NodeFilters.ANY)) {
+		if (rGraphs.contains(RDF4JMigrationUtils.convert2rdf4j(NodeFilters.ANY))) {
 			return new Resource[0];
 		}
 
-		return rGraphs.stream().map(rdf4j2artFact::aRTResource2RDF4JResource).toArray(Resource[]::new);
+		return rGraphs.toArray(new Resource[rGraphs.size()] );
+		
+		//return rGraphs.stream().map(rdf4j2artFact::aRTResource2RDF4JResource).toArray(Resource[]::new);
 	}
 
 	public Resource getWorkingGraph() {
-		return rdf4j2artFact.aRTResource2RDF4JResource(stServiceContext.getWGraph());
+		return rdf4j2artFact.aRTResource2RDF4JResource(RDF4JMigrationUtils.convert2art(stServiceContext.getWGraph()));
 	}
 
 	public Resource getDeleteGraph() {

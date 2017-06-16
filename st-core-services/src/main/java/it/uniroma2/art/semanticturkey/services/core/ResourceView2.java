@@ -81,7 +81,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -227,7 +226,7 @@ public class ResourceView2 extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
-			@Optional ResourcePosition resourcePosition) throws ModelAccessException, ProjectAccessException, ProjectInconsistentException {
+			@Optional ResourcePosition resourcePosition) throws ProjectAccessException, ProjectInconsistentException {
 		if (resourcePosition == null) {
 			resourcePosition = resource != null
 					? resourceLocator.locateResource(getProject(), getRepository(), resource)

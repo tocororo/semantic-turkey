@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,10 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Element;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -138,8 +133,7 @@ public class Projects extends STServiceAdapterOLD {
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
-	public void disconnectFromProject(ProjectConsumer consumer, String projectName)
-			throws ModelUpdateException {
+	public void disconnectFromProject(ProjectConsumer consumer, String projectName) {
 
 		ProjectManager.disconnectFromProject(consumer, projectName);
 	}
@@ -266,12 +260,13 @@ public class Projects extends STServiceAdapterOLD {
 	 * @throws IOException
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException 
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'RC')")
 	public void cloneProject(String projectName, String newProjectName)
 			throws InvalidProjectNameException, DuplicatedResourceException, IOException,
-			UnavailableResourceException, ProjectInexistentException {
+			ProjectInexistentException, ProjectAccessException {
 
 		logger.info("requested to export current project");
 
@@ -282,8 +277,7 @@ public class Projects extends STServiceAdapterOLD {
 	@RequestMapping(value = "it.uniroma2.art.semanticturkey/st-core-services/Projects/exportProject", method = org.springframework.web.bind.annotation.RequestMethod.GET)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public void exportProject(HttpServletResponse oRes,
-			@RequestParam(value = "projectName") String projectName) throws IOException, ModelAccessException,
-			UnsupportedRDFFormatException, UnavailableResourceException {
+			@RequestParam(value = "projectName") String projectName) throws IOException, ProjectAccessException {
 		File tempServerFile = File.createTempFile("export", ".zip");
 		logger.info("requested to export current project");
 		ProjectManager.exportProject(projectName, tempServerFile);
@@ -316,9 +310,10 @@ public class Projects extends STServiceAdapterOLD {
 	@GenerateSTServiceController(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
 	public void importProject(MultipartFile importPackage, String newProjectName)
-			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
-			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
-			ModelUpdateException, InvalidProjectNameException, PUBindingException, ProjectInexistentException, ProjectAccessException {
+			throws IOException, ProjectCreationException,
+			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException, 
+			InvalidProjectNameException, PUBindingException, ProjectInexistentException, 
+			ProjectAccessException {
 
 		logger.info("requested to import project from file: " + importPackage);
 

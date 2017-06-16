@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
-import it.uniroma2.art.owlart.vocabulary.XmlSchema;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -14,6 +13,7 @@ import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.utilities.XmlSchemaUtils;
 import it.uniroma2.art.semanticturkey.validators.XSDDatatypeValidator;
 
 @GenerateSTServiceController
@@ -23,7 +23,7 @@ public class XMLSchema extends STServiceAdapterOLD{
 	
 	@GenerateSTServiceController
 	public Response formatDateTime(int year, int month, int day, int hour, int minute, int second, @Optional(defaultValue="Z") String offset) throws ParseException {
-		String formatted = XmlSchema.formatDateTime(year, month, day, hour, minute, second, offset);
+		String formatted = XmlSchemaUtils.formatDateTime(year, month, day, hour, minute, second, offset);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
@@ -34,7 +34,7 @@ public class XMLSchema extends STServiceAdapterOLD{
 	
 	@GenerateSTServiceController
 	public Response formatDate(int year, int month, int day) throws ParseException {
-		String formatted = XmlSchema.formatDate(year, month, day);
+		String formatted = XmlSchemaUtils.formatDate(year, month, day);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element dateElement = XMLHelp.newElement(dataElement, "date");
@@ -45,7 +45,7 @@ public class XMLSchema extends STServiceAdapterOLD{
 	
 	@GenerateSTServiceController
 	public Response formatTime(int hour, int minute, int second) throws ParseException {
-		String formatted = XmlSchema.formatTime(hour, minute, second);
+		String formatted = XmlSchemaUtils.formatTime(hour, minute, second);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element timeElement = XMLHelp.newElement(dataElement, "time");
@@ -59,7 +59,7 @@ public class XMLSchema extends STServiceAdapterOLD{
 			@Optional(defaultValue="0") int month, @Optional(defaultValue="0") int day, 
 			@Optional(defaultValue="0") int hour, @Optional(defaultValue="0") int minute,
 			@Optional(defaultValue="0") int second) throws ParseException {
-		String formatted = XmlSchema.formatDuration(isPositive, year, month, day, hour, minute, second);
+		String formatted = XmlSchemaUtils.formatDuration(isPositive, year, month, day, hour, minute, second);
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
 		Element durationElement = XMLHelp.newElement(dataElement, "duration");
@@ -70,7 +70,7 @@ public class XMLSchema extends STServiceAdapterOLD{
 	
 	@GenerateSTServiceController
 	public Response formatCurrentLocalDateTime(){
-		String formatted = XmlSchema.formatCurrentLocalDateTime();
+		String formatted = XmlSchemaUtils.formatCurrentLocalDateTime();
 		System.out.println("valid local datetime: " + XSDDatatypeValidator.isValidDateTime(formatted));
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();
@@ -82,7 +82,7 @@ public class XMLSchema extends STServiceAdapterOLD{
 	
 	@GenerateSTServiceController
 	public Response formatCurrentUTCDateTime(){
-		String formatted = XmlSchema.formatCurrentUTCDateTime();
+		String formatted = XmlSchemaUtils.formatCurrentUTCDateTime();
 		System.out.println("valid local datetime: " + XSDDatatypeValidator.isValidDateTime(formatted));
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 		Element dataElement = response.getDataElement();

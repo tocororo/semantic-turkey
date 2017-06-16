@@ -68,11 +68,11 @@ import it.uniroma2.art.owlart.exceptions.ModelAccessException;
 import it.uniroma2.art.owlart.exceptions.ModelCreationException;
 import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+//import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
 import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
 import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -86,6 +86,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -317,17 +318,18 @@ public class ProjectManager {
 	 * @throws IOException
 	 * @throws UnavailableResourceException
 	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException 
 	 */
 	public static void cloneProjectToNewProject(String projectName, String newProjectName)
 			throws InvalidProjectNameException, DuplicatedResourceException, IOException,
-			UnavailableResourceException, ProjectInexistentException {
+			ProjectInexistentException, ProjectAccessException {
 
 		logger.debug("cloning project: " + projectName + " to project: " + newProjectName);
 
 		checkProjectName(newProjectName);
 
 		if (isOpen(projectName)) {
-			throw new UnavailableResourceException(
+			throw new ProjectAccessException(
 					"project: " + projectName + " is currently open, thus it cannot be cloned");
 		}
 
@@ -378,11 +380,10 @@ public class ProjectManager {
 		return new File(Resources.getProjectsDir(), projectName);
 	}
 
-	public static void exportProject(String projectName, File semTurkeyProjectFile) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
+	public static void exportProject(String projectName, File semTurkeyProjectFile) throws IOException, ProjectAccessException {
 
 		if (!isOpen(projectName)) {
-			throw new UnavailableResourceException(
+			throw new ProjectAccessException(
 					"project " + projectName + " is not open, and thus cannot be exported");
 		}
 
@@ -403,9 +404,9 @@ public class ProjectManager {
 	}
 
 	public static void importProject(File semTurkeyProjectFile, String name)
-			throws IOException, ModelAccessException, UnsupportedRDFFormatException, ProjectCreationException,
-			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException,
-			ModelUpdateException, InvalidProjectNameException {
+			throws IOException, ProjectCreationException,
+			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException, 
+			InvalidProjectNameException {
 		File tempDir = Resources.createTempDir();
 		Utilities.unZip(semTurkeyProjectFile.getPath(), tempDir);
 
@@ -983,8 +984,7 @@ public class ProjectManager {
 	 * @param projectName
 	 * @throws ModelUpdateException
 	 */
-	public static void disconnectFromProject(ProjectConsumer consumer, String projectName)
-			throws ModelUpdateException {
+	public static void disconnectFromProject(ProjectConsumer consumer, String projectName) {
 
 		Project project = openProjects.getProject(projectName);
 
@@ -1015,7 +1015,7 @@ public class ProjectManager {
 		return openProjects.isOpen(project);
 	}
 
-	private static void tearDownProject(Project project) throws ModelUpdateException {
+	private static void tearDownProject(Project project) {
 		logger.debug("closing project: " + project);
 		project.deactivate();
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
@@ -1381,7 +1381,7 @@ public class ProjectManager {
 	}
 
 	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException {
+			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException, ProjectAccessException {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 

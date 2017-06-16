@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.rdf4j.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.core.io.Resource;
 
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
 import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 public class STServiceHTTPContext implements STServiceContext, ApplicationListener<ContextRefreshedEvent> {
 
@@ -96,14 +97,14 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	 * {@value #HTTP_PARAM_WGRAPH}), then it returns the base URI of the current project.
 	 */
 	@Override
-	public ARTResource getWGraph() {
+	public Resource getWGraph() {
 		String wgraphParameter = request.getParameter(HTTP_PARAM_WGRAPH);
 
 		if (wgraphParameter == null) {
 			wgraphParameter = getProject().getBaseURI();
 		}
 
-		ARTResource wgraph = conversionService.convert(wgraphParameter, ARTResource.class);
+		Resource wgraph = RDF4JMigrationUtils.convert2rdf4j(conversionService.convert(wgraphParameter, ARTResource.class));
 
 		logger.trace("wgraph = " + wgraph);
 
@@ -111,14 +112,14 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	}
 
 	@Override
-	public ARTResource[] getRGraphs() {
+	public Resource[] getRGraphs() {
 		String rgraphsParameter = request.getParameter(HTTP_PARAM_RGRAPHS);
 
 		if (rgraphsParameter == null) {
 			rgraphsParameter = HTTP_ARG_ANY_GRAPH;
 		}
 
-		ARTResource[] rgraphs = conversionService.convert(rgraphsParameter, ARTResource[].class);
+		Resource[] rgraphs = RDF4JMigrationUtils.convert2rdf4j(conversionService.convert(rgraphsParameter, ARTResource[].class));
 
 		logger.trace("rgraphs = " + Arrays.toString(rgraphs));
 
@@ -146,7 +147,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		// Otherwise, computes the extension path component by looking at the path of the resource
 		// pom.properties added by Maven
-		Resource[] resources;
+		org.springframework.core.io.Resource[] resources;
 		try {
 			resources = applicationContext.getResources("classpath*:/META-INF/maven/**/pom.properties");
 		} catch (IOException e) {
@@ -159,7 +160,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 					"No resource found at the location classpath*:/META-INF/maven/**/pom.properties");
 		}
 
-		Resource r = resources[0];
+		org.springframework.core.io.Resource r = resources[0];
 
 		try {
 			// Path elements should be xxx, yyy, zzz, META-INF, maven, groupId, artifactId, pom.properties

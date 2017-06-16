@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
@@ -156,7 +154,7 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
 	public void setNSPrefixMapping(String prefix, String namespace)
-			throws NSPrefixMappingUpdateException, ModelUpdateException {
+			throws NSPrefixMappingUpdateException {
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
 	}
 
@@ -169,7 +167,7 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
 	public void changeNSPrefixMapping(String prefix, String namespace)
-			throws NSPrefixMappingUpdateException, ModelUpdateException {
+			throws NSPrefixMappingUpdateException {
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
 	}
 
@@ -184,7 +182,7 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'D')")
 	public void removeNSPrefixMapping(String namespace)
-			throws NSPrefixMappingUpdateException, ModelUpdateException {
+			throws NSPrefixMappingUpdateException {
 		getOntologyManager().removeNSPrefixMapping(namespace);
 	}
 
@@ -323,7 +321,7 @@ public class Metadata extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromLocalFile(String baseURI, MultipartFile localFile,
 			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws RDF4JException, OntologyManagerException, ModelUpdateException, IOException {
+			throws RDF4JException, OntologyManagerException, IOException {
 		Set<IRI> failedImports = new HashSet<>();
 		File inputServerFile = File.createTempFile("addFromLocalFile", localFile.getOriginalFilename());
 		try {
@@ -353,7 +351,7 @@ public class Metadata extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromMirror(String baseURI, String mirrorFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws RDF4JException, MalformedURLException, OntologyManagerException, ModelUpdateException {
+			throws RDF4JException, MalformedURLException, OntologyManagerException{
 		Set<IRI> failedImports = new HashSet<>();
 
 		getOntologyManager().addOntologyImportFromMirror(baseURI, mirrorFile, transitiveImportAllowance,
@@ -379,7 +377,7 @@ public class Metadata extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromWeb(String baseURI, @Optional String altUrl,
 			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws RDF4JException, MalformedURLException, OntologyManagerException, ModelUpdateException {
+			throws RDF4JException, MalformedURLException, OntologyManagerException{
 		String url = altUrl != null ? altUrl : baseURI;
 
 		Set<IRI> failedImports = new HashSet<>();
@@ -408,7 +406,7 @@ public class Metadata extends STServiceAdapter {
 	public Collection<OntologyImport> addFromWebToMirror(String baseURI, @Optional String altUrl,
 			String mirrorFile, @Optional RDFFormat rdfFormat,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws RDF4JException, MalformedURLException, OntologyManagerException, ModelUpdateException {
+			throws RDF4JException, MalformedURLException, OntologyManagerException{
 		String url = altUrl != null ? altUrl : baseURI;
 
 		Set<IRI> failedImports = new HashSet<>();
@@ -432,7 +430,7 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'D')")
 	public void removeImport(String baseURI) throws RDF4JException, OntologyManagerException,
-			ModelUpdateException, IOException, ModelAccessException {
+			IOException {
 		getOntologyManager().removeOntologyImport(baseURI);
 	}
 
@@ -447,7 +445,6 @@ public class Metadata extends STServiceAdapter {
 	 * @return
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws ImportManagementException
 	 * @throws IOException
 	 */
@@ -455,7 +452,7 @@ public class Metadata extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> downloadFromWeb(String baseURI, @Optional String altUrl,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws RDF4JException,
-			MalformedURLException, ModelUpdateException, ImportManagementException, IOException {
+			MalformedURLException, ImportManagementException, IOException {
 		String url = altUrl != null ? altUrl : baseURI;
 
 		Set<IRI> failedImports = new HashSet<>();
@@ -476,7 +473,6 @@ public class Metadata extends STServiceAdapter {
 	 * @return
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws ImportManagementException
 	 * @throws IOException
 	 */
@@ -484,7 +480,7 @@ public class Metadata extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('sys(ontologymirror)', 'C')")
 	public Collection<OntologyImport> downloadFromWebToMirror(String baseURI, @Optional String altUrl,
 			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws RDF4JException, MalformedURLException, ModelUpdateException, ImportManagementException,
+			throws RDF4JException, MalformedURLException, ImportManagementException,
 			IOException {
 		String url = altUrl != null ? altUrl : baseURI;
 
@@ -506,14 +502,13 @@ public class Metadata extends STServiceAdapter {
 	 * @return
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
-	 * @throws ModelUpdateException
 	 * @throws ImportManagementException
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public Collection<OntologyImport> getFromLocalFile(String baseURI, String localFile, String mirrorFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws RDF4JException,
-			MalformedURLException, ModelUpdateException, ImportManagementException, IOException {
+			MalformedURLException, ImportManagementException, IOException {
 
 		Set<IRI> failedImports = new HashSet<>();
 

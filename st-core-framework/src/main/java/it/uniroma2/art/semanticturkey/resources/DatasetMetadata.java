@@ -22,7 +22,6 @@
   */
 package it.uniroma2.art.semanticturkey.resources;
 
-import it.uniroma2.art.owlart.model.ARTURIResource;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 
 import com.google.common.base.Objects;
@@ -37,18 +36,16 @@ public class DatasetMetadata {
 	private String sparqlEndpoint;
 	private boolean dereferenceable;
 	private RenderingEngine renderingEngine;
-	private ARTURIResource lexicalModel;
 	private String title;
 	
 
-	public DatasetMetadata(String baseURI, String title, String voidDocument, String sparqlEndpoint, boolean dereferenceable, RenderingEngine renderingEngine, ARTURIResource lexicalModel) {
+	public DatasetMetadata(String baseURI, String title, String voidDocument, String sparqlEndpoint, boolean dereferenceable, RenderingEngine renderingEngine) {
 		this.baseURI = normalizeStringValue(baseURI);
 		this.title = normalizeStringValue(title);
 		this.voidDocument = normalizeStringValue(voidDocument);
 		this.sparqlEndpoint = normalizeStringValue(sparqlEndpoint);
 		this.dereferenceable = dereferenceable;
 		this.renderingEngine = renderingEngine;
-		this.lexicalModel = lexicalModel;
 	}
 
 	public String getSparqlEndpoint() {

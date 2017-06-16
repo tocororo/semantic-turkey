@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.services;
 
+import org.eclipse.rdf4j.model.Resource;
+
 import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
@@ -20,9 +22,9 @@ public interface STServiceContext {
 
 	Project getProject(int index);
 
-	ARTResource getWGraph();
+	Resource getWGraph();
 
-	ARTResource[] getRGraphs();
+	Resource[] getRGraphs();
 
 	String getExtensionPathComponent();
 

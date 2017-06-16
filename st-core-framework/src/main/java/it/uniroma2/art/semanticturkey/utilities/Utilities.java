@@ -26,7 +26,6 @@
  */
 package it.uniroma2.art.semanticturkey.utilities;
 
-import it.uniroma2.art.owlart.io.RDFFormat;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -41,8 +40,11 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
+
+import org.eclipse.rdf4j.rio.RDFFormat;
 
 /**
  * @author Armando Stellato Contributor(s): Andrea Turbati
@@ -80,20 +82,21 @@ public class Utilities {
 		 * System.err.println("Errore, c'e' qualcosa che non va!"); return; }
 		 */
 
-		RandomAccessFile file = new RandomAccessFile(destinationFile, "rw");
-		file.seek(0);
-
-		InputStream inStream = connection.getInputStream();
-		BufferedInputStream bufStream = new BufferedInputStream(inStream);
-
-		byte[] buffer = new byte[1024];
-
-		// download cycle
-		while (true) {
-			int bytesRead = bufStream.read(buffer, 0, 1024);
-			if (bytesRead == -1)
-				break;
-			file.write(buffer, 0, bytesRead);
+		try(RandomAccessFile file = new RandomAccessFile(destinationFile, "rw")){
+			file.seek(0);
+	
+			InputStream inStream = connection.getInputStream();
+			BufferedInputStream bufStream = new BufferedInputStream(inStream);
+	
+			byte[] buffer = new byte[1024];
+	
+			// download cycle
+			while (true) {
+				int bytesRead = bufStream.read(buffer, 0, 1024);
+				if (bytesRead == -1)
+					break;
+				file.write(buffer, 0, bytesRead);
+			}
 		}
 
 	}
@@ -108,10 +111,26 @@ public class Utilities {
 	 */
 	public static void downloadRDF(URL url, String destinationFile) throws IOException {	
 		
-		RDFFormat rdfFormat = RDFFormat.guessRDFFormatFromFile(new File(destinationFile));
-		String mimeType = rdfFormat.getMIMEType();
+		RDFFormat rdfFormat = guessRDFFormatFromFile(new File(destinationFile));
+		
+		String mimeType = rdfFormat.getDefaultMIMEType();
 		
 		download(url, mimeType, destinationFile);
+	}
+	
+	private static RDFFormat guessRDFFormatFromFile(File file){
+		String filename = file.getName();
+		String ext = (filename.lastIndexOf(".") == -1) ? "" : filename.substring(
+				filename.lastIndexOf(".") + 1, filename.length()).toLowerCase();
+		List<RDFFormat> formats = Arrays.asList(RDFFormat.RDFXML, RDFFormat.NTRIPLES, RDFFormat.N3, 
+				RDFFormat.TURTLE, RDFFormat.NQUADS, RDFFormat.TRIG, RDFFormat.TRIX, RDFFormat.RDFJSON,
+				RDFFormat.RDFA, RDFFormat.JSONLD);
+		for(RDFFormat rdfFormat : formats){
+			if(rdfFormat.getFileExtensions().contains(ext)){
+				return rdfFormat;
+			}
+		}
+		return null;
 	}
 
 	/**

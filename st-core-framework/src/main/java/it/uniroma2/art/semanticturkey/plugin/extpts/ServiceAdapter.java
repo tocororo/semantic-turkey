@@ -40,6 +40,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
@@ -404,11 +405,11 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return servletUtilities.createExceptionResponse(request, msg, sertype);
 	}
 
-	protected ARTResource getWorkingGraph() throws ModelAccessException, NonExistingRDFResourceException {
+	protected Resource getWorkingGraph() throws ModelAccessException, NonExistingRDFResourceException {
 		return serviceContext.getWGraph();
 	}
 
-	protected ARTResource[] getUserNamedGraphs()
+	protected Resource[] getUserNamedGraphs()
 			throws ModelAccessException, NonExistingRDFResourceException {
 		return serviceContext.getRGraphs();
 	}

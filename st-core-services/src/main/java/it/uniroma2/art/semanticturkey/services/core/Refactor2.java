@@ -51,6 +51,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
@@ -66,6 +67,7 @@ import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
  */
 
 @STService
+//TODO change the name to Refactor
 public class Refactor2 extends STServiceAdapter  {
 	
 	private static Logger logger = LoggerFactory.getLogger(Refactor2.class);
@@ -148,7 +150,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 * @param targetBaseURI
 	 * @throws ProjectUpdateException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method=RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
 	public void replaceBaseURI(@Optional IRI sourceBaseURI, IRI targetBaseURI) throws ProjectUpdateException {
@@ -164,6 +166,8 @@ public class Refactor2 extends STServiceAdapter  {
 		//if the source baseURI is the default one, set the new baseURI of the project
 		if (source.equals(getProject().getBaseURI())) {
 			getProject().getNewOntologyManager().setBaseURI(target);
+			getProject().setBaseURI(target);
+			//TODO update working graph
 		}
 		// @formatter:off
 		String query =
@@ -199,6 +203,7 @@ public class Refactor2 extends STServiceAdapter  {
 		query = query.replace("%oldBaseURI%", source);
 		query = query.replace("%newBaseURI%", target);
 		query = query.replace("%workingGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph())); 
+		System.out.println("query = "+query); // da cancellare
 		System.out.println("replace base uri query\n" + query);
 		System.out.println("now baseURI is " + getProject().getBaseURI()); //this prints old baseURI, so it is not updated
 		System.out.println("now baseURI (passing by onto mgr) is " + getProject().getNewOntologyManager().getBaseURI());
