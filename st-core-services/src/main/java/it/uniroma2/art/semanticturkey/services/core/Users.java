@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -32,11 +33,18 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import alice.tuprolog.MalformedGoalException;
+import alice.tuprolog.NoMoreSolutionException;
+import alice.tuprolog.NoSolutionException;
+import alice.tuprolog.Term;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -46,6 +54,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
@@ -65,13 +74,6 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation
 	public JsonNode getUser() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-//		ObjectNode userNode = jsonFactory.objectNode();
-//		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//		if (!(auth instanceof AnonymousAuthenticationToken)) {//if there's a user authenticated
-//			STUser loggedUser = (STUser) auth.getPrincipal();
-//			userNode = loggedUser.getAsJsonObject();
-//		}
-//		return userNode;
 		ObjectNode respNode = jsonFactory.objectNode();
 		ObjectNode userNode = jsonFactory.objectNode();
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -102,6 +104,31 @@ public class Users extends STServiceAdapter {
 		}
 		return userArrayNode;
 	}
+	
+	/**
+	 * Returns the capabilities of the current logged user in according the roles he has in the current project
+	 * @return
+	 * @throws NoMoreSolutionException 
+	 * @throws NoSolutionException 
+	 * @throws MalformedGoalException 
+	 */
+	@STServiceOperation
+	public JsonNode listUserCapabilities() throws MalformedGoalException, NoSolutionException, NoMoreSolutionException {
+		ArrayNode capabilitiesJsonArray = JsonNodeFactory.instance.arrayNode();
+		Project project = getProject();
+		STUser user = UsersManager.getLoggedUser();
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
+		for (Role role : puBinding.getRoles()) {
+			RBACProcessor rbac = RBACManager.getRBACProcessor(project, role.getName());
+			List<Term> capabilities = rbac.getCapabilitiesAsTermList();
+			for (Term t : capabilities) {
+				capabilitiesJsonArray.add(t.toString());
+			}
+		}
+		return capabilitiesJsonArray;
+	}
+	
+	
 	
 	/**
 	 * Returns all the users that have at least a role in the given project
