@@ -547,7 +547,7 @@ public class Refactor2 extends STServiceAdapter  {
 	 */
 	@STServiceOperation
 	@Write
-	//TODO decide which value assign to @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> spawnNewConceptFromLabel(
 			@Optional @NotLocallyDefined IRI newConcept, 
 			@LocallyDefined Resource xLabel,

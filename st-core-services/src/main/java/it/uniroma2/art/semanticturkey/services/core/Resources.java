@@ -73,6 +73,7 @@ public class Resources extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'U')")
 	public void setDeprecated(@LocallyDefined @Subject IRI resource){
 		RepositoryConnection conn = getManagedConnection();
 		Literal literalTrue = conn.getValueFactory().createLiteral("true",XMLSchema.BOOLEAN);
