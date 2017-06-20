@@ -110,7 +110,8 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	}
 
 	public Resource getWorkingGraph() {
-		return rdf4j2artFact.aRTResource2RDF4JResource(RDF4JMigrationUtils.convert2art(stServiceContext.getWGraph()));
+		//return rdf4j2artFact.aRTResource2RDF4JResource(RDF4JMigrationUtils.convert2art(stServiceContext.getWGraph()));
+		return stServiceContext.getWGraph();
 	}
 
 	public Resource getDeleteGraph() {

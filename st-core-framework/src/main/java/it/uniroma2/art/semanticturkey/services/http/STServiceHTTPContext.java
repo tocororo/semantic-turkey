@@ -6,6 +6,7 @@ import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.convert.ConversionService;
 
-import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -22,7 +22,6 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
 import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 public class STServiceHTTPContext implements STServiceContext, ApplicationListener<ContextRefreshedEvent> {
 
@@ -101,11 +100,11 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		String wgraphParameter = request.getParameter(HTTP_PARAM_WGRAPH);
 
 		if (wgraphParameter == null) {
-			wgraphParameter = getProject().getBaseURI();
+			wgraphParameter = "<"+getProject().getBaseURI()+">";
 		}
 
-		Resource wgraph = RDF4JMigrationUtils.convert2rdf4j(conversionService.convert(wgraphParameter, ARTResource.class));
-
+		Resource wgraph = conversionService.convert(wgraphParameter, Resource.class);
+		
 		logger.trace("wgraph = " + wgraph);
 
 		return wgraph;
@@ -115,11 +114,13 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	public Resource[] getRGraphs() {
 		String rgraphsParameter = request.getParameter(HTTP_PARAM_RGRAPHS);
 
+		Resource[] rgraphs;
 		if (rgraphsParameter == null) {
 			rgraphsParameter = HTTP_ARG_ANY_GRAPH;
+			rgraphs = new Resource[0];
+		} else{
+			rgraphs = conversionService.convert(rgraphsParameter, Resource[].class);
 		}
-
-		Resource[] rgraphs = RDF4JMigrationUtils.convert2rdf4j(conversionService.convert(rgraphsParameter, ARTResource[].class));
 
 		logger.trace("rgraphs = " + Arrays.toString(rgraphs));
 
@@ -212,5 +213,4 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	public boolean hasContextParameter(String parameter) {
 		return request.getParameter("ctx_" + parameter) != null;
 	}
-
 }

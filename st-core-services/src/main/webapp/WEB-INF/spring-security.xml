@@ -86,8 +86,6 @@
 		class="org.springframework.context.support.ConversionServiceFactoryBean">
 		<beans:property name="converters">
 			<beans:list>
-				<!-- <bean id="toArtNodesConverter" class="it.uniroma2.art.semanticturkey.converters.ToARTNodes" 
-					/> -->
 				<beans:bean id="StringToACLAccessLevelConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToACLAccessLevelConverter" />
 				<beans:bean id="StringToACLLockLevelConverter"
@@ -95,16 +93,6 @@
 				<beans:bean id="StringToProjectConsumerConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />
 
-				<beans:bean id="StringToARTBNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTBNodeConverter" />
-				<beans:bean id="StringToARTLiteralConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTLiteralConverter" />
-				<beans:bean id="StringToARTNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTNodeConverter" />
-				<beans:bean id="StringToARTResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTResourceConverter" />
-				<beans:bean id="StringToARTURIResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToARTURIResourceConverter" />
 				<beans:bean id="StringToResourcePositionConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
 					<beans:constructor-arg ref="datasetMetadataRepository" />
