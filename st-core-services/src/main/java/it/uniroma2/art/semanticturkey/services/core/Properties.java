@@ -338,8 +338,8 @@ public class Properties extends STServiceAdapter {
                 "																						\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {						\n" +
 				"     ?resource 	rdfs:subPropertyOf	?superProperty .								\n" +
-				" }																						\n" +
 				generateNatureSPARQLWherePart("?resource") +
+				" }																						\n" +
 				" GROUP BY ?resource															\n"
 				// @formatter:on
 		);
