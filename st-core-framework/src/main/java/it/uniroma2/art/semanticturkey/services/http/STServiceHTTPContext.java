@@ -116,7 +116,6 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		Resource[] rgraphs;
 		if (rgraphsParameter == null) {
-			rgraphsParameter = HTTP_ARG_ANY_GRAPH;
 			rgraphs = new Resource[0];
 		} else{
 			rgraphs = conversionService.convert(rgraphsParameter, Resource[].class);

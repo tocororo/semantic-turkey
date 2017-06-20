@@ -667,7 +667,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addSuperProperty(@LocallyDefined @Subject IRI property, @LocallyDefined IRI superProperty){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -680,7 +680,7 @@ public class Properties extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removeSuperProperty(@LocallyDefined @Subject IRI property, @LocallyDefined IRI superProperty){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();

@@ -629,7 +629,7 @@ public class SKOS extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addToCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element) throws DeniedOperationException{
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -652,7 +652,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addFirstToOrderedCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element ) 
 			throws DeniedOperationException{
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -677,7 +677,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addInPositionToOrderedCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element,
 			int index) 
 			throws DeniedOperationException{
@@ -714,7 +714,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addLastToOrderedCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element) 
 			throws DeniedOperationException{
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -865,7 +865,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
 	public void removeTopConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -1417,7 +1417,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void removeFromCollection(@Subject @LocallyDefined Resource element, 
 			@LocallyDefined Resource collection) throws DeniedOperationException{
 		Model modelRemovals = new LinkedHashModel();
@@ -1440,7 +1440,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	// TODO @PreAuthorize
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void removeFromOrderedCollection(@Subject @LocallyDefined Resource element, 
 			@LocallyDefined Resource collection) throws DeniedOperationException{
 		Model modelAdditions = new LinkedHashModel();
