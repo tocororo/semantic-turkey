@@ -423,7 +423,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -452,7 +452,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addIntersectionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
 			throws ManchesterParserException{
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -488,7 +488,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addUnionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
 			throws ManchesterParserException{
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -522,7 +522,7 @@ public class Classes extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'W')")
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addOneOf(@LocallyDefined @Subject IRI cls, List<IRI> individuals) 
 			throws ManchesterParserException{
 		RepositoryConnection repoConnection = getManagedConnection();

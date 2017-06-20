@@ -518,7 +518,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -555,7 +555,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	public void addAltLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -568,7 +568,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	public void addHiddenLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -881,7 +881,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
 	public void removePrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -895,7 +895,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
 	public void removeAltLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -909,7 +909,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'R')")
 	public Collection<AnnotatedValue<Literal>> getAltLabels(@LocallyDefined IRI concept, String language){
 		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -948,7 +948,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept, lexicalization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
 	public void removeHiddenLabel(@LocallyDefined @Subject IRI concept, Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
