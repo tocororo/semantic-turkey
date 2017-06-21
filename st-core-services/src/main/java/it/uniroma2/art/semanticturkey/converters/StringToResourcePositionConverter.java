@@ -39,7 +39,8 @@ public class StringToResourcePositionConverter implements Converter<String, Reso
 		} else if (resourcePositionString.startsWith(REMOTE_PREFIX)) {
 			String datasetId = resourcePositionString.substring(REMOTE_PREFIX.length());
 			//DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(VocabUtilities.nodeFactory.createURIResource(datasetId));
-			DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(RDF4JMigrationUtils.convert2art(SimpleValueFactory.getInstance().createIRI(datasetId)));
+			//DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(RDF4JMigrationUtils.convert2art(SimpleValueFactory.getInstance().createIRI(datasetId)));
+			DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(SimpleValueFactory.getInstance().createIRI(datasetId));
 			
 			if (meta == null) {
 				throw new IllegalArgumentException(String.format("The dataset mentioned in a remote resource position is not known: %s", datasetId));
