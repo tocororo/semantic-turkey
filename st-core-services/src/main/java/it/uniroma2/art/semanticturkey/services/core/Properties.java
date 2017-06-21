@@ -617,6 +617,7 @@ public class Properties extends STServiceAdapter {
 		} else { //rdf:Property
 			annotatedValue.setAttribute("role", RDFResourceRole.property.name());
 		}
+		annotatedValue.setAttribute("explicit", true);
 		//TODO compute show
 		return annotatedValue; 
 	}

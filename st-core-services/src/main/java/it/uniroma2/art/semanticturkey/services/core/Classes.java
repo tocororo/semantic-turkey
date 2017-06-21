@@ -297,6 +297,7 @@ public class Classes extends STServiceAdapter {
 		
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newClass);
 		annotatedValue.setAttribute("role", RDFResourceRole.cls.name());
+		annotatedValue.setAttribute("explicit", true);
 		//TODO compute show
 		return annotatedValue; 
 	}
@@ -387,6 +388,7 @@ public class Classes extends STServiceAdapter {
 		} else {
 			annotatedValue.setAttribute("role", RDFResourceRole.individual.name());
 		}
+		annotatedValue.setAttribute("explicit", true);
 		//TODO compute show
 		return annotatedValue; 
 	}
