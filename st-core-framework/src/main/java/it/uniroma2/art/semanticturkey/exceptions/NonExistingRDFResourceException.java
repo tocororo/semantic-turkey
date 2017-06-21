@@ -4,8 +4,6 @@ import java.util.Arrays;
 
 import org.eclipse.rdf4j.model.Resource;
 
-import it.uniroma2.art.owlart.model.ARTResource;
-
 public class NonExistingRDFResourceException extends Exception {
 
 	/**
@@ -30,8 +28,8 @@ public class NonExistingRDFResourceException extends Exception {
 		super(message);
 	}
 
-	public NonExistingRDFResourceException(ARTResource res, ARTResource[] graphs) {
+	/*public NonExistingRDFResourceException(ARTResource res, ARTResource[] graphs) {
 		super("resource: " + res + " does not exist in graphs: " + Arrays.toString(graphs));
-	}
+	}*/
 	
 }

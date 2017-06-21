@@ -29,7 +29,6 @@ package it.uniroma2.art.semanticturkey.vocabulary;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 
-import it.uniroma2.art.owlart.model.ARTResource;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.resources.Config;
 
@@ -48,7 +47,7 @@ public class STVocabUtilities {
 	 * @param res
 	 * @return
 	 */
-	@Deprecated
+	/*@Deprecated
 	public static boolean isHiddenResource(ARTResource res, OntologyManager ontMgr) {
 	    if (!res.isURIResource())
 	        return false;
@@ -58,7 +57,7 @@ public class STVocabUtilities {
 		if (!Config.isAdminStatus() && ontMgr.isApplicationOntNamespace(ns))
 			return true;
 	    return false;		
-	}
+	}*/
 
 	public static boolean isHiddenResource(OntologyManager ontMgr, Resource res) {
 	    if (res instanceof IRI)

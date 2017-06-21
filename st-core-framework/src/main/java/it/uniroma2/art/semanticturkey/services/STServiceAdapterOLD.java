@@ -49,14 +49,14 @@ public class STServiceAdapterOLD implements STService, NewStyleService {
 	 * This should not be used (since there are the Converters). It can be used in particular cases to avoid
 	 * controls performed by the Converter (see Refactor#renameResource())
 	 */
-	protected ARTURIResource retrieveExistingURIResource(RDFModel model, String qname)
+	/*protected ARTURIResource retrieveExistingURIResource(RDFModel model, String qname)
 			throws NonExistingRDFResourceException, ModelAccessException {
 		ARTURIResource res = RDFNodeSerializer.createURI(model, qname);
 		ARTResource[] graphs = RDF4JMigrationUtils.convert2art(stServiceContext.getRGraphs());
 		if (model.existsResource(res, graphs))
 			return res;
 		throw new NonExistingRDFResourceException(res, graphs);
-	}
+	}*/
 
 	private String getRequest() {
 		return this.getClass().getSimpleName();

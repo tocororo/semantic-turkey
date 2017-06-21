@@ -432,21 +432,21 @@ public abstract class ServiceAdapter implements ServiceInterface {
 		return getProject().getOWLModel();
 	}
 
-	protected ARTResource retrieveExistingResource(RDFModel model, String qname, ARTResource... graphs)
+	/*protected ARTResource retrieveExistingResource(RDFModel model, String qname, ARTResource... graphs)
 			throws NonExistingRDFResourceException, ModelAccessException {
 		ARTResource res = RDFNodeSerializer.createResource(model, qname);
 		if (model.existsResource(res, graphs))
 			return res;
 		throw new NonExistingRDFResourceException(res, graphs);
-	}
+	}*/
 
-	protected ARTURIResource retrieveExistingURIResource(RDFModel model, String qname, ARTResource... graphs)
+	/*protected ARTURIResource retrieveExistingURIResource(RDFModel model, String qname, ARTResource... graphs)
 			throws NonExistingRDFResourceException, ModelAccessException {
 		ARTURIResource res = RDFNodeSerializer.createURI(model, qname);
 		if (model.existsResource(res, graphs))
 			return res;
 		throw new NonExistingRDFResourceException(res, graphs);
-	}
+	}*/
 
 	/**
 	 * actually this method should be incorporated inside the OWLART, so that all the addXXX which take a
