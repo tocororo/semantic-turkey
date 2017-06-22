@@ -461,7 +461,6 @@ public class SKOS extends STServiceAdapter {
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newConceptIRI);
 		annotatedValue.setAttribute("role", RDFResourceRole.concept.name());
 		annotatedValue.setAttribute("explicit", true);
-		//TODO compute show
 		return annotatedValue; 
 	}
 	
@@ -513,7 +512,6 @@ public class SKOS extends STServiceAdapter {
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newSchemeIRI);
 		annotatedValue.setAttribute("role", RDFResourceRole.conceptScheme.name());
 		annotatedValue.setAttribute("explicit", true);
-		//TODO compute show
 		return annotatedValue; 
 	}
 	
@@ -1216,7 +1214,6 @@ public class SKOS extends STServiceAdapter {
 			annotatedValue.setAttribute("role", RDFResourceRole.skosOrderedCollection.name());
 		}
 		annotatedValue.setAttribute("explicit", true);
-		//TODO compute show
 		return annotatedValue; 
 	}
 	

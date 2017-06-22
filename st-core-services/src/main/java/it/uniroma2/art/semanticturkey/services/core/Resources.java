@@ -13,11 +13,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
@@ -27,7 +31,7 @@ public class Resources extends STServiceAdapter {
 	
 	private static Logger logger = LoggerFactory.getLogger(Resources.class);
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'U')")
 	public void updateTriple(@Subject Resource subject, IRI property, Value value, Value newValue){
@@ -52,10 +56,9 @@ public class Resources extends STServiceAdapter {
 		query = query.replace("?newValue", NTriplesUtil.toNTriplesString(newValue));
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
-		
 	}
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
 	public void removeValue(@LocallyDefined @Subject Resource subject, @LocallyDefined IRI property, Value value){
@@ -63,7 +66,7 @@ public class Resources extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'C')")
 	public void addValue(@LocallyDefined @Subject Resource subject, @LocallyDefined IRI property, Value value){
@@ -71,13 +74,41 @@ public class Resources extends STServiceAdapter {
 	}
 	
 	
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'U')")
 	public void setDeprecated(@LocallyDefined @Subject IRI resource){
 		RepositoryConnection conn = getManagedConnection();
 		Literal literalTrue = conn.getValueFactory().createLiteral("true",XMLSchema.BOOLEAN);
 		conn.add(resource, OWL2Fragment.DEPRECATED, literalTrue, getWorkingGraph());
+	}
+	
+	/**
+	 * Return the description of a resource, including show and nature
+	 * @param resource
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	public AnnotatedValue<Resource> getResourceDescription(@LocallyDefined Resource resource){
+		QueryBuilder qb = createQueryBuilder(
+			// @formatter:off
+			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +
+			" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>							\n" +
+			" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
+			" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
+			" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
+			" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n" +                                                                              
+			"    ?resource ?p ?o .															\n" +
+			generateNatureSPARQLWherePart("?resource") +
+			" }																				\n" +
+			" GROUP BY ?resource 															\n"
+			// @formatter:on
+		);
+		qb.setBinding("resource", resource);
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery().iterator().next();
 	}
 
 }
