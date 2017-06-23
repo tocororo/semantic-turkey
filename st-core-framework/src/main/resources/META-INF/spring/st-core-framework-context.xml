@@ -171,8 +171,22 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter" />
 		</osgi:service-properties>
 	</osgi:service>
+
+	<!-- Publishes the DCAT-AP implementation of the extension 
+		point DatasetMetadataExporter -->
+	<bean id="DCATAPDatasetMetadataExporterFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.DCATAPDatasetMetadataExporterFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="DCATAPDatasetMetadataExporterFactory">
+		
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter" />
+		</osgi:service-properties>
+	</osgi:service>
 	
-		<!-- Publishes the VOID/LIME implementation of the extension 
+	<!-- Publishes the VOID/LIME implementation of the extension 
 		point DatasetMetadataExporter -->
 	<bean id="VOIDLIMEDatasetMetadataExporterFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.VOIDLIMEDatasetMetadataExporterFactory" />
