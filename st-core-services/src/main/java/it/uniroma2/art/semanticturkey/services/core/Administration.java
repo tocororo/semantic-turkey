@@ -284,11 +284,11 @@ public class Administration extends STServiceAdapter {
 		if (projectName != null) {
 			Project project = ProjectManager.getProjectDescription(projectName);
 			for (Term c: RBACManager.getRoleCapabilities(project, role)) {
-				capabilitiesArrayNode.add(c.toString());
+				capabilitiesArrayNode.add(c.toString().replaceAll("'", "\""));
 			}
 		} else {
 			for (Term c: RBACManager.getRoleCapabilities(null, role)) {
-				capabilitiesArrayNode.add(c.toString());
+				capabilitiesArrayNode.add(c.toString().replaceAll("'", "\""));
 			}
 		}
 		return capabilitiesArrayNode;
