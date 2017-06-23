@@ -1,14 +1,13 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.rendering;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Factory for the instantiation of {@link SKOSXLRenderingEngine}.
@@ -22,8 +21,8 @@ public class SKOSXLRenderingEngineFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new SKOSXLRenderingEngineConfiguration());
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new SKOSXLRenderingEngineConfiguration());
 	}
 
 	@Override
@@ -49,7 +48,7 @@ public class SKOSXLRenderingEngineFactory
 	}
 
 	@Override
-	public SKOSXLRenderingEngine createInstance(PluginConfiguration config) {
+	public SKOSXLRenderingEngine createInstance(STProperties config) {
 		return new SKOSXLRenderingEngine((SKOSXLRenderingEngineConfiguration) config);
 	}
 

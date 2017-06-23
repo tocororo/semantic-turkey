@@ -35,11 +35,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
+import it.uniroma2.art.owlart.models.conf.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
@@ -59,20 +60,20 @@ public class Plugins extends STServiceAdapterOLD {
 	 * @param factoryID
 	 *            the identifier of the plug-in factory
 	 * @return
-	 * @throws ConfParameterNotFoundException
+	 * @throws PropertyNotFoundException 
 	 */
 	@GenerateSTServiceController
 	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
-	public Response getPluginConfigurations(String factoryID) throws ConfParameterNotFoundException {
+	public Response getPluginConfigurations(String factoryID) throws PropertyNotFoundException {
 		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryID);
 
-		Collection<PluginConfiguration> mConfs = pluginFactory.getPluginConfigurations();
+		Collection<STProperties> mConfs = pluginFactory.getPluginConfigurations();
 
 		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 
 		Element dataElement = response.getDataElement();
 
-		for (PluginConfiguration mConf : mConfs) {
+		for (STProperties mConf : mConfs) {
 
 			Element newConfType = XMLHelp.newElement(dataElement, "configuration");
 
@@ -80,20 +81,20 @@ public class Plugins extends STServiceAdapterOLD {
 
 			newConfType.setAttribute("shortName", mConf.getShortName());
 
-			newConfType.setAttribute("editRequired", Boolean.toString(mConf.hasRequiredParameters()));
+			newConfType.setAttribute("editRequired", Boolean.toString(mConf.hasRequiredProperties()));
 
-			Collection<String> pars = mConf.getConfigurationParameters();
+			Collection<String> props = mConf.getProperties();
 
-			for (String par : pars) {
-				String parDescr = mConf.getParameterDescription(par);
+			for (String prop : props) {
+				String parDescr = mConf.getPropertyDescription(prop);
 				Element newPar = XMLHelp.newElement(newConfType, "par");
-				newPar.setAttribute("name", par);
+				newPar.setAttribute("name", prop);
 				newPar.setAttribute("description", parDescr);
-				newPar.setAttribute("required", Boolean.toString(mConf.isRequiredParameter(par)));
-				String contentType = mConf.getParameterContentType(par);
+				newPar.setAttribute("required", Boolean.toString(mConf.isRequiredProperty(prop)));
+				String contentType = mConf.getPropertyContentType(prop);
 				if (contentType != null)
 					newPar.setAttribute("type", contentType);
-				Object parValue = mConf.getParameterValue(par);
+				Object parValue = mConf.getPropertyValue(prop);
 				if (parValue != null)
 					newPar.setTextContent(parValue.toString());
 			}

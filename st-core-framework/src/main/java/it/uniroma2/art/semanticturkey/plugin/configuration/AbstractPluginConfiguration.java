@@ -23,275 +23,101 @@
 
 package it.uniroma2.art.semanticturkey.plugin.configuration;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 
-public abstract class AbstractPluginConfiguration implements PluginConfiguration {
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+
+/**
+ * Abstract base class of plugin configuration objects supporting additional properties (in addition to the
+ * ones defined as annotated fields).
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ *
+ */
+public abstract class AbstractPluginConfiguration extends STPropertiesImpl implements STProperties {
 
 	Class<? extends AbstractPluginConfiguration> thisClass;
 
 	protected Map<String, String> additionalConfigurationParameters = new LinkedHashMap<String, String>();
-	
+
 	protected AbstractPluginConfiguration() {
 		thisClass = this.getClass();
 	}
 
-	protected AbstractPluginConfiguration(File propertyFile) throws IOException, BadConfigurationException {
-		this();
-		loadParameters(propertyFile);
+	@Override
+	public Collection<String> getProperties() {
+		Collection<String> properties = super.getProperties();
+		properties.addAll(additionalConfigurationParameters.keySet());
+		return properties;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#getConfigurationParameters()
-	 */
-	public Collection<String> getConfigurationParameters() {
-		Collection<String> configurationParameters = new ArrayList<String>();
-
-		Field[] fields = thisClass.getFields();
-		for (Field field : fields) {
-			if (field.isAnnotationPresent(PluginConfigurationParameter.class))
-				configurationParameters.add(field.getName());
-		}
-		
-		configurationParameters.addAll(additionalConfigurationParameters.keySet());
-		
-		return configurationParameters;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#getParameterValue(java.lang.String)
-	 */
-	public Object getParameterValue(String id) throws ConfParameterNotFoundException {
+	@Override
+	public Object getPropertyValue(String id) throws PropertyNotFoundException {
 		try {
-			Field parameter = thisClass.getField(id);
-			Object returnedValue = parameter.get(this);
-			return returnedValue;
-		} catch (SecurityException e) {
-			throw new ConfParameterNotFoundException(e);
-		} catch (NoSuchFieldException e) {
-			
+			return super.getPropertyValue(id);
+		} catch (PropertyNotFoundException e) {
+
 			boolean additionalPar = additionalConfigurationParameters.containsKey(id);
-			
+
 			if (additionalPar) {
 				return additionalConfigurationParameters.get(id);
 			} else {
-				throw new ConfParameterNotFoundException(String.format("Parameter %s not found", id));
+				throw new PropertyNotFoundException(String.format("Parameter %s not found", id));
 			}
 		} catch (IllegalArgumentException e) {
-			throw new ConfParameterNotFoundException(e);
-		} catch (IllegalAccessException e) {
-			throw new ConfParameterNotFoundException(e);
+			throw new PropertyNotFoundException(e);
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#setParameter(java.lang.String, java.lang.Object)
-	 */
-	public void setParameter(String id, Object value) throws BadConfigurationException {
-
-		Field prop = null;
+	@Override
+	public void setPropertyValue(String id, Object value) throws WrongPropertiesException {
 		try {
-			prop = thisClass.getField(id);
-
-			// System.out.println("generic type for Prop: " + prop.getGenericType());
-
-			if ((value.getClass() == String.class) && (prop.getGenericType() != String.class)) {
-				value = convertToPropertValue(prop, value);
-			}
-
-			prop.set(this, value);
-		} catch (SecurityException e) {
-			throw new BadConfigurationException(e);
-		} catch (NoSuchFieldException e) {
+			super.setPropertyValue(id, value);
+		} catch (WrongPropertiesException e1) {
 			additionalConfigurationParameters.put(id, value.toString());
-		} catch (IllegalArgumentException e) {
-			throw new BadConfigurationException(e);
-		} catch (IllegalAccessException e) {
-			throw new BadConfigurationException(e);
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#setParameters(java.util.Properties)
-	 */
-	public void setParameters(Properties props) throws BadConfigurationException {
-		Enumeration<?> propNames = props.propertyNames();
-		while (propNames.hasMoreElements()) {
-			String propName = propNames.nextElement().toString();
-			setParameter(propName, props.getProperty(propName));
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#loadParameters(java.io.File)
-	 */
-	public void loadParameters(File propertyFile) throws BadConfigurationException, IOException {
-		Properties props = new java.util.Properties();
-		FileReader fileReader = new FileReader(propertyFile);
-		props.load(fileReader);
-		setParameters(props);
-		fileReader.close();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#storeParameters(java.io.File)
-	 */
-	public void storeParameters(File propertyFile) throws IOException, BadConfigurationException {
-		Properties props = new java.util.Properties();
-		storeParameters(props);
-		try (FileWriter fileWriter = new FileWriter(propertyFile)){
-			props.store(fileWriter, "list of model configuration properties");
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration#storeParameters(java.util.Properties)
-	 */
-	public void storeParameters(Properties props) throws BadConfigurationException {
+	@Override
+	public String getPropertyContentType(String parID) throws PropertyNotFoundException {
 		try {
-			Collection<String> pars = getConfigurationParameters();
-			for (String par : pars) {
-				Object value = getParameterValue(par);
-				props.setProperty(par, value.toString());
-			}
-		} catch (ConfParameterNotFoundException e) {
-			throw new BadConfigurationException(e);
-		}
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.owlart.models.conf.ModelConfiguration#getParameterContentType(java.lang.String)
-	 */
-	public String getParameterContentType(String parID) throws ConfParameterNotFoundException {
-		try {
-			Field field = thisClass.getField(parID);
-
-			if (!field.isAnnotationPresent(ContentType.class))
-				return null;
-
-			ContentType annotation = field.getAnnotation(ContentType.class);
-			return annotation.value();
-
-		} catch (SecurityException e) {
-			throw new ConfParameterNotFoundException(e);
-		} catch (NoSuchFieldException e) {
+			return super.getPropertyContentType(parID);
+		} catch (PropertyNotFoundException e) {
 			if (additionalConfigurationParameters.containsKey(parID)) {
 				return null;
 			} else {
-				throw new ConfParameterNotFoundException(e);
+				throw new PropertyNotFoundException(e);
 			}
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.owlart.models.conf.ModelConfiguration#isRequiredParameter(java.lang.String)
-	 */
-	public boolean isRequiredParameter(String parID) throws ConfParameterNotFoundException {
+	@Override
+	public boolean isRequiredProperty(String parID) throws PropertyNotFoundException {
 		try {
-			Field field = thisClass.getField(parID);
-
-			if (field.isAnnotationPresent(RequiredConfigurationParameter.class))
-				return true;
-			else
+			return super.isRequiredProperty(parID);
+		} catch (PropertyNotFoundException e) {
+			if (additionalConfigurationParameters.containsKey(parID))
 				return false;
 
-		} catch (SecurityException e) {
-			throw new ConfParameterNotFoundException(e);
-		} catch (NoSuchFieldException e) {
-			if (additionalConfigurationParameters.containsKey(parID)) return false;
-			
-			throw new ConfParameterNotFoundException(e);
+			throw e;
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.owlart.models.conf.ModelConfiguration#hasRequiredParameters()
-	 */
-	public boolean hasRequiredParameters() {
-		Field[] fields = thisClass.getFields();
-		for (int i = 0; i < fields.length; i++)
-			if (fields[i].isAnnotationPresent(RequiredConfigurationParameter.class))
-				return true;
-		return false;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.owlart.models.conf.ModelConfiguration#getParameterDescription(java.lang.String)
-	 */
-	public String getParameterDescription(String id) throws ConfParameterNotFoundException {
+	@Override
+	public String getPropertyDescription(String id) throws PropertyNotFoundException {
 		try {
-			Field field = thisClass.getField(id);
-			if (field.isAnnotationPresent(PluginConfigurationParameter.class))
-				return ((PluginConfigurationParameter) field.getAnnotation(PluginConfigurationParameter.class))
-						.description();
-			else
-				throw new ConfParameterNotFoundException("Parameter: " + id + " not found");
-		} catch (SecurityException e) {
-			throw new ConfParameterNotFoundException(e);
-		} catch (NoSuchFieldException e) {
+			return super.getPropertyDescription(id);
+		} catch (PropertyNotFoundException e) {
 			if (additionalConfigurationParameters.containsKey(id)) {
 				return "";
 			}
-			
-			throw new ConfParameterNotFoundException(e);
+
+			throw e;
 		}
 	}
-
-	private Object convertToPropertValue(Field prop, Object value) {
-		if (prop.getGenericType() == Boolean.class || prop.getGenericType() == boolean.class) {
-			value = Boolean.parseBoolean((String) value);
-		} else if (prop.getGenericType() == Long.class || prop.getGenericType() == long.class)
-			value = Long.parseLong((String) value);
-		else if (prop.getGenericType() == Integer.class || prop.getGenericType() == int.class)
-			value = Integer.parseInt((String) value);
-		else if (prop.getGenericType() == Double.class || prop.getGenericType() == double.class)
-			value = Double.parseDouble((String) value);
-		return value;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	public String toString() {
-		Collection<String> pars = getConfigurationParameters();
-		StringBuffer stringed = new StringBuffer("Plugin Configuration ["
-				+ this.getClass().getCanonicalName() + "\n");
-		for (String par : pars) {
-			String value;
-			try {
-				value = getParameterValue(par).toString();
-			} catch (ConfParameterNotFoundException e) {
-				value = "parNotFound!";
-			}
-			stringed.append(par + ": " + value + "\n");
-		}
-		stringed.append("]");
-		return stringed.toString();
-	}
-
 }

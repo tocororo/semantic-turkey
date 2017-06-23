@@ -32,7 +32,6 @@ import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
@@ -120,7 +119,7 @@ public class PluginManager {
 	}
 
 	// // New Methods
-	public static <T extends PluginConfiguration, Q extends STProperties, R extends STProperties> PluginFactory<T, Q, R> getPluginFactory(
+	public static <T extends STProperties, Q extends STProperties, R extends STProperties> PluginFactory<T, Q, R> getPluginFactory(
 			String factoryID) {
 		// test preamble
 		if (isDirectAccessTest()) {

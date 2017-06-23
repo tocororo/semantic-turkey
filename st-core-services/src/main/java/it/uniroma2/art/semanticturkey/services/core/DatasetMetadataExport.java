@@ -23,11 +23,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.owlart.models.conf.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
@@ -36,6 +35,7 @@ import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -64,7 +64,7 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	@STServiceOperation
 	public ObjectNode getExporterSettings(String exporterId) throws STPropertyAccessException {
 		try {
-			PluginFactory<PluginConfiguration, STProperties, STProperties> pluginFactory = PluginManager
+			PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
 					.getPluginFactory(exporterId);
 
 			STProperties extensionPointSettings = pluginFactory.getExtensonPointProjectSettings(getProject());
@@ -117,7 +117,7 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	public void setExporterSettings(String exporterId, Map<String, Object> extensionPointProperties,
 			Map<String, Object> pluginProperties)
 			throws STPropertyAccessException, STPropertyUpdateException {
-		PluginFactory<PluginConfiguration, STProperties, STProperties> pluginFactory = PluginManager
+		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
 				.getPluginFactory(exporterId);
 		pluginFactory.storeExtensonPointProjectSettings(getProject(), extensionPointProperties);
 		pluginFactory.storeProjectSettings(getProject(), pluginProperties);
@@ -145,7 +145,7 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	@Read
 	public void export(HttpServletResponse oRes, PluginSpecification exporterSpecification,
 			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
-			throws ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
+			throws ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, IOException, DatasetMetadataExporterException,
 			STPropertyAccessException {
 

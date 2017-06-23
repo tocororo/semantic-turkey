@@ -103,8 +103,6 @@ import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
@@ -114,6 +112,8 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
@@ -310,11 +310,11 @@ public abstract class Project extends AbstractProject {
 
 			try {
 				PluginFactory<?, ?, ?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
-				PluginConfiguration uriGenConfig;
+				STProperties uriGenConfig;
 
 				if (uriGenConfigType != null) {
 					uriGenConfig = uriGenFactory.createPluginConfiguration(uriGenConfigType);
-					uriGenConfig.loadParameters(new File(_projectDir, URI_GENERATOR_CONFIG_FILENAME));
+					uriGenConfig.loadProperties(new File(_projectDir, URI_GENERATOR_CONFIG_FILENAME));
 				} else {
 					uriGenConfig = uriGenFactory.createDefaultPluginConfiguration();
 				}
@@ -324,9 +324,7 @@ public abstract class Project extends AbstractProject {
 						uriGenFactory.getID(), uriGenConfig);
 
 				this.uriGenerator = (URIGenerator) uriGenFactory.createInstance(uriGenConfig);
-			} catch (IOException
-					| it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException
-					| ClassNotFoundException | UnsupportedPluginConfigurationException
+			} catch (IOException | ClassNotFoundException | UnsupportedPluginConfigurationException
 					| UnloadablePluginConfigurationException e) {
 				throw new ProjectAccessException(e);
 			}
@@ -342,13 +340,13 @@ public abstract class Project extends AbstractProject {
 			try {
 				PluginFactory<?, ?, ?> renderingEngineFactory = PluginManager
 						.getPluginFactory(renderingEngineFactoryID);
-				PluginConfiguration renderingEngineConfig;
+				STProperties renderingEngineConfig;
 
 				if (renderingEngineConfigType != null) {
 					renderingEngineConfig = renderingEngineFactory
 							.createPluginConfiguration(renderingEngineConfigType);
 					renderingEngineConfig
-							.loadParameters(new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME));
+							.loadProperties(new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME));
 				} else {
 					renderingEngineConfig = renderingEngineFactory.createDefaultPluginConfiguration();
 				}
@@ -359,9 +357,7 @@ public abstract class Project extends AbstractProject {
 
 				this.renderingEngine = (RenderingEngine) renderingEngineFactory
 						.createInstance(renderingEngineConfig);
-			} catch (IOException
-					| it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException
-					| ClassNotFoundException | UnsupportedPluginConfigurationException
+			} catch (IOException | ClassNotFoundException | UnsupportedPluginConfigurationException
 					| UnloadablePluginConfigurationException e) {
 				throw new ProjectAccessException(e);
 			}
@@ -659,7 +655,7 @@ public abstract class Project extends AbstractProject {
 
 	public void setBaseURI(String baseURI) throws ProjectUpdateException {
 		try {
-			//getOntModel().setBaseURI(baseURI);
+			// getOntModel().setBaseURI(baseURI);
 			newOntManager.setBaseURI(baseURI);
 			stp_properties.setProperty(BASEURI_PROP, baseURI);
 			updateProjectProperties();
@@ -1010,7 +1006,7 @@ public abstract class Project extends AbstractProject {
 			repositoryManager.addRepositoryConfig(localRepositoryConfig);
 			return repositoryManager.getRepository(localRepostoryId);
 		} catch (ClassCastException | ClassNotFoundException | UnsupportedPluginConfigurationException
-				| UnloadablePluginConfigurationException | BadConfigurationException e) {
+				| UnloadablePluginConfigurationException | WrongPropertiesException e) {
 			throw new RepositoryException(e);
 		}
 	}

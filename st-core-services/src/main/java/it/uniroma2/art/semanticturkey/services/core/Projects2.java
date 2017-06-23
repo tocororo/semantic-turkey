@@ -25,7 +25,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
@@ -41,6 +40,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -71,7 +71,7 @@ public class Projects2 extends STServiceAdapter {
 			@Optional(defaultValue = "resource") String[] updateForRoles) throws ProjectInconsistentException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, BadConfigurationException, UnsupportedPluginConfigurationException,
+			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, PUBindingException, RBACException {
 
 		// Expands defaults in the specification of sail configurers

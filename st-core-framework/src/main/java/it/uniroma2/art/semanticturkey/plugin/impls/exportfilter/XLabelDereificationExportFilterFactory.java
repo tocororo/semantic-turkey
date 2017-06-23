@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XLabelDereificationExportFilterConfiguration;
@@ -24,8 +23,8 @@ public class XLabelDereificationExportFilterFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new XLabelDereificationExportFilterConfiguration());
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new XLabelDereificationExportFilterConfiguration());
 	}
 
 	@Override
@@ -51,7 +50,7 @@ public class XLabelDereificationExportFilterFactory
 	}
 
 	@Override
-	public XLabelDereificationExportFilter createInstance(PluginConfiguration config) {
+	public XLabelDereificationExportFilter createInstance(STProperties config) {
 		return new XLabelDereificationExportFilter((XLabelDereificationExportFilterConfiguration) config);
 	}
 

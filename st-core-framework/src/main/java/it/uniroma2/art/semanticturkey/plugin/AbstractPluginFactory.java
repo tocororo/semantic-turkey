@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.plugin;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -16,7 +15,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
  * 
  * @param <T>
  */
-public abstract class AbstractPluginFactory<T extends PluginConfiguration, Q extends STProperties, R extends STProperties>
+public abstract class AbstractPluginFactory<T extends STProperties, Q extends STProperties, R extends STProperties>
 		implements PluginFactory<T, Q, R> {
 
 	private String extensionPointId;

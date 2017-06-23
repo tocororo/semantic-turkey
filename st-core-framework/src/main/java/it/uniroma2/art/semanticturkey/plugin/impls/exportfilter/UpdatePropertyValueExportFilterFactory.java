@@ -4,10 +4,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.DeletePropertyValueExportFilterConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
@@ -25,8 +23,8 @@ public class UpdatePropertyValueExportFilterFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new UpdatePropertyValueExportFilterConfiguration());
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new UpdatePropertyValueExportFilterConfiguration());
 	}
 
 	@Override
@@ -52,7 +50,7 @@ public class UpdatePropertyValueExportFilterFactory
 	}
 
 	@Override
-	public UpdatePropertyValueExportFilter createInstance(PluginConfiguration config) {
+	public UpdatePropertyValueExportFilter createInstance(STProperties config) {
 		return new UpdatePropertyValueExportFilter((UpdatePropertyValueExportFilterConfiguration) config);
 	}
 

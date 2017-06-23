@@ -28,12 +28,12 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
-import it.uniroma2.art.semanticturkey.tx.ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor;
-
 import static org.junit.Assert.assertTrue;
+
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
+import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.tx.ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor;
 
 /**
  * Abstract base class of tests for implementation of {@link ExportFilter}. To test a specific implementation,
@@ -144,7 +144,7 @@ public abstract class AbstractExportFilterTest {
 							.map(Element.class::cast).orElse(null);
 				}
 
-				PluginConfiguration config;
+				STProperties config;
 
 				if (configType == null) {
 					config = factory.createDefaultPluginConfiguration();
@@ -158,7 +158,7 @@ public abstract class AbstractExportFilterTest {
 						Node child = childNodes.item(i);
 						if (child.getNodeType() == Node.ELEMENT_NODE) {
 							Element childElement = (Element) child;
-							config.setParameter(childElement.getTagName(), childElement.getTextContent());
+							config.setPropertyValue(childElement.getTagName(), childElement.getTextContent());
 						}
 					}
 				}

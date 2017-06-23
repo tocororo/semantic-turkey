@@ -37,7 +37,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorConfiguration conf) {
 		this.converter = new TemplateBasedRandomIdGenerator();
 
-		convProps = new Properties(conf.getProperties());
+		convProps = new Properties(conf.getBackingProperties());
 
 		propsMap = new HashMap<>();
 		propsMap.put(TemplateBasedRandomIdGenerator.CONVERTER_URI, convProps);

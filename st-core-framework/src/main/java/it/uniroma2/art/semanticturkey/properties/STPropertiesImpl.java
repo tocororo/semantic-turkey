@@ -23,7 +23,6 @@ public abstract class STPropertiesImpl implements STProperties {
 		loadProperties(propertyFile);
 	}
 
-	
 	public Collection<String> getProperties() {
 		Collection<String> properties = new ArrayList<String>();
 
@@ -92,18 +91,26 @@ public abstract class STPropertiesImpl implements STProperties {
 	}
 
 	public void storeProperties(File propertyFile) throws IOException, WrongPropertiesException {
-		Properties props = new java.util.Properties();		 
-		try (FileWriter fileWriter = new FileWriter(propertyFile) ) {
-			Collection<String> pars = getProperties();
+		Properties props = new java.util.Properties();
+		try (FileWriter fileWriter = new FileWriter(propertyFile)) {
+			storeProperties(props);
+			props.store(fileWriter, "list of properties");
+		}
+	}
+
+	public void storeProperties(Properties properties) throws IOException, WrongPropertiesException {
+		Collection<String> pars = getProperties();
+		try {
 			for (String par : pars) {
 				Object value = getPropertyValue(par);
-				if (value == null) continue; // skip null values
-				props.setProperty(par, value.toString());
+				if (value == null)
+					continue; // skip null values
+				properties.setProperty(par, value.toString());
 			}
-			props.store(fileWriter, "list of properties");
 		} catch (PropertyNotFoundException e) {
 			throw new WrongPropertiesException(e);
-		} 
+		}
+
 	}
 
 	public String getPropertyContentType(String parID) throws PropertyNotFoundException {
@@ -151,8 +158,7 @@ public abstract class STPropertiesImpl implements STProperties {
 		try {
 			Field field = thisClass.getField(id);
 			if (field.isAnnotationPresent(STProperty.class))
-				return ((STProperty) field.getAnnotation(STProperty.class))
-						.description();
+				return ((STProperty) field.getAnnotation(STProperty.class)).description();
 			else
 				throw new PropertyNotFoundException("Property: " + id + " not found");
 		} catch (SecurityException e) {
@@ -176,8 +182,8 @@ public abstract class STPropertiesImpl implements STProperties {
 
 	public String toString() {
 		Collection<String> pars = getProperties();
-		StringBuffer stringed = new StringBuffer("STProperties ["
-				+ this.getClass().getCanonicalName() + "\n");
+		StringBuffer stringed = new StringBuffer(
+				"STProperties [" + this.getClass().getCanonicalName() + "\n");
 		for (String par : pars) {
 			String value;
 			try {
@@ -190,7 +196,5 @@ public abstract class STPropertiesImpl implements STProperties {
 		stringed.append("]");
 		return stringed.toString();
 	}
-
-
 
 }

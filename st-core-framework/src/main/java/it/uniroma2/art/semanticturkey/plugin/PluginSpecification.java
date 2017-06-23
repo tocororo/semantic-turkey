@@ -1,14 +1,15 @@
 package it.uniroma2.art.semanticturkey.plugin;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
 /**
  * Holds a pluginFactoryId, its configuration type (if not the default) and any configuration parameter
@@ -45,11 +46,10 @@ public class PluginSpecification {
 	}
 
 	public Object instatiatePlugin() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, BadConfigurationException {
-		PluginFactory<?, ?, ?> pluginFactory = PluginManager
-				.getPluginFactory(factoryId);
+			UnloadablePluginConfigurationException, WrongPropertiesException {
+		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
 
-		PluginConfiguration config;
+		STProperties config;
 		if (configTypeHolder.isPresent()) {
 			config = pluginFactory.createPluginConfiguration(configTypeHolder.get());
 		} else {
@@ -57,16 +57,15 @@ public class PluginSpecification {
 		}
 
 		if (!properties.isEmpty()) {
-			config.setParameters(properties);
+			config.setProperties(properties);
 		}
 
 		return pluginFactory.createInstance(config);
 	}
 
-	public void expandDefaults() throws ClassNotFoundException, BadConfigurationException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException {
-		PluginFactory<?,?,?> pluginFactory = PluginManager
-				.getPluginFactory(factoryId);
+	public void expandDefaults() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException {
+		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
 
 		if (!configTypeHolder.isPresent()) {
 			configTypeHolder = Optional
@@ -75,7 +74,11 @@ public class PluginSpecification {
 
 		if (properties == null || properties.isEmpty()) {
 			properties = new Properties();
-			pluginFactory.createPluginConfiguration(configTypeHolder.get()).storeParameters(properties);
+			try {
+				pluginFactory.createPluginConfiguration(configTypeHolder.get()).storeProperties(properties);
+			} catch (IOException | WrongPropertiesException e) {
+				throw new UnloadablePluginConfigurationException(e);
+			}
 		}
 	}
 

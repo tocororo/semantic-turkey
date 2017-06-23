@@ -1,20 +1,19 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen;
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODATemplateBasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
-
-import java.util.Arrays;
-import java.util.Collection;
-
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Factory for the instantiation of {@link CODAURIGenerator}.
@@ -31,8 +30,8 @@ public class CODAURIGeneratorFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new CODATemplateBasedURIGeneratorConfiguration(),
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new CODATemplateBasedURIGeneratorConfiguration(),
 				new CODAAnyURIGeneratorConfiguration());
 	}
 
@@ -47,7 +46,7 @@ public class CODAURIGeneratorFactory
 			ClassNotFoundException {
 		Class<?> clazz = Class.forName(configType);
 
-		if (!CODATemplateBasedURIGeneratorConfiguration.class.isAssignableFrom(clazz)) {
+		if (!CODAURIGeneratorConfiguration.class.isAssignableFrom(clazz)) {
 			throw new UnsupportedPluginConfigurationException();
 		}
 
@@ -59,8 +58,7 @@ public class CODAURIGeneratorFactory
 	}
 
 	@Override
-	public CODAURIGenerator createInstance(PluginConfiguration config) {
-
+	public CODAURIGenerator createInstance(STProperties config) {
 		return new CODAURIGenerator((CODAURIGeneratorConfiguration) config, codaCoreProviderFactory);
 	}
 

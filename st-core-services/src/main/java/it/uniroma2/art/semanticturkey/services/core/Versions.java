@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +21,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.RepositoryCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.project.CreateLocal;
 import it.uniroma2.art.semanticturkey.project.ProjectUtils;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.VersionInfo;
@@ -95,7 +92,7 @@ public class Versions extends STServiceAdapter {
 
 		try {
 			repoConfigurerSpecification.expandDefaults();
-		} catch (ClassNotFoundException | BadConfigurationException | UnsupportedPluginConfigurationException
+		} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
 				| UnloadablePluginConfigurationException e) {
 			throw new RepositoryCreationException(e);
 		}

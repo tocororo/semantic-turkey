@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
@@ -28,8 +27,8 @@ public class PredefinedRepositoryImplConfigurerFactory implements
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new RDF4JPersistentInMemorySailConfigurerConfiguration(),
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new RDF4JPersistentInMemorySailConfigurerConfiguration(),
 				new RDF4JNonPersistentInMemorySailConfigurerConfiguration(),
 				new RDF4JNativeSailConfigurerConfiguration(), new GraphDBFreeConfigurerConfiguration());
 	}
@@ -57,7 +56,7 @@ public class PredefinedRepositoryImplConfigurerFactory implements
 	}
 
 	@Override
-	public PredefinedRepositoryImplConfigurer createInstance(PluginConfiguration config) {
+	public PredefinedRepositoryImplConfigurer createInstance(STProperties config) {
 		return new PredefinedRepositoryImplConfigurer(
 				(PredefinedRepositoryImplConfigurerConfiguration) config);
 	}

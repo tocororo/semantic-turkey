@@ -76,6 +76,15 @@ public interface STProperties {
 	public abstract void storeProperties(File propertyFile) throws IOException, WrongPropertiesException;
 
 	/**
+	 * stores the properties in this instance in the given {@link Properties} object <code>properties</code>
+	 * 
+	 * @param propertyFile
+	 * @throws IOException
+	 * @throws WrongPropertiesException
+	 */
+	public abstract void storeProperties(Properties properties) throws IOException, WrongPropertiesException;
+
+	/**
 	 * get the expected type of content for the property. Can be used by external tools to drive the
 	 * acquisition of that value or to check
 	 * 

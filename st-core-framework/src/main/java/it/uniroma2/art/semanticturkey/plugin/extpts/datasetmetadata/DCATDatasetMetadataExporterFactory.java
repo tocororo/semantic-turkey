@@ -5,11 +5,11 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.plugin.AbstractPluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
  * Factory for the instantiation of {@link DCATDatasetMetadataExporter}.
@@ -32,7 +32,7 @@ public class DCATDatasetMetadataExporterFactory extends
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
+	public Collection<STProperties> getPluginConfigurations() {
 		return Arrays.asList(new DatasetMetadataExporterConfiguration());
 	}
 
@@ -59,7 +59,7 @@ public class DCATDatasetMetadataExporterFactory extends
 	}
 
 	@Override
-	public Object createInstance(PluginConfiguration conf) {
+	public Object createInstance(STProperties conf) {
 		return new DCATDatasetMetadataExporter(this);
 	}
 

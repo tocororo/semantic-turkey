@@ -1,10 +1,10 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf;
 
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfigurationParameter;
+import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class RDF4JPersistentInMemorySailConfigurerConfiguration extends RDF4JInMemorySailConfigurerConfiguration {
 
-	@PluginConfigurationParameter(description = "time in milliseconds before model is persisted; default is 1000 ms")
+	@STProperty(description = "time in milliseconds before model is persisted; default is 1000 ms")
 	public long syncDelay = 1000L;
 
 	public RDF4JPersistentInMemorySailConfigurerConfiguration() {

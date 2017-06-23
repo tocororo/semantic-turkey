@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.plugin;
 import java.util.Collection;
 import java.util.Map;
 
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -16,7 +15,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
  * 
  * @param <T>
  */
-public interface PluginFactory<T extends PluginConfiguration, R extends STProperties, Q extends STProperties> {
+public interface PluginFactory<T extends STProperties, R extends STProperties, Q extends STProperties> {
 
 	/**
 	 * Returns the factory identifier.
@@ -30,7 +29,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * 
 	 * @return
 	 */
-	Collection<PluginConfiguration> getPluginConfigurations();
+	Collection<STProperties> getPluginConfigurations();
 
 	/**
 	 * Returns the default configuration.
@@ -57,7 +56,7 @@ public interface PluginFactory<T extends PluginConfiguration, R extends STProper
 	 * @param conf
 	 * @return
 	 */
-	Object createInstance(PluginConfiguration conf);
+	Object createInstance(STProperties conf);
 
 	/**
 	 * Returns project settings for the implemented extension point. The returned {@link STProperties} is

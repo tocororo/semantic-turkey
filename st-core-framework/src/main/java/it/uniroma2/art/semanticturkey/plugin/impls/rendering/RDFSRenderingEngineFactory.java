@@ -1,14 +1,13 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.rendering;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Factory for the instantiation of {@link RDFSRenderingEngine}.
@@ -22,8 +21,8 @@ public class RDFSRenderingEngineFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new RDFSRenderingEngineConfiguration());
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new RDFSRenderingEngineConfiguration());
 	}
 
 	@Override
@@ -49,7 +48,7 @@ public class RDFSRenderingEngineFactory
 	}
 
 	@Override
-	public RDFSRenderingEngine createInstance(PluginConfiguration config) {
+	public RDFSRenderingEngine createInstance(STProperties config) {
 		return new RDFSRenderingEngine((RDFSRenderingEngineConfiguration) config);
 	}
 

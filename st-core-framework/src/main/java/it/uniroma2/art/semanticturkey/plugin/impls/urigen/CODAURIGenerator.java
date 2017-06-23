@@ -20,11 +20,11 @@ import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
-import it.uniroma2.art.semanticturkey.plugin.configuration.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
@@ -67,8 +67,10 @@ public class CODAURIGenerator implements URIGenerator {
 		codaCore.setGlobalContractBinding(CODA_RANDOM_ID_GENERATOR_CONTRACT, converter);
 		try {
 			Properties converterProperties = new Properties();
-			for (String par : config.getConfigurationParameters()) {
-				converterProperties.setProperty(par, config.getParameterValue(par).toString());
+			for (String par : config.getProperties()) {
+				if (config.getPropertyValue(par) != null) {
+					converterProperties.setProperty(par, config.getPropertyValue(par).toString());
+				}
 			}
 			
 			codaCore.setConverterProperties(converter, converterProperties);
@@ -88,7 +90,7 @@ public class CODAURIGenerator implements URIGenerator {
 			} finally {
 				RDF4JRepositoryUtils.releaseConnection(conn, repo);
 			}
-		} catch (ComponentProvisioningException | ConverterException | ConfParameterNotFoundException e) {
+		} catch (ComponentProvisioningException | ConverterException | PropertyNotFoundException e) {
 			logger.debug("An exceprtion occuring during the generation of a URI", e);
 			throw new URIGenerationException(e);
 		} finally {

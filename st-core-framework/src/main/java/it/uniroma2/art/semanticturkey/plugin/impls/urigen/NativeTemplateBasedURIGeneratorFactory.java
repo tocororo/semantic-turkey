@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
@@ -19,8 +18,8 @@ public class NativeTemplateBasedURIGeneratorFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new NativeTemplateBasedURIGeneratorConfiguration());
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new NativeTemplateBasedURIGeneratorConfiguration());
 	}
 
 	@Override
@@ -46,7 +45,7 @@ public class NativeTemplateBasedURIGeneratorFactory
 	}
 
 	@Override
-	public NativeTemplateBasedURIGenerator createInstance(PluginConfiguration config) {
+	public NativeTemplateBasedURIGenerator createInstance(STProperties config) {
 		return new NativeTemplateBasedURIGenerator((NativeTemplateBasedURIGeneratorConfiguration) config);
 	}
 

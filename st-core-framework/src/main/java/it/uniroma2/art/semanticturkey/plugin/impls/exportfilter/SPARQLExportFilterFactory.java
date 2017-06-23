@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.configuration.PluginConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.SPARQLExportFilterConfiguration;
@@ -24,8 +23,8 @@ public class SPARQLExportFilterFactory
 	}
 
 	@Override
-	public Collection<PluginConfiguration> getPluginConfigurations() {
-		return Arrays.<PluginConfiguration>asList(new SPARQLExportFilterConfiguration());
+	public Collection<STProperties> getPluginConfigurations() {
+		return Arrays.<STProperties>asList(new SPARQLExportFilterConfiguration());
 	}
 
 	@Override
@@ -51,7 +50,7 @@ public class SPARQLExportFilterFactory
 	}
 
 	@Override
-	public SPARQLExportFilter createInstance(PluginConfiguration config) {
+	public SPARQLExportFilter createInstance(STProperties config) {
 		return new SPARQLExportFilter((SPARQLExportFilterConfiguration) config);
 	}
 
