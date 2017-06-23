@@ -79,7 +79,12 @@ public abstract class AbstractPluginConfiguration extends STPropertiesImpl imple
 		try {
 			super.setPropertyValue(id, value);
 		} catch (WrongPropertiesException e1) {
-			additionalConfigurationParameters.put(id, value.toString());
+			Throwable cause = e1.getCause();
+			if (cause instanceof IllegalArgumentException) {
+				throw e1;
+			} else {
+				additionalConfigurationParameters.put(id, value.toString());
+			}
 		}
 	}
 

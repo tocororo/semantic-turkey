@@ -6,9 +6,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.Optional;
 import java.util.Properties;
+
+import com.google.common.collect.Lists;
 
 public abstract class STPropertiesImpl implements STProperties {
 
@@ -62,6 +66,16 @@ public abstract class STPropertiesImpl implements STProperties {
 				value = convertToPropertValue(prop, value);
 			}
 
+			it.uniroma2.art.semanticturkey.properties.Enumeration enumeration = prop
+					.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class);
+
+			if (enumeration != null) {
+				Object tempValue = value;
+
+				Arrays.stream(enumeration.value()).filter(v -> v.equals(tempValue.toString())).findAny()
+						.orElseThrow(() -> new IllegalArgumentException("Value \"" + tempValue.toString()
+								+ "\" is not assignable to property \"" + id + "\""));
+			}
 			prop.set(this, value);
 		} catch (SecurityException e) {
 			throw new WrongPropertiesException(e);
@@ -197,4 +211,26 @@ public abstract class STPropertiesImpl implements STProperties {
 		return stringed.toString();
 	}
 
+	@Override
+	public boolean isEnumerated(String id) throws PropertyNotFoundException {
+		try {
+			Field field = thisClass.getField(id);
+			return field.isAnnotationPresent(it.uniroma2.art.semanticturkey.properties.Enumeration.class);
+		} catch (NoSuchFieldException | SecurityException e) {
+			throw new PropertyNotFoundException(e);
+		}
+	}
+
+	@Override
+	public Optional<Collection<String>> getEnumeration(String id) throws PropertyNotFoundException {
+		try {
+			Field field = thisClass.getField(id);
+			return Optional
+					.ofNullable(
+							field.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class))
+					.map(ann -> Lists.newArrayList(ann.value()));
+		} catch (NoSuchFieldException | SecurityException e) {
+			throw new PropertyNotFoundException(e);
+		}
+	}
 }

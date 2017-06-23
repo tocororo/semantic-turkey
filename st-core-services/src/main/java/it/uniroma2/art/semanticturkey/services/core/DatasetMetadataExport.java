@@ -42,6 +42,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.metadata.ExporterSettingsInfo;
 
 /**
  * This class provides services for exporting metadata about the dataset associated with the current project.
@@ -52,6 +53,25 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 public class DatasetMetadataExport extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(DatasetMetadataExport.class);
+
+	/**
+	 * Returns the (project-level) settings for an exporter (including the part related to the extension
+	 * point).
+	 * 
+	 * @param exporterId
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	public ExporterSettingsInfo getExporterSettings2(String exporterId) throws STPropertyAccessException {
+		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
+				.getPluginFactory(exporterId);
+
+		STProperties extensionPointSettings = pluginFactory.getExtensonPointProjectSettings(getProject());
+		STProperties pluginSettings = pluginFactory.getProjectSettings(getProject());
+
+		return new ExporterSettingsInfo(extensionPointSettings, pluginSettings);
+	}
 
 	/**
 	 * Returns the (project-level) settings for an exporter (including the part related to the extension

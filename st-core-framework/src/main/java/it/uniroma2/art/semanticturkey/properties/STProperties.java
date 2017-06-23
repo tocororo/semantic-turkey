@@ -3,18 +3,22 @@ package it.uniroma2.art.semanticturkey.properties;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Properties;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Describes a set of properties in a declarative way.
  * 
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  */
+@JsonSerialize(using = STPropertiesSerializer.class)
 public interface STProperties {
 
 	/**
-	 * returns all the properties of the class implementing this interface, which have been annotated
-	 * as {@link STProperty}
+	 * returns all the properties of the class implementing this interface, which have been annotated as
+	 * {@link STProperty}
 	 * 
 	 * @return
 	 */
@@ -118,4 +122,20 @@ public interface STProperties {
 	 */
 	public abstract String getShortName();
 
+	/**
+	 * Tells if the property with given {@code id} is enumerated (see {@link Enumeration}).
+	 * 
+	 * @param id
+	 * @return
+	 * @throws PropertyNotFoundException 
+	 */
+	public abstract boolean isEnumerated(String id) throws PropertyNotFoundException;
+
+	/**
+	 * Returns the enumeration (if any) associated with the property with given {@code id}.
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public abstract Optional<Collection<String>> getEnumeration(String id) throws PropertyNotFoundException;
 }
