@@ -32,7 +32,6 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -114,7 +113,7 @@ public class Administration extends STServiceAdapter {
 		if (user == null) {
 			throw new PUBindingException("No user found with email " + email);
 		}
-		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
 			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
@@ -146,7 +145,7 @@ public class Administration extends STServiceAdapter {
 		if (user == null) {
 			throw new PUBindingException("No user found with email " + email);
 		}
-		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
 			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
@@ -201,7 +200,7 @@ public class Administration extends STServiceAdapter {
 		if (user == null) {
 			throw new PUBindingException("No user found with email " + email);
 		}
-		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
 			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
@@ -221,7 +220,7 @@ public class Administration extends STServiceAdapter {
 		if (user == null) {
 			throw new PUBindingException("No user found with email " + email);
 		}
-		AbstractProject project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		if (puBinding == null) {
 			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
@@ -283,12 +282,12 @@ public class Administration extends STServiceAdapter {
 		ArrayNode capabilitiesArrayNode = jsonFactory.arrayNode();
 		if (projectName != null) {
 			Project project = ProjectManager.getProjectDescription(projectName);
-			for (Term c: RBACManager.getRoleCapabilities(project, role)) {
-				capabilitiesArrayNode.add(c.toString().replaceAll("'", "\""));
+			for (String c: RBACManager.getRoleCapabilities(project, role)) {
+				capabilitiesArrayNode.add(c);
 			}
 		} else {
-			for (Term c: RBACManager.getRoleCapabilities(null, role)) {
-				capabilitiesArrayNode.add(c.toString().replaceAll("'", "\""));
+			for (String c: RBACManager.getRoleCapabilities(null, role)) {
+				capabilitiesArrayNode.add(c);
 			}
 		}
 		return capabilitiesArrayNode;

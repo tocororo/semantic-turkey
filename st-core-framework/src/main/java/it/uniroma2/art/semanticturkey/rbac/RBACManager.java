@@ -18,6 +18,7 @@ import alice.tuprolog.NoSolutionException;
 import alice.tuprolog.Term;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -41,20 +42,23 @@ public class RBACManager {
 	
 	public static void initRoles() throws ProjectAccessException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
-		for (AbstractProject p : projects) {
-			File rolesDir = getRolesDir(p);
-			if (rolesDir != null) {
-				rolesDir.mkdir();
-			}
-			Map<String, RBACProcessor> roleRbacMap = new HashMap<>();
-			for (File roleFile : rolesDir.listFiles()) {
-				if (roleFile.isFile() && roleFile.getName().matches(roleFilenamePattern)) {
-					String fileName = roleFile.getName();
-					String role = fileName.substring(fileName.indexOf("role_") + 5, fileName.indexOf(".pl"));
-					roleRbacMap.put(role, null);
+		for (AbstractProject absProj : projects) {
+			if (absProj instanceof Project) {
+				Project proj = (Project) absProj;
+				File rolesDir = getRolesDir(proj);
+				if (rolesDir != null) {
+					rolesDir.mkdir();
 				}
+				Map<String, RBACProcessor> roleRbacMap = new HashMap<>();
+				for (File roleFile : rolesDir.listFiles()) {
+					if (roleFile.isFile() && roleFile.getName().matches(roleFilenamePattern)) {
+						String fileName = roleFile.getName();
+						String role = fileName.substring(fileName.indexOf("role_") + 5, fileName.indexOf(".pl"));
+						roleRbacMap.put(role, null);
+					}
+				}
+				rbacMap.put(proj.getName(), roleRbacMap);
 			}
-			rbacMap.put(p.getName(), roleRbacMap);
 		}
 	}
 	
@@ -65,7 +69,7 @@ public class RBACManager {
 	 * @throws TheoryNotFoundException
 	 * @throws RBACException 
 	 */
-	public static void loadRBACProcessor(AbstractProject project) throws RBACException {
+	public static void loadRBACProcessor(Project project) throws RBACException {
 		try {
 			File rolesDir = getRolesDir(project);
 			if (rolesDir != null) {
@@ -89,7 +93,7 @@ public class RBACManager {
 	 * 
 	 * @param project
 	 */
-	public static void unloadRBACProcessor(AbstractProject project) {
+	public static void unloadRBACProcessor(Project project) {
 		Map<String, RBACProcessor> roleRBacMap = rbacMap.get(project.getName());
 		roleRBacMap.replaceAll((k, v) -> null);
 	}
@@ -101,7 +105,7 @@ public class RBACManager {
 	 * @param role
 	 * @return
 	 */
-	public static RBACProcessor getRBACProcessor(AbstractProject project, String role) {
+	public static RBACProcessor getRBACProcessor(Project project, String role) {
 		//first looks for role at project level...
 		String projectName = project == null ? SYSTEM_PROJ_ID : project.getName();
 		RBACProcessor rbac = rbacMap.get(projectName).get(role);
@@ -118,7 +122,7 @@ public class RBACManager {
 	 * @return
 	 * @throws RBACException
 	 */
-	public static Collection<Role> getRoles(AbstractProject project) throws RBACException {
+	public static Collection<Role> getRoles(Project project) throws RBACException {
 		Collection<Role> roles = new ArrayList<>(); 
 		for (String role: rbacMap.get(SYSTEM_PROJ_ID).keySet()) {
 			roles.add(new Role(role, RoleLevel.system));
@@ -138,7 +142,7 @@ public class RBACManager {
 	 * @param roleName
 	 * @return
 	 */
-	public static Role getRole(AbstractProject project, String roleName) {
+	public static Role getRole(Project project, String roleName) {
 		if (project != null) {
 			if (rbacMap.get(project.getName()).keySet().contains(roleName)) {
 				return new Role(roleName, RoleLevel.project); 
@@ -159,7 +163,7 @@ public class RBACManager {
 	 * @param roleName
 	 * @throws RoleCreationException
 	 */
-	public static void createRole(AbstractProject project, String roleName) throws RoleCreationException {
+	public static void createRole(Project project, String roleName) throws RoleCreationException {
 		//look if the role already exists at project or system level
 		if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
 			throw new RoleCreationException("Role '" + roleName + "' already exists");
@@ -176,7 +180,7 @@ public class RBACManager {
 		}
 	}
 	
-	public static void deleteRole(AbstractProject project, String roleName) {
+	public static void deleteRole(Project project, String roleName) {
 		rbacMap.get(project.getName()).remove(roleName);
 		File rolesFile = getRoleFile(project, roleName);
 		rolesFile.delete();
@@ -190,7 +194,7 @@ public class RBACManager {
 	 * @return
 	 * @throws RBACException
 	 */
-	public static Collection<Term> getRoleCapabilities(AbstractProject project, String role) throws RBACException {
+	public static Collection<String> getRoleCapabilities(Project project, String role) throws RBACException {
 		try {
 			//check for role at project level
 			RBACProcessor rbac = getRBACProcessor(project, role);
@@ -200,13 +204,17 @@ public class RBACManager {
 			if (rbac == null) {
 				throw new RBACException("Role '" + role + "' doesn't exist");
 			}
-			return rbac.getCapabilitiesAsTermList();
+			Collection<String> capabilities = new ArrayList<>(); 
+			for (Term t : rbac.getCapabilitiesAsTermList()) {
+				capabilities.add(t.toString().replace("'", "\""));
+			}
+			return capabilities;
 		} catch (MalformedGoalException | NoSolutionException | NoMoreSolutionException e) {
 			throw new RBACException(e);
 		}
 	}
 	
-	public static void addCapabilities(AbstractProject project, String role, Collection<String> capabilities) throws RBACException {
+	public static void addCapabilities(Project project, String role, Collection<String> capabilities) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
 			throw new RBACException("Role '" + role + "' doesn't exist");
@@ -220,7 +228,7 @@ public class RBACManager {
 		}
 	}
 	
-	public static void addCapability(AbstractProject project, String role, String capability) throws RBACException {
+	public static void addCapability(Project project, String role, String capability) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
 			throw new RBACException("Role '" + role + "' doesn't exist");
@@ -248,7 +256,7 @@ public class RBACManager {
 		}
 	}
 	
-	public static void removeCapability(AbstractProject project, String role, String capability) throws RBACException {
+	public static void removeCapability(Project project, String role, String capability) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
 			throw new RBACException("Role '" + role + "' doesn't exist");
@@ -282,7 +290,7 @@ public class RBACManager {
 		}
 	}
 	
-	public static File getRolesDir(AbstractProject project) {
+	public static File getRolesDir(Project project) {
 		File rolesDir;
 		if (project == null) {
 			rolesDir = new File(Resources.getSystemDir(), ROLES_DIR_NAME); 
@@ -292,7 +300,7 @@ public class RBACManager {
 		return rolesDir;
 	}
 	
-	public static File getRoleFile(AbstractProject project, String role) {
+	public static File getRoleFile(Project project, String role) {
 		return new File(getRolesDir(project), "role_" + role + ".pl");
 	}
 	
