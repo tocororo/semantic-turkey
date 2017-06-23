@@ -47,6 +47,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -61,6 +62,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * This class provides services for manipulating OWL/RDFS classes.
@@ -388,6 +390,10 @@ public class Classes extends STServiceAdapter {
 			annotatedValue.setAttribute("role", RDFResourceRole.individual.name());
 		}
 		annotatedValue.setAttribute("explicit", true);
+		
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newInstance,
+				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
+		
 		return annotatedValue; 
 	}
 	
@@ -401,6 +407,7 @@ public class Classes extends STServiceAdapter {
 	public void deleteInstance(@Subject @LocallyDefined IRI instance) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		String query = 
+				// @formatter:off
 				"DELETE {																\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?instance .												\n"
@@ -414,7 +421,8 @@ public class Classes extends STServiceAdapter {
 				+ "		{ ?instance ?p2 ?o2 . }											\n"
 				+ "	}																	\n"
 				+ "}";
-		repoConnection.prepareUpdate(query).execute();;
+				// @formatter:on
+		repoConnection.prepareUpdate(query).execute();
 	}
 	
 	
@@ -424,7 +432,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
+	public void addSuperCls(@LocallyDefined @Modified(role=RDFResourceRole.cls) @Subject IRI cls, @LocallyDefined IRI supercls){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(cls, RDFS.SUBCLASSOF, supercls));
@@ -437,13 +445,13 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeSuperCls(@LocallyDefined @Subject IRI cls, @LocallyDefined IRI supercls){
+	public void removeSuperCls(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			@LocallyDefined IRI supercls) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(cls, RDFS.SUBCLASSOF, supercls));
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * Adds the OWL.INTERSECTIONOF to the description of the class <code>cls</code> using the supplied array, 
@@ -453,16 +461,16 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addIntersectionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
-			throws ManchesterParserException{
+	public void addIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			List<String> clsDescriptions) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+				.getNSPrefixMappings(false);
 		Model modelAdditions = new LinkedHashModel();
-		addCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, clsDescriptions, modelAdditions, repoConnection, 
+		addCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, clsDescriptions, modelAdditions, repoConnection,
 				prefixToNamespacesMap);
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * Removes an axiom identified by the property <code>OWL.INTERSECTIONOF</code> based on the collection 
@@ -471,14 +479,14 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeIntersectionOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
-			throws ManchesterParserException{
+	public void removeIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		removeCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, collectionBNode, modelRemovals, repoConnection);
+		removeCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, collectionBNode, modelRemovals,
+				repoConnection);
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	
 	/**
@@ -489,16 +497,16 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addUnionOf(@LocallyDefined @Subject IRI cls, List<String> clsDescriptions) 
-			throws ManchesterParserException{
+	public void addUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			List<String> clsDescriptions) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+				.getNSPrefixMappings(false);
 		Model modelAdditions = new LinkedHashModel();
-		addCollectionBasedClassAxiom(cls, OWL.UNIONOF, clsDescriptions, modelAdditions, repoConnection, 
+		addCollectionBasedClassAxiom(cls, OWL.UNIONOF, clsDescriptions, modelAdditions, repoConnection,
 				prefixToNamespacesMap);
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * Removes an axiom identified by the property <code>OWL.UNIONOF</code> based on the collection 
@@ -507,14 +515,13 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeUnionOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
-			throws ManchesterParserException{
+	public void removeUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		removeCollectionBasedClassAxiom(cls, OWL.UNIONOF, collectionBNode, modelRemovals, repoConnection);
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * Enumerates (via <code>owl:oneOf</code>) all and only members of the class <code>cls</code>, which
@@ -523,14 +530,13 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addOneOf(@LocallyDefined @Subject IRI cls, List<IRI> individuals) 
-			throws ManchesterParserException{
+	public void addOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			List<IRI> individuals) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		createAndAddList(cls, OWL.ONEOF, individuals, modelAdditions, repoConnection);
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * Removes the enumeration <code>collectionNode</code> from the description of the class
@@ -539,14 +545,13 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeOneOf(@LocallyDefined @Subject IRI cls, @LocallyDefined BNode collectionBNode) 
-			throws ManchesterParserException{
+	public void removeOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		removeCollectionBasedClassAxiom(cls, OWL.ONEOF, collectionBNode, modelRemovals, repoConnection);
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, List<String> clsDescriptions, 
 			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap) 

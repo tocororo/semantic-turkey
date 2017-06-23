@@ -50,6 +50,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -424,8 +425,10 @@ public class SKOS extends STServiceAdapter {
 			newConceptIRI = newConcept;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI); // set created for versioning
-		HistoryMetadataSupport.currentOperationMetadata().setSubject(newConceptIRI); //set subject for history
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
+				RDFResourceRole.concept); // set created for versioning
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newConceptIRI); // set subject for
+																						// history
 		
 		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
 		if (conceptCls != null) {
@@ -484,8 +487,9 @@ public class SKOS extends STServiceAdapter {
 			newSchemeIRI = newScheme;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newSchemeIRI); // set created for versioning
-		HistoryMetadataSupport.currentOperationMetadata().setSubject(newSchemeIRI); //set subject for history
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newSchemeIRI,
+				RDFResourceRole.conceptScheme); // set created for versioning
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newSchemeIRI); // set subject for history
 		
 		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
 		if (schemeCls != null) {
@@ -519,7 +523,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
-	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
+	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -556,71 +560,73 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
-	public void addAltLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
+	public void addAltLabel(@LocallyDefined @Modified @Subject IRI concept,
+			@LanguageTaggedString Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
-							org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, literal));
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
+				org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, literal));
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
-	public void addHiddenLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal){
+	public void addHiddenLabel(@LocallyDefined @Modified @Subject IRI concept,
+			@LanguageTaggedString Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
-							org.eclipse.rdf4j.model.vocabulary.SKOS.HIDDEN_LABEL, literal));
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
+				org.eclipse.rdf4j.model.vocabulary.SKOS.HIDDEN_LABEL, literal));
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
-
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
-	public void addBroaderConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI broaderConcept){
-		
+	public void addBroaderConcept(
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined IRI broaderConcept) {
+
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept));
-				
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
-	public void addConceptToScheme(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
+	public void addConceptToScheme(
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, scheme));
-				
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
-	public void addTopConcept(@Subject IRI concept, @LocallyDefined IRI scheme){
+	public void addTopConcept(@Subject @Modified(role = RDFResourceRole.concept) IRI concept,
+			@LocallyDefined IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
-				
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * this service adds an element to a (unordered) collection.
@@ -630,47 +636,49 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
-	public void addToCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element) throws DeniedOperationException{
+	public void addToCollection(
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined Resource element) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
+
 		Resource[] graphs = getUserNamedGraphs();
-		
-		boolean hasElement = repoConnection.hasStatement(collection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, 
-				element, false, graphs);
-		if(hasElement){
-			throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
-					+ collection.stringValue());
-		}		
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(collection, 
+
+		boolean hasElement = repoConnection.hasStatement(collection,
+				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, element, false, graphs);
+		if (hasElement) {
+			throw new DeniedOperationException("Element: " + element.stringValue()
+					+ " already contained in collection: " + collection.stringValue());
+		}
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(collection,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, element));
-		
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
-	public void addFirstToOrderedCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element ) 
-			throws DeniedOperationException{
+	public void addFirstToOrderedCollection(
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined Resource element) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		//first check if the orderedCollection as any element (check SKOS.MEMBERLIST)
+		// first check if the orderedCollection as any element (check SKOS.MEMBERLIST)
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
-		if(!list.equals(RDF.NIL)){
+		if (!list.equals(RDF.NIL)) {
 			boolean found = hasElementInList(list, element, repoConnection);
-			if(found){
-				throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
-						+ collection.stringValue());
+			if (found) {
+				throw new DeniedOperationException("Element: " + element.stringValue()
+						+ " already contained in collection: " + collection.stringValue());
 			}
 		}
-		//if the list was empty, then list=RDF.NIL otherwise list is the first element, it does not matter
+		// if the list was empty, then list=RDF.NIL otherwise list is the first element, it does not matter
 		// for the rest of the code
 		addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
-		
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
@@ -678,35 +686,36 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
-	public void addInPositionToOrderedCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element,
-			int index) 
-			throws DeniedOperationException{
+	public void addInPositionToOrderedCollection(
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined Resource element, int index) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
-		if(index<1){
+
+		if (index < 1) {
 			throw new IllegalArgumentException("The postion should be a positive value bigger than 0");
 		}
-		
+
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
-		if(list.equals(RDF.NIL)){
-			//the collection is empty, so if the index is not 1, then the operation cannot be completed
-			if(index!=1){
-				throw new IllegalArgumentException("The collection is empty, so the element can be added just"
-						+ " in position 1");
+		if (list.equals(RDF.NIL)) {
+			// the collection is empty, so if the index is not 1, then the operation cannot be completed
+			if (index != 1) {
+				throw new IllegalArgumentException(
+						"The collection is empty, so the element can be added just" + " in position 1");
 			}
 			addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
 		}
 		boolean found = hasElementInList(list, element, repoConnection);
-		if(found){
-			throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
-					+ collection.stringValue());
+		if (found) {
+			throw new DeniedOperationException("Element: " + element.stringValue()
+					+ " already contained in collection: " + collection.stringValue());
 		}
-		if(index==1){
+		if (index == 1) {
 			addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
-		} else{
-			addInPositionToSKOSOrderedCollection(list, element, repoConnection, index, modelAdditions, modelRemovals);
+		} else {
+			addInPositionToSKOSOrderedCollection(list, element, repoConnection, index, modelAdditions,
+					modelRemovals);
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
@@ -715,39 +724,40 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
-	public void addLastToOrderedCollection(@LocallyDefined @Subject Resource collection, @LocallyDefined Resource element) 
-			throws DeniedOperationException{
+	public void addLastToOrderedCollection(
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined Resource element) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
-		if(list.equals(RDF.NIL)){
-			//the ordered collection is empty, so create a list, having just one element, the input one 
+		if (list.equals(RDF.NIL)) {
+			// the ordered collection is empty, so create a list, having just one element, the input one
 			BNode newBnode = createElementInList(element, RDF.NIL, repoConnection, modelAdditions);
-			modelRemovals.add(repoConnection.getValueFactory().createStatement(collection, 
+			modelRemovals.add(repoConnection.getValueFactory().createStatement(collection,
 					org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, RDF.NIL));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(collection, 
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(collection,
 					org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, newBnode));
-		} else{
+		} else {
 			boolean found = hasElementInList(list, element, repoConnection);
-			if(found){
-				throw new DeniedOperationException("Element: " + element.stringValue() + " already contained in collection: " 
-						+ collection.stringValue());
+			if (found) {
+				throw new DeniedOperationException("Element: " + element.stringValue()
+						+ " already contained in collection: " + collection.stringValue());
 			}
-	
-			//create the last element of the list with the desired value (as RDF.FIRST)
+
+			// create the last element of the list with the desired value (as RDF.FIRST)
 			BNode newBNode = createElementInList(element, RDF.NIL, repoConnection, modelAdditions);
-			
-			//now walk the original list to obtain the last element of such list
+
+			// now walk the original list to obtain the last element of such list
 			Resource lastElem = getLastElemInList(list, repoConnection);
 			modelRemovals.add(repoConnection.getValueFactory().createStatement(lastElem, RDF.REST, RDF.NIL));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(lastElem, RDF.REST, newBNode));
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(lastElem, RDF.REST, newBNode));
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	protected Resource getFirstElemOfOrderedCollection(Resource collection, RepositoryConnection repoConnection){
 		Resource[] graphs = getUserNamedGraphs();
@@ -849,7 +859,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
-	public void removeConceptFromScheme(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
+	public void removeConceptFromScheme(@LocallyDefined @Modified(role=RDFResourceRole.concept) @Subject IRI concept, @LocallyDefined IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -866,7 +876,9 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
-	public void removeTopConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI scheme){
+	public void removeTopConcept(
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -882,24 +894,25 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removePrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Literal literal){
+	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept,
+			@LocallyDefined Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, literal));
-				
+
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removeAltLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Literal literal){
+	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept,
+			@LocallyDefined Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
 				org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL, literal));
 				
@@ -932,33 +945,32 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
-	public void removeBroaderConcept(@LocallyDefined @Subject IRI concept, @LocallyDefined IRI broaderConcept){
+	public void removeBroaderConcept(
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined IRI broaderConcept) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept));
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept, 
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER, concept));
-		
-		
+
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removeHiddenLabel(@LocallyDefined @Subject IRI concept, Literal literal){
+	public void removeHiddenLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
+
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.HIDDEN_LABEL, literal));
-				
+
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	/**
 	 * Checks if a ConceptScheme is empty. Useful before deleting a ConceptScheme.
@@ -1123,8 +1135,10 @@ public class SKOS extends STServiceAdapter {
 			newCollectionRes = newCollection;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newCollectionRes); // set created for versioning
-		HistoryMetadataSupport.currentOperationMetadata().setSubject(newCollectionRes); //set subject for history
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newCollectionRes,
+				RDFResourceRole.skosCollection); // set created for versioning
+		HistoryMetadataSupport.currentOperationMetadata().setSubject(newCollectionRes); // set subject for
+																						// history
 		
 		IRI collectionClass = collectionType;
 		if (collectionCls != null) {
@@ -1418,8 +1432,9 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
-	public void removeFromCollection(@Subject @LocallyDefined Resource element, 
-			@LocallyDefined Resource collection) throws DeniedOperationException{
+	public void removeFromCollection(@LocallyDefined Resource element,
+			@Subject @Modified(role = RDFResourceRole.skosCollection) @LocallyDefined Resource collection)
+			throws DeniedOperationException {
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -1441,8 +1456,10 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
-	public void removeFromOrderedCollection(@Subject @LocallyDefined Resource element, 
-			@LocallyDefined Resource collection) throws DeniedOperationException{
+	public void removeFromOrderedCollection(
+			@LocallyDefined Resource element,
+			@Subject @Modified(role = RDFResourceRole.skosCollection) @LocallyDefined Resource collection)
+			throws DeniedOperationException {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();

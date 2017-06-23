@@ -52,6 +52,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -64,6 +65,7 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * This class provides services for reading the Properties.
@@ -618,6 +620,10 @@ public class Properties extends STServiceAdapter {
 			annotatedValue.setAttribute("role", RDFResourceRole.property.name());
 		}
 		annotatedValue.setAttribute("explicit", true);
+		
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newProperty,
+				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
+		
 		return annotatedValue; 
 	}
 	
@@ -648,6 +654,7 @@ public class Properties extends STServiceAdapter {
 		}
 		
 		query = 
+				// @formatter:off
 				"DELETE {																\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?property .												\n"
@@ -661,6 +668,7 @@ public class Properties extends STServiceAdapter {
 				+ "		{ ?property ?p2 ?o2 . }											\n"
 				+ "	}																	\n"
 				+ "}";
+				// @formatter:on
 		repoConnection.prepareUpdate(query).execute();;
 	}
 	
@@ -668,12 +676,15 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
-	public void addSuperProperty(@LocallyDefined @Subject IRI property, @LocallyDefined IRI superProperty){
+	public void addSuperProperty(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.SUBPROPERTYOF, superProperty));
-		
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.SUBPROPERTYOF,
+				superProperty));
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
 	
@@ -681,38 +692,43 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
-	public void removeSuperProperty(@LocallyDefined @Subject IRI property, @LocallyDefined IRI superProperty){
+	public void removeSuperProperty(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, RDFS.SUBPROPERTYOF, superProperty));
-		
+
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, RDFS.SUBPROPERTYOF,
+				superProperty));
+
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addPropertyDomain(@LocallyDefined @Subject IRI property, @LocallyDefined Resource domain){
+	public void addPropertyDomain(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
+
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.DOMAIN, domain));
-		
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removePropertyDomain(@LocallyDefined @Subject IRI property, @LocallyDefined Resource domain){
+	public void removePropertyDomain(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, RDFS.DOMAIN, domain));
-		
+
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
 	
@@ -720,28 +736,30 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addPropertyRange(@LocallyDefined @Subject IRI property, Resource range){
+	public void addPropertyRange(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			Resource range) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
+
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.RANGE, range));
-		
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}
-	
+	}	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removePropertyRange(@LocallyDefined @Subject IRI property, Resource range){
+	public void removePropertyRange(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			Resource range) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, RDFS.RANGE, range));
-		
+
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}
-	
+	}	
 	
 	
 	// DATARANGE SERVICES
@@ -749,39 +767,46 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void setDataRange(@LocallyDefined @Subject IRI property,
+	public void setDataRange(@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2000/01/rdf-schema#range") IRI predicate,
-			List <Literal> literals) {
+			List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
-		
+
 		BNode datarange = repoConnection.getValueFactory().createBNode();
-		
+
 		if (predicate == null) {
 			predicate = RDFS.RANGE;
 		}
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, predicate, datarange));
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, RDF.TYPE, RDFS.DATATYPE));
-		
-		//if values is null or empty, create an empty RDF List
-		if(literals == null || literals.isEmpty()){
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
-		} else{
+		modelAdditions
+				.add(repoConnection.getValueFactory().createStatement(datarange, RDF.TYPE, RDFS.DATATYPE));
+
+		// if values is null or empty, create an empty RDF List
+		if (literals == null || literals.isEmpty()) {
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
+		} else {
 			BNode tempList = repoConnection.getValueFactory().createBNode();
-			//add the first element to the list
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
-			//iteration on the other elements of the list
-			for(int i=1; i<literals.size(); ++i){
+			// add the first element to the list
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+			modelAdditions.add(
+					repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
+			// iteration on the other elements of the list
+			for (int i = 1; i < literals.size(); ++i) {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST, literals.get(i)));
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
+						literals.get(i)));
 				tempList = newTempList;
 			}
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
 		}
-		
+
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
 	
@@ -794,9 +819,11 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removeDataranges(@LocallyDefined @Subject IRI property, @LocallyDefined BNode datarange){
+	public void removeDataranges(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined BNode datarange) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		//prepare a SPARQL update to remove 
+		// prepare a SPARQL update to remove
 		// @formatter:off
 		String query="DELETE {"+
 				"GRAPH ?workingGraph {\n" +
@@ -828,8 +855,7 @@ public class Properties extends STServiceAdapter {
 		update.setBinding("?property", property);
 		update.setBinding("?datarange", datarange);
 		update.execute();
-	}
-	
+	}	
 	
 	/**
 	 * Update the current RDF list associated to the RDFS.DATATYPE by deleting the old one and create 
@@ -841,9 +867,11 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'U')")
-	public void updateDataranges(@Subject @LocallyDefined BNode datarange, List <Literal> literals){
+	public void updateDataranges(
+			@Modified(role = RDFResourceRole.property) @Subject @LocallyDefined BNode datarange,
+			List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		//prepare a SPARQL update to remove the old list
+		// prepare a SPARQL update to remove the old list
 		// @formatter:off
 		String query="DELETE {"+
 				"GRAPH ?workingGraph {\n" +
@@ -871,51 +899,63 @@ public class Properties extends STServiceAdapter {
 		update.setBinding("?workingGraph", getWorkingGraph());
 		update.setBinding("?datarange", datarange);
 		update.execute();
-		
-		//now add the new list
+
+		// now add the new list
 		Model modelAdditions = new LinkedHashModel();
-		//if values is null or empty, create an empty RDF List
-		if(literals == null || literals.isEmpty()){
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
-		} else{
+		// if values is null or empty, create an empty RDF List
+		if (literals == null || literals.isEmpty()) {
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
+		} else {
 			BNode tempList = repoConnection.getValueFactory().createBNode();
-			//add the first element to the list
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
-			//iteration on the other elements of the list
-			for(int i=1; i<literals.size(); ++i){
+			// add the first element to the list
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+			modelAdditions.add(
+					repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
+			// iteration on the other elements of the list
+			for (int i = 1; i < literals.size(); ++i) {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST, literals.get(i)));
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
+						literals.get(i)));
 				tempList = newTempList;
 			}
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
 		}
- 		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
 	
 	
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addValueToDatarange(@LocallyDefined @Subject Resource datarange, Literal literal){
+	public void addValueToDatarange(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject Resource datarange,
+			Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		// check if the datarange has no associated values
-		if(repoConnection.hasStatement(datarange, OWL.ONEOF, RDF.NIL, false, getUserNamedGraphs())){
+		if (repoConnection.hasStatement(datarange, OWL.ONEOF, RDF.NIL, false, getUserNamedGraphs())) {
 			// the datarange has no associated value
-			modelRemovals.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
-			//create a list, with just one element (the input literal)
+			modelRemovals
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
+			// create a list, with just one element (the input literal)
 			BNode tempList = repoConnection.getValueFactory().createBNode();
-			//add the first element to the list
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literal));
+			// add the first element to the list
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literal));
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
-		} else{
+		} else {
 			// the datarange has at least one associated value, so obtain from list the last element
 			// @formatter:off
 			String query = "SELECT ?lastElemOfList" +
@@ -931,16 +971,21 @@ public class Properties extends STServiceAdapter {
 			tupleQuery.setIncludeInferred(false);
 			tupleQuery.setBinding("g", getWorkingGraph());
 			tupleQuery.setBinding("datarange", datarange);
-			try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
+			try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
 				Resource lastElemOfList = (Resource) tupleQueryResult.next().getValue("lastElemOfList");
-				//remove the old rest (RDF.NIL)
-				modelRemovals.add(repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, RDF.NIL));
-				//add the neew value after the old last one
+				// remove the old rest (RDF.NIL)
+				modelRemovals.add(
+						repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, RDF.NIL));
+				// add the neew value after the old last one
 				BNode tempList = repoConnection.getValueFactory().createBNode();
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, tempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literal));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, tempList));
+				modelAdditions
+						.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+				modelAdditions
+						.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literal));
+				modelAdditions
+						.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
 			}
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -950,36 +995,42 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addValuesToDatarange(@LocallyDefined @Subject Resource datarange, 
-			@LocallyDefinedResources List<Literal> literals){
+	public void addValuesToDatarange(@LocallyDefined @Modified(role=RDFResourceRole.property) @Subject Resource datarange, 
+			@LocallyDefinedResources List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
-		if(literals.isEmpty()){
+
+		if (literals.isEmpty()) {
 			throw new IllegalArgumentException("the literals list cannot be null");
 		}
-		
+
 		// check if the datarange has no associated values
-		if(repoConnection.hasStatement(datarange, OWL.ONEOF, RDF.NIL, false, getUserNamedGraphs())){
+		if (repoConnection.hasStatement(datarange, OWL.ONEOF, RDF.NIL, false, getUserNamedGraphs())) {
 			// the datarange has no associated value
-			modelRemovals.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
-			//create a list, with just one element (the input literal)
+			modelRemovals
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
+			// create a list, with just one element (the input literal)
 			BNode tempList = repoConnection.getValueFactory().createBNode();
-			//add the first element to the list
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
-			
-			//iteration on the other elements of the list
-			for(int i=1; i<literals.size(); ++i){
+			// add the first element to the list
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
+			modelAdditions
+					.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+			modelAdditions.add(
+					repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
+
+			// iteration on the other elements of the list
+			for (int i = 1; i < literals.size(); ++i) {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST, literals.get(i)));
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
+						literals.get(i)));
 				tempList = newTempList;
 			}
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
-		} else{
+		} else {
 			// the datarange has at least one associated value, so obtain from list the last element
 			// @formatter:off
 			String query = "SELECT ?lastElemOfList" +
@@ -995,24 +1046,31 @@ public class Properties extends STServiceAdapter {
 			tupleQuery.setIncludeInferred(false);
 			tupleQuery.setBinding("g", getWorkingGraph());
 			tupleQuery.setBinding("datarange", datarange);
-			try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
+			try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
 				Resource lastElemOfList = (Resource) tupleQueryResult.next().getValue("lastElemOfList");
-				//remove the old rest (RDF.NIL)
-				modelRemovals.add(repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, RDF.NIL));
-				//add the neew value after the old last one
+				// remove the old rest (RDF.NIL)
+				modelRemovals.add(
+						repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, RDF.NIL));
+				// add the neew value after the old last one
 				BNode tempList = repoConnection.getValueFactory().createBNode();
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, tempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
-				
-				//iteration on the other elements of the list
-				for(int i=1; i<literals.size(); ++i){
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(lastElemOfList, RDF.REST, tempList));
+				modelAdditions
+						.add(repoConnection.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.FIRST,
+						literals.get(0)));
+
+				// iteration on the other elements of the list
+				for (int i = 1; i < literals.size(); ++i) {
 					BNode newTempList = repoConnection.getValueFactory().createBNode();
-					modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
-					modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST, literals.get(i)));
+					modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST,
+							newTempList));
+					modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList,
+							RDF.FIRST, literals.get(i)));
 					tempList = newTempList;
 				}
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
+				modelAdditions
+						.add(repoConnection.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
 			}
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -1053,12 +1111,15 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removeValueFromDatarange(@LocallyDefined @Subject Resource datarange, Literal literal){
+	public void removeValueFromDatarange(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject Resource datarange,
+			Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
-		//check if the desired element is the first one in the list
+
+		// check if the desired element is the first one in the list
+		// @formatter:off
 		String query = "SELECT ?list ?next"+
 				"\nWHERE{"+
 				"\nGRAPH ?g{"+
@@ -1067,28 +1128,32 @@ public class Properties extends STServiceAdapter {
 				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?next ." +
 				"\n}"+
 				"\n}";
+		// @formatter:on
 		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		tupleQuery.setBinding("g", getWorkingGraph());
 		tupleQuery.setBinding("datange", datarange);
 		tupleQuery.setBinding("literal", literal);
 		boolean found = false;
-		try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
-			if(tupleQueryResult.hasNext()){
+		try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+			if (tupleQueryResult.hasNext()) {
 				found = true;
 				BindingSet bindingSet = tupleQueryResult.next();
 				Resource list = (Resource) bindingSet.getValue("list");
 				Resource next = (Resource) bindingSet.getValue("next");
-				modelRemovals.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, list));
+				modelRemovals
+						.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, list));
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(list, RDF.TYPE, RDF.LIST));
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(list, RDF.FIRST, literal));
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(list, RDF.REST, next));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
-			} 
+				modelAdditions
+						.add(repoConnection.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
+			}
 		}
-		
-		if(!found){
-			//the desired element is not the one in the list, so search in all the list
+
+		if (!found) {
+			// the desired element is not the one in the list, so search in all the list
+			// @formatter:off
 			query = "SELECT ?list ?next"+
 					"\nWHERE{"+
 					"\nGRAPH ?g{"+
@@ -1099,26 +1164,31 @@ public class Properties extends STServiceAdapter {
 					"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?next ." +
 					"\n}"+
 					"\n}";
+			// @formatter:on
 			tupleQuery = repoConnection.prepareTupleQuery(query);
 			tupleQuery.setIncludeInferred(false);
 			tupleQuery.setBinding("g", getWorkingGraph());
 			tupleQuery.setBinding("datange", datarange);
 			tupleQuery.setBinding("literal", literal);
-			try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
-				if(tupleQueryResult.hasNext()){
+			try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+				if (tupleQueryResult.hasNext()) {
 					found = true;
 					BindingSet bindingSet = tupleQueryResult.next();
 					Resource desiredElem = (Resource) bindingSet.getValue("desiredElem");
 					Resource next = (Resource) bindingSet.getValue("next");
 					Resource prevElem = (Resource) bindingSet.getValue("prevElem");
-					
-					modelRemovals.add(repoConnection.getValueFactory().createStatement(prevElem, RDF.REST, desiredElem));
-					modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElem, RDF.TYPE, RDF.LIST));
-					modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElem, RDF.FIRST, literal));
-					modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElem, RDF.REST, next));
-					modelAdditions.add(repoConnection.getValueFactory().createStatement(prevElem, RDF.REST, next));
-				}
-				else{
+
+					modelRemovals.add(repoConnection.getValueFactory().createStatement(prevElem, RDF.REST,
+							desiredElem));
+					modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElem, RDF.TYPE,
+							RDF.LIST));
+					modelRemovals.add(repoConnection.getValueFactory().createStatement(desiredElem, RDF.FIRST,
+							literal));
+					modelRemovals.add(
+							repoConnection.getValueFactory().createStatement(desiredElem, RDF.REST, next));
+					modelAdditions
+							.add(repoConnection.getValueFactory().createStatement(prevElem, RDF.REST, next));
+				} else {
 					throw new IllegalArgumentException("the literals cannot be found in the datarange");
 				}
 			}

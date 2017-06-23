@@ -29,6 +29,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -220,7 +221,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
-	public void addAltLabel(@LocallyDefined @Subject IRI concept, Literal literal, XLabelCreationMode mode) 
+	public void addAltLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal, XLabelCreationMode mode) 
 			throws URIGenerationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -256,7 +257,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
-	public void addHiddenLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal, 
+	public void addHiddenLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal, 
 			XLabelCreationMode mode) throws URIGenerationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -281,7 +282,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
-	public void prefToAtlLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+	public void prefToAtlLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -299,7 +300,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
-	public void altToPrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+	public void altToPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -337,7 +338,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
-	public void setPrefLabel(@LocallyDefined @Subject IRI concept, @LanguageTaggedString Literal literal,
+	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal,
 			XLabelCreationMode mode) throws URIGenerationException{
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -384,7 +385,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removePrefLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		// @formatter:off
@@ -412,7 +413,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removeAltLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		// @formatter:off
@@ -440,7 +441,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removeHiddenLabel(@LocallyDefined @Subject IRI concept, @LocallyDefined Resource xlabel){
+	public void removeHiddenLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		// @formatter:off
@@ -468,7 +469,7 @@ public class SKOSXL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	// TODO @PreAuthorize
-	public void changeLabelInfo(@LocallyDefined @Subject Resource xlabel, @LanguageTaggedString Literal literal){
+	public void changeLabelInfo(@LocallyDefined @Modified @Subject Resource xlabel, @LanguageTaggedString Literal literal){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		// @formatter:off

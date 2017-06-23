@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -25,21 +26,19 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
-
 @STService
 public class Resources extends STServiceAdapter {
-	
+
 	private static Logger logger = LoggerFactory.getLogger(Resources.class);
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'U')")
-	public void updateTriple(@Subject Resource subject, IRI property, Value value, Value newValue){
+	public void updateTriple(@Subject @Modified Resource subject, IRI property, Value value, Value newValue) {
 		logger.info("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
-		
-		String query = 
-				"DELETE DATA {								\n"
+
+		String query = "DELETE DATA {								\n"
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?value .		\n"
 				+ "		}									\n"
@@ -47,8 +46,7 @@ public class Resources extends STServiceAdapter {
 				+ "INSERT DATA {							\n"
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?newValue .	\n"
-				+ "		}									\n"
-				+ "}" ;
+				+ "		}									\n" + "}";
 		query = query.replace("?g", NTriplesUtil.toNTriplesString(getWorkingGraph()));
 		query = query.replace("?subject", NTriplesUtil.toNTriplesString(subject));
 		query = query.replace("?property", NTriplesUtil.toNTriplesString(property));
@@ -57,40 +55,41 @@ public class Resources extends STServiceAdapter {
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
-	public void removeValue(@LocallyDefined @Subject Resource subject, @LocallyDefined IRI property, Value value){
+	public void removeValue(@LocallyDefined @Modified @Subject Resource subject, @LocallyDefined IRI property,
+			Value value) {
 		getManagedConnection().remove(subject, property, value, getWorkingGraph());
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'C')")
-	public void addValue(@LocallyDefined @Subject Resource subject, @LocallyDefined IRI property, Value value){
+	public void addValue(@LocallyDefined @Modified @Subject Resource subject, @LocallyDefined IRI property,
+			Value value) {
 		getManagedConnection().add(subject, property, value, getWorkingGraph());
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'U')")
-	public void setDeprecated(@LocallyDefined @Subject IRI resource){
+	public void setDeprecated(@LocallyDefined @Modified @Subject IRI resource) {
 		RepositoryConnection conn = getManagedConnection();
-		Literal literalTrue = conn.getValueFactory().createLiteral("true",XMLSchema.BOOLEAN);
+		Literal literalTrue = conn.getValueFactory().createLiteral("true", XMLSchema.BOOLEAN);
 		conn.add(resource, OWL2Fragment.DEPRECATED, literalTrue, getWorkingGraph());
 	}
-	
+
 	/**
 	 * Return the description of a resource, including show and nature
+	 * 
 	 * @param resource
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
-	public AnnotatedValue<Resource> getResourceDescription(@LocallyDefined Resource resource){
+	public AnnotatedValue<Resource> getResourceDescription(@LocallyDefined Resource resource) {
 		QueryBuilder qb = createQueryBuilder(
 			// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +

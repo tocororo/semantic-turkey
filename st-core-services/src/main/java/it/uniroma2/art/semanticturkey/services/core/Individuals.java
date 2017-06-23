@@ -11,8 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -65,13 +67,16 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'U')")
-	public void addType(@LocallyDefined @Subject Resource individual, @LocallyDefined Resource type) {
+	public void addType(@LocallyDefined @Modified @Subject Resource individual,
+			@LocallyDefined Resource type) {
 		String query =
+				//@formatter:off
 				"INSERT DATA {					\n" +
 				"	GRAPH %graph% {				\n" +
 				"		%individual% a %type% .	\n" + 
 				"	}							\n" +
 				"}";
+				//@formatter:on
 		query = query.replace("%graph%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
 		query = query.replace("%individual%", NTriplesUtil.toNTriplesString(individual));
 		query = query.replace("%type%", NTriplesUtil.toNTriplesString(type));
@@ -88,13 +93,15 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'D')")
-	public void removeType(@LocallyDefined @Subject Resource individual, @LocallyDefined Resource type) {
+	public void removeType(@LocallyDefined @Modified @Subject Resource individual, @LocallyDefined Resource type) {
 		String query =
+				// @formatter:off
 				"DELETE WHERE {					\n" +
 				"	GRAPH %graph% {				\n" +
 				"		%individual% a %type% .	\n" + 
 				"	}							\n" +
 				"}";
+				// @formatter:on
 		query = query.replace("%graph%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
 		query = query.replace("%individual%", NTriplesUtil.toNTriplesString(individual));
 		query = query.replace("%type%", NTriplesUtil.toNTriplesString(type));
