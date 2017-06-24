@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,7 +73,9 @@ import it.uniroma2.art.semanticturkey.customform.FormsMapping;
 import it.uniroma2.art.semanticturkey.customform.SessionFormData;
 import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -418,6 +421,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation
+	@Read
 	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
 	public JsonNode getFormCollection(String id) throws CustomFormException{
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -425,6 +429,7 @@ public class CustomForms extends STServiceAdapter {
 		FormCollection formColl = cfManager.getFormCollection(getProject(), id);
 		if (formColl != null) {
 			formCollNode.set("id", jsonFactory.textNode(formColl.getId()));
+			
 			ArrayNode formsColl = jsonFactory.arrayNode();
 			for (CustomForm form : formColl.getForms()) {
 				ObjectNode formNode = jsonFactory.objectNode();
@@ -433,6 +438,17 @@ public class CustomForms extends STServiceAdapter {
 				formsColl.add(formNode);
 			}
 			formCollNode.set("forms", formsColl);
+			
+			ArrayNode suggestionsColl = jsonFactory.arrayNode();
+			for (IRI sugg : formColl.getSuggestions()) {
+				ObjectNode suggNode = jsonFactory.objectNode();
+				suggNode.set("@id", jsonFactory.textNode(sugg.stringValue()));
+				suggNode.set("role", jsonFactory.textNode(RoleRecognitionOrchestrator.computeRole(sugg, getManagedConnection()).name()));
+				suggNode.set("nature", jsonFactory.textNode(NatureRecognitionOrchestrator.computeNature(sugg, getManagedConnection())));
+				suggestionsColl.add(suggNode);
+			}
+			formCollNode.set("suggestions", suggestionsColl);
+			
 			return formCollNode;
 		} else {
 			throw new CustomFormException("FormCollection with id " + id + " not found");
@@ -487,7 +503,9 @@ public class CustomForms extends STServiceAdapter {
 			throw new CustomFormException("Impossible to clone '" + sourceId + "'. A FormCollection with this ID doesn't exists");
 		}
 		FormCollection newFC = cfManager.createFormCollection(getProject(), targetId);
-		cfManager.addFormsToCollection(getProject(), newFC, sourceFC.getForms());
+		newFC.setForms(sourceFC.getForms());
+		newFC.setSuggestions(sourceFC.getSuggestions());
+		cfManager.updateFormCollection(getProject(), newFC, sourceFC.getForms(), sourceFC.getSuggestions());
 	}
 	
 	/**
@@ -547,7 +565,7 @@ public class CustomForms extends STServiceAdapter {
 					newFormCollId = parsedFormColl.getId();
 				}
 				FormCollection newFormColl = cfManager.createFormCollection(getProject(), newFormCollId);
-				cfManager.addFormsToCollection(getProject(), newFormColl, parsedFormColl.getForms());
+				cfManager.updateFormCollection(getProject(), newFormColl, parsedFormColl.getForms(), parsedFormColl.getSuggestions());
 			} catch (CustomFormParseException e) {
 				throw new CustomFormException("Failed to parse the input file, it may contain some errors.");
 			}
@@ -573,45 +591,28 @@ public class CustomForms extends STServiceAdapter {
 	}
 	
 	/**
-	 * Adds an existing CustomForm to an existing FormCollection
-	 * @param formCollectionId
-	 * @param customFormId
-	 * @return
-	 * @throws CustomFormException
-	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'C')")
-	public void addFormToCollection(String formCollectionId, String customFormId) throws CustomFormException{
-		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
-		if (formColl == null) {
-			throw new CustomFormException("FormCollection with ID " + formCollectionId + " doesn't exist");
-		}
-		CustomForm cf = cfManager.getCustomForm(getProject(), customFormId);
-		if (cf == null) {
-			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
-		}
-		cfManager.addFormToCollection(getProject(), formColl, cf);
-	}
-	
-	/**
 	 * Removes a CustomForm from an existing FormCollection
 	 * @param formCollectionId
 	 * @param customFormId
 	 * @return
 	 * @throws CustomFormException
 	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'D')")
-	public void removeFormFromCollection(String formCollectionId, String customFormId) throws CustomFormException {
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'U')")
+	public void updateFromCollection(String formCollectionId, List<String> customFormIds, List<IRI> suggestions) throws CustomFormException {
 		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
 		if (formColl == null) {
 			throw new CustomFormException("FormCollection with ID " + formCollectionId + " doesn't exist");
 		}
-		CustomForm cf = cfManager.getCustomForm(getProject(), customFormId);
-		if (cf == null) {
-			throw new CustomFormException("CustomForm with ID " + customFormId + " doesn't exist");
+		List<CustomForm> customForms = new ArrayList<>();
+		for (String cfId : customFormIds) {
+			CustomForm cf = cfManager.getCustomForm(getProject(), cfId);
+			if (cf == null) {
+				throw new CustomFormException("CustomForm with ID " + cfId + " doesn't exist");
+			}
+			customForms.add(cf);
 		}
-		cfManager.removeFormFromCollection(getProject(), formColl, cf);
+		cfManager.updateFormCollection(getProject(), formColl, customForms, suggestions);
 	}
 	
 	//========== Custom Form =================

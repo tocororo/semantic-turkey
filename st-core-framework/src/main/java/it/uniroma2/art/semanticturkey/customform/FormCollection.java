@@ -6,6 +6,8 @@ import java.util.Collection;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.eclipse.rdf4j.model.IRI;
+
 /**
  * A collection of {@link CustomForm}
  * @author Tiziano
@@ -18,17 +20,17 @@ public class FormCollection {
 	private String id;
 	private Collection<CustomForm> forms;
 	private CustomFormLevel level;
+	private Collection<IRI> suggestions;
 	
 	public FormCollection(String id, Collection<CustomForm> forms){
 		this.id = id;
 		this.forms = forms;
 		this.level = CustomFormLevel.project;
+		this.suggestions = new ArrayList<>();
 	}
 	
 	public FormCollection(String id){
-		this.id = id;
-		this.forms = new ArrayList<CustomForm>();
-		this.level = CustomFormLevel.project;
+		this(id, new ArrayList<CustomForm>());
 	}
 	
 	/**
@@ -45,6 +47,14 @@ public class FormCollection {
 	 */
 	public Collection<CustomForm> getForms(){
 		return forms;
+	}
+	
+	/**
+	 * Sets the forms of the collection
+	 * @param forms
+	 */
+	public void setForms(Collection<CustomForm> forms) {
+		this.forms = forms;
 	}
 	
 	/**
@@ -154,6 +164,46 @@ public class FormCollection {
 	}
 	
 	/**
+	 * Returns a collection of properties/classes suggested for the form collection
+	 * @return
+	 */
+	public Collection<IRI> getSuggestions() {
+		return this.suggestions;
+	}
+	
+	public void setSuggestions(Collection<IRI> suggestions) {
+		this.suggestions = suggestions;
+	}
+	
+	/**
+	 * Adds a collection of properties/classes to the suggestions list
+	 * @param suggestions
+	 */
+	public void addSuggestions(Collection<IRI> suggestions) {
+		for (IRI s : suggestions) {
+			this.addSuggestion(s);
+		}
+	}
+	
+	/**
+	 * Adds a property/class to the suggestions list
+	 * @param suggestions
+	 */
+	public void addSuggestion(IRI suggestion) {
+		if (!this.suggestions.contains(suggestion)) {
+			this.suggestions.add(suggestion);
+		}
+	}
+	
+	/**
+	 * Removes a class/property from the suggestion list
+	 * @param suggestion
+	 */
+	public void removeSuggestion(IRI suggestion) {
+		this.suggestions.remove(suggestion);
+	}
+	
+	/**
 	 * Serialize the {@link FormCollection} on a xml file.
 	 * @throws ParserConfigurationException 
 	 */
@@ -161,6 +211,4 @@ public class FormCollection {
 		CustomFormXMLHelper.serializeFormCollection(this, file);
 	}
 	
-	
-
 }

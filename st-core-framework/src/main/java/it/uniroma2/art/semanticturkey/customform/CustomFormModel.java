@@ -353,20 +353,9 @@ public class CustomFormModel {
 		}
 	}
 	
-	public void addFormToCollection(FormCollection formColl, CustomForm customForm) {
-		formColl.addForm(customForm);
-		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
-	}
-	
-	public void addFormsToCollection(FormCollection formColl, Collection<CustomForm> customForms) {
-		for (CustomForm cf : customForms) {
-			formColl.addForm(cf);
-		}
-		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
-	}
-	
-	public void removeFormFromCollection(FormCollection formColl, CustomForm customForm) {
-		formColl.removeForm(customForm.getId());
+	public void updateFormCollection(FormCollection formColl, Collection<CustomForm> customForms, Collection<IRI> suggestions) {
+		formColl.setForms(customForms);
+		formColl.setSuggestions(suggestions);
 		formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
 	}
 	

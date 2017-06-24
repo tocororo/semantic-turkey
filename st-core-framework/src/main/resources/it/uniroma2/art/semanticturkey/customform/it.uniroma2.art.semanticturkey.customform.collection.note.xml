@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<formCollection id="it.uniroma2.art.semanticturkey.customform.collection.note">
+<formCollection id="it.uniroma2.art.semanticturkey.customform.collection.note"
+	suggestions="http://www.w3.org/2004/02/skos/core#note,http://www.w3.org/2004/02/skos/core#definition">
 	<form id="it.uniroma2.art.semanticturkey.customform.form.reifiednote"/>
 </formCollection>

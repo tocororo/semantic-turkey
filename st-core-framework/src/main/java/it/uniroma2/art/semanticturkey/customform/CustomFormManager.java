@@ -555,6 +555,10 @@ public class CustomFormManager {
 	
 	// FORM COLLECTION
 	
+	public void updateFormCollection(Project project, FormCollection formColl, Collection<CustomForm> customForms, Collection<IRI> suggestions) {
+		cfModelMap.get(project.getName()).updateFormCollection(formColl, customForms, suggestions);
+	}
+	
 	/**
 	 * Removes a {@link FormCollection} from the configuration of the given project and its file from file-system
 	 * @param formCollId
@@ -577,37 +581,6 @@ public class CustomFormManager {
 	public void deleteCustomForm(Project project, CustomForm customForm, boolean deleteEmptyColl)  {
 		cfModelMap.get(project.getName()).deleteCustomForm(customForm, deleteEmptyColl);
 	}
-	
-	/**
-	 * Adds a CustomForm to a FormCollection
-	 * @param project project where the FormCollection belongs
-	 * @param formColl
-	 * @param customForm
-	 */
-	public void addFormToCollection(Project project, FormCollection formColl, CustomForm customForm) {
-		cfModelMap.get(project.getName()).addFormToCollection(formColl, customForm);
-	}
-	
-	/**
-	 * Adds a collection of CustomForm to a FormCollection 
-	 * @param project project where the FormCollection belongs
-	 * @param formColl
-	 * @param customForms
-	 */
-	public void addFormsToCollection(Project project, FormCollection formColl, Collection<CustomForm> customForms) {
-		cfModelMap.get(project.getName()).addFormsToCollection(formColl, customForms);
-	}
-	
-	/**
-	 * Removes a CustomForm from a FormCollection
-	 * @param project project where the FormCollection belongs
-	 * @param formColl
-	 * @param customForm
-	 */
-	public void removeFormFromCollection(Project project, FormCollection formColl, CustomForm customForm) {
-		cfModelMap.get(project.getName()).removeFormFromCollection(formColl, customForm);
-	}
-	
 	
 	/* #############################################
 	 * ################# Utility ###################

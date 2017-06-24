@@ -141,5 +141,19 @@ public abstract class CustomForm {
 	public void save(File file) {
 		CustomFormXMLHelper.serializeCustomForm(this, file);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) return false;
+		if (obj == this) return true;
+		if (obj instanceof CustomForm) {
+			CustomForm objCF = (CustomForm) obj;
+			return (
+				this.id.equals(objCF.getId()) && this.level.equals(objCF.getLevel())
+			);
+		} else {
+			return false;
+		}
+	}
 
 }
