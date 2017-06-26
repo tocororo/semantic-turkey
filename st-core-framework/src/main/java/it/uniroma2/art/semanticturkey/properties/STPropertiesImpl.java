@@ -223,6 +223,7 @@ public abstract class STPropertiesImpl implements STProperties {
 
 	@Override
 	public Optional<Collection<String>> getEnumeration(String id) throws PropertyNotFoundException {
+		getPropertyDescription(id); // just used to check the existence of the property
 		try {
 			Field field = thisClass.getField(id);
 			return Optional
@@ -230,7 +231,7 @@ public abstract class STPropertiesImpl implements STProperties {
 							field.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class))
 					.map(ann -> Lists.newArrayList(ann.value()));
 		} catch (NoSuchFieldException | SecurityException e) {
-			throw new PropertyNotFoundException(e);
+			return Optional.empty();
 		}
 	}
 }
