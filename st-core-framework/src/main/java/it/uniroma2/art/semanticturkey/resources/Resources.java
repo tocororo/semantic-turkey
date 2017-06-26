@@ -362,9 +362,6 @@ public class Resources {
 			if (abstrProj instanceof Project) {
 				for (STUser user : UsersManager.listUsers()) {
 					ProjectUserBinding puBinding = new ProjectUserBinding(abstrProj, user);
-					if (user.getEmail().equals("admin@vocbench.com")) {
-						puBinding.addRole(RBACManager.DefaultRole.ADMINISTRATOR);
-					}
 					ProjectUserBindingsManager.createPUBinding(puBinding);
 				}
 			}
@@ -417,8 +414,8 @@ public class Resources {
 	
 	private static void initializeRoles() throws IOException {
 		Role[] roles = {
-				RBACManager.DefaultRole.ADMINISTRATOR, RBACManager.DefaultRole.LEXICOGRAPHER,
-				RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.PROJECTMANAGER
+				RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
+				RBACManager.DefaultRole.PROJECTMANAGER
 		};
 		File rolesDir = RBACManager.getRolesDir(null);
 		if (!rolesDir.exists()) {

@@ -175,10 +175,6 @@ public class STAuthorizationEvaluator {
 	 */
 	private Collection<Role> getRoles(STUser user) {
 		Collection<Role> roles = new ArrayList<>();
-		if (user.isAdmin()) {
-			//administration role is a cross project role, so it checked independently from the project accessed
-			roles.add(RBACManager.DefaultRole.ADMINISTRATOR);
-		}
 		AbstractProject project = getTargetForRBAC();
 		if (project != null) {
 			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);

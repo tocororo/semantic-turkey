@@ -28,7 +28,6 @@ import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 public class RBACManager {
 	
 	public static final class DefaultRole {
-		public static final Role ADMINISTRATOR = new Role("administrator", RoleLevel.system);
 		public static final Role LEXICOGRAPHER = new Role("lexicographer", RoleLevel.system);
 		public static final Role MAPPER = new Role("mapper", RoleLevel.system);
 		public static final Role PROJECTMANAGER = new Role("projectmanager", RoleLevel.system);

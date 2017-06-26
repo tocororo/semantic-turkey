@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Element;
 
+import it.uniroma2.art.owlart.exceptions.ModelAccessException;
+import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
+import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
+import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -31,26 +35,20 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.generation.annotation.RequestMethod;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
 import it.uniroma2.art.semanticturkey.servlet.Response;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 /**
@@ -320,13 +318,6 @@ public class Projects extends STServiceAdapterOLD {
 		File projectFile = File.createTempFile("prefix", "suffix");
 		importPackage.transferTo(projectFile);
 		ProjectManager.importProject(projectFile, newProjectName);
-		
-		STUser loggedUser = UsersManager.getLoggedUser();
-		//TODO is correct to assign administrator role to the user that creates project?
-		//if not how do I handle the administrator role since the role is related to a project?
-		
-		ProjectUserBindingsManager.addRoleToPUBinding(loggedUser, ProjectManager.getProjectDescription(newProjectName),
-				RBACManager.DefaultRole.ADMINISTRATOR);
 	}
 
 	/**
