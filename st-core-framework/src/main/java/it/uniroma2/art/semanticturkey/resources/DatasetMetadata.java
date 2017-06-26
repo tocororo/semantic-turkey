@@ -24,6 +24,7 @@ package it.uniroma2.art.semanticturkey.resources;
 
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 
 /**
@@ -59,7 +60,8 @@ public class DatasetMetadata {
 	public String getBaseURI() {
 		return baseURI;
 	}
-	
+
+	@JsonIgnore
 	public boolean isAccessible() {
 		return getSparqlEndpoint() != null || isDereferenceable();
 	}
