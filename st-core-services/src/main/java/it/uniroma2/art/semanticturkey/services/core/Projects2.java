@@ -59,7 +59,7 @@ public class Projects2 extends STServiceAdapter {
 	// TODO understand how to specify remote repository / different sail configurations
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
-	public JsonNode createProject(ProjectConsumer consumer, String projectName, IRI model,
+	public void createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			RepositoryAccess repositoryAccess, String coreRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification coreRepoSailConfigurerSpecification,
@@ -88,16 +88,11 @@ public class Projects2 extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		Project proj = ProjectManager.createProject(consumer, projectName, model, lexicalizationModel,
+		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel,
 				baseURI, historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
 				uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
 				modificationDateProperty, updateForRoles);
-
-		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
-		objectNode.set("type", JsonNodeFactory.instance.textNode(proj.getType()));
-
-		return objectNode;
 	}
 	
 	/**
@@ -149,11 +144,6 @@ public class Projects2 extends STServiceAdapter {
 				validationEnabled = proj.isValidationEnabled();
 				open = ProjectManager.isOpen(proj);
 				access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel, requestedLockLevel);
-				try {
-					type = proj.getType();
-				} catch (ProjectInconsistentException e) {
-					status = new ProjectStatus(Status.error, e.getMessage());
-				}
 				
 				if (onlyOpen && !open) { continue; }
 				if (userDependent && !ProjectUserBindingsManager.hasUserAccessToProject(UsersManager.getLoggedUser(), proj)) {
@@ -163,8 +153,7 @@ public class Projects2 extends STServiceAdapter {
 				CorruptedProject proj = (CorruptedProject) absProj;
 				status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 			}
-			ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-					type, historyEnabled, validationEnabled, access, status);
+			ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel, historyEnabled, validationEnabled, access, status);
 			listProjInfo.add(projInfo);
 		}
 				

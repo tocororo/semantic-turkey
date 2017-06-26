@@ -241,7 +241,7 @@ public class ProjectManager {
 		Project proj = getProjectDescription(projectName);
 
 		try {
-			logger.debug("project " + projectName + " initialized as a " + proj.getType() + " project");
+			logger.debug("project " + projectName + " initialized");
 
 			proj.activate();
 
@@ -489,14 +489,8 @@ public class ProjectManager {
 
 		Project proj;
 
-		ProjectType type;
 		try {
-			type = getProjectType(projectName);
-			logger.debug("project type:" + type);
-			if (type == ProjectType.continousEditing)
-				proj = new PersistentStoreProject(projectName, projectDir);
-			else
-				proj = new SaveToStoreProject(projectName, projectDir);
+			proj = new PersistentStoreProject(projectName, projectDir);
 			logger.info("created project description for: " + proj);
 			return proj;
 		} catch (Exception e) {
@@ -673,24 +667,6 @@ public class ProjectManager {
 		else
 			throw new ProjectInconsistentException(
 					"missing required " + property + " value from description of project: " + projectName);
-	}
-
-	/**
-	 * gets the type fo the project. It is not applicable for the main project, which is anyway assumed to be
-	 * always a {@link PersistentStoreProject}
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws IOException
-	 * @throws ProjectInexistentException
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectInconsistentException
-	 * @throws FileNotFoundException
-	 */
-	public static ProjectType getProjectType(String projectName) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectInconsistentException {
-		String propValue = getRequiredProjectProperty(projectName, Project.PROJECT_TYPE);
-		return Enum.valueOf(ProjectType.class, propValue);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1637,7 +1613,6 @@ public class ProjectManager {
 					+ escape(renderingEngineSpecification.getConfigType()) + "\n");
 			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
 			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
-			out.write(Project.PROJECT_TYPE + "=" + type + "\n");
 			out.write(Project.MODEL_PROP + "=" + escape(model.stringValue()) + "\n");
 			out.write(Project.LEXICALIZATION_MODEL_PROP + "=" + escape(lexicalizationModel.stringValue())
 					+ "\n");

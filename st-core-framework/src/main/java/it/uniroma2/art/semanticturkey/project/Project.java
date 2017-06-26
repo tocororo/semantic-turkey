@@ -153,7 +153,6 @@ public abstract class Project extends AbstractProject {
 	public static final String PROJECT_NAME_PROP = "name";
 	public static final String BASEURI_PROP = "baseURI";
 	public static final String DEF_NS_PROP = "defaultNamespace";
-	public static final String PROJECT_TYPE = "ProjectType";
 	public static final String MODEL_PROP = "model";
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
 	public static final String UPDATE_FOR_ROLES_PROP = "updateForRoles";
@@ -196,7 +195,6 @@ public abstract class Project extends AbstractProject {
 		reservedProperties.add(PROJECT_NAME_PROP);
 		reservedProperties.add(BASEURI_PROP);
 		reservedProperties.add(DEF_NS_PROP);
-		reservedProperties.add(PROJECT_TYPE);
 		reservedProperties.add(MODEL_PROP);
 		reservedProperties.add(LEXICALIZATION_MODEL_PROP);
 		reservedProperties.add(PLUGINS_PROP);
@@ -601,10 +599,6 @@ public abstract class Project extends AbstractProject {
 
 	public String getDefaultNamespace() {
 		return stp_properties.getProperty(DEF_NS_PROP);
-	}
-
-	public String getType() throws ProjectInconsistentException {
-		return getRequiredProperty(PROJECT_TYPE);
 	}
 
 	public boolean isHistoryEnabled() {

@@ -9,7 +9,6 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNonPersistentInMemorySailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JPersistentInMemorySailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
@@ -29,7 +28,6 @@ public class PredefinedRepositoryImplConfigurerFactory implements
 	@Override
 	public Collection<STProperties> getPluginConfigurations() {
 		return Arrays.<STProperties>asList(new RDF4JPersistentInMemorySailConfigurerConfiguration(),
-				new RDF4JNonPersistentInMemorySailConfigurerConfiguration(),
 				new RDF4JNativeSailConfigurerConfiguration(), new GraphDBFreeConfigurerConfiguration());
 	}
 

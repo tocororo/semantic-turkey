@@ -10,14 +10,13 @@ public class ProjectInfo {
 	private final String defaultNamespace;
 	private final String model;
 	private final String lexicalizationModel;
-	private final String type;
 	private final boolean historyEnabled;
 	private final boolean validationEnabled;
 	private final AccessResponse accessible;
 	private final ProjectStatus status;
 	
 	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
-			String model, String lexicalizationModel, String type, 
+			String model, String lexicalizationModel, 
 			boolean historyEnabled, boolean validationEnabled, AccessResponse accessible, ProjectStatus status) {
 		this.name = name;
 		this.open = open;
@@ -25,7 +24,6 @@ public class ProjectInfo {
 		this.defaultNamespace = defaultNamespace;
 		this.model = model;
 		this.lexicalizationModel = lexicalizationModel;
-		this.type = type;
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
 		this.accessible = accessible;
@@ -54,10 +52,6 @@ public class ProjectInfo {
 	
 	public String getLexicalizationModel() {
 		return lexicalizationModel;
-	}
-	
-	public String getType() {
-		return type;
 	}
 	
 	public boolean isHistoryEnabled() {

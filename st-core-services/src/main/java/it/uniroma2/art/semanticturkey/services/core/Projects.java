@@ -41,7 +41,6 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.project.SaveToStoreProject;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
@@ -212,30 +211,6 @@ public class Projects extends STServiceAdapterOLD {
 	public void repairProject(String projectName) throws IOException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectInconsistentException {
 		UpdateRoutines.repairProject(projectName);
-	}
-
-	/**
-	 * saves state of currently loaded project <code>projectName</code>
-	 * 
-	 * @param project
-	 * @return
-	 * @throws IllegalAccessException
-	 * @throws ProjectUpdateException
-	 */
-	@GenerateSTServiceController
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
-	public void saveProject(String project) throws IllegalAccessException, ProjectUpdateException {
-		logger.info("requested to save project: " + project);
-
-		if (!ProjectManager.isOpen(project))
-			throw new IllegalAccessException("the project has to be open first in order to be saved!");
-
-		Project projectInstance = ProjectManager.getProject(project);
-
-		if (!(projectInstance instanceof SaveToStoreProject))
-			throw new IllegalAccessException("non-sense request: this is not a saveable project!");
-
-		((SaveToStoreProject) projectInstance).save();
 	}
 
 	/*
