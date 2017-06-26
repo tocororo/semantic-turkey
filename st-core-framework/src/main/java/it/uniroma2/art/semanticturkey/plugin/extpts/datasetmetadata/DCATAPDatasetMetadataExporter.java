@@ -46,8 +46,6 @@ public class DCATAPDatasetMetadataExporter extends
 		ValueFactory valueFactory = conn.getValueFactory();
 		try {
 			try (RepositoryConnection metadataConnection = tempMetadataRepository.getConnection()) {
-				/*DatasetMetadataExporterSettings extensionPointSettings = getExtensionPointProjectSettings(
-						project);*/
 				DCATAPDatasetMetadataExporterSettings pluginSettings = getClassLevelProjectSettings(
 						project);
 
@@ -61,48 +59,16 @@ public class DCATAPDatasetMetadataExporter extends
 				
 				//First create the mandatory and recommended classes
 				
-				//IRI agentIRI = valueFactory.createIRI(pluginSettings.agent_iri);
-				//metadataModel.add(valueFactory.createStatement(agentIRI, RDF.TYPE, FOAF.AGENT));
-
 				IRI catalogueIRI = valueFactory.createIRI(pluginSettings.catalogue_iri);
 				metadataModel.add(valueFactory.createStatement(catalogueIRI, RDF.TYPE, DCAT.CATALOG));
 
 				IRI datasetIRI = valueFactory.createIRI(pluginSettings.dataset_iri);
 				metadataModel.add(valueFactory.createStatement(datasetIRI, RDF.TYPE, DCAT.DATASET));
 
-				//String category_iri_string = pluginSettings.category_iri;
-				//IRI categoryIRI = null;
-				//if(category_iri_string!=null && !category_iri_string.isEmpty()) {
-				//	categoryIRI = valueFactory.createIRI(pluginSettings.category_iri);
-				//	metadataModel.add(valueFactory.createStatement(agentIRI, RDF.TYPE, SKOS.CONCEPT));
-				//}
-
-				//String categoryScheme_iri_string = pluginSettings.categoryScheme_iri;
-				//IRI categorySchemeIRI = null;
-				//if(categoryScheme_iri_string!=null && !categoryScheme_iri_string.isEmpty()) {
-				//	categorySchemeIRI = valueFactory.createIRI(pluginSettings.categoryScheme_iri);
-				//	metadataModel.add(valueFactory.createStatement(agentIRI, RDF.TYPE, SKOS.CONCEPT_SCHEME));
-				//}
-				
-				//String distribution_iri_string = pluginSettings.distribution_iri;
-				//IRI distributionIRI = null;
-				//if(distribution_iri_string!=null && !distribution_iri_string.isEmpty()) {
-				//	distributionIRI = valueFactory.createIRI(pluginSettings.distribution_iri);
-				//	metadataModel.add(valueFactory.createStatement(distributionIRI, RDF.TYPE, DCAT.DISTRIBUTION));
-				//}
-				
-				//String licenceDocument_iri_string = pluginSettings.licenceDocument_iri;
-				//IRI licenceDocumentIRI = null;
-				//if(licenceDocument_iri_string!=null && !licenceDocument_iri_string.isEmpty()) {
-				//	licenceDocumentIRI = valueFactory.createIRI(pluginSettings.licenceDocument_iri);
-				//	metadataModel.add(valueFactory.createStatement(agentIRI, RDF.TYPE, DCTERMS.LICENSE_DOCUMENT));
-				//}
-
-				
 				//now add the property
 				
 				/*  CATALOGUE */
-				metadataModel.add(valueFactory.createStatement(catalogueIRI, DCAT.DATASET, datasetIRI));
+				metadataModel.add(valueFactory.createStatement(catalogueIRI, DCAT.HAS_DATASET, datasetIRI));
 				
 				String catalogue_description = pluginSettings.catalogue_description;
 				metadataModel.add(valueFactory.createStatement(catalogueIRI, DCTERMS.DESCRIPTION, 
