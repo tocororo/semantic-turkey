@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,7 +21,6 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -32,7 +30,6 @@ import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.OWLModel;
 import it.uniroma2.art.owlart.rdf4jimpl.RDF4JARTResourceFactory;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
@@ -56,10 +53,8 @@ import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
-import it.uniroma2.art.semanticturkey.tx.STServiceInvocaton;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
-import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
 /**
  * Base class of Semantic Turkey services.
@@ -159,53 +154,6 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		return QueryResults.stream(query.evaluate())
 				.map(bindingSet -> new AnnotatedValue<>((Resource) bindingSet.getValue("resource")))
 				.collect(toList());
-	}
-
-	protected void applyPatch(Model quadAdditions, Model quadRemovals) {
-		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-		// java.lang.Thread.getStackTrace() |
-		// it.uniroma2.art.semanticturkey.services.STServiceAdapter2.applyPatch(Model, Model) | <actual
-		// service>
-
-		if (stackTrace.length < 3)
-			throw new IllegalStateException("Unable to estalish the calling service");
-
-		String methodName = stackTrace[2].getMethodName();
-		Method serviceMethod = ReflectionUtilities.getMethodByName(getClass(), methodName);
-
-		STServiceInvocaton currentServiceInvocation = STServiceAspect.getCurrentServiceInvocation();
-
-		if (!serviceMethod.equals(currentServiceInvocation.getMethod())) {
-			throw new IllegalStateException(STServiceAdapter.class.getSimpleName()
-					+ ".applyPath(..) may only invoked within the executon of a service method");
-		}
-
-		System.out.println("=== BEGIN PATCH ===");
-
-		System.out.println(currentServiceInvocation);
-
-		System.out.println();
-
-		quadAdditions.forEach(stmt -> System.out.println("+ "
-				+ NTriplesUtil.toNTriplesString(stmt.getSubject()) + " "
-				+ NTriplesUtil.toNTriplesString(stmt.getPredicate()) + " "
-				+ NTriplesUtil.toNTriplesString(stmt.getObject()) + Optional.ofNullable(stmt.getContext())
-						.map(c -> NTriplesUtil.toNTriplesString(c)).orElse("")));
-		quadRemovals.forEach(stmt -> System.out.println("- "
-				+ NTriplesUtil.toNTriplesString(stmt.getSubject()) + " "
-				+ NTriplesUtil.toNTriplesString(stmt.getPredicate()) + " "
-				+ NTriplesUtil.toNTriplesString(stmt.getObject()) + Optional.ofNullable(stmt.getContext())
-						.map(c -> NTriplesUtil.toNTriplesString(c)).orElse("")));
-		System.out.println("=== END PATCH ===");
-
-		RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(getProject().getRepository());
-		try {
-			conn.add(quadAdditions);
-			conn.remove(quadRemovals);
-		} finally {
-			RDF4JRepositoryUtils.releaseConnection(conn, getProject().getRepository());
-		}
 	}
 
 	protected QueryBuilder createQueryBuilder(String resourceQuery) {
@@ -337,12 +285,4 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		return NatureRecognitionOrchestrator.getNatureSPARQLWherePart(varName);
 	}
 	
-	// Deprecated
-
-	@Override
-	public OWLModel getOWLModel() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 }

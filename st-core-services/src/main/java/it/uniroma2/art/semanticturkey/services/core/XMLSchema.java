@@ -2,94 +2,62 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.text.ParseException;
 
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Element;
 
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapterOLD;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.xmlschema.FormattedValue;
 import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.utilities.XmlSchemaUtils;
 import it.uniroma2.art.semanticturkey.validators.XSDDatatypeValidator;
 
-@GenerateSTServiceController
-@Validated
-@Component
-public class XMLSchema extends STServiceAdapterOLD{
-	
-	@GenerateSTServiceController
-	public Response formatDateTime(int year, int month, int day, int hour, int minute, int second, @Optional(defaultValue="Z") String offset) throws ParseException {
+@STService
+public class XMLSchema extends STServiceAdapter {
+
+	@STServiceOperation
+	public FormattedValue formatDateTime(int year, int month, int day, int hour, int minute, int second,
+			@Optional(defaultValue = "Z") String offset) throws ParseException {
 		String formatted = XmlSchemaUtils.formatDateTime(year, month, day, hour, minute, second, offset);
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
-		dateTimeElement.setTextContent(formatted);
-		dateTimeElement.setAttribute("validated", XSDDatatypeValidator.isValidDateTime(formatted)+"");
-		return response;
+		return new FormattedValue("dateTime", formatted, XSDDatatypeValidator.isValidDateTime(formatted));
 	}
-	
-	@GenerateSTServiceController
-	public Response formatDate(int year, int month, int day) throws ParseException {
+
+	@STServiceOperation
+	public FormattedValue formatDate(int year, int month, int day) throws ParseException {
 		String formatted = XmlSchemaUtils.formatDate(year, month, day);
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Element dateElement = XMLHelp.newElement(dataElement, "date");
-		dateElement.setTextContent(formatted);
-		dateElement.setAttribute("validated", XSDDatatypeValidator.isValidDate(formatted)+"");
-		return response;
+		return new FormattedValue("date", formatted, XSDDatatypeValidator.isValidDate(formatted));
 	}
-	
-	@GenerateSTServiceController
-	public Response formatTime(int hour, int minute, int second) throws ParseException {
+
+	@STServiceOperation
+	public FormattedValue formatTime(int hour, int minute, int second) throws ParseException {
 		String formatted = XmlSchemaUtils.formatTime(hour, minute, second);
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Element timeElement = XMLHelp.newElement(dataElement, "time");
-		timeElement.setTextContent(formatted);
-		timeElement.setAttribute("validated", XSDDatatypeValidator.isValidTime(formatted)+"");
-		return response;
+		return new FormattedValue("time", formatted, XSDDatatypeValidator.isValidTime(formatted));
 	}
-	
-	@GenerateSTServiceController
-	public Response formatDuration(@Optional(defaultValue="true") boolean isPositive, @Optional(defaultValue="0") int year,
-			@Optional(defaultValue="0") int month, @Optional(defaultValue="0") int day, 
-			@Optional(defaultValue="0") int hour, @Optional(defaultValue="0") int minute,
-			@Optional(defaultValue="0") int second) throws ParseException {
+
+	@STServiceOperation
+	public FormattedValue formatDuration(@Optional(defaultValue = "true") boolean isPositive,
+			@Optional(defaultValue = "0") int year, @Optional(defaultValue = "0") int month,
+			@Optional(defaultValue = "0") int day, @Optional(defaultValue = "0") int hour,
+			@Optional(defaultValue = "0") int minute, @Optional(defaultValue = "0") int second)
+			throws ParseException {
 		String formatted = XmlSchemaUtils.formatDuration(isPositive, year, month, day, hour, minute, second);
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Element durationElement = XMLHelp.newElement(dataElement, "duration");
-		durationElement.setTextContent(formatted);
-		durationElement.setAttribute("validated", XSDDatatypeValidator.isValidDuration(formatted)+"");
-		return response;
+		return new FormattedValue("duration", formatted, XSDDatatypeValidator.isValidDuration(formatted));
 	}
-	
-	@GenerateSTServiceController
-	public Response formatCurrentLocalDateTime(){
+
+	@STServiceOperation
+	public FormattedValue formatCurrentLocalDateTime() {
 		String formatted = XmlSchemaUtils.formatCurrentLocalDateTime();
-		System.out.println("valid local datetime: " + XSDDatatypeValidator.isValidDateTime(formatted));
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
-		dateTimeElement.setTextContent(formatted);
-		dateTimeElement.setAttribute("validated", XSDDatatypeValidator.isValidDateTime(formatted)+"");
-		return response;
+		return new FormattedValue("dateTime", formatted, XSDDatatypeValidator.isValidDateTime(formatted));
 	}
-	
-	@GenerateSTServiceController
-	public Response formatCurrentUTCDateTime(){
+
+	@STServiceOperation
+	public FormattedValue formatCurrentUTCDateTime() {
 		String formatted = XmlSchemaUtils.formatCurrentUTCDateTime();
-		System.out.println("valid local datetime: " + XSDDatatypeValidator.isValidDateTime(formatted));
-		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		Element dataElement = response.getDataElement();
-		Element dateTimeElement = XMLHelp.newElement(dataElement, "dateTime");
-		dateTimeElement.setTextContent(formatted);
-		dateTimeElement.setAttribute("validated", XSDDatatypeValidator.isValidDateTime(formatted)+"");
-		return response;
+		return new FormattedValue("dateTime", formatted, XSDDatatypeValidator.isValidDateTime(formatted));
 	}
-	
+
 }
