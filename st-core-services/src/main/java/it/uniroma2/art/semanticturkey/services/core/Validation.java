@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -49,6 +50,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(validation)', 'V')")
 	public ValidationPaginationInfo getStagedCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional String timeLowerBound, @Optional String timeUpperBound,
 			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
@@ -94,6 +96,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public Collection<CommitInfo> getCommits2(
 			@Optional(defaultValue = "") IRI[] operationFilter, @Optional String timeLowerBound,
 			String timeUpperBound,
@@ -194,6 +197,7 @@ public class Validation extends STServiceAdapter {
 	}
 
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public Page<CommitInfo> getStagedCommits(@Optional(defaultValue = "100") int limit) {
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
@@ -266,6 +270,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void accept(IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit,
 				CHANGETRACKER.VALIDATION);
@@ -273,6 +278,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void reject(IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit,
 				CHANGETRACKER.VALIDATION);

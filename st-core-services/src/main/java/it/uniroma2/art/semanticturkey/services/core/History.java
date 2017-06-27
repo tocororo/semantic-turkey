@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -55,6 +56,7 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional String timeLowerBound, @Optional String timeUpperBound,
 			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
@@ -100,6 +102,7 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public Collection<CommitInfo> getCommits2(long tipRevisionNumber,
 			@Optional(defaultValue = "") IRI[] operationFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound,
@@ -202,6 +205,7 @@ public class History extends STServiceAdapter {
 	}
 
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public Page<CommitInfo> getCommits(@Optional IRI parentCommit,
 			@Optional(defaultValue = "100") int limit) {
 
@@ -300,6 +304,7 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public CommitDelta getCommitDelta(IRI commit) {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 
