@@ -137,7 +137,7 @@ resolveLANG(LANG, LANGCOVERAGE) :-
 
 % undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty, ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection;
 
-covered(Subj,resource) :- role(Subj);
+covered(Subj,resource) :- role(Subj).
 covered(objectProperty, property).
 covered(datatypeProperty, property).
 covered(annotationProperty, property).
