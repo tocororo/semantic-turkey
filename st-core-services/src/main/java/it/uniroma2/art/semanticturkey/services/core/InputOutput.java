@@ -30,9 +30,9 @@ import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
-public class InputOutput2 extends STServiceAdapter {
+public class InputOutput extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(InputOutput2.class);
+	private static Logger logger = LoggerFactory.getLogger(InputOutput.class);
 
 	/**
 	 * Adds RDF data directly to the ontology being edited (i.e. it is not a read-only import of an external

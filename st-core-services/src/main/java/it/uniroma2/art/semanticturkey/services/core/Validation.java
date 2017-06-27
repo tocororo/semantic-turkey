@@ -97,7 +97,7 @@ public class Validation extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
-	public Collection<CommitInfo> getCommits2(
+	public Collection<CommitInfo> getCommits(
 			@Optional(defaultValue = "") IRI[] operationFilter, @Optional String timeLowerBound,
 			String timeUpperBound,
 			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
@@ -193,78 +193,6 @@ public class Validation extends STServiceAdapter {
 
 				return commitInfo;
 			}).collect(Collectors.toList());
-		}
-	}
-
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
-	public Page<CommitInfo> getStagedCommits(@Optional(defaultValue = "100") int limit) {
-
-		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
-
-		try (RepositoryConnection conn = supportRepository.getConnection()) {
-			String queryString =
-				// @formatter:off
-				" prefix cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                         \n" +
-				" prefix prov: <http://www.w3.org/ns/prov#>                                            \n" +
-				" prefix dcterms: <http://purl.org/dc/terms/>                                          \n" +
-	            "                                                                                      \n" +
-				" select * {                                                                           \n" +
-	            "    ?commit a cl:Commit .                                                             \n" +
-				"    ?commit prov:endedAtTime ?endTime .                                               \n" +
-	            "    FILTER NOT EXISTS { ?commit cl:parentCommit [] }                                  \n" +
-				"    FILTER NOT EXISTS { cl:MASTER cl:tip ?commit }                                    \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit prov:used ?operation .                                                 \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit prov:qualifiedAssociation [                                            \n" +
-				"          prov:agent ?agent                                                           \n" +
-				"       ]                                                                              \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit dcterms:subject ?subject                                               \n" +
-				"    }                                                                                 \n" +
-				" }                                                                                    \n" +
-				" order by desc(?endTime)                                                              \n" +
-				" limit " + (limit +1)
-				// @formatter:on
-			;
-
-			TupleQuery query = conn.prepareTupleQuery(queryString);
-			query.setIncludeInferred(false);
-			List<CommitInfo> commitInfos = QueryResults.stream(query.evaluate()).map(bindingSet -> {
-				CommitInfo commitInfo = new CommitInfo();
-
-				commitInfo.setCommit((IRI) bindingSet.getValue("commit"));
-
-				AnnotatedValue<IRI> operation = new AnnotatedValue<IRI>(
-						(IRI) bindingSet.getValue("operation"));
-
-				if (bindingSet.hasBinding("operation")) {
-					commitInfo.setOperation(operation);
-				}
-				if (bindingSet.hasBinding("agent")) {
-					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
-					STUser userDetails = UsersManager.getUserByIRI(user.getValue());
-					if (userDetails != null) {
-						String show = new StringBuilder().append(userDetails.getGivenName()).append(" ")
-								.append(userDetails.getFamilyName()).append(" <")
-								.append(userDetails.getEmail()).append(">").toString();
-						user.setAttribute("show", show);
-					}
-					commitInfo.setUser(user);
-				}
-
-				if (bindingSet.hasBinding("subject")) {
-					AnnotatedValue<Resource> subject = new AnnotatedValue<Resource>(
-							(Resource) bindingSet.getValue("subject"));
-					commitInfo.setSubject(subject);
-				}
-				return commitInfo;
-			}).collect(Collectors.toList());
-
-			return Page.build(commitInfos, limit);
 		}
 	}
 

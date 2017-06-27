@@ -102,7 +102,6 @@ public class Metadata extends STServiceAdapter {
 	 * @throws OntologyManagerException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'R')")
 	public Collection<PrefixMapping> getNamespaceMappings() throws OntologyManagerException {
 		Map<String, String> allMappings = getOntologyManager().getNSPrefixMappings(false);
 		Map<String, String> explicitMappings = getOntologyManager().getNSPrefixMappings(true);

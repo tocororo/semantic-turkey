@@ -63,7 +63,7 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation
-	public ExporterSettingsInfo getExporterSettings2(String exporterId) throws STPropertyAccessException {
+	public ExporterSettingsInfo getExporterSettings(String exporterId) throws STPropertyAccessException {
 		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
 				.getPluginFactory(exporterId);
 
@@ -71,32 +71,6 @@ public class DatasetMetadataExport extends STServiceAdapter {
 		STProperties pluginSettings = pluginFactory.getProjectSettings(getProject());
 
 		return new ExporterSettingsInfo(extensionPointSettings, pluginSettings);
-	}
-
-	/**
-	 * Returns the (project-level) settings for an exporter (including the part related to the extension
-	 * point).
-	 * 
-	 * @param exporterId
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	@STServiceOperation
-	public ObjectNode getExporterSettings(String exporterId) throws STPropertyAccessException {
-		try {
-			PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
-					.getPluginFactory(exporterId);
-
-			STProperties extensionPointSettings = pluginFactory.getExtensonPointProjectSettings(getProject());
-			STProperties pluginSettings = pluginFactory.getProjectSettings(getProject());
-
-			ObjectNode rv = JsonNodeFactory.instance.objectNode();
-			rv.set("extensionPointSettings", serializeSTPropertiesToJSON(extensionPointSettings));
-			rv.set("pluginSettings", serializeSTPropertiesToJSON(pluginSettings));
-			return rv;
-		} catch (PropertyNotFoundException e) {
-			throw new STPropertyAccessException(e);
-		}
 	}
 
 	protected ObjectNode serializeSTPropertiesToJSON(STProperties settings) throws PropertyNotFoundException {

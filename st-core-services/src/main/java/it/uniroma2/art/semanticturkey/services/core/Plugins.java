@@ -21,9 +21,9 @@ import it.uniroma2.art.semanticturkey.services.core.plugins.PluginInfo;
  * This class provides services for handling plugins.
  */
 @STService
-public class Plugins2 extends STServiceAdapter {
+public class Plugins extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(Plugins2.class);
+	private static Logger logger = LoggerFactory.getLogger(Plugins.class);
 
 	/**
 	 * Returns the available configuration options for a given plug-in

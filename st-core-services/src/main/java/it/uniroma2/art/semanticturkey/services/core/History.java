@@ -103,7 +103,7 @@ public class History extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-	public Collection<CommitInfo> getCommits2(long tipRevisionNumber,
+	public Collection<CommitInfo> getCommits(long tipRevisionNumber,
 			@Optional(defaultValue = "") IRI[] operationFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound,
 			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
@@ -201,104 +201,6 @@ public class History extends STServiceAdapter {
 
 				return commitInfo;
 			}).collect(Collectors.toList());
-		}
-	}
-
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-	public Page<CommitInfo> getCommits(@Optional IRI parentCommit,
-			@Optional(defaultValue = "100") int limit) {
-
-		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
-
-		try (RepositoryConnection conn = supportRepository.getConnection()) {
-			String queryString =
-				// @formatter:off
-				" prefix cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                         \n" +
-				" prefix prov: <http://www.w3.org/ns/prov#>                                            \n" +
-				" prefix dcterms: <http://purl.org/dc/terms/>                                          \n" +
-	            "                                                                                      \n" +
-				" select * {                                                                           \n" +
-				"    {select ?commit (COUNT(?successorCommit) as ?count) where {                       \n" +
-				( parentCommit != null ?
-						"        ?latest cl:parentCommit " + RenderUtils.toSPARQL(parentCommit) + " .\n"
-						:
-						"        cl:MASTER cl:tip ?latest .\n" ) +
-				"        ?latest cl:parentCommit* ?successorCommit .                                   \n" +
-				"        ?successorCommit cl:parentCommit* ?commit                                     \n" +
-				"     }                                                                                \n" +
-				"     group by ?commit                                                                 \n" +
-				"     order by asc(?count)                                                             \n" +
-				"     limit " + (limit + 1) + "                                                        \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit prov:used ?operation .                                                 \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit prov:qualifiedAssociation [                                            \n" +
-				"          prov:agent ?agent                                                           \n" +
-				"       ]                                                                              \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit dcterms:subject ?subject                                               \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit prov:startedAtTime ?startTime                                          \n" +
-				"    }                                                                                 \n" +
-				"    optional {                                                                        \n" +
-				"       ?commit prov:endedAtTime ?endTime                                              \n" +
-				"    }                                                                                 \n" +
-				" }                                                                                    \n"
-				// @formatter:on
-			;
-
-			TupleQuery query = conn.prepareTupleQuery(queryString);
-			query.setIncludeInferred(false);
-			List<CommitInfo> commitInfos = QueryResults.stream(query.evaluate()).map(bindingSet -> {
-				CommitInfo commitInfo = new CommitInfo();
-
-				commitInfo.setCommit((IRI) bindingSet.getValue("commit"));
-
-				AnnotatedValue<IRI> operation = new AnnotatedValue<IRI>(
-						(IRI) bindingSet.getValue("operation"));
-
-				if (bindingSet.hasBinding("operation")) {
-					commitInfo.setOperation(operation);
-				}
-				if (bindingSet.hasBinding("agent")) {
-					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
-					STUser userDetails = UsersManager.getUserByIRI(user.getValue());
-					if (userDetails != null) {
-						String show = new StringBuilder().append(userDetails.getGivenName()).append(" ")
-								.append(userDetails.getFamilyName()).append(" <")
-								.append(userDetails.getEmail()).append(">").toString();
-						user.setAttribute("show", show);
-					}
-					commitInfo.setUser(user);
-				}
-
-				if (bindingSet.hasBinding("subject")) {
-					AnnotatedValue<Resource> subject = new AnnotatedValue<Resource>(
-							(Resource) bindingSet.getValue("subject"));
-					commitInfo.setSubject(subject);
-				}
-
-				if (bindingSet.hasBinding("startTime")) {
-					commitInfo.setStartTime(
-							Literals.getCalendarValue((Literal) bindingSet.getValue("startTime"), null)
-									.toGregorianCalendar());
-				}
-
-				if (bindingSet.hasBinding("endTime")) {
-					commitInfo.setEndTime(
-							Literals.getCalendarValue((Literal) bindingSet.getValue("endTime"), null)
-									.toGregorianCalendar());
-				}
-
-				return commitInfo;
-			}).collect(Collectors.toList());
-
-			return Page.build(commitInfos, limit);
 		}
 	}
 
