@@ -121,12 +121,12 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
  * 
  */
 @STService
-public class ResourceView2 extends STServiceAdapter {
+public class ResourceView extends STServiceAdapter {
 
 	public static final IRI INFERENCE_GRAPH = SimpleValueFactory.getInstance()
 			.createIRI("http://semanticturkey/inference-graph");
 
-	private static final Logger logger = LoggerFactory.getLogger(ResourceView2.class);
+	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
 
 	@Autowired
 	private ResourceLocator resourceLocator;
@@ -181,6 +181,7 @@ public class ResourceView2 extends STServiceAdapter {
 			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<Resource>(resource);
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
+			annotatedResource.setAttribute("nature", resource2attributes.get(resource).get("nature"));
 			AbstractStatementConsumer.addRole(annotatedResource, resource2attributes);
 
 			RDFResourceRole resourceRole = RDFResourceRole
@@ -375,12 +376,17 @@ public class ResourceView2 extends STServiceAdapter {
 			sb.append(
 				// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
-				" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) WHERE { \n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
+				" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
 				"   {                                                                               \n" +
 				"     ?subjectResource ?predicate ?tempResource .                                   \n" +
 				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
 				"   } UNION {                                                                       \n" +
 				"     bind(?subjectResource as ?resource)                                           \n" +
+				generateNatureSPARQLWherePart("resource") +
 				"   }                                                                               \n" +
 				"   FILTER(!isLITERAL(?resource))                                                   \n"
 				// @formatter:on
