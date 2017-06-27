@@ -386,9 +386,9 @@ public class ResourceView extends STServiceAdapter {
 				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
 				"   } UNION {                                                                       \n" +
 				"     bind(?subjectResource as ?resource)                                           \n" +
-				generateNatureSPARQLWherePart("resource") +
 				"   }                                                                               \n" +
-				"   FILTER(!isLITERAL(?resource))                                                   \n"
+				"   FILTER(!isLITERAL(?resource))                                                   \n" +
+				generateNatureSPARQLWherePart("resource")
 				// @formatter:on
 			);
 

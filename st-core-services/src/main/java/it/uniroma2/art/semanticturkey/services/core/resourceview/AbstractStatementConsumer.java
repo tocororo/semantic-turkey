@@ -165,4 +165,17 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				computeRole(resource2attributes, annotatedResource.getValue()));
 	}
 
+	public static <T extends Resource> void addNature(AnnotatedValue<T> annotatedResource,
+			Map<Resource, Map<String, Value>> resource2attributes) {
+		Map<String, Value> attr2values = resource2attributes.get(annotatedResource.getValue());
+		
+		if (attr2values != null) {
+			Value nature = attr2values.get("nature");
+			if (nature != null) {
+				annotatedResource.setAttribute("nature", nature);
+			}
+			
+		}
+	}
+
 }
