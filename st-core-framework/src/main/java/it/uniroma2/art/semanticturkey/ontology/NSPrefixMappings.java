@@ -42,7 +42,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * projects<br/>
  * This system has an in-memory representation of the map, which is regularly persisted to file; its sync is
  * managed internally. On the contrary, this manager does not syncs automatically with the prefix-namespace
- * mappings held inside an OWLART model. This latter sync is managed by the {@link {@link STOntologyManager}
+ * mappings held inside an RDF4J repository. This latter sync is managed by the
+ * {@link {@link STOntologyManager}
  * 
  * @author Armando Stellato
  * @author Manuel Fiorelli

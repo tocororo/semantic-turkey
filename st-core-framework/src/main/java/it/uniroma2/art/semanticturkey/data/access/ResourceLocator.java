@@ -46,7 +46,7 @@ public class ResourceLocator {
 	 * equal to the default namespace of <code>p</code></li>, then assumes that <code>resource</code> belongs
 	 * to <code>p</code></li>
 	 * <li>attempt to locate <code>resource</code> in a remote dataset (see
-	 * {@link DatasetMetadataRepositoryImpl#findDatasetForResource(ARTURIResource)}</li>
+	 * {@link DatasetMetadataRepositoryImpl#findDatasetForResource(IRI)}</li>
 	 * <li>otherwise; states that the position is unknown</li>
 	 * </ol>
 	 * </li>

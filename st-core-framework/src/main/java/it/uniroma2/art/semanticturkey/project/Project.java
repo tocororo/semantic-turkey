@@ -51,6 +51,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -62,30 +63,11 @@ import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.sail.SailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.MapMaker;
 
-import it.uniroma2.art.owlart.exceptions.ModelCreationException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.SKOSModel;
-import it.uniroma2.art.owlart.models.SKOSXLModel;
-import it.uniroma2.art.owlart.rdf4jimpl.models.BaseRDFModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.OWLModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSModelRDF4JImpl;
-import it.uniroma2.art.owlart.rdf4jimpl.models.SKOSXLModelRDF4JImpl;
-import it.uniroma2.art.owlart.utilities.ModelUtilities;
-import it.uniroma2.art.owlart.vocabulary.OWL;
-import it.uniroma2.art.owlart.vocabulary.SKOS;
-import it.uniroma2.art.owlart.vocabulary.SKOSXL;
-import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -100,6 +82,7 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelE
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
+import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
@@ -213,7 +196,6 @@ public abstract class Project extends AbstractProject {
 	private URIGenerator uriGenerator;
 	private RenderingEngine renderingEngine;
 
-	private final ThreadLocal<RDFModel> modelHolder;
 	private Map<Repository, RDF4JRepositoryTransactionManager> repository2TransactionManager;
 	protected RepositoryConfig coreRepoConfig;
 	protected RepositoryConfig supportRepoConfig;
@@ -242,7 +224,6 @@ public abstract class Project extends AbstractProject {
 		infoSTPFile = new File(projectDir, INFOFILENAME);
 		uriGenConfigFile = new File(projectDir, URI_GENERATOR_CONFIG_FILENAME);
 		renderingConfigFile = new File(projectDir, RENDERING_ENGINE_CONFIG_FILENAME);
-		modelHolder = new ThreadLocal<>();
 
 		stp_properties = new Properties();
 		try {
@@ -280,8 +261,8 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	void activate() throws ProjectIncompatibleException, ProjectInconsistentException, ModelCreationException,
-			ProjectUpdateException, UnavailableResourceException, ProjectAccessException {
+	void activate() throws ProjectIncompatibleException, ProjectInconsistentException, RDF4JException,
+			ProjectUpdateException, ProjectAccessException {
 		try {
 			repositoryManager = new LocalRepositoryManager(_projectDir);
 			repositoryManager.initialize();
@@ -441,7 +422,7 @@ public abstract class Project extends AbstractProject {
 		updateTimeStamp();
 	}
 
-	protected void loadingCoreVocabularies() throws ModelCreationException {
+	protected void loadingCoreVocabularies() throws RDF4JException, IOException {
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
 
@@ -459,44 +440,40 @@ public abstract class Project extends AbstractProject {
 
 			boolean isSKOSXL = false;
 
-			try {
-				if (!contexts.contains(rdfBaseURI)) {
+			if (!contexts.contains(rdfBaseURI)) {
 
-					logger.debug("Loading RDF vocabulary...");
-					conn.add(OntologyManager.class.getResource("rdf.rdf"), rdfBaseURI.stringValue(),
-							RDFFormat.RDFXML, rdfBaseURI);
-				}
+				logger.debug("Loading RDF vocabulary...");
+				conn.add(OntologyManager.class.getResource("rdf.rdf"), rdfBaseURI.stringValue(),
+						RDFFormat.RDFXML, rdfBaseURI);
+			}
 
-				if (!contexts.contains(rdfsBaseURI)) {
-					logger.debug("Loading RDFS vocabulary...");
-					conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
-							RDFFormat.RDFXML, rdfsBaseURI);
-				}
+			if (!contexts.contains(rdfsBaseURI)) {
+				logger.debug("Loading RDFS vocabulary...");
+				conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
+						RDFFormat.RDFXML, rdfsBaseURI);
+			}
 
-				if (!contexts.contains(owlBaseURI)) {
-					logger.debug("Loading OWL vocabulary...");
-					conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
-							RDFFormat.RDFXML, owlBaseURI);
-				}
+			if (!contexts.contains(owlBaseURI)) {
+				logger.debug("Loading OWL vocabulary...");
+				conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
+						RDFFormat.RDFXML, owlBaseURI);
+			}
 
-				isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
-				boolean isSKOS = isSKOSXL
-						|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
-						|| Objects.equals(getModel(), SKOS_MODEL);
+			isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
+			boolean isSKOS = isSKOSXL
+					|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
+					|| Objects.equals(getModel(), SKOS_MODEL);
 
-				if (isSKOS && !contexts.contains(skosBaseURI)) {
-					logger.debug("Loading SKOS vocabulary...");
-					conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
-							RDFFormat.RDFXML, skosBaseURI);
-				}
+			if (isSKOS && !contexts.contains(skosBaseURI)) {
+				logger.debug("Loading SKOS vocabulary...");
+				conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
+						RDFFormat.RDFXML, skosBaseURI);
+			}
 
-				if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
-					logger.debug("Loading SKOS-XL vocabulary...");
-					conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
-							RDFFormat.RDFXML, skosxlBaseURI);
-				}
-			} catch (RepositoryException | IOException e) {
-				throw new ModelCreationException(e);
+			if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
+				logger.debug("Loading SKOS-XL vocabulary...");
+				conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
+						RDFFormat.RDFXML, skosxlBaseURI);
 			}
 
 			logger.debug("About to commit the loaded triples");
@@ -535,12 +512,7 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	/**
-	 * this initializes the {@link #model} field with a newly created {@link OWLModel} for this project
-	 * 
-	 * @throws ModelCreationException
-	 */
-	protected abstract void loadTriples() throws ModelCreationException;
+	protected abstract void loadTriples() throws RDF4JException;
 
 	private void updateProjectProperties() throws IOException {
 		FileOutputStream os = new FileOutputStream(infoSTPFile);
@@ -793,73 +765,6 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	public RDFModel unbindModelFromThread() throws ModelUpdateException {
-		RDFModel oldModel = modelHolder.get();
-		modelHolder.remove();
-		if (oldModel == null) {
-			logger.warn("Unbinding null model");
-		} else {
-			oldModel.close();
-		}
-		logger.debug("Unbound model {}", oldModel);
-
-		return oldModel;
-	}
-
-	public boolean isModelBoundToThread() {
-		return modelHolder.get() != null;
-	}
-
-	public void createModelAndBoundToThread() throws ModelCreationException {
-		if (isModelBoundToThread()) {
-			throw new IllegalStateException("Model already bound to thread");
-		}
-
-		RDFModel threadBoundModel;
-
-		String modelType = computeOntoType();
-
-		try {
-			if (modelType.equals(SKOSXLModel.class.getName())) {
-				threadBoundModel = new SKOSXLModelRDF4JImpl(
-						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
-			} else if (modelType.equals(SKOSModel.class.getName())) {
-				threadBoundModel = new SKOSModelRDF4JImpl(
-						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
-			} else {
-				threadBoundModel = new OWLModelRDF4JImpl(
-						new ProjectAwareBaseRDFModel(this, newOntManager.getRepository(), false, false));
-			}
-		} catch (SailException | RepositoryException | VocabularyInitializationException e) {
-			throw new ModelCreationException(e);
-		}
-
-		modelHolder.set(threadBoundModel);
-	}
-
-	@Deprecated
-	public RDFModel getOntModel() {
-		RDFModel model = modelHolder.get();
-
-		if (model == null) {
-			throw new RuntimeException("Could not obtain thread-bound model");
-		}
-
-		return model;
-	}
-
-	@Deprecated
-	// TODO this should really only be in OWLModel and SKOSModel Projects
-	public OWLModel getOWLModel() {
-		RDFModel model = getOntModel();
-
-		if (model instanceof SKOSModel) {
-			return ((SKOSModel) model).getOWLModel();
-		}
-
-		return (OWLModel) model;
-	}
-
 	/**
 	 * Returns the core repository associated with this project. Clients should rarely invoke this method, and
 	 * use instead the operations found in {@link STServiceContextUtils} (which are aware, for example, of
@@ -899,8 +804,8 @@ public abstract class Project extends AbstractProject {
 	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";
 	private static final String AUXILIARY_METADATA_GRAPH_SUFFIX = "/meta";
 
-	public ARTResource getMetadataGraph(String extensionPathComponent) {
-		return VocabUtilities.nodeFactory.createURIResource(AUXILIARY_METADATA_GRAPH_NAME_BASE
+	public Resource getMetadataGraph(String extensionPathComponent) {
+		return SimpleValueFactory.getInstance().createIRI(AUXILIARY_METADATA_GRAPH_NAME_BASE
 				+ extensionPathComponent + AUXILIARY_METADATA_GRAPH_SUFFIX);
 	}
 
@@ -1026,45 +931,11 @@ public abstract class Project extends AbstractProject {
 
 	public String computeOntoType() {
 		if (lexicalizationModel.equals(SKOSXL_LEXICALIZATION_MODEL)) {
-			return SKOSXL.class.getName();
+			return "it.uniroma2.art.owlart.models.SKOSXLModel";
 		} else if (model.equals(SKOS_MODEL) || lexicalizationModel.equals(SKOS_MODEL)) {
-			return SKOS.class.getName();
+			return "it.uniroma2.art.owlart.models.SKOSModel";
 		} else {
-			return OWL.class.getName();
+			return "it.uniroma2.art.owlart.models.OWLModel";
 		}
-	}
-}
-
-class ProjectAwareBaseRDFModel extends BaseRDFModelRDF4JImpl {
-	private Project project;
-
-	public ProjectAwareBaseRDFModel(Project project, Repository repo, boolean rdfsReasoning,
-			boolean directTypeReasoning) throws SailException, RepositoryException, ModelCreationException {
-		super(repo, rdfsReasoning, directTypeReasoning);
-		this.project = project;
-	}
-
-	@Override
-	public BaseRDFModelRDF4JImpl forkModel() throws ModelCreationException {
-		throw new UnsupportedOperationException("This model does not support forking");
-	}
-
-	@Override
-	public void close() throws ModelUpdateException {
-		getRDF4JRepositoryConnection().close(); // Only close the connection (leave the repository open)
-	}
-
-	@Override
-	public void setBaseURI(String uri) throws ModelUpdateException {
-		try {
-			project.setBaseURI(uri);
-		} catch (ProjectUpdateException e) {
-			throw new ModelUpdateException(e);
-		}
-	}
-
-	@Override
-	public String getBaseURI() {
-		return project.getBaseURI();
 	}
 }

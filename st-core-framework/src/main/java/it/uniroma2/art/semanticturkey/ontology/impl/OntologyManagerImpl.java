@@ -17,10 +17,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.apache.http.impl.cookie.BasicSecureHandler;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
@@ -31,14 +29,12 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.sail.config.SailRepositoryFactory;
 import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
@@ -532,7 +528,6 @@ public class OntologyManagerImpl implements OntologyManager {
 	 * gets the set of ontologies imported by the user
 	 * 
 	 * @return
-	 * @throws ModelAccessException
 	 */
 	private Collection<IRI> getOntologyImports(RepositoryConnection conn) throws RDF4JException {
 		return getDeclaredImports(conn, ImportModality.USER);
@@ -552,7 +547,6 @@ public class OntologyManagerImpl implements OntologyManager {
 	 * 
 	 * @param mod
 	 * @return
-	 * @throws ModelAccessException
 	 */
 	public Collection<IRI> getDeclaredImports(RepositoryConnection conn, ImportModality mod)
 			throws RDF4JException {
@@ -781,15 +775,13 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	/**
-	 * a wrapper around OWLART {@link PrefixMapping} with an additional <code>overwrite</code> parameter
+	 * a wrapper around the RDF4J's prefix mapping with an additional <code>overwrite</code> parameter
 	 * which, if false, makes the method ignore calls if the namespace-prefix mapping already exists. If true,
 	 * it still does not overwrite if the old and new values are the same
 	 * 
 	 * @param namespace
 	 * @param prefix
 	 * @param overwrite
-	 * @throws ModelAccessException
-	 * @throws ModelUpdateException
 	 */
 	private void setNsPrefix(String namespace, String prefix, boolean overwrite){
 		Repositories.consume(repository, conn -> {

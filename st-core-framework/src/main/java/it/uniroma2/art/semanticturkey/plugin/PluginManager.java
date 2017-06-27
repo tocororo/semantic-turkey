@@ -32,7 +32,6 @@ import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.semanticturkey.plugin.extpts.PluginInterface;
 import it.uniroma2.art.semanticturkey.plugin.extpts.STOSGIExtension;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
@@ -63,26 +62,6 @@ public class PluginManager {
 
 	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?, ?, ?>> impls) {
 		testPluginFactoryCls = impls;
-	}
-
-	/**
-	 * this method retrieves all IDs of available {@link PluginInterface} implementations installed in the
-	 * OSGi framework
-	 * 
-	 * @return Arraylist
-	 */
-	public static ArrayList<String> getPluginsIDs() {
-		return getServletExtensionsIDForType(PluginInterface.class);
-	}
-
-	/**
-	 * this method retrieves all available {@link PluginInterface} implementations installed in the OSGi
-	 * framework
-	 * 
-	 * @return
-	 */
-	public static ArrayList<PluginInterface> getPlugins() {
-		return getServletExtensionsForType(PluginInterface.class);
 	}
 
 	private static ArrayList<String> getServletExtensionsIDForType(Class<? extends STOSGIExtension> type) {

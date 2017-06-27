@@ -23,13 +23,6 @@
 
 package it.uniroma2.art.semanticturkey.servlet;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,27 +31,11 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.model.ARTNode;
-import it.uniroma2.art.owlart.model.ARTResource;
-import it.uniroma2.art.owlart.model.ARTStatement;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.models.DirectReasoning;
-import it.uniroma2.art.owlart.models.OWLModel;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.navigation.ARTLiteralIterator;
-import it.uniroma2.art.owlart.navigation.ARTResourceIterator;
-import it.uniroma2.art.owlart.navigation.ARTStatementIterator;
-import it.uniroma2.art.owlart.vocabulary.RDF;
 import it.uniroma2.art.semanticturkey.exceptions.HTTPParameterUnspecifiedException;
 import it.uniroma2.art.semanticturkey.exceptions.MalformedURIException;
-import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 /**Classe che contiene le utilities per le servlet, oltre ad alcuni metodi di supporto la maggior parte dei metodi
  * dichiarati aggiungono elementi xml al documento che costituiscono le risposte alle servlet invocate da client*/
@@ -75,134 +52,6 @@ public class ServletUtilities {
 
 	public static ServletUtilities getService() {
 		return service;
-	}
-
-	/**
-	 * @param repository
-	 * @param cls
-	 * @param element
-	 * @throws ModelAccessException
-	 */
-	void createInstancesXMLList(DirectReasoning repository, ARTResource cls, Element element)
-			throws ModelAccessException {
-		//ARTResourceIterator IteratorInstances = repository.listDirectInstances(cls);
-		ARTResourceIterator IteratorInstances = repository.listInstances(cls, false);
-		Element instances = XMLHelp.newElement(element, "Instances");
-		while (IteratorInstances.streamOpen()) {
-			ARTResource instance = (ARTResource) IteratorInstances.getNext();
-			Element instanceElement = XMLHelp.newElement(instances, "Instance");
-			if (instance.isURIResource()) {
-				instanceElement.setAttribute("name",
-						this.decodeLabel(instance.asURIResource().getLocalName()));
-			}
-		}
-	}
-
-	/**
-	 * Prende il link associato all'istanza
-	 * 
-	 * @param SesameOWLModelImpl
-	 *            repository
-	 * @param Resource
-	 *            instanceRes
-	 * @throws ModelAccessException
-	 */
-	Collection<String[]> getUrlPageTitle(OWLModel repository, ARTResource instanceRes)
-			throws ModelAccessException {
-		ArrayList<String[]> list = new ArrayList<String[]>();
-		ARTResourceIterator semanticAnnotationInstancesIterator = repository.listValuesOfSubjObjPropertyPair(
-				instanceRes, SemAnnotVocab.Res.annotation, true); // TODO put in specific object all
-		// application ontology objects!!!
-		Set<String> set = new HashSet<String>();
-		while (semanticAnnotationInstancesIterator.hasNext()) {
-			ARTResource semanticAnnotationRes = semanticAnnotationInstancesIterator.next().asResource();
-			ARTResourceIterator webPageInstancesIterator = repository.listValuesOfSubjObjPropertyPair(
-					semanticAnnotationRes, SemAnnotVocab.Res.location, true);
-			while (webPageInstancesIterator.hasNext()) {
-				String[] strings = new String[2];
-				ARTResource webPageInstance = webPageInstancesIterator.next().asResource();
-				ARTLiteralIterator urlPageIterator = repository.listValuesOfSubjDTypePropertyPair(
-						webPageInstance, SemAnnotVocab.Res.url, true);
-				ARTNode urlPageValue = null;
-				while (urlPageIterator.hasNext()) { // TODO che fa? lo esaurisce e poi prende solo l'ultimo
-					// valore? mica avr� pensato che sono sempre nello stesso
-					// ordine?
-					urlPageValue = urlPageIterator.next();
-				}
-				String urlPage = urlPageValue.toString();
-				if (!set.add(urlPage))
-					continue;
-				ARTLiteralIterator titleIterator = repository.listValuesOfSubjDTypePropertyPair(
-						webPageInstance, SemAnnotVocab.Res.title, true);
-				ARTNode titleValue = null;
-				while (titleIterator.hasNext()) {
-					titleValue = titleIterator.next();
-				}
-				String title = titleValue.toString();
-				urlPage = urlPage.replace("%3A", ":");
-				urlPage = urlPage.replace("%2F", "/");
-				strings[0] = urlPage;
-				strings[1] = title;
-				list.add(strings);
-			}
-		}
-		return list;
-	}
-
-	/*
-	 * TODO rifare: alla fine � molto simile alle stesse selezioni che faccio su ALE (Linguistic Enrichment Of
-	 * Ontologies) devo stare attento perch� credo che anche qui, con una ontologia "reale", possano crearsi
-	 * dei problemi (lui esclude solamente type e annotation e mappa sempre tutti in URI, ma cosa succede se
-	 * escono fuori delle Intersection o altre strutture pi� complesse che non sono URI? teoricamente potrebbe
-	 * succedere devo mettere dei filtri migliori
-	 */
-	/**
-	 * Carica le proprieta' relative all'istanza in una Map
-	 * 
-	 * @param SesameOWLModelImpl
-	 *            repository
-	 * @param Resource
-	 *            instance
-	 * @return Map map
-	 * @throws ModelAccessException
-	 */
-
-	// FRA Deve essere ricontrollata
-	Map<String, ArrayList<String>> getInstanceProperties(OWLModel repository, ARTResource instance)
-			throws ModelAccessException {
-		Map<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
-		ARTStatementIterator it = repository.listStatements(instance, null, null, true);
-
-		while (it.streamOpen()) {
-			ARTStatement statement = it.getNext();
-			ARTURIResource predicate = statement.getPredicate();
-			logger.debug(repository.getQName(predicate.getURI()));
-			if (repository.getQName(predicate.getURI()).equals(RDF.Res.TYPE)
-					|| repository.getQName(predicate.getURI()).equals(SemAnnotVocab.Res.annotation)) {
-				continue;
-			}
-			if (statement.getObject().isURIResource()) {
-				ArrayList<String> list = map.get(predicate.getURI()); // TODO qui ci va l'uri completa! questa
-				// � tutta da rifare come tutte le
-				// assertions fatte sulla base dei
-				// localname!
-				if (list == null) {
-					list = new ArrayList<String>();
-				}
-				logger.debug("***" + statement.getObject().asURIResource().getLocalName());
-				list.add(statement.getObject().asURIResource().getLocalName()); // TODO qui ci va l'uri
-				// completa! questa � tutta da
-				// rifare come tutte le
-				// assertions fatte sulla base
-				// dei localname!
-				map.put(repository.getQName(predicate.getURI()), list);
-			}
-			// FRA chiss� perch�???
-			// else {
-			// }
-		}
-
-		return map;
 	}
 
 	/**
@@ -558,54 +407,5 @@ public class ServletUtilities {
 	public static final String ontAccessProblem = "problems in accessing the ontology";
 
 	static final String ontUpdateProblem = "problems in updating the ontology";
-
-	public ResponseProblem createExceptionResponse(String request, ModelAccessException e, ARTResource subj,
-			ARTURIResource pred, ARTNode obj) {
-		return createExceptionResponse(request, ontAccessProblem + " when retrieving triple: <" + subj + ", "
-				+ pred + ", " + obj + ">\n" + "Content of exception: " + e.getMessage());
-	}
-
-	public ResponseProblem createExceptionResponse(String request, ModelAccessException e, ARTResource subj,
-			ARTURIResource pred, ARTNode obj, SerializationType ser_type) {
-		return createExceptionResponse(request, ontAccessProblem + " when retrieving triple: <" + subj + ", "
-				+ pred + ", " + obj + ">\n" + "Content of exception: " + e.getMessage(), ser_type);
-	}
-
-	public ResponseProblem createExceptionResponse(String request, ModelUpdateException e) {
-		return createExceptionResponse(request, ontUpdateProblem + e.getMessage());
-	}
-
-	public ResponseProblem createExceptionResponse(String request, ModelUpdateException e,
-			SerializationType ser_type) {
-		return createExceptionResponse(request, ontUpdateProblem + e.getMessage(), ser_type);
-	}
-
-	public ResponseProblem createExceptionResponse(String request, ModelAccessException e) {
-		return createExceptionResponse(request, ontAccessProblem + e.getMessage());
-	}
-
-	public ResponseProblem createExceptionResponse(String request, ModelAccessException e,
-			SerializationType ser_type) {
-		return createExceptionResponse(request, ontAccessProblem + e.getMessage(), ser_type);
-	}
-
-	// TODO I should change this!!!
-	public boolean checkReadOnly(ARTURIResource res, Project project) {
-		return (
-		// if other namespace than default one, then it is imported, thus write only
-		!(checkWritable(res, project)));
-	}
-
-	// TODO I should change this!!!
-	public boolean checkWritable(ARTURIResource res, Project project) {
-		return (
-		// if other namespace than default one, then it is imported, thus write only
-		res.getNamespace().equals(project.getDefaultNamespace()));
-	}
-
-	public boolean checkWritable(RDFModel model, ARTResource res, ARTResource graph)
-			throws ModelAccessException {
-		return model.hasTriple(res, NodeFilters.ANY, NodeFilters.ANY, false, graph);
-	}
 
 }

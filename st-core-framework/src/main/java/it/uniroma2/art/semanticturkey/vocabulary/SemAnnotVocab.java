@@ -26,9 +26,8 @@
  */
 package it.uniroma2.art.semanticturkey.vocabulary;
 
-import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.vocabulary.VocabUtilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * @author Armando Stellato
@@ -76,40 +75,32 @@ public class SemAnnotVocab {
 	public static final String topic = "http://purl.org/dc/terms/subject";
 
 	public static class Res {
-		public static ARTURIResource SemanticAnnotation;
-		public static ARTURIResource RangeAnnotation;
-		public static ARTURIResource annotation;
-		public static ARTURIResource WebPage;
-		public static ARTURIResource text;
-		public static ARTURIResource url;
-		public static ARTURIResource location;
-		public static ARTURIResource title;
-		public static ARTURIResource range;
-		public static ARTURIResource topic;
-		public static ARTURIResource TextualAnnotation;
-		public static ARTURIResource ImageAnnotation;
+		public static IRI SemanticAnnotation;
+		public static IRI RangeAnnotation;
+		public static IRI annotation;
+		public static IRI WebPage;
+		public static IRI text;
+		public static IRI url;
+		public static IRI location;
+		public static IRI title;
+		public static IRI range;
+		public static IRI topic;
+		public static IRI TextualAnnotation;
+		public static IRI ImageAnnotation;
 
-		public static void initialize() throws VocabularyInitializationException {
-			SemanticAnnotation = VocabUtilities.nodeFactory
-					.createURIResource(SemAnnotVocab.SemanticAnnotation);
-			RangeAnnotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.RangeAnnotation);
-			annotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.annotation);
-			WebPage = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.WebPage);
-			url = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.url);
-			location = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.location);
-			text = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.text);
-			title = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.title);
-			range = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.range);
-			TextualAnnotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.TextualAnnotation);
-			ImageAnnotation = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.ImageAnnotation);
-			topic = VocabUtilities.nodeFactory.createURIResource(SemAnnotVocab.topic);
-
-			if (SemanticAnnotation == null || RangeAnnotation == null || annotation == null || WebPage == null
-					|| url == null || location == null || text == null || title == null || range == null
-					|| TextualAnnotation == null || ImageAnnotation == null || topic == null)
-				throw new VocabularyInitializationException(
-						"Problems occurred in initializing the Semantic Annotation ontology vocabulary");
-
+		public static void initialize() {
+			SemanticAnnotation = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.SemanticAnnotation);
+			RangeAnnotation = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.RangeAnnotation);
+			annotation = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.annotation);
+			WebPage = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.WebPage);
+			url = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.url);
+			location = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.location);
+			text = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.text);
+			title = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.title);
+			range = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.range);
+			TextualAnnotation = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.TextualAnnotation);
+			ImageAnnotation = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.ImageAnnotation);
+			topic = SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.topic);
 		}
 
 	}

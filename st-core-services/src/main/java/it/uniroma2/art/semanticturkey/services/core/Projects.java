@@ -24,10 +24,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -361,7 +357,6 @@ public class Projects extends STServiceAdapter {
 	 * 
 	 * @param consumer
 	 * @param projectName
-	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
@@ -393,7 +388,6 @@ public class Projects extends STServiceAdapter {
 	 * @param projectName
 	 * @return
 	 * @throws ProjectInexistentException
-	 * @throws UnavailableResourceException
 	 * @throws IOException
 	 * @throws DuplicatedResourceException
 	 * @throws InvalidProjectNameException
@@ -431,13 +425,10 @@ public class Projects extends STServiceAdapter {
 	 * @param projectName
 	 * @return
 	 * @throws InvalidProjectNameException
-	 * @throws ModelUpdateException
 	 * @throws ProjectUpdateException
 	 * @throws ProjectInconsistentException
 	 * @throws DuplicatedResourceException
 	 * @throws ProjectCreationException
-	 * @throws UnsupportedRDFFormatException
-	 * @throws ModelAccessException
 	 * @throws IOException
 	 * @throws PUBindingException
 	 * @throws ProjectAccessException

@@ -7,7 +7,6 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 
-import it.uniroma2.art.owlart.models.RDFModel;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -63,7 +62,6 @@ public class RenderingOrchestrator implements RenderingEngine {
 	private static RenderingEngine getRenderingEngine(ResourcePosition subjectPosition) {
 		if (subjectPosition instanceof LocalResourcePosition) {
 			Project project = ((LocalResourcePosition) (subjectPosition)).getProject();
-			RDFModel ontModel = project.getOntModel();
 			return project.getRenderingEngine();
 		} else if ((subjectPosition instanceof RemoteResourcePosition)) {
 			DatasetMetadata meta = ((RemoteResourcePosition) subjectPosition).getDatasetMetadata();

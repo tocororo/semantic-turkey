@@ -1,11 +1,5 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor;
 
-import it.uniroma2.art.semanticturkey.generation.annotation.DoNotGenerateController;
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
-import it.uniroma2.art.semanticturkey.generation.annotation.processor.internal.VelocitySupportTools;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
@@ -35,6 +29,11 @@ import javax.tools.JavaFileObject;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+
+import it.uniroma2.art.semanticturkey.generation.annotation.DoNotGenerateController;
+import it.uniroma2.art.semanticturkey.generation.annotation.processor.internal.VelocitySupportTools;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 @SupportedAnnotationTypes("it.uniroma2.art.semanticturkey.services.annotations.STService")
 @SupportedSourceVersion(SourceVersion.RELEASE_6)

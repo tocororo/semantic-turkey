@@ -13,7 +13,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
-import it.uniroma2.art.semanticturkey.generation.annotation.GenerateSTServiceController;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 public class VelocitySupportTools {
@@ -117,19 +116,6 @@ public class VelocitySupportTools {
 	}
 
 	public String getRequestMethodAsSource(ExecutableElement executableElement) {
-		GenerateSTServiceController ann = executableElement.getAnnotation(GenerateSTServiceController.class);
-		if (ann != null) {
-			String requestMethodName = ann.method().toString();
-			if (requestMethodName.equals("GET")) {
-				return "RequestMethod.GET";
-			} else if (requestMethodName.equals("POST")) {
-				return "RequestMethod.POST";
-			} else {
-				throw new IllegalArgumentException(
-						"Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
-			}
-		}
-
 		STServiceOperation ann2 = executableElement.getAnnotation(STServiceOperation.class);
 		if (ann2 != null) {
 			String requestMethodName = ann2.method().toString();

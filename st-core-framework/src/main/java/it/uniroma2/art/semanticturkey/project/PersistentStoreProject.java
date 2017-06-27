@@ -29,7 +29,8 @@ package it.uniroma2.art.semanticturkey.project;
 import java.io.File;
 import java.io.IOException;
 
-import it.uniroma2.art.owlart.exceptions.ModelCreationException;
+import org.eclipse.rdf4j.RDF4JException;
+
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 
@@ -45,7 +46,7 @@ public class PersistentStoreProject extends Project {
 	}
 
 	@Override
-	protected void loadTriples() throws ModelCreationException {
+	protected void loadTriples() throws RDF4JException {
 		logger.debug("loading triples");
 		if (supportOntManager != null) {
 			supportOntManager.startOntModel("http://example.org/history", null, null);

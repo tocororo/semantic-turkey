@@ -29,8 +29,6 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.structures.ARTTriple;
-import it.uniroma2.art.owlart.model.NodeFilters;
-import it.uniroma2.art.owlart.rdf4jimpl.RDF4JARTResourceFactory;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
@@ -54,7 +52,6 @@ import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * Base class of Semantic Turkey services.
@@ -74,12 +71,10 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
 	private final ValueFactory sesVf;
-	private final RDF4JARTResourceFactory rdf4j2artFact;
 	private final ServletUtilities servletUtilities;
 
 	protected STServiceAdapter() {
 		sesVf = SimpleValueFactory.getInstance();
-		rdf4j2artFact = new RDF4JARTResourceFactory(sesVf);
 		servletUtilities = ServletUtilities.getService();
 	}
 
@@ -94,9 +89,9 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	public Resource[] getUserNamedGraphs() {
 		List<Resource> rGraphs = Arrays.asList(stServiceContext.getRGraphs());
 
-		if (rGraphs.contains(RDF4JMigrationUtils.convert2rdf4j(NodeFilters.ANY))) {
-			return new Resource[0];
-		}
+//		if (rGraphs.contains(RDF4JMigrationUtils.convert2rdf4j(NodeFilters.ANY))) {
+//			return new Resource[0];
+//		}
 
 		return rGraphs.toArray(new Resource[rGraphs.size()] );
 		
@@ -114,8 +109,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	}
 
 	public Resource getMetadataGraph() {
-		return rdf4j2artFact.aRTResource2RDF4JResource(
-				stServiceContext.getProject().getMetadataGraph(stServiceContext.getExtensionPathComponent()));
+		return stServiceContext.getProject().getMetadataGraph(stServiceContext.getExtensionPathComponent());
 	}
 
 	public RepositoryConnection getManagedConnection() {

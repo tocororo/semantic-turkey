@@ -9,9 +9,6 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.ServiceSpecies;
 
 /**
@@ -31,30 +28,30 @@ public class LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor imple
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
 
-		logger.debug("pre handle: " + request);
-
-		if (shouldManage(handler)) {
-
-			logger.debug("either legacy or new-style service");
-
-			String projectName = request.getParameter("ctx_project");
-
-			if (projectName != null) {
-
-				logger.debug("uses project");
-
-				Project project = ProjectManager.getProject(projectName);
-
-				if (project == null) {
-					logger.warn("Project not open: " + projectName);
-					return true;
-				}
-
-				project.createModelAndBoundToThread();
-			} else {
-				logger.debug("does not use project");
-			}
-		}
+//		logger.debug("pre handle: " + request);
+//
+//		if (shouldManage(handler)) {
+//
+//			logger.debug("either legacy or new-style service");
+//
+//			String projectName = request.getParameter("ctx_project");
+//
+//			if (projectName != null) {
+//
+//				logger.debug("uses project");
+//
+//				Project project = ProjectManager.getProject(projectName);
+//
+//				if (project == null) {
+//					logger.warn("Project not open: " + projectName);
+//					return true;
+//				}
+//
+//				project.createModelAndBoundToThread();
+//			} else {
+//				logger.debug("does not use project");
+//			}
+//		}
 		return true;
 	}
 
@@ -63,51 +60,51 @@ public class LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor imple
 			ModelAndView modelAndView) throws Exception {
 		logger.debug("post handle: " + request);
 
-		if (shouldManage(handler)) {
-
-			logger.debug("either legacy or new-style service");
-
-			String projectName = request.getParameter("ctx_project");
-
-			if (projectName != null) {
-
-				logger.debug("uses project");
-
-				Project project = ProjectManager.getProject(projectName);
-
-				if (project == null) {
-					logger.warn(
-							"Could not unbound model from thread because after service handling the project is close: "
-									+ projectName);
-					return;
-				}
-
-				project.unbindModelFromThread();
-			} else {
-				logger.debug("does not use project");
-			}
-
-		}
+//		if (shouldManage(handler)) {
+//
+//			logger.debug("either legacy or new-style service");
+//
+//			String projectName = request.getParameter("ctx_project");
+//
+//			if (projectName != null) {
+//
+//				logger.debug("uses project");
+//
+//				Project project = ProjectManager.getProject(projectName);
+//
+//				if (project == null) {
+//					logger.warn(
+//							"Could not unbound model from thread because after service handling the project is close: "
+//									+ projectName);
+//					return;
+//				}
+//
+//				project.unbindModelFromThread();
+//			} else {
+//				logger.debug("does not use project");
+//			}
+//
+//		}
 	}
 
 	@Override
 	public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
 			Exception ex) throws Exception {
-		// We expect that the model has already been unbound from the thread. However, in case of abrupt
-		// termination of a handler, the method postHandle is not invoked. Thus, we repeat the release here. 
-		if (shouldManage(handler)) {
-			String projectName = request.getParameter("ctx_project");
-			if (projectName != null) {
-				Project project = ProjectManager.getProject(projectName);
-				if (project != null) {
-					try {
-						project.unbindModelFromThread();
-					} catch (ModelUpdateException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
+//		// We expect that the model has already been unbound from the thread. However, in case of abrupt
+//		// termination of a handler, the method postHandle is not invoked. Thus, we repeat the release here. 
+//		if (shouldManage(handler)) {
+//			String projectName = request.getParameter("ctx_project");
+//			if (projectName != null) {
+//				Project project = ProjectManager.getProject(projectName);
+//				if (project != null) {
+//					try {
+//						project.unbindModelFromThread();
+//					} catch (ModelUpdateException e) {
+//						e.printStackTrace();
+//					}
+//				}
+//			}
+//		}
 	}
 
 	/**

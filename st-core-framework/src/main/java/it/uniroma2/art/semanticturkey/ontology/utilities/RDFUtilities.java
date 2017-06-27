@@ -23,24 +23,6 @@
 
 package it.uniroma2.art.semanticturkey.ontology.utilities;
 
-//import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-//import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-//import it.uniroma2.art.owlart.model.ARTResource;
-//import it.uniroma2.art.owlart.model.ARTURIResource;
-//import it.uniroma2.art.owlart.model.NodeFilters;
-//import it.uniroma2.art.owlart.models.OWLModel;
-//import it.uniroma2.art.owlart.models.RDFModel;
-//import it.uniroma2.art.owlart.vocabulary.OWL;
-//import it.uniroma2.art.owlart.vocabulary.RDF;
-//import it.uniroma2.art.owlart.vocabulary.RDFS;
-import it.uniroma2.art.semanticturkey.exceptions.IncompatibleRangeException;
-import it.uniroma2.art.semanticturkey.exceptions.NonExistingRDFResourceException;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
-import it.uniroma2.art.semanticturkey.utilities.XmlSchemaUtils;
-import it.uniroma2.art.semanticturkey.vocabulary.RDFTypesEnum;
-
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

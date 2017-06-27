@@ -86,7 +86,6 @@ public class Search extends STServiceAdapter {
 		}
 		
 		for(int i=0; i<rolesArray.length; ++i){
-			//TODO remove the RDFResourceRolesEnum from the owlart and find an equivalent in RDF4J
 			if(rolesArray[i].toLowerCase().equals(RDFResourceRole.cls.name())){
 				isClassWanted = true;
 			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())){

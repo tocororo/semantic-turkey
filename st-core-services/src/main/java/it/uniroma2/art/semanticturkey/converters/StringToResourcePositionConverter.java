@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.converters;
 
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.springframework.core.convert.converter.Converter;
+
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -8,11 +11,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
-
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.security.core.authority.mapping.SimpleMappableAttributesRetriever;
 
 public class StringToResourcePositionConverter implements Converter<String, ResourcePosition> {
 

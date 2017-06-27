@@ -31,13 +31,11 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.instrument.IllegalClassFormatException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,6 +50,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.EnumUtils;
+import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -64,15 +63,6 @@ import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.owlart.exceptions.ModelAccessException;
-import it.uniroma2.art.owlart.exceptions.ModelCreationException;
-import it.uniroma2.art.owlart.exceptions.ModelUpdateException;
-import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-//import it.uniroma2.art.owlart.exceptions.UnavailableResourceException;
-import it.uniroma2.art.owlart.exceptions.UnsupportedRDFFormatException;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.owlart.models.UnloadableModelConfigurationException;
-import it.uniroma2.art.owlart.models.UnsupportedModelConfigurationException;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -236,8 +226,7 @@ public class ProjectManager {
 
 	private static Project activateProject(String projectName)
 			throws ProjectCreationException, ProjectInconsistentException, ProjectUpdateException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			UnsupportedModelConfigurationException, UnloadableModelConfigurationException {
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Project proj = getProjectDescription(projectName);
 
 		try {
@@ -253,7 +242,7 @@ public class ProjectManager {
 
 			return proj;
 
-		} catch (ModelCreationException e) {
+		} catch (RDF4JException e) {
 			// Utilities.deleteDir(resolveProjectNameToDir(projectName));
 			// I moved the delete to where I'm sure I'm creating the project
 			throw new ProjectCreationException(e);
@@ -264,8 +253,6 @@ public class ProjectManager {
 			// been created with an ontology manager which is not present in the current installation
 			throw new ProjectCreationException("it is not possible to create a project with OntologyManager: "
 					+ "---" + "because no bundle with such ID has been loaded by OSGi");
-		} catch (UnavailableResourceException e) {
-			throw new ProjectCreationException(e);
 		}
 	}
 
@@ -316,7 +303,6 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 * @throws DuplicatedResourceException
 	 * @throws IOException
-	 * @throws UnavailableResourceException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException 
 	 */
@@ -461,10 +447,6 @@ public class ProjectManager {
 		} catch (ProjectAccessException e) {
 			throw new ProjectCreationException("unable to access data from project: " + name
 					+ " imported from file: " + semTurkeyProjectFile);
-		} catch (UnsupportedModelConfigurationException e) {
-			throw new ProjectCreationException(e);
-		} catch (UnloadableModelConfigurationException e) {
-			throw new ProjectCreationException(e);
 		}
 
 	}
@@ -667,18 +649,6 @@ public class ProjectManager {
 		else
 			throw new ProjectInconsistentException(
 					"missing required " + property + " value from description of project: " + projectName);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static Class<? extends RDFModel> deserializeModelType(String modelTypeName)
-			throws ClassNotFoundException, IllegalClassFormatException {
-		Class<?> modelType = Class.forName(modelTypeName);
-		// this should check that the returned model is a subclass of RDFModel
-		if (RDFModel.class.isAssignableFrom(modelType))
-			return (Class<? extends RDFModel>) modelType;
-		else
-			throw new IllegalClassFormatException(
-					"ModelType assigned to this project is a legal java class, but is not a known RDFModel subclass");
 	}
 
 	/**
@@ -942,10 +912,6 @@ public class ProjectManager {
 			throw new ProjectAccessException(e);
 		} catch (InvalidProjectNameException e) {
 			throw new ProjectAccessException(e);
-		} catch (UnsupportedModelConfigurationException e) {
-			throw new ProjectAccessException(e);
-		} catch (UnloadableModelConfigurationException e) {
-			throw new ProjectAccessException(e);
 		}
 
 	}
@@ -958,7 +924,6 @@ public class ProjectManager {
 	 * 
 	 * @param consumer
 	 * @param projectName
-	 * @throws ModelUpdateException
 	 */
 	public static void disconnectFromProject(ProjectConsumer consumer, String projectName) {
 
@@ -1350,14 +1315,13 @@ public class ProjectManager {
 
 	}
 
-	public static void closeCurrentProject() throws ModelUpdateException {
+	public static void closeCurrentProject() {
 		// logger.debug("closing current project: " + _currentProject.getName());
 		disconnectFromProject(ProjectConsumer.SYSTEM, getCurrentProject().getName());
 		_currentProject = null;
 	}
 
-	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException,
-			ModelAccessException, UnsupportedRDFFormatException, UnavailableResourceException, ProjectAccessException {
+	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException, ProjectAccessException {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 

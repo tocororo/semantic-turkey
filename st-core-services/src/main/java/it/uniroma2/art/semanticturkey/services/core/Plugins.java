@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.owlart.models.conf.ConfParameterNotFoundException;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
@@ -79,12 +78,10 @@ public class Plugins extends STServiceAdapter {
 	 *            the name of the extension point (it should be the fully qualified name of the interface
 	 *            implemented by the plug-in instances)
 	 * @return
-	 * @throws ConfParameterNotFoundException
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
-	public Collection<PluginInfo> getAvailablePlugins(String extensionPoint)
-			throws ConfParameterNotFoundException {
+	public Collection<PluginInfo> getAvailablePlugins(String extensionPoint) {
 		Collection<PluginFactory<?, ?, ?>> pluginFactoryCollection = PluginManager
 				.getPluginFactories(extensionPoint);
 
@@ -92,4 +89,4 @@ public class Plugins extends STServiceAdapter {
 				.collect(Collectors.toList());
 	}
 
-};
+}

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.owlart.models.conf.BadConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
@@ -128,7 +127,6 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	 *            single graph
 	 * @throws UnloadablePluginConfigurationException
 	 * @throws UnsupportedPluginConfigurationException
-	 * @throws BadConfigurationException
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 * @throws DatasetMetadataExporterException

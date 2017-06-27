@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 
-import it.uniroma2.art.owlart.model.ARTLiteral;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -44,14 +43,14 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 public abstract class BaseRenderingEngine implements RenderingEngine {
 	private static final Logger logger = LoggerFactory.getLogger(BaseRenderingEngine.class);
 
-	private static class LabelComparator implements Comparator<ARTLiteral> {
+	private static class LabelComparator implements Comparator<Literal> {
 
 		public static final LabelComparator INSTANCE = new LabelComparator();
 
 		@Override
-		public int compare(ARTLiteral o1, ARTLiteral o2) {
+		public int compare(Literal o1, Literal o2) {
 
-			int langCompare = compare(o1.getLanguage(), o2.getLanguage());
+			int langCompare = compare(o1.getLanguage().orElse(null), o2.getLanguage().orElse(null));
 
 			if (langCompare == 0) {
 				return compare(o1.getLabel(), o2.getLabel());

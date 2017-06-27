@@ -27,7 +27,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Created;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JMigrationUtils;
 
 /**
  * An AOP Alliance {@link MethodInterceptor} implementation that manages versioning-relevant metadata related

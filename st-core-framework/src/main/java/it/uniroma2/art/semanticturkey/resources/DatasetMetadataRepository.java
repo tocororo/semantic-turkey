@@ -22,10 +22,6 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
-import it.uniroma2.art.owlart.model.ARTURIResource;
-import it.uniroma2.art.owlart.vocabulary.RDFS;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -54,6 +50,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.google.common.base.Objects;
+
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
 /**
  * A repository of metadata about known datasets.
@@ -309,53 +307,4 @@ public class DatasetMetadataRepository {
 		}
 
 	}
-	
-	/**
-	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method
-	 * returns <code>null</code>.
-	 * 
-	 * @param uriResource
-	 * @return
-	 */
-	@Deprecated
-	public synchronized DatasetMetadata findDatasetForResource(ARTURIResource uriResource) {
-		// -------------------------------------------------------------------------------------------
-		// The following resolution strategy might be subject to ambiguity in some rare circumstances
-
-		DatasetMetadata datasetMetadata;
-
-		// -----------------------------------------
-		// Case 1: The provided URI is the base URI
-
-		datasetMetadata = base2meta.get(uriResource.getURI());
-
-		if (datasetMetadata != null) {
-			return datasetMetadata;
-		}
-
-		// ------------------------------------------
-		// Case 2: The namespace is the base URI
-		// e.g., [http://example.org/]Person
-
-		String namespace = uriResource.getNamespace();
-
-		datasetMetadata = base2meta.get(namespace);
-
-		if (datasetMetadata != null) {
-			return datasetMetadata;
-		}
-
-		// --------------------------------------------
-		// Case 2: The namespace is the base URI + "#"
-		// e.g., [http://example.org]#Person
-
-		if (namespace.endsWith("#")) {
-			datasetMetadata = base2meta.get(namespace.substring(0, namespace.length() - 1));
-			return datasetMetadata;
-		} else {
-			return null;
-		}
-
-	}
-
 }

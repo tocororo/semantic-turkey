@@ -45,17 +45,17 @@
 			<version>${spring.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		
+
 		<dependency>
-	    	<groupId>org.springframework.security</groupId>
-	    	<artifactId>spring-security-web</artifactId>
-	    	<version>${spring-security.version}</version>
-	    </dependency>
-	    <dependency>
-	    	<groupId>org.springframework.security</groupId>
-	    	<artifactId>spring-security-config</artifactId>
-	    	<version>${spring-security.version}</version>
-	    </dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-web</artifactId>
+			<version>${spring-security.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-config</artifactId>
+			<version>${spring-security.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>it.uniroma2.art.semanticturkey</groupId>
@@ -98,12 +98,16 @@
 			<artifactId>rdf4j-rio-ntriples</artifactId>
 			<version>${rdf4j.version}</version>
 		</dependency>
-		
+		<dependency>
+			<groupId>org.eclipse.rdf4j</groupId>
+			<artifactId>rdf4j-queryresultio-sparqljson</artifactId>
+			<version>${rdf4j.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.eclipse.rdf4j</groupId>
 			<artifactId>rdf4j-queryrender</artifactId>
 			<version>${rdf4j.version}</version>
-		</dependency>		
+		</dependency>
 		<dependency>
 			<groupId>javax.mail</groupId>
 			<artifactId>mail</artifactId>

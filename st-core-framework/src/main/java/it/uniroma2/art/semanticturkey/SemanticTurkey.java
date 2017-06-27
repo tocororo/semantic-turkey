@@ -23,14 +23,6 @@
 
 package it.uniroma2.art.semanticturkey;
 
-import it.uniroma2.art.owlart.exceptions.VocabularyInitializationException;
-import it.uniroma2.art.owlart.models.RDFModel;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
-import it.uniroma2.art.semanticturkey.resources.Resources;
-import it.uniroma2.art.semanticturkey.resources.VersionNumber;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
-
 import java.io.File;
 import java.net.URISyntaxException;
 
@@ -40,6 +32,11 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 /**
  * <p>
@@ -125,7 +122,7 @@ public class SemanticTurkey implements BundleActivator {
 	/**
 	 * this method builds up the HTTP Server in charge of replying to user requests
 	 */
-	public static void initializeVocabularies(RepositoryConnection conn) throws VocabularyInitializationException {
+	public static void initializeVocabularies(RepositoryConnection conn) {
 		SemAnnotVocab.Res.initialize();
 	}
 
