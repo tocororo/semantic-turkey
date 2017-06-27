@@ -30,7 +30,11 @@ public class RBACManager {
 	public static final class DefaultRole {
 		public static final Role LEXICOGRAPHER = new Role("lexicographer", RoleLevel.system);
 		public static final Role MAPPER = new Role("mapper", RoleLevel.system);
+		public static final Role ONTOLOGIST = new Role("ontologist", RoleLevel.system);
 		public static final Role PROJECTMANAGER = new Role("projectmanager", RoleLevel.system);
+		public static final Role RDF_GEEK = new Role("rdfgeek", RoleLevel.system);
+		public static final Role THESAURUS_EDITOR = new Role("thesaurus-editor", RoleLevel.system);
+		public static final Role VALIDATOR = new Role("validator", RoleLevel.system);
 	}
 	
 	private static final String SYSTEM_PROJ_ID = "SYSTEM";

@@ -415,7 +415,9 @@ public class Resources {
 	private static void initializeRoles() throws IOException {
 		Role[] roles = {
 				RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
-				RBACManager.DefaultRole.PROJECTMANAGER
+				RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER, 
+				RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR,
+				RBACManager.DefaultRole.VALIDATOR
 		};
 		File rolesDir = RBACManager.getRolesDir(null);
 		if (!rolesDir.exists()) {

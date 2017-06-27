@@ -19,7 +19,8 @@ import alice.tuprolog.Theory;
 
 public class RBACProcessor {
 
-	public static String tboxTheoryLocation = "/it/uniroma2/art/semanticturkey/rbac/rbac_tbox.pl";
+	private String tboxTheoryLocation = "/it/uniroma2/art/semanticturkey/rbac/rbac_tbox.pl";
+	private String tuprologSupportLocation = "/it/uniroma2/art/semanticturkey/rbac/tuprolog_support.pl";
 	Prolog engine;
 	String role;
 	File roleFile;
@@ -42,7 +43,10 @@ public class RBACProcessor {
 	public void initializeResources(File roleFile) throws InvalidTheoryException, TheoryNotFoundException {
 		// creating initial theory (consulting a file)
 		try {
-			engine.setTheory(new Theory(RBACProcessor.class.getClassLoader().getResourceAsStream(tboxTheoryLocation)));
+			Theory tboxTheory = new Theory(RBACProcessor.class.getClassLoader().getResourceAsStream(tboxTheoryLocation));
+			Theory supportTheory = new Theory(RBACProcessor.class.getClassLoader().getResourceAsStream(tuprologSupportLocation));
+			engine.setTheory(tboxTheory);
+			engine.addTheory(supportTheory);
 		} catch (IOException e) {
 			throw new TheoryNotFoundException("a problem occuring in loading the RBAC TBOX occurred", e);
 		}
