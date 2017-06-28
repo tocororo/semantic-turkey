@@ -422,48 +422,37 @@ public class ICV extends STServiceAdapter {
 //		}
 //		return response;
 //	}
-//	
-//	/**
-//	 * Returns a list of concepts or schemes that have no skos:prefLabel
-//	 * @return
-//	 * @throws QueryEvaluationException 
-//	 * @throws MalformedQueryException 
-//	 * @throws ModelAccessException 
-//	 * @throws UnsupportedQueryLanguageException 
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-//	public Response listResourcesWithNoSKOSPrefLabel() {
-//		String q = "SELECT ?resource ?type WHERE {\n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
-//				+ " UNION \n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
-//				+ "?resource a ?type . \n"
-//				+ "FILTER NOT EXISTS {\n"
-//				+ "?resource <" + SKOS.PREF_LABEL + "> ?prefLabel .\n"
-//				+ "} }";
-//		logger.info("query [listResourcesWithNoSKOSPrefLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElement = response.getDataElement();
-//		Element collectionElement = XMLHelp.newElement(dataElement, "collection");
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			IRI resource = (IRI) tb.getValue("resource");
-//			String type = tb.getBinding("type").getValue().stringValue();
-//			RDFResourceRole role = RDFResourceRole.concept;
-//			if (type.equals(SKOS.CONCEPT)) {
-//				role = RDFResourceRole.concept;
-//			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
-//				role = RDFResourceRole.conceptScheme;
-//			}
-//			addResourceToElement(collectionElement, resource, role, resource.stringValue());
-//		}
-//		return response;
-//	}
+	
+	/**
+	 * Returns a list of concepts or schemes that have no skos:prefLabel
+	 * @return
+	 * @throws QueryEvaluationException 
+	 * @throws MalformedQueryException 
+	 * @throws ModelAccessException 
+	 * @throws UnsupportedQueryLanguageException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcesWithNoSKOSPrefLabel() {
+		String q = "SELECT ?resource WHERE {\n"
+				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
+				+ " UNION \n"
+				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
+				+ " UNION \n"
+				+ "{ ?resource a <" + SKOS.COLLECTION + "> . }\n"
+				+ " UNION \n"
+				+ "{ ?resource a <" + SKOS.ORDERED_COLLECTION + "> . }\n"
+				+ "FILTER NOT EXISTS {\n"
+				+ "?resource <" + SKOS.PREF_LABEL + "> ?prefLabel .\n"
+				+ "} } GROUP BY ?resource";
+		logger.info("query [listResourcesWithNoSKOSPrefLabel]:\n" + q);
+		QueryBuilder qb = createQueryBuilder(q);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
 	
 	/**
 	 * Returns a list of concepts/schemes/collections that have no skosxl:prefLabel
