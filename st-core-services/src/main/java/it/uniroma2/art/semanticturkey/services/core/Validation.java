@@ -129,9 +129,6 @@ public class Validation extends STServiceAdapter {
 				"     ?commit prov:endedAtTime ?endTime .                                      \n" +
 				timeBoundsSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
-				"         ?commit dcterms:subject ?subject .                                   \n" +
-				"     }                                                                        \n" +
-				"     OPTIONAL {                                                               \n" +
 				"         ?commit prov:used ?operation .                                       \n" +
 				"     }                                                                        \n" +
 				operationSPARQLFilter +
@@ -171,12 +168,6 @@ public class Validation extends STServiceAdapter {
 						user.setAttribute("show", show);
 					}
 					commitInfo.setUser(user);
-				}
-
-				if (bindingSet.hasBinding("subject")) {
-					AnnotatedValue<Resource> subject = new AnnotatedValue<Resource>(
-							(Resource) bindingSet.getValue("subject"));
-					commitInfo.setSubject(subject);
 				}
 
 				if (bindingSet.hasBinding("startTime")) {

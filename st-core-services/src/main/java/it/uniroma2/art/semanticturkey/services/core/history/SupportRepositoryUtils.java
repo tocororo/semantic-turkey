@@ -1,12 +1,18 @@
 package it.uniroma2.art.semanticturkey.services.core.history;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -116,5 +122,38 @@ public class SupportRepositoryUtils {
 				.orElseThrow(() -> new IllegalStateException(
 						"Could not obtain the validation graph. Perhaps this project is without validation"));
 		return historyGraph;
+	}
+
+	public static List<ParameterInfo> deserializeOperationParameters(String serializedParameters) {
+		
+		if (serializedParameters.isEmpty()) return Collections.emptyList();
+		
+		String[] splits = serializedParameters.split("(?<!\\\\)\\$");
+		
+		int nParams = splits.length / 2;
+		
+		ArrayList<ParameterInfo> rv = new ArrayList<>(nParams);
+		for(int i = 0 ; i < nParams ; i++) {
+			rv.add(null);
+		}
+		for (int i = 0; i < splits.length; i += 2) {
+			String pIRI = splits[i].replaceAll("\\\\\\$", "$");
+			int startParamIndex = pIRI.lastIndexOf("/param-") + 7;
+			int endParamIndex = pIRI.indexOf("-", startParamIndex);
+
+			int pIndex = Integer.parseInt(pIRI.substring(startParamIndex, endParamIndex));
+			
+			String pName = pIRI.substring(endParamIndex + 1);
+
+			String pValue = splits[i + 1].replaceAll("\\\\\\$", "$");
+
+			if (SESAME.NIL.stringValue().equals(pValue)) {
+				pValue = null;
+			}
+			
+			rv.set(pIndex, new ParameterInfo(pName, pValue));
+		}
+
+		return rv;
 	}
 }

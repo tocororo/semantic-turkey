@@ -1,9 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core.history;
 
 import java.util.GregorianCalendar;
+import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
@@ -20,9 +20,9 @@ public class CommitInfo {
 	private IRI commit;
 	private AnnotatedValue<IRI> user;
 	private AnnotatedValue<IRI> operation;
-	private AnnotatedValue<Resource> subject;
 	private GregorianCalendar startTime;
 	private GregorianCalendar endTime;
+	private List<ParameterInfo> operationParameters;
 
 	
 	
@@ -42,12 +42,12 @@ public class CommitInfo {
 		this.operation = operation;
 	}
 
-	public AnnotatedValue<Resource> getSubject() {
-		return subject;
+	public void setOperationParameters(List<ParameterInfo> operationParameters) {
+		this.operationParameters = operationParameters;
 	}
 
-	public void setSubject(AnnotatedValue<Resource> subject) {
-		this.subject = subject;
+	public List<ParameterInfo> getOperationParameters() {
+		return operationParameters;
 	}
 
 	@JsonSerialize(converter=IRI2StringConverter.class)
@@ -76,4 +76,5 @@ public class CommitInfo {
 	public GregorianCalendar getEndTime() {
 		return endTime;
 	}
+
 }

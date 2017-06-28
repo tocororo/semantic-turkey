@@ -1,24 +1,23 @@
 package it.uniroma2.art.semanticturkey.history;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Optional;
+import java.util.Arrays;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import it.uniroma2.art.semanticturkey.aop.MethodInvocationUtilities;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -34,6 +33,7 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 
 	@Autowired
 	private STServiceContext stServiceContext;
+	private LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer;
 
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
@@ -46,13 +46,25 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 				.createIRI("http://semanticturkey.uniroma2.it/services/" + extensionPathComponent + "/"
 						+ serviceClass.getSimpleName() + "/" + serviceOperation.getName());
 
-		Optional<Resource> subjectResource = MethodInvocationUtilities
-				.getValueOfFirstAnnotatedParameter(invocation, Subject.class, Resource.class);
-
+		parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
+		String[] parameterNames = parameterNameDiscoverer.getParameterNames(invocation.getMethod());
+		String[] parameterValues = new String[parameterNames.length];
+		
+		for (int i = 0; i < parameterNames.length; i++) {
+			String pn = parameterNames[i];
+			String pv = stServiceContext.getRequest().getParamValue(pn);
+			if (pv == null) {
+				Annotation[] paramAnnotations = invocation.getMethod().getParameterAnnotations()[i];
+				pv = Arrays.stream(paramAnnotations)
+						.filter(ann -> ann instanceof it.uniroma2.art.semanticturkey.services.annotations.Optional)
+						.map(it.uniroma2.art.semanticturkey.services.annotations.Optional.class::cast)
+						.map(ann -> ann.defaultValue()).findAny().orElse(null);
+			}
+			parameterValues[i] = pv;
+		}
 		OperationMetadata operationMetadata = new OperationMetadata();
 		operationMetadata.setUserIRI(userIRI, STCHANGELOG.PERFORMER); // TODO: make it sensitive to validation
-		operationMetadata.setOperationIRI(operationIRI);
-		subjectResource.ifPresent(operationMetadata::setSubject);
+		operationMetadata.setOperation(operationIRI, parameterNames, parameterValues);
 
 		HistoryMetadataSupport.setOperationMetadata(operationMetadata);
 

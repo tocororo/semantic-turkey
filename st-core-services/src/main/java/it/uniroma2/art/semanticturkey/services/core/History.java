@@ -32,7 +32,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitDelta;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitInfo;
-import it.uniroma2.art.semanticturkey.services.core.history.Page;
 import it.uniroma2.art.semanticturkey.services.core.history.HistoryPaginationInfo;
 import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -123,9 +122,16 @@ public class History extends STServiceAdapter {
 			String queryString =
 				// @formatter:off
 				" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
+			    " PREFIX stcl: <http://semanticturkey.uniroma2.it/ns/st-changelog#>            \n" +
 				" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
-				" SELECT *                                                                     \n" +
+				" SELECT ?commit                                                               \n" +
+				"        (MAX(?revisionNumber) as ?revisionNumber)                             \n" +
+				"        (MAX(?startTime) as ?startTime)                                       \n" +
+				"        (MAX(?endTime) as ?endTime)                                           \n" +
+				"        (MAX(?operation) as ?operation)                                       \n" +
+				"        (GROUP_CONCAT(CONCAT(STR(?param), \"$\", REPLACE(STR(?paramValue), \"\\\\$\", \"\\\\$\")); separator=\"$\") as ?parameters) \n" + 
+				"        (MAX(?agent) as ?agent)                                               \n" +
 				" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
 				" {                                                                            \n" +
 				"     ?commit a cl:Commit .                                                    \n" +
@@ -135,11 +141,16 @@ public class History extends STServiceAdapter {
 				"     ?commit prov:endedAtTime ?endTime .                                      \n" +
 				timeBoundsSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
-				"         ?commit dcterms:subject ?subject .                                   \n" +
-				"     }                                                                        \n" +
-				"     OPTIONAL {                                                               \n" +
 				"         ?commit prov:used ?operation .                                       \n" +
 				"     }                                                                        \n" +
+			    "     OPTIONAL {                                                               \n" +
+			    "         ?commit prov:qualifiedAssociation [                                  \n" +
+			    "             prov:entity ?parameters ;                                        \n" +
+			    "             prov:hadRole stcl:parameters                                     \n" +
+			    "         ] .                                                                  \n" +
+			    "         ?parameters ?param ?paramValue .                                     \n" +
+			    "         FILTER(STRSTARTS(STR(?param), STR(?operation)))                      \n" +
+			    "     }                                                                        \n" +
 				operationSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
 				"         ?commit prov:qualifiedAssociation [                                  \n" +
@@ -147,6 +158,7 @@ public class History extends STServiceAdapter {
 				"         ]                                                                    \n" +
 				"     }                                                                        \n" +
 				" }                                                                            \n" +
+				" GROUP BY ?commit                                                             \n" +
 				orderBySPARQLFragment +
 				" OFFSET " + (page * limit) + "                                                \n" +
 				" LIMIT " + limit + "                                                          \n";
@@ -169,6 +181,11 @@ public class History extends STServiceAdapter {
 				if (bindingSet.hasBinding("operation")) {
 					commitInfo.setOperation(operation);
 				}
+				
+				if (bindingSet.hasBinding("parameters")) {
+					commitInfo.setOperationParameters(SupportRepositoryUtils.deserializeOperationParameters(bindingSet.getValue("parameters").stringValue()));
+				}
+				
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
 					STUser userDetails = UsersManager.getUserByIRI(user.getValue());
@@ -179,12 +196,6 @@ public class History extends STServiceAdapter {
 						user.setAttribute("show", show);
 					}
 					commitInfo.setUser(user);
-				}
-
-				if (bindingSet.hasBinding("subject")) {
-					AnnotatedValue<Resource> subject = new AnnotatedValue<Resource>(
-							(Resource) bindingSet.getValue("subject"));
-					commitInfo.setSubject(subject);
 				}
 
 				if (bindingSet.hasBinding("startTime")) {

@@ -44,7 +44,6 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
-import it.uniroma2.art.semanticturkey.history.HistoryMetadataSupport;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -427,8 +426,6 @@ public class SKOS extends STServiceAdapter {
 		
 		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
 				RDFResourceRole.concept); // set created for versioning
-		HistoryMetadataSupport.currentOperationMetadata().setSubject(newConceptIRI); // set subject for
-																						// history
 		
 		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
 		if (conceptCls != null) {
@@ -489,7 +486,6 @@ public class SKOS extends STServiceAdapter {
 		
 		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newSchemeIRI,
 				RDFResourceRole.conceptScheme); // set created for versioning
-		HistoryMetadataSupport.currentOperationMetadata().setSubject(newSchemeIRI); // set subject for history
 		
 		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
 		if (schemeCls != null) {
@@ -1135,8 +1131,6 @@ public class SKOS extends STServiceAdapter {
 		
 		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newCollectionRes,
 				RDFResourceRole.skosCollection); // set created for versioning
-		HistoryMetadataSupport.currentOperationMetadata().setSubject(newCollectionRes); // set subject for
-																						// history
 		
 		IRI collectionClass = collectionType;
 		if (collectionCls != null) {
