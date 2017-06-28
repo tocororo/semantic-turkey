@@ -99,7 +99,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<antlr4.version>4.7</antlr4.version>
 		<tuprolog.version>3.2.1</tuprolog.version>
 		<osgi.core.version>6.0.0</osgi.core.version>
-		<lime-api.version>0.0.1-SNAPSHOT</lime-api.version>
+		<lime-api.version>0.1</lime-api.version>
 		<guava.version>15.0</guava.version>
 	</properties>
 
