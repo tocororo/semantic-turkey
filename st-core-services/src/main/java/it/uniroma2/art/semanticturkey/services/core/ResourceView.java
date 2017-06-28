@@ -182,10 +182,9 @@ public class ResourceView extends STServiceAdapter {
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
 			annotatedResource.setAttribute("nature", resource2attributes.get(resource).get("nature"));
-			AbstractStatementConsumer.addRole(annotatedResource, resource2attributes);
 
-			RDFResourceRole resourceRole = RDFResourceRole
-					.valueOf(annotatedResource.getAttributes().get("role").stringValue());
+			RDFResourceRole resourceRole = getRoleFromNature(
+					annotatedResource.getAttributes().get("nature").stringValue());
 
 			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
 					predicate2resourceCreShow, null, retrievedStatements);
@@ -227,7 +226,8 @@ public class ResourceView extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
-			@Optional ResourcePosition resourcePosition) throws ProjectAccessException, ProjectInconsistentException {
+			@Optional ResourcePosition resourcePosition)
+			throws ProjectAccessException, ProjectInconsistentException {
 		if (resourcePosition == null) {
 			resourcePosition = resource != null
 					? resourceLocator.locateResource(getProject(), getRepository(), resource)
@@ -308,8 +308,11 @@ public class ResourceView extends STServiceAdapter {
 			QueryBuilder qb = createQueryBuilder(String.format(
 				// @formatter:off  
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                            \n" +
-					" 	SELECT ?resource (GROUP_CONCAT(DISTINCT $parentProp; separator = \"><\") AS ?attr_parents) WHERE {     \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
+					" 	SELECT ?resource (GROUP_CONCAT(DISTINCT $parentProp; separator = \"><\") AS ?attr_parents)" + generateNatureSPARQLSelectPart() + " WHERE {     \n" +
 					" 	  VALUES(?resource){                                                          \n" +
 					" 	    %s						                                                  \n" +
 					" 	  }                                                                           \n" +
@@ -320,6 +323,7 @@ public class ResourceView extends STServiceAdapter {
 					" 	    ?resource rdfs:subPropertyOf* ?specialProp                                \n" +
 					" 	    BIND(STR(?specialProp) as $parentProp)                                    \n" +
 					" 	  }	                                                                          \n" +
+					generateNatureSPARQLWherePart("resource") +
 					" 	}                                                                             \n" +
 					" 	GROUP BY ?resource                                                            \n"
 				// @formatter:on
@@ -449,11 +453,10 @@ public class ResourceView extends STServiceAdapter {
 
 			QueryBuilder qb = createQueryBuilder(sb.toString());
 			qb.processRendering();
-			qb.processRole();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
 			qb.setBinding("subjectResource", resource);
 			qb.setIncludeInferred(true);
-			
+
 			Collection<BindingSet> bindingSets = qb.runQuery(
 					acquireManagedConnectionToProject(getProject(), localResourcePosition.getProject()),
 					QueryResultsProcessors.toBindingSets());

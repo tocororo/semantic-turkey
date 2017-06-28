@@ -163,7 +163,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 										firstElement);
 
 								if (firstElement instanceof Resource) {
-									addRole((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
+									addNature((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 									addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedMember,
 											resource2attributes, predicate2resourceCreShow, null, statements);
 								}
@@ -194,7 +194,6 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					} else {
 						annotatedObject = new AnnotatedValue<>(object);
 					}
-					addRole((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
 					addNature((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
 					addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject,
 							resource2attributes, predicate2resourceCreShow, predicate, statements);
@@ -219,9 +218,11 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
 
-			annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
-			addRole(annotatedPredicate, resource2attributes);
-			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
+			addNature(annotatedPredicate, resource2attributes);
+			if ("".equals(annotatedPredicate.getAttributes().get("nature"))) {
+				annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
+			}
+ 			addShowOrRenderXLabelOrCRE(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
 					null, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customFormManager.existsCustomFormGraphForResource(project, predicate));

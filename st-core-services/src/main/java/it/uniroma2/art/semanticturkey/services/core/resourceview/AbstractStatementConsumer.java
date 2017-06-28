@@ -177,5 +177,5 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			
 		}
 	}
-
+	
 }

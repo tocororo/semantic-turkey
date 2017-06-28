@@ -37,6 +37,7 @@ import it.uniroma2.art.semanticturkey.customform.SessionFormData;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -278,5 +279,16 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	protected String generateNatureSPARQLWherePart(String varName){
 		return NatureRecognitionOrchestrator.getNatureSPARQLWherePart(varName);
 	}
+	
+	protected RDFResourceRole getRoleFromNature(String nature) {
+		String roleRaw = nature.split(",")[0];
+		
+		if (roleRaw.isEmpty()) {
+			return RDFResourceRole.undetermined;
+		} else {
+			return RDFResourceRole.valueOf(roleRaw);
+		}
+	}
+
 	
 }
