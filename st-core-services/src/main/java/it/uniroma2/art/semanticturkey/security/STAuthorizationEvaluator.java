@@ -113,23 +113,22 @@ public class STAuthorizationEvaluator {
 					"Illegal authorization parameter 'userResponsabililty': " + userResponsibility);
 		}
 		
-		System.out.println("Role base access control:");
-		
 		STUser loggedUser = UsersManager.getLoggedUser();
 		Collection<Role> userRoles = getRoles(loggedUser);
 		Project targetForRBAC = getTargetForRBAC();
 		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
-
-		System.out.println("\tprolog goal = " + prologGoal);
-		System.out.println("\tuser responsibility map = " + userRespMap);
-		System.out.println("\tproject consumer = " + stServiceContext.getProjectConsumer().getName());
-		System.out.println("\taccessed project = " + (targetForRBAC != null ? targetForRBAC.getName() : "SYSTEM"));
-		System.out.println("\trequested access level = " + requestedAccessLevel);
-		System.out.println("\taclCheck = " + aclSatisfied);
-		System.out.println("\tlogged User = " + loggedUser.getEmail());
-		System.out.println("\t\troles = " + userRoles);
+		
+//		System.out.println("Role base access control:");
+//		System.out.println("\tprolog goal = " + prologGoal);
+//		System.out.println("\tuser responsibility map = " + userRespMap);
+//		System.out.println("\tproject consumer = " + stServiceContext.getProjectConsumer().getName());
+//		System.out.println("\taccessed project = " + (targetForRBAC != null ? targetForRBAC.getName() : "SYSTEM"));
+//		System.out.println("\trequested access level = " + requestedAccessLevel);
+//		System.out.println("\taclCheck = " + aclSatisfied);
+//		System.out.println("\tlogged User = " + loggedUser.getEmail());
+//		System.out.println("\t\troles = " + userRoles);
 
 		if (!aclSatisfied) {
 			return false;
@@ -137,20 +136,25 @@ public class STAuthorizationEvaluator {
 		
 		boolean authorized = false;
 		
-		boolean prologGoalSatisfied = false;
-		for (Role role: userRoles) {
-			RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
-			System.out.println("check satisfaction for goal " + prologGoal);
-			if (rbac.authorizes(prologGoal)) {
-				//TODO in order to enable the evaluator, use authorized here instead of prologGoalSatisfied
-				prologGoalSatisfied = true;
-				break;
+		authorized = false;
+		if (loggedUser.isAdmin()) {
+			authorized = true;
+		} else {
+			for (Role role: userRoles) {
+//				try {
+//					System.out.println("capabilities: " + RBACManager.getRoleCapabilities(targetForRBAC, role.getName()));
+//				} catch (RBACException e) {
+//					System.out.println(e);
+//				}
+				RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
+//				System.out.println("check satisfaction for goal " + prologGoal);
+				if (rbac.authorizes(prologGoal)) {
+					authorized = true;
+					break;
+				}
 			}
 		}
-		System.out.println("prolog goal satisfied? " + prologGoalSatisfied);
-		
-		authorized = true;
-
+//		System.out.println("prolog goal satisfied? " + authorized);
 		return authorized;
 	}
 

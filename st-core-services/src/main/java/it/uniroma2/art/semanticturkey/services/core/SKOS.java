@@ -300,7 +300,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getRootCollections() {
 		QueryBuilder qb = createQueryBuilder(
 				// @formatter:off
