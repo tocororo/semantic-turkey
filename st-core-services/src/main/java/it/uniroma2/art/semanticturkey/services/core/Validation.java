@@ -2,12 +2,10 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Collection;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -17,6 +15,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
@@ -30,9 +29,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.History.SortingDirection;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitInfo;
-import it.uniroma2.art.semanticturkey.services.core.history.Page;
 import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUtils;
 import it.uniroma2.art.semanticturkey.services.core.history.ValidationPaginationInfo;
+import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
@@ -47,6 +46,9 @@ public class Validation extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Validation.class);
 
 	private static final String DEFAULT_PAGE_SIZE = "100";
+
+	@Autowired
+	private STServiceTracker stServiceTracker;
 
 	@STServiceOperation
 	@Read
@@ -157,6 +159,7 @@ public class Validation extends STServiceAdapter {
 
 				if (bindingSet.hasBinding("operation")) {
 					commitInfo.setOperation(operation);
+					SupportRepositoryUtils.computeOperationDisplay(stServiceTracker, operation);
 				}
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));

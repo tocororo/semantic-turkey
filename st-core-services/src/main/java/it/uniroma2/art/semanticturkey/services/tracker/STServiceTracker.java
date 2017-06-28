@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
@@ -36,13 +38,15 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public class STServiceTracker {
 
 	private ServiceTracker serviceTracker;
-	private Map<String, Map<String, Map<String, Entry<RequestMappingInfo, HandlerMethod>>>> extensionPath2serviceClass2operation2meta;
+	private Map<String, Map<String, Map<String, OperationDescription>>> extensionPath2serviceClass2operation2meta;
+	private Map<IRI, OperationDescription> iri2operationDescription;
 
 	private static final Pattern regex = Pattern.compile("^\\/+([^/]+)\\/+([^/]+)\\/+([^/]+)\\/+([^/]+)$");
 
 	@Autowired
 	public STServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
 		this.extensionPath2serviceClass2operation2meta = new ConcurrentHashMap<>();
+		this.iri2operationDescription = new ConcurrentHashMap<>();
 
 		this.serviceTracker = new ServiceTracker(bundleContext,
 				bundleContext.createFilter(
@@ -72,16 +76,21 @@ public class STServiceTracker {
 									String serviceClass = matcher.group(3);
 									String operation = matcher.group(4);
 
-									Map<String, Map<String, Entry<RequestMappingInfo, HandlerMethod>>> serviceClass2operation2meta = extensionPath2serviceClass2operation2meta
+									Map<String, Map<String, OperationDescription>> serviceClass2operation2meta = extensionPath2serviceClass2operation2meta
 											.getOrDefault(groupId + "/" + artifactId, Collections.emptyMap());
-									Map<String, Entry<RequestMappingInfo, HandlerMethod>> operation2meta = serviceClass2operation2meta
+									Map<String, OperationDescription> operation2meta = serviceClass2operation2meta
 											.getOrDefault(serviceClass, Collections.emptyMap());
 									if (operation2meta.remove(operation) != null
 											&& operation2meta.isEmpty()) {
 										if (serviceClass2operation2meta.remove(serviceClass) != null
 												&& serviceClass2operation2meta.isEmpty()) {
-											extensionPath2serviceClass2operation2meta
+											Map<String, Map<String, OperationDescription>> removedSeviceClass2Operation2Meta = extensionPath2serviceClass2operation2meta
 													.remove(groupId + "/" + artifactId);
+
+											removedSeviceClass2Operation2Meta.values().stream()
+													.flatMap(m -> m.values().stream())
+													.map(OperationDescription::getOperationIRI)
+													.forEach(iri2operationDescription::remove);
 										}
 									}
 								}
@@ -118,12 +127,16 @@ public class STServiceTracker {
 									String serviceClass = matcher.group(3);
 									String operation = matcher.group(4);
 
-									Map<String, Map<String, Entry<RequestMappingInfo, HandlerMethod>>> serviceClass2operation2meta = extensionPath2serviceClass2operation2meta
+									Map<String, Map<String, OperationDescription>> serviceClass2operation2meta = extensionPath2serviceClass2operation2meta
 											.computeIfAbsent(groupId + "/" + artifactId,
 													key -> new ConcurrentHashMap<>());
-									Map<String, Entry<RequestMappingInfo, HandlerMethod>> operation2meta = serviceClass2operation2meta
+									Map<String, OperationDescription> operation2meta = serviceClass2operation2meta
 											.computeIfAbsent(serviceClass, key -> new ConcurrentHashMap<>());
-									operation2meta.put(operation, entry);
+									OperationDescription operationDescription = OperationDescription
+											.create(wac, groupId, artifactId, serviceClass, operation, entry);
+									operation2meta.put(operation, operationDescription);
+									iri2operationDescription.put(operationDescription.getOperationIRI(),
+											operationDescription);
 								}
 							}
 
@@ -161,5 +174,9 @@ public class STServiceTracker {
 						+ serviceClass + "/" + operation)
 				.collect(Collectors.toSet());
 
+	}
+
+	public Optional<OperationDescription> getOperationDescription(IRI operationIRI) {
+		return Optional.ofNullable(iri2operationDescription.get(operationIRI));
 	}
 }

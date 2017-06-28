@@ -2,13 +2,12 @@ package it.uniroma2.art.semanticturkey.services.core.history;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
@@ -21,7 +20,10 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.core.History.SortingDirection;
+import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
+import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 
 /**
  * Utility class for interacting with the support repository.
@@ -125,15 +127,16 @@ public class SupportRepositoryUtils {
 	}
 
 	public static List<ParameterInfo> deserializeOperationParameters(String serializedParameters) {
-		
-		if (serializedParameters.isEmpty()) return Collections.emptyList();
-		
+
+		if (serializedParameters.isEmpty())
+			return Collections.emptyList();
+
 		String[] splits = serializedParameters.split("(?<!\\\\)\\$");
-		
+
 		int nParams = splits.length / 2;
-		
+
 		ArrayList<ParameterInfo> rv = new ArrayList<>(nParams);
-		for(int i = 0 ; i < nParams ; i++) {
+		for (int i = 0; i < nParams; i++) {
 			rv.add(null);
 		}
 		for (int i = 0; i < splits.length; i += 2) {
@@ -142,7 +145,7 @@ public class SupportRepositoryUtils {
 			int endParamIndex = pIRI.indexOf("-", startParamIndex);
 
 			int pIndex = Integer.parseInt(pIRI.substring(startParamIndex, endParamIndex));
-			
+
 			String pName = pIRI.substring(endParamIndex + 1);
 
 			String pValue = splits[i + 1].replaceAll("\\\\\\$", "$");
@@ -150,10 +153,23 @@ public class SupportRepositoryUtils {
 			if (SESAME.NIL.stringValue().equals(pValue)) {
 				pValue = null;
 			}
-			
+
 			rv.set(pIndex, new ParameterInfo(pName, pValue));
 		}
 
 		return rv;
+	}
+
+	public static void computeOperationDisplay(STServiceTracker stServiceTracker, AnnotatedValue<IRI> operation) {
+		String displayName = stServiceTracker.getOperationDescription(operation.getValue())
+				.flatMap(OperationDescription::getDisplayName).filter(s -> !s.isEmpty()).orElseGet(() -> {
+					int operationStartIndex = operation.getValue().stringValue().lastIndexOf("/");
+					String operationName = operation.getValue().stringValue()
+							.substring(operationStartIndex + 1);
+
+					return Arrays.stream(StringUtils.splitByCharacterTypeCamelCase(operationName))
+							.map(String::toLowerCase).collect(Collectors.joining(" "));
+				});
+		operation.setAttribute("show", displayName);
 	}
 }

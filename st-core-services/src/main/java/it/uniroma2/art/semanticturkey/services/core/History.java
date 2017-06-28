@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
@@ -34,6 +35,7 @@ import it.uniroma2.art.semanticturkey.services.core.history.CommitDelta;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitInfo;
 import it.uniroma2.art.semanticturkey.services.core.history.HistoryPaginationInfo;
 import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUtils;
+import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
@@ -52,6 +54,9 @@ public class History extends STServiceAdapter {
 	public static enum SortingDirection {
 		Ascending, Descending, Unordered
 	};
+	
+	@Autowired
+	private STServiceTracker stServiceTracker;
 
 	@STServiceOperation
 	@Read
@@ -180,6 +185,7 @@ public class History extends STServiceAdapter {
 
 				if (bindingSet.hasBinding("operation")) {
 					commitInfo.setOperation(operation);
+					SupportRepositoryUtils.computeOperationDisplay(stServiceTracker, operation);
 				}
 				
 				if (bindingSet.hasBinding("parameters")) {
