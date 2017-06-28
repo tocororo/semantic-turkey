@@ -894,8 +894,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept,
-			@LocallyDefined Literal literal) {
+	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
@@ -908,8 +907,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept,
-			@LocallyDefined Literal literal) {
+	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
