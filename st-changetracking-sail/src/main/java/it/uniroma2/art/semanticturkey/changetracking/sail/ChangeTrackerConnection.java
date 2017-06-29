@@ -624,8 +624,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 								subj, pred, obj, false, newContexts)) {
 							while (it.hasNext()) {
 								Statement stmt = it.next();
-								super.addStatement(stmt.getSubject(), stmt.getPredicate(),
-										stmt.getPredicate(),
+								super.addStatement(stmt.getSubject(), stmt.getPredicate(), stmt.getObject(),
 										VALIDATION.stagingRemoveGraph(stmt.getContext()));
 							}
 						}
@@ -820,6 +819,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					supportRepoConn.begin();
 
 					if (CHANGETRACKER.ACCEPT.equals(pred)) {
+						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
+								sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+											s.getContext());
+									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+											VALIDATION.stagingRemoveGraph(s.getContext()));
+								});
 						QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, (IRI) obj,
 								sail.validationGraph)).forEach(s -> {
 									addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
@@ -827,23 +833,16 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingAddGraph(s.getContext()));
 								});
+					} else if (CHANGETRACKER.REJECT.equals(pred)) {
 						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
-								sail.validationGraph)).forEach(s -> {
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											s.getContext());
+								sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingRemoveGraph(s.getContext()));
 								});
-					} else if (CHANGETRACKER.REJECT.equals(pred)) {
 						QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, (IRI) obj,
 								sail.validationGraph)).forEach(s -> {
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingAddGraph(s.getContext()));
-								});
-						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
-								sail.validationGraph)).forEach(s -> {
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											VALIDATION.stagingRemoveGraph(s.getContext()));
 								});
 					} else {
 						throw new SailException("Unrecognized operation: it should be either "
