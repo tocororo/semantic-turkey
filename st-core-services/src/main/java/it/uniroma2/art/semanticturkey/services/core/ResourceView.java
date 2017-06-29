@@ -181,10 +181,12 @@ public class ResourceView extends STServiceAdapter {
 			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<Resource>(resource);
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
-			annotatedResource.setAttribute("nature", resource2attributes.get(resource).get("nature"));
+
+			AbstractStatementConsumer.addNature(annotatedResource, resource2attributes);
 
 			RDFResourceRole resourceRole = getRoleFromNature(
-					annotatedResource.getAttributes().get("nature").stringValue());
+					java.util.Optional.ofNullable(annotatedResource.getAttributes().get("nature"))
+							.map(Value::stringValue).orElse(""));
 
 			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
 					predicate2resourceCreShow, null, retrievedStatements);

@@ -90,17 +90,18 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	public Resource[] getUserNamedGraphs() {
 		List<Resource> rGraphs = Arrays.asList(stServiceContext.getRGraphs());
 
-//		if (rGraphs.contains(RDF4JMigrationUtils.convert2rdf4j(NodeFilters.ANY))) {
-//			return new Resource[0];
-//		}
+		// if (rGraphs.contains(RDF4JMigrationUtils.convert2rdf4j(NodeFilters.ANY))) {
+		// return new Resource[0];
+		// }
 
-		return rGraphs.toArray(new Resource[rGraphs.size()] );
-		
-		//return rGraphs.stream().map(rdf4j2artFact::aRTResource2RDF4JResource).toArray(Resource[]::new);
+		return rGraphs.toArray(new Resource[rGraphs.size()]);
+
+		// return rGraphs.stream().map(rdf4j2artFact::aRTResource2RDF4JResource).toArray(Resource[]::new);
 	}
 
 	public Resource getWorkingGraph() {
-		//return rdf4j2artFact.aRTResource2RDF4JResource(RDF4JMigrationUtils.convert2art(stServiceContext.getWGraph()));
+		// return
+		// rdf4j2artFact.aRTResource2RDF4JResource(RDF4JMigrationUtils.convert2art(stServiceContext.getWGraph()));
 		return stServiceContext.getWGraph();
 	}
 
@@ -204,22 +205,24 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		codaCore.setRepositoryConnection(null);
 		codaCore.stopAndClose();
 	}
-	
-	
+
 	/**
-	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and remove
-	 * suggested by CODA running the PEARL rule defined in the CustomForm with the given <code>cfId</code>  
+	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and
+	 * remove suggested by CODA running the PEARL rule defined in the CustomForm with the given
+	 * <code>cfId</code>
 	 */
-	protected void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions, Model modelRemovals,
-			CustomForm cForm, Map<String, Object> userPromptMap, StandardForm stdForm)
+	protected void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions,
+			Model modelRemovals, CustomForm cForm, Map<String, Object> userPromptMap, StandardForm stdForm)
 			throws ProjectInconsistentException, CODAException, CustomFormException {
 		CODACore codaCore = getInitializedCodaCore(repoConn);
 		try {
 			if (cForm.isTypeGraph()) {
 				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
 				SessionFormData sessionData = new SessionFormData();
-				sessionData.addSessionParameter(SessionFormData.Data.user, UsersManager.getLoggedUser().getIRI().stringValue());
-				UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm, sessionData);
+				sessionData.addSessionParameter(SessionFormData.Data.user,
+						UsersManager.getLoggedUser().getIRI().stringValue());
+				UpdateTripleSet updates = cfGraph.executePearlForConstructor(codaCore, userPromptMap, stdForm,
+						sessionData);
 				shutDownCodaCore(codaCore);
 
 				for (ARTTriple t : updates.getInsertTriples()) {
@@ -266,23 +269,22 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 				sertype);
 	}
 
-	
-	//TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
-	//variables being used: $st, $go, $dep and ?attr_nature
-	protected String generateNatureSPARQLSelectPart(){
+	// TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
+	// variables being used: $st, $go, $dep and ?attr_nature
+	protected String generateNatureSPARQLSelectPart() {
 		return NatureRecognitionOrchestrator.getNatureSPARQLSelectPart();
 	}
-	
-	//TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
-	//variables being used: $st, $go, $t, $dep
-	//  prefixes needed: skos, owl, skosxl, rdfs
-	protected String generateNatureSPARQLWherePart(String varName){
+
+	// TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
+	// variables being used: $st, $go, $t, $dep
+	// prefixes needed: skos, owl, skosxl, rdfs
+	protected String generateNatureSPARQLWherePart(String varName) {
 		return NatureRecognitionOrchestrator.getNatureSPARQLWherePart(varName);
 	}
-	
+
 	protected RDFResourceRole getRoleFromNature(String nature) {
 		String roleRaw = nature.split(",")[0];
-		
+
 		if (roleRaw.isEmpty()) {
 			return RDFResourceRole.undetermined;
 		} else {
@@ -290,5 +292,4 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		}
 	}
 
-	
 }
