@@ -618,8 +618,21 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			try {
 				if (validationEnabled) {
 					validatableOpertionHandler.removeStatements(subj, pred, obj, newContexts);
-					mangleRemoveContextsForValidation(newContexts);
-					super.addStatement(subj, pred, obj, newContexts);
+					if (subj == null || pred == null || obj == null) {
+						// in case of non-ground delete, try to read to statements to be deleted
+						try (CloseableIteration<? extends Statement, SailException> it = super.getStatements(
+								subj, pred, obj, false, newContexts)) {
+							while (it.hasNext()) {
+								Statement stmt = it.next();
+								super.addStatement(stmt.getSubject(), stmt.getPredicate(),
+										stmt.getPredicate(),
+										VALIDATION.stagingRemoveGraph(stmt.getContext()));
+							}
+						}
+					} else {
+						mangleRemoveContextsForValidation(newContexts);
+						super.addStatement(subj, pred, obj, newContexts);
+					}
 				} else {
 					readonlyHandler.removeStatements(subj, pred, obj, newContexts);
 					super.removeStatements(subj, pred, obj, newContexts);
