@@ -802,13 +802,11 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void loadOntologyData(File inputFile, String baseURI, RDFFormat format, Resource graph,
+	public void loadOntologyData(RepositoryConnection conn, File inputFile, String baseURI, RDFFormat format, Resource graph,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException {
-		try (RepositoryConnection conn = repository.getConnection()) {
-			conn.add(inputFile, baseURI, format, graph);
-			recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER, transitiveImportAllowance, failedImports);
-		}
+		conn.add(inputFile, baseURI, format, graph);
+		recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER, transitiveImportAllowance, failedImports);
 	}
 
 	@Override

@@ -25,6 +25,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
@@ -812,6 +813,21 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	}
 
 	private void handleValidation(Resource subj, IRI pred, Value obj) throws SailException {
+		if (CHANGETRACKER.ENABLED.equals(pred)) {
+			if (BooleanLiteral.FALSE.equals(obj)) {
+				validationEnabled = false;
+			} else if (BooleanLiteral.TRUE.equals(obj)) {
+				if (sail.validationEnabled) {
+					validationEnabled = true;
+				} else {
+					throw new SailException(
+							"Could not enable validation on a connection to a Sail without validation");
+				}
+			} else {
+				throw new SailException("A boolean value expected. Given: " + obj);
+			}
+			return;
+		}
 		try {
 			validationEnabled = false;
 			synchronized (sail) {

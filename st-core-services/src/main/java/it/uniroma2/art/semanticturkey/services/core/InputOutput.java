@@ -9,6 +9,10 @@ import java.util.Set;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.BooleanLiteral;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.slf4j.Logger;
@@ -16,12 +20,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
 
 /**
@@ -48,10 +54,26 @@ public class InputOutput extends STServiceAdapter {
 	 * @throws UnsupportedRDFFormatException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rdf', 'C')")
+	@Write
+	@PreAuthorize("#validateImplicitly ? @auth.isAuthorized('rdf', 'CV') : @auth.isAuthorized('rdf', 'C')")
 	public Collection<OntologyImport> loadRDF(MultipartFile inputFile, String baseURI,
-			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
+			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			@Optional(defaultValue = "false") boolean validateImplicitly)
 			throws FileNotFoundException, IOException {
+
+		RepositoryConnection conn = getManagedConnection();
+
+		if (validateImplicitly) {
+			if (!getProject().isValidationEnabled()) {
+				throw new IllegalArgumentException(
+						"Could not validate loaded data implicitly becase validation is disabled");
+			}
+
+			conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.FALSE,
+					CHANGETRACKER.VALIDATION);
+			conn.prepareBooleanQuery("ASK {}").evaluate(); // perform a dummy query to flush the possibly cached
+															// operation
+		}
 
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File inputServerFile = File.createTempFile("loadRDF", inputFile.getOriginalFilename());
@@ -61,14 +83,16 @@ public class InputOutput extends STServiceAdapter {
 			if (rdfFormat == null) {
 				logger.debug("guessing format from extension of file to be loaded: " + rdfFormat);
 				rdfFormat = RDFFormat
-						.matchFileName(inputFile.getOriginalFilename(), RDFParserRegistry.getInstance().getKeys())
-						.orElseThrow(() -> new IllegalArgumentException(
-								"Could not match a parser for file name: " + inputFile.getOriginalFilename()));
+						.matchFileName(inputFile.getOriginalFilename(),
+								RDFParserRegistry.getInstance().getKeys())
+						.orElseThrow(
+								() -> new IllegalArgumentException("Could not match a parser for file name: "
+										+ inputFile.getOriginalFilename()));
 			}
 
 			Set<IRI> failedImports = new HashSet<>();
 
-			getProject().getNewOntologyManager().loadOntologyData(inputServerFile, baseURI, rdfFormat,
+			getProject().getNewOntologyManager().loadOntologyData(conn, inputServerFile, baseURI, rdfFormat,
 					getWorkingGraph(), transitiveImportAllowance, failedImports);
 			return OntologyImport.fromImportFailures(failedImports);
 		} finally {
