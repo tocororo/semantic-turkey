@@ -37,7 +37,7 @@ public abstract class AbstractGraphDBConfigurerConfiguration extends AbstractPlu
 	@STProperty(description = "Rule-set (owlim:ruleset)")
 	@Enumeration({ "empty", "rdfs", "rdfsplus", "owl-horst", "owl-max", "owl2-rl", "rdfs-optimized",
 			"rdfsplus-optimized", "owl-horst-optimized", "owl-max-optimized", "owl2-rl-optimized" })
-	public String ruleset = "rdfsplus-optimized";
+	public String ruleset = "empty";
 
 	@STProperty(description = "Storage folder (owlim:storage-folder)")
 	public String storageFolder = "storage";
