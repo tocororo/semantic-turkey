@@ -4,7 +4,7 @@ public class GraphDBFreeConfigurerConfiguration extends AbstractGraphDBConfigure
 
 	@Override
 	public String getShortName() {
-		return "GraphDB Free";
+		return "GraphDB Free (remote only)";
 	}
 
 }
