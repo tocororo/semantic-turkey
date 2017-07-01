@@ -111,7 +111,7 @@ public class Validation extends STServiceAdapter {
 		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
 
 		String orderBySPARQLFragment = SupportRepositoryUtils.computeOrderBySPARQLFragment(operationSorting,
-				timeSorting);
+				timeSorting, false);
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
 				timeUpperBound);

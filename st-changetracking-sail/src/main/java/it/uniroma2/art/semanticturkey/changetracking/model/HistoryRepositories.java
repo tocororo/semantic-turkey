@@ -9,7 +9,9 @@ import java.util.Optional;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.ConvertingIteration;
 import org.eclipse.rdf4j.common.iteration.Iteration;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
@@ -181,7 +183,39 @@ class TupleBinding2StatementIteration
 		if (SESAME.NIL.equals(context)) {
 			context = null;
 		}
-		return vf.createStatement(subject, predicate, object, context);
+		return vf.createStatement(cloneValue(subject), cloneValue(predicate), cloneValue(object), cloneValue(context));
+	}
+
+	private IRI cloneValue(IRI input) {
+		return vf.createIRI(input.stringValue());
+	}
+	
+	private BNode cloneValue(BNode input) {
+		return vf.createBNode(input.stringValue());
+	}
+	
+	private Resource cloneValue(Resource input) {
+		if (input instanceof IRI) {
+			return cloneValue((IRI)input);
+		} else {
+			return cloneValue((BNode)input);
+		}
+	}
+	
+	private Literal cloneValue(Literal input) {
+		if (input.getLanguage().isPresent()) {
+			return vf.createLiteral(input.getLabel(), input.getLanguage().get());
+		} else {
+			return vf.createLiteral(input.getLabel(), vf.createIRI(input.getDatatype().stringValue()));
+		}
+	}
+	
+	private Value cloneValue(Value input) {
+		if (input instanceof Resource) {
+			return cloneValue((Resource)input);
+		} else {
+			return cloneValue((Literal)input);
+		}
 	}
 
 }

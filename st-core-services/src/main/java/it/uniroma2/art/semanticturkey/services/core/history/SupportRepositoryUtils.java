@@ -67,7 +67,7 @@ public class SupportRepositoryUtils {
 	}
 
 	public static String computeOrderBySPARQLFragment(SortingDirection operationSorting,
-			SortingDirection timeSorting) {
+			SortingDirection timeSorting, boolean useRevisionNumber) {
 		String orderBy = "";
 
 		switch (operationSorting) {
@@ -80,12 +80,14 @@ public class SupportRepositoryUtils {
 		default:
 		}
 
+		String timeComparisonVar = useRevisionNumber ? "revisionNumber" : "endTime";
+		
 		switch (timeSorting) {
 		case Ascending:
-			orderBy += " ASC(?revisionNumber)";
+			orderBy += " ASC(?" + timeComparisonVar + ")";
 			break;
 		case Descending:
-			orderBy += " DESC(?revisionNumber)";
+			orderBy += " DESC(?" + timeComparisonVar + ")";
 			break;
 		default:
 		}

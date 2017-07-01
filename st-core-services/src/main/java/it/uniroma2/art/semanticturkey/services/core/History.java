@@ -54,7 +54,7 @@ public class History extends STServiceAdapter {
 	public static enum SortingDirection {
 		Ascending, Descending, Unordered
 	};
-	
+
 	@Autowired
 	private STServiceTracker stServiceTracker;
 
@@ -66,7 +66,8 @@ public class History extends STServiceAdapter {
 			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
 		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
 
-		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound, timeUpperBound);
+		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
+				timeUpperBound);
 		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
@@ -118,9 +119,11 @@ public class History extends STServiceAdapter {
 
 		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
 
-		String orderBySPARQLFragment = SupportRepositoryUtils.computeOrderBySPARQLFragment(operationSorting, timeSorting);
+		String orderBySPARQLFragment = SupportRepositoryUtils.computeOrderBySPARQLFragment(operationSorting,
+				timeSorting, true);
 
-		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound, timeUpperBound);
+		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
+				timeUpperBound);
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
@@ -187,11 +190,12 @@ public class History extends STServiceAdapter {
 					commitInfo.setOperation(operation);
 					SupportRepositoryUtils.computeOperationDisplay(stServiceTracker, operation);
 				}
-				
+
 				if (bindingSet.hasBinding("parameters")) {
-					commitInfo.setOperationParameters(SupportRepositoryUtils.deserializeOperationParameters(bindingSet.getValue("parameters").stringValue()));
+					commitInfo.setOperationParameters(SupportRepositoryUtils
+							.deserializeOperationParameters(bindingSet.getValue("parameters").stringValue()));
 				}
-				
+
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
 					STUser userDetails = UsersManager.getUserByIRI(user.getValue());

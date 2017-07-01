@@ -754,8 +754,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			context = SESAME.NIL;
 		}
 
-		if (context.stringValue().startsWith(VALIDATION.STAGING_ADD_GRAPH.stringValue())
-				|| context.stringValue().startsWith(VALIDATION.STAGING_REMOVE_GRAPH.stringValue())) {
+		String contextString = context.stringValue();
+		
+		if (contextString.startsWith(VALIDATION.STAGING_ADD_GRAPH.stringValue())
+				|| contextString.startsWith(VALIDATION.STAGING_REMOVE_GRAPH.stringValue())) {
 			return false;
 		}
 
