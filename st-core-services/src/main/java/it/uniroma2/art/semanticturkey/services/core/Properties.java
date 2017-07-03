@@ -100,6 +100,33 @@ public class Properties extends STServiceAdapter {
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
+				" 	{ ?resource 	rdf:type rdf:Property .}								\n" +
+				"	UNION																	\n" +
+				" 	{ ?resource 	rdf:type owl:ObjectProperty .}							\n" +
+				"	UNION																	\n" +
+				" 	{ ?resource 	rdf:type owl:DatatypeProperty .}						\n" +
+				"	UNION																	\n" +
+				" 	{ ?resource 	rdf:type owl:AnnotationProperty .}						\n" +
+				"	UNION																	\n" +
+				" 	{ ?resource 	rdf:type owl:OntologyProperty .}						\n" +
+				"	FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				generateNatureSPARQLWherePart("?resource") +
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
+				// @formatter:on
+		);
+		
+		
+		//OLD VERSION
+		/*qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
+                "																			\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	?propertyType	.							\n" +
 				"     FILTER (?propertyType = rdf:Property || " +
 				"				?propertyType = owl:ObjectProperty ||" +
@@ -111,7 +138,7 @@ public class Properties extends STServiceAdapter {
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
 				// @formatter:on
-		);
+		);*/
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
 		qb.processRendering();
 		qb.processQName();
