@@ -2,7 +2,10 @@ package it.uniroma2.art.semanticturkey.changetracking.model;
 
 import static java.util.stream.Collectors.toList;
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -12,22 +15,29 @@ import org.eclipse.rdf4j.common.iteration.Iteration;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 
 /**
  * Utility class encapsulating common operations with connections to history repositories.
@@ -149,14 +159,110 @@ public abstract class HistoryRepositories {
 				.asList(conn.getStatements(commit, CHANGELOG.PARENT_COMMIT, null, historyGraph));
 
 		int parentSize = parentList.size();
-		
+
 		if (parentSize > 1) {
 			throw new IllegalStateException(
 					"Commit " + NTriplesUtil.toNTriplesString(commit) + " has more than one parent");
 		}
-		
-		return parentSize != 0 ? Optional.of((Resource)parentList.get(0).getObject()) : Optional.empty();
+
+		return parentSize != 0 ? Optional.of((Resource) parentList.get(0).getObject()) : Optional.empty();
 	}
+
+	public static Model getCommitUserMetadata(RepositoryConnection supportRepoConn, IRI commit, IRI graph,
+			boolean rewriteCommit) {
+		GraphQuery describeQuery = supportRepoConn.prepareGraphQuery(
+				"describe " + RenderUtils.toSPARQL(commit) + " from " + RenderUtils.toSPARQL(graph));
+		describeQuery.setIncludeInferred(false);
+
+		LinkedHashModel metadataModel = new LinkedHashModel();
+		Map<BNode, BNode> bnodeRewriting = new LinkedHashMap<>();
+
+		try (GraphQueryResult results = describeQuery.evaluate()) {
+			while (results.hasNext()) {
+				Statement statement = results.next();
+				if (statement.getPredicate().getNamespace().equals(CHANGELOG.NAMESPACE))
+					continue;
+
+				Value obj = statement.getObject();
+
+				if (obj instanceof IRI) {
+					if (((IRI) obj).getNamespace().equals(CHANGELOG.NAMESPACE))
+						continue;
+				}
+
+				metadataModel
+						.add(cloneStatement(statement, SimpleValueFactory.getInstance(), bnodeRewriting));
+			}
+		}
+
+		metadataModel.remove(commit, PROV.STARTED_AT_TIME, null);
+		metadataModel.remove(commit, PROV.ENDED_AT_TIME, null);
+		metadataModel.remove(commit, PROV.GENERATED, null);
+
+		if (rewriteCommit) {
+			Iterator<Statement> it = metadataModel.filter(commit, null, null).iterator();
+			Model rewrittenStatements = new LinkedHashModel();
+			while (it.hasNext()) {
+				Statement stmt = it.next();
+				it.remove();
+				rewrittenStatements.add(CHANGETRACKER.COMMIT_METADATA, stmt.getPredicate(), stmt.getObject());
+			}
+
+			metadataModel.addAll(rewrittenStatements);
+		}
+		return metadataModel;
+	}
+
+	public static IRI cloneValue(IRI input, ValueFactory vf,
+			/* @Nullable */ Map<BNode, BNode> bnodeRewriting) {
+		return vf.createIRI(input.stringValue());
+	}
+
+	public static BNode cloneValue(BNode input, ValueFactory vf,
+			/* @Nullable */ Map<BNode, BNode> bnodeRewriting) {
+		if (bnodeRewriting == null) {
+			return vf.createBNode(input.stringValue());
+		} else {
+			return bnodeRewriting.computeIfAbsent(input, i -> vf.createBNode());
+		}
+	}
+
+	public static Resource cloneValue(Resource input, ValueFactory vf,
+			/* @Nullable */ Map<BNode, BNode> bnodeRewriting) {
+		if (input instanceof IRI) {
+			return cloneValue((IRI) input, vf, bnodeRewriting);
+		} else {
+			return cloneValue((BNode) input, vf, bnodeRewriting);
+		}
+	}
+
+	public static Literal cloneValue(Literal input, ValueFactory vf,
+			/* @Nullable */ Map<BNode, BNode> bnodeRewriting) {
+		if (input.getLanguage().isPresent()) {
+			return vf.createLiteral(input.getLabel(), input.getLanguage().get());
+		} else {
+			return vf.createLiteral(input.getLabel(), vf.createIRI(input.getDatatype().stringValue()));
+		}
+	}
+
+	public static Value cloneValue(Value input, ValueFactory vf,
+			/* @Nullable */ Map<BNode, BNode> bnodeRewriting) {
+		if (input instanceof Resource) {
+			return cloneValue((Resource) input, vf, bnodeRewriting);
+		} else {
+			return cloneValue((Literal) input, vf, bnodeRewriting);
+		}
+	}
+
+	public static Statement cloneStatement(Statement stmt, ValueFactory vf,
+			/* @Nullable */ Map<BNode, BNode> bnodeRewriting) {
+		return vf.createStatement(cloneValue(stmt.getSubject(), vf, bnodeRewriting),
+				cloneValue(stmt.getPredicate(), vf, bnodeRewriting),
+				cloneValue(stmt.getObject(), vf, bnodeRewriting),
+				stmt.getContext() != null ? cloneValue(stmt.getContext(), vf, bnodeRewriting) : null);
+
+	}
+
 }
 
 class TupleBinding2StatementIteration
@@ -183,39 +289,10 @@ class TupleBinding2StatementIteration
 		if (SESAME.NIL.equals(context)) {
 			context = null;
 		}
-		return vf.createStatement(cloneValue(subject), cloneValue(predicate), cloneValue(object), cloneValue(context));
-	}
 
-	private IRI cloneValue(IRI input) {
-		return vf.createIRI(input.stringValue());
+		return vf.createStatement(HistoryRepositories.cloneValue(subject, vf, null),
+				HistoryRepositories.cloneValue(predicate, vf, null),
+				HistoryRepositories.cloneValue(object, vf, null),
+				context != null ? HistoryRepositories.cloneValue(context, vf, null) : null);
 	}
-	
-	private BNode cloneValue(BNode input) {
-		return vf.createBNode(input.stringValue());
-	}
-	
-	private Resource cloneValue(Resource input) {
-		if (input instanceof IRI) {
-			return cloneValue((IRI)input);
-		} else {
-			return cloneValue((BNode)input);
-		}
-	}
-	
-	private Literal cloneValue(Literal input) {
-		if (input.getLanguage().isPresent()) {
-			return vf.createLiteral(input.getLabel(), input.getLanguage().get());
-		} else {
-			return vf.createLiteral(input.getLabel(), vf.createIRI(input.getDatatype().stringValue()));
-		}
-	}
-	
-	private Value cloneValue(Value input) {
-		if (input instanceof Resource) {
-			return cloneValue((Resource)input);
-		} else {
-			return cloneValue((Literal)input);
-		}
-	}
-
 }

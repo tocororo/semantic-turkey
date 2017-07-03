@@ -31,10 +31,12 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
+import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.algebra.evaluation.iterator.CollectionIteration;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -74,6 +76,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private boolean validationEnabled;
 
 	private Literal startTime;
+
+	private IRI pendingValidation;
 
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
 		super(wrappedCon);
@@ -132,6 +136,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		readonlyHandler.clearHandler();
 		validatableOpertionHandler.clearHandler();
 		startTime = currentTimeAsLiteral();
+		pendingValidation = null;
 		logger.debug("Transaction Begin / Isolation Level = {}", level);
 	}
 
@@ -154,16 +159,23 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					UUID.randomUUID().toString());
 
 			conn.add(stmtRes, RDF.TYPE, CHANGELOG.QUADRUPLE, sail.historyGraph);
-			conn.add(stmtRes, CHANGELOG.SUBJECT, stmt.getSubject(), sail.historyGraph);
-			conn.add(stmtRes, CHANGELOG.PREDICATE, stmt.getPredicate(), sail.historyGraph);
-			conn.add(stmtRes, CHANGELOG.OBJECT, stmt.getObject(), sail.historyGraph);
+			conn.add(stmtRes, CHANGELOG.SUBJECT,
+					HistoryRepositories.cloneValue(stmt.getSubject(), conn.getValueFactory(), null),
+					sail.historyGraph);
+			conn.add(stmtRes, CHANGELOG.PREDICATE,
+					HistoryRepositories.cloneValue(stmt.getPredicate(), conn.getValueFactory(), null),
+					sail.historyGraph);
+			conn.add(stmtRes, CHANGELOG.OBJECT,
+					HistoryRepositories.cloneValue(stmt.getObject(), conn.getValueFactory(), null),
+					sail.historyGraph);
 
 			Resource ctx = stmt.getContext();
 			if (ctx == null) {
 				ctx = SESAME.NIL;
 			}
 
-			conn.add(stmtRes, CHANGELOG.CONTEXT, ctx, sail.historyGraph);
+			conn.add(stmtRes, CHANGELOG.CONTEXT,
+					HistoryRepositories.cloneValue(ctx, conn.getValueFactory(), null), sail.historyGraph);
 			conn.add(commit, predicate, stmtRes, sail.historyGraph);
 		};
 
@@ -227,177 +239,194 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				}
 			}
 		}
-		// Some triple stores (e.g. GraphDB, at least version 8.0.4) notify triple additions/deletions only
-		// during the commit operation. Therefore, we can't be certain that an empty staging area means a
-		// read-only transaction.
 
-		// In a read-only connection, just execute the commit
-		if (readonlyHandler.isReadOnly()) {
-			super.commit();
-			return;
-		}
+		try {
+			// Some triple stores (e.g. GraphDB, at least version 8.0.4) notify triple additions/deletions
+			// only
+			// during the commit operation. Therefore, we can't be certain that an empty staging area means a
+			// read-only transaction.
 
-		// If the underlying triple store sends interactive notifications, and the staging area is empty then
-		// we shuld commit and return
-		if (sail.interactiveNotifications && stagingArea.isEmpty()) {
-			super.commit();
-			return;
-		}
-
-		// However, if some triples have been staged or the triple triple store does not send interactive
-		// notifications, then we need to log the operations.
-
-		synchronized (sail) {
-			// Prepares data commit (in case of success, it is unlikely that a subsequent commit() fails)
-			prepare();
-
-			// Commits the metadata
-			IRI commitIRI;
-
-			Resource previousTip;
-			BigInteger revisionNumber = BigInteger.ZERO;
-			Model commitMetadataModel = new LinkedHashModel();
-			boolean triplesUnknown = false;
-
-			Literal generationTime = currentTimeAsLiteral();
-			Literal endTime = currentTimeAsLiteral();
-
-			try (RepositoryConnection supporRepoConn = sail.supportRepo.getConnection()) {
-				ValueFactory vf = supporRepoConn.getValueFactory();
-
-				supporRepoConn.begin();
-
-				// Gets the tip of MASTER:
-				// - if the history is empty, then there is no MASTER and its associated tip
-				// - otherwise, there should be exactly one tip, which is the last successful commit
-				List<Statement> headList = QueryResults.asList(supporRepoConn.getStatements(CHANGELOG.MASTER,
-						CHANGELOG.TIP, null, sail.historyGraph));
-
-				if (headList.size() > 1) {
-					throw new SailException(
-							"Could not commit the changeset metadata, since the tip of MASTER is not unique: "
-									+ headList);
-				}
-
-				// If the tip of MASTER is defined, check that has status committed. Otherwise, it could be
-				// possible that the registered commit has not been effectively applied to the data
-				// repository. In this case, subsequent commits are denied, until the consistency between data
-				// and metadata is restored.
-
-				if (headList.size() == 1) {
-					previousTip = (Resource) headList.iterator().next().getObject();
-
-					boolean previousTipCommitted = supporRepoConn.hasStatement(previousTip, CHANGELOG.STATUS,
-							vf.createLiteral("committed"), false, sail.historyGraph);
-
-					if (!previousTipCommitted) {
-						throw new SailException(
-								"Could not commit the changeset metadata, since there is a pending commit: "
-										+ previousTip);
-					}
-
-					BigInteger lastRevisionNumber = Models.objectLiteral(QueryResults.asModel(supporRepoConn
-							.getStatements(previousTip, CHANGELOG.REVISION_NUMBER, null, sail.historyGraph)))
-							.map(lit -> {
-								try {
-									return new BigInteger(lit.getLabel());
-								} catch (NumberFormatException e) {
-									throw new SailException(
-											"Current tip has an illegal revision number: " + lit.getLabel());
-								}
-							}).orElseThrow(() -> new SailException(
-									"Current tip does not have a revision number: " + previousTip));
-
-					revisionNumber = lastRevisionNumber.add(BigInteger.ONE);
-				} else {
-					previousTip = null;
-				}
-
-				commitIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
-
-				generateCommitMetadataModel(commitIRI, commitMetadataModel);
-
-				supporRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.historyGraph);
-				supporRepoConn.add(commitIRI, PROV.STARTED_AT_TIME, startTime, sail.historyGraph);
-				supporRepoConn.add(commitIRI, PROV.ENDED_AT_TIME, endTime, sail.historyGraph);
-				supporRepoConn.add(commitIRI, CHANGELOG.REVISION_NUMBER,
-						supporRepoConn.getValueFactory().createLiteral(revisionNumber), sail.historyGraph);
-
-				if (!commitMetadataModel.isEmpty()) {
-					supporRepoConn.add(commitMetadataModel, sail.historyGraph);
-				}
-
-				if (stagingArea.isEmpty()) {
-					triplesUnknown = true;
-					supporRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("triples-unknown"),
-							sail.historyGraph);
-				} else {
-					recordModifiedTriples(consumer, commitIRI, supporRepoConn, vf, generationTime);
-				}
-
-				if (previousTip != null) {
-					supporRepoConn.add(commitIRI, CHANGELOG.PARENT_COMMIT, previousTip, sail.historyGraph);
-					supporRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, previousTip, sail.historyGraph);
-				}
-				supporRepoConn.add(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, sail.historyGraph);
-
-				supporRepoConn.commit();
-			} catch (RepositoryException e) {
-				// It may be the case that metadata have been committed, but for some reason (e.g.
-				// disconnection from a remote metadata repo) the transaction status cannot be reported back
-				throw new SailException(e);
-			}
-
-			// Commits the data
-			try {
+			// In a read-only connection, just execute the commit
+			if (readonlyHandler.isReadOnly()) {
 				super.commit();
-			} catch (SailException e) {
-				// commit() has failed, so we should undo the history
-				removeLastCommit(sail.historyGraph, commitIRI, previousTip, commitMetadataModel,
-						triplesUnknown, true);
-				throw e;
+				return;
 			}
 
-			// Data has been committed. So, mark the MASTER commit as committed
+			// If the underlying triple store sends interactive notifications, and the staging area is empty
+			// then
+			// we shuld commit and return
+			if (sail.interactiveNotifications && stagingArea.isEmpty()) {
+				super.commit();
+				return;
+			}
 
-			// If triples were unknown when the commit was first logged, then add that information now
-			// (note that in the meantime the triple store should have sent the necessary notifications)
+			// However, if some triples have been staged or the triple triple store does not send interactive
+			// notifications, then we need to log the operations.
 
-			if (triplesUnknown && stagingArea.isEmpty()) {
-				removeLastCommit(sail.historyGraph, commitIRI, previousTip, commitMetadataModel,
-						triplesUnknown, true);
-			} else {
-				try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
-					ValueFactory vf = supportRepoConn.getValueFactory();
+			synchronized (sail) {
+				// Prepares data commit (in case of success, it is unlikely that a subsequent commit() fails)
+				prepare();
 
-					supportRepoConn.begin();
+				// Commits the metadata
+				IRI commitIRI;
 
-					// If triples were unknown when the commit was first logged, then add that information now
-					// (note that in the meantime the triple store should have sent the necessary
-					// notifications)
+				Resource previousTip;
+				BigInteger revisionNumber = BigInteger.ZERO;
+				Model commitMetadataModel = new LinkedHashModel();
+				boolean triplesUnknown = false;
 
-					if (triplesUnknown) {
-						recordModifiedTriples(consumer, commitIRI, supportRepoConn, vf, generationTime);
+				Literal generationTime = currentTimeAsLiteral();
+				Literal endTime = currentTimeAsLiteral();
+
+				try (RepositoryConnection supporRepoConn = sail.supportRepo.getConnection()) {
+					ValueFactory vf = supporRepoConn.getValueFactory();
+
+					supporRepoConn.begin();
+
+					// Gets the tip of MASTER:
+					// - if the history is empty, then there is no MASTER and its associated tip
+					// - otherwise, there should be exactly one tip, which is the last successful commit
+					List<Statement> headList = QueryResults.asList(supporRepoConn
+							.getStatements(CHANGELOG.MASTER, CHANGELOG.TIP, null, sail.historyGraph));
+
+					if (headList.size() > 1) {
+						throw new SailException(
+								"Could not commit the changeset metadata, since the tip of MASTER is not unique: "
+										+ headList);
 					}
-					supportRepoConn.remove(commitIRI, CHANGELOG.STATUS, null, sail.historyGraph);
-					supportRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("committed"),
+
+					// If the tip of MASTER is defined, check that has status committed. Otherwise, it could
+					// be
+					// possible that the registered commit has not been effectively applied to the data
+					// repository. In this case, subsequent commits are denied, until the consistency between
+					// data
+					// and metadata is restored.
+
+					if (headList.size() == 1) {
+						previousTip = (Resource) headList.iterator().next().getObject();
+
+						boolean previousTipCommitted = supporRepoConn.hasStatement(previousTip,
+								CHANGELOG.STATUS, vf.createLiteral("committed"), false, sail.historyGraph);
+
+						if (!previousTipCommitted) {
+							throw new SailException(
+									"Could not commit the changeset metadata, since there is a pending commit: "
+											+ previousTip);
+						}
+
+						BigInteger lastRevisionNumber = Models
+								.objectLiteral(QueryResults.asModel(supporRepoConn.getStatements(previousTip,
+										CHANGELOG.REVISION_NUMBER, null, sail.historyGraph)))
+								.map(lit -> {
+									try {
+										return new BigInteger(lit.getLabel());
+									} catch (NumberFormatException e) {
+										throw new SailException("Current tip has an illegal revision number: "
+												+ lit.getLabel());
+									}
+								}).orElseThrow(() -> new SailException(
+										"Current tip does not have a revision number: " + previousTip));
+
+						revisionNumber = lastRevisionNumber.add(BigInteger.ONE);
+					} else {
+						previousTip = null;
+					}
+
+					commitIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
+
+					generateCommitMetadataModel(commitIRI, commitMetadataModel);
+
+					supporRepoConn.add(commitIRI, RDF.TYPE, CHANGELOG.COMMIT, sail.historyGraph);
+					supporRepoConn.add(commitIRI, PROV.STARTED_AT_TIME, startTime, sail.historyGraph);
+					supporRepoConn.add(commitIRI, PROV.ENDED_AT_TIME, endTime, sail.historyGraph);
+					supporRepoConn.add(commitIRI, CHANGELOG.REVISION_NUMBER,
+							supporRepoConn.getValueFactory().createLiteral(revisionNumber),
 							sail.historyGraph);
-					supportRepoConn.commit();
+
+					if (!commitMetadataModel.isEmpty()) {
+						supporRepoConn.add(commitMetadataModel, sail.historyGraph);
+					}
+
+					if (stagingArea.isEmpty()) {
+						triplesUnknown = true;
+						supporRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("triples-unknown"),
+								sail.historyGraph);
+					} else {
+						recordModifiedTriples(consumer, commitIRI, supporRepoConn, vf, generationTime);
+					}
+
+					if (previousTip != null) {
+						supporRepoConn.add(commitIRI, CHANGELOG.PARENT_COMMIT, previousTip,
+								sail.historyGraph);
+						supporRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, previousTip,
+								sail.historyGraph);
+					}
+					supporRepoConn.add(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, sail.historyGraph);
+
+					supporRepoConn.commit();
 				} catch (RepositoryException e) {
-					// We would end up with data committed and metadata missing that information.
-					// Since we don't known if data have been committed or not, it is safest to make fail
-					// subsequent commit attempts.
+					// It may be the case that metadata have been committed, but for some reason (e.g.
+					// disconnection from a remote metadata repo) the transaction status cannot be reported
+					// back
 					throw new SailException(e);
 				}
+
+				// Commits the data
+				try {
+					super.commit();
+				} catch (SailException e) {
+					// commit() has failed, so we should undo the history
+					removeLastCommit(sail.historyGraph, commitIRI, previousTip, triplesUnknown, true);
+					throw e;
+				}
+
+				// Data has been committed. So, mark the MASTER commit as committed
+
+				// If triples were unknown when the commit was first logged, then add that information now
+				// (note that in the meantime the triple store should have sent the necessary notifications)
+
+				if (triplesUnknown && stagingArea.isEmpty()) {
+					removeLastCommit(sail.historyGraph, commitIRI, previousTip, triplesUnknown, true);
+				} else {
+					try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
+						ValueFactory vf = supportRepoConn.getValueFactory();
+
+						supportRepoConn.begin();
+
+						// If triples were unknown when the commit was first logged, then add that information
+						// now
+						// (note that in the meantime the triple store should have sent the necessary
+						// notifications)
+
+						if (triplesUnknown) {
+							recordModifiedTriples(consumer, commitIRI, supportRepoConn, vf, generationTime);
+						}
+						supportRepoConn.remove(commitIRI, CHANGELOG.STATUS, null, sail.historyGraph);
+						supportRepoConn.add(commitIRI, CHANGELOG.STATUS, vf.createLiteral("committed"),
+								sail.historyGraph);
+						supportRepoConn.commit();
+					} catch (RepositoryException e) {
+						// We would end up with data committed and metadata missing that information.
+						// Since we don't known if data have been committed or not, it is safest to make fail
+						// subsequent commit attempts.
+						throw new SailException(e);
+					}
+				}
+
+				stagingArea.clear();
+				readonlyHandler.clearHandler();
+				validatableOpertionHandler.clearHandler();
 			}
 
-			stagingArea.clear();
-			readonlyHandler.clearHandler();
-			validatableOpertionHandler.clearHandler();
+			// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or not
+			// the commit has been applied to the data repo
+		} finally {
+			if (pendingValidation != null) {
+				try (RepositoryConnection supporRepoConn = sail.supportRepo.getConnection()) {
+					removeLastCommit(sail.validationGraph, pendingValidation, null, false, false);
+				}
+			}
 		}
-
-		// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or not
-		// the commit has been applied to the data repo
 	}
 
 	protected void generateCommitMetadataModel(IRI commitIRI, Collection<? super Statement> model) {
@@ -427,6 +456,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		modifiedTriplesIRI = vf.createIRI(sail.metadataNS, UUID.randomUUID().toString());
 
 		supportRepoConn.add(modifiedTriplesIRI, RDF.TYPE, PROV.ENTITY, sail.historyGraph);
+
 		stagingArea.getAddedStatements().forEach(
 				consumer.apply(modifiedTriplesIRI).apply(supportRepoConn).apply(CHANGELOG.ADDED_STATEMENT));
 		stagingArea.getRemovedStatements().forEach(
@@ -447,8 +477,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		return SimpleValueFactory.getInstance().createLiteral(currentDateTimeXML);
 	}
 
-	private void removeLastCommit(IRI graph, IRI commitIRI, Resource previousTip, Model commitMetadataModel,
-			boolean triplesUnknown, boolean updateTip) throws SailException {
+	private void removeLastCommit(IRI graph, IRI commitIRI, Resource previousTip, boolean triplesUnknown,
+			boolean updateTip) throws SailException {
 		try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
 			supportRepoConn.begin();
 
@@ -475,9 +505,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 			supportRepoConn.remove(commitIRI, null, null, graph);
 
-			if (!commitMetadataModel.isEmpty()) {
-				supportRepoConn.remove(commitMetadataModel, graph);
-			}
+			GraphQuery commitDescribeQuery = supportRepoConn.prepareGraphQuery(
+					"describe " + RenderUtils.toSPARQL(commitIRI) + " from " + RenderUtils.toSPARQL(graph));
+			commitDescribeQuery.setIncludeInferred(false);
+			supportRepoConn.remove(commitDescribeQuery.evaluate(), graph);
 
 			if (updateTip) {
 				supportRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, graph);
@@ -755,7 +786,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		}
 
 		String contextString = context.stringValue();
-		
+
 		if (contextString.startsWith(VALIDATION.STAGING_ADD_GRAPH.stringValue())
 				|| contextString.startsWith(VALIDATION.STAGING_REMOVE_GRAPH.stringValue())) {
 			return false;
@@ -851,6 +882,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingAddGraph(s.getContext()));
 								});
+
+						Model validatedUserMetadataModel = HistoryRepositories.getCommitUserMetadata(
+								supportRepoConn, (IRI) obj, sail.validationGraph, true);
+
+						stagingArea.getCommitMetadataModel().clear();
+						stagingArea.getCommitMetadataModel().addAll(validatedUserMetadataModel);
+
 					} else if (CHANGETRACKER.REJECT.equals(pred)) {
 						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
 								sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
@@ -868,8 +906,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 								+ NTriplesUtil.toNTriplesString(CHANGETRACKER.REJECT));
 					}
 
-					removeLastCommit(sail.validationGraph, (IRI) obj, null, new LinkedHashModel(), false,
-							false);
+					pendingValidation = (IRI) obj;
 
 					supportRepoConn.commit();
 				}

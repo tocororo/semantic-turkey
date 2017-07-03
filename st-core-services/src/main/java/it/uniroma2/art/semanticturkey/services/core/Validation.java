@@ -21,6 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.OmitHistoryMetadata;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -192,6 +193,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@OmitHistoryMetadata
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void accept(IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit,
@@ -200,6 +202,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@OmitHistoryMetadata
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void reject(IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit,

@@ -178,6 +178,8 @@ public class History extends STServiceAdapter {
 			tupleQuery.setBinding("tipRevisionNumber",
 					conn.getValueFactory().createLiteral(BigInteger.valueOf(tipRevisionNumber)));
 
+			System.out.println(queryString.toString());
+			
 			return QueryResults.stream(tupleQuery.evaluate()).map(bindingSet -> {
 				CommitInfo commitInfo = new CommitInfo();
 

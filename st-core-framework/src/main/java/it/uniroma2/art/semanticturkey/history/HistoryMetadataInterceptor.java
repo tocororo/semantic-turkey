@@ -13,11 +13,13 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.OmitHistoryMetadata;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -42,75 +44,79 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 		Class<?> serviceClass = invocation.getThis().getClass();
 		Method serviceOperation = invocation.getMethod();
 
-		IRI operationIRI = SimpleValueFactory.getInstance()
-				.createIRI("http://semanticturkey.uniroma2.it/services/" + extensionPathComponent + "/"
-						+ serviceClass.getSimpleName() + "/" + serviceOperation.getName());
-
-		parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
-		String[] parameterNames = parameterNameDiscoverer.getParameterNames(invocation.getMethod());
-		String[] parameterValues = new String[parameterNames.length];
-		
-		for (int i = 0; i < parameterNames.length; i++) {
-			String pn = parameterNames[i];
-			String pv = stServiceContext.getRequest().getParamValue(pn);
-			if (pv == null) {
-				Annotation[] paramAnnotations = invocation.getMethod().getParameterAnnotations()[i];
-				pv = Arrays.stream(paramAnnotations)
-						.filter(ann -> ann instanceof it.uniroma2.art.semanticturkey.services.annotations.Optional)
-						.map(it.uniroma2.art.semanticturkey.services.annotations.Optional.class::cast)
-						.map(ann -> ann.defaultValue()).findAny().orElse(null);
-			}
-			parameterValues[i] = pv;
-		}
 		OperationMetadata operationMetadata = new OperationMetadata();
-		operationMetadata.setUserIRI(userIRI, STCHANGELOG.PERFORMER); // TODO: make it sensitive to validation
-		operationMetadata.setOperation(operationIRI, parameterNames, parameterValues);
-
 		HistoryMetadataSupport.setOperationMetadata(operationMetadata);
 
-		if (TransactionSynchronizationManager.isSynchronizationActive()) {
-			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+		if (AnnotationUtils.findAnnotation(serviceOperation, OmitHistoryMetadata.class) == null) {
 
-				@Override
-				public void suspend() {
+			IRI operationIRI = SimpleValueFactory.getInstance()
+					.createIRI("http://semanticturkey.uniroma2.it/services/" + extensionPathComponent + "/"
+							+ serviceClass.getSimpleName() + "/" + serviceOperation.getName());
+
+			parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
+			String[] parameterNames = parameterNameDiscoverer.getParameterNames(invocation.getMethod());
+			String[] parameterValues = new String[parameterNames.length];
+
+			for (int i = 0; i < parameterNames.length; i++) {
+				String pn = parameterNames[i];
+				String pv = stServiceContext.getRequest().getParamValue(pn);
+				if (pv == null) {
+					Annotation[] paramAnnotations = invocation.getMethod().getParameterAnnotations()[i];
+					pv = Arrays.stream(paramAnnotations)
+							.filter(ann -> ann instanceof it.uniroma2.art.semanticturkey.services.annotations.Optional)
+							.map(it.uniroma2.art.semanticturkey.services.annotations.Optional.class::cast)
+							.map(ann -> ann.defaultValue()).findAny().orElse(null);
 				}
+				parameterValues[i] = pv;
+			}
+			operationMetadata.setUserIRI(userIRI, STCHANGELOG.PERFORMER); // TODO: make it sensitive to
+																			// validation
+			operationMetadata.setOperation(operationIRI, parameterNames, parameterValues);
 
-				@Override
-				public void resume() {
-				}
+			if (TransactionSynchronizationManager.isSynchronizationActive()) {
+				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 
-				@Override
-				public void flush() {
-				}
+					@Override
+					public void suspend() {
+					}
 
-				@Override
-				public void beforeCompletion() {
-				}
+					@Override
+					public void resume() {
+					}
 
-				@Override
-				public void beforeCommit(boolean readOnly) {
-					if (readOnly)
-						return;
+					@Override
+					public void flush() {
+					}
 
-					if (!stServiceContext.getProject().isHistoryEnabled()
-							&& !stServiceContext.getProject().isValidationEnabled())
-						return;
+					@Override
+					public void beforeCompletion() {
+					}
 
-					Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
-					RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository, false);
+					@Override
+					public void beforeCommit(boolean readOnly) {
+						if (readOnly)
+							return;
 
-					Model rdfOperationMetadata = operationMetadata.toRDF();
-					conn.add(rdfOperationMetadata, CHANGETRACKER.COMMIT_METADATA);
-				}
+						if (!stServiceContext.getProject().isHistoryEnabled()
+								&& !stServiceContext.getProject().isValidationEnabled())
+							return;
 
-				@Override
-				public void afterCompletion(int status) {
-				}
+						Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
+						RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository, false);
 
-				@Override
-				public void afterCommit() {
-				}
-			});
+						Model rdfOperationMetadata = operationMetadata.toRDF();
+						conn.add(rdfOperationMetadata, CHANGETRACKER.COMMIT_METADATA);
+					}
+
+					@Override
+					public void afterCompletion(int status) {
+					}
+
+					@Override
+					public void afterCommit() {
+					}
+				});
+			}
 		}
 
 		Object rv;
