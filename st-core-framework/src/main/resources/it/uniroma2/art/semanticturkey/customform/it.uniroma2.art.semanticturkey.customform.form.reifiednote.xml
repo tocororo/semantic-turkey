@@ -10,16 +10,15 @@ prefix	codaImpl: 	<http://art.uniroma2.it/coda/converters/>
 rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
 	nodes = {
  		reifNoteId uri(coda:randIdGen("note", {})) .
-		noteLit literal userPrompt/note .
+		noteLang literal userPrompt/lang .
+		noteLit literal(coda:langString($noteLang)) userPrompt/note .
 		source literal userPrompt/source .
 		related uri userPrompt/related .
-		created literal(coda:date()) .
 	}
 	graph = {
 		$reifNoteId rdf:value $noteLit .
 		OPTIONAL { $reifNoteId dc:related $related . }
 		OPTIONAL { $reifNoteId dc:source $source . }
-		OPTIONAL { $reifNoteId dc:created $created. }
 	}
 }
 ]]></ref>
