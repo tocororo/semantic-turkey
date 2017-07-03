@@ -40,7 +40,7 @@ public class SupportRepositoryUtils {
 						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeLowerBound);
 			}
 
-			timeLowerBoundSPARQLFilter = "FILTER(?endTime >= " + RenderUtils.toSPARQL(
+			timeLowerBoundSPARQLFilter = "FILTER(?endTimeT >= " + RenderUtils.toSPARQL(
 					SimpleValueFactory.getInstance().createLiteral(timeLowerBound, XMLSchema.DATETIME))
 					+ ")\n";
 
@@ -55,7 +55,7 @@ public class SupportRepositoryUtils {
 						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeUpperBound);
 			}
 
-			timeUpperBoundSPARQLFilter = "FILTER(?endTime <= " + RenderUtils.toSPARQL(
+			timeUpperBoundSPARQLFilter = "FILTER(?endTimeT <= " + RenderUtils.toSPARQL(
 					SimpleValueFactory.getInstance().createLiteral(timeUpperBound, XMLSchema.DATETIME))
 					+ ")\n";
 
@@ -100,7 +100,7 @@ public class SupportRepositoryUtils {
 
 	public static String computeOperationSPARQLFilter(IRI[] operationFilter) {
 		String operationSPARQLFilter = operationFilter.length != 0
-				? "FILTER(?operation IN " + Arrays.stream(operationFilter).map(RenderUtils::toSPARQL)
+				? "FILTER(?operationT IN " + Arrays.stream(operationFilter).map(RenderUtils::toSPARQL)
 						.collect(Collectors.joining(", ", "(", ")")) + ")\n"
 				: "";
 		return operationSPARQLFilter;

@@ -70,18 +70,18 @@ public class Validation extends STServiceAdapter {
 					" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
 					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
-					" SELECT (MAX(?endTime) as ?tipTime) (COUNT(?commit) as ?commitCount) \n" +
+					" SELECT (MAX(?endTimeT) as ?tipTime) (COUNT(?commit) as ?commitCount)         \n" +
 					" FROM " + RenderUtils.toSPARQL(validationGraph ) + "\n" +
 					" {                                                                            \n" +
 					"     ?commit a cl:Commit .                                                    \n" +
-					"     ?commit prov:startedAtTime ?startTime .                                  \n" +
-					"     ?commit prov:endedAtTime ?endTime .                                      \n" +
+					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
+					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 					timeBoundsSPARQLFilter +
 					"     OPTIONAL {                                                               \n" +
-					"         ?commit prov:used ?operation .                                       \n" +
+					"         ?commit prov:used ?operationT .                                      \n" +
 					"     }                                                                        \n" +
 					operationSPARQLFilter +
-					" }                                                                            \n" 
+					" }                                                                            \n"
 					// @formatter:on
 			;
 
@@ -122,25 +122,40 @@ public class Validation extends STServiceAdapter {
 			String queryString =
 				// @formatter:off
 				" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
+			    " PREFIX stcl: <http://semanticturkey.uniroma2.it/ns/st-changelog#>            \n" +
 				" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
-				" SELECT *                                                                     \n" +
+				" SELECT ?commit                                                               \n" +
+				"        (MAX(?startTimeT) as ?startTime)                                      \n" +
+				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
+				"        (MAX(?operationT) as ?operation)                                      \n" +
+				"        (GROUP_CONCAT(CONCAT(STR(?param), \"$\", REPLACE(STR(?paramValue), \"\\\\$\", \"\\\\$\")); separator=\"$\") as ?parameters)\n" + 
+				"        (MAX(?agentT) as ?agent)                                              \n" +
 				" FROM " + RenderUtils.toSPARQL(validationGraph) + "\n" +
 				" {                                                                            \n" +
 				"     ?commit a cl:Commit .                                                    \n" +
-				"     ?commit prov:startedAtTime ?startTime .                                  \n" +
-				"     ?commit prov:endedAtTime ?endTime .                                      \n" +
+				"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
+				"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 				timeBoundsSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
-				"         ?commit prov:used ?operation .                                       \n" +
+				"         ?commit prov:used ?operationT .                                      \n" +
 				"     }                                                                        \n" +
+			    "     OPTIONAL {                                                               \n" +
+			    "         ?commit prov:qualifiedAssociation [                                  \n" +
+			    "             prov:entity ?params ;                                            \n" +
+			    "             prov:hadRole stcl:parameters                                     \n" +
+			    "         ] .                                                                  \n" +
+			    "         ?params ?param ?paramValue .                                         \n" +
+			    "         FILTER(STRSTARTS(STR(?param), STR(?operationT)))                     \n" +
+			    "     }                                                                        \n" +
 				operationSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
 				"         ?commit prov:qualifiedAssociation [                                  \n" +
-				"             prov:agent ?agent                                                \n" +
+				"             prov:agent ?agentT                                               \n" +
 				"         ]                                                                    \n" +
 				"     }                                                                        \n" +
 				" }                                                                            \n" +
+				" GROUP BY ?commit                                                             \n" +
 				orderBySPARQLFragment +
 				" OFFSET " + (page * limit) + "                                                \n" +
 				" LIMIT " + limit + "                                                          \n";
@@ -162,6 +177,13 @@ public class Validation extends STServiceAdapter {
 					commitInfo.setOperation(operation);
 					SupportRepositoryUtils.computeOperationDisplay(stServiceTracker, operation);
 				}
+			
+				if (bindingSet.hasBinding("parameters")) {
+					commitInfo.setOperationParameters(SupportRepositoryUtils
+							.deserializeOperationParameters(bindingSet.getValue("parameters").stringValue()));
+				}
+
+
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
 					STUser userDetails = UsersManager.getUserByIRI(user.getValue());

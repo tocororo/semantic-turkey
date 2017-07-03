@@ -77,19 +77,19 @@ public class History extends STServiceAdapter {
 					" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
 					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
-					" SELECT (MAX(?revisionNumber) as ?tipRevisionNumber) (COUNT(?commit) as ?commitCount) \n" +
+					" SELECT (MAX(?revisionNumberT) as ?tipRevisionNumber) (COUNT(?commit) as ?commitCount) \n" +
 					" FROM " + RenderUtils.toSPARQL(historyGraph ) + "\n" +
 					" {                                                                            \n" +
 					"     ?commit a cl:Commit .                                                    \n" +
-					"     ?commit cl:revisionNumber ?revisionNumber .                              \n" +
-					"     ?commit prov:startedAtTime ?startTime .                                  \n" +
-					"     ?commit prov:endedAtTime ?endTime .                                      \n" +
+					"     ?commit cl:revisionNumber ?revisionNumberT .                             \n" +
+					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
+					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 					timeBoundsSPARQLFilter +
 					"     OPTIONAL {                                                               \n" +
-					"         ?commit prov:used ?operation .                                       \n" +
+					"         ?commit prov:used ?operationT .                                      \n" +
 					"     }                                                                        \n" +
 					operationSPARQLFilter +
-					" }                                                                            \n" 
+					" }                                                                            \n"
 					// @formatter:on
 			;
 
@@ -134,35 +134,35 @@ public class History extends STServiceAdapter {
 				" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
 				" SELECT ?commit                                                               \n" +
-				"        (MAX(?revisionNumber) as ?revisionNumber)                             \n" +
-				"        (MAX(?startTime) as ?startTime)                                       \n" +
-				"        (MAX(?endTime) as ?endTime)                                           \n" +
-				"        (MAX(?operation) as ?operation)                                       \n" +
+				"        (MAX(?revisionNumberT) as ?revisionNumber)                            \n" +
+				"        (MAX(?startTimeT) as ?startTime)                                      \n" +
+				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
+				"        (MAX(?operationT) as ?operation)                                      \n" +
 				"        (GROUP_CONCAT(CONCAT(STR(?param), \"$\", REPLACE(STR(?paramValue), \"\\\\$\", \"\\\\$\")); separator=\"$\") as ?parameters) \n" + 
-				"        (MAX(?agent) as ?agent)                                               \n" +
+				"        (MAX(?agentT) as ?agent)                                              \n" +
 				" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
 				" {                                                                            \n" +
 				"     ?commit a cl:Commit .                                                    \n" +
-				"     ?commit cl:revisionNumber ?revisionNumber .                              \n" +
-				"     FILTER(?revisionNumber <= ?tipRevisionNumber)                            \n" +
-				"     ?commit prov:startedAtTime ?startTime .                                  \n" +
-				"     ?commit prov:endedAtTime ?endTime .                                      \n" +
+				"     ?commit cl:revisionNumber ?revisionNumberT .                             \n" +
+				"     FILTER(?revisionNumberT <= ?tipRevisionNumber)                           \n" +
+				"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
+				"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 				timeBoundsSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
-				"         ?commit prov:used ?operation .                                       \n" +
+				"         ?commit prov:used ?operationT .                                      \n" +
 				"     }                                                                        \n" +
 			    "     OPTIONAL {                                                               \n" +
 			    "         ?commit prov:qualifiedAssociation [                                  \n" +
-			    "             prov:entity ?parameters ;                                        \n" +
+			    "             prov:entity ?params ;                                            \n" +
 			    "             prov:hadRole stcl:parameters                                     \n" +
 			    "         ] .                                                                  \n" +
-			    "         ?parameters ?param ?paramValue .                                     \n" +
-			    "         FILTER(STRSTARTS(STR(?param), STR(?operation)))                      \n" +
+			    "         ?params ?param ?paramValue .                                         \n" +
+			    "         FILTER(STRSTARTS(STR(?param), STR(?operationT)))                     \n" +
 			    "     }                                                                        \n" +
 				operationSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
 				"         ?commit prov:qualifiedAssociation [                                  \n" +
-				"             prov:agent ?agent                                                \n" +
+				"             prov:agent ?agentT                                               \n" +
 				"         ]                                                                    \n" +
 				"     }                                                                        \n" +
 				" }                                                                            \n" +
@@ -178,8 +178,6 @@ public class History extends STServiceAdapter {
 			tupleQuery.setBinding("tipRevisionNumber",
 					conn.getValueFactory().createLiteral(BigInteger.valueOf(tipRevisionNumber)));
 
-			System.out.println(queryString.toString());
-			
 			return QueryResults.stream(tupleQuery.evaluate()).map(bindingSet -> {
 				CommitInfo commitInfo = new CommitInfo();
 
