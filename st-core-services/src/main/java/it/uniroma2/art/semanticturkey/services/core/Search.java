@@ -136,24 +136,11 @@ public class Search extends STServiceAdapter {
 		
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
-			"\nWHERE{" +
-			"\n{";
-		//do a subquery to get the candidate resources
-		query+="\nSELECT DISTINCT ?resource ?type" +
-			"\nWHERE{" ;
-		
-		//Old version, prior to adding the otional scheme
-		/*query+="\n?resource a ?type ."+
-				addFilterForRsourseType("?type", isClassWanted, isInstanceWanted, isPropertyWanted, 
-						isConceptWanted);*/
-		
+			"\nWHERE{"; // +
+		//get the candidate resources
 		query+=filterResourceTypeAndScheme("?resource", "?type", isClassWanted, isInstanceWanted, 
 				isPropertyWanted, isConceptWanted, isConceptSchemeWanted, isCollectionWanted, schemes);
 		
-		
-		query+="\n}" +
-			"\n}";
-			
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
 		
