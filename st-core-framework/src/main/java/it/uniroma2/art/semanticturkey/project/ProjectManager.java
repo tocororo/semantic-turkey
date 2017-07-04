@@ -214,9 +214,8 @@ public class ProjectManager {
 
 		// delete the folders about project-user bindings
 		try {
-			ProjectUserBindingsManager.deletePUBindingsOfProject(getProjectDescription(projectName));
-		} catch (ProjectAccessException | InvalidProjectNameException | ProjectInexistentException
-				| IOException e) {
+			ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+		} catch (IOException e) {
 			throw new ProjectDeletionException(e);
 		}
 
@@ -1533,16 +1532,22 @@ public class ProjectManager {
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles);
 
+			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
+			return project;
 		} catch (Exception e) {
-			Utilities.deleteDir(projectDir); // if something fails, deletes everything
 			logger.debug("directory: " + projectDir + " deleted due to project creation fail");
+
+			try {
+				try {
+					ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+				} catch (IOException e1) {
+					logger.debug("Swallowed exception", e1);
+				}
+			} finally {
+				Utilities.deleteDir(projectDir); // if something fails, deletes everything
+			}
 			throw e;
 		}
-		Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
-		// TODO this has to be removed, once all references to currentProject have been removed from ST
-		// (filters etc..)
-		// setCurrentProject(project);
-		return project;
 	}
 
 	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, IRI model,

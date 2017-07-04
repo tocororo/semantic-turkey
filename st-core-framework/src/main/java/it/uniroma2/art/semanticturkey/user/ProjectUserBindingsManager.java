@@ -124,15 +124,15 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public static void deletePUBindingsOfProject(AbstractProject project) throws IOException {
+	public static void deletePUBindingsOfProject(String projectName) throws IOException {
 		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
 		while (itPUB.hasNext()) {
-			if (itPUB.next().getProject().getName().equals(project.getName())) {
+			if (itPUB.next().getProject().getName().equals(projectName)) {
 				itPUB.remove();
 			}
 		}
 		//delete folder about the project's bindings
-		FileUtils.deleteDirectory(getProjBindingsFolder(project));
+		FileUtils.deleteDirectory(getProjBindingsFolder(projectName));
 	}
 	
 	/**
@@ -289,11 +289,20 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Returns the folder about the given project under <STData>/pu_bindings/
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static File getProjBindingsFolder(AbstractProject project) {
-		return new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName());
+		return getProjBindingsFolder(project.getName());
+	}
+	
+	/**
+	 * Returns the folder about the given project under <STData>/pu_bindings/
+	 * @param projectName
+	 * @return
+	 */
+	public static File getProjBindingsFolder(String projectName) {
+		return new File(Resources.getProjectUserBindingsDir() + File.separator + projectName);
 	}
 	
 	/**
