@@ -63,7 +63,7 @@ public class Metadata extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('pm(project, baseuri)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('pm(project, baseuri)', 'R')") temporarily disabled (maybe not required)
 	public String getBaseURI() {
 		return getOntologyManager().getBaseURI();
 	}
@@ -77,7 +77,7 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('pm(project, defnamespace)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('pm(project, defnamespace)', 'R')") temporarily disabled (maybe not required)
 	public String getDefaultNamespace() {
 		return getManagedConnection().getNamespace("");
 	}
@@ -252,7 +252,7 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'R')") temporarily disabled (maybe not required)
 	public Collection<OntologyImport> getImports() throws RepositoryException {
 		RepositoryConnection conn = getManagedConnection();
 

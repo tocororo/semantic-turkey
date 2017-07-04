@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
@@ -58,6 +59,7 @@ public class OntManager extends STServiceAdapter {
 	 * @param cacheFileName
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(ontologyMirror)', 'D)")
 	public void deleteOntologyMirrorEntry(String baseURI, String cacheFileName) {
 		OntologiesMirror.removeCachedOntologyEntry(baseURI);
 		File cacheFile = new File(Resources.getOntologiesMirrorDir(), cacheFileName);
@@ -81,6 +83,7 @@ public class OntManager extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(ontologyMirror)', 'CU)")
 	public void updateOntologyMirrorEntry(UpdateType updateType, String baseURI, String mirrorFileName,
 			@Optional String alternativeURL, @Optional MultipartFile inputFile) throws IOException {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(mirrorFileName);

@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
@@ -33,42 +32,12 @@ public class Plugins extends STServiceAdapter {
 	 * @throws PropertyNotFoundException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')") //temporarily disabled (maybe not required)
 	public Collection<STProperties> getPluginConfigurations(String factoryID)
 			throws PropertyNotFoundException {
 		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryID);
 
 		return pluginFactory.getPluginConfigurations();
-
-		// XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-		//
-		// Element dataElement = response.getDataElement();
-		//
-		// for (STProperties mConf : mConfs) {
-		//
-		// Element newConfType = XMLHelp.newElement(dataElement, "configuration");
-		//
-		// newConfType.setAttribute("type", mConf.getClass().getName());
-		//
-		// newConfType.setAttribute("shortName", mConf.getShortName());
-		//
-		// newConfType.setAttribute("editRequired", Boolean.toString(mConf.hasRequiredProperties()));
-		//
-		// Collection<String> props = mConf.getProperties();
-		//
-		// for (String prop : props) {
-		// String parDescr = mConf.getPropertyDescription(prop);
-		// Element newPar = XMLHelp.newElement(newConfType, "par");
-		// newPar.setAttribute("name", prop);
-		// newPar.setAttribute("description", parDescr);
-		// newPar.setAttribute("required", Boolean.toString(mConf.isRequiredProperty(prop)));
-		// String contentType = mConf.getPropertyContentType(prop);
-		// if (contentType != null)
-		// newPar.setAttribute("type", contentType);
-		// Object parValue = mConf.getPropertyValue(prop);
-		// if (parValue != null)
-		// newPar.setTextContent(parValue.toString());
-		// }
 	}
 
 	/**
@@ -80,7 +49,7 @@ public class Plugins extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')") //temporarily disabled (maybe not required)
 	public Collection<PluginInfo> getAvailablePlugins(String extensionPoint) {
 		Collection<PluginFactory<?, ?, ?>> pluginFactoryCollection = PluginManager
 				.getPluginFactories(extensionPoint);

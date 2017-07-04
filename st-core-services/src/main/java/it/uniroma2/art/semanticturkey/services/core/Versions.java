@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -43,9 +44,8 @@ public class Versions extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Versions.class);
 
-	// TODO: establish authorizations for each operation
-
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'R')")
 	public List<VersionInfo> getVersions(@Optional(defaultValue = "false") boolean setRepositoryStatus)
 			throws JsonParseException, JsonMappingException, IOException {
 		List<VersionInfo> versionInfoList = getProject().getVersionManager().getVersions();
@@ -84,6 +84,7 @@ public class Versions extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'C')")
 	public VersionInfo createVersionDump(@Optional RepositoryAccess repositoryAccess,
 			@Optional String repositoryId,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification repoConfigurerSpecification,
@@ -117,6 +118,7 @@ public class Versions extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'R')")
 	public void closeVersion(String versionId) {
 		VersionInfo versionInfo = getProject().getVersionManager().getVersion(versionId).orElseThrow(
 				() -> new IllegalArgumentException("Unexisting version identifier: " + versionId));

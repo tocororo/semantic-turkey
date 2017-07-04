@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -49,9 +50,9 @@ import it.uniroma2.art.semanticturkey.services.core.metadata.ExporterSettingsInf
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
-public class DatasetMetadataExport extends STServiceAdapter {
+public class DatasetMetadata extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(DatasetMetadataExport.class);
+	private static Logger logger = LoggerFactory.getLogger(DatasetMetadata.class);
 
 	/**
 	 * Returns the (project-level) settings for an exporter (including the part related to the extension
@@ -62,7 +63,8 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation
-	public ExporterSettingsInfo getExporterSettings(String exporterId) throws STPropertyAccessException {
+	@PreAuthorize("@auth.isAuthorized('rdf(dataset, metadata)', 'R')")
+	public ExporterSettingsInfo getDatasetMetadata(String exporterId) throws STPropertyAccessException {
 		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
 				.getPluginFactory(exporterId);
 
@@ -107,7 +109,8 @@ public class DatasetMetadataExport extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setExporterSettings(String exporterId, Map<String, Object> extensionPointProperties,
+	@PreAuthorize("@auth.isAuthorized('rdf(dataset, metadata)', 'CU')")
+	public void setDatasetMetadata(String exporterId, Map<String, Object> extensionPointProperties,
 			Map<String, Object> pluginProperties)
 			throws STPropertyAccessException, STPropertyUpdateException {
 		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager

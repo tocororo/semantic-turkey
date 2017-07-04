@@ -52,7 +52,6 @@
 			access="permitAll" />
 		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
 			access="isAuthenticated()" />
-		<intercept-url pattern="/resources/stserver/**" access="isAuthenticated()" />
 		<!-- <intercept-url pattern="" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" 
 			/> -->
 
