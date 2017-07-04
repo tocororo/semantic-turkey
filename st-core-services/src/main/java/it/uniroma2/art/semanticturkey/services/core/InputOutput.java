@@ -9,9 +9,6 @@ import java.util.Set;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.BooleanLiteral;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
@@ -20,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -29,6 +25,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 /**
  * This class provides services for input/output.
@@ -69,10 +66,7 @@ public class InputOutput extends STServiceAdapter {
 						"Could not validate loaded data implicitly becase validation is disabled");
 			}
 
-			conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.FALSE,
-					CHANGETRACKER.VALIDATION);
-			conn.prepareBooleanQuery("ASK {}").evaluate(); // perform a dummy query to flush the possibly cached
-															// operation
+			ValidationUtilities.disableValidationIfEnabled(getProject(), conn);
 		}
 
 		// create a temp file (in karaf data/temp folder) to copy the received file

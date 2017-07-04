@@ -99,6 +99,7 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 public abstract class Project extends AbstractProject {
@@ -425,6 +426,8 @@ public abstract class Project extends AbstractProject {
 	protected void loadingCoreVocabularies() throws RDF4JException, IOException {
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
+			
+			ValidationUtilities.disableValidationIfEnabled(this, conn);
 
 			logger.debug("Loading core vocabularies");
 
