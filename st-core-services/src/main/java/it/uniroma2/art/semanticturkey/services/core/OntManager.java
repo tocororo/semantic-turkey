@@ -59,7 +59,7 @@ public class OntManager extends STServiceAdapter {
 	 * @param cacheFileName
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(ontologyMirror)', 'D)")
+	@PreAuthorize("@auth.isAuthorized('sys(ontologyMirror)', 'D')")
 	public void deleteOntologyMirrorEntry(String baseURI, String cacheFileName) {
 		OntologiesMirror.removeCachedOntologyEntry(baseURI);
 		File cacheFile = new File(Resources.getOntologiesMirrorDir(), cacheFileName);
@@ -83,7 +83,7 @@ public class OntManager extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(ontologyMirror)', 'CU)")
+	@PreAuthorize("@auth.isAuthorized('sys(ontologyMirror)', 'CU')")
 	public void updateOntologyMirrorEntry(UpdateType updateType, String baseURI, String mirrorFileName,
 			@Optional String alternativeURL, @Optional MultipartFile inputFile) throws IOException {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(mirrorFileName);
