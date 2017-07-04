@@ -1,11 +1,13 @@
 package it.uniroma2.art.semanticturkey.validation;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.project.Project;
 
 /**
@@ -41,4 +43,20 @@ public class ValidationUtilities {
 															// operation
 		}
 	}
+
+	/**
+	 * Returns the add graph if validation is enabled
+	 * 
+	 * @param validationEnabled
+	 * @param graph
+	 * @return
+	 */
+	public static IRI getAddGraphIfValidatonEnabled(boolean validationEnabled, IRI graph) {
+		if (validationEnabled) {
+			return (IRI) VALIDATION.stagingAddGraph(graph);
+		} else {
+			return graph;
+		}
+	}
+	
 }

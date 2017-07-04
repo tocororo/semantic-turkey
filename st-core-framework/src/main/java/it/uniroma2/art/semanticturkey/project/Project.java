@@ -270,11 +270,11 @@ public abstract class Project extends AbstractProject {
 			Repository supportRepository = repositoryManager.getRepository("support");
 
 			if (supportRepository != null) {
-				supportOntManager = new OntologyManagerImpl(supportRepository);
+				supportOntManager = new OntologyManagerImpl(supportRepository, false);
 			}
 
 			Repository coreRepository = repositoryManager.getRepository("core");
-			newOntManager = new OntologyManagerImpl(coreRepository);
+			newOntManager = new OntologyManagerImpl(coreRepository, isValidationEnabled());
 
 			String baseURI = getBaseURI();
 			if (baseURI == null)
@@ -426,7 +426,7 @@ public abstract class Project extends AbstractProject {
 	protected void loadingCoreVocabularies() throws RDF4JException, IOException {
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
-			
+
 			ValidationUtilities.disableValidationIfEnabled(this, conn);
 
 			logger.debug("Loading core vocabularies");
@@ -463,8 +463,7 @@ public abstract class Project extends AbstractProject {
 			}
 
 			isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
-			boolean isSKOS = isSKOSXL
-					|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
+			boolean isSKOS = isSKOSXL || Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
 					|| Objects.equals(getModel(), SKOS_MODEL);
 
 			if (isSKOS && !contexts.contains(skosBaseURI)) {

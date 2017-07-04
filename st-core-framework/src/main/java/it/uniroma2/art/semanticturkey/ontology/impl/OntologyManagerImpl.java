@@ -56,6 +56,7 @@ import it.uniroma2.art.semanticturkey.resources.OntFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 /**
  * Native implementation of {@link OntologyManager} for RDF4J.
@@ -79,7 +80,10 @@ public class OntologyManagerImpl implements OntologyManager {
 	private final Set<IRI> supportOntologiesNG;
 	private final Set<String> supportOntologiesNamespace;
 
-	public OntologyManagerImpl(Repository repository) {
+	private boolean validationEnabled;
+
+	public OntologyManagerImpl(Repository repository, boolean validationEnabled) {
+		this.validationEnabled = validationEnabled;
 		// initializes user, application and support ontology sets
 		applicationOntologiesNG = new HashSet<>();
 		applicationOntologiesNamespace = new ConcurrentSkipListSet<>();
@@ -89,7 +93,7 @@ public class OntologyManagerImpl implements OntologyManager {
 		importModalityMap = new HashMap<>();
 		importModalityMap.put(ImportModality.APPLICATION, applicationOntologiesNG);
 		importModalityMap.put(ImportModality.SUPPORT, supportOntologiesNG);
-		
+
 		this.repository = repository;
 	}
 
@@ -220,8 +224,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
 			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports)
-			throws MalformedURLException, RDF4JException, OntologyManagerException {
+			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException {
 		try (RepositoryConnection conn = repository.getConnection()) {
 			conn.begin();
 
@@ -289,8 +292,9 @@ public class OntologyManagerImpl implements OntologyManager {
 			// happen when the given URI is a successful URL for retrieving the ontology but it is not the URI
 			// of the ontology
 
-			Set<IRI> declOnts = Models.subjectIRIs(
-					QueryResults.asModel(conn.getStatements(null, RDF.TYPE, OWL.ONTOLOGY, false, ont)));
+			Set<IRI> declOnts = Models
+					.subjectIRIs(QueryResults.asModel(conn.getStatements(null, RDF.TYPE, OWL.ONTOLOGY, false,
+							ValidationUtilities.getAddGraphIfValidatonEnabled(validationEnabled, ont))));
 			// the import ont does not contain the declaration of itself as an ont and it contains at
 			// least
 			// one declaration (probably its own one)
@@ -300,7 +304,9 @@ public class OntologyManagerImpl implements OntologyManager {
 				// checking that the realURI has not already been imported, by checking the existence of
 				// its
 				// NG in the current data
-				if (conn.hasStatement(null, null, null, false, realURI)) {
+				if (conn.hasStatement(null, null, null, false, realURI)
+						|| validationEnabled && conn.hasStatement(null, null, null, false, ValidationUtilities
+								.getAddGraphIfValidatonEnabled(validationEnabled, realURI))) {
 					// if realURI is already imported, then remove the data imported in the wrong URI
 					conn.clear(ont);
 					// and throw an exception
@@ -375,8 +381,9 @@ public class OntologyManagerImpl implements OntologyManager {
 	private void recoverImportsForOntology(RepositoryConnection conn, IRI ont, ImportModality mod,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws RDF4JException, MalformedURLException, OntologyManagerException {
-		for (IRI importedOnt : Models
-				.objectIRIs(QueryResults.asModel(conn.getStatements(ont, OWL.IMPORTS, null, ont)))) {
+		for (IRI importedOnt : Models.objectIRIs(QueryResults.asModel(conn.getStatements(ont, OWL.IMPORTS,
+				null, ValidationUtilities.getAddGraphIfValidatonEnabled(validationEnabled, ont))))) {
+			System.out.println("Recover " + importedOnt + " for " + ont);
 			recoverOntology(conn, importedOnt, mod, transitiveImportAllowance, failedImports);
 		}
 	}
@@ -471,13 +478,11 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void removeOntologyImport(String uriToBeRemoved)
-			throws IOException {
+	public void removeOntologyImport(String uriToBeRemoved) throws IOException {
 		removeOntologyImport(uriToBeRemoved, ImportModality.USER);
 	}
 
-	public void removeOntologyImport(String uriToBeRemoved, ImportModality mod)
-			throws IOException {
+	public void removeOntologyImport(String uriToBeRemoved, ImportModality mod) throws IOException {
 		try (RepositoryConnection conn = repository.getConnection()) {
 			conn.begin();
 
@@ -603,8 +608,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws ImportManagementException, RDF4JException, MalformedURLException,
-			IOException {
+			throws ImportManagementException, RDF4JException, MalformedURLException, IOException {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 
 		try (RepositoryConnection conn = repository.getConnection()) {
@@ -722,8 +726,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void removeNSPrefixMapping(String namespace)
-			throws NSPrefixMappingUpdateException {
+	public void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException {
 		try {
 			nsPrefixMappings.removeNSPrefixMapping(namespace);
 			Repositories.consume(repository, conn -> {
@@ -775,15 +778,15 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	/**
-	 * a wrapper around the RDF4J's prefix mapping with an additional <code>overwrite</code> parameter
-	 * which, if false, makes the method ignore calls if the namespace-prefix mapping already exists. If true,
-	 * it still does not overwrite if the old and new values are the same
+	 * a wrapper around the RDF4J's prefix mapping with an additional <code>overwrite</code> parameter which,
+	 * if false, makes the method ignore calls if the namespace-prefix mapping already exists. If true, it
+	 * still does not overwrite if the old and new values are the same
 	 * 
 	 * @param namespace
 	 * @param prefix
 	 * @param overwrite
 	 */
-	private void setNsPrefix(String namespace, String prefix, boolean overwrite){
+	private void setNsPrefix(String namespace, String prefix, boolean overwrite) {
 		Repositories.consume(repository, conn -> {
 			String oldPrefix = QueryResults.stream(conn.getNamespaces())
 					.filter(ns -> ns.getName().equals(namespace)).findAny().map(Namespace::getPrefix)
@@ -795,18 +798,18 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	// TODO Pay attention this is not being invoked by any method! check metadata ones!
-	public void setNSPrefixMapping(String prefix, String namespace)
-			throws NSPrefixMappingUpdateException {
+	public void setNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException {
 		Repositories.consume(repository, conn -> conn.setNamespace(prefix, namespace));
 		nsPrefixMappings.setNSPrefixMapping(namespace, prefix);
 	}
 
 	@Override
-	public void loadOntologyData(RepositoryConnection conn, File inputFile, String baseURI, RDFFormat format, Resource graph,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+	public void loadOntologyData(RepositoryConnection conn, File inputFile, String baseURI, RDFFormat format,
+			Resource graph, TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException {
 		conn.add(inputFile, baseURI, format, graph);
-		recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER, transitiveImportAllowance, failedImports);
+		recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER,
+				transitiveImportAllowance, failedImports);
 	}
 
 	@Override
@@ -829,14 +832,14 @@ public class OntologyManagerImpl implements OntologyManager {
 	@Override
 	public void startOntModel(String baseURI, File repoDir, RepositoryConfig supportRepoConfig)
 			throws OntologyManagerException {
-//		try {
-//			SailRepositoryFactory repoFactory = new SailRepositoryFactory();
-//			repository = repoFactory.getRepository(supportRepoConfig.getRepositoryImplConfig());
-//			repository.setDataDir(repoDir);
-			this.baseURI = baseURI;
-//			repository.initialize();
-//		} catch (RDF4JException e) {
-//			throw new OntologyManagerException(e);
-//		}
+		// try {
+		// SailRepositoryFactory repoFactory = new SailRepositoryFactory();
+		// repository = repoFactory.getRepository(supportRepoConfig.getRepositoryImplConfig());
+		// repository.setDataDir(repoDir);
+		this.baseURI = baseURI;
+		// repository.initialize();
+		// } catch (RDF4JException e) {
+		// throw new OntologyManagerException(e);
+		// }
 	}
 }
