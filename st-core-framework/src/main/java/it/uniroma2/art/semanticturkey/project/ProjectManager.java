@@ -54,7 +54,9 @@ import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
@@ -303,7 +305,7 @@ public class ProjectManager {
 	 * @throws DuplicatedResourceException
 	 * @throws IOException
 	 * @throws ProjectInexistentException
-	 * @throws ProjectAccessException 
+	 * @throws ProjectAccessException
 	 */
 	public static void cloneProjectToNewProject(String projectName, String newProjectName)
 			throws InvalidProjectNameException, DuplicatedResourceException, IOException,
@@ -365,7 +367,8 @@ public class ProjectManager {
 		return new File(Resources.getProjectsDir(), projectName);
 	}
 
-	public static void exportProject(String projectName, File semTurkeyProjectFile) throws IOException, ProjectAccessException {
+	public static void exportProject(String projectName, File semTurkeyProjectFile)
+			throws IOException, ProjectAccessException {
 
 		if (!isOpen(projectName)) {
 			throw new ProjectAccessException(
@@ -389,9 +392,8 @@ public class ProjectManager {
 	}
 
 	public static void importProject(File semTurkeyProjectFile, String name)
-			throws IOException, ProjectCreationException,
-			DuplicatedResourceException, ProjectInconsistentException, ProjectUpdateException, 
-			InvalidProjectNameException {
+			throws IOException, ProjectCreationException, DuplicatedResourceException,
+			ProjectInconsistentException, ProjectUpdateException, InvalidProjectNameException {
 		File tempDir = Resources.createTempDir();
 		Utilities.unZip(semTurkeyProjectFile.getPath(), tempDir);
 
@@ -1320,7 +1322,8 @@ public class ProjectManager {
 		_currentProject = null;
 	}
 
-	public static void exportCurrentProject(File semTurkeyProjectFile) throws IOException, ProjectAccessException {
+	public static void exportCurrentProject(File semTurkeyProjectFile)
+			throws IOException, ProjectAccessException {
 		exportProject(_currentProject.getName(), semTurkeyProjectFile);
 	}
 
@@ -1447,8 +1450,9 @@ public class ProjectManager {
 					// newCoreRepositoryConfig.export(model);
 					// Rio.write(model, System.out, RDFFormat.TURTLE);
 
-					RepositoryManager remoteRepoManager = RemoteRepositoryManager
-							.getInstance(remoteRepositoryAccess.getServerURL().toString());
+					RepositoryManager remoteRepoManager = RemoteRepositoryManager.getInstance(
+							remoteRepositoryAccess.getServerURL().toString(),
+							remoteRepositoryAccess.getUsername(), remoteRepositoryAccess.getPassword());
 
 					try {
 						if (remoteRepoManager.hasRepositoryConfig(coreRepoID)) {
@@ -1539,7 +1543,61 @@ public class ProjectManager {
 
 			try {
 				try {
-					ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+					try {
+						if (repositoryAccess instanceof CreateRemote) {
+							try {
+								CreateRemote createRemoteAccess = (CreateRemote) repositoryAccess;
+
+								RepositoryManager remoteRepoManager = RemoteRepositoryManager.getInstance(
+										createRemoteAccess.getServerURL().toString(),
+										createRemoteAccess.getUsername(), createRemoteAccess.getPassword());
+
+								boolean removedCore = false;
+								boolean removedSupport = false;
+
+								try {
+									try {
+										try {
+											remoteRepoManager.removeRepository(coreRepoID);
+											removedCore = true;
+										} finally {
+											if (supportRepoID != null) {
+												remoteRepoManager.removeRepository(supportRepoID);
+											}
+											removedSupport = true;
+										}
+									} catch (RDF4JException e2) {
+										logger.debug("Swallowed exception", e2);
+									}
+
+									// If the removeRepository didn't succeeded (e.g. wrong repo config), try
+									// to manipulate the SYSTEM repository
+
+									if (!removedCore || !removedSupport) {
+										Repository systemRepository = remoteRepoManager.getSystemRepository();
+
+										ArrayList<String> repoIdsToRemove = new ArrayList<>();
+										if (!removedCore) {
+											repoIdsToRemove.add(coreRepoID);
+										}
+
+										if (!removedSupport) {
+											repoIdsToRemove.add(supportRepoID);
+										}
+										RepositoryConfigUtil.removeRepositoryConfigs(systemRepository,
+												repoIdsToRemove.toArray(new String[repoIdsToRemove.size()]));
+
+									}
+								} finally {
+									remoteRepoManager.shutDown();
+								}
+							} catch (RDF4JException e2) {
+								logger.debug("Swallowed exception", e2);
+							}
+						}
+					} finally {
+						ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+					}
 				} catch (IOException e1) {
 					logger.debug("Swallowed exception", e1);
 				}
