@@ -148,6 +148,7 @@ public class Search extends STServiceAdapter {
 		//check if the request want to search in the local name
 		if(useLocalName){
 			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
 					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
 					"\n}"+
@@ -158,6 +159,7 @@ public class Search extends STServiceAdapter {
 		//check if the request want to search in the complete URI
 		if(useURI){
 			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+
 					searchModePrepareQuery("?complURI", searchString, searchModeSelected) +
 					"\n}"+
