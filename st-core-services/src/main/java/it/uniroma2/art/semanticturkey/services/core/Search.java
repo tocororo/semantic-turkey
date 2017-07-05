@@ -561,13 +561,22 @@ public class Search extends STServiceAdapter {
 						"\nBIND (\"true\" AS ?isTopConcept)" +
 						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> ." +
 						"\n}";
-			} else if(schemesIRI != null && schemesIRI.size()>1){
+			} else if(schemesIRI != null &&schemesIRI.size()>1){
 				query += "\n?broader " + inSchemeOrTopConcept + " ?scheme1 ."+
 						filterWithOrValues(schemesIRI, "?scheme1") +
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
 						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme2 ." +
 						filterWithOrValues(schemesIRI, "?scheme2") +
+						"\n}";
+			}
+			else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is wither null or an empty list
+				//check if the selected broader has no brother itself, in this case it is consider a topConcept
+				query +="\nOPTIONAL{" +
+						"\nBIND (\"true\" AS ?isTopConcept)" +
+						"\nFILTER NOT EXISTS{ " +
+						"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader ."+
+						"}"+
 						"\n}";
 			}
 			query += "\nOPTIONAL{" +
@@ -601,7 +610,7 @@ public class Search extends STServiceAdapter {
 					"\n}";
 					
 			// this using, used only when no scheme is selected, is used when the concept does not have any
-			// brader and it is not topConcept of any scheme
+			// broader and it is not topConcept of any scheme
 			if(schemesIRI == null){
 				query+="\nUNION" +
 						"\n{" +
@@ -662,47 +671,6 @@ public class Search extends STServiceAdapter {
 					"\n}" +
 					"\n}";
 			//@formatter:on
-			/*
-			 // old version, now skosCollection and skosOrderedCollection are managed together
-		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosCollection.name().toLowerCase())){
-			superResourceVar = "superCollection";
-			superSuperResourceVar = "superSuperCollection";
-			//@formatter:off
-			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
-					"\nWHERE {"+
-					"\n{"+
-					"\n?superCollection <"+SKOS.MEMBER+">+ <"+resourceURI+"> ." +
-					"\nOPTIONAL {"+
-					"?superSuperCollection <"+SKOS.MEMBER+"> ?superCollection ." +
-					"\n}" +
-					"\n}" +
-					"\nUNION" +
-					"\n{" +
-					"\n<"+resourceURI+"> a <"+SKOS.COLLECTION+"> ." +
-					"\nFILTER NOT EXISTS{ _:b1 <"+SKOS.MEMBER+"> <"+resourceURI+"> }" +
-					"\nBIND(\"true\" AS ?isTop )" +
-					"\n}" +
-					"\n}";
-			//@formatter:on
-		} else if(role.toLowerCase().equals(RDFResourceRolesEnum.skosOrderedCollection.name().toLowerCase())){
-			//@formatter:off
-			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
-					"\nWHERE {"+
-					"\n{"+
-					"\n?superCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">)+ <"+resourceURI+"> ." +
-					"\nOPTIONAL {"+
-					"?superSuperCollection (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) ?superCollection ." +
-					"\n}" +
-					"\n}" +
-					"\nUNION" +
-					"\n{" +
-					"\n<"+resourceURI+"> a <"+SKOS.ORDEREDCOLLECTION+"> ." +
-					"\nFILTER NOT EXISTS{ _:b1 (<"+SKOS.MEMBERLIST+">/<"+RDF.REST+">* /<"+RDF.FIRST+">) <"+resourceURI+"> }" +
-					"\nBIND(\"true\" AS ?isTop )" +
-					"\n}" +
-					"\n}";
-			//@formatter:on
-		*/
 		} else if(role.toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
 			superResourceVar = "superCollection";
 			superSuperResourceVar = "superSuperCollection";
@@ -816,7 +784,7 @@ public class Search extends STServiceAdapter {
 				continue;
 			}
 			if(role.toLowerCase().equals(RDFResourceRole.concept.name())){
-				//the role is a concept, so check it an input scheme was passed, if so, if it is not a 
+				//the role is a concept, so check if an input scheme was passed, if so, if it is not a 
 				// top concept (for that particular scheme) then pass to the next concept
 				if(schemesIRI!=null && !resourceForHierarchy.isTopConcept){
 					continue;
