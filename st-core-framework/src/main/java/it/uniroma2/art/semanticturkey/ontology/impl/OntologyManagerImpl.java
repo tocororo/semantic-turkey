@@ -383,7 +383,6 @@ public class OntologyManagerImpl implements OntologyManager {
 			throws RDF4JException, MalformedURLException, OntologyManagerException {
 		for (IRI importedOnt : Models.objectIRIs(QueryResults.asModel(conn.getStatements(ont, OWL.IMPORTS,
 				null, ValidationUtilities.getAddGraphIfValidatonEnabled(validationEnabled, ont))))) {
-			System.out.println("Recover " + importedOnt + " for " + ont);
 			recoverOntology(conn, importedOnt, mod, transitiveImportAllowance, failedImports);
 		}
 	}
