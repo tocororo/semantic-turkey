@@ -891,7 +891,7 @@ public class Search extends STServiceAdapter {
 				schemesInFilter+=" || ";
 			}
 			first=false;
-			schemesInFilter+="variable="+NTriplesUtil.toNTriplesString(iri);
+			schemesInFilter+=variable+"="+NTriplesUtil.toNTriplesString(iri);
 		}
 		schemesInFilter+= ") \n";
 		return schemesInFilter;
