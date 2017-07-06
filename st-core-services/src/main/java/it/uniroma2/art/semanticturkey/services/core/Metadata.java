@@ -40,6 +40,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
 import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport.Statuses;
 
@@ -316,6 +317,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromLocalFile(String baseURI, MultipartFile localFile,
 			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
@@ -324,8 +326,8 @@ public class Metadata extends STServiceAdapter {
 		File inputServerFile = File.createTempFile("addFromLocalFile", localFile.getOriginalFilename());
 		try {
 			localFile.transferTo(inputServerFile);
-			getOntologyManager().addOntologyImportFromLocalFile(baseURI, inputServerFile.getPath(),
-					mirrorFile, transitiveImportAllowance, failedImports);
+			getOntologyManager().addOntologyImportFromLocalFile(getManagedConnection(), baseURI,
+					inputServerFile.getPath(), mirrorFile, transitiveImportAllowance, failedImports);
 
 			return OntologyImport.fromImportFailures(failedImports);
 		} finally {
@@ -346,14 +348,15 @@ public class Metadata extends STServiceAdapter {
 	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> addFromMirror(String baseURI, String mirrorFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, OntologyManagerException {
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().addOntologyImportFromMirror(baseURI, mirrorFile, transitiveImportAllowance,
-				failedImports);
+		getOntologyManager().addOntologyImportFromMirror(getManagedConnection(), baseURI, mirrorFile,
+				transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -373,6 +376,7 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
+	@Write
 	public Collection<OntologyImport> addFromWeb(String baseURI, @Optional String altUrl,
 			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, OntologyManagerException {
@@ -380,8 +384,8 @@ public class Metadata extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().addOntologyImportFromWeb(baseURI, url, rdfFormat, transitiveImportAllowance,
-				failedImports);
+		getOntologyManager().addOntologyImportFromWeb(getManagedConnection(), baseURI, url, rdfFormat,
+				transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -401,6 +405,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	public Collection<OntologyImport> addFromWebToMirror(String baseURI, @Optional String altUrl,
 			String mirrorFile, @Optional RDFFormat rdfFormat,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
@@ -409,8 +414,8 @@ public class Metadata extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().addOntologyImportFromWebToMirror(baseURI, url, mirrorFile, rdfFormat,
-				transitiveImportAllowance, failedImports);
+		getOntologyManager().addOntologyImportFromWebToMirror(getManagedConnection(), baseURI, url,
+				mirrorFile, rdfFormat, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}

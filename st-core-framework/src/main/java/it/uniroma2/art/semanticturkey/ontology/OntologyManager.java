@@ -94,6 +94,7 @@ public interface OntologyManager {
 	/**
 	 * Imports an ontology from a local file, and copies it to the ontology mirror.
 	 * 
+	 * @param conn
 	 * @param baseURI
 	 * @param fromLocalFilePath
 	 * @param toLocalFile
@@ -102,13 +103,14 @@ public interface OntologyManager {
 	 * @throws MalformedURLException
 	 * @throws RDF4JException
 	 */
-	void addOntologyImportFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, RDF4JException;
+	void addOntologyImportFromLocalFile(RepositoryConnection conn, String baseURI, String fromLocalFilePath,
+			String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws MalformedURLException, RDF4JException;
 
 	/**
 	 * Imports an ontology from the ontology mirror
 	 * 
+	 * @param conn
 	 * @param baseURI
 	 * @param mirFileString
 	 * @param transitiveImportAllowance
@@ -117,13 +119,14 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
-	void addOntologyImportFromMirror(String baseURI, String mirFileString,
+	void addOntologyImportFromMirror(RepositoryConnection conn, String baseURI, String mirFileString,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Imports an ontology from the web
-	 * 
+	 *
+	 * @param conn
 	 * @param baseUriToBeImported
 	 * @param url
 	 * @param rdfFormat
@@ -133,13 +136,14 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
-	void addOntologyImportFromWeb(String baseUriToBeImported, String url, @Nullable RDFFormat rdfFormat,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, RDF4JException, OntologyManagerException;
+	void addOntologyImportFromWeb(RepositoryConnection conn, String baseUriToBeImported, String url,
+			@Nullable RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Imports an ontology from the web and copies it to the ontology mirror
 	 * 
+	 * @param conn
 	 * @param baseURI
 	 * @param sourceURL
 	 * @param toLocalFile
@@ -150,9 +154,10 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
-	void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
-			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException;
+	void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI, String sourceURL,
+			String toLocalFile, RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Removes an ontology import
