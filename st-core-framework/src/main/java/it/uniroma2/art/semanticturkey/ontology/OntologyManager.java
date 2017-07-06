@@ -183,6 +183,7 @@ public interface OntologyManager {
 	/**
 	 * Downloads an ontology that is a failed import from the web
 	 * 
+	 * @param conn
 	 * @param baseURI
 	 * @param altURL
 	 * @param transitiveImportAllowance
@@ -192,13 +193,14 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws IOException
 	 */
-	void downloadImportedOntologyFromWeb(String baseURI, String altURL,
+	void downloadImportedOntologyFromWeb(RepositoryConnection conn, String baseURI, String altURL,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, ImportManagementException, RDF4JException, IOException;
 
 	/**
 	 * Downloads an ontology that is a failed import from the web to the ontology mirror
 	 * 
+	 * @param conn
 	 * @param baseURI
 	 * @param altURL
 	 * @param toLocalFile
@@ -209,13 +211,15 @@ public interface OntologyManager {
 	 * @throws MalformedURLException
 	 * @throws IOException
 	 */
-	void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+	void downloadImportedOntologyFromWebToMirror(RepositoryConnection conn, String baseURI, String altURL,
+			String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, MalformedURLException, IOException;
 
 	/**
 	 * Retrieves an ontology that is a failed import from a local file and copies it to the ontology mirror
 	 * 
+	 * @param conn
 	 * @param baseURI
 	 * @param fromLocalFilePath
 	 * @param toLocalFile
@@ -226,8 +230,9 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws IOException
 	 */
-	void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+	void getImportedOntologyFromLocalFile(RepositoryConnection conn, String baseURI, String fromLocalFilePath,
+			String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports)
 			throws MalformedURLException, ImportManagementException, RDF4JException, IOException;
 
 	// Application/Support ontologies management

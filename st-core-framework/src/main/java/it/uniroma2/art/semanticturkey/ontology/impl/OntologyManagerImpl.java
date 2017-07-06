@@ -340,10 +340,10 @@ public class OntologyManagerImpl implements OntologyManager {
 			IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
 					baseURI, sourceURL, rdfFormat, capturedImports);
 			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
-			
+
 			// this time sends a notification with the spied ontology imports (but change the import method
 			// so that it won't be created another mirror entry)
-			
+
 			notifiedAddedOntologyImport(ImportMethod.fromWeb, baseURI, sourceURL, mirFile, modality,
 					updateImportStatement, conn, capturedImports, transitiveImportAllowance, failedImports);
 
@@ -660,75 +660,79 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void downloadImportedOntologyFromWeb(String baseURI, String altURL,
+	public void downloadImportedOntologyFromWeb(RepositoryConnection conn, String baseURI, String altURL,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, IOException {
-		try (RepositoryConnection conn = repository.getConnection()) {
-			conn.begin();
+		checkImportFailed(conn, baseURI);
 
-			checkImportFailed(conn, baseURI);
+		getImportedOntology(fromWeb, baseURI, altURL, null, null);
 
-			conn.add(new URL(baseURI), baseURI, null, conn.getValueFactory().createIRI(baseURI));
-			getImportedOntology(fromWeb, baseURI, altURL, null, null);
+		// TODO: check whether ImportModality.USER is correct
 
-			// TODO: check whether ImportModality.USER is correct
+		Model capturedImports = new LinkedHashModel();
+		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
+				baseURI, altURL, null, capturedImports);
+		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
-			Model capturedImports = new LinkedHashModel();
-			notifiedAddedOntologyImport(fromWeb, baseURI, altURL, null, ImportModality.USER, false, conn,
-					capturedImports, transitiveImportAllowance, failedImports);
-
-			conn.commit();
-		}
+		notifiedAddedOntologyImport(fromWeb, baseURI, altURL, null, ImportModality.USER, false, conn,
+				capturedImports, transitiveImportAllowance, failedImports);
 	}
 
 	@Override
-	public void downloadImportedOntologyFromWebToMirror(String baseURI, String altURL, String toLocalFile,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+	public void downloadImportedOntologyFromWebToMirror(RepositoryConnection conn, String baseURI,
+			String altURL, String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, MalformedURLException, IOException {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 
-		try (RepositoryConnection conn = repository.getConnection()) {
-			conn.begin();
+		checkImportFailed(conn, baseURI);
 
-			checkImportFailed(conn, baseURI);
+		Model capturedImports = new LinkedHashModel();
 
-			conn.add(new URL(baseURI), baseURI, null, conn.getValueFactory().createIRI(baseURI));
+		// TODO: check whether ImportModality.USER is correct
 
-			// TODO: check whether ImportModality.USER is correct
+		// try to download the ontology
+		notifiedAddedOntologyImport(fromWebToMirror, baseURI, altURL, mirFile, ImportModality.USER, false,
+				conn, capturedImports, transitiveImportAllowance, failedImports);
 
-			Model capturedImports = new LinkedHashModel();
-			notifiedAddedOntologyImport(fromWebToMirror, baseURI, altURL, mirFile, ImportModality.USER, false,
-					conn, capturedImports, transitiveImportAllowance, failedImports);
+		// if the download was achieved, import the ontology in the model
 
-			conn.commit();
-		}
+		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
+				baseURI, altURL, null, capturedImports);
+		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
+
+		// this time sends a notification with the spied ontology imports (but change the import method
+		// so that it won't be created another mirror entry)
+
+		notifiedAddedOntologyImport(fromWebToMirror, baseURI, altURL, mirFile, ImportModality.USER, false,
+				conn, capturedImports, transitiveImportAllowance, failedImports);
 	}
 
 	@Override
-	public void getImportedOntologyFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
+	public void getImportedOntologyFromLocalFile(RepositoryConnection conn, String baseURI,
+			String fromLocalFilePath, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, IOException {
 		File inputFile = new File(fromLocalFilePath);
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 
-		try (RepositoryConnection conn = repository.getConnection()) {
-			conn.begin();
+		checkImportFailed(conn, baseURI);
 
-			checkImportFailed(conn, baseURI);
+		RDFFormat rdfFormat = Rio.getParserFormatForFileName(inputFile.getName())
+				.orElseThrow(() -> new OntologyManagerException(
+						"Could not match a parser for file name: " + inputFile.getName()));
+		RDFParser parser = RDFParserRegistry.getInstance().get(rdfFormat).map(RDFParserFactory::getParser)
+				.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
+		Model capturedImports = new LinkedHashModel();
+		InputStream in = new FileInputStream(inputFile);
+		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
+				baseURI, in, parser, capturedImports);
 
-			conn.add(inputFile, baseURI,
-					RDFFormat.matchFileName(inputFile.getName(), RDFParserRegistry.getInstance().getKeys())
-							.orElseThrow(() -> new OntologyManagerException(
-									"Could not match a parser for file name: " + inputFile.getName())),
-					conn.getValueFactory().createIRI(baseURI));
+		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
-			Model caputedImports = new LinkedHashModel();
-			notifiedAddedOntologyImport(fromLocalFile, baseURI, fromLocalFilePath, mirFile,
-					ImportModality.USER, false, conn, caputedImports, transitiveImportAllowance,
-					failedImports);
-
-			conn.commit();
-		}
+		Model caputedImports = new LinkedHashModel();
+		notifiedAddedOntologyImport(fromLocalFile, baseURI, fromLocalFilePath, mirFile, ImportModality.USER,
+				false, conn, caputedImports, transitiveImportAllowance, failedImports);
 	}
 
 	@Override

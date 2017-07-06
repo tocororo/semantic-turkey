@@ -451,6 +451,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> downloadFromWeb(String baseURI, @Optional String altUrl,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
@@ -459,8 +460,8 @@ public class Metadata extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().downloadImportedOntologyFromWeb(baseURI, url, transitiveImportAllowance,
-				failedImports);
+		getOntologyManager().downloadImportedOntologyFromWeb(getManagedConnection(), baseURI, url,
+				transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -479,6 +480,7 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	@PreAuthorize("@auth.isAuthorized('sys(ontologymirror)', 'C')")
 	public Collection<OntologyImport> downloadFromWebToMirror(String baseURI, @Optional String altUrl,
 			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
@@ -487,8 +489,8 @@ public class Metadata extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().downloadImportedOntologyFromWebToMirror(baseURI, url, mirrorFile,
-				transitiveImportAllowance, failedImports);
+		getOntologyManager().downloadImportedOntologyFromWebToMirror(getManagedConnection(), baseURI, url,
+				mirrorFile, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -507,14 +509,15 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	public Collection<OntologyImport> getFromLocalFile(String baseURI, String localFile, String mirrorFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ImportManagementException, IOException {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().getImportedOntologyFromLocalFile(baseURI, localFile, mirrorFile,
-				transitiveImportAllowance, failedImports);
+		getOntologyManager().getImportedOntologyFromLocalFile(getManagedConnection(), baseURI, localFile,
+				mirrorFile, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
