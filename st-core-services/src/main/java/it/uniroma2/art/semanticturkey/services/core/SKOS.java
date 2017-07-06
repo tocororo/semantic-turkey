@@ -285,7 +285,7 @@ public class SKOS extends STServiceAdapter {
 				"    ?conceptSchemeSubClass rdfs:subClassOf* skos:ConceptScheme .                        \n" +
 				"    ?resource rdf:type ?conceptSchemeSubClass .                                         \n" +
 				"    BIND(EXISTS{                                                                        \n" +
-				"             ?resource skos:hasTopConcept|^skos:isTopConceptOf|^skos:inScheme ?concept .\n" +
+				"             ?resource skos:hasTopConcept|^skos:topConceptOf|^skos:inScheme ?concept .\n" +
 				"         } AS ?attr_inScheme )                                                          \n" +
 				" }                                                                                      \n" +
 				" GROUP BY ?resource ?attr_inScheme                                                      \n"
