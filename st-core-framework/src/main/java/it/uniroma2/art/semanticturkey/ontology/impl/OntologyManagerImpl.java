@@ -890,8 +890,20 @@ public class OntologyManagerImpl implements OntologyManager {
 	public void loadOntologyData(RepositoryConnection conn, File inputFile, String baseURI, RDFFormat format,
 			Resource graph, TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException {
-		conn.add(inputFile, baseURI, format, graph);
+		if (format == null) {
+			format = Rio.getParserFormatForFileName(inputFile.getName())
+					.orElseThrow(() -> new OntologyManagerException(
+							"Could not match a parser for file name: " + inputFile.getName()));
+		}
+		RDFParser parser = RDFParserRegistry.getInstance().get(format).map(RDFParserFactory::getParser)
+				.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
 		Model capturedImports = new LinkedHashModel();
+		InputStream in = new FileInputStream(inputFile);
+		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
+				baseURI, in, parser, capturedImports);
+
+		conn.add(spyConcurrentIter, graph);
+
 		recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER,
 				capturedImports, transitiveImportAllowance, failedImports);
 	}
