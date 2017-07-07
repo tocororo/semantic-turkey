@@ -28,10 +28,11 @@ public class STPropertiesManager {
 	private static final String USER_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.props";
 	private static final String USER_SYSTEM_PREFERENCES_FILE_NAME = "system-preferences.props";
 
-	public static final String PROP_LANGUAGES = "languages";
-	public static final String PROP_SHOW_FLAGS = "show_flags";
-	public static final String PROP_SHOW_INSTANCES_NUMBER = "show_instances_number";
-	public static final String PROP_ACTIVE_SCHEMES = "active_schemes";
+	public static final String PREF_LANGUAGES = "languages";
+	public static final String PREF_SHOW_FLAGS = "show_flags";
+	public static final String PREF_SHOW_INSTANCES_NUMBER = "show_instances_number";
+	public static final String PREF_ACTIVE_SCHEMES = "active_schemes";
+	public static final String PREF_PROJ_THEME = "project_theme";
 
 	/*
 	 * Methods to get/set properties to/from the following Properties files

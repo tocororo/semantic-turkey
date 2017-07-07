@@ -11,7 +11,7 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 public abstract class AbstractLabelBasedRenderingEngineConfiguration extends AbstractPluginConfiguration {
 
 	@STProperty(description = "A comma-separated list of language tags. Use ${"
-			+ STPropertiesManager.PROP_LANGUAGES + "} to depend on ST Properties")
-	public String languages = "${" + STPropertiesManager.PROP_LANGUAGES + "}";
+			+ STPropertiesManager.PREF_LANGUAGES + "} to depend on ST Properties")
+	public String languages = "${" + STPropertiesManager.PREF_LANGUAGES + "}";
 
 }

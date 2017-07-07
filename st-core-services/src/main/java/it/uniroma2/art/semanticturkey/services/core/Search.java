@@ -61,7 +61,7 @@ public class Search extends STServiceAdapter {
 		
 		//it can be null, * or a list of languages
 		String languagesPropValue = STPropertiesManager.getProjectPreference(
-			       STPropertiesManager.PROP_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+			       STPropertiesManager.PREF_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 		String [] langArray;
 		if(languagesPropValue == null){
 			langArray = new String[]{"*"};
@@ -397,7 +397,7 @@ public class Search extends STServiceAdapter {
 		
 		//it can be null, * or a list of languages
 		String languagesPropValue = STPropertiesManager.getProjectPreference(
-			       STPropertiesManager.PROP_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+			       STPropertiesManager.PREF_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 		String [] langArray;
 		if(languagesPropValue == null){
 			langArray = new String[]{"*"};

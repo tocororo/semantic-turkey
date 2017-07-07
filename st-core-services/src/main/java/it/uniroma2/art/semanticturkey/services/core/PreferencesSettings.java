@@ -29,7 +29,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
-public class Preferences extends STServiceAdapter {
+public class PreferencesSettings extends STServiceAdapter {
 	
 	/**
 	 * TODO
@@ -61,7 +61,7 @@ public class Preferences extends STServiceAdapter {
 		} else if (languages.size() > 1) {
 			value = String.join(",", languages);
 		}
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_LANGUAGES, value, getProject(),	
+		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_LANGUAGES, value, getProject(),	
 				UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 	}
 	
@@ -72,7 +72,7 @@ public class Preferences extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void setShowFlags(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, show+"", getProject(),
+		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_FLAGS, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
 	
@@ -84,12 +84,12 @@ public class Preferences extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void setShowInstancesNumb(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, show+"", getProject(),
+		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
 	
 	/**
-	 * Set the active scheme preference (in order to retrieve it on the future access) for the current project.
+	 * Sets the active scheme preference (in order to retrieve it on the future access) for the current project.
 	 * The scheme is optional, if not provided it means that the concept tree is working in no scheme mode
 	 * @param scheme
 	 * @throws IllegalStateException
@@ -103,12 +103,23 @@ public class Preferences extends STServiceAdapter {
 				value += s.stringValue() + ",";
 			}
 			value = value.substring(0, value.length()-1);
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES, value, getProject(),
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES, value, getProject(),
 					UsersManager.getLoggedUser());
 		} else { // no scheme mode
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES, null, getProject(),
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES, null, getProject(),
 					UsersManager.getLoggedUser());
 		}
+	}
+	
+	/**
+	 * Changes the project theme
+	 * @param themeId
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void setProjectTheme(int themeId) throws STPropertyUpdateException {
+		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_PROJ_THEME, themeId+"", getProject(),
+				UsersManager.getLoggedUser());
 	}
 	
 	/**
@@ -128,7 +139,7 @@ public class Preferences extends STServiceAdapter {
 			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName 
 					+ ". It could be closed or not existing.");
 		}
-		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES,
+		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES,
 				ProjectManager.getProject(projectName), UsersManager.getLoggedUser());
 		if (value != null) {
 			String[] splitted = value.split(",");
@@ -148,7 +159,7 @@ public class Preferences extends STServiceAdapter {
 		
 		//languages
 		ArrayNode languagesArrayNode = jsonFactory.arrayNode();
-		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_LANGUAGES, getProject(),
+		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_LANGUAGES, getProject(),
 				UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 		if (value != null) {
 			value.replaceAll(" ", ""); // remove all spaces
@@ -157,26 +168,26 @@ public class Preferences extends STServiceAdapter {
 				languagesArrayNode.add(splitted[i]);
 			}
 		} else { //preference not set => set the default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_LANGUAGES, "*", getProject(),	
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_LANGUAGES, "*", getProject(),	
 					UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 			languagesArrayNode.add("*");
 		}
-		preferencesNode.set(STPropertiesManager.PROP_LANGUAGES, languagesArrayNode);
+		preferencesNode.set(STPropertiesManager.PREF_LANGUAGES, languagesArrayNode);
 		
 		//show_flags
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, getProject(),
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_SHOW_FLAGS, getProject(),
 				UsersManager.getLoggedUser());
 		boolean showFlags = true;
 		if (value != null) {
 			showFlags = Boolean.parseBoolean(value);
 		} else { //property not set => set default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_FLAGS, showFlags+"", getProject(),
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_FLAGS, showFlags+"", getProject(),
 					UsersManager.getLoggedUser());
 		}
-		preferencesNode.set(STPropertiesManager.PROP_SHOW_FLAGS, jsonFactory.booleanNode(showFlags));
+		preferencesNode.set(STPropertiesManager.PREF_SHOW_FLAGS, jsonFactory.booleanNode(showFlags));
 		
 		//show_instances_number
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, getProject(),
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, getProject(),
 				UsersManager.getLoggedUser());
 
 		//default: false in skos, true in owl
@@ -184,14 +195,14 @@ public class Preferences extends STServiceAdapter {
 		if (value != null) {
 			showInst = Boolean.parseBoolean(value);
 		} else { //property not set => set default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, showInst+"",
+			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, showInst+"",
 					getProject(), UsersManager.getLoggedUser());
 		}
-		preferencesNode.set(STPropertiesManager.PROP_SHOW_INSTANCES_NUMBER, jsonFactory.booleanNode(showInst));
+		preferencesNode.set(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, jsonFactory.booleanNode(showInst));
 		
 		//active_scheme
 		ArrayNode schemesArrayNode = jsonFactory.arrayNode();
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PROP_ACTIVE_SCHEMES, getProject(),
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES, getProject(),
 				UsersManager.getLoggedUser());
 		if (value != null) {
 			String[] splitted = value.split(",");
@@ -199,9 +210,27 @@ public class Preferences extends STServiceAdapter {
 				schemesArrayNode.add(s);
 			}
 		}
-		preferencesNode.set(STPropertiesManager.PROP_ACTIVE_SCHEMES, schemesArrayNode);
+		preferencesNode.set(STPropertiesManager.PREF_ACTIVE_SCHEMES, schemesArrayNode);
+		
+		//project_theme
+		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_PROJ_THEME, getProject(),
+				UsersManager.getLoggedUser());
+		preferencesNode.set(STPropertiesManager.PREF_PROJ_THEME, jsonFactory.textNode(value));
 		
 		return preferencesNode;
+	}
+	
+	@STServiceOperation
+	public JsonNode getProjectSettings(List<String> keys, @Optional String pluginID) throws STPropertyAccessException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode respArrayNode = jsonFactory.arrayNode();
+		for (String key: keys) {
+			ObjectNode keyValueNode = jsonFactory.objectNode();
+			String value = STPropertiesManager.getProjectSetting(key, getProject(), pluginID);
+			keyValueNode.set(key, jsonFactory.textNode(value));
+			respArrayNode.add(keyValueNode);
+		}
+		return respArrayNode;
 	}
 	
 }

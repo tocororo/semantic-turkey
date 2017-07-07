@@ -88,7 +88,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	private static final Pattern propPattern = Pattern
-			.compile("\\$\\{" + Pattern.quote(STPropertiesManager.PROP_LANGUAGES) + "\\}");
+			.compile("\\$\\{" + Pattern.quote(STPropertiesManager.PREF_LANGUAGES) + "\\}");
 
 	/**
 	 * Computes the set of languages by interpolating the configured langues with ST Properties.
@@ -104,9 +104,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			if (languagesPropValue == null) {
 				try {
 					languagesPropValue = STPropertiesManager.getProjectPreference(
-							STPropertiesManager.PROP_LANGUAGES, currentProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+							STPropertiesManager.PREF_LANGUAGES, currentProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 				} catch (STPropertyAccessException e) {
-					logger.debug("Could not access property: " + STPropertiesManager.PROP_LANGUAGES, e);
+					logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
 				}
 				if (languagesPropValue == null) {
 					languagesPropValue = "*";
