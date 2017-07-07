@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
@@ -59,87 +61,20 @@ public class Search extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String [] rolesArray, boolean useLocalName, boolean useURI,
 			String searchMode, @Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException  {
 		
-		//it can be null, * or a list of languages
-		String languagesPropValue = STPropertiesManager.getProjectPreference(
-			       STPropertiesManager.PREF_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-		String [] langArray;
-		if(languagesPropValue == null){
-			langArray = new String[]{"*"};
-		} else{
-			langArray = languagesPropValue.split(",");
-		}
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		
-		boolean isClassWanted = false;
-		boolean isConceptWanted = false;
-		boolean isConceptSchemeWanted = false;
-		boolean isInstanceWanted = false;
-		boolean isPropertyWanted = false;
-		boolean isCollectionWanted = false;
+		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, 
+				getProject());
 		
-		String searchModeSelected = null;
-		
-		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
-		
-		if(searchString.isEmpty()){
-			//TODO change the exception (previously was a fail)
-			throw new IllegalArgumentException("the serchString cannot be empty");
-		}
-		
-		for(int i=0; i<rolesArray.length; ++i){
-			if(rolesArray[i].toLowerCase().equals(RDFResourceRole.cls.name())){
-				isClassWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())){
-				isConceptWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())){
-				isConceptSchemeWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.individual.name().toLowerCase())){
-				isInstanceWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())){
-				isPropertyWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
-				isCollectionWanted = true;
-			} 
-		}
-		//@formatter:off
-		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
-				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
-			
-			String msg = "the serch roles should be at least one of: "+
-					RDFResourceRole.cls.name()+", "+
-					RDFResourceRole.concept.name()+", "+
-					RDFResourceRole.conceptScheme.name()+", "+
-					RDFResourceRole.individual+", "+
-					RDFResourceRole.property.name() +" or "+
-					RDFResourceRole.skosCollection.name();
-			//TODO change the exception (previously was a fail)
-			throw new IllegalArgumentException(msg);
-			
-		}
-		//@formatter:on
-		
-		if(searchMode.toLowerCase().contains(START_SEARCH_MODE)){
-			searchModeSelected = START_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
-			searchModeSelected = CONTAINS_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
-			searchModeSelected = END_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
-			searchModeSelected = EXACT_SEARCH_MODE;
-		}
-		
-		if(searchModeSelected == null){
-			String msg = "the serch mode should be at one of: "+START_SEARCH_MODE+", "+
-			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE;
-			//TODO change the exception (previously was a fail)
-			throw new IllegalArgumentException(msg);
-		}
-		
+		//create the query to be executed for the search
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
 			"\nWHERE{"; // +
 		//get the candidate resources
-		query+=filterResourceTypeAndScheme("?resource", "?type", isClassWanted, isInstanceWanted, 
-				isPropertyWanted, isConceptWanted, isConceptSchemeWanted, isCollectionWanted, schemes);
+		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
+				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
+				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
+				serviceForSearches.isCollectionWanted(), schemes);
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
@@ -186,207 +121,18 @@ public class Search extends STServiceAdapter {
 				searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
 				"\n}"+
 		//add the show part according to the Lexicalization Model
-				addShowPart("?show", langArray)+
+				ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), getProject())+
 				"\n}";
 		//@formatter:on
 		
 		logger.debug("query = "+query);
+		System.out.println("query = "+query); // da cancellare
 		
-		TupleQuery tupleQuery;
-		tupleQuery = getManagedConnection().prepareTupleQuery(query);
-		tupleQuery.setIncludeInferred(false);
-		
-		
-		//set the dataset to search just in the UserNamedGraphs
-		SimpleDataset dataset = new SimpleDataset();
-		Resource[] namedGraphs = getUserNamedGraphs();
-		for(Resource namedGraph : namedGraphs){
-			if(namedGraph instanceof IRI){
-				dataset.addDefaultGraph((IRI) namedGraph);
-			}
-		}
-		tupleQuery.setDataset(dataset);
-		
-		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
-		
-		Map<String, ValueTypeAndShow> propertyMap = new HashMap<String, ValueTypeAndShow>();
-		Map<String, ValueTypeAndShow> otherResourcesMap = new HashMap<String, ValueTypeAndShow>();
-		
-		while (tupleBindingsIterator.hasNext()) {
-			BindingSet tupleBindings = tupleBindingsIterator.next();
-			Value value = tupleBindings.getBinding("resource").getValue();
-
-			if (!(value instanceof IRI)) {
-				continue;
-			}
-
-			RDFResourceRole role = null;
-			boolean isProp = false;
-			//since there are more than one element in the input role array, see the resource
-			String type = tupleBindings.getBinding("type").getValue().stringValue();
-			
-			role = getRoleFromType(type);
-			
-			if(role.equals(RDFResourceRole.cls)){
-				//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
-				// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
-				// when the parent class is Owl:Thing the service filters out those classes with 
-				// NoLanguageResourcePredicate)
-				String resNamespace = value.stringValue();
-				if(resNamespace.equals(XMLSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
-						|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
-					continue;
-				}
-				if(!otherResourcesMap.containsKey(value.stringValue())){
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-				}
-				
-			} else if(role.equals(RDFResourceRole.individual)){
-				//there a special section for the individual, since an individual can belong to more than a
-				// class, so the result set could have more tuple regarding a single individual, this way
-				// should speed up the process
-				if(!otherResourcesMap.containsKey(value.stringValue())){
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-				}
-			} else if(role.equals(RDFResourceRole.property) || 
-					role.equals(RDFResourceRole.annotationProperty) || 
-					role.equals(RDFResourceRole.datatypeProperty) || 
-					role.equals(RDFResourceRole.objectProperty) || 
-					role.equals(RDFResourceRole.ontologyProperty) ) {
-				isProp = true;
-				//check if the property was already added before (with a different type)
-				if(propertyMap.containsKey(value.stringValue())){
-					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(value.stringValue());
-					if(prevValueTypeAndShow.getRole().equals(RDFResourceRole.property)){
-						//the previous value was property, now it has a different role, so replace the old 
-						// one with the new one
-						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-						propertyMap.put(value.stringValue(), valueTypeAndShow);
-					}
-				} else{
-					//the property map did not have a previous value, so add this one without any checking
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-					propertyMap.put(value.stringValue(), valueTypeAndShow);
-				}
-			} else{
-				//it is a concept, a conceptScheme or a collection, just add it to the otherMap
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-			}
-			
-			if(tupleBindings.hasBinding("show")){
-				Value showRes = tupleBindings.getBinding("show").getValue();
-				if(showRes instanceof Literal){
-					//check if the show belong to a property or to another type
-					if(isProp){
-						if(!propertyMap.get(value.stringValue()).hasShowValue((Literal) showRes)) {
-							propertyMap.get(value.stringValue()).addShow((Literal) showRes);
-						}
-					} else{
-						//is not a property
-						if(!otherResourcesMap.get(value.stringValue()).hasShowValue((Literal) showRes)){
-							otherResourcesMap.get(value.stringValue()).addShow((Literal) showRes);
-						}
-					}
-				}
-			}
-		}
-		
-		//now iterate over the 2 maps and construct the responses
-		for(String key : otherResourcesMap.keySet()){
-			ValueTypeAndShow valueTypeAndShow = otherResourcesMap.get(key);
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
-			annotatedValue.setAttribute("explicit", true);
-			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent()){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
-			} 
-			results.add(annotatedValue);
-		}
-		for(String key : propertyMap.keySet()){
-			ValueTypeAndShow valueTypeAndShow = propertyMap.get(key);
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
-			annotatedValue.setAttribute("explicit", true);
-			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent() ){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
-			} 
-			results.add(annotatedValue);
-		}
-		return results;
+		return serviceForSearches.executeGenericSearchQuery(query, getUserNamedGraphs(), getManagedConnection());
 	}
 	
 	
-	private class ValueTypeAndShow{
-		IRI resource  = null;
-		//String show = null;
-		List<Literal> showList = null;
-		RDFResourceRole role = null;
-		
-		public ValueTypeAndShow(IRI resource, RDFResourceRole role) {
-			this.resource = resource;
-			this.role = role;
-			this.showList = new ArrayList<Literal>();
-		}
-		
-		public void addShow(Literal show){
-			if(!showList.contains(show)){
-				showList.add(show);
-			}
-		}
-		
-		public void addShowList(List<Literal> showList){
-			for(Literal literal : showList){
-				if(!this.showList.contains(literal)){
-					this.showList.add(literal);
-				}
-			}
-		}
-
-		public IRI getResource() {
-			return resource;
-		}
-
-		
-		public boolean hasShowValue(Literal show){
-			return showList.contains(show);
-		}
-		
-		public List<Literal> getShowList() {
-			return showList;
-		}
-		
-		public String getShowAsString(){
-			boolean first = true;
-			String showAsString = "";
-			for(Literal literal : showList){
-				if(!first){
-					showAsString+=", ";
-				}
-				showAsString+=literal.getLabel();
-				if(literal.getLanguage().isPresent()){
-					showAsString+=" ("+literal.getLanguage().get()+")";
-				}
-				first = false;
-			}
-			return showAsString;
-		}
-		
-
-		public RDFResourceRole getRole() {
-			return role;
-		}
-		
-		public boolean isShowPresent(){
-			if(!showList.isEmpty()){
-				return true;
-			}
-			return false;
-		}
-		
-	}
+	
 	
 	
 	@STServiceOperation
@@ -395,40 +141,11 @@ public class Search extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString, boolean useLocalName, 
 			boolean useURI, String searchMode, @Optional String lang) throws IllegalStateException, STPropertyAccessException {
 		
-		//it can be null, * or a list of languages
-		String languagesPropValue = STPropertiesManager.getProjectPreference(
-			       STPropertiesManager.PREF_LANGUAGES, getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-		String [] langArray;
-		if(languagesPropValue == null){
-			langArray = new String[]{"*"};
-		} else{
-			langArray = languagesPropValue.split(",");
-		}
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		
-		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
-		
-		String searchModeSelected = null;
-		
-		
-		if(searchString.isEmpty()){
-			//TODO change the exception (previously was a fail)
-			throw new IllegalArgumentException("the serchString cannot be empty");
-		}
-
-		if(searchMode.toLowerCase().contains(START_SEARCH_MODE)){
-			searchModeSelected = START_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
-			searchModeSelected = CONTAINS_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
-			searchModeSelected = END_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
-			searchModeSelected = EXACT_SEARCH_MODE;
-		}
-		
-		if(searchModeSelected == null){
-			//TODO change the exception (previously was a fail)
-			throw new IllegalArgumentException("the serchString cannot be empty");
-		}
+		String []rolesArray = {RDFResourceRole.individual.name()};
+		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, 
+				searchMode, getProject());
 		
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
@@ -455,7 +172,6 @@ public class Search extends STServiceAdapter {
 					"\nUNION";
 		}
 		
-		
 		//check if the request want to search in the complete URI
 		if(useURI){
 			query+="\n{" +
@@ -470,70 +186,16 @@ public class Search extends STServiceAdapter {
 				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
 				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
 				"\n}";
-
 		
 		//add the show part in SPARQL query
-		query+=addShowPart("?show", langArray);
+		query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), getProject());
 		
 		query+="\n}";
 		//@formatter:on
 		
 		logger.debug("query = "+query);
 		
-		TupleQuery tupleQuery = getManagedConnection().prepareTupleQuery(query);
-		tupleQuery.setIncludeInferred(false);
-		
-		//set the dataset to search just in the UserNamedGraphs
-		SimpleDataset dataset = new SimpleDataset();
-		Resource[] namedGraphs = getUserNamedGraphs();
-		for(Resource namedGraph : namedGraphs){
-			if(namedGraph instanceof IRI){
-				dataset.addDefaultGraph((IRI) namedGraph);
-			}
-		}
-		tupleQuery.setDataset(dataset);
-		
-		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-		// Element collectionElem = XMLHelp.newElement(dataElement, "collection");
-		//List<String> addedIndividualList = new ArrayList<String>();
-		Map<String, ValueTypeAndShow> individualsMap = new HashMap<String, ValueTypeAndShow>();
-		while (tupleQueryResult.hasNext()) {
-			BindingSet bindingSet = tupleQueryResult.next();
-			Value resourceURI = bindingSet.getValue("resource");
-
-			if (!(resourceURI instanceof IRI)) {
-				continue;
-			}
-			
-			if(!individualsMap.containsKey(resourceURI.stringValue())){
-				String type = bindingSet.getBinding("type").getValue().stringValue();
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) resourceURI, getRoleFromType(type));
-				individualsMap.put(resourceURI.stringValue(), valueTypeAndShow);
-			}
-			
-			if(bindingSet.hasBinding("show")){
-				Value showRes = bindingSet.getValue("show");
-				if(showRes instanceof Literal){
-					if(!individualsMap.get(resourceURI.stringValue()).hasShowValue((Literal) showRes)){
-						individualsMap.get(resourceURI.stringValue()).addShow((Literal) showRes);
-					}
-				}
-			}
-		}
-		
-		for(String key : individualsMap.keySet()){
-			ValueTypeAndShow valueTypeAndShow = individualsMap.get(key);
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
-			annotatedValue.setAttribute("explicit", true);
-			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent()){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
-			} 
-			results.add(annotatedValue);
-		}
-		
-		
-		return results;
+		return serviceForSearches.executeInstancesSearchQuery(query, getUserNamedGraphs(), getManagedConnection());
 	}
 
 	@STServiceOperation
@@ -563,11 +225,11 @@ public class Search extends STServiceAdapter {
 						"\n}";
 			} else if(schemesIRI != null &&schemesIRI.size()>1){
 				query += "\n?broader " + inSchemeOrTopConcept + " ?scheme1 ."+
-						filterWithOrValues(schemesIRI, "?scheme1") +
+						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme1") +
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
 						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme2 ." +
-						filterWithOrValues(schemesIRI, "?scheme2") +
+						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme2") +
 						"\n}";
 			}
 			else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is wither null or an empty list
@@ -585,7 +247,7 @@ public class Search extends STServiceAdapter {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " ?scheme3 . "+
-				filterWithOrValues(schemesIRI, "?scheme3");
+						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme3");
 			}
 			query +="\n}" + 
 					"\n}" +
@@ -601,7 +263,7 @@ public class Search extends STServiceAdapter {
 			} else if(schemesIRI != null && schemesIRI.size()>1){
 				query+="\n<"+resourceURI.stringValue()+"> " +
 						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme4 ."+
-						filterWithOrValues(schemesIRI, "?scheme4");
+						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme4");
 			} else{
 				query+="\n<"+resourceURI.stringValue()+"> " +
 						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) _:b1";
@@ -850,23 +512,6 @@ public class Search extends STServiceAdapter {
 	}
 	
 	
-	private String filterWithOrValues(List<IRI> IRIList, String variable){
-		if(!variable.startsWith("?")){
-			variable+="?"+variable;
-		}
-		String schemesInFilter = "\nFILTER (";
-		boolean first=true;
-		for(IRI iri : IRIList){
-			if(!first){
-				schemesInFilter+=" || ";
-			}
-			first=false;
-			schemesInFilter+=variable+"="+NTriplesUtil.toNTriplesString(iri);
-		}
-		schemesInFilter+= ") \n";
-		return schemesInFilter;
-	}
-	
 //	private String addFilterForRsourseType(String variable, boolean isClassWanted, 
 //			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted) {
 //		boolean otherWanted = false;
@@ -926,87 +571,6 @@ public class Search extends STServiceAdapter {
 //	}
 	
 	
-	private String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
-			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isConceptSchemeWanted, boolean isCollectionWanted, List<IRI> schemes){
-		boolean otherWanted = false;
-		String filterQuery = "";
-		
-		if(isClassWanted){
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+" = <"+OWL.CLASS.stringValue()+"> || " +
-							type+" = <"+RDFS.CLASS.stringValue()+"> )" +
-					"\n}";
-			
-			otherWanted = true;
-		}
-		if(isPropertyWanted){
-			if(otherWanted){
-				filterQuery += "\nUNION ";
-			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+ " = <"+RDF.PROPERTY.stringValue()+"> || "+
-					type+" = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "+
-					type+" = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "+
-					type+" = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
-					type+" = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
-					"\n}";
-			otherWanted = true;
-		}
-		if(isConceptWanted){
-			if(otherWanted){
-				filterQuery += "\nUNION ";
-			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.CONCEPT.stringValue()+">)";
-			if(schemes!=null && schemes.size()==1){
-				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> <"+schemes.get(0).stringValue()+"> .";
-			} else if(schemes!=null && schemes.size()>1){
-				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> ?scheme0 . "+
-						filterWithOrValues(schemes, "?scheme0");
-			}
-			
-			filterQuery += "\n}";
-			
-			otherWanted = true;
-		}
-		if(isConceptSchemeWanted){
-			if(otherWanted){
-				filterQuery += "\nUNION ";
-			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
-			
-			filterQuery += "\n}";
-			
-			otherWanted = true;
-		}
-		if(isCollectionWanted) {
-			if(otherWanted){
-				filterQuery += "\nUNION ";
-			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.COLLECTION.stringValue()+"> || " +
-					 		 type+" = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> )" +
-					 "\n}";
-			
-			otherWanted = true;
-		}
-		if(isInstanceWanted) {
-			if(otherWanted){
-				filterQuery += "\nUNION ";
-			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
-					//"\n?type a ?classType ." +
-					//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
-					"\n}";
-				
-				otherWanted = true;
-		}
-		
-		return filterQuery;
-	}
 	
 
 	private String searchModePrepareQuery(String variable, String value, String searchMode){
@@ -1025,47 +589,9 @@ public class Search extends STServiceAdapter {
 		return query;
 	}
 	
-	private String addShowPart(String variable, String[] langArray){
-		//according to the Lexicalization Model, prepare the show considering one of the following properties:
-		// - rdfs:label (Project.RDFS_LEXICALIZATION_MODEL)
-		// - skos:prefLabel (Project.SKOS_LEXICALIZATION_MODEL)
-		// - skosxl:prefLabel -> skosxl:literalForm (Project.SKOSXL_LEXICALIZATION_MODEL)
-		IRI lexModel = getProject().getLexicalizationModel();
-		String query="\nOPTIONAL" +
-				"\n{";
-		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){
-			query+="\n?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?show .";
-		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
-			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?show .";
-		} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			query+="\n?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?skosPrefLabel ." +
-					"\n?skosPrefLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) +" ?show .";
-		}
-		query+=filterAccordingToLanguage("?show", langArray) +
-				"\n}";
-		
-		return query;
-	}
 	
 	
-	private String filterAccordingToLanguage(String variable, String[] languages){
-		String query = "";
-		if(languages.length==1 && languages[0].equals("*")){
-			//all languages are selected, so no filter should apply, do nothing
-		} else{
-			query = "FILTER(";
-			boolean first = true;
-			for(String lang : languages){
-				//iterate over the languages
-				if(!first){
-					query += " || ";
-				} query += "lang("+variable+") = \""+lang+"\"";
-				first = false;
-			}
-			query += ")";
-		}
-		return query;
-	}
+	
 	
 	private void getSubResourcesListUsingResourceFroHierarchy(ResourceForHierarchy resource, 
 			List<String> currentPathList, List<List<String>> pathList, 
@@ -1165,35 +691,6 @@ public class Search extends STServiceAdapter {
 		}
 	}
 	
-	private RDFResourceRole getRoleFromType(String typeURI){
-		RDFResourceRole role;
-		if(typeURI.equals(OWL.CLASS.stringValue()) || typeURI.equals(RDFS.CLASS.stringValue()) ){
-			role = RDFResourceRole.cls;
-		} else if(typeURI.equals(RDF.PROPERTY.stringValue())){
-			role = RDFResourceRole.property;
-		} else if(typeURI.equals(OWL.OBJECTPROPERTY.stringValue())){
-			role = RDFResourceRole.objectProperty;
-		} else if(typeURI.equals(OWL.DATATYPEPROPERTY.stringValue())){
-			role = RDFResourceRole.datatypeProperty;
-		} else if(typeURI.equals(OWL.ANNOTATIONPROPERTY.stringValue())){
-			role = RDFResourceRole.annotationProperty;
-		} else if(typeURI.equals(OWL.ONTOLOGYPROPERTY.stringValue())){
-			role = RDFResourceRole.ontologyProperty;
-		}  else if(typeURI.equals(SKOS.CONCEPT.stringValue())){
-			role = RDFResourceRole.concept;
-		} else if(typeURI.equals(SKOS.COLLECTION.stringValue())){
-			role = RDFResourceRole.skosCollection;
-		} else if(typeURI.equals(SKOS.ORDERED_COLLECTION.stringValue())){
-			role = RDFResourceRole.skosOrderedCollection;
-		} else if(typeURI.equals(SKOSXL.LABEL.stringValue())){
-			role = RDFResourceRole.xLabel;
-		} else if(typeURI.equals(SKOS.CONCEPT_SCHEME.stringValue())){
-			role = RDFResourceRole.conceptScheme;
-		} else {
-			role = RDFResourceRole.individual;
-		} 
-		
-		return role;
-	}
+	
 	
 }
