@@ -16,6 +16,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -58,6 +60,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.ontology.ImportMethod;
 import it.uniroma2.art.semanticturkey.ontology.ImportModality;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
+import it.uniroma2.art.semanticturkey.ontology.ImportStatus.Values;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
@@ -138,32 +141,36 @@ public class OntologyManagerImpl implements OntologyManager {
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException {
 		addOntologyImportFromLocalFile(baseURI, fromLocalFilePath, toLocalFile, ImportModality.USER, true,
-				conn, transitiveImportAllowance, failedImports);
+				conn, transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	public void addOntologyImportFromLocalFile(String baseURI, String fromLocalFilePath, String toLocalFile,
 			ImportModality modality, boolean updateImportStatement, RepositoryConnection conn,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws OntologyManagerException {
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
+			Set<IRI> importedOntologies) throws OntologyManagerException {
+
 		logger.debug("adding: " + baseURI + " from localfile: " + fromLocalFilePath + " to Mirror: "
 				+ toLocalFile);
 		File inputFile = new File(fromLocalFilePath);
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 		try {
+			checkOntologyNotImported(conn, baseURI, importedOntologies);
+
 			RDFFormat rdfFormat = Rio.getParserFormatForFileName(inputFile.getName())
 					.orElseThrow(() -> new OntologyManagerException(
 							"Could not match a parser for file name: " + inputFile.getName()));
 			RDFParser parser = RDFParserRegistry.getInstance().get(rdfFormat).map(RDFParserFactory::getParser)
 					.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
-			Model capturedImports = new LinkedHashModel();
+			Model capturedOntologyMetadata = new LinkedHashModel();
 			InputStream in = new FileInputStream(inputFile);
 			IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
-					baseURI, in, parser, capturedImports);
+					baseURI, in, parser, capturedOntologyMetadata);
 
 			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 			notifiedAddedOntologyImport(fromLocalFile, baseURI, fromLocalFilePath, mirFile, modality,
-					updateImportStatement, conn, capturedImports, transitiveImportAllowance, failedImports);
+					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
+					failedImports, importedOntologies);
 		} catch (OntologyManagerException e) {
 			throw e;
 		} catch (Exception e) {
@@ -176,31 +183,33 @@ public class OntologyManagerImpl implements OntologyManager {
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException {
 		addOntologyImportFromMirror(baseURI, mirFileString, ImportModality.USER, true, conn,
-				transitiveImportAllowance, failedImports);
+				transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	public void addOntologyImportFromMirror(String baseURI, String mirFileString, ImportModality modality,
 			boolean updateImportStatement, RepositoryConnection conn,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws OntologyManagerException {
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
+			Set<IRI> importedOntologies) throws OntologyManagerException {
 		MirroredOntologyFile mirFile = new MirroredOntologyFile(mirFileString);
 		File physicalMirrorFile = new File(mirFile.getAbsolutePath());
 		try {
+			checkOntologyNotImported(conn, baseURI, importedOntologies);
 
 			RDFFormat rdfFormat = Rio.getParserFormatForFileName(physicalMirrorFile.getName())
 					.orElseThrow(() -> new OntologyManagerException(
 							"Could not match a parser for file name: " + physicalMirrorFile.getName()));
 			RDFParser parser = RDFParserRegistry.getInstance().get(rdfFormat).map(RDFParserFactory::getParser)
 					.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
-			Model capturedImports = new LinkedHashModel();
+			Model capturedOntologyMetadata = new LinkedHashModel();
 			InputStream in = new FileInputStream(physicalMirrorFile);
 			IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
-					baseURI, in, parser, capturedImports);
+					baseURI, in, parser, capturedOntologyMetadata);
 
 			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 			notifiedAddedOntologyImport(fromOntologyMirror, baseURI, null, mirFile, modality,
-					updateImportStatement, conn, capturedImports, transitiveImportAllowance, failedImports);
+					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
+					failedImports, importedOntologies);
 		} catch (OntologyManagerException e) {
 			throw e;
 		} catch (Exception e) {
@@ -213,14 +222,15 @@ public class OntologyManagerImpl implements OntologyManager {
 			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException {
 		addOntologyImportFromWeb(baseURI, sourceURL, rdfFormat, ImportModality.USER, true, conn,
-				transitiveImportAllowance, failedImports);
+				transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	public void addOntologyImportFromWeb(String baseURI, String sourceURL, RDFFormat rdfFormat,
 			ImportModality modality, boolean updateImportStatement, RepositoryConnection conn,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws OntologyManagerException {
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
+			Set<IRI> importedOntologies) throws OntologyManagerException {
 		try {
+			checkOntologyNotImported(conn, baseURI, importedOntologies);
 
 			if (baseURI == null) {
 				baseURI = sourceURL;
@@ -231,7 +241,73 @@ public class OntologyManagerImpl implements OntologyManager {
 					baseURI, sourceURL, rdfFormat, caputeredImports);
 			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 			notifiedAddedOntologyImport(fromWeb, baseURI, sourceURL, null, modality, updateImportStatement,
-					conn, caputeredImports, transitiveImportAllowance, failedImports);
+					conn, caputeredImports, transitiveImportAllowance, failedImports, importedOntologies);
+		} catch (OntologyManagerException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new OntologyManagerException(e);
+		}
+	}
+
+	@Override
+	public void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI, String sourceURL,
+			String toLocalFile, RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			throws MalformedURLException, RDF4JException, OntologyManagerException {
+		addOntologyImportFromWebToMirror(baseURI, sourceURL, toLocalFile, rdfFormat, ImportModality.USER,
+				true, conn, transitiveImportAllowance, failedImports, new HashSet<>());
+	}
+
+	public void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
+			RDFFormat rdfFormat, ImportModality modality, boolean updateImportStatement,
+			RepositoryConnection conn, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports, Set<IRI> importedOntologies) throws OntologyManagerException {
+
+		// first of all, try to download the ontology in the mirror file in the format specified by the user
+		// (or inferred from the extention of the file). Then, if this download was done without any problem,
+		// import the ontology
+
+		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
+		RDFFormat guessedFormat = RDFFormat
+				.matchFileName(mirFile.getLocalName(), RDFParserRegistry.getInstance().getKeys())
+				.orElse(null);
+
+		if (rdfFormat != null) {
+			// check it the input rdfFormat is compliant with the file extension
+			if (guessedFormat == null || rdfFormat != guessedFormat) {
+				// change the file extention according to the input RDFFormat
+				String newLocalFile = toLocalFile + "." + rdfFormat.getDefaultFileExtension();
+				mirFile = new MirroredOntologyFile(newLocalFile);
+			}
+		} else {
+			if (guessedFormat == null) {
+				String newLocalFile = toLocalFile + "." + RDFFormat.RDFXML.getDefaultFileExtension();
+				mirFile = new MirroredOntologyFile(newLocalFile);
+			}
+		}
+
+		try {
+			checkOntologyNotImported(conn, baseURI, importedOntologies);
+
+			Model capturedOntologyMetadata = new LinkedHashModel();
+			// try to download the ontology
+			notifiedAddedOntologyImport(fromWebToMirror, baseURI, sourceURL, mirFile, modality,
+					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
+					failedImports, importedOntologies);
+
+			// if the download was achieved, import the ontology in the model
+
+			IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
+					baseURI, sourceURL, rdfFormat, capturedOntologyMetadata);
+			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
+
+			// this time sends a notification with the spied ontology imports (but change the import method
+			// so that it won't be created another mirror entry)
+
+			notifiedAddedOntologyImport(ImportMethod.fromWeb, baseURI, sourceURL, mirFile, modality,
+					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
+					failedImports, importedOntologies);
+
 		} catch (OntologyManagerException e) {
 			throw e;
 		} catch (Exception e) {
@@ -287,77 +363,17 @@ public class OntologyManagerImpl implements OntologyManager {
 		BackgroundGraphResult concurrentIter = new BackgroundGraphResult(parser, in, null, baseURI);
 		new Thread(concurrentIter).start();
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = new IterationSpy<>(
-				concurrentIter, stmt -> stmt.getPredicate().equals(OWL.IMPORTS),
+				concurrentIter,
+				stmt -> stmt.getPredicate().equals(OWL.IMPORTS)
+						|| (stmt.getPredicate().equals(RDF.TYPE) && stmt.getObject().equals(OWL.ONTOLOGY)),
 				stmt -> caputeredImports.add(stmt));
 		return spyConcurrentIter;
 	}
 
-	@Override
-	public void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI, String sourceURL,
-			String toLocalFile, RDFFormat rdfFormat,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, RDF4JException, OntologyManagerException {
-		addOntologyImportFromWebToMirror(baseURI, sourceURL, toLocalFile, rdfFormat, ImportModality.USER,
-				true, conn, transitiveImportAllowance, failedImports);
-	}
-
-	public void addOntologyImportFromWebToMirror(String baseURI, String sourceURL, String toLocalFile,
-			RDFFormat rdfFormat, ImportModality modality, boolean updateImportStatement,
-			RepositoryConnection conn, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws OntologyManagerException {
-
-		// first of all, try to download the ontology in the mirror file in the format specified by the user
-		// (or inferred from the extention of the file). Then, if this download was done without any problem,
-		// import the ontology
-
-		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
-		RDFFormat guessedFormat = RDFFormat
-				.matchFileName(mirFile.getLocalName(), RDFParserRegistry.getInstance().getKeys())
-				.orElse(null);
-
-		if (rdfFormat != null) {
-			// check it the input rdfFormat is compliant with the file extension
-			if (guessedFormat == null || rdfFormat != guessedFormat) {
-				// change the file extention according to the input RDFFormat
-				String newLocalFile = toLocalFile + "." + rdfFormat.getDefaultFileExtension();
-				mirFile = new MirroredOntologyFile(newLocalFile);
-			}
-		} else {
-			if (guessedFormat == null) {
-				String newLocalFile = toLocalFile + "." + RDFFormat.RDFXML.getDefaultFileExtension();
-				mirFile = new MirroredOntologyFile(newLocalFile);
-			}
-		}
-
-		try {
-			Model capturedImports = new LinkedHashModel();
-			// try to download the ontology
-			notifiedAddedOntologyImport(fromWebToMirror, baseURI, sourceURL, mirFile, modality,
-					updateImportStatement, conn, capturedImports, transitiveImportAllowance, failedImports);
-
-			// if the download was achieved, import the ontology in the model
-
-			IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
-					baseURI, sourceURL, rdfFormat, capturedImports);
-			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
-
-			// this time sends a notification with the spied ontology imports (but change the import method
-			// so that it won't be created another mirror entry)
-
-			notifiedAddedOntologyImport(ImportMethod.fromWeb, baseURI, sourceURL, mirFile, modality,
-					updateImportStatement, conn, capturedImports, transitiveImportAllowance, failedImports);
-
-		} catch (OntologyManagerException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new OntologyManagerException(e);
-		}
-	}
-
 	private void notifiedAddedOntologyImport(ImportMethod method, String baseURI, String sourcePath,
 			OntFile localFile, ImportModality mod, boolean updateImportStatement, RepositoryConnection conn,
-			Model capturedImports, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws OntologyManagerException {
+			Model capturedOntologyMetadata, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports, Set<IRI> importedOntologies) throws OntologyManagerException {
 		logger.debug("notifying added ontology import with method: " + method + " with baseuri: " + baseURI
 				+ " sourcePath: " + sourcePath + " localFile: " + localFile + " importModality: " + mod
 				+ ", thought for updating the import status: " + updateImportStatement);
@@ -369,16 +385,15 @@ public class OntologyManagerImpl implements OntologyManager {
 			// happen when the given URI is a successful URL for retrieving the ontology but it is not the URI
 			// of the ontology
 
-			Set<IRI> declOnts = Models.subjectIRIs(capturedImports.filter(null, RDF.TYPE, OWL.ONTOLOGY));
+			Set<IRI> declOnts = Models
+					.subjectIRIs(capturedOntologyMetadata.filter(null, RDF.TYPE, OWL.ONTOLOGY));
 			// the import ont does not contain the declaration of itself as an ont and it contains at
-			// least
-			// one declaration (probably its own one)
+			// least one declaration (probably its own one)
 			if (!declOnts.contains(ont) && !declOnts.isEmpty()) {
 				// extracting the real baseURI of the imported ontology
 				IRI realURI = declOnts.iterator().next();
 				// checking that the realURI has not already been imported, by checking the existence of
-				// its
-				// NG in the current data
+				// its NG in the current data
 				if (conn.hasStatement(null, null, null, false, realURI)
 						|| validationEnabled && conn.hasStatement(null, null, null, false, ValidationUtilities
 								.getAddGraphIfValidatonEnabled(validationEnabled, realURI))) {
@@ -429,8 +444,10 @@ public class OntologyManagerImpl implements OntologyManager {
 			// logger.debug("refreshing the import situation after adding new ontology: " + ont);
 			// refreshImportsForOntology(ont, mod);
 
-			recoverImportsForOntology(conn, ont, mod, capturedImports, transitiveImportAllowance,
-					failedImports);
+			importedOntologies.add(ont);
+
+			recoverImportsForOntology(conn, ont, mod, capturedOntologyMetadata, transitiveImportAllowance,
+					failedImports, importedOntologies);
 
 			if (updateImportStatement) {
 				// if updateImportStatement==true then it is an explicit request from the user so in this
@@ -455,15 +472,18 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	private void recoverImportsForOntology(RepositoryConnection conn, IRI ont, ImportModality mod,
-			Model capturedImports, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws RDF4JException, MalformedURLException, OntologyManagerException {
-		for (IRI importedOnt : Models.objectIRIs(capturedImports.filter(ont, OWL.IMPORTS, null))) {
-			recoverOntology(conn, importedOnt, mod, transitiveImportAllowance, failedImports);
+			Model capturedOntologyMetadata, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports, Set<IRI> importedOntologies)
+			throws RDF4JException, MalformedURLException, OntologyManagerException {
+		for (IRI importedOnt : Models.objectIRIs(capturedOntologyMetadata.filter(ont, OWL.IMPORTS, null))) {
+			recoverOntology(conn, importedOnt, mod, transitiveImportAllowance, failedImports,
+					importedOntologies);
 		}
 	}
 
 	private void recoverOntology(RepositoryConnection conn, IRI importedOntology, ImportModality mod,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
+			Set<IRI> importedOntologies)
 			throws RDF4JException, MalformedURLException, OntologyManagerException {
 		logger.debug("recovering ontology: " + importedOntology);
 		String baseURI = importedOntology.stringValue();
@@ -487,29 +507,34 @@ public class OntologyManagerImpl implements OntologyManager {
 		// new ImportStatus(ImportStatus.Values.NG, null));
 		// }
 
+		Values importStatus = getImportStatus(conn, baseURI, importedOntologies).getValue();
+
 		boolean ontologyImported = false;
 
-		for (ImportMethod method : transitiveImportAllowance.getAllowedMethods()) {
-			try {
-				if (method == ImportMethod.fromWeb) {
-					addOntologyImportFromWeb(baseURI, baseURI, null, mod, false, conn,
-							transitiveImportAllowance, failedImports);
-				} else if (method == ImportMethod.fromOntologyMirror) {
-					String mirrorEntry = OntologiesMirror.getMirroredOntologyEntry(baseURI);
-					if (mirrorEntry != null) {
-						addOntologyImportFromMirror(baseURI, mirrorEntry, mod, false, conn,
-								transitiveImportAllowance, failedImports);
+		if (importStatus == Values.FAILED) {
+			for (ImportMethod method : transitiveImportAllowance.getAllowedMethods()) {
+				try {
+					if (method == ImportMethod.fromWeb) {
+						addOntologyImportFromWeb(baseURI, baseURI, null, mod, false, conn,
+								transitiveImportAllowance, failedImports, importedOntologies);
+					} else if (method == ImportMethod.fromOntologyMirror) {
+						String mirrorEntry = OntologiesMirror.getMirroredOntologyEntry(baseURI);
+						if (mirrorEntry != null) {
+							addOntologyImportFromMirror(baseURI, mirrorEntry, mod, false, conn,
+									transitiveImportAllowance, failedImports, importedOntologies);
+						}
 					}
+
+					ontologyImported = true;
+					break;
+				} catch (OntologyManagerException e) {
+					e.printStackTrace();
+					// Swallow exception, and tries with the next method
 				}
-
-				ontologyImported = true;
-				break;
-			} catch (OntologyManagerException e) {
-				e.printStackTrace();
-				// Swallow exception, and tries with the next method
 			}
+		} else if (importStatus == Values.OK) {
+			ontologyImported = true;
 		}
-
 		if (ontologyImported) {
 			failedImports.remove(conn.getValueFactory().createIRI(baseURI));
 		} else {
@@ -594,14 +619,47 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public ImportStatus getImportStatus(String baseURI) {
-		return Repositories.get(repository, conn -> {
-			if (conn.hasStatement(null, null, null, false, conn.getValueFactory().createIRI(baseURI))) {
-				return new ImportStatus(ImportStatus.Values.OK, null);
-			} else {
-				return new ImportStatus(ImportStatus.Values.FAILED, null);
+	public ImportStatus getImportStatus(RepositoryConnection conn, String baseURI) {
+		return getImportStatus(conn, baseURI, Collections.emptySet());
+	}
+
+	private ImportStatus getImportStatus(RepositoryConnection conn, String baseURI,
+			Set<IRI> importedOntologies) {
+		IRI ont = SimpleValueFactory.getInstance().createIRI(baseURI);
+
+		if (importedOntologies.contains(ont) || QueryResults.asSet(conn.getContextIDs()).contains(ont)) {
+			return new ImportStatus(ImportStatus.Values.OK, null);
+		}
+
+		if (validationEnabled) {
+			if (conn.hasStatement(null, null, null, false,
+					ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont))) {
+				return new ImportStatus(ImportStatus.Values.STAGED_ADDITION, null);
 			}
-		});
+
+			if (conn.hasStatement(null, null, null, false,
+					ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont))) {
+				return new ImportStatus(ImportStatus.Values.STAGED_REMOVAL, null);
+			}
+		}
+
+		return new ImportStatus(ImportStatus.Values.FAILED, null);
+	}
+
+	private void checkOntologyNotImported(RepositoryConnection conn, String baseURI,
+			Set<IRI> importedOntologies) throws OntologyManagerException {
+		switch (getImportStatus(conn, baseURI, importedOntologies).getValue()) {
+		case FAILED:
+			break;
+		case OK:
+			throw new OntologyManagerException("Ontology already imported: " + baseURI);
+		case STAGED_ADDITION:
+			throw new OntologyManagerException("Ontology import already staged for addition: " + baseURI);
+		case STAGED_REMOVAL:
+			throw new OntologyManagerException("Ontology import already staged for removal: " + baseURI);
+		default:
+			throw new OntologyManagerException("Unknown import status for ontology: " + baseURI);
+		}
 	}
 
 	/**
@@ -652,8 +710,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	private void checkImportFailed(RepositoryConnection conn, String baseURI)
 			throws ImportManagementException, RepositoryException {
 
-		if ((conn.hasStatement(null, null, null, false,
-				conn.getValueFactory().createIRI(baseURI))) != false) {
+		if (getImportStatus(conn, baseURI, Collections.emptySet()).getValue() != ImportStatus.Values.FAILED) {
 			throw new ImportManagementException("the import for: " + baseURI
 					+ " should be a FAILED import for this request to make sense, while it is not");
 		}
@@ -669,13 +726,13 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		// TODO: check whether ImportModality.USER is correct
 
-		Model capturedImports = new LinkedHashModel();
+		Model capturedOntologyMetadata = new LinkedHashModel();
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
-				baseURI, altURL, null, capturedImports);
+				baseURI, altURL, null, capturedOntologyMetadata);
 		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 		notifiedAddedOntologyImport(fromWeb, baseURI, altURL, null, ImportModality.USER, false, conn,
-				capturedImports, transitiveImportAllowance, failedImports);
+				capturedOntologyMetadata, transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	@Override
@@ -687,25 +744,25 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		checkImportFailed(conn, baseURI);
 
-		Model capturedImports = new LinkedHashModel();
+		Model capturedOntologyMetadata = new LinkedHashModel();
 
 		// TODO: check whether ImportModality.USER is correct
 
 		// try to download the ontology
 		notifiedAddedOntologyImport(fromWebToMirror, baseURI, altURL, mirFile, ImportModality.USER, false,
-				conn, capturedImports, transitiveImportAllowance, failedImports);
+				conn, capturedOntologyMetadata, transitiveImportAllowance, failedImports, new HashSet<>());
 
 		// if the download was achieved, import the ontology in the model
 
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
-				baseURI, altURL, null, capturedImports);
+				baseURI, altURL, null, capturedOntologyMetadata);
 		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 		// this time sends a notification with the spied ontology imports (but change the import method
 		// so that it won't be created another mirror entry)
 
 		notifiedAddedOntologyImport(fromWebToMirror, baseURI, altURL, mirFile, ImportModality.USER, false,
-				conn, capturedImports, transitiveImportAllowance, failedImports);
+				conn, capturedOntologyMetadata, transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	@Override
@@ -723,16 +780,16 @@ public class OntologyManagerImpl implements OntologyManager {
 						"Could not match a parser for file name: " + inputFile.getName()));
 		RDFParser parser = RDFParserRegistry.getInstance().get(rdfFormat).map(RDFParserFactory::getParser)
 				.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
-		Model capturedImports = new LinkedHashModel();
+		Model capturedOntologyMetadata = new LinkedHashModel();
 		InputStream in = new FileInputStream(inputFile);
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
-				baseURI, in, parser, capturedImports);
+				baseURI, in, parser, capturedOntologyMetadata);
 
 		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 		Model caputedImports = new LinkedHashModel();
 		notifiedAddedOntologyImport(fromLocalFile, baseURI, fromLocalFilePath, mirFile, ImportModality.USER,
-				false, conn, caputedImports, transitiveImportAllowance, failedImports);
+				false, conn, caputedImports, transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	@Override
@@ -897,15 +954,15 @@ public class OntologyManagerImpl implements OntologyManager {
 		}
 		RDFParser parser = RDFParserRegistry.getInstance().get(format).map(RDFParserFactory::getParser)
 				.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
-		Model capturedImports = new LinkedHashModel();
+		Model capturedOntologyMetadata = new LinkedHashModel();
 		InputStream in = new FileInputStream(inputFile);
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
-				baseURI, in, parser, capturedImports);
+				baseURI, in, parser, capturedOntologyMetadata);
 
 		conn.add(spyConcurrentIter, graph);
 
 		recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER,
-				capturedImports, transitiveImportAllowance, failedImports);
+				capturedOntologyMetadata, transitiveImportAllowance, failedImports, new HashSet<>());
 	}
 
 	@Override

@@ -283,12 +283,10 @@ public class Metadata extends STServiceAdapter {
 				if (importsBranch.contains(importedOnt)) {
 					status = Statuses.LOOP;
 				} else {
-					ImportStatus importStatus = getOntologyManager()
-							.getImportStatus(importedOnt.stringValue());
+					ImportStatus importStatus = getOntologyManager().getImportStatus(conn,
+							importedOnt.stringValue());
 
-					status = importStatus == null || importStatus.getValue() == ImportStatus.Values.FAILED
-							|| importStatus.getValue() == ImportStatus.Values.UNASSIGNED ? Statuses.FAILED
-									: Statuses.OK;
+					status = OntologyImport.Statuses.fromImportStatus(importStatus);
 					Set<IRI> newImportsBranch = new HashSet<>(importsBranch);
 					newImportsBranch.add(importedOnt);
 

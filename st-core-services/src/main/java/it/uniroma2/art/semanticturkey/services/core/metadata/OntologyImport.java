@@ -15,6 +15,9 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
+import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
+import it.uniroma2.art.semanticturkey.ontology.ImportStatus.Values;
+
 /**
  * Represents an individual ontology import
  *
@@ -22,14 +25,29 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 @JsonSerialize(using = OntologyImport.OntologyImportSerializer.class)
 public class OntologyImport {
 	public static enum Statuses {
-		OK, FAILED, LOOP
+		OK, FAILED, STAGED_ADDITION, STAGED_REMOVAL, LOOP;
+
+		public static Statuses fromImportStatus(ImportStatus importStatus) {
+			Values value = importStatus.getValue();
+			if (value == null || value == ImportStatus.Values.FAILED
+					|| value == ImportStatus.Values.UNASSIGNED) {
+				return FAILED;
+			} else if (value == ImportStatus.Values.STAGED_ADDITION) {
+				return Statuses.STAGED_ADDITION;
+			} else if (value == ImportStatus.Values.STAGED_REMOVAL) {
+				return STAGED_REMOVAL;
+			} else {
+				return OK;
+			}
+		}
 	};
 
 	private IRI ontology;
 	private OntologyImport.Statuses status;
 	private Collection<OntologyImport> imports;
 
-	public OntologyImport(IRI ontology, OntologyImport.Statuses status, @Nullable Collection<OntologyImport> imports) {
+	public OntologyImport(IRI ontology, OntologyImport.Statuses status,
+			@Nullable Collection<OntologyImport> imports) {
 		this.ontology = ontology;
 		this.status = status;
 		this.imports = imports;

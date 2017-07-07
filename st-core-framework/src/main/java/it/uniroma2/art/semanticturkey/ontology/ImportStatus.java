@@ -37,7 +37,7 @@ public class ImportStatus {
 
 	public enum Values {
 		LOCAL, WEB, NULL, FAILED, NG,
-		UNASSIGNED, OK
+		UNASSIGNED, OK, STAGED_ADDITION, STAGED_REMOVAL
 	}
 		
 	/**

@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.validation;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
@@ -58,5 +59,20 @@ public class ValidationUtilities {
 			return graph;
 		}
 	}
-	
+
+	/**
+	 * Returns the remove graph if validation is enabled
+	 * 
+	 * @param validationEnabled
+	 * @param graph
+	 * @return
+	 */
+	public static Resource getRemoveGraphIfValidatonEnabled(boolean validationEnabled, IRI graph) {
+		if (validationEnabled) {
+			return (IRI) VALIDATION.stagingRemoveGraph(graph);
+		} else {
+			return graph;
+		}
+	}
+
 }

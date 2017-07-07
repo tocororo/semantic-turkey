@@ -176,7 +176,7 @@ public interface OntologyManager {
 	 * @param baseURI
 	 * @return
 	 */
-	ImportStatus getImportStatus(String baseURI);
+	ImportStatus getImportStatus(RepositoryConnection conn, String baseURI);
 
 	// Recover failed imports
 
