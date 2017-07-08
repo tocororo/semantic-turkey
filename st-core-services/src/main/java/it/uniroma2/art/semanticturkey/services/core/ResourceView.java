@@ -144,18 +144,17 @@ public class ResourceView extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public Map<String, ResourceViewSection> getResourceView(Resource resource,
-			@Optional ResourcePosition resourcePosition) throws Exception {
+			@Optional ResourcePosition resourcePosition,
+			@Optional(defaultValue = "false") boolean includeInferred) throws Exception {
 		try {
 			Project project = getProject();
 			Resource workingGraph = getWorkingGraph();
-
-			SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
 			if (resourcePosition == null) {
 				resourcePosition = resourceLocator.locateResource(getProject(), getRepository(), resource);
 			}
 
-			Model retrievedStatements = retrieveStatements(resourcePosition, resource);
+			Model retrievedStatements = retrieveStatements(resourcePosition, resource, includeInferred);
 
 			// A resource is editable iff it is a locally defined resource (i.e. it is the subject of at least
 			// one triple in the working graph)
@@ -169,7 +168,7 @@ public class ResourceView extends STServiceAdapter {
 			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
 
 			SubjectAndObjectsInfos subjectAndObjectsAddtionalInfo = retrieveSubjectAndObjectsAddtionalInformation(
-					resourcePosition, resource, resourcePredicates);
+					resourcePosition, resource, includeInferred, resourcePredicates);
 
 			Map<Resource, Map<String, Value>> resource2attributes = subjectAndObjectsAddtionalInfo.resource2attributes;
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = subjectAndObjectsAddtionalInfo.predicate2resourceCreShow;
@@ -374,8 +373,8 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	private SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
-			ResourcePosition resourcePosition, Resource resource, Set<IRI> resourcePredicates)
-			throws ProjectAccessException {
+			ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+			Set<IRI> resourcePredicates) throws ProjectAccessException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 			StringBuilder sb = new StringBuilder();
@@ -457,7 +456,8 @@ public class ResourceView extends STServiceAdapter {
 			qb.processRendering();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
 			qb.setBinding("subjectResource", resource);
-			qb.setIncludeInferred(true);
+			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
+													// nature to inferred objects
 
 			Collection<BindingSet> bindingSets = qb.runQuery(
 					acquireManagedConnectionToProject(getProject(), localResourcePosition.getProject()),
@@ -523,8 +523,8 @@ public class ResourceView extends STServiceAdapter {
 		public final Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow;
 	}
 
-	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource)
-			throws ProjectAccessException, RDF4JException, IOException {
+	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
+			boolean includeInferred) throws ProjectAccessException, RDF4JException, IOException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 
@@ -574,19 +574,21 @@ public class ResourceView extends STServiceAdapter {
 				}
 			}
 
-			GraphQuery describeQuery = managedConnection
-					.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
-			describeQuery.setBinding("y", resource);
-			describeQuery.setIncludeInferred(true);
-			QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
-				Resource subject = stmt.getSubject();
-				IRI predicate = stmt.getPredicate();
-				Value object = stmt.getObject();
-				if (retrievedStatements.contains(subject, predicate, object))
-					return;
+			if (includeInferred) {
+				GraphQuery describeQuery = managedConnection
+						.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
+				describeQuery.setBinding("y", resource);
+				describeQuery.setIncludeInferred(true);
+				QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
+					Resource subject = stmt.getSubject();
+					IRI predicate = stmt.getPredicate();
+					Value object = stmt.getObject();
+					if (retrievedStatements.contains(subject, predicate, object))
+						return;
 
-				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
-			});
+					retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
+				});
+			}
 
 			return retrievedStatements;
 		}
