@@ -658,8 +658,6 @@ public class OntologyManagerImpl implements OntologyManager {
 							.filter(stmt -> !toBeRemovedOntologies.contains(stmt.getSubject()))
 							.filter(stmt -> !removedImport.equals(stmt)).collect(Collectors.toList()));
 
-			System.out.println("@@ live imports for ontology " + ontToBeSaved + ": " + liveImportsForOnt);
-
 			if (liveImportsForOnt.stream()
 					.filter(stmt -> !VALIDATION.isAddGraph(stmt.getContext())
 							&& !VALIDATION.isRemoveGraph(stmt.getContext()))
