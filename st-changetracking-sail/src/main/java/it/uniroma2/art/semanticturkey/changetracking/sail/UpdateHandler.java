@@ -45,6 +45,6 @@ public interface UpdateHandler {
 
 	void removeNamespace(String prefix);
 
-	void clearHandler();
+	void clearHandler(IRI...contexts);
 
 }

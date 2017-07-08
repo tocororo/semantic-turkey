@@ -29,26 +29,45 @@ public abstract class VALIDATION {
 
 	/** val:staging-add-graph/ */
 	public static final IRI STAGING_ADD_GRAPH;
-	
+
 	/** val:staging-remove-graph/ */
 	public static final IRI STAGING_REMOVE_GRAPH;
 
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
-		
+
 		STAGING_ADD_GRAPH = vf.createIRI(NAMESPACE, "staging-add-graph/");
 		STAGING_REMOVE_GRAPH = vf.createIRI(NAMESPACE, "staging-remove-graph/");
 	}
 
 	public static Resource stagingAddGraph(Resource context) {
 		IRI contextIRI = (IRI) context;
-		
+
 		return SimpleValueFactory.getInstance().createIRI(STAGING_ADD_GRAPH.stringValue() + contextIRI);
 	}
-	
+
 	public static Resource stagingRemoveGraph(Resource context) {
 		IRI contextIRI = (IRI) context;
-		
+
 		return SimpleValueFactory.getInstance().createIRI(STAGING_REMOVE_GRAPH.stringValue() + contextIRI);
 	}
+
+	public static boolean isAddGraph(Resource ctx) {
+		return ctx instanceof IRI && ((IRI) ctx).stringValue().startsWith(STAGING_ADD_GRAPH.stringValue());
+	}
+
+	public static boolean isRemoveGraph(Resource ctx) {
+		return ctx instanceof IRI && ((IRI) ctx).stringValue().startsWith(STAGING_REMOVE_GRAPH.stringValue());
+	}
+
+	public static IRI unmangleAddGraph(IRI ctx) {
+		return SimpleValueFactory.getInstance()
+				.createIRI(ctx.stringValue().substring(STAGING_ADD_GRAPH.stringValue().length()));
+	}
+
+	public static IRI unmangleRemoveGraph(IRI ctx) {
+		return SimpleValueFactory.getInstance()
+				.createIRI(ctx.stringValue().substring(STAGING_REMOVE_GRAPH.stringValue().length()));
+	}
+
 }

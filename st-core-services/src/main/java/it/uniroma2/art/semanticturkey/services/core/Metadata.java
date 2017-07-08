@@ -14,21 +14,24 @@ import java.util.Set;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
+import it.uniroma2.art.semanticturkey.ontology.ImportStatus.Values;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
@@ -267,36 +270,40 @@ public class Metadata extends STServiceAdapter {
 			Set<IRI> importsBranch) throws RepositoryException {
 		Collection<OntologyImport> rv = new ArrayList<>();
 
-		try (RepositoryResult<Statement> imports = conn.getStatements(ont, OWL.IMPORTS, null, false)) {
-			while (imports.hasNext()) {
-				Value importedOntValue = imports.next().getObject();
+		Model importStatements = QueryResults.asModel(conn.getStatements(ont, OWL.IMPORTS, null, false));
 
-				if (!(importedOntValue instanceof IRI))
-					continue;
+		for (IRI importedOnt : Models.objectIRIs(importStatements)) {
 
-				IRI importedOnt = (IRI) importedOntValue;
-				logger.debug("\timport: " + importedOnt);
+			logger.debug("\timport: " + importedOnt);
 
-				Statuses status;
-				Collection<OntologyImport> importsOfImporteddOntology = null;
+			Statuses status;
+			Collection<OntologyImport> importsOfImporteddOntology = null;
 
-				if (importsBranch.contains(importedOnt)) {
-					status = Statuses.LOOP;
+			if (importsBranch.contains(importedOnt)) {
+				status = Statuses.LOOP;
+			} else {
+				Resource addGraph = VALIDATION.stagingAddGraph(ont);
+				Resource removeGraph = VALIDATION.stagingRemoveGraph(ont);
+
+				ImportStatus importStatus;
+
+				if (importStatements.contains(null, null, importedOnt, addGraph)) {
+					importStatus = new ImportStatus(Values.STAGED_ADDITION, null);
+				} else if (importStatements.contains(null, null, importedOnt, removeGraph)) {
+					importStatus = new ImportStatus(Values.STAGED_REMOVAL, null);
 				} else {
-					ImportStatus importStatus = getOntologyManager().getImportStatus(conn,
-							importedOnt.stringValue());
-
-					status = OntologyImport.Statuses.fromImportStatus(importStatus);
-					Set<IRI> newImportsBranch = new HashSet<>(importsBranch);
-					newImportsBranch.add(importedOnt);
-
-					importsOfImporteddOntology = getImportsHelper(conn, importedOnt, newImportsBranch);
+					importStatus = getOntologyManager().getImportStatus(conn, importedOnt.stringValue());
 				}
+				status = OntologyImport.Statuses.fromImportStatus(importStatus);
+				Set<IRI> newImportsBranch = new HashSet<>(importsBranch);
+				newImportsBranch.add(importedOnt);
 
-				OntologyImport importedOntologyElem = new OntologyImport(importedOnt, status,
-						importsOfImporteddOntology);
-				rv.add(importedOntologyElem);
+				importsOfImporteddOntology = getImportsHelper(conn, importedOnt, newImportsBranch);
 			}
+
+			OntologyImport importedOntologyElem = new OntologyImport(importedOnt, status,
+					importsOfImporteddOntology);
+			rv.add(importedOntologyElem);
 		}
 
 		return rv;
@@ -429,9 +436,10 @@ public class Metadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'D')")
 	public void removeImport(String baseURI) throws RDF4JException, OntologyManagerException, IOException {
-		getOntologyManager().removeOntologyImport(baseURI);
+		getOntologyManager().removeOntologyImport(getManagedConnection(), baseURI);
 	}
 
 	// Failed imports recovery

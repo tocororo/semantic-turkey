@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -711,11 +712,41 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	@Override
 	public void clear(Resource... contexts) throws SailException {
 		readonlyHandler.clear(contexts);
+
+		List<Resource> contextsToCopy = new ArrayList<>();
+		List<Resource> contextsToClear = new ArrayList<>();
+
 		try {
 			if (validationEnabled) {
-				throw new NotValidatableOperationException("Could not validate clear(Resource...)");
+				for (int i = 0; i < contexts.length; i++) {
+					Resource ctx = contexts[i];
+					if (VALIDATION.isAddGraph(ctx)) {
+						IRI unmangleGraph = VALIDATION.unmangleAddGraph((IRI) ctx);
+						validatableOpertionHandler.clearHandler(unmangleGraph);
+						contextsToClear.add(ctx);
+					} else if (!VALIDATION.isRemoveGraph(ctx)) {
+						validatableOpertionHandler.removeStatements(null, null, null, new Resource[] { ctx });
+						contextsToCopy.add(ctx);
+					}
+				}
+
+				if (!contextsToClear.isEmpty()) {
+					super.clear(contextsToClear.toArray(new Resource[contextsToClear.size()]));
+				}
+
+				if (contexts.length == 0) {
+					contextsToCopy = QueryResults.stream(getContextIDs())
+							.filter(r -> !VALIDATION.isAddGraph(r) && !VALIDATION.isRemoveGraph(r))
+							.collect(Collectors.toList());
+				}
+
+				if (!contextsToCopy.isEmpty()) {
+					removeStatements(null, null, null,
+							contextsToCopy.toArray(new Resource[contextsToCopy.size()]));
+				}
+			} else {
+				super.clear(contexts);
 			}
-			super.clear(contexts);
 		} catch (Exception e) {
 			readonlyHandler.recordCorruption();
 			throw e;

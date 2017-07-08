@@ -162,10 +162,11 @@ public interface OntologyManager {
 	/**
 	 * Removes an ontology import
 	 * 
+	 * @param conn
 	 * @param uriToBeRemoved
 	 * @throws IOException
 	 */
-	void removeOntologyImport(String uriToBeRemoved) throws IOException;
+	void removeOntologyImport(RepositoryConnection conn, String uriToBeRemoved) throws IOException;
 
 	// Ontology import status
 

@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.changetracking.sail;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -74,9 +75,16 @@ public class LoggingUpdateHandler extends BaseUpdateHandler {
 	}
 
 	@Override
-	public void clearHandler() {
-		additions.clear();
-		removals.clear();
+	public void clearHandler(IRI... contexts) {
+		if (contexts.length == 0) {
+			additions.clear();
+			removals.clear();
+		} else {
+			for (IRI ctx : contexts) {
+				additions.removeIf(qp -> Objects.equals(qp.getContext(), ctx));
+				removals.removeIf(qp -> Objects.equals(qp.getContext(), ctx));
+			}
+		}
 	}
 
 	public Iterable<QuadPattern> getAdditions() {

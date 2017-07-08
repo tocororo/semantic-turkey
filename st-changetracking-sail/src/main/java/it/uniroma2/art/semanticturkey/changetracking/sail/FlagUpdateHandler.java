@@ -56,7 +56,7 @@ public class FlagUpdateHandler extends BaseUpdateHandler {
 	}
 	
 	@Override
-	public void clearHandler() {
+	public void clearHandler(IRI...contexts) {
 		readonly = true;
 	}
 
