@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.customform;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -18,7 +19,7 @@ public class CustomFormsConfig {
 	protected static final String CUSTOM_FORMS_CONFIG_FILENAME = "customFormConfig.xml";
 	
 	public CustomFormsConfig(Collection<FormsMapping> mappings) {
-		this.mappings = mappings;
+		this.mappings = new ArrayList<>(mappings);
 	}
 	
 	/**

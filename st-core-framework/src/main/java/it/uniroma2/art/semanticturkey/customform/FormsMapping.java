@@ -41,4 +41,9 @@ public class FormsMapping {
 	public void setReplace(boolean replace) {
 		this.replace = replace;
 	}
+	
+	@Override
+	public String toString() {
+		return "{ FormCollection: " + this.formCollection.getId() + ", resource: " + resourceURI + " }";
+	}
 }

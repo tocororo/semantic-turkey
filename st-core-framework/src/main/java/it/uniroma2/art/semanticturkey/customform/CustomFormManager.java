@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 
@@ -612,6 +613,17 @@ public class CustomFormManager {
 	 */
 	public static File getFormsFolder(Project project){
 		return new File(getCustomFormsFolder(project) + File.separator + FORMS_FOLDER_NAME);
+	}
+	
+	//for debugging
+	@SuppressWarnings("unused")
+	private void printModels() {
+		System.out.println("CustomForm model map:");
+		for (Entry<String, CustomFormModel> entry : cfModelMap.entrySet()) {
+			System.out.println("Project: " + entry.getKey());
+			CustomFormModel cfModel = entry.getValue();
+			System.out.println("Model: " + cfModel);
+		}
 	}
 	
 }

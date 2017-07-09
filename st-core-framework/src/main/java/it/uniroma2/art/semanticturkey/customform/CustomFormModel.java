@@ -393,4 +393,12 @@ public class CustomFormModel {
 		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 	}
 	
+	@Override
+	public String toString() {
+		String projName = project == null ? "SYSTEM" : project.getName(); 
+		String str = "Project: " + projName;
+		str += "\nMappings: " + cfConfig.getFormsMappings();
+		return str;
+	}
+	
 }
