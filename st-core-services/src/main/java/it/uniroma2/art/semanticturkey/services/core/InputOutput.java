@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
+import org.eclipse.rdf4j.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,6 +39,30 @@ public class InputOutput extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(InputOutput.class);
 
 	/**
+	 * Tries to match the extension of a file name against the list of RDF formats that can be parsed (see:
+	 * {@link Rio#getParserFormatForFileName(String)}).
+	 * 
+	 * @param fileName
+	 * @return the name of the matched {@link RDFFormat}, or <code>null</code> if none is found
+	 */
+	@STServiceOperation
+	public String getParserFormatForFileName(String fileName) {
+		return Rio.getParserFormatForFileName(fileName).map(RDFFormat::getName).orElse(null);
+	}
+
+	/**
+	 * Tries to match the extension of a file name against the list of RDF formats that can be written (see:
+	 * {@link Rio#getWriterFormatForFileName(String)}).
+	 * 
+	 * @param fileName
+	 * @return the name of the matched {@link RDFFormat}, or <code>null</code> if none is found
+	 */
+	@STServiceOperation
+	public String getWriterFormatForFileName(String fileName) {
+		return Rio.getWriterFormatForFileName(fileName).map(RDFFormat::getName).orElse(null);
+	}
+
+	/**
 	 * Adds RDF data directly to the ontology being edited (i.e. it is not a read-only import of an external
 	 * ontology that the working ontology depends on, but a mass add of RDF triples to the main graph of the
 	 * working ontology)
@@ -53,8 +78,8 @@ public class InputOutput extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("#validateImplicitly ? @auth.isAuthorized('rdf', 'CV') : @auth.isAuthorized('rdf', 'C')")
-	public Collection<OntologyImport> loadRDF(MultipartFile inputFile, String baseURI,
-			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+	public Collection<OntologyImport> loadRDF(MultipartFile inputFile, String baseURI, RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance,
 			@Optional(defaultValue = "false") boolean validateImplicitly)
 			throws FileNotFoundException, IOException {
 
