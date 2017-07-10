@@ -2,8 +2,10 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -22,6 +24,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +74,7 @@ import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
  * This class provides services for reading the Properties.
  * 
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
 public class Properties extends STServiceAdapter {
@@ -79,9 +83,10 @@ public class Properties extends STServiceAdapter {
 
 	@Autowired
 	private CustomFormManager cfManager;
-	
+
 	/**
 	 * returns all root properties
+	 * 
 	 * @return
 	 */
 	@STServiceOperation
@@ -89,7 +94,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopProperties() {
 		logger.info("request to get all the top properties");
-		
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -115,9 +120,8 @@ public class Properties extends STServiceAdapter {
 				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
-		
-		
-		//OLD VERSION
+
+		// OLD VERSION
 		/*qb = createQueryBuilder(
 				// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
@@ -144,9 +148,10 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * returns all root RDF properties
+	 * 
 	 * @return
 	 */
 	@STServiceOperation
@@ -154,7 +159,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopRDFProperties() {
 		logger.info("request to get the top RDF properties");
-		
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -177,9 +182,10 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * returns all root Object properties
+	 * 
 	 * @return
 	 */
 	@STServiceOperation
@@ -187,7 +193,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(objectProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopObjectProperties() {
 		logger.info("request to get the top Object properties");
-		
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -210,9 +216,10 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * returns all root Datatype properties
+	 * 
 	 * @return
 	 */
 	@STServiceOperation
@@ -220,7 +227,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(datatypeProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopDatatypeProperties() {
 		logger.info("request to get the top Datatype properties");
-		
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -243,9 +250,10 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * returns all root Annotation properties
+	 * 
 	 * @return
 	 */
 	@STServiceOperation
@@ -253,7 +261,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(annotationProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopAnnotationProperties() {
 		logger.info("request to get the top Annotation properties");
-		
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -276,9 +284,10 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * returns all root Ontology properties
+	 * 
 	 * @return
 	 */
 	@STServiceOperation
@@ -286,7 +295,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(ontologyProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopOntologyProperties() {
 		logger.info("request to get the top Ontology properties");
-		
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -309,10 +318,11 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
-	 * takes a list of Properties and return their description as if they were roots for a tree
-	 * (so more, role, explicit etc...)
+	 * takes a list of Properties and return their description as if they were roots for a tree (so more,
+	 * role, explicit etc...)
+	 * 
 	 * @param propList
 	 * @return
 	 */
@@ -321,7 +331,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getPropertiesInfo(IRI[] propList) {
 		logger.info("request to get the Propery info, given a property List");
-		
+
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
 		sb.append(
@@ -349,13 +359,13 @@ public class Properties extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSubProperties(@LocallyDefined Resource superProperty) {
-		logger.info("request to get the top sub properties for "+superProperty.stringValue());
-		
+		logger.info("request to get the top sub properties for " + superProperty.stringValue());
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -378,14 +388,13 @@ public class Properties extends STServiceAdapter {
 		qb.setBinding("superProperty", superProperty);
 		return qb.runQuery();
 	}
-	
-	
+
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSuperProperties(@LocallyDefined Resource subProperty) {
-		logger.info("request to get the top super properties for "+subProperty.stringValue());
-		
+		logger.info("request to get the top super properties for " + subProperty.stringValue());
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -405,19 +414,22 @@ public class Properties extends STServiceAdapter {
 		qb.setBinding("subProperty", subProperty);
 		return qb.runQuery();
 	}
-	
+
 	/**
-	 * Retrieves all types of res, then all properties having their domain on any of the types for res.
-	 * Note that it provides only root properties (e.g. if both rdfs:label and skos:prefLabel,
-	 * which is a subProperty of rdfs:label, have domain = one of the types of res, then only rdfs:label is returned)
+	 * Retrieves all types of res, then all properties having their domain on any of the types for res. Note
+	 * that it provides only root properties (e.g. if both rdfs:label and skos:prefLabel, which is a
+	 * subProperty of rdfs:label, have domain = one of the types of res, then only rdfs:label is returned)
+	 * 
 	 * @param res
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForResource(@LocallyDefined Resource res) {
-		logger.info("request to get the top all properties having their domain on any of the types for "+res.stringValue());
-		
+	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForResource(
+			@LocallyDefined Resource res) {
+		logger.info("request to get the top all properties having their domain on any of the types for "
+				+ res.stringValue());
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -443,19 +455,21 @@ public class Properties extends STServiceAdapter {
 		qb.setBinding("res", res);
 		return qb.runQuery();
 	}
-	
+
 	/**
-	 * Retrieves all properties having their domain on cls.
-	 * Note that it has to provide only root properties (e.g. if both rdfs:label and skos:prefLabel,
-	 * which is a subProperty of rdfs:label, have domain = cls, then only rdfs:label is returned)
+	 * Retrieves all properties having their domain on cls. Note that it has to provide only root properties
+	 * (e.g. if both rdfs:label and skos:prefLabel, which is a subProperty of rdfs:label, have domain = cls,
+	 * then only rdfs:label is returned)
+	 * 
 	 * @param classUri
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
-	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForClass(@LocallyDefined Resource classUri) {
-		logger.info("request to get all properties having their domain on "+classUri.stringValue());
-		
+	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForClass(
+			@LocallyDefined Resource classUri) {
+		logger.info("request to get all properties having their domain on " + classUri.stringValue());
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -480,19 +494,21 @@ public class Properties extends STServiceAdapter {
 		qb.setBinding("classUri", classUri);
 		return qb.runQuery();
 	}
-	
+
 	/**
-	 * it takes any named class which is relevant in the domain of prop.
-	 * Relevant means that if the domain of prop is (A or B) or (A and B) in any case the relevant domain classes
-	 * are provided by a list with A and B.
+	 * it takes any named class which is relevant in the domain of prop. Relevant means that if the domain of
+	 * prop is (A or B) or (A and B) in any case the relevant domain classes are provided by a list with A and
+	 * B.
+	 * 
 	 * @param property
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantDomainClasses(@LocallyDefined Resource property) {
-		logger.info("request to get any named class which is relevant in the domain of "+property.stringValue());
-		
+		logger.info("request to get any named class which is relevant in the domain of "
+				+ property.stringValue());
+
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -512,11 +528,12 @@ public class Properties extends STServiceAdapter {
 		qb.setBinding("property", property);
 		return qb.runQuery();
 	}
-	
+
 	/**
-	 * it takes any named class which is relevant in the range of prop.
-	 * Relevant means that if the range of prop is (A or B) or (A and B) in any case the relevant domain classes
-	 * are provided by a list with A and B.
+	 * it takes any named class which is relevant in the range of prop. Relevant means that if the range of
+	 * prop is (A or B) or (A and B) in any case the relevant domain classes are provided by a list with A and
+	 * B.
+	 * 
 	 * @param property
 	 * @return
 	 */
@@ -524,7 +541,8 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource property) {
-		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
+		logger.info(
+				"request to get any named class which is relevant in the range of " + property.stringValue());
 		QueryBuilder qb;
 		qb = createQueryBuilder(
 				// @formatter:off
@@ -545,95 +563,98 @@ public class Properties extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
-	
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public JsonNode getRange(@LocallyDefined IRI property) {
-		logger.info("request to get any named class which is relevant in the range of "+property.stringValue());
-		
+		logger.info(
+				"request to get any named class which is relevant in the range of " + property.stringValue());
+
 		ObjectNode response = JsonNodeFactory.instance.objectNode();
-		
-		//first of all, check if there is a form collection that replace the standard range(s)
+
+		// first of all, check if there is a form collection that replace the standard range(s)
 		boolean replace = cfManager.getReplace(getProject(), property, true);
-		if(!replace) {
+		if (!replace) {
 			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
-			
+
 			ObjectNode rangesObjectNode = JsonNodeFactory.instance.objectNode();
-			rangesObjectNode.set("type", JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
-		
+			rangesObjectNode.set("type",
+					JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
+
 			ArrayNode rangeArrayNode = JsonNodeFactory.instance.arrayNode();
-			for(String range : typesAndRanges.getRangesList()){
-				rangeArrayNode.add(JsonNodeFactory.instance.textNode(range));
+			for (Range range : typesAndRanges.getRanges()) {
+				rangeArrayNode.add(range.toJsonNode());
 			}
-			if(!typesAndRanges.getRangesList().isEmpty()){
+			if (!typesAndRanges.getRanges().isEmpty()) {
 				rangesObjectNode.set("rangeCollection", rangeArrayNode);
 			}
 			response.set("ranges", rangesObjectNode);
 		}
-		
-		//now add the part relative to the custom ranges
+
+		// now add the part relative to the custom ranges
 		FormCollection formColl = cfManager.getFormCollection(getProject(), property);
-		if( formColl != null) {
+		if (formColl != null) {
 			ObjectNode formCollNode = JsonNodeFactory.instance.objectNode();
 			formCollNode.set("id", JsonNodeFactory.instance.textNode(formColl.getId()));
 			formCollNode.set("property", JsonNodeFactory.instance.textNode(property.stringValue()));
-			
+
 			ArrayNode formsArrayNode = JsonNodeFactory.instance.arrayNode();
 			Collection<CustomForm> cForms = formColl.getForms();
-			for(CustomForm customForm : cForms){
+			for (CustomForm customForm : cForms) {
 				ObjectNode formObjectNode = JsonNodeFactory.instance.objectNode();
 				formObjectNode.set("id", JsonNodeFactory.instance.textNode(customForm.getId()));
 				formObjectNode.set("name", JsonNodeFactory.instance.textNode(customForm.getName()));
 				formObjectNode.set("type", JsonNodeFactory.instance.textNode(customForm.getType()));
-				formObjectNode.set("description", JsonNodeFactory.instance.textNode(customForm.getDescription()));
+				formObjectNode.set("description",
+						JsonNodeFactory.instance.textNode(customForm.getDescription()));
 				formsArrayNode.add(formObjectNode);
-				
+
 			}
 			formCollNode.set("forms", formsArrayNode);
 			response.set("formCollection", formCollNode);
 		}
-			
+
 		return response;
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public AnnotatedValue<IRI> createProperty(
-			IRI propertyType, @Subject @NotLocallyDefined @Created(role=RDFResourceRole.property) IRI newProperty, @Optional IRI superProperty,
-			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
-					throws ProjectInconsistentException, CODAException, CustomFormException {
-		
+	public AnnotatedValue<IRI> createProperty(IRI propertyType,
+			@Subject @NotLocallyDefined @Created(role = RDFResourceRole.property) IRI newProperty,
+			@Optional IRI superProperty, @Optional String customFormId,
+			@Optional Map<String, Object> userPromptMap)
+			throws ProjectInconsistentException, CODAException, CustomFormException {
+
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
-		if (!propertyType.equals(OWL.OBJECTPROPERTY) && !propertyType.equals(OWL.DATATYPEPROPERTY) &&
-			!propertyType.equals(OWL.ANNOTATIONPROPERTY) && !propertyType.equals(OWL.ONTOLOGYPROPERTY) &&
-			!propertyType.equals(RDF.PROPERTY)) {
+
+		if (!propertyType.equals(OWL.OBJECTPROPERTY) && !propertyType.equals(OWL.DATATYPEPROPERTY)
+				&& !propertyType.equals(OWL.ANNOTATIONPROPERTY) && !propertyType.equals(OWL.ONTOLOGYPROPERTY)
+				&& !propertyType.equals(RDF.PROPERTY)) {
 			throw new IllegalArgumentException(propertyType.stringValue() + " is not a valid property type");
 		}
-		
+
 		modelAdditions.add(newProperty, RDF.TYPE, propertyType);
-		
+
 		if (superProperty != null) {
 			modelAdditions.add(newProperty, RDFS.SUBPROPERTYOF, superProperty);
 		}
-		
+
 		RepositoryConnection repoConnection = getManagedConnection();
 
-		//CustomForm further info
+		// CustomForm further info
 		if (customFormId != null && userPromptMap != null) {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newProperty.stringValue());
 			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap,
+					stdForm);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-		
+
 		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newProperty);
 		if (propertyType.equals(OWL.OBJECTPROPERTY)) {
 			annotatedValue.setAttribute("role", RDFResourceRole.objectProperty.name());
@@ -643,19 +664,20 @@ public class Properties extends STServiceAdapter {
 			annotatedValue.setAttribute("role", RDFResourceRole.annotationProperty.name());
 		} else if (propertyType.equals(OWL.ONTOLOGYPROPERTY)) {
 			annotatedValue.setAttribute("role", RDFResourceRole.ontologyProperty.name());
-		} else { //rdf:Property
+		} else { // rdf:Property
 			annotatedValue.setAttribute("role", RDFResourceRole.property.name());
 		}
 		annotatedValue.setAttribute("explicit", true);
-		
+
 		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newProperty,
 				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
-		
-		return annotatedValue; 
+
+		return annotatedValue;
 	}
-	
+
 	/**
 	 * Deletes a properties
+	 * 
 	 * @param property
 	 * @throws DeniedOperationException
 	 */
@@ -664,8 +686,8 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void deleteProperty(@Subject @LocallyDefined IRI property) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
-		
-		//first check if the property has any sub property
+
+		// first check if the property has any sub property
 		String query =
 			// @formatter:off
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>	\n" +
@@ -675,12 +697,12 @@ public class Properties extends STServiceAdapter {
 			// @formatter:on
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setBinding("property", property);
-		if(booleanQuery.evaluate()){
+		if (booleanQuery.evaluate()) {
 			throw new DeniedOperationException(
 					"Property: " + property.stringValue() + " has sub property(ies); delete them before");
 		}
-		
-		query = 
+
+		query =
 				// @formatter:off
 				"DELETE {																\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
@@ -696,10 +718,10 @@ public class Properties extends STServiceAdapter {
 				+ "	}																	\n"
 				+ "}";
 				// @formatter:on
-		repoConnection.prepareUpdate(query).execute();;
+		repoConnection.prepareUpdate(query).execute();
+		;
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
@@ -714,8 +736,7 @@ public class Properties extends STServiceAdapter {
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
@@ -729,8 +750,8 @@ public class Properties extends STServiceAdapter {
 				superProperty));
 
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}	
-	
+	}
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
@@ -743,8 +764,8 @@ public class Properties extends STServiceAdapter {
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.DOMAIN, domain));
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}	
-	
+	}
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
@@ -758,8 +779,7 @@ public class Properties extends STServiceAdapter {
 
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
-	
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
@@ -772,8 +792,8 @@ public class Properties extends STServiceAdapter {
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.RANGE, range));
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
-	}	
-	
+	}
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
@@ -786,11 +806,10 @@ public class Properties extends STServiceAdapter {
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, RDFS.RANGE, range));
 
 		repoConnection.remove(modelRemovals, getWorkingGraph());
-	}	
-	
-	
+	}
+
 	// DATARANGE SERVICES
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
@@ -836,10 +855,11 @@ public class Properties extends STServiceAdapter {
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
-	
+
 	/**
-	 * It deletes all the triple representing the old datarange. It removes also the triple linking the 
+	 * It deletes all the triple representing the old datarange. It removes also the triple linking the
 	 * property and the datarange
+	 * 
 	 * @param property
 	 * @param datarange
 	 */
@@ -882,12 +902,12 @@ public class Properties extends STServiceAdapter {
 		update.setBinding("?property", property);
 		update.setBinding("?datarange", datarange);
 		update.execute();
-	}	
-	
+	}
+
 	/**
-	 * Update the current RDF list associated to the RDFS.DATATYPE by deleting the old one and create 
-	 * a new RDF:List using the input one. The BNode representing the old one is maintain and used in the 
-	 * the one 
+	 * Update the current RDF list associated to the RDFS.DATATYPE by deleting the old one and create a new
+	 * RDF:List using the input one. The BNode representing the old one is maintain and used in the the one
+	 * 
 	 * @param datarange
 	 * @param literals
 	 */
@@ -955,8 +975,7 @@ public class Properties extends STServiceAdapter {
 		}
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
-	
-	
+
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
@@ -1018,11 +1037,12 @@ public class Properties extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
-	
+
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addValuesToDatarange(@LocallyDefined @Modified(role=RDFResourceRole.property) @Subject Resource datarange, 
+	public void addValuesToDatarange(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject Resource datarange,
 			@LocallyDefinedResources List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -1103,13 +1123,13 @@ public class Properties extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
-	
+
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
-	public Boolean hasValueInDatarange(@LocallyDefined @Subject Resource datarange, Literal literal){
+	public Boolean hasValueInDatarange(@LocallyDefined @Subject Resource datarange, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		
+
 		// @formatter:off
 		String query = "SELECT ?desiredElem" +
 					"\nWHERE{"+
@@ -1124,17 +1144,16 @@ public class Properties extends STServiceAdapter {
 		tupleQuery.setIncludeInferred(false);
 		tupleQuery.setBinding("g", getWorkingGraph());
 		tupleQuery.setBinding("datarange", datarange);
-		try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
-			if(tupleQueryResult.hasNext()){
+		try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+			if (tupleQueryResult.hasNext()) {
 				return true;
-			} else{
+			} else {
 				return false;
 			}
 		}
-		
-		
+
 	}
-	
+
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
@@ -1223,120 +1242,211 @@ public class Properties extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
-	
+
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
-	public Collection<AnnotatedValue<Literal>> getDatarangeLiterals(BNode datarange){
+	public Collection<AnnotatedValue<Literal>> getDatarangeLiterals(BNode datarange) {
 		logger.info("getLiteralEnumeration");
 		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<AnnotatedValue<Literal>>();
-		
+
 		DataRangeDataOneOf dataOneOf = null;
-		DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(datarange, getManagedConnection());
-		if(dataRangeAbstract instanceof DataRangeDataOneOf){
+		DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(datarange,
+				getManagedConnection());
+		if (dataRangeAbstract instanceof DataRangeDataOneOf) {
 			dataOneOf = (DataRangeDataOneOf) dataRangeAbstract;
-		} else{
-			//There was an error, since the bnode is not the expected datarange (ONEOF)
-			//TODO decide what to do, at the moment, return an empty list
+		} else {
+			// There was an error, since the bnode is not the expected datarange (ONEOF)
+			// TODO decide what to do, at the moment, return an empty list
 			return literalList;
 		}
-		
+
 		List<Literal> literalTempList = dataOneOf.getLiteralList();
-		
-		for(Literal literal : literalTempList){
+
+		for (Literal literal : literalTempList) {
 			literalList.add(new AnnotatedValue<Literal>(literal));
 		}
-		
+
 		return literalList;
 	}
-	
-	
-	protected TypesAndRanges getRangeOnlyClasses(IRI property){
-		
+
+	protected TypesAndRanges getRangeOnlyClasses(IRI property) {
+
 		String selectQuery =
-				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
-				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-	            "SELECT ?type ?range \n " +
-				"WHERE {\n" +
-	            "<"+property.stringValue()+"> rdf:type ?type . \n" +
-				"<"+property.stringValue()+"> rdfs:subPropertyOf* ?superProperty  \n" +
-	            "OPTIONAL { \n " +
-	            "?superProperty  rdfs:range ?range \n" +
-	            "} \n " +
-				"}";
+			// @formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+			"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+			"SELECT ?type ?range \n " +
+			"WHERE {\n" +
+				"<" + property.stringValue() + "> rdf:type ?type . \n" +
+				"<" + property.stringValue() + "> rdfs:subPropertyOf* ?superProperty  \n" +
+				"OPTIONAL { \n " +
+					"?superProperty  rdfs:range ?range . \n" +
+					"OPTIONAL {\n" +
+						"?range a <" + RDFS.DATATYPE +"> . \n" +
+						"?range <" + OWL.ONEOF +"> ?oneOf . \n" +
+					"} \n" +
+				"} \n " +
+			"}";
+			// @formatter:on
 		TupleQuery select = getManagedConnection().prepareTupleQuery(selectQuery);
 		select.setIncludeInferred(false);
 		TupleQueryResult tupleQueryResult = select.evaluate();
 		TypesAndRanges typesAndRanges = new TypesAndRanges();
-		while(tupleQueryResult.hasNext()){
+
+		Set<BNode> enumeratedDatatypes = new HashSet<>();
+
+		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
 			Value valueType = bindingSet.getBinding("type").getValue();
-			if(valueType instanceof IRI){
+			if (valueType instanceof IRI) {
 				typesAndRanges.addType(valueType.stringValue());
 			}
-			if(bindingSet.hasBinding("range")){
+			if (bindingSet.hasBinding("range")) {
 				Value valueRange = bindingSet.getBinding("range").getValue();
-				if(valueRange instanceof IRI){
-					typesAndRanges.addRange(valueRange.stringValue());
+				if (valueRange instanceof IRI) {
+					typesAndRanges.addRange(new IRIRange((IRI) valueRange));
+				} else if (valueRange instanceof BNode) {
+					enumeratedDatatypes.add((BNode) valueRange);
 				}
+			}
+		}
+
+		for (BNode anEnum : enumeratedDatatypes) {
+			DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(anEnum,
+					getManagedConnection());
+			if (dataRangeAbstract instanceof DataRangeDataOneOf) {
+				typesAndRanges.addRange(
+						new EnumeratedDatatype(((DataRangeDataOneOf) dataRangeAbstract).getLiteralList()));
+			} else {
+				// An error occurred
 			}
 		}
 		tupleQueryResult.close();
 		return typesAndRanges;
-		
+
 	}
-	
+
+}
+
+abstract class Range {
+	abstract public JsonNode toJsonNode();
+}
+
+class IRIRange extends Range {
+	private IRI iri;
+
+	public IRIRange(IRI iri) {
+		this.iri = iri;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		if (obj == this)
+			return true;
+
+		if (!this.getClass().equals(obj.getClass()))
+			return false;
+
+		return iri.equals(((IRIRange) obj).iri);
+	}
+
+	@Override
+	public int hashCode() {
+		return iri.hashCode();
+	}
+
+	@Override
+	public JsonNode toJsonNode() {
+		return JsonNodeFactory.instance.textNode(iri.stringValue());
+	}
+}
+
+class EnumeratedDatatype extends Range {
+	private List<Literal> literals;
+
+	public EnumeratedDatatype(List<Literal> literals) {
+		this.literals = literals;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		if (obj == this)
+			return true;
+
+		if (!this.getClass().equals(obj.getClass()))
+			return false;
+
+		return literals.equals(((EnumeratedDatatype) obj).literals);
+	}
+
+	@Override
+	public int hashCode() {
+		return literals.hashCode();
+	}
+
+	@Override
+	public JsonNode toJsonNode() {
+
+		ArrayNode literalsArray = JsonNodeFactory.instance.arrayNode();
+		for (Literal aLit : literals) {
+			literalsArray.addPOJO(new AnnotatedValue<Literal>(aLit));
+		}
+		ObjectNode enumObj = JsonNodeFactory.instance.objectNode();
+		enumObj.set("oneOf", literalsArray);
+		return enumObj;
+	}
+
 }
 
 class TypesAndRanges {
-	private List <String> typesList;
-	private List <String> rangesList;
+	private Set<String> types;
+	private Set<Range> ranges;
 
 	public TypesAndRanges() {
-		typesList = new ArrayList<String >();
-		rangesList = new ArrayList<String>();
+		types = new HashSet<>();
+		ranges = new HashSet<>();
 	}
-	
-	public void addType(String type){
-		if(!typesList.contains(type)){
-			typesList.add(type);
-		}
+
+	public void addType(String type) {
+		types.add(type); // deduplication is performed by the set class
 	}
-	
-	public void addRange(String range){
-		if(!rangesList.contains(range)){
-			rangesList.add(range);
-		}
+
+	public void addRange(Range range) {
+		ranges.add(range);
 	}
-	
-	public List<String> getTypesList(){
-		return typesList;
+
+	public Set<String> getTypes() {
+		return types;
 	}
-	
-	public String getTypeNormalized(){
-		if(typesList.contains(OWL.OBJECTPROPERTY.stringValue())){
+
+	public String getTypeNormalized() {
+		if (types.contains(OWL.OBJECTPROPERTY.stringValue())) {
 			return "resource";
-		} else if(typesList.contains(OWL.DATATYPEPROPERTY.stringValue())){
-			if(rangesList.isEmpty()){
+		} else if (types.contains(OWL.DATATYPEPROPERTY.stringValue())) {
+			if (ranges.isEmpty()) {
 				return "literal";
-			} else{
+			} else {
 				return "typedLiteral";
 			}
 		} else {
-			if(rangesList.isEmpty()){
+			if (ranges.isEmpty()) {
 				return "undetermined";
-			} else{
+			} else {
 				return "resource";
 			}
 		}
 	}
-	
-	public List<String> getRangesList() {
-		return rangesList;
+
+	public Set<Range> getRanges() {
+		return ranges;
 	}
-	
-	 
+
 }
 
 class PropertiesMoreProcessor implements QueryBuilderProcessor {
@@ -1346,9 +1456,9 @@ class PropertiesMoreProcessor implements QueryBuilderProcessor {
 
 	private PropertiesMoreProcessor() {
 		this.graphPattern = GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE)
-				.prefix("rdfs", RDFS.NAMESPACE)
-				.projection(ProjectionElementBuilder.variable("attr_more"))
-				.pattern("BIND( EXISTS {?aSubProperty rdfs:subPropertyOf ?resource . } AS ?attr_more )  \n").graphPattern();
+				.prefix("rdfs", RDFS.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_more"))
+				.pattern("BIND( EXISTS {?aSubProperty rdfs:subPropertyOf ?resource . } AS ?attr_more )  \n")
+				.graphPattern();
 	}
 
 	@Override
