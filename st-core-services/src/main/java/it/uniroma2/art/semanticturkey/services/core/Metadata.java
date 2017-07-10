@@ -516,16 +516,20 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public Collection<OntologyImport> getFromLocalFile(String baseURI, String localFile, String mirrorFile,
+	public Collection<OntologyImport> getFromLocalFile(String baseURI, MultipartFile localFile, String mirrorFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ImportManagementException, IOException {
-
 		Set<IRI> failedImports = new HashSet<>();
+		File inputServerFile = File.createTempFile("getFromLocalFile", localFile.getOriginalFilename());
+		try {
+			localFile.transferTo(inputServerFile);
+			getOntologyManager().getImportedOntologyFromLocalFile(getManagedConnection(), baseURI,
+					inputServerFile.getPath(), mirrorFile, transitiveImportAllowance, failedImports);
 
-		getOntologyManager().getImportedOntologyFromLocalFile(getManagedConnection(), baseURI, localFile,
-				mirrorFile, transitiveImportAllowance, failedImports);
-
-		return OntologyImport.fromImportFailures(failedImports);
+			return OntologyImport.fromImportFailures(failedImports);
+		} finally {
+			inputServerFile.delete();
+		}
 	}
 
 	protected OntologyManager getOntologyManager() {
