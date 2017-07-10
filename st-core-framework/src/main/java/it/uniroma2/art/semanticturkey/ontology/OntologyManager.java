@@ -187,6 +187,7 @@ public interface OntologyManager {
 	 * @param conn
 	 * @param baseURI
 	 * @param altURL
+	 * @param rdfFormat 
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
@@ -195,7 +196,7 @@ public interface OntologyManager {
 	 * @throws IOException
 	 */
 	void downloadImportedOntologyFromWeb(RepositoryConnection conn, String baseURI, String altURL,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, ImportManagementException, RDF4JException, IOException;
 
 	/**
@@ -205,6 +206,7 @@ public interface OntologyManager {
 	 * @param baseURI
 	 * @param altURL
 	 * @param toLocalFile
+	 * @param rdfFormat 
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws ImportManagementException
@@ -213,7 +215,7 @@ public interface OntologyManager {
 	 * @throws IOException
 	 */
 	void downloadImportedOntologyFromWebToMirror(RepositoryConnection conn, String baseURI, String altURL,
-			String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
+			String toLocalFile, RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, MalformedURLException, IOException;
 

@@ -43,7 +43,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.algebra.evaluation.util.Statements;
 import org.eclipse.rdf4j.query.impl.BackgroundGraphResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -58,8 +57,6 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
@@ -308,24 +305,7 @@ public class OntologyManagerImpl implements OntologyManager {
 		// (or inferred from the extention of the file). Then, if this download was done without any problem,
 		// import the ontology
 
-		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
-		RDFFormat guessedFormat = RDFFormat
-				.matchFileName(mirFile.getLocalName(), RDFParserRegistry.getInstance().getKeys())
-				.orElse(null);
-
-		if (rdfFormat != null) {
-			// check it the input rdfFormat is compliant with the file extension
-			if (guessedFormat == null || rdfFormat != guessedFormat) {
-				// change the file extention according to the input RDFFormat
-				String newLocalFile = toLocalFile + "." + rdfFormat.getDefaultFileExtension();
-				mirFile = new MirroredOntologyFile(newLocalFile);
-			}
-		} else {
-			if (guessedFormat == null) {
-				String newLocalFile = toLocalFile + "." + RDFFormat.RDFXML.getDefaultFileExtension();
-				mirFile = new MirroredOntologyFile(newLocalFile);
-			}
-		}
+		MirroredOntologyFile mirFile = getMirFile(toLocalFile, rdfFormat);
 
 		try {
 			checkOntologyNotExplicitlyImported(conn, baseURI);
@@ -354,6 +334,28 @@ public class OntologyManagerImpl implements OntologyManager {
 		} catch (Exception e) {
 			throw new OntologyManagerException(e);
 		}
+	}
+
+	protected MirroredOntologyFile getMirFile(String toLocalFile, RDFFormat rdfFormat) {
+		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
+		RDFFormat guessedFormat = RDFFormat
+				.matchFileName(mirFile.getLocalName(), RDFParserRegistry.getInstance().getKeys())
+				.orElse(null);
+
+		if (rdfFormat != null) {
+			// check it the input rdfFormat is compliant with the file extension
+			if (guessedFormat == null || rdfFormat != guessedFormat) {
+				// change the file extension according to the input RDFFormat
+				String newLocalFile = toLocalFile + "." + rdfFormat.getDefaultFileExtension();
+				mirFile = new MirroredOntologyFile(newLocalFile);
+			}
+		} else {
+			if (guessedFormat == null) {
+				String newLocalFile = toLocalFile + "." + RDFFormat.RDFXML.getDefaultFileExtension();
+				mirFile = new MirroredOntologyFile(newLocalFile);
+			}
+		}
+		return mirFile;
 	}
 
 	protected IterationSpy<Statement, QueryEvaluationException> createURLImportsSpyingIteration(
@@ -772,8 +774,8 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	@Override
 	public void downloadImportedOntologyFromWeb(RepositoryConnection conn, String baseURI, String altURL,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws ImportManagementException, RDF4JException, IOException {
+			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws ImportManagementException, RDF4JException, IOException {
 		checkImportFailed(conn, baseURI);
 
 		getImportedOntology(fromWeb, baseURI, altURL, null, null);
@@ -782,7 +784,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		Model capturedOntologyMetadata = new LinkedHashModel();
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
-				baseURI, altURL, null, capturedOntologyMetadata);
+				baseURI, altURL, rdfFormat, capturedOntologyMetadata);
 		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 		notifiedAddedOntologyImport(fromWeb, baseURI, altURL, null, ImportModality.USER, false, conn,
@@ -791,10 +793,11 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	@Override
 	public void downloadImportedOntologyFromWebToMirror(RepositoryConnection conn, String baseURI,
-			String altURL, String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports)
+			String altURL, String toLocalFile, RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, MalformedURLException, IOException {
-		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
+		
+		MirroredOntologyFile mirFile = getMirFile(toLocalFile, rdfFormat);
 
 		checkImportFailed(conn, baseURI);
 
@@ -809,7 +812,7 @@ public class OntologyManagerImpl implements OntologyManager {
 		// if the download was achieved, import the ontology in the model
 
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
-				baseURI, altURL, null, capturedOntologyMetadata);
+				baseURI, altURL, rdfFormat, capturedOntologyMetadata);
 		conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
 
 		// this time sends a notification with the spied ontology imports (but change the import method

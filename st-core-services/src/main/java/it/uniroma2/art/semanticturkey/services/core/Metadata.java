@@ -449,6 +449,7 @@ public class Metadata extends STServiceAdapter {
 	 * 
 	 * @param baseURI
 	 * @param altUrl
+	 * @param rdfFormat
 	 * @param transitiveImportAllowance
 	 * @return
 	 * @throws RDF4JException
@@ -460,13 +461,13 @@ public class Metadata extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
 	public Collection<OntologyImport> downloadFromWeb(String baseURI, @Optional String altUrl,
-			TransitiveImportMethodAllowance transitiveImportAllowance)
+			@Optional RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ImportManagementException, IOException {
 		String url = altUrl != null ? altUrl : baseURI;
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().downloadImportedOntologyFromWeb(getManagedConnection(), baseURI, url,
+		getOntologyManager().downloadImportedOntologyFromWeb(getManagedConnection(), baseURI, url, rdfFormat,
 				transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
@@ -478,6 +479,7 @@ public class Metadata extends STServiceAdapter {
 	 * @param baseURI
 	 * @param altUrl
 	 * @param mirrorFile
+	 * @param rdfFormat
 	 * @param transitiveImportAllowance
 	 * @return
 	 * @throws RDF4JException
@@ -489,14 +491,15 @@ public class Metadata extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('sys(ontologymirror)', 'C')")
 	public Collection<OntologyImport> downloadFromWebToMirror(String baseURI, @Optional String altUrl,
-			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
+			String mirrorFile, @Optional RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ImportManagementException, IOException {
 		String url = altUrl != null ? altUrl : baseURI;
 
 		Set<IRI> failedImports = new HashSet<>();
 
 		getOntologyManager().downloadImportedOntologyFromWebToMirror(getManagedConnection(), baseURI, url,
-				mirrorFile, transitiveImportAllowance, failedImports);
+				mirrorFile, rdfFormat, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -516,8 +519,8 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public Collection<OntologyImport> getFromLocalFile(String baseURI, MultipartFile localFile, String mirrorFile,
-			TransitiveImportMethodAllowance transitiveImportAllowance)
+	public Collection<OntologyImport> getFromLocalFile(String baseURI, MultipartFile localFile,
+			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ImportManagementException, IOException {
 		Set<IRI> failedImports = new HashSet<>();
 		File inputServerFile = File.createTempFile("getFromLocalFile", localFile.getOriginalFilename());
