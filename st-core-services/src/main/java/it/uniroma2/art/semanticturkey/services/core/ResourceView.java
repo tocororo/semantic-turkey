@@ -574,21 +574,19 @@ public class ResourceView extends STServiceAdapter {
 				}
 			}
 
-			if (includeInferred) {
-				GraphQuery describeQuery = managedConnection
-						.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
-				describeQuery.setBinding("y", resource);
-				describeQuery.setIncludeInferred(true);
-				QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
-					Resource subject = stmt.getSubject();
-					IRI predicate = stmt.getPredicate();
-					Value object = stmt.getObject();
-					if (retrievedStatements.contains(subject, predicate, object))
-						return;
+			GraphQuery describeQuery = managedConnection
+					.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
+			describeQuery.setBinding("y", resource);
+			describeQuery.setIncludeInferred(includeInferred);
+			QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
+				Resource subject = stmt.getSubject();
+				IRI predicate = stmt.getPredicate();
+				Value object = stmt.getObject();
+				if (retrievedStatements.contains(subject, predicate, object))
+					return;
 
-					retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
-				});
-			}
+				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
+			});
 
 			return retrievedStatements;
 		}
