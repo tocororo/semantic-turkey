@@ -152,7 +152,13 @@ public class ManchesterHandler extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public Boolean isClassAxiom(BNode bnode) {
-		return ManchesterSyntaxUtils.isClassAxiom(bnode, getUserNamedGraphs(), getManagedConnection());
+		boolean isClassAxiom = false;
+		try{
+		isClassAxiom = ManchesterSyntaxUtils.isClassAxiom(bnode, getUserNamedGraphs(), getManagedConnection());
+		} catch(ClassCastException e){
+			return false;
+		}
+		return isClassAxiom;
 	}
 	
 	/**
