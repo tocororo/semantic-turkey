@@ -97,6 +97,8 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngi
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.repository.ReadOnlyRepositoryWrapper;
+import it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperConfig;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
@@ -820,7 +822,8 @@ public abstract class Project extends AbstractProject {
 	}
 
 	/**
-	 * Creates a new repository.
+	 * Creates a new repository. The repository can optionally be wrapped in {@link ReadOnlyRepositoryWrapper}
+	 * to prevent unintended modifications of the data.
 	 * 
 	 * @param repositoryAccess
 	 *            if <code>null</code> the default repository location associated with the project is used
@@ -829,12 +832,13 @@ public abstract class Project extends AbstractProject {
 	 *            <code>projectName-localRepositoryId</code>
 	 * @param repoConfigurerSpecification
 	 * @param localRepostoryId
+	 * @param readOnlyWrapper
 	 * @return
 	 * @throws RepositoryCreationException
 	 */
 	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess,
 			@Nullable String repositoryId, PluginSpecification repoConfigurerSpecification,
-			String localRepostoryId) throws RepositoryCreationException {
+			String localRepostoryId, boolean readOnlyWrapper) throws RepositoryCreationException {
 
 		RepositoryImplConfig localRepositoryImplConfig;
 
@@ -902,6 +906,10 @@ public abstract class Project extends AbstractProject {
 				localRepositoryImplConfig = repoConfigurer.buildRepositoryImplConfig(null);
 			}
 
+			if (readOnlyWrapper) {
+				localRepositoryImplConfig = new ReadOnlyRepositoryWrapperConfig(localRepositoryImplConfig);
+			}
+			
 			RepositoryConfig localRepositoryConfig = new RepositoryConfig(localRepostoryId, "",
 					localRepositoryImplConfig);
 			repositoryManager.addRepositoryConfig(localRepositoryConfig);
@@ -910,6 +918,20 @@ public abstract class Project extends AbstractProject {
 				| UnloadablePluginConfigurationException | WrongPropertiesException e) {
 			throw new RepositoryException(e);
 		}
+	}
+
+	public Repository createRepository(RepositoryAccess repositoryAccess, String repositoryId,
+			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
+			throws RepositoryCreationException {
+		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
+				false);
+	}
+
+	public Repository createReadOnlyRepository(RepositoryAccess repositoryAccess, String repositoryId,
+			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
+			throws RepositoryCreationException {
+		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
+				true);
 	}
 
 	public VersionManager getVersionManager() {
@@ -940,4 +962,5 @@ public abstract class Project extends AbstractProject {
 			return "it.uniroma2.art.owlart.models.OWLModel";
 		}
 	}
+
 }

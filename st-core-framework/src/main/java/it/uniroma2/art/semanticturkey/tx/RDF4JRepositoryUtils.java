@@ -82,6 +82,9 @@ public class RDF4JRepositoryUtils {
 	private static boolean connectionEquals(RepositoryConnection heldConnection,
 			RepositoryConnection connection) {
 		while (connection instanceof DelegatingRepositoryConnection) {
+			if (heldConnection == connection || heldConnection.equals(connection))
+				return true;
+
 			connection = ((DelegatingRepositoryConnection) connection).getDelegate();
 		}
 		return heldConnection == connection || heldConnection.equals(connection);

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.IsolationLevels;
+import org.eclipse.rdf4j.repository.DelegatingRepositoryConnection;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
@@ -100,12 +101,16 @@ public class Versions extends STServiceAdapter {
 
 		String localRepostoryId = ProjectUtils.computeVersionRepository(versionId);
 
-		Repository versionRepository = getProject().createRepository(repositoryAccess, repositoryId,
+		Repository versionRepository = getProject().createReadOnlyRepository(repositoryAccess, repositoryId,
 				repoConfigurerSpecification, localRepostoryId);
 
 		try (RepositoryConnection outConn = versionRepository.getConnection()) {
 			outConn.begin(IsolationLevels.READ_COMMITTED);
-			getManagedConnection().export(new RDFInserter(outConn));
+
+			// Unwraps the read-only connection wrapper to access the underlying writable connection
+			getManagedConnection()
+					.export(new RDFInserter(((DelegatingRepositoryConnection) outConn).getDelegate()));
+			
 			outConn.commit();
 		}
 
@@ -117,7 +122,6 @@ public class Versions extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'R')")
 	public void closeVersion(String versionId) {
 		VersionInfo versionInfo = getProject().getVersionManager().getVersion(versionId).orElseThrow(
