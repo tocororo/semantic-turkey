@@ -51,13 +51,6 @@ public class Config {
 	private static String singleProjectModePropName = "singleProjectMode";
 	private static String dataDirPropName = "data.dir";
 	
-	private static String emailAdminAddressPropName = "mail.admin.address";
-	private static String emailFromAddressPropName = "mail.from.address";
-	private static String emailFromPasswordPropName = "mail.from.password";
-	private static String emailFromAliasPropName = "mail.from.alias";
-	private static String emailFromHostPropName = "mail.from.host";
-	private static String emailFromPortPropName = "mail.from.port";
-	
 	private static void updatePropertyFile() {
 		FileOutputStream os;
 		try {
@@ -152,111 +145,6 @@ public class Config {
 
 	public static void setDataDirProp(String dataDirPath) throws ConfigurationUpdateException {
 		stProperties.setProperty(dataDirPropName, dataDirPath);
-	}
-	
-	//===== email configuration methods =====
-	
-	/**
-	 * Sets the email address of the administrator
-	 * @param emailAddress
-	 */
-	public static void setEmailAdminAddress(String emailAddress) {
-		stProperties.setProperty(emailAdminAddressPropName, emailAddress);
-		updatePropertyFile();
-	}
-	
-	/**
-	 * Gets the email address of the administrator
-	 * @return
-	 */
-	public static String getEmailAdminAddress() {
-		return stProperties.getProperty(emailAdminAddressPropName);
-	}
-	
-	/**
-	 * Gets the email address used to send administration e-mail
-	 * @return
-	 */
-	public static String getEmailFromAddress() {
-		return stProperties.getProperty(emailFromAddressPropName);
-	}
-	
-	/**
-	 * Sets the email address used to send administration e-mail
-	 * @param emailAddress
-	 */
-	public static void setEmailFromAddress(String emailAddress) {
-		stProperties.setProperty(emailFromAddressPropName, emailAddress);
-		updatePropertyFile();
-	}
-	
-	
-	/**
-	 * Sets the password of the mail used to send administration e-mail
-	 * @param password
-	 */
-	public static void setEmailFromPassword(String password) {
-		stProperties.setProperty(emailFromPasswordPropName, password);
-		updatePropertyFile();
-	}
-	
-	/**
-	 * Gets the password of the mail used to send administration e-mail
-	 * @return
-	 */
-	public static String getEmailFromPassword() {
-		return stProperties.getProperty(emailFromPasswordPropName);
-	}
-	
-	/**
-	 * Sets the alias of the mail used to send administration mails
-	 * @param alias
-	 */
-	public static void setEmailFromAlias(String alias) {
-		stProperties.setProperty(emailFromAliasPropName, alias);
-		updatePropertyFile();
-	}
-	
-	/**
-	 * Gets the alias of the mail used to send administration mails
-	 * @return
-	 */
-	public static String getEmailFromAlias() {
-		return stProperties.getProperty(emailFromAliasPropName);
-	}
-	
-	/**
-	 * Sets the host of the mail used to send administration mails
-	 * @param host
-	 */
-	public static void setEmailFromHost(String host) {
-		stProperties.setProperty(emailFromHostPropName, host);
-		updatePropertyFile();
-	}
-	
-	/**
-	 * Gets the host of the mail used to send administration mails
-	 * @return
-	 */
-	public static String getEmailFromHost() {
-		return stProperties.getProperty(emailFromHostPropName);
-	}
-	
-	/**
-	 * Sets the port of the mail used to send administration mails
-	 * @param port
-	 */
-	public static void setEmailFromPort(String port) {
-		stProperties.setProperty(emailFromPortPropName, port);
-		updatePropertyFile();
-	}
-	
-	/**
-	 * Gets the port of the mail used to send administration mails
-	 * @return
-	 */
-	public static String getEmailFromPort() {
-		return stProperties.getProperty(emailFromPortPropName);
 	}
 
 }

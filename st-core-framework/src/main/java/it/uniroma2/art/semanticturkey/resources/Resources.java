@@ -41,6 +41,9 @@ import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -71,7 +74,7 @@ public class Resources {
 	private static File extensionPath;
 
 	// private static File sourceUserDirectory;
-	private static File userDirectory;
+	private static File stDataDirectory;
 
 	/* new */
 	private static File karafEtcDirectory;
@@ -136,29 +139,29 @@ public class Resources {
 		/* new */
 		File dataDir = Config.getDataDir();
 		if (dataDir.isAbsolute())
-			userDirectory = dataDir;
+			stDataDirectory = dataDir;
 		else
-			userDirectory = new File(getExtensionPath(), dataDir.getPath());
+			stDataDirectory = new File(getExtensionPath(), dataDir.getPath());
 		logger.info("st data directory: " + getSemTurkeyDataDir());
 
-		ontLibraryDir = new File(userDirectory, _ontLibraryDirLocalName);
-		ontTempDir = new File(userDirectory, _ontTempDirLocalName);
-		ontMirrorDirDefaultLocation = new File(userDirectory, _ontMirrorDirDefaultLocationLocalName);
+		ontLibraryDir = new File(stDataDirectory, _ontLibraryDirLocalName);
+		ontTempDir = new File(stDataDirectory, _ontTempDirLocalName);
+		ontMirrorDirDefaultLocation = new File(stDataDirectory, _ontMirrorDirDefaultLocationLocalName);
 		owlDefinitionFile = new File(ontLibraryDir, "owl.rdfs");
 		annotOntologyFile = new File(ontLibraryDir, "annotation.owl");
-		ontologiesMirrorFile = new File(userDirectory, _ontMirrorFileName);
-		projectsDir = new File(userDirectory, _projectsDirName);
-		systemDir = new File(userDirectory, _systemDirName);
-		usersDir = new File(userDirectory, _usersDirName);
-		projectUserBindingsDir = new File(userDirectory, _projectUserBindingsDirName);
+		ontologiesMirrorFile = new File(stDataDirectory, _ontMirrorFileName);
+		projectsDir = new File(stDataDirectory, _projectsDirName);
+		systemDir = new File(stDataDirectory, _systemDirName);
+		usersDir = new File(stDataDirectory, _usersDirName);
+		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
 
-		if (!userDirectory.exists()) {
+		if (!stDataDirectory.exists()) {
 			try {
 				// first Copy Of User Resources
 				// Utilities.recursiveCopy(sourceUserDirectory, userDirectory);
 
 				/* new */
-				createDataDirectoryFromScratch(userDirectory);
+				createDataDirectoryFromScratch(stDataDirectory);
 
 			} catch (IOException e) {
 				throw new STInitializationException(
@@ -178,31 +181,23 @@ public class Resources {
 			if (!systemDir.exists()) {
 				systemDir.mkdirs();
 			}
+			initializeSystemAdminSettings();
+			
 			if (!usersDir.exists()) {
 				usersDir.mkdir();
 			}
+			
 			if (!projectUserBindingsDir.exists()) {
-				try {
-					initializePUBindingFileStructure();
-				} catch (ProjectAccessException | PUBindingException e) {
-					throw new STInitializationException(e);
-				}
-			}
-			if (!CustomFormManager.getCustomFormsFolder(null).exists()) {
-				try {
-					initializeCustomFormFileStructure();
-				} catch (IOException e) {
-					throw new STInitializationException(e);
-				}
-			}
-			if (!RBACManager.getRolesDir(null).exists()) {
-				try {
-					initializeRoles();
-				} catch (IOException e) {
-					throw new STInitializationException(e);
-				}
+				initializePUBindingFileStructure();
 			}
 			
+			if (!CustomFormManager.getCustomFormsFolder(null).exists()) {
+				initializeCustomFormFileStructure();
+			}
+			
+			if (!RBACManager.getRolesDir(null).exists()) {
+				initializeRoles();
+			}
 		}
 
 		try {
@@ -215,7 +210,7 @@ public class Resources {
 	}
 
 	public static File getSemTurkeyDataDir() {
-		return userDirectory;
+		return stDataDirectory;
 	}
 
 	public static File getAnnotOntologyFile() {
@@ -330,12 +325,8 @@ public class Resources {
 			
 			initializeCustomFormFileStructure();
 			initializeRoles();
-			
-			try {
-				initializePUBindingFileStructure();
-			} catch (ProjectAccessException | PUBindingException e) {
-				throw new STInitializationException(e);
-			}
+			initializePUBindingFileStructure();
+			initializeSystemAdminSettings();
 						
 		} else
 			throw new STInitializationException("Unable to create the main data folder");
@@ -354,17 +345,20 @@ public class Resources {
 	 * @throws ProjectAccessException
 	 * @throws IOException 
 	 */
-	private static void initializePUBindingFileStructure() throws ProjectAccessException, PUBindingException {
-		// create project-user bindings
-		projectUserBindingsDir.mkdir();
-
-		for (AbstractProject abstrProj : ProjectManager.listProjects()) {
-			if (abstrProj instanceof Project) {
-				for (STUser user : UsersManager.listUsers()) {
-					ProjectUserBinding puBinding = new ProjectUserBinding(abstrProj, user);
-					ProjectUserBindingsManager.createPUBinding(puBinding);
+	private static void initializePUBindingFileStructure() throws STInitializationException {
+		try {
+			// create project-user bindings
+			projectUserBindingsDir.mkdir();
+			for (AbstractProject abstrProj : ProjectManager.listProjects()) {
+				if (abstrProj instanceof Project) {
+					for (STUser user : UsersManager.listUsers()) {
+						ProjectUserBinding puBinding = new ProjectUserBinding(abstrProj, user);
+						ProjectUserBindingsManager.createPUBinding(puBinding);
+					}
 				}
 			}
+		} catch (ProjectAccessException | PUBindingException e) {
+			throw new STInitializationException(e);
 		}
 	}
 	
@@ -383,51 +377,90 @@ public class Resources {
 	 * </ul> 
 	 * @throws IOException 
 	 */
-	private static void initializeCustomFormFileStructure() throws IOException {
-		File customFormsFolder = CustomFormManager.getCustomFormsFolder(null);
-		customFormsFolder.mkdir();
-		File formCollFolder = CustomFormManager.getFormCollectionsFolder(null);
-		formCollFolder.mkdir();
-		File formsFolder = CustomFormManager.getFormsFolder(null);
-		formsFolder.mkdir();
-		Utilities.copy(
-				Resources.class.getClassLoader().getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/customform/customFormConfig.xml"),
-				new File(customFormsFolder, "customFormConfig.xml")
-		);
-		Utilities.copy(
-				Resources.class.getClassLoader().getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.collection.note.xml"),
-				new File(formCollFolder, "it.uniroma2.art.semanticturkey.customform.collection.note.xml")
-		);
-		Utilities.copy(
-				Resources.class.getClassLoader().getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
-				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
-		);
-		Utilities.copy(
-				Resources.class.getClassLoader().getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
-				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml")
-		);
+	private static void initializeCustomFormFileStructure() throws STInitializationException {
+		try {
+			File customFormsFolder = CustomFormManager.getCustomFormsFolder(null);
+			customFormsFolder.mkdir();
+			File formCollFolder = CustomFormManager.getFormCollectionsFolder(null);
+			formCollFolder.mkdir();
+			File formsFolder = CustomFormManager.getFormsFolder(null);
+			formsFolder.mkdir();
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/customform/customFormConfig.xml"),
+					new File(customFormsFolder, "customFormConfig.xml")
+			);
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.collection.note.xml"),
+					new File(formCollFolder, "it.uniroma2.art.semanticturkey.customform.collection.note.xml")
+			);
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
+					new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
+			);
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
+					new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml")
+			);
+		} catch (IOException e) {
+			throw new STInitializationException(e);
+		}
 	}
 	
-	private static void initializeRoles() throws IOException {
-		Role[] roles = {
-				RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
-				RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER, 
-				RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR,
-				RBACManager.DefaultRole.VALIDATOR
-		};
-		File rolesDir = RBACManager.getRolesDir(null);
-		if (!rolesDir.exists()) {
-			rolesDir.mkdirs();
+	private static void initializeRoles() throws STInitializationException {
+		try {
+			Role[] roles = {
+					RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
+					RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER, 
+					RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR,
+					RBACManager.DefaultRole.VALIDATOR
+			};
+			File rolesDir = RBACManager.getRolesDir(null);
+			if (!rolesDir.exists()) {
+				rolesDir.mkdirs();
+			}
+			for (Role r : roles) {
+				Utilities.copy(Resources.class.getClassLoader()
+						.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
+						new File(rolesDir, "role_" + r.getName() + ".pl")
+				);
+			}
+		} catch (IOException e) {
+			throw new STInitializationException(e);
 		}
-		for (Role r : roles) {
-			Utilities.copy(Resources.class.getClassLoader()
-					.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
-					new File(rolesDir, "role_" + r.getName() + ".pl")
-			);
+	}
+	
+	private static void initializeSystemAdminSettings() throws STInitializationException {
+		try {
+			String emailAdminAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
+			if (emailAdminAddress == null) {
+				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, "admin@vocbench.com");
+			}
+			String emailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS);
+			if (emailFromAddress == null) {
+				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS, "xxxx@gmail.com");
+			}
+			String emailFromPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD);
+			if (emailFromPassword == null) {
+				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD, "xxxx");
+			}
+			String emailFromAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS);
+			if (emailFromAlias == null) {
+				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS, "VocBench Admin");
+			}
+			String emailFromHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST);
+			if (emailFromHost == null) {
+				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST, "smtp.gmail.com");
+			}
+			String emailFromPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT);
+			if (emailFromPort == null) {
+				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT, "465");
+			}
+		} catch (STPropertyUpdateException | STPropertyAccessException e) {
+			throw new STInitializationException(e);
 		}
 	}
 

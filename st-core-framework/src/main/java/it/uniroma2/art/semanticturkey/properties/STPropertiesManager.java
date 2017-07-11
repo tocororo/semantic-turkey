@@ -33,6 +33,13 @@ public class STPropertiesManager {
 	public static final String PREF_SHOW_INSTANCES_NUMBER = "show_instances_number";
 	public static final String PREF_ACTIVE_SCHEMES = "active_schemes";
 	public static final String PREF_PROJ_THEME = "project_theme";
+	
+	public static final String SETTING_EMAIL_ADMIN_ADDRESS = "mail.admin.address";
+	public static final String SETTING_EMAIL_FROM_ADDRESS = "mail.from.address";
+	public static final String SETTING_EMAIL_FROM_PASSWORD = "mail.from.password";
+	public static final String SETTING_EMAIL_FROM_ALIAS = "mail.from.alias";
+	public static final String SETTING_EMAIL_FROM_HOST = "mail.from.host";
+	public static final String SETTING_EMAIL_FROM_PORT = "mail.from.port";
 
 	/*
 	 * Methods to get/set properties to/from the following Properties files

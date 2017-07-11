@@ -34,11 +34,13 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
-import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -60,17 +62,24 @@ public class Administration extends STServiceAdapter {
 	 * Gets the administration config: a map with key value of configuration parameters
 	 * @return
 	 * @throws JSONException
+	 * @throws STPropertyAccessException 
 	 */
 	@STServiceOperation
-	public JsonNode getAdministrationConfig() throws JSONException {
+	public JsonNode getAdministrationConfig() throws JSONException, STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode configNode = jsonFactory.objectNode();
-		configNode.set("emailAdminAddress", jsonFactory.textNode(Config.getEmailAdminAddress()));
-		configNode.set("emailFromAddress", jsonFactory.textNode(Config.getEmailFromAddress()));
-		configNode.set("emailFromPassword", jsonFactory.textNode(Config.getEmailFromPassword()));
-		configNode.set("emailFromAlias", jsonFactory.textNode(Config.getEmailFromAlias()));
-		configNode.set("emailFromHost", jsonFactory.textNode(Config.getEmailFromHost()));
-		configNode.set("emailFromPort", jsonFactory.textNode(Config.getEmailFromPort()));
+		configNode.set("emailAdminAddress", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS)));
+		configNode.set("emailFromAddress", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS)));
+		configNode.set("emailFromPassword", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD)));
+		configNode.set("emailFromAlias", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS)));
+		configNode.set("emailFromHost", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST)));
+		configNode.set("emailFromPort", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT)));
 		return configNode;
 	}
 	
@@ -83,17 +92,18 @@ public class Administration extends STServiceAdapter {
 	 * @param emailFromHost
 	 * @param emailFromPort
 	 * @return
+	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateAdministrationConfig(
 			String emailAdminAddress, String emailFromAddress, String emailFromPassword,
-			String emailFromAlias, String emailFromHost, String emailFromPort) {
-		Config.setEmailAdminAddress(emailAdminAddress);
-		Config.setEmailFromAddress(emailFromAddress);
-		Config.setEmailFromPassword(emailFromPassword);
-		Config.setEmailFromAlias(emailFromAlias);
-		Config.setEmailFromHost(emailFromHost);
-		Config.setEmailFromPort(emailFromPort);
+			String emailFromAlias, String emailFromHost, String emailFromPort) throws STPropertyUpdateException {
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, emailAdminAddress);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS, emailFromAddress);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD, emailFromPassword);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS, emailFromAlias);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST, emailFromHost);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT, emailFromPort);
 	}
 	
 	

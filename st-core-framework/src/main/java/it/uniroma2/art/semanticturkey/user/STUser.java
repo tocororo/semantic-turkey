@@ -17,7 +17,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.resources.Config;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
 public class STUser implements UserDetails {
@@ -211,8 +212,11 @@ public class STUser implements UserDetails {
 	}
 	
 	public boolean isAdmin() {
-		//check every time in order to returns the correct boolean even if the admin email address changes
-		return Config.getEmailAdminAddress().equals(email);
+		try {
+			return email.equals(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS));
+		} catch (STPropertyAccessException e) {
+			return false;
+		}
 	}
 	
 	public ObjectNode getAsJsonObject() {

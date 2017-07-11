@@ -42,9 +42,11 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -173,12 +175,13 @@ public class Users extends STServiceAdapter {
 	 * @throws UserCreationException 
 	 * @throws ParseException 
 	 * @throws PUBindingException 
+	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String birthday, @Optional String gender, @Optional String country, @Optional String address,
 			@Optional String affiliation, @Optional String url, @Optional String phone)
-					throws ProjectAccessException, UserException, ParseException, PUBindingException {
+					throws ProjectAccessException, UserException, ParseException, PUBindingException, STPropertyUpdateException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
@@ -206,10 +209,9 @@ public class Users extends STServiceAdapter {
 		if (phone != null) {
 			user.setPhone(phone);
 		}
-		//if this is the first registered user, it means that it is the first access, 
-		//so set it as admin (TODO I'm not sure this is completely safe, check it) 
+		//if this is the first registered user, it means that it is the first access, so set it as admin 
 		if (UsersManager.listUsers().isEmpty()) {
-			Config.setEmailAdminAddress(email);
+			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, email);
 			user.setStatus(UserStatus.ACTIVE);
 		}
 		UsersManager.registerUser(user);
@@ -218,9 +220,8 @@ public class Users extends STServiceAdapter {
 		try {
 			EmailSender.sendRegistrationMailToUser(email, givenName, familyName);
 			EmailSender.sendRegistrationMailToAdmin(email, givenName, familyName);
-		} catch (UnsupportedEncodingException | MessagingException e) {
+		} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
 			logger.error(Utilities.printFullStackTrace(e));
-//			e.printStackTrace();
 		}
 	}
 	
@@ -260,10 +261,10 @@ public class Users extends STServiceAdapter {
 	 * @param newEmail
 	 * @return
 	 * @throws IOException 
-	 * @throws UserException 
+	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserEmail(String email, String newEmail) throws IOException, UserException {
+	public ObjectNode updateUserEmail(String email, String newEmail) throws UserException, STPropertyUpdateException {
 		STUser user = UsersManager.getUserByEmail(email);
 		//check if there is already a user that uses the newEmail
 		if (UsersManager.getUserByEmail(newEmail) != null) {
@@ -273,7 +274,7 @@ public class Users extends STServiceAdapter {
 		boolean wasAdmin = user.isAdmin(); 
 		user = UsersManager.updateUserEmail(user, newEmail);
 		if (wasAdmin) { //if user was admin, update the admin email in the configuration file
-			Config.setEmailAdminAddress(user.getEmail());
+			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, user.getEmail());
 		}
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -446,8 +447,10 @@ public class Users extends STServiceAdapter {
 			EmailSender.sendForgotPasswordMail(user, resetLink);
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
+			String emailAdminAddress = STPropertiesManager.getSystemSetting(
+					STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
 			throw new Exception("Failed to send an e-mail for resetting the password. Please contact the "
-					+ "system administration at " + Config.getEmailAdminAddress());
+					+ "system administration at " + emailAdminAddress);
 		}
 	}
 	
@@ -495,16 +498,19 @@ public class Users extends STServiceAdapter {
 		 * @param familyName
 		 * @throws MessagingException
 		 * @throws UnsupportedEncodingException
+		 * @throws STPropertyAccessException 
 		 */
 		public static void sendRegistrationMailToUser(String toEmail, String givenName, String familyName) 
-				throws MessagingException, UnsupportedEncodingException {
+				throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+			String emailAdminAddress = STPropertiesManager.getSystemSetting(
+					STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
 			String text = "Dear " + givenName + " " + familyName + ","
 					+ "\nthank you for registering as a user of VocBench 3."
 					+ " Your request has been received. Please wait for the administrator to approve it."
 					+ " After approval, you can log into VocBench with the e-mail " + toEmail + " and your chosen password."
 					+ "\nThanks for your interest."
 					+ "\nIf you want to unregister, please send an email with your e-mail address and the subject:"
-					+ " 'VocBench - Unregister' to " + Config.getEmailAdminAddress() + "."
+					+ " 'VocBench - Unregister' to " + emailAdminAddress + "."
 					+ "\nRegards,\nThe VocBench Team.";
 			sendMail(toEmail, "VocBench registration", text);
 		}
@@ -513,20 +519,23 @@ public class Users extends STServiceAdapter {
 		 * Sends an email to the system administrator to inform about a new user registration request
 		 * @throws MessagingException 
 		 * @throws UnsupportedEncodingException 
+		 * @throws STPropertyAccessException 
 		 */
 		public static void sendRegistrationMailToAdmin(String userEmail, String userGivenName, String userFamilyName)
-				throws UnsupportedEncodingException, MessagingException {
+				throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+			String emailAdminAddress = STPropertiesManager.getSystemSetting(
+					STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
 			String text = "Dear VocBench administrator,"
 					+ "\nthere is a new user registration request for VocBench."
 					+ "\nGiven Name: " + userGivenName
 					+ "\nFamily Name: " + userFamilyName
 					+ "\nE-mail: " + userEmail
 					+ "\nPlease activate the account.\nRegards,\nThe VocBench Team.";
-			sendMail(Config.getEmailAdminAddress(), "VocBench registration", text);
+			sendMail(emailAdminAddress, "VocBench registration", text);
 		}
 		
 		public static void sendForgotPasswordMail(STUser user, String forgotPasswordLink)
-				throws UnsupportedEncodingException, MessagingException {
+				throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 			String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
 					+ "\nwe've received a request to reset the password for the"
 					+ " VocBench account associated to this email address."
@@ -540,7 +549,7 @@ public class Users extends STServiceAdapter {
 		}
 		
 		public static void sendResetPasswordMail(STUser user, String tempPassword)
-				throws UnsupportedEncodingException, MessagingException {
+				throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 			String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
 					+ "\nwe confirm you that your password has been reset."
 					+ "\nThis is your new temporary password:"
@@ -550,12 +559,13 @@ public class Users extends STServiceAdapter {
 			sendMail(user.getEmail(), "VocBench password reset", text);
 		}
 		
-		private static void sendMail(String toEmail, String subject, String text) throws MessagingException, UnsupportedEncodingException {
-			String emailAddress = Config.getEmailFromAddress();
-			String emailPassword = Config.getEmailFromPassword();
-			String emailAlias = Config.getEmailFromAlias();
-			String emailHost = Config.getEmailFromHost();
-			String emailPort = Config.getEmailFromPort();
+		private static void sendMail(String toEmail, String subject, String text) 
+				throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+			String emailAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS);
+			String emailPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD);
+			String emailAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS);
+			String emailHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST);
+			String emailPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT);
 			
 			if (emailAddress == null || emailPassword == null || emailAlias == null || emailHost == null || emailPort == null) {
 				throw new MessagingException("Wrong mail configuration, impossible to send a confirmation e-mail");
