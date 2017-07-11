@@ -21,7 +21,14 @@ public class NatureRecognitionOrchestrator {
 		if(!varName.startsWith("?")){
 			varName = "?"+varName;
 		}
-		sparqlPartText = 
+		sparqlPartText =
+		" OPTIONAL { \n" +
+		"  values($st) {(rdfs:Datatype)} \n" +
+		"  graph $go { \n" +
+		" "+varName+" a $st . \n" +
+		"  } \n" +
+		" } \n" +
+				
 		" OPTIONAL { \n" +
 		"  values($st) {"
 		+ "		(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)"
@@ -59,8 +66,9 @@ public class NatureRecognitionOrchestrator {
 				+ "IF(?st = owl:AnnotationProperty, \"" + RDFResourceRole.annotationProperty + "\","
 				+ "IF(?st = owl:OntologyProperty, \"" + RDFResourceRole.ontologyProperty + "\","
 				+ "IF(?st = rdfs:Class, \"" + RDFResourceRole.cls + "\","
+				+ "IF(?st = rdfs:Datatype, \"" + RDFResourceRole.dataRange + "\","
 				+ "\"" + RDFResourceRole.individual + "\""
-				+ ")))))))))))) as ?rt) \n" +
+				+ "))))))))))))) as ?rt) \n" +
 		" OPTIONAL { \n" +
 		"	   BIND( \n" +
 		"	     IF(EXISTS {"+varName+" owl:deprecated true}, \"true\", \n" +
