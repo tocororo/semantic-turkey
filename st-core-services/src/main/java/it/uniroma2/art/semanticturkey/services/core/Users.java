@@ -220,7 +220,7 @@ public class Users extends STServiceAdapter {
 			EmailSender.sendRegistrationMailToAdmin(email, givenName, familyName);
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 	}
 	
