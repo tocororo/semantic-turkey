@@ -126,7 +126,6 @@ public class Search extends STServiceAdapter {
 		//@formatter:on
 		
 		logger.debug("query = "+query);
-		System.out.println("query = "+query); // da cancellare
 		
 		return serviceForSearches.executeGenericSearchQuery(query, getUserNamedGraphs(), getManagedConnection());
 	}
