@@ -31,7 +31,7 @@ public class NatureRecognitionOrchestrator {
 				
 		" OPTIONAL { \n" +
 		"  values($st) {"
-		+ "		(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)"
+		+ "		(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)(owl:Ontology)"
 		+ "		(owl:ObjectProperty)(owl:DatatypeProperty)(owl:AnnotationProperty)(owl:OntologyProperty)"
 		+ "} \n" +
 		"  graph $go { \n" +
@@ -65,10 +65,11 @@ public class NatureRecognitionOrchestrator {
 				+ "IF(?st = owl:DatatypeProperty, \"" + RDFResourceRole.datatypeProperty + "\","
 				+ "IF(?st = owl:AnnotationProperty, \"" + RDFResourceRole.annotationProperty + "\","
 				+ "IF(?st = owl:OntologyProperty, \"" + RDFResourceRole.ontologyProperty + "\","
+				+ "IF(?st = owl:Ontology, \"" + RDFResourceRole.ontology + "\","
 				+ "IF(?st = rdfs:Class, \"" + RDFResourceRole.cls + "\","
 				+ "IF(?st = rdfs:Datatype, \"" + RDFResourceRole.dataRange + "\","
 				+ "\"" + RDFResourceRole.individual + "\""
-				+ "))))))))))))) as ?rt) \n" +
+				+ ")))))))))))))) as ?rt) \n" +
 		" OPTIONAL { \n" +
 		"	   BIND( \n" +
 		"	     IF(EXISTS {"+varName+" owl:deprecated true}, \"true\", \n" +
