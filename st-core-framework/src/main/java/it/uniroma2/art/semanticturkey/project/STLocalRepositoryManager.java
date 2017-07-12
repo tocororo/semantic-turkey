@@ -115,13 +115,13 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 	}
 
 	@Override
-	public void addRepositoryConfig(RepositoryConfig config)
+	public synchronized void addRepositoryConfig(RepositoryConfig config)
 			throws RepositoryException, RepositoryConfigException {
 		storePwdIfAvailable(config);
 		super.addRepositoryConfig(config);
 	}
 
-	private synchronized void storePwdIfAvailable(RepositoryConfig config) throws RepositoryException {
+	private void storePwdIfAvailable(RepositoryConfig config) throws RepositoryException {
 		String repositoryId = config.getID();
 
 		RepositoryImplConfig repoImplConfig = config.getRepositoryImplConfig();
