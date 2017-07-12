@@ -465,7 +465,7 @@ public class SKOSXL extends STServiceAdapter {
 		Update update = repoConnection.prepareUpdate(query);
 		update.setBinding("concept", concept);
 		update.setBinding("xlabel", xlabel);
-		update.setBinding("?g", getWorkingGraph());
+		update.setBinding("g", getWorkingGraph());
 		update.execute();
 	}
 	
@@ -494,7 +494,7 @@ public class SKOSXL extends STServiceAdapter {
 				"\n}";
 		// @formatter:on
 		Update update = repoConnection.prepareUpdate(query);
-		update.setBinding("?g", getWorkingGraph());
+		update.setBinding("g", getWorkingGraph());
 		update.setBinding("xlabel", xlabel);
 		update.execute();
 		

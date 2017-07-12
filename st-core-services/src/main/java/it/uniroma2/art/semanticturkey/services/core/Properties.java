@@ -24,7 +24,6 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -846,6 +845,8 @@ public class Properties extends STServiceAdapter {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
 				modelAdditions.add(
 						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.TYPE, 
+						RDF.LIST));
 				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
 						literals.get(i)));
 				tempList = newTempList;
@@ -870,26 +871,33 @@ public class Properties extends STServiceAdapter {
 			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
 			@LocallyDefined BNode datarange) {
 		RepositoryConnection repoConnection = getManagedConnection();
+		
+		removeDatarangesTriples(repoConnection, property, datarange);
+	}
+	
+	private void removeDatarangesTriples(RepositoryConnection repoConnection, IRI property, BNode datarange){
 		// prepare a SPARQL update to remove
-		// @formatter:off
+		// @formatter:off 
 		String query="DELETE {"+
-				"GRAPH ?workingGraph {\n" +
-				"\n?property ?predicate ?datarange ." +
-				"\n?datarange "+NTriplesUtil.toNTriplesString(RDF.TYPE)+" "+NTriplesUtil.toNTriplesString(RDFS.DATATYPE) +" ."+
-				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
-				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
+				"\nGRAPH ?workingGraph {";
+		if(property!=null){
+			query+= "\n?property ?predicate ?datarange ." +
+			"\n?datarange "+NTriplesUtil.toNTriplesString(RDF.TYPE)+" "+NTriplesUtil.toNTriplesString(RDFS.DATATYPE) +" .";
+			
+		}
+		query+="\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ."+
 				"\n?elemInList ?p ?o ."+
 				"\n}" +
 				"\n}" +
 				"\nWHERE{"+
-				"\nGRAPH ?workingGraph {\n" +
-				"\n?property ?predicate ?datarange ." +
-				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
-				//get the first element of the list
-				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
-				//get all the element of the list
-				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+"+ ?elemInList ."+
-				//get all the info for regarding each element of the list (OPTIONL because the last is RDF.REST
+				"\nGRAPH ?workingGraph {";
+		if(property!=null) {
+			query+="\n?predicate "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+NTriplesUtil.toNTriplesString(RDFS.RANGE)+" ."+ 
+				"\n?property ?predicate ?datarange .";
+		}
+		query+="\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
+				//get all the element of the list (including the list itself since it is an element as well)
+				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+"* ?elemInList ." +
 				// which is not the subject of any triple)
 				"\nOPTIONAL{" +
 				"\n?elemInList ?p ?o ."+
@@ -898,9 +906,11 @@ public class Properties extends STServiceAdapter {
 				"\n}";
 		// @formatter:on
 		Update update = repoConnection.prepareUpdate(query);
-		update.setBinding("?workingGraph", getWorkingGraph());
-		update.setBinding("?property", property);
-		update.setBinding("?datarange", datarange);
+		update.setBinding("workingGraph", getWorkingGraph());
+		if(property!=null){
+			update.setBinding("property", property);
+		}
+		update.setBinding("datarange", datarange);
 		update.execute();
 	}
 
@@ -918,34 +928,9 @@ public class Properties extends STServiceAdapter {
 			@Modified(role = RDFResourceRole.property) @Subject @LocallyDefined BNode datarange,
 			List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		// prepare a SPARQL update to remove the old list
-		// @formatter:off
-		String query="DELETE {"+
-				"GRAPH ?workingGraph {\n" +
-				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
-				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
-				"\n?elemInList ?p ?o ."+
-				"\n}" +
-				"\n}" +
-				"\nWHERE{"+
-				"\nGRAPH ?workingGraph {\n" +
-				"\n?datarange "+NTriplesUtil.toNTriplesString(OWL.ONEOF)+" ?list ." +
-				//get the first element of the list
-				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+" ?firstElemInList ."+
-				//get all the element of the list
-				"\n?list "+NTriplesUtil.toNTriplesString(RDF.REST)+"+ ?elemInList ."+
-				//get all the info for regarding each element of the list (OPTIONL because the last is RDF.REST
-				// which is not the subject of any triple)
-				"\nOPTIONAL{" +
-				"\n?elemInList ?p ?o ."+
-				"\n}"+
-				"\n}" +
-				"\n}";
-		// @formatter:on
-		Update update = repoConnection.prepareUpdate(query);
-		update.setBinding("?workingGraph", getWorkingGraph());
-		update.setBinding("?datarange", datarange);
-		update.execute();
+		
+		//first remove the old datarange
+		removeDatarangesTriples(repoConnection, null, datarange);
 
 		// now add the new list
 		Model modelAdditions = new LinkedHashModel();
@@ -967,6 +952,8 @@ public class Properties extends STServiceAdapter {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
 				modelAdditions.add(
 						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.TYPE, 
+						RDF.LIST));
 				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
 						literals.get(i)));
 				tempList = newTempList;
