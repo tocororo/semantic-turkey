@@ -1477,8 +1477,9 @@ public class ProjectManager {
 
 					// Check the existence of remote repositories
 
-					RepositoryManager remoteRepoManager = RemoteRepositoryManager
-							.getInstance(remoteRepositoryAccess.getServerURL().toString());
+					RepositoryManager remoteRepoManager = RemoteRepositoryManager.getInstance(
+							remoteRepositoryAccess.getServerURL().toString(),
+							remoteRepositoryAccess.getUsername(), remoteRepositoryAccess.getPassword());
 
 					try {
 						if (!remoteRepoManager.hasRepositoryConfig(coreRepoID)) {
@@ -1530,11 +1531,10 @@ public class ProjectManager {
 			}
 
 			prepareProjectFiles(consumer, projectName, model, lexicalizationModel, projType, projectDir,
-					baseURI, defaultNamespace, historyEnabled, validationEnabled,
-					RepositoryLocation.fromRepositoryAccess(repositoryAccess), coreRepoID,
-					coreRepositoryConfig, supportRepoID, supportRepositoryConfig, uriGeneratorSpecification,
-					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
-					updateForRoles);
+					baseURI, defaultNamespace, historyEnabled, validationEnabled, repositoryAccess,
+					coreRepoID, coreRepositoryConfig, supportRepoID, supportRepositoryConfig,
+					uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
+					modificationDateProperty, updateForRoles);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 			return project;
@@ -1611,7 +1611,7 @@ public class ProjectManager {
 	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
-			RepositoryLocation defaultRepositoryLocation, String coreRepoID, RepositoryConfig coreRepoConfig,
+			RepositoryAccess repositoryAccess, String coreRepoID, RepositoryConfig coreRepoConfig,
 			String supportRepoID, RepositoryConfig supportRepoConfig,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
@@ -1648,7 +1648,7 @@ public class ProjectManager {
 			out.write(ProjectACL.ACL + "="
 					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW) + "\n");
 			out.write(Project.DEFAULT_REPOSITORY_LOCATION_PROP + "="
-					+ escape(defaultRepositoryLocation.toString()) + "\n");
+					+ escape(RepositoryLocation.fromRepositoryAccess(repositoryAccess).toString()) + "\n");
 
 			if (creationDateProperty != null) {
 				out.write(
@@ -1706,7 +1706,7 @@ public class ProjectManager {
 
 			logger.debug("all project info have been built");
 
-			LocalRepositoryManager localRepoMgr = new LocalRepositoryManager(projectDir);
+			STLocalRepositoryManager localRepoMgr = new STLocalRepositoryManager(projectDir);
 			localRepoMgr.initialize();
 			try {
 				localRepoMgr.addRepositoryConfig(coreRepoConfig);

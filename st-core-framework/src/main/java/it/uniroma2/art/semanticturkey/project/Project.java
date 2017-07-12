@@ -267,7 +267,7 @@ public abstract class Project extends AbstractProject {
 	void activate() throws ProjectIncompatibleException, ProjectInconsistentException, RDF4JException,
 			ProjectUpdateException, ProjectAccessException {
 		try {
-			repositoryManager = new LocalRepositoryManager(_projectDir);
+			repositoryManager = new STLocalRepositoryManager(_projectDir);
 			repositoryManager.initialize();
 			Repository supportRepository = repositoryManager.getRepository("support");
 
@@ -909,7 +909,7 @@ public abstract class Project extends AbstractProject {
 			if (readOnlyWrapper) {
 				localRepositoryImplConfig = new ReadOnlyRepositoryWrapperConfig(localRepositoryImplConfig);
 			}
-			
+
 			RepositoryConfig localRepositoryConfig = new RepositoryConfig(localRepostoryId, "",
 					localRepositoryImplConfig);
 			repositoryManager.addRepositoryConfig(localRepositoryConfig);
