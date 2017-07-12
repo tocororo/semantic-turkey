@@ -99,8 +99,6 @@ public class StatementConsumerProvider {
 	public List<StatementConsumer> getTemplateForResourceRole(RDFResourceRole role) {
 		if (role.isProperty()) {
 			return role2template.get(RDFResourceRole.property);
-		} else if (role.isClass()) {
-			return role2template.get(RDFResourceRole.cls);
 		} else {
 			List<StatementConsumer> result = role2template.get(role);
 
