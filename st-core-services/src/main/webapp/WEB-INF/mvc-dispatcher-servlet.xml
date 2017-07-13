@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:mvc="http://www.springframework.org/schema/mvc"
-	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
 	xmlns:security="http://www.springframework.org/schema/security"
 	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd 
@@ -16,11 +16,12 @@
 	<mvc:resources mapping="/WEB-INF/pages/**" location="/WEB-INF/pages/" />
 	<mvc:interceptors>
 		<mvc:interceptor>
-			<mvc:mapping path="/**"/>
-			<bean class="it.uniroma2.art.semanticturkey.mvc.LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor"></bean>
+			<mvc:mapping path="/**" />
+			<bean
+				class="it.uniroma2.art.semanticturkey.mvc.LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor"></bean>
 		</mvc:interceptor>
 	</mvc:interceptors>
-	
+
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey">
 		<context:exclude-filter type="regex"
 			expression="it\.uniroma2\.art\.semanticturkey\.customrange\..*" />
@@ -43,6 +44,12 @@
 		<property name="order" value="1" />
 	</bean>
 
+	<bean
+		class="it.uniroma2.art.semanticturkey.services.aspects.WritabilityCheckerPostProcessor">
+		<property name="proxyTargetClass" value="true"></property>
+		<property name="order" value="90" />
+	</bean>
+
 	<bean id="stServiceAspect" class="it.uniroma2.art.semanticturkey.tx.STServiceAspect">
 		<property name="order" value="100" />
 	</bean>
@@ -55,7 +62,7 @@
 		scope="request">
 		<aop:scoped-proxy proxy-target-class="false" />
 	</bean>
-	
+
 	<bean
 		class="it.uniroma2.art.semanticturkey.history.HistoryMetadataPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
@@ -93,7 +100,8 @@
 	<bean
 		class="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator"
 		id="stSpecificRandomIDGenerator" />
-	
+
 	<!-- Enable @PreAuthorize and @PostAuthorize annotation for securing methods -->
-	<security:global-method-security pre-post-annotations="enabled" />
+	<security:global-method-security
+		pre-post-annotations="enabled" />
 </beans>
