@@ -2,7 +2,6 @@ package it.uniroma2.art.semanticturkey.vocabulary;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
@@ -28,7 +27,7 @@ public abstract class STCHANGELOG {
 	public static final IRI PERFORMER;
 	public static final IRI VALIDATOR;
 
-	public static final Value PARAMETERS;
+	public static final IRI PARAMETERS;
 
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();

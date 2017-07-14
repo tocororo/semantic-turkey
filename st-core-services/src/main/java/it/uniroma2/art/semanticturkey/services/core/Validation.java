@@ -141,10 +141,7 @@ public class Validation extends STServiceAdapter {
 				"         ?commit prov:used ?operationT .                                      \n" +
 				"     }                                                                        \n" +
 			    "     OPTIONAL {                                                               \n" +
-			    "         ?commit prov:qualifiedAssociation [                                  \n" +
-			    "             prov:entity ?params ;                                            \n" +
-			    "             prov:hadRole stcl:parameters                                     \n" +
-			    "         ] .                                                                  \n" +
+			    "         ?commit stcl:parameters ?params .                                    \n" +
 			    "         ?params ?param ?paramValue .                                         \n" +
 			    "         FILTER(STRSTARTS(STR(?param), STR(?operationT)))                     \n" +
 			    "     }                                                                        \n" +

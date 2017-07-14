@@ -48,29 +48,26 @@ public class OperationMetadata {
 		if (operationIRI != null) {
 			model.add(CHANGETRACKER.COMMIT_METADATA, PROV.USED, operationIRI);
 
-			BNode association = vf.createBNode();
 			BNode parametersResource = vf.createBNode();
+			
+			if (parameterNames != null) {
+				model.add(CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.PARAMETERS, parametersResource);
+				model.add(parametersResource, RDF.TYPE, PROV.ENTITY);
 
-			model.add(CHANGETRACKER.COMMIT_METADATA, PROV.QUALIFIED_ASSOCIATION, association);
-			model.add(association, RDF.TYPE, PROV.ASSOCIATION);
-			model.add(association, PROV.HAS_ENTITY, parametersResource);
-			model.add(association, PROV.HAD_ROLE, STCHANGELOG.PARAMETERS);
+				for (int i = 0; i < parameterNames.length; i++) {
+					String pn = parameterNames[i];
+					String pv = parameterValues[i];
 
-			model.add(parametersResource, RDF.TYPE, PROV.ENTITY);
+					Value rdfPv;
 
-			for (int i = 0; i < parameterNames.length; i++) {
-				String pn = parameterNames[i];
-				String pv = parameterValues[i];
-
-				Value rdfPv;
-
-				if (pv == null) {
-					rdfPv = SESAME.NIL;
-				} else {
-					rdfPv = vf.createLiteral(pv);
+					if (pv == null) {
+						rdfPv = SESAME.NIL;
+					} else {
+						rdfPv = vf.createLiteral(pv);
+					}
+					model.add(parametersResource,
+							vf.createIRI(operationIRI.stringValue() + "/param-" + i + "-" + pn), rdfPv);
 				}
-				model.add(parametersResource,
-						vf.createIRI(operationIRI.stringValue() + "/param-" + i + "-" + pn), rdfPv);
 			}
 		}
 
