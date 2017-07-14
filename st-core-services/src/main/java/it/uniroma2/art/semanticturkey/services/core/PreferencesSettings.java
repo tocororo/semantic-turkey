@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -13,7 +14,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -221,15 +224,51 @@ public class PreferencesSettings extends STServiceAdapter {
 	}
 	
 	@STServiceOperation
-	public JsonNode getProjectSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
+	public JsonNode getProjectSettings(List<String> properties, @Optional String projectName, @Optional String pluginID)
+			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode respNode = jsonFactory.objectNode();
+		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
+		for (String prop: properties) {
+			String value;
+			if (pluginID == null) {
+				value = STPropertiesManager.getProjectSetting(prop, project);
+			} else {
+				value = STPropertiesManager.getProjectSetting(prop, project, pluginID);
+			}
+			respNode.set(prop, jsonFactory.textNode(value));
+		}
+		return respNode;
+	}
+	
+	/**
+	 * Update the value of a project setting.
+	 * @param property
+	 * @param value if null remove the property
+	 * @param projectName
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	public void setProjectSetting(String property, @Optional String value, @Optional String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
+		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
+		STPropertiesManager.setProjectSetting(property, value, project);
+	}
+	
+	@STServiceOperation
+	public JsonNode getDefaultProjectSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
 		for (String prop: properties) {
 			String value;
 			if (pluginID == null) {
-				value = STPropertiesManager.getProjectSetting(prop, getProject());
+				value = STPropertiesManager.getProjectSettingDefault(prop);
 			} else {
-				value = STPropertiesManager.getProjectSetting(prop, getProject(), pluginID);
+				value = STPropertiesManager.getProjectSettingDefault(prop, pluginID);
 			}
 			respNode.set(prop, jsonFactory.textNode(value));
 		}
