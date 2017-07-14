@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.history.OperationMetadata;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.OmitHistoryMetadata;
@@ -35,6 +36,7 @@ import it.uniroma2.art.semanticturkey.services.core.history.ValidationPagination
 import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
 
 /**
  * This class provides services related to operation validation.
@@ -100,9 +102,8 @@ public class Validation extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
-	public Collection<CommitInfo> getCommits(
-			@Optional(defaultValue = "") IRI[] operationFilter, @Optional String timeLowerBound,
-			String timeUpperBound,
+	public Collection<CommitInfo> getCommits(@Optional(defaultValue = "") IRI[] operationFilter,
+			@Optional String timeLowerBound, String timeUpperBound,
 			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
 			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
 			@Optional(defaultValue = "0") long page, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
@@ -174,12 +175,11 @@ public class Validation extends STServiceAdapter {
 					commitInfo.setOperation(operation);
 					SupportRepositoryUtils.computeOperationDisplay(stServiceTracker, operation);
 				}
-			
+
 				if (bindingSet.hasBinding("parameters")) {
 					commitInfo.setOperationParameters(SupportRepositoryUtils
 							.deserializeOperationParameters(bindingSet.getValue("parameters").stringValue()));
 				}
-
 
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
@@ -215,6 +215,11 @@ public class Validation extends STServiceAdapter {
 	@OmitHistoryMetadata
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void accept(IRI validatableCommit) {
+		OperationMetadata operationMetadata = new OperationMetadata();
+		operationMetadata.setUserIRI(UsersManager.getLoggedUser().getIRI(), STCHANGELOG.VALIDATOR);
+		getManagedConnection().add(operationMetadata.toRDF(), CHANGETRACKER.COMMIT_METADATA);
+		getManagedConnection().prepareBooleanQuery("ASK {}").evaluate(); // flush commit metadata
+		
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit,
 				CHANGETRACKER.VALIDATION);
 	}

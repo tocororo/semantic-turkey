@@ -917,7 +917,6 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 						Model validatedUserMetadataModel = HistoryRepositories.getCommitUserMetadata(
 								supportRepoConn, (IRI) obj, sail.validationGraph, true);
 
-						stagingArea.getCommitMetadataModel().clear();
 						stagingArea.getCommitMetadataModel().addAll(validatedUserMetadataModel);
 
 					} else if (CHANGETRACKER.REJECT.equals(pred)) {
