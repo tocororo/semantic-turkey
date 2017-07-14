@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Properties;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -179,9 +181,9 @@ public class Resources {
 			//Here check them and eventually create the folders. TODO in the future versions this could be removed
 			if (!systemDir.exists()) {
 				systemDir.mkdirs();
-				initializeSystemAdminSettings();
-				initializeProjectPreferencesDefault();
 			}
+			initializeOrUpdateSystemAdminSettings();
+			initializeOrUpdateProjectPreferencesDefault();
 			
 			if (!usersDir.exists()) {
 				usersDir.mkdir();
@@ -326,8 +328,8 @@ public class Resources {
 			initializeCustomFormFileStructure();
 			initializeRoles();
 			initializePUBindingFileStructure();
-			initializeSystemAdminSettings();
-			initializeProjectPreferencesDefault();
+			initializeOrUpdateSystemAdminSettings();
+			initializeOrUpdateProjectPreferencesDefault();
 						
 		} else
 			throw new STInitializationException("Unable to create the main data folder");
@@ -434,22 +436,36 @@ public class Resources {
 		}
 	}
 	
-	private static void initializeSystemAdminSettings() throws STInitializationException {
+	private static void initializeOrUpdateSystemAdminSettings() throws STInitializationException {
 		try {
-			Utilities.copy(Resources.class.getClassLoader()
-					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/settings.props"),
-						STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID));
-		} catch (IOException | STPropertyAccessException e) {
+			Properties prop = new Properties();
+			prop.load(Resources.class.getClassLoader()
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/settings.props"));
+			for (Object k : prop.keySet()) {
+				String propName = (String) k;
+				String propValue = prop.getProperty(propName);
+				if (STPropertiesManager.getSystemSetting(propName) == null) {
+					STPropertiesManager.setSystemSetting(propName, propValue);
+				}
+			}
+		} catch (IOException | STPropertyAccessException | STPropertyUpdateException e) {
 			throw new STInitializationException(e);
 		}
 	}
 	
-	private static void initializeProjectPreferencesDefault() throws STInitializationException {
+	private static void initializeOrUpdateProjectPreferencesDefault() throws STInitializationException {
 		try {
-			Utilities.copy(Resources.class.getClassLoader()
-					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/project-settings-defaults.props"),
-						STPropertiesManager.getSystemProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID));
-		} catch (IOException | STPropertyAccessException e) {
+			Properties prop = new Properties();
+			prop.load(Resources.class.getClassLoader()
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/project-settings-defaults.props"));
+			for (Object k : prop.keySet()) {
+				String propName = (String) k;
+				String propValue = prop.getProperty(propName);
+				if (STPropertiesManager.getProjectSettingDefault(propName) == null) {
+					STPropertiesManager.setProjectSettingsDefault(propName, propValue);
+				}
+			}
+		} catch (IOException | STPropertyAccessException | STPropertyUpdateException e) {
 			throw new STInitializationException(e);
 		}
  	}
