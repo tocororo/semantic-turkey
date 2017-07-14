@@ -221,16 +221,19 @@ public class PreferencesSettings extends STServiceAdapter {
 	}
 	
 	@STServiceOperation
-	public JsonNode getProjectSettings(List<String> keys, @Optional String pluginID) throws STPropertyAccessException {
+	public JsonNode getProjectSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ArrayNode respArrayNode = jsonFactory.arrayNode();
-		for (String key: keys) {
-			ObjectNode keyValueNode = jsonFactory.objectNode();
-			String value = STPropertiesManager.getProjectSetting(key, getProject(), pluginID);
-			keyValueNode.set(key, jsonFactory.textNode(value));
-			respArrayNode.add(keyValueNode);
+		ObjectNode respNode = jsonFactory.objectNode();
+		for (String prop: properties) {
+			String value;
+			if (pluginID == null) {
+				value = STPropertiesManager.getProjectSetting(prop, getProject());
+			} else {
+				value = STPropertiesManager.getProjectSetting(prop, getProject(), pluginID);
+			}
+			respNode.set(prop, jsonFactory.textNode(value));
 		}
-		return respArrayNode;
+		return respNode;
 	}
 	
 }

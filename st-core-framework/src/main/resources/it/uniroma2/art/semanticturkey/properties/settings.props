@@ -1,0 +1,6 @@
+mail.admin.address=admin@vocbench.com
+mail.from.address=xxxx@gmail.com
+mail.from.password=xxxx
+mail.from.alias=VocBench Admin
+mail.from.host=smtp.gmail.com
+mail.from.port=465

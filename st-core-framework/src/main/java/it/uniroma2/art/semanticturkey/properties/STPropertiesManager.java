@@ -13,7 +13,7 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 public class STPropertiesManager {
 
 	// id of the "core plugin", used for preferences/properties that don't belong to any plugin
-	private static final String CORE_PLUGIN_ID = "it.uniroma2.art.semanticturkey";
+	public static final String CORE_PLUGIN_ID = "it.uniroma2.art.semanticturkey";
 
 	private static final String SYSTEM_PREFERENCES_DEFAULTS_FILE_NAME = "system-preferences-defaults.props";
 	private static final String SYSTEM_PROJECT_PREFERENCES_DEFAULTS_FILE_NAME = "project-preferences-defaults.props";
@@ -40,6 +40,8 @@ public class STPropertiesManager {
 	public static final String SETTING_EMAIL_FROM_ALIAS = "mail.from.alias";
 	public static final String SETTING_EMAIL_FROM_HOST = "mail.from.host";
 	public static final String SETTING_EMAIL_FROM_PORT = "mail.from.port";
+	
+	public static final String SETTING_PROJ_LANGUAGES = "languages";
 
 	/*
 	 * Methods to get/set properties to/from the following Properties files
@@ -806,7 +808,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getSystemProjectSettingsDefaultsFile(String pluginID)
+	public static File getSystemProjectSettingsDefaultsFile(String pluginID)
 			throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator
@@ -828,7 +830,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getSystemSettingsFile(String pluginID) throws STPropertyAccessException {
+	public static File getSystemSettingsFile(String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(
 					getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_SETTINGS_FILE_NAME);

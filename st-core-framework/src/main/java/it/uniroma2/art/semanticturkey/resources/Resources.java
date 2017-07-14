@@ -43,7 +43,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -180,8 +179,9 @@ public class Resources {
 			//Here check them and eventually create the folders. TODO in the future versions this could be removed
 			if (!systemDir.exists()) {
 				systemDir.mkdirs();
+				initializeSystemAdminSettings();
+				initializeProjectPreferencesDefault();
 			}
-			initializeSystemAdminSettings();
 			
 			if (!usersDir.exists()) {
 				usersDir.mkdir();
@@ -327,6 +327,7 @@ public class Resources {
 			initializeRoles();
 			initializePUBindingFileStructure();
 			initializeSystemAdminSettings();
+			initializeProjectPreferencesDefault();
 						
 		} else
 			throw new STInitializationException("Unable to create the main data folder");
@@ -435,33 +436,22 @@ public class Resources {
 	
 	private static void initializeSystemAdminSettings() throws STInitializationException {
 		try {
-			String emailAdminAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
-			if (emailAdminAddress == null) {
-				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, "admin@vocbench.com");
-			}
-			String emailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS);
-			if (emailFromAddress == null) {
-				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS, "xxxx@gmail.com");
-			}
-			String emailFromPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD);
-			if (emailFromPassword == null) {
-				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD, "xxxx");
-			}
-			String emailFromAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS);
-			if (emailFromAlias == null) {
-				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS, "VocBench Admin");
-			}
-			String emailFromHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST);
-			if (emailFromHost == null) {
-				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST, "smtp.gmail.com");
-			}
-			String emailFromPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT);
-			if (emailFromPort == null) {
-				STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT, "465");
-			}
-		} catch (STPropertyUpdateException | STPropertyAccessException e) {
+			Utilities.copy(Resources.class.getClassLoader()
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/settings.props"),
+						STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID));
+		} catch (IOException | STPropertyAccessException e) {
 			throw new STInitializationException(e);
 		}
 	}
+	
+	private static void initializeProjectPreferencesDefault() throws STInitializationException {
+		try {
+			Utilities.copy(Resources.class.getClassLoader()
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/project-settings-defaults.props"),
+						STPropertiesManager.getSystemProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID));
+		} catch (IOException | STPropertyAccessException e) {
+			throw new STInitializationException(e);
+		}
+ 	}
 
 }
