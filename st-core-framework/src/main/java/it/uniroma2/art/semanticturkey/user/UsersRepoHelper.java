@@ -61,6 +61,7 @@ public class UsersRepoHelper {
 	private String BINDING_ADDRESS = "address";
 	private String BINDING_REGISTRATION_DATE = "registrationDate";
 	private String BINDING_STATUS = "status";
+	private String BINDING_LANGUAGE_PROFICIENCIES = "languageProficiencies";
 	
 	public UsersRepoHelper() {
 		MemoryStore memStore = new MemoryStore();
@@ -110,6 +111,10 @@ public class UsersRepoHelper {
 		if (user.getAddress() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " '" + user.getAddress() + "' .";
 		}
+		for (String lang : user.getLanguageProficiencies()) {
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) + 
+					" '" + lang + "' .";
+		}
 		query += " }";
 		
 		query = query.replace("?" + BINDING_IRI, NTriplesUtil.toNTriplesString(user.getIRI()));
@@ -143,6 +148,8 @@ public class UsersRepoHelper {
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " ?" + BINDING_AFFILIATION + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.COUNTRY) + " ?" + BINDING_COUNTRY + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " ?" + BINDING_ADDRESS + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) 
+					+ " ?" + BINDING_LANGUAGE_PROFICIENCIES + " . }"
 				+ "}";
 		
 		//execute query
@@ -190,7 +197,7 @@ public class UsersRepoHelper {
 		// collect users
 		Collection<STUser> list = new ArrayList<STUser>();
 
-		while (result.hasNext()) {
+		tupleLoop: while (result.hasNext()) {
 			BindingSet tuple = result.next();
 
 			IRI iri = (IRI) tuple.getValue(BINDING_IRI);
@@ -241,6 +248,24 @@ public class UsersRepoHelper {
 			if (tuple.getBinding(BINDING_ADDRESS) != null) {
 				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
 			}
+			
+			String lang = null;
+			if (tuple.getBinding(BINDING_LANGUAGE_PROFICIENCIES) != null) {
+				lang = tuple.getValue(BINDING_LANGUAGE_PROFICIENCIES).stringValue();
+			}
+			if (lang != null) {
+				//Check if the current tuple is about a user already fetched (and differs just for the language proficiency)
+				for (STUser u: list) {
+					if (u.getEmail().equals(email)) {
+						u.addLanguageProficiency(lang);
+						continue tupleLoop;
+					}
+				}
+				//if this line of code is reached, current user was not already fetched
+				//so add the language to its proficiency and then the user to the list
+				user.addLanguageProficiency(lang);
+			}
+			
 			list.add(user);
 		}
 		return list;

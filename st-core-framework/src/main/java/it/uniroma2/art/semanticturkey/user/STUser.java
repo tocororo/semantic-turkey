@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -40,6 +41,7 @@ public class STUser implements UserDetails {
 	private String address;
 	private Date registrationDate;
 	private UserStatus status;
+	private Collection<String> languageProficiencies;
 	
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
@@ -52,6 +54,7 @@ public class STUser implements UserDetails {
 		this.familyName = familyName;
 		this.authorities = new ArrayList<GrantedAuthority>();
 		this.status = UserStatus.NEW;
+		this.languageProficiencies = new ArrayList<String>();
 	}
 	
 	public STUser(IRI iri, String email, String password, String givenName, String familyName) {
@@ -62,6 +65,7 @@ public class STUser implements UserDetails {
 		this.familyName = familyName;
 		this.authorities = new ArrayList<GrantedAuthority>();
 		this.status = UserStatus.NEW;
+		this.languageProficiencies = new ArrayList<String>();
 	}
 	
 	public IRI getIRI() {
@@ -211,6 +215,18 @@ public class STUser implements UserDetails {
 		this.status = status;
 	}
 	
+	public Collection<String> getLanguageProficiencies() {
+		return languageProficiencies;
+	}
+	
+	public void addLanguageProficiency(String lang) {
+		this.languageProficiencies.add(lang);
+	}
+
+	public void setLanguageProficiencies(Collection<String> languageProficiencies) {
+		this.languageProficiencies = languageProficiencies;
+	}
+
 	public boolean isAdmin() {
 		try {
 			return email.equals(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS));
@@ -242,6 +258,12 @@ public class STUser implements UserDetails {
 		userJson.set("status", jsonFactory.textNode(status.name()));
 		userJson.set("admin", jsonFactory.booleanNode(isAdmin()));
 		
+		ArrayNode langsArrayNode = jsonFactory.arrayNode();
+		for (String l : languageProficiencies) {
+			langsArrayNode.add(l);
+		}
+		userJson.set("languageProficiencies", langsArrayNode);
+		
 		return userJson;
 	}
 	
@@ -265,6 +287,7 @@ public class STUser implements UserDetails {
 		s += "\nAddress: " + this.address;
 		s += "\nRegistraion date: " + dateFormat.format(this.registrationDate);
 		s += "\nStatus: " + this.status;
+		s += "\nLanguage proficiencies: " + this.languageProficiencies;
 		s += "\nisAdmin: " + isAdmin();
 		s += "\n";
 		return s;

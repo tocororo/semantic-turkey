@@ -29,6 +29,7 @@ public class UserVocabulary {
 	public static final IRI ADDRESS;
 	public static final IRI REGISTRATION_DATE;
 	public static final IRI STATUS;
+	public static final IRI LANGUAGE_PROFICIENCIES;
 	
 	public static final IRI BINDING;
 	public static final IRI ROLE_PROP;
@@ -44,6 +45,7 @@ public class UserVocabulary {
     	ADDRESS = fact.createIRI(UserVocabulary.PUVOC_NS, "address");
     	REGISTRATION_DATE = fact.createIRI(UserVocabulary.PUVOC_NS, "registration_date");
     	STATUS = fact.createIRI(UserVocabulary.PUVOC_NS, "status");
+    	LANGUAGE_PROFICIENCIES = fact.createIRI(UserVocabulary.PUVOC_NS, "language_proficencies");
     	
     	BINDING = fact.createIRI(UserVocabulary.PUVOC_NS, "Binding");
     	ROLE_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "role");

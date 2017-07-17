@@ -259,6 +259,13 @@ public class PreferencesSettings extends STServiceAdapter {
 		STPropertiesManager.setProjectSetting(property, value, project);
 	}
 	
+	/**
+	 * Gets the default value of the given project settings
+	 * @param properties
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	public JsonNode getDefaultProjectSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -273,6 +280,20 @@ public class PreferencesSettings extends STServiceAdapter {
 			respNode.set(prop, jsonFactory.textNode(value));
 		}
 		return respNode;
+	}
+	
+	/**
+	 * Returns the languages available in the system. This information could be retrieved calling
+	 * {@link #getDefaultProjectSettings(List, String)} passing the 'languages' property and null plugin.
+	 * Anyway, since this information should be available without be logged, this method is excluded from the 
+	 * intercepted url
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	public JsonNode getSystemLanguages() throws STPropertyAccessException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		return jsonFactory.textNode(STPropertiesManager.getProjectSettingDefault(STPropertiesManager.SETTING_PROJ_LANGUAGES));
 	}
 	
 }

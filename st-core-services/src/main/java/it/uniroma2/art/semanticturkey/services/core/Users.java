@@ -180,7 +180,8 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String birthday, @Optional String gender, @Optional String country, @Optional String address,
-			@Optional String affiliation, @Optional String url, @Optional String phone)
+			@Optional String affiliation, @Optional String url, @Optional String phone, 
+			@Optional Collection<String> languageProficiencies)
 					throws ProjectAccessException, UserException, ParseException, PUBindingException, STPropertyUpdateException {
 		STUser user;
 		if (iri != null) {
@@ -208,6 +209,9 @@ public class Users extends STServiceAdapter {
 		}
 		if (phone != null) {
 			user.setPhone(phone);
+		}
+		if (languageProficiencies != null) {
+			user.setLanguageProficiencies(languageProficiencies);
 		}
 		//if this is the first registered user, it means that it is the first access, so set it as admin 
 		if (UsersManager.listUsers().isEmpty()) {
@@ -288,7 +292,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserPhone(@RequestParam("email") String email, @RequestParam("phone") String phone) throws UserException {
+	public ObjectNode updateUserPhone(String email, String phone) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
@@ -304,7 +308,7 @@ public class Users extends STServiceAdapter {
 	 * @throws ParseException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserBirthday(@RequestParam("email") String email, @RequestParam("birthday") String birthday) throws UserException, ParseException {
+	public ObjectNode updateUserBirthday(String email, String birthday) throws UserException, ParseException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserBirthday(user, birthday);
 		updateUserInSecurityContext(user);
@@ -319,7 +323,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserGender(@RequestParam("email") String email, @RequestParam("gender") String gender) throws UserException {
+	public ObjectNode updateUserGender(String email, String gender) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserGender(user, gender);
 		updateUserInSecurityContext(user);
@@ -334,7 +338,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserCountry(@RequestParam("email") String email, @RequestParam("country") String country) throws UserException {
+	public ObjectNode updateUserCountry(String email, String country) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserCountry(user, country);
 		updateUserInSecurityContext(user);
@@ -349,7 +353,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserAddress(@RequestParam("email") String email, @RequestParam("address") String address) throws UserException {
+	public ObjectNode updateUserAddress(String email, String address) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
@@ -364,7 +368,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserAffiliation(@RequestParam("email") String email, @RequestParam("affiliation") String affiliation) throws UserException {
+	public ObjectNode updateUserAffiliation(String email, String affiliation) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
@@ -379,9 +383,24 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public ObjectNode updateUserUrl(@RequestParam("email") String email, @RequestParam("url") String url) throws UserException {
+	public ObjectNode updateUserUrl(String email, String url) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserUrl(user, url);
+		updateUserInSecurityContext(user);
+		return user.getAsJsonObject();
+	}
+	
+	/**
+	 * Update language proficiencies of the given user
+	 * @param email
+	 * @param languageProficiencies
+	 * @return
+	 * @throws IOException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public ObjectNode updateUserLanguageProficiencies(String email, Collection<String> languageProficiencies) throws UserException {
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserLanguageProficiencies(user, languageProficiencies);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}

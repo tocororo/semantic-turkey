@@ -275,6 +275,20 @@ public class UsersManager {
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}
+	
+	/**
+	 * Updates the language proficiencies of the given user and returns it updated
+	 * 
+	 * @param user
+	 * @param newValue
+	 * @return
+	 * @throws IOException
+	 */
+	public static STUser updateUserLanguageProficiencies(STUser user, Collection<String> newValue) throws UserException {
+		user.setLanguageProficiencies(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
 
 	/**
 	 * Updates the status of the given user and returns it update
