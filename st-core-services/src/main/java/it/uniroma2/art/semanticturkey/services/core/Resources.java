@@ -1,11 +1,17 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.joining;
+
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -89,6 +95,7 @@ public class Resources extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public AnnotatedValue<Resource> getResourceDescription(@LocallyDefined Resource resource) {
 		QueryBuilder qb = createQueryBuilder(
 			// @formatter:off
@@ -110,4 +117,40 @@ public class Resources extends STServiceAdapter {
 		return qb.runQuery().iterator().next();
 	}
 
+	
+	/**
+	 * Return the description of a list of resources, including show and nature
+	 * 
+	 * @param resource
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public Collection <AnnotatedValue<Resource>> getResourcesInfo( IRI[] resources) {
+		
+		QueryBuilder qb;
+		StringBuilder sb = new StringBuilder();
+		sb.append(
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +                                      
+				" prefix owl: <http://www.w3.org/2002/07/owl#>							\n" +                                      
+				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +                                      
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>					\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {		\n" +
+				"     VALUES(?resource) {");
+		sb.append(Arrays.stream(resources).map(iri -> "(" + RenderUtils.toSPARQL(iri) + ")").collect(joining()));
+		sb.append("}													 				\n" +
+				generateNatureSPARQLWherePart("?resource") +
+				"} 																		\n" +
+				" GROUP BY ?resource													\n"
+				// @formatter:on
+		);
+		qb = createQueryBuilder(sb.toString());
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+		
+	}
 }
