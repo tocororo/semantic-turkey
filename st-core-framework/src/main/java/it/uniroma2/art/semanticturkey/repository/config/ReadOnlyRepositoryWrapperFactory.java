@@ -33,14 +33,7 @@ public class ReadOnlyRepositoryWrapperFactory implements RepositoryFactory {
 	@Override
 	public Repository getRepository(RepositoryImplConfig config) throws RepositoryConfigException {
 		if (config instanceof ReadOnlyRepositoryWrapperConfig) {
-			RepositoryImplConfig delegateRepoImplConfig = ((ReadOnlyRepositoryWrapperConfig) config)
-					.getDelegate();
-
-			RepositoryFactory delegateFactory = RepositoryRegistry.getInstance()
-					.get(delegateRepoImplConfig.getType()).orElseThrow(() -> new RepositoryConfigException(
-							"Unrecognized repository type: " + delegateRepoImplConfig.getType()));
-			Repository delegateRepository = delegateFactory.getRepository(delegateRepoImplConfig);
-			return new ReadOnlyRepositoryWrapper(delegateRepository);
+			return new ReadOnlyRepositoryWrapper();
 		}
 
 		throw new RepositoryConfigException("Invalid configuration class: " + config.getClass());

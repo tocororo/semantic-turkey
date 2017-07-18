@@ -16,6 +16,9 @@ public class ReadOnlyRepositoryWrapper extends InterceptingRepositoryWrapper {
 	public ReadOnlyRepositoryWrapper(Repository delegate) {
 		super(delegate);
 	}
+	
+	public ReadOnlyRepositoryWrapper() {
+	}
 
 	@Override
 	public boolean isWritable() throws RepositoryException {
