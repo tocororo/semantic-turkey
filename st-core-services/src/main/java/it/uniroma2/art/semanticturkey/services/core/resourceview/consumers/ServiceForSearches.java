@@ -237,23 +237,25 @@ public class ServiceForSearches {
 			throw new IllegalArgumentException("the serchString cannot be empty");
 		}
 		
-		for(int i=0; i<rolesArray.length; ++i){
-			if(rolesArray[i].toLowerCase().equals(RDFResourceRole.cls.name())){
-				isClassWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())){
-				isConceptWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())){
-				isConceptSchemeWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.individual.name().toLowerCase())){
-				isInstanceWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())){
-				isPropertyWanted = true;
-			} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
-				isCollectionWanted = true;
-			} 
+		if(rolesArray!=null){
+			for(int i=0; i<rolesArray.length; ++i){
+				if(rolesArray[i].toLowerCase().equals(RDFResourceRole.cls.name())){
+					isClassWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())){
+					isConceptWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())){
+					isConceptSchemeWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.individual.name().toLowerCase())){
+					isInstanceWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())){
+					isPropertyWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
+					isCollectionWanted = true;
+				} 
+			}	
 		}
 		//@formatter:off
-		if(!isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
+		if(rolesArray!= null && !isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
 				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
 			
 			String msg = "the serch roles should be at least one of: "+
@@ -415,6 +417,50 @@ public class ServiceForSearches {
 			} 
 			results.add(annotatedValue);
 		}
+		return results;
+	}
+	
+	public Collection<String> executeGenericSearchQueryForStringList(String query, Resource[] namedGraphs,
+			RepositoryConnection repositoryConnection){
+		Collection<String> results = new ArrayList<>();
+		
+		TupleQuery tupleQuery;
+		tupleQuery = repositoryConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		
+		//set the dataset to search just in the UserNamedGraphs
+		SimpleDataset dataset = new SimpleDataset();
+		for(Resource namedGraph : namedGraphs){
+			if(namedGraph instanceof IRI){
+				dataset.addDefaultGraph((IRI) namedGraph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
+		
+		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
+		
+		while (tupleBindingsIterator.hasNext()) {
+			//if it has the value for the variable label, take that value and ignore the value for
+			// resource, otherwise take the value for resource
+			BindingSet tupleBindings = tupleBindingsIterator.next();
+			String result = null;
+			if(tupleBindings.hasBinding("label")){
+				Literal label = (Literal) tupleBindings.getBinding("label").getValue();
+				result = label.getLabel();
+				if(label.getLanguage().isPresent()){
+					result += label.getLanguage().get();
+				}
+			} else{
+				Value value = tupleBindings.getBinding("resource").getValue();
+				if(value instanceof IRI){
+					result = ((IRI)value).getLocalName();
+				}
+			}
+			if(result!= null && !results.contains(result)){
+				results.add(result);
+			}
+		}
+		
 		return results;
 	}
 	

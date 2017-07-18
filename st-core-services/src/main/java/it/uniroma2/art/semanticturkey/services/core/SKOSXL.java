@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
@@ -25,6 +26,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -218,14 +220,16 @@ public class SKOSXL extends STServiceAdapter {
 	 *            bnode or uri: if uri a URI generator is used to create the URI for the xlabel
 	 * @return
 	 * @throws URIGenerationException 
+	 * @throws AlreadyExistingLiteralFormForResourceException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	@DisplayName("add alternative label")
 	public void addAltLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal, XLabelCreationMode mode) 
-			throws URIGenerationException {
+			throws URIGenerationException, AlreadyExistingLiteralFormForResourceException {
 		RepositoryConnection repoConnection = getManagedConnection();
+		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
 		
 		Resource xlabel;
@@ -240,7 +244,6 @@ public class SKOSXL extends STServiceAdapter {
 				RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
-		
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}
 	
@@ -343,8 +346,9 @@ public class SKOSXL extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	@DisplayName("set preferred label")
 	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal,
-			XLabelCreationMode mode) throws URIGenerationException{
+			XLabelCreationMode mode) throws URIGenerationException, AlreadyExistingLiteralFormForResourceException{
 		RepositoryConnection repoConnection = getManagedConnection();
+		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -498,6 +502,63 @@ public class SKOSXL extends STServiceAdapter {
 		update.setBinding("xlabel", xlabel);
 		update.execute();
 		
+	}
+	
+	public  static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
+			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
+		// to which the Literal will be added has not already an alternative label with the input
+		String query = "ASK {"+
+				"\n{?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" "+
+					"?xlabel ."+
+				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . }"+
+				"\nUNION"+
+				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" "+
+					"?xlabel ."+
+				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . }";	
+				//see the type to check
+		query+="\n}";
+		
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setIncludeInferred(false);
+		boolean check = booleanQuery.evaluate();
+		if(check){
+			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since it either "
+					+ "already exists resoruce with the same prefLabel or this resource has already an altLabel "
+					+ "with the same value";
+			throw new AlreadyExistingLiteralFormForResourceException(text);
+		}
+	}
+	
+	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
+			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+		//see if the resource to which the Literal will be added has not already a pref label or an  
+		// alternative label with the input
+		String query = "ASK {"+
+				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" "+
+					"?xlabel ."+
+				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . }"+
+				"\nUNION"+
+				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" "+
+				"?xlabel ."+
+					"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . }";	
+				//see the type to check
+		query+="\n}";
+		
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setIncludeInferred(false);
+		if(booleanQuery.evaluate()){
+			String text = "altLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since this "
+					+ "resource already has a prefLabel or an altLabel with the same value";
+			throw new AlreadyExistingLiteralFormForResourceException(text);
+		}
 	}
 	
 }

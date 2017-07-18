@@ -40,6 +40,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
@@ -401,6 +402,7 @@ public class SKOS extends STServiceAdapter {
 	 * @throws CustomFormException
 	 * @throws CODAException
 	 * @throws UnsupportedLexicalizationModelException 
+	 * @throws AlreadyExistingLiteralFormForResourceException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -411,7 +413,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
-					CODAException, UnsupportedLexicalizationModelException {
+					CODAException, UnsupportedLexicalizationModelException, AlreadyExistingLiteralFormForResourceException {
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -473,7 +475,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#ConceptScheme") IRI schemeCls,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException,
-					CODAException, UnsupportedLexicalizationModelException {
+					CODAException, UnsupportedLexicalizationModelException, AlreadyExistingLiteralFormForResourceException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -521,8 +523,10 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	@DisplayName("set preferred label")
-	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal){
+	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal) 
+			throws AlreadyExistingLiteralFormForResourceException{
 		RepositoryConnection repoConnection = getManagedConnection();
+		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		//check if there is always an existing prefLabel for the given language, in this case, delete it and
@@ -560,8 +564,9 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
 	@DisplayName("add alternative label")
 	public void addAltLabel(@LocallyDefined @Modified @Subject IRI concept,
-			@LanguageTaggedString Literal literal) {
+			@LanguageTaggedString Literal literal) throws AlreadyExistingLiteralFormForResourceException {
 		RepositoryConnection repoConnection = getManagedConnection();
+		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
 
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
@@ -1112,7 +1117,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean bnodeCreationMode,
 			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, 
-					IllegalAccessException, UnsupportedLexicalizationModelException {
+					IllegalAccessException, UnsupportedLexicalizationModelException, AlreadyExistingLiteralFormForResourceException {
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -1591,16 +1596,19 @@ public class SKOS extends STServiceAdapter {
 	 * In case of SKOSXL_LEXICALIZATION_MODEL it return the xLabelIRI, null in other cases
 	 * @throws URIGenerationException 
 	 * @throws UnsupportedLexicalizationModelException 
+	 * @throws AlreadyExistingLiteralFormForResourceException 
 	 */
 	private IRI createLabelUsingLexicalizationModel(Resource resource, Literal label, Model modelAdditions) 
-			throws URIGenerationException, UnsupportedLexicalizationModelException {
+			throws URIGenerationException, UnsupportedLexicalizationModelException, AlreadyExistingLiteralFormForResourceException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		IRI xLabelIRI = null;
 		if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 			modelAdditions.add(resource, RDFS.LABEL, label);
 		} else if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource);
 			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		} else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource);
 			xLabelIRI = generateXLabelIRI(resource, label, SKOSXL.PREF_LABEL);
 			modelAdditions.add(resource, SKOSXL.PREF_LABEL, xLabelIRI);
 			modelAdditions.add(xLabelIRI, RDF.TYPE, SKOSXL.LABEL);
@@ -1683,6 +1691,49 @@ public class SKOS extends STServiceAdapter {
 		return generateIRI(URIGenerator.Roles.xLabel, args);
 	}
 	
+	
+	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
+			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
+		// to which the Literal will be added has not already an alternative label with the input
+		String query = "ASK {"+
+				"\n{?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . }"+
+				"\nUNION"+
+				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . }";	
+				//see the type to check
+		query+="\n}";
+		
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setIncludeInferred(false);
+		if(booleanQuery.evaluate()){
+			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since it either "
+					+ "already exists a resoruce with the same prefLabel or this resource has already an altLabel "
+					+ "with the same value";
+			throw new AlreadyExistingLiteralFormForResourceException(text);
+		}
+	}
+	
+	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
+			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+		//see if the resource to which the Literal will be added has not already a pref label or an  
+		// alternative label with the input
+		String query = "ASK {"+
+				"\n?"+NTriplesUtil.toNTriplesString(resource)+" "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . "+
+				"\n}";
+		
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setIncludeInferred(false);
+		if(booleanQuery.evaluate()){
+			String text = "altLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since this "
+					+ "resource has already a prefLabel with the same value";
+			throw new AlreadyExistingLiteralFormForResourceException(text);
+		}
+	}
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
 		Method m = SKOS.class.getMethod("getNarrowerConcepts", Resource.class, Resource.class,
