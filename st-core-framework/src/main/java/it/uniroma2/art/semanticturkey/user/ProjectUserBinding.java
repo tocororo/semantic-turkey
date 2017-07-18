@@ -10,11 +10,13 @@ public class ProjectUserBinding {
 	private AbstractProject project;
 	private STUser user;
 	private Collection<Role> roles;
+	private Collection<String> languages;
 	
 	public ProjectUserBinding(AbstractProject project, STUser user) {
 		this.project = project;;
 		this.user = user;
 		this.roles = new ArrayList<>();
+		this.languages = new ArrayList<>();
 	}
 	
 	public AbstractProject getProject() {
@@ -43,13 +45,33 @@ public class ProjectUserBinding {
 		this.roles.remove(role);
 	}
 	
+	public Collection<String> getLanguages() {
+		return this.languages;
+	}
+	
+	public void setLanguages(Collection<String> languages) {
+		this.languages = languages;
+	}
+	
+	public void addLanguage(String language) {
+		if (!this.languages.contains(language)) {
+			this.languages.add(language);
+		}
+	}
+	
+	public void removeLanguage(String language) {
+		this.languages.remove(language);
+	}
+	
 	@Override
 	public String toString() {
 		Collection<String> rolesAsStringList = new ArrayList<>();
 		for (Role r: this.roles) {
 			rolesAsStringList.add(r.getName());
 		}
-		return "<" + this.project.getName() + "," + this.user.getEmail() + ">: " + this.roles; 
+		return "<" + this.project.getName() + "," + this.user.getEmail() + ">:\n"
+				+ "\tRoles:" + this.roles
+				+ "\tLanguages:" + this.languages;
 	}
 
 }

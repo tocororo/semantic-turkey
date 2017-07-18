@@ -38,7 +38,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ServiceForSearches;
+import it.uniroma2.art.semanticturkey.services.core.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService

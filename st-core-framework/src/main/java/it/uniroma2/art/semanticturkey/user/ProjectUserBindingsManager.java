@@ -191,7 +191,7 @@ public class ProjectUserBindingsManager {
 	}
 	
 	/**
-	 * Adds roles to the binding between the given project-user pair
+	 * Adds role to the binding between the given project-user pair
 	 * @param userEmail
 	 * @param projectName
 	 * @param roles
@@ -200,7 +200,6 @@ public class ProjectUserBindingsManager {
 	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
-				System.out.println("pub found " + pub);
 				pub.addRole(role);
 				createOrUpdatePUBindingFolder(pub);
 				return;
@@ -255,6 +254,43 @@ public class ProjectUserBindingsManager {
 			roles.remove(role);
 			pub.setRoles(roles);
 			createOrUpdatePUBindingFolder(pub);
+		}
+	}
+	
+	/**
+	 * Adds languages to the binding between the given project-user pair
+	 * @param userEmail
+	 * @param projectName
+	 * @param languages
+	 * @throws PUBindingException
+	 */
+	public static void addLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages)
+			throws PUBindingException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+				for (String l : languages) {
+					pub.addLanguage(l);
+				}
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Removes a language from the binding between the given project-user pair
+	 * @param userEmail
+	 * @param projectName
+	 * @param role
+	 * @throws PUBindingException
+	 */
+	public static void updateLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages) throws PUBindingException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+				pub.setLanguages(languages);
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
 		}
 	}
 	

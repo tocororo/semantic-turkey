@@ -246,5 +246,17 @@ public class STAuthorizationEvaluator {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
 		}
 	}
+	
+	/**
+	 * Check if the user that is performing the request has the given email.
+	 * Useful to the Preauthorize annotation in the service to edit user that are
+	 * permitted to those user who have the required capability or to the same user that is
+	 * the subject of the changes.
+	 * @param email
+	 * @return
+	 */
+	public boolean isLoggedUser(String email) {
+		return (UsersManager.getLoggedUser().getEmail().equals(email));
+	}
 
 }

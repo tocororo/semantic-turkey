@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -182,8 +183,7 @@ public class Resources {
 			if (!systemDir.exists()) {
 				systemDir.mkdirs();
 			}
-			initializeOrUpdateSystemAdminSettings();
-			initializeOrUpdateProjectPreferencesDefault();
+			initializeOrUpdateSystemProperties();
 			
 			if (!usersDir.exists()) {
 				usersDir.mkdir();
@@ -328,8 +328,7 @@ public class Resources {
 			initializeCustomFormFileStructure();
 			initializeRoles();
 			initializePUBindingFileStructure();
-			initializeOrUpdateSystemAdminSettings();
-			initializeOrUpdateProjectPreferencesDefault();
+			initializeOrUpdateSystemProperties();
 						
 		} else
 			throw new STInitializationException("Unable to create the main data folder");
@@ -436,11 +435,12 @@ public class Resources {
 		}
 	}
 	
-	private static void initializeOrUpdateSystemAdminSettings() throws STInitializationException {
+	private static void initializeOrUpdateSystemProperties() throws STInitializationException {
 		try {
+			//System settings
 			Properties prop = new Properties();
-			prop.load(Resources.class.getClassLoader()
-					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/settings.props"));
+			prop.load(Resources.class.getClassLoader().getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"));
 			for (Object k : prop.keySet()) {
 				String propName = (String) k;
 				String propValue = prop.getProperty(propName);
@@ -448,16 +448,10 @@ public class Resources {
 					STPropertiesManager.setSystemSetting(propName, propValue);
 				}
 			}
-		} catch (IOException | STPropertyAccessException | STPropertyUpdateException e) {
-			throw new STInitializationException(e);
-		}
-	}
-	
-	private static void initializeOrUpdateProjectPreferencesDefault() throws STInitializationException {
-		try {
-			Properties prop = new Properties();
-			prop.load(Resources.class.getClassLoader()
-					.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/project-settings-defaults.props"));
+			//default project settings
+			prop = new Properties();
+			prop.load(Resources.class.getClassLoader().getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"));
 			for (Object k : prop.keySet()) {
 				String propName = (String) k;
 				String propValue = prop.getProperty(propName);
@@ -465,9 +459,32 @@ public class Resources {
 					STPropertiesManager.setProjectSettingsDefault(propName, propValue);
 				}
 			}
+			//project preferences default
+			// - core
+			prop = new Properties();
+			prop.load(Resources.class.getClassLoader().getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-preferences-defaults.props"));
+			for (Object k : prop.keySet()) {
+				String propName = (String) k;
+				String propValue = prop.getProperty(propName);
+				if (STPropertiesManager.getProjectPreferenceDefault(propName) == null) {
+					STPropertiesManager.setProjectPreferenceDefault(propName, propValue);
+				}
+			}
+			// - rendering engine
+			prop = new Properties();
+			prop.load(Resources.class.getClassLoader().getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/project-preferences-defaults.props"));
+			for (Object k : prop.keySet()) {
+				String propName = (String) k;
+				String propValue = prop.getProperty(propName);
+				if (STPropertiesManager.getProjectPreferenceDefault(propName, RenderingEngine.class.getName()) == null) {
+					STPropertiesManager.setProjectPreferenceDefault(propName, propValue, RenderingEngine.class.getName());
+				}
+			}
 		} catch (IOException | STPropertyAccessException | STPropertyUpdateException e) {
 			throw new STInitializationException(e);
 		}
- 	}
-
+	}
+	
 }

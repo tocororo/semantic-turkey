@@ -9,7 +9,6 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -154,75 +153,44 @@ public class PreferencesSettings extends STServiceAdapter {
 		return schemes;
 	}
 	
-	
+	/**
+	 * Returns the specified project preferences
+	 * @param properties
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
 	@STServiceOperation
-	public JsonNode getProjectPreferences() throws STPropertyAccessException, STPropertyUpdateException {
+	public JsonNode getProjectPreferences(List<String> properties, @Optional String pluginID)
+			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode preferencesNode = jsonFactory.objectNode();
-		
-		//languages
-		ArrayNode languagesArrayNode = jsonFactory.arrayNode();
-		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_LANGUAGES, getProject(),
-				UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-		if (value != null) {
-			value.replaceAll(" ", ""); // remove all spaces
-			String[] splitted = value.split(",");
-			for (int i = 0; i < splitted.length; i++) {
-				languagesArrayNode.add(splitted[i]);
+		ObjectNode respNode = jsonFactory.objectNode();
+		for (String prop: properties) {
+			String value;
+			if (pluginID == null) {
+				value = STPropertiesManager.getProjectPreference(prop, getProject(), UsersManager.getLoggedUser());
+			} else {
+				value = STPropertiesManager.getProjectPreference(prop, getProject(), UsersManager.getLoggedUser(), pluginID);
 			}
-		} else { //preference not set => set the default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_LANGUAGES, "*", getProject(),	
-					UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-			languagesArrayNode.add("*");
+			respNode.set(prop, jsonFactory.textNode(value));
 		}
-		preferencesNode.set(STPropertiesManager.PREF_LANGUAGES, languagesArrayNode);
-		
-		//show_flags
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_SHOW_FLAGS, getProject(),
-				UsersManager.getLoggedUser());
-		boolean showFlags = true;
-		if (value != null) {
-			showFlags = Boolean.parseBoolean(value);
-		} else { //property not set => set default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_FLAGS, showFlags+"", getProject(),
-					UsersManager.getLoggedUser());
-		}
-		preferencesNode.set(STPropertiesManager.PREF_SHOW_FLAGS, jsonFactory.booleanNode(showFlags));
-		
-		//show_instances_number
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, getProject(),
-				UsersManager.getLoggedUser());
-
-		//default: false in skos, true in owl
-		boolean showInst = getProject().getModel().equals(Project.SKOS_MODEL) ? false : true;
-		if (value != null) {
-			showInst = Boolean.parseBoolean(value);
-		} else { //property not set => set default
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, showInst+"",
-					getProject(), UsersManager.getLoggedUser());
-		}
-		preferencesNode.set(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, jsonFactory.booleanNode(showInst));
-		
-		//active_scheme
-		ArrayNode schemesArrayNode = jsonFactory.arrayNode();
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES, getProject(),
-				UsersManager.getLoggedUser());
-		if (value != null) {
-			String[] splitted = value.split(",");
-			for (String s : splitted) {
-				schemesArrayNode.add(s);
-			}
-		}
-		preferencesNode.set(STPropertiesManager.PREF_ACTIVE_SCHEMES, schemesArrayNode);
-		
-		//project_theme
-		value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_PROJ_THEME, getProject(),
-				UsersManager.getLoggedUser());
-		preferencesNode.set(STPropertiesManager.PREF_PROJ_THEME, jsonFactory.textNode(value));
-		
-		return preferencesNode;
+		return respNode;
 	}
 	
+	/**
+	 * Returns the specified project settings
+	 * @param properties
+	 * @param projectName
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
 	@STServiceOperation
 	public JsonNode getProjectSettings(List<String> properties, @Optional String projectName, @Optional String pluginID)
 			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
@@ -252,7 +220,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('pm(project,_)', 'U')")
 	public void setProjectSetting(String property, @Optional String value, @Optional String projectName)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
 		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();

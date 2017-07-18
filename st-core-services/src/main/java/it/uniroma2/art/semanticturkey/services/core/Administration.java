@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -115,10 +116,11 @@ public class Administration extends STServiceAdapter {
 	 * @throws ProjectAccessException 
 	 * @throws ProjectInexistentException 
 	 * @throws InvalidProjectNameException 
+	 * @throws STPropertyAccessException 
 	 */
 	@STServiceOperation
 	public JsonNode getProjectUserBinding(String projectName, String email) throws PUBindingException, JSONException, 
-		InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new PUBindingException("No user found with email " + email);
@@ -137,6 +139,24 @@ public class Administration extends STServiceAdapter {
 			rolesArrayNode.add(role.getName());
 		}
 		bindingNode.set("roles", rolesArrayNode);
+		ArrayNode languagesArrayNode = jsonFactory.arrayNode();
+		
+		Collection<String> boundLangs = puBinding.getLanguages();
+		/* special case:
+		 * the administrator as default has no languages, but he should have permission to use all the langs,
+		 * so if in its project-user binding there is no language assigned, assign all the language of the project
+		 */
+		if (boundLangs.isEmpty() && user.isAdmin()) {
+			String projLangsValue = STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, project);
+			JSONArray jsonLangsArray = new JSONArray(projLangsValue);
+			for (int i = 0; i < jsonLangsArray.length(); i++) {
+				languagesArrayNode.add(jsonLangsArray.getJSONObject(i).getString("tag"));
+			}
+		}
+		for (String lang: boundLangs) {
+			languagesArrayNode.add(lang);
+		}
+		bindingNode.set("languages", languagesArrayNode);
 		return bindingNode;
 	}
 	
@@ -171,29 +191,6 @@ public class Administration extends STServiceAdapter {
 		}
 		ProjectUserBindingsManager.addRolesToPUBinding(user, project, roleList);
 	}
-	
-//	/**
-//	 * @throws RBACException 
-//	 */
-//	@STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
-//	public void addRoleToUser(String projectName, String email, String role) throws PUBindingException, 
-//			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
-//		STUser user = UsersManager.getUserByEmail(email);
-//		if (user == null) {
-//			throw new PUBindingException("No user found with email " + email);
-//		}
-//		AbstractProject project = ProjectManager.getProjectDescription(projectName);
-//		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-//		if (puBinding == null) {
-//			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
-//		}
-//		Role aRole = RBACManager.getRole(project, role);
-//		if (aRole == null) {
-//			throw new PUBindingException("No role '" + role + "' found");
-//		}
-//		ProjectUserBindingsManager.addRoleToPUBinding(user, project, aRole);
-//	}
 	
 	/**
 	 * Removes all roles from the user in the given project
@@ -240,6 +237,25 @@ public class Administration extends STServiceAdapter {
 			throw new PUBindingException("No role '" + role + "' found");
 		}
 		ProjectUserBindingsManager.removeRoleFromPUBinding(user, project, aRole);
+	}
+	
+	/**
+	 * @throws PUBindingException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'U')")
+	public void updateLanguagesOfUserInProject(String projectName, String email, Collection<String> languages) throws PUBindingException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new PUBindingException("No user found with email " + email);
+		}
+		Project project = ProjectManager.getProjectDescription(projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
+		if (puBinding == null) {
+			throw new PUBindingException("No binding found for user with email " + email + " and project " + projectName);
+		}
+		ProjectUserBindingsManager.updateLanguagesToPUBinding(user, project, languages);
 	}
 	
 	//ROLES AND CAPABILITIES SERVICES

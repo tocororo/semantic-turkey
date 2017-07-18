@@ -48,6 +48,7 @@ public class ProjectUserBindingsRepoHelper {
 	
 	private static String BINDING_USER = "user";
 	private static String BINDING_ROLE = "role";
+	private static String BINDING_LANGUAGE = "language";
 	private static String BINDING_PROJECT = "project";
 	
 	private Repository repository;
@@ -80,6 +81,9 @@ public class ProjectUserBindingsRepoHelper {
 			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " " 
 					+ NTriplesUtil.toNTriplesString(getRoleIRI(role, puBinding.getProject())) + " .";
 		}
+		for (String lang : puBinding.getLanguages()) {
+			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " '" + lang + "' .";
+		}
 		query += " }";
 		
 		//execute query
@@ -102,6 +106,7 @@ public class ProjectUserBindingsRepoHelper {
 				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.USER_PROP) + " ?" + BINDING_USER + " ."
 				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.PROJECT) + " ?" + BINDING_PROJECT + " ."
 				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " ?" + BINDING_ROLE + " . }"
+				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " ?" + BINDING_LANGUAGE + " . }"
 				+ " }";
 		// execute query
 		logger.debug(query);
@@ -146,7 +151,6 @@ public class ProjectUserBindingsRepoHelper {
 			if (tuple.getBinding(BINDING_ROLE) != null) {
 				role = getRoleFromIRI((IRI) tuple.getValue(BINDING_ROLE));
 			}
-			
 			if (role != null) {
 				// Check if the current tuple is about a binding already fetched (and differs just for a role)
 				for (ProjectUserBinding b : list) {
@@ -156,9 +160,25 @@ public class ProjectUserBindingsRepoHelper {
 						continue tupleLoop;
 					}
 				}
-				//if it reach this point, current binding was not already fetched
-				//so add the role to the binding and then the binding to the list
+				//if it reach this point, current binding was not already fetched so add the role to the binding
 				puBinding.addRole(role);
+			}
+			
+			String lang = null;
+			if (tuple.getBinding(BINDING_LANGUAGE) != null) {
+				lang = tuple.getValue(BINDING_LANGUAGE).stringValue();
+			}
+			if (lang != null) {
+				// Check if the current tuple is about a binding already fetched (and differs just for a lang)
+				for (ProjectUserBinding b : list) {
+					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
+						// binding already in list => add the lang to it
+						b.addLanguage(lang);
+						continue tupleLoop;
+					}
+				}
+				//if it reach this point, current binding was not already fetched so add the lang to the binding
+				puBinding.addLanguage(lang);
 			}
 
 			list.add(puBinding);

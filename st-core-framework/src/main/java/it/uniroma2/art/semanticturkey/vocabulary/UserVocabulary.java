@@ -33,6 +33,7 @@ public class UserVocabulary {
 	
 	public static final IRI BINDING;
 	public static final IRI ROLE_PROP;
+	public static final IRI LANGUAGE_PROP;
 	public static final IRI USER_PROP;
 	public static final IRI PROJECT;
     
@@ -49,6 +50,7 @@ public class UserVocabulary {
     	
     	BINDING = fact.createIRI(UserVocabulary.PUVOC_NS, "Binding");
     	ROLE_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "role");
+    	LANGUAGE_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "language");
     	USER_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "user");
     	PROJECT = fact.createIRI(UserVocabulary.PUVOC_NS, "project");
 	}

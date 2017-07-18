@@ -139,7 +139,7 @@ public class Users extends STServiceAdapter {
 	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('um(user, project)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('um(user, project)', 'R')")
 	public JsonNode listUsersBoundToProject(String projectName)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		AbstractProject project = ProjectManager.getProjectDescription(projectName);
@@ -147,6 +147,9 @@ public class Users extends STServiceAdapter {
 		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode userArrayNode = jsonFactory.arrayNode();
+		
+		//add the admin even if it has no binding
+		userArrayNode.add(UsersManager.getAdminUser().getAsJsonObject());
 		
 		for (ProjectUserBinding pub : puBindings) {
 			if (!pub.getRoles().isEmpty()) {
@@ -237,6 +240,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserGivenName(String email, String givenName) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserGivenName(user, givenName);
@@ -252,6 +256,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserFamilyName(String email, String familyName) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserFamilyName(user, familyName);
@@ -268,6 +273,7 @@ public class Users extends STServiceAdapter {
 	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserEmail(String email, String newEmail) throws UserException, STPropertyUpdateException {
 		STUser user = UsersManager.getUserByEmail(email);
 		//check if there is already a user that uses the newEmail
@@ -292,6 +298,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserPhone(String email, String phone) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserPhone(user, phone);
@@ -308,6 +315,7 @@ public class Users extends STServiceAdapter {
 	 * @throws ParseException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserBirthday(String email, String birthday) throws UserException, ParseException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserBirthday(user, birthday);
@@ -323,6 +331,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserGender(String email, String gender) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserGender(user, gender);
@@ -338,6 +347,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserCountry(String email, String country) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserCountry(user, country);
@@ -353,6 +363,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAddress(String email, String address) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAddress(user, address);
@@ -368,6 +379,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAffiliation(String email, String affiliation) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAffiliation(user, affiliation);
@@ -383,6 +395,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserUrl(String email, String url) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserUrl(user, url);
@@ -398,6 +411,7 @@ public class Users extends STServiceAdapter {
 	 * @throws IOException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserLanguageProficiencies(String email, Collection<String> languageProficiencies) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserLanguageProficiencies(user, languageProficiencies);

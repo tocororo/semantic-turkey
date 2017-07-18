@@ -71,6 +71,19 @@ public class UsersManager {
 	public static Collection<STUser> listUsers() {
 		return userList;
 	}
+	
+	/**
+	 * Returns the admin
+	 * @return
+	 */
+	public static STUser getAdminUser() {
+		for (STUser user : userList) {
+			if (user.isAdmin()) {
+				return user;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Returns the user with the given email. Null if there is no user with the given email.
