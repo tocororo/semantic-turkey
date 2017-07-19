@@ -44,21 +44,30 @@ public class Resources extends STServiceAdapter {
 		logger.info("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
 
-		String query = "DELETE DATA {								\n"
+		String query = "DELETE  {							\n"
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?value .		\n"
 				+ "		}									\n"
-				+ "};										\n"
-				+ "INSERT DATA {							\n"
+				+ "}										\n"
+				+ "INSERT  {							\n"
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?newValue .	\n"
-				+ "		}									\n" + "}";
-		query = query.replace("?g", NTriplesUtil.toNTriplesString(getWorkingGraph()));
-		query = query.replace("?subject", NTriplesUtil.toNTriplesString(subject));
-		query = query.replace("?property", NTriplesUtil.toNTriplesString(property));
-		query = query.replace("?value", NTriplesUtil.toNTriplesString(value));
-		query = query.replace("?newValue", NTriplesUtil.toNTriplesString(newValue));
+				+ "		}									\n" 
+				+ "}										\n"
+				+ "WHERE{									\n"
+				+ "BIND(?g_input AS ?g )					\n"
+				+ "BIND(?subject_input AS ?subject )		\n"
+				+ "BIND(?property_input AS ?property )		\n"
+				+ "BIND(?value_input AS ?value )			\n"
+				+ "BIND(?newValue_input AS ?newValue )		\n"
+				+ "}";
+		
 		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("g_input", getWorkingGraph());
+		update.setBinding("subject_input", subject);
+		update.setBinding("property_input", property);
+		update.setBinding("value_input", value);
+		update.setBinding("newValue_input", newValue);
 		update.execute();
 	}
 
