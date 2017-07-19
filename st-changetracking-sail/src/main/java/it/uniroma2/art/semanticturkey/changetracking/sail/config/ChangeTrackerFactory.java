@@ -1,9 +1,11 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.sail.Sail;
+import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
 import org.eclipse.rdf4j.sail.config.SailConfigException;
 import org.eclipse.rdf4j.sail.config.SailFactory;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
@@ -47,11 +49,29 @@ public class ChangeTrackerFactory implements SailFactory {
 		Set<IRI> includeGraph = config2.getIncludeGraph();
 		Set<IRI> excludeGraph = config2.getExcludeGraph();
 		boolean validationEnabled = config2.isValidationEnabled();
-		boolean interactiveNotifications = config2.isInteractiveNotifications();
+		Optional<Boolean> interactiveNotifications = config2.isInteractiveNotifications();
 		IRI validationGraph = config2.getValidationGraph();
-		
-		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph, excludeGraph,
-				validationEnabled, interactiveNotifications, validationGraph);
+
+		SailImplConfig config3 = config;
+
+		if (!interactiveNotifications.isPresent()) {
+			while (config3 instanceof DelegatingSailImplConfig) {
+				config3 = ((DelegatingSailImplConfig) config).getDelegate();
+
+				String type = config3.getType();
+				if (type.equals("graphdb:FreeSail")) {
+					interactiveNotifications = ChangeTracker.OPTIONAL_FALSE;
+					break;
+				} else if (type.equals("openrdf:MemoryStore")
+						|| type.equals("openrdf:NativeStore")) {
+					interactiveNotifications = ChangeTracker.OPTIONAL_TRUE;
+					break;
+				}
+			}
+		}
+
+		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph,
+				excludeGraph, validationEnabled, interactiveNotifications, validationGraph);
 	}
 
 }

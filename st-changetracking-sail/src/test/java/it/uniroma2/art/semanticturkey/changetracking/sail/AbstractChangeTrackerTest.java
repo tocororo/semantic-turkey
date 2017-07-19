@@ -9,10 +9,16 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.UnknownTransactionStateException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.repository.util.Repositories;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 import org.junit.After;
 import org.junit.Before;
@@ -61,7 +67,7 @@ public abstract class AbstractChangeTrackerTest {
 	}
 
 	protected boolean requiresValidation;
-	
+
 	@Rule
 	public TestWatcher testWatcher = new TestWatcher() {
 
@@ -92,6 +98,7 @@ public abstract class AbstractChangeTrackerTest {
 		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
 		trackerConfig.setSupportRepositoryID(HISTORY_REPO_ID);
 		trackerConfig.setMetadataNS(HISTORY_NS);
+//		trackerConfig.setInteractiveNotifications(true);
 		
 		if (requiresValidation) {
 			trackerConfig.setValidationEnabled(true);
@@ -99,7 +106,7 @@ public abstract class AbstractChangeTrackerTest {
 		} else {
 			trackerConfig.setValidationEnabled(false);
 		}
-		
+
 		trackerConfig.setHistoryGraph(HISTORY_GRAPH);
 
 		repositoryManager.addRepositoryConfig(
@@ -111,6 +118,28 @@ public abstract class AbstractChangeTrackerTest {
 	@After
 	public void teardown() {
 		repositoryManager.shutDown();
+	}
+
+	protected void printRepositories() throws RepositoryException, UnknownTransactionStateException {
+		System.out.println();
+		System.out.println("--- Data repo ---");
+		System.out.println();
+
+		Repositories.consume(coreRepo, conn -> {
+			conn.export(Rio.createWriter(RDFFormat.NQUADS, System.out));
+		});
+
+		System.out.println();
+		System.out.println("--- Support repo ---");
+		System.out.println();
+
+		Repositories.consume(supportRepo, conn -> {
+			RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TRIG, System.out);
+			rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
+			conn.export(rdfWriter);
+		});
+
+		System.out.println();
 	}
 
 }

@@ -1,7 +1,12 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.eclipse.rdf4j.IsolationLevel;
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -18,6 +23,8 @@ import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.MoreObjects;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
@@ -69,6 +76,9 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  */
 public class ChangeTracker extends NotifyingSailWrapper implements RepositoryResolverClient {
 
+	public static final Optional<Boolean> OPTIONAL_TRUE = Optional.of(true);
+	public static final Optional<Boolean> OPTIONAL_FALSE = Optional.of(false);
+
 	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
 
 	final String supportRepoId;
@@ -82,13 +92,13 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	final Model graphManagement;
 
 	final boolean validationEnabled;
-	final boolean interactiveNotifications;
+	final Optional<Boolean> interactiveNotifications;
 
 	private RepositoryResolver repositoryResolver;
 
 	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
 			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean validationEnabled,
-			boolean interactiveNotifications, IRI validationGraph) {
+			Optional<Boolean> interactiveNotifications, IRI validationGraph) {
 		this.serverURL = serverURL;
 		this.supportRepoId = supportRepoId;
 		this.metadataNS = metadataNS;
@@ -145,6 +155,37 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		NotifyingSailConnection delegate = super.getConnection();
 		ChangeTrackerConnection connection = new ChangeTrackerConnection(delegate, this);
 		return connection;
+	}
+
+	@Override
+	public IsolationLevel getDefaultIsolationLevel() {
+		IsolationLevel isolationLevel = super.getDefaultIsolationLevel();
+
+		if (interactiveNotifications.equals(OPTIONAL_FALSE)) {
+			return isolationLevel;
+		} else {
+			if (isolationLevel.isCompatibleWith(IsolationLevels.SERIALIZABLE)) {
+				return isolationLevel;
+			} else {
+				return MoreObjects.firstNonNull(
+						IsolationLevels.getCompatibleIsolationLevel(IsolationLevels.SERIALIZABLE,
+								super.getSupportedIsolationLevels()),
+						IsolationLevels.SERIALIZABLE);
+			}
+		}
+	}
+
+	@Override
+	public List<IsolationLevel> getSupportedIsolationLevels() {
+		List<IsolationLevel> supportedByDelegate = super.getSupportedIsolationLevels();
+
+		if (interactiveNotifications.equals(OPTIONAL_FALSE)) {
+			return supportedByDelegate;
+		} else {
+			return supportedByDelegate.stream()
+					.filter(level -> level.isCompatibleWith(IsolationLevels.SERIALIZABLE))
+					.collect(Collectors.toList());
+		}
 	}
 
 	@Override

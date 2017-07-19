@@ -16,6 +16,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.eclipse.rdf4j.IsolationLevel;
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.Iteration;
 import org.eclipse.rdf4j.common.iteration.UnionIteration;
@@ -44,6 +45,7 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnectionListener;
 import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.UnknownSailTransactionStateException;
 import org.eclipse.rdf4j.sail.UpdateContext;
 import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.slf4j.Logger;
@@ -132,7 +134,18 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	@Override
 	public void begin(IsolationLevel level) throws SailException {
-		super.begin(level);
+		if (level == null) {
+			level = sail.getDefaultIsolationLevel();
+		}
+
+		IsolationLevel compatibleLevel = IsolationLevels.getCompatibleIsolationLevel(level,
+				sail.getSupportedIsolationLevels());
+		if (compatibleLevel == null) {
+			throw new UnknownSailTransactionStateException(
+					"Isolation level " + level + " not compatible with this Sail");
+		}
+		super.begin(compatibleLevel);
+
 		stagingArea.clear();
 		readonlyHandler.clearHandler();
 		validatableOpertionHandler.clearHandler();
@@ -254,9 +267,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			}
 
 			// If the underlying triple store sends interactive notifications, and the staging area is empty
-			// then
-			// we shuld commit and return
-			if (sail.interactiveNotifications && stagingArea.isEmpty()) {
+			// then we should commit and return
+			if (sail.interactiveNotifications.equals(ChangeTracker.OPTIONAL_TRUE) && stagingArea.isEmpty()) {
 				super.commit();
 				return;
 			}

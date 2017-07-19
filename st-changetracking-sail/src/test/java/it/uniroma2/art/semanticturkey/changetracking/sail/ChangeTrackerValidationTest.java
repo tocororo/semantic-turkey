@@ -11,13 +11,7 @@ import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.UnknownTransactionStateException;
 import org.eclipse.rdf4j.repository.util.Repositories;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
@@ -204,28 +198,6 @@ public class ChangeTrackerValidationTest extends AbstractChangeTrackerTest {
 		try (RepositoryConnection conn = supportRepo.getConnection()) {
 			assertTrue(conn.size() == 0);
 		}
-	}
-
-	protected void printRepositories() throws RepositoryException, UnknownTransactionStateException {
-		System.out.println();
-		System.out.println("--- Data repo ---");
-		System.out.println();
-
-		Repositories.consume(coreRepo, conn -> {
-			conn.export(Rio.createWriter(RDFFormat.NQUADS, System.out));
-		});
-
-		System.out.println();
-		System.out.println("--- History repo ---");
-		System.out.println();
-
-		Repositories.consume(supportRepo, conn -> {
-			RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TRIG, System.out);
-			rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
-			conn.export(rdfWriter);
-		});
-
-		System.out.println();
 	}
 
 }
