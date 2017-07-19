@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -16,21 +15,15 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -39,7 +32,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.search.ServiceForSearches;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -131,6 +123,65 @@ public class Search extends STServiceAdapter {
 	}
 	
 	
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<String> searchStringList(String searchString, @Optional String [] rolesArray,  boolean useLocalName,
+			String searchMode, @Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException  {
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
+		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, 
+				searchMode, getProject());
+		
+		//@formatter:off
+		String query = "SELECT DISTINCT ?resource ?label"+ 
+			"\nWHERE{";
+		
+		//get the candidate resources
+		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
+				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
+				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
+				serviceForSearches.isCollectionWanted(), schemes);
+		
+		//check if the request want to search in the local name
+		if(useLocalName){
+			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the localName is not computed
+					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
+					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		//if the user specify a role, then get the resource associated to the label, since it will be use 
+		// later to filter the results
+		if(rolesArray!=null && rolesArray.length>0){
+			//search in the rdfs:label
+			query+="\n{" +
+					"\n?resource <"+RDFS.LABEL+"> ?label ." +
+					searchModePrepareQuery("?label", searchString, searchModeSelected) +
+					"\n}"+
+			//search in skos:prefLabel and skos:altLabel
+					"\nUNION" +
+					"\n{" +
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+					searchModePrepareQuery("?label", searchString, searchModeSelected) +
+					"\n}" +
+			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+					"\nUNION" +
+					"\n{" +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+					searchModePrepareQuery("?label", searchString, searchModeSelected) +
+					"\n}";		
+		}
+		
+		query+="\n}";
+		//@formatter:on
+
+		logger.debug("query = "+query);
+		
+		return serviceForSearches.executeGenericSearchQueryForStringList(query, getUserNamedGraphs(), getManagedConnection());
+	}
 	
 	
 	

@@ -446,7 +446,7 @@ public class ServiceForSearches {
 				Literal label = (Literal) tupleBindings.getBinding("label").getValue();
 				result = label.getLabel();
 				if(label.getLanguage().isPresent()){
-					result += label.getLanguage().get();
+					result += "@"+label.getLanguage().get();
 				}
 			} else{
 				Value value = tupleBindings.getBinding("resource").getValue();

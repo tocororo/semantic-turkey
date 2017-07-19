@@ -307,7 +307,6 @@ public class GraphDB extends STServiceAdapter {
 		//@formatter:on
 
 		logger.debug("query = "+query);
-		System.out.println("query = "+query); // da cancellare
 		
 		return serviceForSearches.executeGenericSearchQueryForStringList(query, getUserNamedGraphs(), getManagedConnection());
 	}
@@ -364,12 +363,18 @@ public class GraphDB extends STServiceAdapter {
 		String query ="";
 		
 		if(searchMode.equals(START_SEARCH_MODE)){
-			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' .";
+			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
+				// the GraphDB indexes (Lucene) consider as the start of the string all the sterts of the 
+				//single word, so filter them afterward
+				"\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
 		} else if(searchMode.equals(END_SEARCH_MODE)){
-			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' .";
+			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
+			// the GraphDB indexes (Lucene) consider as the start of the string all the sterts of the 
+			//single word, so filter them afterward
+			"\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
 		} else if(searchMode.equals(CONTAINS_SEARCH_MODE)){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' .";
-		} else { // searchMode.equals(contains)
+		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' .";
 		}
 		
@@ -385,7 +390,7 @@ public class GraphDB extends STServiceAdapter {
 			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
 		} else if(searchMode.equals(CONTAINS_SEARCH_MODE)){
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
-		} else { // searchMode.equals(contains)
+		} else { // searchMode.equals(exact)
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
 		}
 		
