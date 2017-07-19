@@ -138,7 +138,7 @@ public class History extends STServiceAdapter {
 				"        (MAX(?startTimeT) as ?startTime)                                      \n" +
 				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
 				"        (MAX(?operationT) as ?operation)                                      \n" +
-				"        (GROUP_CONCAT(CONCAT(STR(?param), \"$\", REPLACE(STR(?paramValue), \"\\\\$\", \"\\\\$\")); separator=\"$\") as ?parameters) \n" + 
+				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(STR(?paramValue), \"\\\\$\", \"\\\\$\")); separator=\"$\") as ?parameters) \n" + 
 				"        (MAX(?agentT) as ?agent)                                              \n" +
 				" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
 				" {                                                                            \n" +
@@ -159,7 +159,8 @@ public class History extends STServiceAdapter {
 				operationSPARQLFilter +
 				"     OPTIONAL {                                                               \n" +
 				"         ?commit prov:qualifiedAssociation [                                  \n" +
-				"             prov:agent ?agentT                                               \n" +
+				"             prov:agent ?agentT ;                                             \n" +
+				"             prov:hadRole stcl:performer                                      \n" +
 				"         ]                                                                    \n" +
 				"     }                                                                        \n" +
 				" }                                                                            \n" +
