@@ -5,10 +5,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +31,10 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.Language;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesUtils;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rbac.HaltedEngineException;
 import it.uniroma2.art.semanticturkey.rbac.HarmingGoalException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
@@ -66,9 +76,11 @@ public class STAuthorizationEvaluator {
 	 * @throws TheoryNotFoundException 
 	 * @throws MalformedGoalException 
 	 * @throws InvalidTheoryException 
+	 * @throws STPropertyAccessException 
+	 * @throws JSONException 
 	 */
 	public boolean isAuthorized(String prologCapability, String crudv) throws InvalidTheoryException,
-		MalformedGoalException, TheoryNotFoundException, HaltedEngineException, HarmingGoalException {
+		MalformedGoalException, TheoryNotFoundException, HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException {
 		return this.isAuthorized(prologCapability, "{}", crudv);
 	}
 	
@@ -84,7 +96,7 @@ public class STAuthorizationEvaluator {
 	 * 
 	 * @param userResponsibility
 	 * 		A String representing a JSON map serialization like <code>{key1: "value1", key2: "value2"}</code>
-	 * 		TODO: define the available keys
+	 * 		currently the only handled key is 'lang'
 	 * 
 	 * @param crudv
 	 * 		Following the CRUD paradigma, it could be any of <code>C (create)</code> <code>R (read)</code>
@@ -96,9 +108,11 @@ public class STAuthorizationEvaluator {
 	 * @throws HarmingGoalException 
 	 * @throws HaltedEngineException 
 	 * @throws MalformedGoalException 
+	 * @throws STPropertyAccessException 
+	 * @throws JSONException 
 	 */
 	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv)
-			throws InvalidTheoryException, TheoryNotFoundException, MalformedGoalException, HaltedEngineException, HarmingGoalException {
+			throws InvalidTheoryException, TheoryNotFoundException, MalformedGoalException, HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException {
 		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "').";
 		
 		//parse userResponsibility
@@ -137,7 +151,7 @@ public class STAuthorizationEvaluator {
 		boolean authorized = false;
 		
 		authorized = false;
-		if (loggedUser.isAdmin()) {
+		if (loggedUser.isAdmin()) { //admin is authorized for every operation
 			authorized = true;
 		} else {
 			for (Role role: userRoles) {
@@ -151,6 +165,25 @@ public class STAuthorizationEvaluator {
 				if (rbac.authorizes(prologGoal)) {
 					authorized = true;
 					break;
+				}
+			}
+			//check on the user responsibilities
+			//at the moment the only check is to the lang capability
+			String lang = (String) userRespMap.get("lang");
+			if (lang != null) {
+				Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
+						loggedUser, targetForRBAC).getLanguages();
+				
+				Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(
+						STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, targetForRBAC));
+				Collection<String> projLangTags = new ArrayList<>();
+				for (Language l : projectLangs) {
+					projLangTags.add(l.getTag());
+				}
+				
+				//if the lang capability is not in project languages or is not assigned to the user, do not authorize
+				if (!assignedLangs.contains(lang) || !projLangTags.contains(lang)) {
+					authorized = false;
 				}
 			}
 		}
@@ -248,6 +281,45 @@ public class STAuthorizationEvaluator {
 	}
 	
 	/**
+	 * To use at support of isAuthorized like 
+	 * @PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
+	 * the three ''' are required because '' represents the double quotes surrounding the map value, the third '
+	 * closes (or open) the string to evaluate in isAuthorized()
+	 * where literal is a method parameter name of type Literal
+	 * @param literal
+	 * @return
+	 */
+	public String langof(Literal literal) {
+		return literal.getLanguage().orElse(null);
+	}
+	/**
+	 * Same of {@link #langof(Literal)} to use with xLabel
+	 * @param xLabel
+	 * @return
+	 */
+	public String langof(Resource xLabel) {
+		String lang = null;
+		Repository repo = stServiceContext.getProject().getRepository();
+		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
+		try {
+			String query = 
+					"SELECT ?lang WHERE {															\n" +
+					" 	?xlabel " + NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?lf .	\n" +
+					"	BIND(lang(?lf) as ?lang)													\n" +
+					"} 																				\n";
+			TupleQuery tq = repoConn.prepareTupleQuery(query);
+			tq.setBinding("xlabel", xLabel);
+			TupleQueryResult result = tq.evaluate();
+			if (result.hasNext()) {
+				lang = result.next().getValue("lang").stringValue();
+			}
+			return lang;
+		} finally {
+			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
+		}
+	}
+	
+	/**
 	 * Check if the user that is performing the request has the given email.
 	 * Useful to the Preauthorize annotation in the service to edit user that are
 	 * permitted to those user who have the required capability or to the same user that is
@@ -258,5 +330,5 @@ public class STAuthorizationEvaluator {
 	public boolean isLoggedUser(String email) {
 		return (UsersManager.getLoggedUser().getEmail().equals(email));
 	}
-
+	
 }

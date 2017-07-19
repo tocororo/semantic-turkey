@@ -406,7 +406,7 @@ public class SKOS extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
@@ -469,7 +469,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
 	public AnnotatedValue<IRI> createConceptScheme(
 			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#ConceptScheme") IRI schemeCls,
@@ -521,7 +521,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("set preferred label")
 	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal) 
 			throws AlreadyExistingLiteralFormForResourceException{
@@ -561,7 +561,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add alternative label")
 	public void addAltLabel(@LocallyDefined @Modified @Subject IRI concept,
 			@LanguageTaggedString Literal literal) throws AlreadyExistingLiteralFormForResourceException {
@@ -576,7 +576,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add hidden label")
 	public void addHiddenLabel(@LocallyDefined @Modified @Subject IRI concept,
 			@LanguageTaggedString Literal literal) {
@@ -898,7 +898,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'D')")
 	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -911,7 +911,7 @@ public class SKOS extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'D')")
 	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -1109,7 +1109,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
 	public AnnotatedValue<Resource> createCollection(
 			IRI collectionType, @Optional @NotLocallyDefined IRI newCollection, 
 			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,

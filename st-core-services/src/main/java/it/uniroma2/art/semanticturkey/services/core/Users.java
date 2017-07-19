@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
 
@@ -148,14 +149,23 @@ public class Users extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode userArrayNode = jsonFactory.arrayNode();
 		
-		//add the admin even if it has no binding
-		userArrayNode.add(UsersManager.getAdminUser().getAsJsonObject());
-		
+		Collection<STUser> boundUsers = new ArrayList<STUser>();
+		//admin is always bound to a project even if he has no role in it
+		boundUsers.add(UsersManager.getAdminUser()); 
+		//add user only if has a role in project
 		for (ProjectUserBinding pub : puBindings) {
 			if (!pub.getRoles().isEmpty()) {
-				userArrayNode.add(UsersManager.getUserByEmail(pub.getUser().getEmail()).getAsJsonObject());
+				STUser user = pub.getUser();
+				if (!boundUsers.contains(user)) {
+					boundUsers.add(user);
+				}
 			}
 		}
+		//serialize bound user in json response
+		for (STUser u : boundUsers) {
+			userArrayNode.add(u.getAsJsonObject());
+		}
+		
 		return userArrayNode;
 	}
 	

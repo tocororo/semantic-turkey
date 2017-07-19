@@ -12,7 +12,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -35,7 +34,9 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.Language;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -147,15 +148,17 @@ public class Administration extends STServiceAdapter {
 		 * so if in its project-user binding there is no language assigned, assign all the language of the project
 		 */
 		if (boundLangs.isEmpty() && user.isAdmin()) {
-			String projLangsValue = STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, project);
-			JSONArray jsonLangsArray = new JSONArray(projLangsValue);
-			for (int i = 0; i < jsonLangsArray.length(); i++) {
-				languagesArrayNode.add(jsonLangsArray.getJSONObject(i).getString("tag"));
+			Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(
+					STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, project));
+			for (Language l : projectLangs) {
+				languagesArrayNode.add(l.getTag());
+			}
+		} else {
+			for (String lang: boundLangs) {
+				languagesArrayNode.add(lang);
 			}
 		}
-		for (String lang: boundLangs) {
-			languagesArrayNode.add(lang);
-		}
+		
 		bindingNode.set("languages", languagesArrayNode);
 		return bindingNode;
 	}

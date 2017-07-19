@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.json.JSONException;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,7 +20,9 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.Language;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -28,6 +31,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
@@ -218,11 +223,12 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws STPropertyUpdateException
+	 * @throws JSONException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project,_)', 'U')")
 	public void setProjectSetting(String property, @Optional String value, @Optional String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
 		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
 		STPropertiesManager.setProjectSetting(property, value, project);
 	}
