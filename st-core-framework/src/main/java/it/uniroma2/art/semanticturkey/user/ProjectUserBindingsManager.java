@@ -73,7 +73,7 @@ public class ProjectUserBindingsManager {
 	public static ProjectUserBinding getPUBinding(STUser user, AbstractProject project) {
 		ProjectUserBinding puBinding = null;
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				puBinding = pub;
 			}
 		}
@@ -161,7 +161,7 @@ public class ProjectUserBindingsManager {
 	public static void deletePUBindingsOfUser(STUser user) throws IOException {
 		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
 		while (itPUB.hasNext()) {
-			if (itPUB.next().getUser().getEmail().equals(user.getEmail())) {
+			if (itPUB.next().getUser().getIRI().equals(user.getIRI())) {
 				itPUB.remove();
 			}
 		}
@@ -180,7 +180,7 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void addRolesToPUBinding(STUser user, AbstractProject project, Collection<Role> roles) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				for (Role r : roles) {
 					pub.addRole(r);
 				}
@@ -199,7 +199,7 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.addRole(role);
 				createOrUpdatePUBindingFolder(pub);
 				return;
@@ -216,7 +216,7 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void removeRoleFromPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				Collection<Role> roles = pub.getRoles();
 				roles.remove(role);
 				pub.setRoles(roles);
@@ -235,7 +235,7 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void removeAllRoleFromPUBinding(STUser user, AbstractProject project) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.setRoles(new ArrayList<Role>());
 				createOrUpdatePUBindingFolder(pub);
 				return;
@@ -267,7 +267,7 @@ public class ProjectUserBindingsManager {
 	public static void addLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages)
 			throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				for (String l : languages) {
 					pub.addLanguage(l);
 				}
@@ -286,7 +286,7 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void updateLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages) throws PUBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getEmail().equals(user.getEmail()) && pub.getProject().getName().equals(project.getName())) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.setLanguages(languages);
 				createOrUpdatePUBindingFolder(pub);
 				return;

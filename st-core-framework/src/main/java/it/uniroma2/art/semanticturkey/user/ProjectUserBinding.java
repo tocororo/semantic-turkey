@@ -69,7 +69,7 @@ public class ProjectUserBinding {
 		for (Role r: this.roles) {
 			rolesAsStringList.add(r.getName());
 		}
-		return "<" + this.project.getName() + "," + this.user.getEmail() + ">:\n"
+		return "<" + this.project.getName() + "," + this.user.getIRI().stringValue() + ">:\n"
 				+ "\tRoles:" + this.roles
 				+ "\tLanguages:" + this.languages;
 	}

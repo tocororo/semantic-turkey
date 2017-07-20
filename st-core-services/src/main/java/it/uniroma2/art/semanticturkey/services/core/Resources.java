@@ -13,12 +13,14 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
@@ -36,6 +38,9 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 public class Resources extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Resources.class);
+	
+	@Autowired
+	private ResourceLocator resourceLocator;
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -133,10 +138,10 @@ public class Resources extends STServiceAdapter {
 	 * @param resource
 	 * @return
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-	public Collection <AnnotatedValue<Resource>> getResourcesInfo( IRI[] resources) {
+	public Collection <AnnotatedValue<Resource>> getResourcesInfo(IRI[] resources) {
 		
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
@@ -160,6 +165,18 @@ public class Resources extends STServiceAdapter {
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
-		
+	}
+	
+	/**
+	 * Return the position of a resource (local/remote/unknown)
+	 * @param resource
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public String getResourcePosition(IRI resource) throws ProjectAccessException {
+		return resourceLocator.locateResource(getProject(), getRepository(), resource).toString();
 	}
 }

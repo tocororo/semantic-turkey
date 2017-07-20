@@ -151,33 +151,28 @@ public class ProjectUserBindingsRepoHelper {
 			if (tuple.getBinding(BINDING_ROLE) != null) {
 				role = getRoleFromIRI((IRI) tuple.getValue(BINDING_ROLE));
 			}
-			if (role != null) {
-				// Check if the current tuple is about a binding already fetched (and differs just for a role)
-				for (ProjectUserBinding b : list) {
-					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
-						// binding already in list => add the role to it
-						b.addRole(role);
-						continue tupleLoop;
-					}
-				}
-				//if it reach this point, current binding was not already fetched so add the role to the binding
-				puBinding.addRole(role);
-			}
-			
 			String lang = null;
 			if (tuple.getBinding(BINDING_LANGUAGE) != null) {
 				lang = tuple.getValue(BINDING_LANGUAGE).stringValue();
 			}
-			if (lang != null) {
-				// Check if the current tuple is about a binding already fetched (and differs just for a lang)
-				for (ProjectUserBinding b : list) {
-					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
-						// binding already in list => add the lang to it
-						b.addLanguage(lang);
-						continue tupleLoop;
+			// Check if the current tuple is about a binding already fetched (and so it differs just for role or lang)
+			for (ProjectUserBinding b : list) {
+				if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
+					// binding already in list => add the role or the lang to it
+					if (role != null) {
+						b.addRole(role);
 					}
+					if (lang != null) {
+						b.addLanguage(lang);
+					}
+					continue tupleLoop;
 				}
-				//if it reach this point, current binding was not already fetched so add the lang to the binding
+			}
+			//if it reach this point, current binding was not already fetched so add the role to the binding
+			if (role != null) {
+				puBinding.addRole(role);
+			}
+			if (lang != null) {
 				puBinding.addLanguage(lang);
 			}
 
