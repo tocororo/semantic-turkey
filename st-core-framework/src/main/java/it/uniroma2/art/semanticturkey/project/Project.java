@@ -929,10 +929,10 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public Repository createReadOnlyRepository(RepositoryAccess repositoryAccess, String repositoryId,
-			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
+			PluginSpecification repoConfigurerSpecification, String localRepostoryId, String backendType)
 			throws RepositoryCreationException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
-				true, null);
+				true, backendType);
 	}
 
 	public VersionManager getVersionManager() {

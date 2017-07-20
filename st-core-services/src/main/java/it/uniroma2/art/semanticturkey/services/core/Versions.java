@@ -75,6 +75,10 @@ public class Versions extends STServiceAdapter {
 	 * @param repositoryId
 	 *            tells the name of the version repository. If the repository is local, this parameter must be
 	 *            <code>null</code>
+	 * @param repoConfigurerSpecification
+	 *            specifies the configuration of the repository
+	 * @param backendType
+	 *            type of the triple store that will host the dump
 	 * @param versionId
 	 *            the version identifier
 	 * @return
@@ -89,8 +93,8 @@ public class Versions extends STServiceAdapter {
 	public VersionInfo createVersionDump(@Optional RepositoryAccess repositoryAccess,
 			@Optional String repositoryId,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification repoConfigurerSpecification,
-			String versionId) throws RepositoryCreationException, JsonProcessingException,
-			ProjectUpdateException, ReservedPropertyUpdateException {
+			@Optional String backendType, String versionId) throws RepositoryCreationException,
+			JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
 
 		try {
 			repoConfigurerSpecification.expandDefaults();
@@ -102,7 +106,7 @@ public class Versions extends STServiceAdapter {
 		String localRepostoryId = ProjectUtils.computeVersionRepository(versionId);
 
 		Repository versionRepository = getProject().createReadOnlyRepository(repositoryAccess, repositoryId,
-				repoConfigurerSpecification, localRepostoryId);
+				repoConfigurerSpecification, localRepostoryId, backendType);
 
 		try (RepositoryConnection outConn = versionRepository.getConnection()) {
 			outConn.begin(IsolationLevels.READ_COMMITTED);
@@ -110,7 +114,7 @@ public class Versions extends STServiceAdapter {
 			// Unwraps the read-only connection wrapper to access the underlying writable connection
 			getManagedConnection()
 					.export(new RDFInserter(((DelegatingRepositoryConnection) outConn).getDelegate()));
-			
+
 			outConn.commit();
 		}
 
