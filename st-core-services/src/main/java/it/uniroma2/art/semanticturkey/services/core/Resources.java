@@ -140,7 +140,7 @@ public class Resources extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection <AnnotatedValue<Resource>> getResourcesInfo(IRI[] resources) {
 		
 		QueryBuilder qb;
@@ -175,7 +175,7 @@ public class Resources extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public String getResourcePosition(IRI resource) throws ProjectAccessException {
 		return resourceLocator.locateResource(getProject(), getRepository(), resource).toString();
 	}
