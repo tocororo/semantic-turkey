@@ -59,7 +59,6 @@ import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -202,7 +201,7 @@ public abstract class Project extends AbstractProject {
 	private Map<Repository, RDF4JRepositoryTransactionManager> repository2TransactionManager;
 	protected RepositoryConfig coreRepoConfig;
 	protected RepositoryConfig supportRepoConfig;
-	private LocalRepositoryManager repositoryManager;
+	private STLocalRepositoryManager repositoryManager;
 	private VersionManager versionManager;
 	private RepositoryLocation defaultRepositoryLocation;
 
@@ -833,12 +832,14 @@ public abstract class Project extends AbstractProject {
 	 * @param repoConfigurerSpecification
 	 * @param localRepostoryId
 	 * @param readOnlyWrapper
+	 * @param backendType
 	 * @return
 	 * @throws RepositoryCreationException
 	 */
 	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess,
 			@Nullable String repositoryId, PluginSpecification repoConfigurerSpecification,
-			String localRepostoryId, boolean readOnlyWrapper) throws RepositoryCreationException {
+			String localRepostoryId, boolean readOnlyWrapper, @Nullable String backendType)
+			throws RepositoryCreationException {
 
 		RepositoryImplConfig localRepositoryImplConfig;
 
@@ -912,7 +913,7 @@ public abstract class Project extends AbstractProject {
 
 			RepositoryConfig localRepositoryConfig = new RepositoryConfig(localRepostoryId, "",
 					localRepositoryImplConfig);
-			repositoryManager.addRepositoryConfig(localRepositoryConfig);
+			repositoryManager.addRepositoryConfig(localRepositoryConfig, backendType);
 			return repositoryManager.getRepository(localRepostoryId);
 		} catch (ClassCastException | ClassNotFoundException | UnsupportedPluginConfigurationException
 				| UnloadablePluginConfigurationException | WrongPropertiesException e) {
@@ -924,14 +925,14 @@ public abstract class Project extends AbstractProject {
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
 			throws RepositoryCreationException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
-				false);
+				false, null);
 	}
 
 	public Repository createReadOnlyRepository(RepositoryAccess repositoryAccess, String repositoryId,
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
 			throws RepositoryCreationException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
-				true);
+				true, null);
 	}
 
 	public VersionManager getVersionManager() {

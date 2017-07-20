@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.eclipse.rdf4j.repository.DelegatingRepository;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -15,9 +17,10 @@ import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
+import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -30,46 +33,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class STLocalRepositoryManager extends LocalRepositoryManager {
 
-	private static class Credentials {
-		private String username;
-		private String password;
-
-		@JsonCreator
-		public Credentials(@JsonProperty("username") String username,
-				@JsonProperty("password") String password) {
-			this.username = username;
-			this.password = password;
-		}
-
-		public String getUsername() {
-			return username;
-		}
-
-		public void setUsername(String username) {
-			this.username = username;
-		}
-
-		public String getPassword() {
-			return password;
-		}
-
-		public void setPassword(String password) {
-			this.password = password;
-		}
-
-	}
-
 	private ObjectMapper mapper;
-	private Map<String, Credentials> repo2Credentials;
-	private File pwdStore;
+	private Map<String, STRepositoryInfo> repo2Info;
+	private File repositoriesInfoFile;
 
-	private static final String PWD_STORE_PATH = "pwd.json";
+	private static final String REPOSITORIES_INFO_JSON = "repositories-info.json";
 
 	public STLocalRepositoryManager(File baseDir) {
 		super(baseDir);
 		mapper = new ObjectMapper();
-		repo2Credentials = new ConcurrentHashMap<>();
-		pwdStore = new File(baseDir, PWD_STORE_PATH);
+		repo2Info = new ConcurrentHashMap<>();
+		repositoriesInfoFile = new File(baseDir, REPOSITORIES_INFO_JSON);
 	}
 
 	@Override
@@ -77,13 +51,13 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 		if (isInitialized()) {
 			return;
 		}
-		if (pwdStore.exists()) {
+		if (repositoriesInfoFile.exists()) {
 			try {
-				Map<String, Credentials> tempRepo2Credentials = mapper.readValue(pwdStore,
-						new TypeReference<Map<String, Credentials>>() {
+				Map<String, STRepositoryInfo> tempRepo2Credentials = mapper.readValue(repositoriesInfoFile,
+						new TypeReference<Map<String, STRepositoryInfo>>() {
 						});
-				repo2Credentials.clear();
-				repo2Credentials.putAll(tempRepo2Credentials);
+				repo2Info.clear();
+				repo2Info.putAll(tempRepo2Credentials);
 			} catch (IOException e) {
 				throw new RepositoryException(e);
 			}
@@ -105,7 +79,7 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 		}
 
 		if (repository instanceof HTTPRepository) {
-			Credentials credentials = repo2Credentials.get(id);
+			STRepositoryInfo credentials = repo2Info.get(id);
 
 			if (credentials != null) {
 				((HTTPRepository) repository).setUsernameAndPassword(credentials.getUsername(),
@@ -117,11 +91,18 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 	@Override
 	public synchronized void addRepositoryConfig(RepositoryConfig config)
 			throws RepositoryException, RepositoryConfigException {
-		storePwdIfAvailable(config);
+		updateRepositoryInfo(config, null);
 		super.addRepositoryConfig(config);
 	}
 
-	private void storePwdIfAvailable(RepositoryConfig config) throws RepositoryException {
+	public synchronized void addRepositoryConfig(RepositoryConfig config, String backendType)
+			throws RepositoryException, RepositoryConfigException {
+		updateRepositoryInfo(config, backendType);
+		super.addRepositoryConfig(config);
+	}
+
+	private synchronized void updateRepositoryInfo(RepositoryConfig config, String backendType)
+			throws RepositoryException {
 		String repositoryId = config.getID();
 
 		RepositoryImplConfig repoImplConfig = config.getRepositoryImplConfig();
@@ -130,19 +111,38 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			repoImplConfig = ((DelegatingRepositoryImplConfig) repoImplConfig).getDelegate();
 		}
 
-		if (repoImplConfig instanceof HTTPRepositoryConfig) {
-			String username = ((HTTPRepositoryConfig) repoImplConfig).getUsername();
-			String password = ((HTTPRepositoryConfig) repoImplConfig).getPassword();
+		if (backendType == null) {
+			backendType = detectBackendType(repoImplConfig);
+		}
+		String username;
+		String password;
 
-			if (username != null || password != null) {
-				repo2Credentials.put(repositoryId, new Credentials(username, password));
-				try {
-					mapper.writeValue(pwdStore, repo2Credentials);
-				} catch (IOException e) {
-					throw new RepositoryException(e);
-				}
-			}
+		if (repoImplConfig instanceof HTTPRepositoryConfig) {
+			username = ((HTTPRepositoryConfig) repoImplConfig).getUsername();
+			password = ((HTTPRepositoryConfig) repoImplConfig).getPassword();
+		} else {
+			username = null;
+			password = null;
 		}
 
+		repo2Info.put(repositoryId, new STRepositoryInfo(backendType, username, password));
+		try {
+			mapper.writeValue(repositoriesInfoFile, repo2Info);
+		} catch (IOException e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	public static @Nullable String detectBackendType(RepositoryImplConfig repoImplConfig) {
+		if (repoImplConfig instanceof SailRepositoryConfig) {
+			SailImplConfig sailImplConfig = ((SailRepositoryConfig) repoImplConfig).getSailImplConfig();
+
+			while (sailImplConfig instanceof DelegatingSailImplConfig) {
+				sailImplConfig = ((DelegatingSailImplConfig) sailImplConfig).getDelegate();
+			}
+
+			return sailImplConfig.getType();
+		}
+		return null;
 	}
 }

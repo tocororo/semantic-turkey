@@ -1329,15 +1329,15 @@ public class ProjectManager {
 	public static Project createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			RepositoryAccess repositoryAccess, String coreRepoID,
-			PluginSpecification coreRepoSailConfigurerSpecification, String supportRepoID,
-			PluginSpecification supportRepoSailConfigurerSpecification,
-			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, PUBindingException,
-			RBACException {
+			PluginSpecification coreRepoSailConfigurerSpecification, String coreBackendType,
+			String supportRepoID, PluginSpecification supportRepoSailConfigurerSpecification,
+			String supportBackendType, PluginSpecification uriGeneratorSpecification,
+			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
+			IRI modificationDateProperty, String[] updateForRoles) throws InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
+			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
+			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			WrongPropertiesException, PUBindingException, RBACException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1472,6 +1472,16 @@ public class ProjectManager {
 					} finally {
 						remoteRepoManager.shutDown();
 					}
+
+					/* Creating a remote repository: try to detect the backend type */
+					if (coreBackendType == null) {
+						coreBackendType = STLocalRepositoryManager
+								.detectBackendType(newCoreRepositoryConfig.getRepositoryImplConfig());
+					}
+					if (supportBackendType == null && newSupportRepositoryConfig != null) {
+						supportBackendType = STLocalRepositoryManager
+								.detectBackendType(newSupportRepositoryConfig.getRepositoryImplConfig());
+					}
 				} else { // remote access & not create --> access existing remote
 
 					// Check the existence of remote repositories
@@ -1531,9 +1541,9 @@ public class ProjectManager {
 
 			prepareProjectFiles(consumer, projectName, model, lexicalizationModel, projType, projectDir,
 					baseURI, defaultNamespace, historyEnabled, validationEnabled, repositoryAccess,
-					coreRepoID, coreRepositoryConfig, supportRepoID, supportRepositoryConfig,
-					uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
-					modificationDateProperty, updateForRoles);
+					coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID, supportRepositoryConfig,
+					supportBackendType, uriGeneratorSpecification, renderingEngineSpecification,
+					creationDateProperty, modificationDateProperty, updateForRoles);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 			return project;
@@ -1611,9 +1621,10 @@ public class ProjectManager {
 			IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
 			RepositoryAccess repositoryAccess, String coreRepoID, RepositoryConfig coreRepoConfig,
-			String supportRepoID, RepositoryConfig supportRepoConfig,
-			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
+			String coreBackendType, String supportRepoID, RepositoryConfig supportRepoConfig,
+			String supportBackendType, PluginSpecification uriGeneratorSpecification,
+			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
+			IRI modificationDateProperty, String[] updateForRoles)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1708,10 +1719,10 @@ public class ProjectManager {
 			STLocalRepositoryManager localRepoMgr = new STLocalRepositoryManager(projectDir);
 			localRepoMgr.initialize();
 			try {
-				localRepoMgr.addRepositoryConfig(coreRepoConfig);
+				localRepoMgr.addRepositoryConfig(coreRepoConfig, coreBackendType);
 
 				if (supportRepoConfig != null) {
-					localRepoMgr.addRepositoryConfig(supportRepoConfig);
+					localRepoMgr.addRepositoryConfig(supportRepoConfig, supportBackendType);
 				}
 			} finally {
 				localRepoMgr.shutDown();

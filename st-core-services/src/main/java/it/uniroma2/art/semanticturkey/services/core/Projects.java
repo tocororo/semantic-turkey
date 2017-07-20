@@ -75,8 +75,9 @@ public class Projects extends STServiceAdapter {
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			RepositoryAccess repositoryAccess, String coreRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification coreRepoSailConfigurerSpecification,
-			String supportRepoID,
+			@Optional String coreBackendType, String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
+			@Optional String supportBackendType,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
 			@Optional PluginSpecification renderingEngineSpecification,
 			@Optional(defaultValue = "<http://purl.org/dc/terms/created>") IRI creationDateProperty,
@@ -103,9 +104,9 @@ public class Projects extends STServiceAdapter {
 
 		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI,
 				historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
-				coreRepoSailConfigurerSpecification, supportRepoID, supportRepoSailConfigurerSpecification,
-				uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
-				modificationDateProperty, updateForRoles);
+				coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
+				supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
+				renderingEngineSpecification, creationDateProperty, modificationDateProperty, updateForRoles);
 	}
 
 	/**
