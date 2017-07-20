@@ -60,7 +60,7 @@ public class Search extends STServiceAdapter {
 		
 		//create the query to be executed for the search
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
+		String query = "SELECT DISTINCT ?resource ?type ?show ?scheme"+ 
 			"\nWHERE{"; // +
 		//get the candidate resources
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
@@ -82,7 +82,6 @@ public class Search extends STServiceAdapter {
 					"\nUNION";
 		}
 		
-		
 		//check if the request want to search in the complete URI
 		if(useURI){
 			query+="\n{" +
@@ -92,7 +91,6 @@ public class Search extends STServiceAdapter {
 					"\n}"+
 					"\nUNION";
 		}
-		
 		
 		//search in the rdfs:label
 		query+="\n{" +

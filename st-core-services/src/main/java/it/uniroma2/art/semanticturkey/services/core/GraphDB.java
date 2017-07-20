@@ -175,7 +175,7 @@ public class GraphDB extends STServiceAdapter {
 				searchMode, getProject());
 		
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
+		String query = "SELECT DISTINCT ?resource ?type ?show ?scheme"+ 
 			"\nWHERE{";
 		
 		if(useLocalName){

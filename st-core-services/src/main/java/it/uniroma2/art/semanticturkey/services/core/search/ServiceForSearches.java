@@ -104,16 +104,22 @@ public class ServiceForSearches {
 			otherWanted = true;
 		}
 		if(isConceptWanted){
+			String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
+					+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
+			
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+resource+" a "+type+" . " +
 					 "\nFILTER("+type+" = <"+SKOS.CONCEPT.stringValue()+">)";
 			if(schemes!=null && schemes.size()==1){
-				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> <"+schemes.get(0).stringValue()+"> .";
+				filterQuery += "\n"+resource+" "+schemeOrTopConcept+" <"+schemes.get(0).stringValue()+"> ."+
+						"\n"+resource+" "+schemeOrTopConcept+" ?scheme .";
 			} else if(schemes!=null && schemes.size()>1){
-				filterQuery += "\n"+resource+" <"+SKOS.IN_SCHEME.stringValue()+"> ?scheme0 . "+
-						filterWithOrValues(schemes, "?scheme0");
+				filterQuery += "\n"+resource+" "+schemeOrTopConcept+" ?scheme . "+
+						filterWithOrValues(schemes, "?scheme");
+			} else{ // schemes!=null
+				filterQuery +="\n"+resource+" "+schemeOrTopConcept+" ?scheme .";
 			}
 			
 			filterQuery += "\n}";
@@ -373,7 +379,10 @@ public class ServiceForSearches {
 			} else{
 				//it is a concept, a conceptScheme or a collection, just add it to the otherMap
 				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-				otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
+				//check if the map already has the resource, in case it has not the resorce, add it
+				if(!otherResourcesMap.containsKey(value.stringValue())){
+					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
+				}
 			}
 			
 			if(tupleBindings.hasBinding("show")){
@@ -392,6 +401,15 @@ public class ServiceForSearches {
 					}
 				}
 			}
+			
+			if(tupleBindings.hasBinding("scheme")){
+				Value scheme = tupleBindings.getBinding("scheme").getValue();
+				if(scheme instanceof IRI){
+					if(!otherResourcesMap.get(value.stringValue()).hasScheme((IRI) scheme)){
+						otherResourcesMap.get(value.stringValue()).addScheme((IRI) scheme);
+					}
+				}
+			}
 		}
 		
 		//now iterate over the 2 maps and construct the responses
@@ -402,7 +420,10 @@ public class ServiceForSearches {
 			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
 			if(valueTypeAndShow.isShowPresent()){
 				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
-			} 
+			}
+			if(valueTypeAndShow.isSchemePresent()){
+				annotatedValue.setAttribute("scheme", valueTypeAndShow.getSchemesAsString());
+			}
 			results.add(annotatedValue);
 		}
 		for(String key : propertyMap.keySet()){
@@ -557,11 +578,13 @@ public class ServiceForSearches {
 		//String show = null;
 		List<Literal> showList = null;
 		RDFResourceRole role = null;
+		List<IRI> schemeList = null;
 		
 		public ValueTypeAndShow(IRI resource, RDFResourceRole role) {
 			this.resource = resource;
 			this.role = role;
 			this.showList = new ArrayList<Literal>();
+			this.schemeList = new ArrayList<IRI>();
 		}
 		
 		public void addShow(Literal show){
@@ -577,18 +600,40 @@ public class ServiceForSearches {
 				}
 			}
 		}
+		
+		public void addScheme(IRI scheme){
+			if(!schemeList.contains(scheme)){
+				schemeList.add(scheme);
+			}
+		}
+		
+		public void addSchemeList(List<IRI> schemeList){
+			for(IRI scheme : schemeList){
+				if(!schemeList.contains(scheme)){
+					this.schemeList.add(scheme);
+				}
+			}
+		}
+		
 
 		public IRI getResource() {
 			return resource;
 		}
-
 		
 		public boolean hasShowValue(Literal show){
 			return showList.contains(show);
 		}
 		
+		public boolean hasScheme(IRI scheme){
+			return schemeList.contains(scheme);
+		}
+		
 		public List<Literal> getShowList() {
 			return showList;
+		}
+		
+		public List<IRI> getSchemeList(){
+			return schemeList;
 		}
 		
 		public String getShowAsString(){
@@ -607,6 +652,19 @@ public class ServiceForSearches {
 			return showAsString;
 		}
 		
+		public String getSchemesAsString(){
+			boolean first = true;
+			String schemesAsString = "";
+			for(IRI scheme : schemeList){
+				if(!first){
+					schemesAsString+=",";
+				}
+				first=false;
+				schemesAsString+="<"+scheme.stringValue()+">";
+			}
+			return schemesAsString;
+		}
+		
 
 		public RDFResourceRole getRole() {
 			return role;
@@ -619,6 +677,12 @@ public class ServiceForSearches {
 			return false;
 		}
 		
+		public boolean isSchemePresent(){
+			if(!schemeList.isEmpty()){
+				return true;
+			}
+			return false;
+		}
 	}
 }
 
