@@ -20,9 +20,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.properties.Language;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -31,8 +29,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
@@ -269,5 +265,42 @@ public class PreferencesSettings extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		return jsonFactory.textNode(STPropertiesManager.getProjectSettingDefault(STPropertiesManager.SETTING_PROJ_LANGUAGES));
 	}
+	
+	/**
+	 * 
+	 * @param properties
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public JsonNode getSystemSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode respNode = jsonFactory.objectNode();
+		for (String prop: properties) {
+			String value;
+			if (pluginID == null) {
+				value = STPropertiesManager.getSystemSetting(prop);
+			} else {
+				value = STPropertiesManager.getSystemSetting(prop, pluginID);
+			}
+			respNode.set(prop, jsonFactory.textNode(value));
+		}
+		return respNode;
+	}
+	
+	/**
+	 * 
+	 * @param property
+	 * @param value
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setSystemSetting(String property, String value) throws STPropertyUpdateException {
+		STPropertiesManager.setSystemSetting(property, value);
+	}
+	
 	
 }

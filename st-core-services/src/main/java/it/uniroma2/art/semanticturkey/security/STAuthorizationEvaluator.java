@@ -60,6 +60,18 @@ public class STAuthorizationEvaluator {
 
 	@Autowired
 	private STServiceContext stServiceContext;
+	
+	/**
+	 * Allows request only to system administrator
+	 * To use like follow:
+	 * <code>
+	 * @PreAuthorize("@auth.isAdmin())
+	 * </code>
+	 * @return
+	 */
+	public boolean isAdmin() {
+		return UsersManager.getLoggedUser().isAdmin();
+	}
 
 	/**
 	 * To use like follow:
