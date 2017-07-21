@@ -1173,14 +1173,15 @@ public class SKOS extends STServiceAdapter {
 			xLabelIRI = createLabelUsingLexicalizationModel(newCollectionRes, label, modelAdditions);
 		}
 		
+		
+		Resource[] graphs = getUserNamedGraphs();
 		if (containingCollection != null) {
 			if (repoConnection.hasStatement(containingCollection, RDF.TYPE, 
-					org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION, false, getWorkingGraph())) {
-				
+					org.eclipse.rdf4j.model.vocabulary.SKOS.ORDERED_COLLECTION, false, graphs)) {
 				//add newCollection as last of containingCollection (inspired from SKOSModelImpl.addLastToSKOSOrderedCollection())
 				Resource memberList = null;
 				RepositoryResult<Statement> res = repoConnection.getStatements(
-						containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, null, false, getWorkingGraph());
+						containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, null, false, graphs);
 				if (res.hasNext()) {
 					memberList = (Resource) res.next().getObject();//it's a resource for sure since the predicate is skos:memberList
 				}
@@ -1208,7 +1209,7 @@ public class SKOS extends STServiceAdapter {
 				}
 				
 			} else if (repoConnection.hasStatement(containingCollection, RDF.TYPE,
-					org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION, false, getWorkingGraph())) {
+					org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION, false, graphs)) {
 				modelAdditions.add(containingCollection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, newCollectionRes);
 			}
 		}
