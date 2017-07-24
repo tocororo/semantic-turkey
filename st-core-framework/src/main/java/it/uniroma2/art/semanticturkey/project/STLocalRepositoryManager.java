@@ -3,10 +3,13 @@ package it.uniroma2.art.semanticturkey.project;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
+import org.eclipse.rdf4j.IsolationLevel;
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.repository.DelegatingRepository;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -20,6 +23,8 @@ import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.memory.config.MemoryStoreFactory;
+import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,6 +71,19 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 	}
 
 	@Override
+	public synchronized void addRepositoryConfig(RepositoryConfig config)
+			throws RepositoryException, RepositoryConfigException {
+		updateRepositoryInfo(config, null);
+		super.addRepositoryConfig(config);
+	}
+
+	public synchronized void addRepositoryConfig(RepositoryConfig config, String backendType)
+			throws RepositoryException, RepositoryConfigException {
+		updateRepositoryInfo(config, backendType);
+		super.addRepositoryConfig(config);
+	}
+
+	@Override
 	protected Repository createRepository(String id) throws RepositoryConfigException, RepositoryException {
 		Repository repository = super.createRepository(id);
 		injectPwdIfAvailable(id, repository);
@@ -88,17 +106,8 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 		}
 	}
 
-	@Override
-	public synchronized void addRepositoryConfig(RepositoryConfig config)
-			throws RepositoryException, RepositoryConfigException {
-		updateRepositoryInfo(config, null);
-		super.addRepositoryConfig(config);
-	}
-
-	public synchronized void addRepositoryConfig(RepositoryConfig config, String backendType)
-			throws RepositoryException, RepositoryConfigException {
-		updateRepositoryInfo(config, backendType);
-		super.addRepositoryConfig(config);
+	public Optional<STRepositoryInfo> getSTRepositoryInfo(String id) {
+		return Optional.ofNullable(repo2Info.get(id));
 	}
 
 	private synchronized void updateRepositoryInfo(RepositoryConfig config, String backendType)
@@ -125,7 +134,16 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			password = null;
 		}
 
-		repo2Info.put(repositoryId, new STRepositoryInfo(backendType, username, password));
+		IsolationLevel defaultReadIsolationLevel = null;
+		IsolationLevel defaultWriteIsolationLevel = null;
+
+		if (MemoryStoreFactory.SAIL_TYPE.equals(backendType)
+				|| NativeStoreFactory.SAIL_TYPE.equals(backendType)) {
+			defaultWriteIsolationLevel = IsolationLevels.SERIALIZABLE;
+		}
+
+		repo2Info.put(repositoryId, new STRepositoryInfo(backendType, username, password,
+				defaultReadIsolationLevel, defaultWriteIsolationLevel));
 		try {
 			mapper.writeValue(repositoriesInfoFile, repo2Info);
 		} catch (IOException e) {

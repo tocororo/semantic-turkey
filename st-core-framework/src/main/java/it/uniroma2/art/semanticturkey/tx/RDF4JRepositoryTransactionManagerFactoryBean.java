@@ -22,7 +22,7 @@ public class RDF4JRepositoryTransactionManagerFactoryBean
 	@Override
 	public RDF4JRepositoryTransactionManager getObject() throws Exception {
 		return stContext.getProject()
-				.getRepositoryTransactionManager(STServiceContextUtils.getRepostory(stContext));
+				.getRepositoryTransactionManager(STServiceContextUtils.getRepostoryId(stContext));
 	}
 
 	@Override

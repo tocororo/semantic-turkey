@@ -359,7 +359,7 @@ public abstract class Project extends AbstractProject {
 			if (rdf4jRepo != null) {
 				repository2TransactionManager = new MapMaker().weakKeys().makeMap();
 				repository2TransactionManager.put(rdf4jRepo,
-						new RDF4JRepositoryTransactionManager(rdf4jRepo));
+						new RDF4JRepositoryTransactionManager(rdf4jRepo, repositoryManager.getSTRepositoryInfo("core")));
 			}
 
 			String defaultNamespace = getDefaultNamespace();
@@ -779,9 +779,12 @@ public abstract class Project extends AbstractProject {
 		return newOntManager.getRepository();
 	}
 
-	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager(Repository repository) {
+	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager(String repositoryId) {
+		Repository repository = repositoryManager.getRepository(repositoryId);
+		Optional<STRepositoryInfo> repoInfo = repositoryManager.getSTRepositoryInfo(repositoryId);
+		
 		return repository2TransactionManager.computeIfAbsent(repository,
-				RDF4JRepositoryTransactionManager::new);
+				(r) -> new RDF4JRepositoryTransactionManager(r, repoInfo));
 	}
 
 	public String toString() {
@@ -816,7 +819,7 @@ public abstract class Project extends AbstractProject {
 		return newOntManager;
 	}
 
-	public RepositoryManager getRepositoryManager() {
+	public STLocalRepositoryManager getRepositoryManager() {
 		return repositoryManager;
 	}
 

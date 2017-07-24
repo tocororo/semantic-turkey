@@ -1,12 +1,19 @@
 package it.uniroma2.art.semanticturkey.tx;
 
+import java.util.Optional;
+
+import org.eclipse.rdf4j.IsolationLevel;
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.repository.DelegatingRepositoryConnection;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.event.base.InterceptingRepositoryConnectionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 
 /**
  * Utility class that provides static methods for obtaining connections from Sesame Repositories. It includes
@@ -115,5 +122,49 @@ public class RDF4JRepositoryUtils {
 		wrappedConnection.addRepositoryConnectionInterceptor(
 				new ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor());
 		return wrappedConnection;
+	}
+
+	/**
+	 * Computes the appropriate level for a connection.
+	 * 
+	 * @param repositoryInfo
+	 *            information object about a repository
+	 * @param conn
+	 *            a connection
+	 * @param readOnly
+	 *            whether the connection will be used in read-only mode or not
+	 * @return the desired isolation level, or <code>null</code> to indicate the default isolation level
+	 */
+	public static IsolationLevel computeIsolationLevel(Optional<STRepositoryInfo> repositoryInfo,
+			RepositoryConnection conn, boolean readOnly) {
+		return repositoryInfo.map(readOnly ? STRepositoryInfo::getDefaultReadIsolationLevel
+				: STRepositoryInfo::getDefaultWriteIsolationLevel).orElse(null);
+	}
+
+	/**
+	 * Converters the isolation levels defined by Spring (see constants <code>ISOLATION_...</code> defined in
+	 * {@link TransactionDefinition}).
+	 * 
+	 * @return the corresponding isolation level in RDF4J. Please, note that <code>null</code> represents the
+	 *         default isolation level
+	 * @throws IllegalArgumentException
+	 *             if <code>isolationLevel</code> does not correspond to an isolation level
+	 */
+	public static IsolationLevel convertSpringIsolationLevel(int isolationLevel)
+			throws IllegalArgumentException {
+		switch (isolationLevel) {
+		case TransactionDefinition.ISOLATION_DEFAULT:
+			return null;
+		case TransactionDefinition.ISOLATION_READ_UNCOMMITTED:
+			return IsolationLevels.READ_UNCOMMITTED;
+		case TransactionDefinition.ISOLATION_READ_COMMITTED:
+			return IsolationLevels.READ_COMMITTED;
+		case TransactionDefinition.ISOLATION_REPEATABLE_READ:
+			return IsolationLevels.SNAPSHOT_READ;
+		case TransactionDefinition.ISOLATION_SERIALIZABLE:
+			return IsolationLevels.SERIALIZABLE;
+		default:
+			throw new IllegalArgumentException("Invalid Spring isolation level: " + isolationLevel);
+		}
 	}
 }

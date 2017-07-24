@@ -23,19 +23,31 @@ public abstract class STServiceContextUtils {
 	 */
 	public static Repository getRepostory(STServiceContext stServiceContext) {
 		Project project = stServiceContext.getProject();
+		return project.getRepositoryManager().getRepository(getRepostoryId(stServiceContext));
+	}
+
+	/**
+	 * Returns the id of the repository that should be used for servicing a data operation. This method takes
+	 * into consideration the possibility to use a version dump.
+	 * 
+	 * @param stServiceContext
+	 * @return
+	 */
+	public static String getRepostoryId(STServiceContext stServiceContext) {
+		Project project = stServiceContext.getProject();
 		String versionId = stServiceContext.getVersion();
 
 		if (versionId != null) {
 			String repoId = project.getVersionManager().getVersion(versionId)
 					.map(VersionInfo::getRepositoryId)
 					.orElseThrow(() -> new InvalidContextException("Not a dumped version: " + versionId));
-			Repository repo = project.getRepositoryManager().getRepository(repoId);
-			if (repo == null) {
+			if (!project.getRepositoryManager().hasRepositoryConfig(repoId)) {
 				throw new InvalidContextException("No repository for version: " + versionId);
 			}
-			return repo;
+			return repoId;
 		} else {
-			return project.getRepository();
+			return "core";
 		}
 	}
+
 }

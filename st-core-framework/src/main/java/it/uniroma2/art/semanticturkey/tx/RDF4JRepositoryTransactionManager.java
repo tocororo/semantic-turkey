@@ -3,6 +3,9 @@
  */
 package it.uniroma2.art.semanticturkey.tx;
 
+import java.util.Optional;
+
+import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -16,6 +19,8 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 
 /**
  * Implementation of {@link org.springframework.transaction.PlatformTransactionManager} for RDF4J
@@ -54,9 +59,12 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 	}
 
 	private Repository repository;
+	private Optional<STRepositoryInfo> repositoryInfo;
 
-	public RDF4JRepositoryTransactionManager(Repository sesameRepository) {
+	public RDF4JRepositoryTransactionManager(Repository sesameRepository,
+			Optional<STRepositoryInfo> repositoryInfo) {
 		this.repository = sesameRepository;
+		this.repositoryInfo = repositoryInfo;
 		this.setNestedTransactionAllowed(false);
 	}
 
@@ -95,7 +103,18 @@ public class RDF4JRepositoryTransactionManager extends AbstractPlatformTransacti
 
 			conn = repository.getConnection();
 
-			conn.begin();
+			IsolationLevel declaredIsolationLevel = RDF4JRepositoryUtils
+					.convertSpringIsolationLevel(definition.getIsolationLevel());
+
+			logger.debug("declared isolation level: {}", declaredIsolationLevel);
+
+			IsolationLevel isolationLevelToSet = declaredIsolationLevel != null ? declaredIsolationLevel
+					: RDF4JRepositoryUtils.computeIsolationLevel(repositoryInfo, conn,
+							definition.isReadOnly());
+
+			logger.debug("isolation level to set: {}", isolationLevelToSet);
+
+			conn.begin(isolationLevelToSet);
 
 			txObject.setConnection(conn);
 
