@@ -28,12 +28,16 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.project.ProjectUtils;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.VersionInfo;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 
 /**
  * This class provides services for handling versions of a repository.
@@ -94,7 +98,7 @@ public class Versions extends STServiceAdapter {
 			@Optional String repositoryId,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification repoConfigurerSpecification,
 			@Optional String backendType, String versionId) throws RepositoryCreationException,
-			JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
+			JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException, Exception {
 
 		try {
 			repoConfigurerSpecification.expandDefaults();
@@ -114,6 +118,16 @@ public class Versions extends STServiceAdapter {
 			// Unwraps the read-only connection wrapper to access the underlying writable connection
 			getManagedConnection()
 					.export(new RDFInserter(((DelegatingRepositoryConnection) outConn).getDelegate()));
+
+			outConn.commit();
+
+			outConn.begin();
+
+			SearchStrategyUtils
+					.instantiateSearchStrategy(STRepositoryInfoUtils
+							.getSearchStrategy(getProject().getRepositoryManager().getSTRepositoryInfo(
+									STServiceContextUtils.getRepostoryId(stServiceContext))))
+					.initialize(getProject(), outConn);
 
 			outConn.commit();
 		}
