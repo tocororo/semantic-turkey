@@ -422,7 +422,7 @@ public class ServiceForSearches {
 				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
 			}
 			if(valueTypeAndShow.isSchemePresent()){
-				annotatedValue.setAttribute("scheme", valueTypeAndShow.getSchemesAsString());
+				annotatedValue.setAttribute("schemes", valueTypeAndShow.getSchemesAsString());
 			}
 			results.add(annotatedValue);
 		}
