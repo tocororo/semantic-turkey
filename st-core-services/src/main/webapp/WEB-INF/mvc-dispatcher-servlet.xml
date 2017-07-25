@@ -75,6 +75,12 @@
 		<property name="order" value="251" />
 	</bean>
 
+	<bean
+		class="it.uniroma2.art.semanticturkey.search.SearchUpdatePostProcessor">
+		<property name="proxyTargetClass" value="true"></property>
+		<property name="order" value="252" />
+	</bean>
+
 
 	<bean
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">

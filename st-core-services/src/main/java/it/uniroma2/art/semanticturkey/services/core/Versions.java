@@ -106,7 +106,7 @@ public class Versions extends STServiceAdapter {
 		String localRepostoryId = ProjectUtils.computeVersionRepository(versionId);
 
 		Repository versionRepository = getProject().createReadOnlyRepository(repositoryAccess, repositoryId,
-				repoConfigurerSpecification, localRepostoryId, backendType);
+				repoConfigurerSpecification, localRepostoryId, backendType, true);
 
 		try (RepositoryConnection outConn = versionRepository.getConnection()) {
 			outConn.begin(IsolationLevels.READ_COMMITTED);

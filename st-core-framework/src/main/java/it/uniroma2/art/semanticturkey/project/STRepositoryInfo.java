@@ -27,17 +27,24 @@ public class STRepositoryInfo {
 	private final String password;
 	private final IsolationLevel defaultReadIsolationLevel;
 	private final IsolationLevel defaultWriteIsolationLevel;
+	private final SearchStrategies searchStrategy;
+
+	public static enum SearchStrategies {
+		REGEX, GRAPH_DB
+	}
 
 	@JsonCreator
 	public STRepositoryInfo(@JsonProperty("backendType") String backendType,
 			@JsonProperty("username") String username, @JsonProperty("password") String password,
 			@JsonProperty("defaultReadIsolationLevel") @JsonDeserialize(using = IsolationLevelDeserializer.class) IsolationLevel defaultReadIsolationLevel,
-			@JsonProperty("defaultWriteIsolationLevel") @JsonDeserialize(using = IsolationLevelDeserializer.class) IsolationLevel defaultWriteIsolationLevel) {
+			@JsonProperty("defaultWriteIsolationLevel") @JsonDeserialize(using = IsolationLevelDeserializer.class) IsolationLevel defaultWriteIsolationLevel,
+			@JsonProperty("searchStrategy") SearchStrategies searchStrategy) {
 		this.backendType = backendType;
 		this.username = username;
 		this.password = password;
 		this.defaultReadIsolationLevel = defaultReadIsolationLevel;
 		this.defaultWriteIsolationLevel = defaultWriteIsolationLevel;
+		this.searchStrategy = searchStrategy;
 	}
 
 	public @Nullable String getBackendType() {
@@ -60,6 +67,10 @@ public class STRepositoryInfo {
 	@JsonSerialize(using = IsolationLevelSerializer.class)
 	public IsolationLevel getDefaultWriteIsolationLevel() {
 		return defaultWriteIsolationLevel;
+	}
+
+	public @Nullable SearchStrategies getSearchStrategy() {
+		return searchStrategy;
 	}
 
 	private static class IsolationLevelSerializer extends StdSerializer<IsolationLevel> {

@@ -1719,10 +1719,10 @@ public class ProjectManager {
 			STLocalRepositoryManager localRepoMgr = new STLocalRepositoryManager(projectDir);
 			localRepoMgr.initialize();
 			try {
-				localRepoMgr.addRepositoryConfig(coreRepoConfig, coreBackendType);
+				localRepoMgr.addRepositoryConfig(coreRepoConfig, coreBackendType, true);
 
 				if (supportRepoConfig != null) {
-					localRepoMgr.addRepositoryConfig(supportRepoConfig, supportBackendType);
+					localRepoMgr.addRepositoryConfig(supportRepoConfig, supportBackendType, false);
 				}
 			} finally {
 				localRepoMgr.shutDown();

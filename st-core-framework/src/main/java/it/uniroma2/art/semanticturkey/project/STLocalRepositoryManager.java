@@ -29,6 +29,8 @@ import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+
 /**
  * A subclass of {@link LocalRepositoryManager} adding ST-related capabilities. Currently, an important
  * capability is the configuration of username/passwords, which are not stored inside SYSTEM.
@@ -73,13 +75,13 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 	@Override
 	public synchronized void addRepositoryConfig(RepositoryConfig config)
 			throws RepositoryException, RepositoryConfigException {
-		updateRepositoryInfo(config, null);
+		updateRepositoryInfo(config, null, false);
 		super.addRepositoryConfig(config);
 	}
 
-	public synchronized void addRepositoryConfig(RepositoryConfig config, String backendType)
-			throws RepositoryException, RepositoryConfigException {
-		updateRepositoryInfo(config, backendType);
+	public synchronized void addRepositoryConfig(RepositoryConfig config, String backendType,
+			boolean customizeSearch) throws RepositoryException, RepositoryConfigException {
+		updateRepositoryInfo(config, backendType, customizeSearch);
 		super.addRepositoryConfig(config);
 	}
 
@@ -110,8 +112,8 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 		return Optional.ofNullable(repo2Info.get(id));
 	}
 
-	private synchronized void updateRepositoryInfo(RepositoryConfig config, String backendType)
-			throws RepositoryException {
+	private synchronized void updateRepositoryInfo(RepositoryConfig config, String backendType,
+			boolean customizeSearch) throws RepositoryException {
 		String repositoryId = config.getID();
 
 		RepositoryImplConfig repoImplConfig = config.getRepositoryImplConfig();
@@ -142,13 +144,22 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			defaultWriteIsolationLevel = IsolationLevels.SERIALIZABLE;
 		}
 
+		customizeSearch = false; // ignores search customization until we decide it is safe
+		
+		SearchStrategies searchStrategy = customizeSearch && isGraphDBBackEnd(backendType)
+				? SearchStrategies.GRAPH_DB : SearchStrategies.REGEX;
+
 		repo2Info.put(repositoryId, new STRepositoryInfo(backendType, username, password,
-				defaultReadIsolationLevel, defaultWriteIsolationLevel));
+				defaultReadIsolationLevel, defaultWriteIsolationLevel, searchStrategy));
 		try {
 			mapper.writeValue(repositoriesInfoFile, repo2Info);
 		} catch (IOException e) {
 			throw new RepositoryException(e);
 		}
+	}
+
+	public static boolean isGraphDBBackEnd(String backendType) {
+		return backendType.startsWith("graphdb:");
 	}
 
 	public static @Nullable String detectBackendType(RepositoryImplConfig repoImplConfig) {

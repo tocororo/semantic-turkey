@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -91,9 +92,28 @@ public class InputOutput extends STServiceAdapter {
 						"Could not validate loaded data implicitly becase validation is disabled");
 			}
 
-			ValidationUtilities.disableValidationIfEnabled(getProject(), conn);
-		}
+			Collection<OntologyImport> rv = new ArrayList<>();
 
+			ValidationUtilities.executeWithoutValidation(conn, (RepositoryConnection c) -> {
+				try {
+					Collection<OntologyImport> tempRv = loadRDFInternal(inputFile, baseURI, rdfFormat,
+							transitiveImportAllowance, conn);
+					rv.addAll(tempRv);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+
+			return rv;
+		} else {
+			return loadRDFInternal(inputFile, baseURI, rdfFormat, transitiveImportAllowance, conn);
+		}
+	}
+
+	protected Collection<OntologyImport> loadRDFInternal(MultipartFile inputFile, String baseURI,
+			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			RepositoryConnection conn) throws IOException, IllegalStateException, IllegalArgumentException,
+			FileNotFoundException, RDF4JException {
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File inputServerFile = File.createTempFile("loadRDF", inputFile.getOriginalFilename());
 		try {

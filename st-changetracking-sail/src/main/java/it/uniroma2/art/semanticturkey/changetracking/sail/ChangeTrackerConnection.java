@@ -562,6 +562,13 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			iterations.add(new CollectionIteration<>(getCommitMetadataModel().filter(subj, pred, obj)));
 			contextList.remove(CHANGETRACKER.COMMIT_METADATA);
 		}
+		if (contextList.contains(CHANGETRACKER.VALIDATION)) {
+			Model tempModel = new LinkedHashModel();
+			tempModel.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED,
+					SimpleValueFactory.getInstance().createLiteral(validationEnabled));
+			iterations.add(new CollectionIteration<>(tempModel.filter(subj, pred, obj)));
+			contextList.remove(CHANGETRACKER.VALIDATION);
+		}
 		if (contextList.size() > 0 || iterations.isEmpty()) {
 			Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
 			iterations.add(super.getStatements(subj, pred, obj, includeInferred, newContexts));

@@ -1,15 +1,19 @@
 package it.uniroma2.art.semanticturkey.validation;
 
+import java.util.Optional;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.BooleanLiteral;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
-import it.uniroma2.art.semanticturkey.project.Project;
 
 /**
  * Utility class about validation.
@@ -24,24 +28,52 @@ public class ValidationUtilities {
 	 * Disables validation (if enabled) on the given connection to the core repository of the provided
 	 * project.
 	 * 
-	 * @param project
 	 * @param conn
+	 * @param consumer
+	 * @throws Y
 	 */
-	public static void disableValidationIfEnabled(Project project, RepositoryConnection conn) {
+	public static <Y extends Exception> void executeWithoutValidation(RepositoryConnection conn,
+			ThrowingConsumer<RepositoryConnection, Y> consumer) throws Y {
 
 		logger.debug("Disable validation on connection: " + conn.toString());
 
-		if (project.getRepository() != conn.getRepository()) {
-			throw new IllegalArgumentException(
-					"Could not disable validation for a connection to anything but the core repository of the project");
-		}
+		boolean validationEnabled = isValidationEnabled(conn);
 
-		if (project.isValidationEnabled()) {
+		logger.debug("Is validation enabled: " + validationEnabled);
+
+		if (validationEnabled) {
 			conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.FALSE,
 					CHANGETRACKER.VALIDATION);
 			conn.prepareBooleanQuery("ASK {}").evaluate(); // perform a dummy query to flush the possibly
-															// cached
-															// operation
+															// cached operation
+		}
+
+		try {
+			consumer.accept(conn);
+		} finally {
+			if (validationEnabled) {
+				conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.TRUE,
+						CHANGETRACKER.VALIDATION);
+				conn.prepareBooleanQuery("ASK {}").evaluate(); // perform a dummy query to flush the possibly
+																// cached operation
+			}
+		}
+	}
+
+	/**
+	 * Determines whether validation is enabled on the provided connection
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	public static boolean isValidationEnabled(RepositoryConnection conn) {
+		Optional<Value> enablmentHodler = Models
+				.object(QueryResults.asModel(conn.getStatements(CHANGETRACKER.VALIDATION,
+						CHANGETRACKER.ENABLED, null, CHANGETRACKER.VALIDATION)));
+		if (enablmentHodler.isPresent()) {
+			return enablmentHodler.get().equals(BooleanLiteral.TRUE);
+		} else {
+			return false;
 		}
 	}
 
@@ -75,4 +107,7 @@ public class ValidationUtilities {
 		}
 	}
 
+	public static interface ThrowingConsumer<X, Y extends Exception> {
+		void accept(X input) throws Y;
+	}
 }

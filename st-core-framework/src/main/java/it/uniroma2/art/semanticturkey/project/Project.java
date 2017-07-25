@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.mutable.MutableBoolean;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
@@ -89,6 +90,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
+import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
@@ -98,6 +100,7 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.repository.ReadOnlyRepositoryWrapper;
 import it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperConfig;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
@@ -358,8 +361,8 @@ public abstract class Project extends AbstractProject {
 
 			if (rdf4jRepo != null) {
 				repository2TransactionManager = new MapMaker().weakKeys().makeMap();
-				repository2TransactionManager.put(rdf4jRepo,
-						new RDF4JRepositoryTransactionManager(rdf4jRepo, repositoryManager.getSTRepositoryInfo("core")));
+				repository2TransactionManager.put(rdf4jRepo, new RDF4JRepositoryTransactionManager(rdf4jRepo,
+						repositoryManager.getSTRepositoryInfo("core")));
 			}
 
 			String defaultNamespace = getDefaultNamespace();
@@ -424,63 +427,80 @@ public abstract class Project extends AbstractProject {
 		updateTimeStamp();
 	}
 
-	protected void loadingCoreVocabularies() throws RDF4JException, IOException {
+	protected void loadingCoreVocabularies() throws RDF4JException, IOException, Exception {
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
 
-			ValidationUtilities.disableValidationIfEnabled(this, conn);
-
-			logger.debug("Loading core vocabularies");
-
-			ValueFactory vf = conn.getValueFactory();
-
 			Set<Resource> contexts = QueryResults.asSet(conn.getContextIDs());
 
+			ValueFactory vf = conn.getValueFactory();
 			IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
 			IRI rdfsBaseURI = vf.createIRI("http://www.w3.org/2000/01/rdf-schema");
 			IRI owlBaseURI = vf.createIRI("http://www.w3.org/2002/07/owl");
 			IRI skosBaseURI = vf.createIRI("http://www.w3.org/2004/02/skos/core");
 			IRI skosxlBaseURI = vf.createIRI("http://www.w3.org/2008/05/skos-xl");
 
-			boolean isSKOSXL = false;
+			boolean isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
 
-			if (!contexts.contains(rdfBaseURI)) {
+			MutableBoolean anyWritten = new MutableBoolean(false);
 
-				logger.debug("Loading RDF vocabulary...");
-				conn.add(OntologyManager.class.getResource("rdf.rdf"), rdfBaseURI.stringValue(),
-						RDFFormat.RDFXML, rdfBaseURI);
-			}
+			ValidationUtilities.executeWithoutValidation(conn, (connection) -> {
+				logger.debug("Loading core vocabularies");
 
-			if (!contexts.contains(rdfsBaseURI)) {
-				logger.debug("Loading RDFS vocabulary...");
-				conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
-						RDFFormat.RDFXML, rdfsBaseURI);
-			}
+				if (!contexts.contains(rdfBaseURI)) {
 
-			if (!contexts.contains(owlBaseURI)) {
-				logger.debug("Loading OWL vocabulary...");
-				conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
-						RDFFormat.RDFXML, owlBaseURI);
-			}
+					logger.debug("Loading RDF vocabulary...");
+					conn.add(OntologyManager.class.getResource("rdf.rdf"), rdfBaseURI.stringValue(),
+							RDFFormat.RDFXML, rdfBaseURI);
+					anyWritten.setValue(true);
+				}
 
-			isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
-			boolean isSKOS = isSKOSXL || Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
-					|| Objects.equals(getModel(), SKOS_MODEL);
+				if (!contexts.contains(rdfsBaseURI)) {
+					logger.debug("Loading RDFS vocabulary...");
+					conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
+							RDFFormat.RDFXML, rdfsBaseURI);
+					anyWritten.setValue(true);
+				}
 
-			if (isSKOS && !contexts.contains(skosBaseURI)) {
-				logger.debug("Loading SKOS vocabulary...");
-				conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
-						RDFFormat.RDFXML, skosBaseURI);
-			}
+				if (!contexts.contains(owlBaseURI)) {
+					logger.debug("Loading OWL vocabulary...");
+					conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
+							RDFFormat.RDFXML, owlBaseURI);
+					anyWritten.setValue(true);
+				}
 
-			if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
-				logger.debug("Loading SKOS-XL vocabulary...");
-				conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
-						RDFFormat.RDFXML, skosxlBaseURI);
-			}
+				boolean isSKOS = isSKOSXL
+						|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
+						|| Objects.equals(getModel(), SKOS_MODEL);
+
+				if (isSKOS && !contexts.contains(skosBaseURI)) {
+					logger.debug("Loading SKOS vocabulary...");
+					conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
+							RDFFormat.RDFXML, skosBaseURI);
+					anyWritten.setValue(true);
+				}
+
+				if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
+					logger.debug("Loading SKOS-XL vocabulary...");
+					conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
+							RDFFormat.RDFXML, skosxlBaseURI);
+					anyWritten.setValue(true);
+				}
+
+			});
 
 			logger.debug("About to commit the loaded triples");
 			conn.commit();
+
+			// If anything has been written, assumes a newly created project, so initialize search
+			if (anyWritten.isTrue()) {
+				conn.begin();
+				SearchStrategy searchStrategy = SearchStrategyUtils
+						.instantiateSearchStrategy(STRepositoryInfoUtils
+								.getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
+				searchStrategy.initialize(this, conn);
+				conn.commit();
+			}
 
 			if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
 				conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
@@ -782,7 +802,7 @@ public abstract class Project extends AbstractProject {
 	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager(String repositoryId) {
 		Repository repository = repositoryManager.getRepository(repositoryId);
 		Optional<STRepositoryInfo> repoInfo = repositoryManager.getSTRepositoryInfo(repositoryId);
-		
+
 		return repository2TransactionManager.computeIfAbsent(repository,
 				(r) -> new RDF4JRepositoryTransactionManager(r, repoInfo));
 	}
@@ -836,13 +856,14 @@ public abstract class Project extends AbstractProject {
 	 * @param localRepostoryId
 	 * @param readOnlyWrapper
 	 * @param backendType
+	 * @param customizeSearch
 	 * @return
 	 * @throws RepositoryCreationException
 	 */
 	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess,
 			@Nullable String repositoryId, PluginSpecification repoConfigurerSpecification,
-			String localRepostoryId, boolean readOnlyWrapper, @Nullable String backendType)
-			throws RepositoryCreationException {
+			String localRepostoryId, boolean readOnlyWrapper, @Nullable String backendType,
+			boolean customizeSearch) throws RepositoryCreationException {
 
 		RepositoryImplConfig localRepositoryImplConfig;
 
@@ -916,7 +937,7 @@ public abstract class Project extends AbstractProject {
 
 			RepositoryConfig localRepositoryConfig = new RepositoryConfig(localRepostoryId, "",
 					localRepositoryImplConfig);
-			repositoryManager.addRepositoryConfig(localRepositoryConfig, backendType);
+			repositoryManager.addRepositoryConfig(localRepositoryConfig, backendType, customizeSearch);
 			return repositoryManager.getRepository(localRepostoryId);
 		} catch (ClassCastException | ClassNotFoundException | UnsupportedPluginConfigurationException
 				| UnloadablePluginConfigurationException | WrongPropertiesException e) {
@@ -928,14 +949,14 @@ public abstract class Project extends AbstractProject {
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
 			throws RepositoryCreationException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
-				false, null);
+				false, null, false);
 	}
 
 	public Repository createReadOnlyRepository(RepositoryAccess repositoryAccess, String repositoryId,
-			PluginSpecification repoConfigurerSpecification, String localRepostoryId, String backendType)
-			throws RepositoryCreationException {
+			PluginSpecification repoConfigurerSpecification, String localRepostoryId, String backendType,
+			boolean customizeSearch) throws RepositoryCreationException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
-				true, backendType);
+				true, backendType, customizeSearch);
 	}
 
 	public VersionManager getVersionManager() {
