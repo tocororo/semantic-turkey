@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.search;
+package it.uniroma2.art.semanticturkey.search;
 
 import java.util.ArrayList;
 import java.util.Collection;
