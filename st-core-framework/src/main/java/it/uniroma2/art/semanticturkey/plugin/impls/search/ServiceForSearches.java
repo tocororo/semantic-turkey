@@ -34,9 +34,9 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 public class ServiceForSearches {
 
 	
-	final static public String START_SEARCH_MODE = "start";
-	final static public String CONTAINS_SEARCH_MODE = "contain";
-	final static public String END_SEARCH_MODE = "end";
+	final static public String START_SEARCH_MODE = "startsWith";
+	final static public String CONTAINS_SEARCH_MODE = "contains";
+	final static public String END_SEARCH_MODE = "endsWith";
 	final static public String EXACT_SEARCH_MODE = "exact";
 	
 	private boolean isClassWanted = false;

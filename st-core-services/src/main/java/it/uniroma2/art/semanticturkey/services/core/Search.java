@@ -47,11 +47,6 @@ public class Search extends STServiceAdapter {
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
 
-	private static String START_SEARCH_MODE = "startsWith";
-	private static String CONTAINS_SEARCH_MODE = "contains";
-	private static String END_SEARCH_MODE = "endsWith";
-	private static String EXACT_SEARCH_MODE = "exact";
-
 	protected SearchStrategy instantiateSearchStrategy() {
 		SearchStrategies searchStrategy = STRepositoryInfoUtils
 				.getSearchStrategy(getProject().getRepositoryManager()
@@ -485,22 +480,6 @@ public class Search extends STServiceAdapter {
 	// filterQuery += ")";
 	// return filterQuery;
 	// }
-
-	private String searchModePrepareQuery(String variable, String value, String searchMode) {
-		String query = "";
-
-		if (searchMode.equals(START_SEARCH_MODE)) {
-			query = "\nFILTER regex(str(" + variable + "), '^" + value + "', 'i')";
-		} else if (searchMode.equals(END_SEARCH_MODE)) {
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')";
-		} else if (searchMode.equals(CONTAINS_SEARCH_MODE)) {
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')";
-		} else { // searchMode.equals(contains)
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')";
-		}
-
-		return query;
-	}
 
 	private void getSubResourcesListUsingResourceFroHierarchy(ResourceForHierarchy resource,
 			List<String> currentPathList, List<List<String>> pathList,
