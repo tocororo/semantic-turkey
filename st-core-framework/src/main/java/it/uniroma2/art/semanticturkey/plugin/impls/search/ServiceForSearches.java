@@ -660,7 +660,7 @@ public class ServiceForSearches {
 					schemesAsString+=",";
 				}
 				first=false;
-				schemesAsString+="<"+scheme.stringValue()+">";
+				schemesAsString+=scheme.stringValue();
 			}
 			return schemesAsString;
 		}
