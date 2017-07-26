@@ -47,9 +47,9 @@ public class Search extends STServiceAdapter {
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
 
-	private static String START_SEARCH_MODE = "start";
-	private static String CONTAINS_SEARCH_MODE = "contain";
-	private static String END_SEARCH_MODE = "end";
+	private static String START_SEARCH_MODE = "startsWith";
+	private static String CONTAINS_SEARCH_MODE = "contains";
+	private static String END_SEARCH_MODE = "endsWith";
 	private static String EXACT_SEARCH_MODE = "exact";
 
 	protected SearchStrategy instantiateSearchStrategy() {
