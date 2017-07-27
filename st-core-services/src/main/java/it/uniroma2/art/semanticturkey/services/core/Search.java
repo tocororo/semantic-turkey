@@ -52,7 +52,6 @@ public class Search extends STServiceAdapter {
 				.getSearchStrategy(getProject().getRepositoryManager()
 						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
 
-		System.out.println("@@search strategy = " + searchStrategy);
 		return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy);
 	}
 
