@@ -674,6 +674,25 @@ public class Refactor extends STServiceAdapter  {
 		return annotatedValue; 
 	}
 	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#sourceResource)+ ', lexicalization)', 'CD')")
+	public void moveXLabelToResource(
+			@LocallyDefined Resource sourceResource, IRI predicate, @LocallyDefined Resource xLabel,
+			@LocallyDefined Resource targetResource)
+					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
+					CODAException, NonExistingLiteralFormForResourceException{
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		modelRemovals.add(sourceResource, predicate, xLabel);
+		modelAdditions.add(targetResource, predicate, xLabel);
+		
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+	
 	//copied from the service SKOXL
 	/**
 	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
