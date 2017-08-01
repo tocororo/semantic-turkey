@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -476,15 +477,18 @@ public class Alignment extends STServiceAdapter {
 	public void exportAlignment(HttpServletResponse oRes) throws IOException {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		File tempServerFile = File.createTempFile("alignment", ".rdf");
-		alignmentModel.serialize(tempServerFile);
-		FileInputStream is = new FileInputStream(tempServerFile);
-		IOUtils.copy(is, oRes.getOutputStream());
-		oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
-		oRes.setContentType("application/xml");
-		oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
-		oRes.setContentLength((int) tempServerFile.length());
-		oRes.flushBuffer();
-		is.close();
+		try {
+			alignmentModel.serialize(tempServerFile);
+			oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
+			oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
+			oRes.setContentLength((int) tempServerFile.length());
+			try (InputStream is = new FileInputStream(tempServerFile)) {
+				IOUtils.copy(is, oRes.getOutputStream());
+			}
+			oRes.flushBuffer();
+		} finally {
+			tempServerFile.delete();
+		}
 	}
 	
 	/**
