@@ -526,8 +526,8 @@ public class SKOSXL extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		boolean check = booleanQuery.evaluate();
 		if(check){
-			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since it either "
-					+ "already exists resoruce with the same prefLabel or this resource has already an altLabel "
+			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
+					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
 					+ "with the same value";
 			throw new AlreadyExistingLiteralFormForResourceException(text);
 		}

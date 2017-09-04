@@ -1710,8 +1710,8 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since it either "
-					+ "already exists a resoruce with the same prefLabel or this resource has already an altLabel "
+			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
+					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
 					+ "with the same value";
 			throw new AlreadyExistingLiteralFormForResourceException(text);
 		}
