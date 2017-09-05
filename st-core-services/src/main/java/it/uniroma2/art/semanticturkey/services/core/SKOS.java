@@ -246,6 +246,71 @@ public class SKOS extends STServiceAdapter {
 		qb.setBinding("concept", concept);
 		return qb.runQuery();
 	}
+	
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getBroaderConcepts(@LocallyDefined Resource concept,
+			@Optional @LocallyDefinedResources List<IRI> schemes) {
+		QueryBuilder qb;
+
+		if (schemes != null && !schemes.isEmpty()) {
+			String query = 
+					// @formatter:off
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
+                    "                                                                                    \n" +
+					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
+					" WHERE {																			 \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
+					"     ?resource skos:narrower|^skos:broader ?concept .                               \n" +
+					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
+					"     ?resource ?subPropInScheme ?scheme .                                             \n" +
+					"FILTER (";
+			boolean first=true;
+			for(IRI scheme : schemes){
+				if(!first){
+					query+= " || ";
+				}
+				first=false;
+				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
+			}	
+			query += ") 																				 \n" +
+					generateNatureSPARQLWherePart("?resource") +
+					" }                                                                                  \n" +
+					" GROUP BY ?resource ?attr_more                                                      \n";
+					// @formatter:on
+			qb = createQueryBuilder(query);
+			//qb.setBinding("scheme", scheme);
+		} else {
+			qb = createQueryBuilder(
+					// @formatter:off
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
+                    "                                                                                    \n" +
+					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
+					" WHERE {																			 \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
+					"     ?resource skos:narrower|^skos:broader ?concept .                               \n" +
+					generateNatureSPARQLWherePart("?resource") +
+					" }                                                                                  \n" +
+					" GROUP BY ?resource ?attr_more                                                      \n"
+					// @formatter:on
+			);
+		}
+		qb.processRendering();
+		qb.processQName();
+		qb.setBinding("concept", concept);
+		return qb.runQuery();
+	}
 
 	@STServiceOperation
 	@Read
