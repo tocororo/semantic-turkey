@@ -1787,7 +1787,7 @@ public class SKOS extends STServiceAdapter {
 		//see if the resource to which the Literal will be added has not already a pref label or an  
 		// alternative label with the input
 		String query = "ASK {"+
-				"\n?"+NTriplesUtil.toNTriplesString(resource)+" "+
+				"\n"+NTriplesUtil.toNTriplesString(resource)+" "+
 					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL)+" "+
 					NTriplesUtil.toNTriplesString(newLabel)+" . "+
 				"\n}";
