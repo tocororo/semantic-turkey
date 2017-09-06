@@ -41,11 +41,13 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -674,19 +676,87 @@ public class Refactor extends STServiceAdapter  {
 		return annotatedValue; 
 	}
 	
+	/**
+	 * a refactoring service for moving xLabels to an existing concept ( ST-498 )
+	 * @param sourceResource
+	 * @param predicate
+	 * @param xLabel
+	 * @param targetResource
+	 * @param force set to true to change the possible prefLabel of a third concept (with the same label and language)
+	 *  as altLabel if the old predicate (dynamically calculated) is altLabel and the new one is prefLabel
+	 * @return the newCoceptIRI as an AnnotatedValue
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#sourceResource)+ ', lexicalization)', 'CD')")
 	public void moveXLabelToResource(
 			@LocallyDefined Resource sourceResource, IRI predicate, @LocallyDefined Resource xLabel,
-			@LocallyDefined Resource targetResource)
+			@LocallyDefined Resource targetResource,@Optional(defaultValue = "false") Boolean force)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
-					CODAException, NonExistingLiteralFormForResourceException{
+					CODAException, NonExistingLiteralFormForResourceException, AlreadyExistingLiteralFormForResourceException{
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();
 		
-		modelRemovals.add(sourceResource, predicate, xLabel);
+		
+		//first found out the predicate used in the sourceResource
+		IRI oldPredicate = (IRI)repoConnection.getStatements(sourceResource, null, xLabel).next().getObject();
+		
+		//if the new predicate is skosxl:prefLabel (and the old one is not skosxl:prefLabel) check that
+		// there are no other concept having the label associated to this xLabel
+		if(predicate.equals(SKOSXL.PREF_LABEL) && !oldPredicate.equals(SKOSXL.PREF_LABEL)) {
+			String query = "SELECT ?otherConcept ?otherXLabel ?literalForm" +
+					"\nWHERE{" +
+					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+"?literalForm ."+
+					"\n?otherConcept "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?otherXLabel ."+
+					"\n?otherXLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm ." +
+					"\n}";
+			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+			tupleQuery.setIncludeInferred(false);
+			tupleQuery.setBinding("xLabel", xLabel);
+			try(TupleQueryResult  tupleQueryResult = tupleQuery.evaluate()){
+				while(tupleQueryResult.hasNext()) {
+					BindingSet bindingSet = tupleQueryResult.next();
+					Value otherConcept = bindingSet.getValue("otherConcept");
+					Value otherXLabel = bindingSet.getValue("otherXLabel");
+					Value literal = bindingSet.getValue("literalForm");
+					if(force) {
+						String text = "The resource "+otherConcept.stringValue()+" already has the label "+
+								NTriplesUtil.toNTriplesString(literal)+" as skosxl:prefLabel";
+						throw new AlreadyExistingLiteralFormForResourceException(text);
+					} else {
+						//in this case, switch the prefLabel to altLabel for the otherConcept
+						modelRemovals.add((Resource)otherConcept, SKOSXL.PREF_LABEL, otherXLabel);
+						modelAdditions.add((Resource)otherConcept, SKOSXL.ALT_LABEL, otherXLabel);
+					}
+				}
+			}
+		}
+		
+		//if the new predicate is skosxl:prefLabel and if the new concept already has a prefLabel with the same 
+		// language transform the already existing xlabel into a skosxl:altLabel
+		if(predicate.equals(SKOSXL.PREF_LABEL)) {
+			String query = "SELECT ?otherXLabel" +
+					"\nWHERE{" +
+					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+"?literalForm1 ."+
+					"\n?"+NTriplesUtil.toNTriplesString(targetResource)+" "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?otherXLabel ."+
+					"\n?otherXLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm2 ." +
+					"\nFILTER(lang(?literalForm1) = lang(?literalForm2))"+
+					"\n}";
+			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+			tupleQuery.setIncludeInferred(false);
+			tupleQuery.setBinding("xLabel", xLabel);
+			try(TupleQueryResult  tupleQueryResult = tupleQuery.evaluate()){
+				while(tupleQueryResult.hasNext()) {
+					BindingSet bindingSet = tupleQueryResult.next();
+					Value otherXLabel = bindingSet.getValue("otherXLabel");
+					modelRemovals.add(targetResource, SKOSXL.PREF_LABEL, otherXLabel);
+					modelAdditions.add(targetResource, SKOSXL.ALT_LABEL, otherXLabel);
+				}
+			}
+		}
+		
+		modelRemovals.add(sourceResource, oldPredicate, xLabel);
 		modelAdditions.add(targetResource, predicate, xLabel);
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
