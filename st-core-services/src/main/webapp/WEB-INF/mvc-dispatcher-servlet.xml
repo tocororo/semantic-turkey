@@ -20,6 +20,11 @@
 			<bean
 				class="it.uniroma2.art.semanticturkey.mvc.LegacyAndNewStyleServiceConnectioManagementHandlerInterceptor"></bean>
 		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+			<bean
+				class="it.uniroma2.art.semanticturkey.mvc.RequestListenerHandlerInterceptor"></bean>
+		</mvc:interceptor>
 	</mvc:interceptors>
 
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey">

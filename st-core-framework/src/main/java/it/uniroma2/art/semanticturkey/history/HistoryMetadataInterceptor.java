@@ -4,6 +4,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.eclipse.rdf4j.model.IRI;
@@ -16,8 +18,12 @@ import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.google.common.primitives.Primitives;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.mvc.ResolvedRequestHolder;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.OmitHistoryMetadata;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
@@ -39,10 +45,12 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
+
 		IRI userIRI = UsersManager.getLoggedUser().getIRI();
 		String extensionPathComponent = stServiceContext.getExtensionPathComponent();
 		Class<?> serviceClass = invocation.getThis().getClass();
 		Method serviceOperation = invocation.getMethod();
+		Object[] serviceArguments = invocation.getArguments();
 
 		OperationMetadata operationMetadata = new OperationMetadata();
 		HistoryMetadataSupport.setOperationMetadata(operationMetadata);
@@ -57,20 +65,41 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 			String[] parameterNames = parameterNameDiscoverer.getParameterNames(invocation.getMethod());
 			String[] parameterValues = new String[parameterNames.length];
 
+			HttpServletRequest request = ResolvedRequestHolder.get();
+
 			for (int i = 0; i < parameterNames.length; i++) {
-				String pn = parameterNames[i];
-				String pv = stServiceContext.getRequest().getParamValue(pn);
-				if (pv == null) {
-					Annotation[] paramAnnotations = invocation.getMethod().getParameterAnnotations()[i];
-					pv = Arrays.stream(paramAnnotations)
-							.filter(ann -> ann instanceof it.uniroma2.art.semanticturkey.services.annotations.Optional)
-							.map(it.uniroma2.art.semanticturkey.services.annotations.Optional.class::cast)
-							.map(ann -> ann.defaultValue()).findAny().orElse(null);
+				String paramenterName = parameterNames[i];
+				String providedValue = request.getParameter(paramenterName);
+				if (providedValue == null) {
+					Object actualValue = serviceArguments[i];
+
+					if (actualValue == null)
+						continue;
+
+					Class<?> parameterType = serviceOperation.getParameterTypes()[i];
+
+					if (MultipartFile.class.isAssignableFrom(parameterType)) {
+						parameterValues[i] = ((MultipartFile) actualValue).getOriginalFilename();
+					} else {
+						Annotation[] paramAnnotations = invocation.getMethod().getParameterAnnotations()[i];
+						String defaultValue = Arrays.stream(paramAnnotations)
+								.filter(ann -> ann instanceof it.uniroma2.art.semanticturkey.services.annotations.Optional)
+								.map(it.uniroma2.art.semanticturkey.services.annotations.Optional.class::cast)
+								.map(ann -> ann.defaultValue()).findAny().orElse(null);
+
+						if (defaultValue != null) {
+							parameterValues[i] = defaultValue;
+						} else {
+							if (parameterType.isPrimitive() || Primitives.isWrapperType(parameterType)) {
+								parameterValues[i] = actualValue.toString();
+							}
+						}
+					}
+				} else {
+					parameterValues[i] = providedValue;
 				}
-				parameterValues[i] = pv;
 			}
-			operationMetadata.setUserIRI(userIRI, STCHANGELOG.PERFORMER); // TODO: make it sensitive to
-																			// validation
+			operationMetadata.setUserIRI(userIRI, STCHANGELOG.PERFORMER);
 			operationMetadata.setOperation(operationIRI, parameterNames, parameterValues);
 
 			if (TransactionSynchronizationManager.isSynchronizationActive()) {
