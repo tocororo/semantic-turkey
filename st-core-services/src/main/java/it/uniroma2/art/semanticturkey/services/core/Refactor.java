@@ -700,14 +700,14 @@ public class Refactor extends STServiceAdapter  {
 		
 		
 		//first found out the predicate used in the sourceResource
-		IRI oldPredicate = (IRI)repoConnection.getStatements(sourceResource, null, xLabel).next().getObject();
+		IRI oldPredicate = (IRI)repoConnection.getStatements(sourceResource, null, xLabel).next().getPredicate();
 		
 		//if the new predicate is skosxl:prefLabel (and the old one is not skosxl:prefLabel) check that
 		// there are no other concept having the label associated to this xLabel
 		if(predicate.equals(SKOSXL.PREF_LABEL) && !oldPredicate.equals(SKOSXL.PREF_LABEL)) {
 			String query = "SELECT ?otherConcept ?otherXLabel ?literalForm" +
 					"\nWHERE{" +
-					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+"?literalForm ."+
+					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm ."+
 					"\n?otherConcept "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?otherXLabel ."+
 					"\n?otherXLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm ." +
 					"\n}";
@@ -718,16 +718,11 @@ public class Refactor extends STServiceAdapter  {
 				while(tupleQueryResult.hasNext()) {
 					BindingSet bindingSet = tupleQueryResult.next();
 					Value otherConcept = bindingSet.getValue("otherConcept");
-					Value otherXLabel = bindingSet.getValue("otherXLabel");
 					Value literal = bindingSet.getValue("literalForm");
-					if(force) {
+					if(!force) {
 						String text = "The resource "+otherConcept.stringValue()+" already has the label "+
 								NTriplesUtil.toNTriplesString(literal)+" as skosxl:prefLabel";
 						throw new AlreadyExistingLiteralFormForResourceException(text);
-					} else {
-						//in this case, switch the prefLabel to altLabel for the otherConcept
-						modelRemovals.add((Resource)otherConcept, SKOSXL.PREF_LABEL, otherXLabel);
-						modelAdditions.add((Resource)otherConcept, SKOSXL.ALT_LABEL, otherXLabel);
 					}
 				}
 			}
@@ -738,8 +733,8 @@ public class Refactor extends STServiceAdapter  {
 		if(predicate.equals(SKOSXL.PREF_LABEL)) {
 			String query = "SELECT ?otherXLabel" +
 					"\nWHERE{" +
-					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+"?literalForm1 ."+
-					"\n?"+NTriplesUtil.toNTriplesString(targetResource)+" "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?otherXLabel ."+
+					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm1 ."+
+					"\n"+NTriplesUtil.toNTriplesString(targetResource)+" "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?otherXLabel ."+
 					"\n?otherXLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm2 ." +
 					"\nFILTER(lang(?literalForm1) = lang(?literalForm2))"+
 					"\n}";
