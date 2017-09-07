@@ -719,8 +719,8 @@ public class Refactor extends STServiceAdapter  {
 					if(!force) {
 						String text = "Label " + NTriplesUtil.toNTriplesString(literal) + " cannot be"
 								+ " moved as skoxl:prefLabel for " + NTriplesUtil.toNTriplesString(targetResource) 
-								+ " since already exists a resource with the same label as skosxl:prefLabel ("
-								+ otherConcept.stringValue() + ")";
+								+ " since already exists a resource ("+ NTriplesUtil.toNTriplesString(otherConcept) 
+								+ ") with the same label as skosxl:prefLabel";
 						throw new AlreadyExistingLiteralFormForResourceException(text);
 					}
 				}
