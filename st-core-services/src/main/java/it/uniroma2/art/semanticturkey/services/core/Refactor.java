@@ -47,7 +47,6 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.ontology.utilities.RDFUtilities;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -69,7 +68,6 @@ import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
  */
 
 @STService
-//TODO change the name to Refactor
 public class Refactor extends STServiceAdapter  {
 	
 	private static Logger logger = LoggerFactory.getLogger(Refactor.class);
@@ -682,8 +680,8 @@ public class Refactor extends STServiceAdapter  {
 	 * @param predicate
 	 * @param xLabel
 	 * @param targetResource
-	 * @param force set to true to change the possible prefLabel of a third concept (with the same label and language)
-	 *  as altLabel if the old predicate (dynamically calculated) is altLabel and the new one is prefLabel
+	 * @param force set to true to create a new prefLabel for the targetResource even if this creates a conflict 
+	 * with another prefLabel belonging to a third resource
 	 * @return the newCoceptIRI as an AnnotatedValue
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
