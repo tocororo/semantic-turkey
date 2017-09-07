@@ -696,7 +696,6 @@ public class Refactor extends STServiceAdapter  {
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();
 		
-		
 		//first found out the predicate used in the sourceResource
 		IRI oldPredicate = (IRI)repoConnection.getStatements(sourceResource, null, xLabel).next().getPredicate();
 		
@@ -718,8 +717,10 @@ public class Refactor extends STServiceAdapter  {
 					Value otherConcept = bindingSet.getValue("otherConcept");
 					Value literal = bindingSet.getValue("literalForm");
 					if(!force) {
-						String text = "The resource "+otherConcept.stringValue()+" already has the label "+
-								NTriplesUtil.toNTriplesString(literal)+" as skosxl:prefLabel";
+						String text = "Label " + NTriplesUtil.toNTriplesString(literal) + " cannot be"
+								+ " moved as skoxl:prefLabel for " + NTriplesUtil.toNTriplesString(targetResource) 
+								+ " since already exists a resource with the same label as skosxl:prefLabel ("
+								+ otherConcept.stringValue() + ")";
 						throw new AlreadyExistingLiteralFormForResourceException(text);
 					}
 				}
