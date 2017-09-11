@@ -1358,6 +1358,8 @@ public class ProjectManager {
 			throw new ProjectCreationException("One or more roles to be updated are illegal");
 		}
 
+		boolean shouldDeleteRemoteRepositoriesOnRollback = false;
+
 		try {
 
 			// Currently, only guess the namespace from the base uri
@@ -1465,6 +1467,8 @@ public class ProjectManager {
 									"Remote repository already existing: " + supportRepoID);
 						}
 
+						shouldDeleteRemoteRepositoriesOnRollback = true;
+
 						if (newSupportRepositoryConfig != null) {
 							remoteRepoManager.addRepositoryConfig(newSupportRepositoryConfig);
 						}
@@ -1554,54 +1558,60 @@ public class ProjectManager {
 				try {
 					try {
 						if (repositoryAccess instanceof CreateRemote) {
-							try {
-								CreateRemote createRemoteAccess = (CreateRemote) repositoryAccess;
-
-								RepositoryManager remoteRepoManager = RemoteRepositoryManager.getInstance(
-										createRemoteAccess.getServerURL().toString(),
-										createRemoteAccess.getUsername(), createRemoteAccess.getPassword());
-
-								boolean removedCore = false;
-								boolean removedSupport = false;
-
+							if (shouldDeleteRemoteRepositoriesOnRollback) {
 								try {
+									CreateRemote createRemoteAccess = (CreateRemote) repositoryAccess;
+
+									RepositoryManager remoteRepoManager = RemoteRepositoryManager.getInstance(
+											createRemoteAccess.getServerURL().toString(),
+											createRemoteAccess.getUsername(),
+											createRemoteAccess.getPassword());
+
+									boolean removedCore = false;
+									boolean removedSupport = false;
+
 									try {
 										try {
-											remoteRepoManager.removeRepository(coreRepoID);
-											removedCore = true;
-										} finally {
-											if (supportRepoID != null) {
-												remoteRepoManager.removeRepository(supportRepoID);
+											try {
+												remoteRepoManager.removeRepository(coreRepoID);
+												removedCore = true;
+											} finally {
+												if (supportRepoID != null) {
+													remoteRepoManager.removeRepository(supportRepoID);
+												}
+												removedSupport = true;
 											}
-											removedSupport = true;
+										} catch (RDF4JException e2) {
+											logger.debug("Swallowed exception", e2);
 										}
-									} catch (RDF4JException e2) {
-										logger.debug("Swallowed exception", e2);
+
+										// If the removeRepository didn't succeeded (e.g. wrong repo config),
+										// try
+										// to manipulate the SYSTEM repository
+
+										if (!removedCore || !removedSupport) {
+											Repository systemRepository = remoteRepoManager
+													.getSystemRepository();
+
+											ArrayList<String> repoIdsToRemove = new ArrayList<>();
+											if (!removedCore) {
+												repoIdsToRemove.add(coreRepoID);
+											}
+
+											if (!removedSupport) {
+												repoIdsToRemove.add(supportRepoID);
+											}
+											RepositoryConfigUtil.removeRepositoryConfigs(systemRepository,
+													repoIdsToRemove
+															.toArray(new String[repoIdsToRemove.size()]));
+
+										}
+									} finally {
+										remoteRepoManager.shutDown();
 									}
-
-									// If the removeRepository didn't succeeded (e.g. wrong repo config), try
-									// to manipulate the SYSTEM repository
-
-									if (!removedCore || !removedSupport) {
-										Repository systemRepository = remoteRepoManager.getSystemRepository();
-
-										ArrayList<String> repoIdsToRemove = new ArrayList<>();
-										if (!removedCore) {
-											repoIdsToRemove.add(coreRepoID);
-										}
-
-										if (!removedSupport) {
-											repoIdsToRemove.add(supportRepoID);
-										}
-										RepositoryConfigUtil.removeRepositoryConfigs(systemRepository,
-												repoIdsToRemove.toArray(new String[repoIdsToRemove.size()]));
-
-									}
-								} finally {
-									remoteRepoManager.shutDown();
+								} catch (RDF4JException e2) {
+									logger.debug("Swallowed exception", e2);
 								}
-							} catch (RDF4JException e2) {
-								logger.debug("Swallowed exception", e2);
 							}
 						}
 					} finally {
