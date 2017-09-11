@@ -27,6 +27,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -79,7 +80,7 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String[] rolesArray,
-			boolean useLocalName, boolean useURI, String searchMode, @Optional List<IRI> schemes)
+			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<IRI> schemes)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
@@ -91,7 +92,7 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<String> searchStringList(String searchString, @Optional String[] rolesArray,
-			boolean useLocalName, String searchMode, @Optional List<IRI> schemes)
+			boolean useLocalName, SearchMode searchMode, @Optional List<IRI> schemes)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchStringList(stServiceContext, searchString, rolesArray,
@@ -102,7 +103,7 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString,
-			boolean useLocalName, boolean useURI, String searchMode, @Optional String lang)
+			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional String lang)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, cls, searchString,

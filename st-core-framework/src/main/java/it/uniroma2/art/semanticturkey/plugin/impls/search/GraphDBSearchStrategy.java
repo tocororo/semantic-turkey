@@ -17,6 +17,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -32,11 +33,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	final static private String LUCENEINDEX = "http://www.ontotext.com/owlim/lucene#vocbench";
 	final static private String LUCENEINDEXLITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
 	final static private String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
-
-	private static String START_SEARCH_MODE = "start";
-	private static String CONTAINS_SEARCH_MODE = "contain";
-	private static String END_SEARCH_MODE = "end";
-	private static String EXACT_SEARCH_MODE = "exact";
 
 	@Override
 	public void initialize(Project project, RepositoryConnection connection) throws Exception {
@@ -141,12 +137,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useURI, boolean useLocalName, String searchMode,
+			String searchString, String[] rolesArray, boolean useURI, boolean useLocalName, SearchMode searchMode,
 			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
-				stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show ?scheme"+ 
@@ -155,7 +150,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
-					searchModePrepareQueryWithIndexes("?resource", searchString, searchModeSelected,
+					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
 							LUCENEINDEXLOCALNAME)+
 					"\n}"+
 					"\nUNION";
@@ -164,7 +159,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (without the indexes)
 			query+="\n{"+
 					"\n?resource a ?type . " + // otherwise the filter may not be computed
-					searchModePrepareQueryNoIndexes("?resource", searchString, searchModeSelected) +
+					searchModePrepareQueryNoIndexes("?resource", searchString, searchMode) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -176,7 +171,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchModeSelected, LUCENEINDEXLITERAL);
+		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL);
 				
 		//search in the rdfs:label
 		query+="\n{" +
@@ -218,11 +213,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
-			@Optional String[] rolesArray, boolean useLocalName, String searchMode,
+			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
 			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
-				stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -231,7 +225,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
-					searchModePrepareQueryWithIndexes("?resource", searchString, searchModeSelected,
+					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
 							LUCENEINDEXLOCALNAME)+
 					"\n}"+
 					"\nUNION";
@@ -244,7 +238,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchModeSelected, LUCENEINDEXLITERAL);
+		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL);
 		
 		//if the user specify a role, then get the resource associated to the label, since it will be use 
 		// later to filter the results
@@ -288,14 +282,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
-			IRI cls, String searchString, boolean useLocalName, boolean useURI, String searchMode,
+			IRI cls, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional String lang) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
-				stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
 				String query = "SELECT DISTINCT ?resource ?type ?show"+ 
@@ -308,7 +301,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				
 				
 				//use the lucene indexes to obtain all the resources from the searchString
-				query+="\n{"+searchModePrepareQueryWithIndexes("?resource", searchString, searchModeSelected, 
+				query+="\n{"+searchModePrepareQueryWithIndexes("?resource", searchString, searchMode, 
 						LUCENEINDEX)+"\n}";
 				
 				
@@ -316,7 +309,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					query+="\nUNION" +
 							"\n{" +
 							"\n?resource a ?type . " + // otherwise the filter may not be coomputed
-							searchModePrepareQueryNoIndexes("?resource", searchString, searchModeSelected) +
+							searchModePrepareQueryNoIndexes("?resource", searchString, searchMode) +
 							"\n}";
 				}
 				
@@ -331,21 +324,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	
-	private String searchModePrepareQueryWithIndexes(String variable, String value, String searchMode, 
+	private String searchModePrepareQueryWithIndexes(String variable, String value, SearchMode searchMode, 
 			String indexToUse){
 		String query ="";
 		
-		if(searchMode.equals(START_SEARCH_MODE)){
+		if(searchMode == SearchMode.startsWith){
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
 				// the GraphDB indexes (Lucene) consider as the start of the string all the sterts of the 
 				//single word, so filter them afterward
 				"\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
-		} else if(searchMode.equals(END_SEARCH_MODE)){
+		} else if(searchMode == SearchMode.endsWith){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
 			// the GraphDB indexes (Lucene) consider as the start of the string all the sterts of the 
 			//single word, so filter them afterward
 			"\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
-		} else if(searchMode.equals(CONTAINS_SEARCH_MODE)){
+		} else if(searchMode == SearchMode.contains){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' .";
 		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' .";
@@ -354,17 +347,17 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		return query;
 	}
 	
-	private String searchModePrepareQueryNoIndexes(String variable, String value, String searchMode){
+	private String searchModePrepareQueryNoIndexes(String variable, String value, SearchMode searchMode){
 		String query ="";
 		
-		if(searchMode.equals(START_SEARCH_MODE)){
+		if(searchMode == SearchMode.startsWith){
 			query="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
-		} else if(searchMode.equals(END_SEARCH_MODE)){
+		} else if(searchMode == SearchMode.endsWith){
 			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
-		} else if(searchMode.equals(CONTAINS_SEARCH_MODE)){
+		} else if(searchMode == SearchMode.contains){
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
 		} else { // searchMode.equals(exact)
-			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
+			query="\nFILTER regex(str("+variable+"), '^"+value+"$', 'i')";
 		}
 		
 		return query;

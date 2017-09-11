@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -32,14 +33,14 @@ public interface SearchStrategy {
 	void update(Project project, RepositoryConnection connection) throws Exception;
 
 	Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, String searchMode,
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Nullable List<IRI> schemes) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
-			@Optional String[] rolesArray, boolean useLocalName, String searchMode,
+			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
 			@Nullable List<IRI> schemes) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext, IRI cls,
-			String searchString, boolean useLocalName, boolean useURI, String searchMode,
+			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Nullable String lang) throws IllegalStateException, STPropertyAccessException;
 }

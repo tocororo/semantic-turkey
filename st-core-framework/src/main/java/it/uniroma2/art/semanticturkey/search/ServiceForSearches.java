@@ -34,12 +34,12 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 public class ServiceForSearches {
 
 	
-	final static public String START_SEARCH_MODE = "startsWith";
-	final static public String CONTAINS_SEARCH_MODE = "contains";
-	final static public String END_SEARCH_MODE = "endsWith";
-	final static public String EXACT_SEARCH_MODE = "exact";
+//	final static public String START_SEARCH_MODE = "startsWith";
+//	final static public String CONTAINS_SEARCH_MODE = "contains";
+//	final static public String END_SEARCH_MODE = "endsWith";
+//	final static public String EXACT_SEARCH_MODE = "exact";
 	
-	private boolean isClassWanted = false;
+	public static boolean isClassWanted = false;
 	private boolean isConceptWanted = false;
 	private boolean isConceptSchemeWanted = false;
 	private boolean isInstanceWanted = false;
@@ -223,7 +223,7 @@ public class ServiceForSearches {
 		return schemesInFilter;
 	}
 	
-	public String checksPreQuery(String searchString, String [] rolesArray, String searchMode, 
+	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode, 
 			Project project) throws IllegalStateException, STPropertyAccessException{
 		//it can be null, * or a list of languages
 		String languagesPropValue = STPropertiesManager.getProjectPreference(
@@ -233,8 +233,6 @@ public class ServiceForSearches {
 		} else{
 			langArray = languagesPropValue.split(",");
 		}
-		
-		String searchModeSelected = null;
 		
 		if(searchString.isEmpty()){
 			//TODO change the exception (previously was a fail)
@@ -275,24 +273,25 @@ public class ServiceForSearches {
 		}
 		//@formatter:on
 		
-		if(searchMode.toLowerCase().contains(START_SEARCH_MODE)){
-			searchModeSelected = START_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
-			searchModeSelected = CONTAINS_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
-			searchModeSelected = END_SEARCH_MODE;
-		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
-			searchModeSelected = EXACT_SEARCH_MODE;
-		}
+//		if(searchMode.equals(SearchMode.startsWith)){
+//			searchModeSelected = START_SEARCH_MODE;
+//		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
+//			searchModeSelected = CONTAINS_SEARCH_MODE;
+//		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
+//			searchModeSelected = END_SEARCH_MODE;
+//		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
+//			searchModeSelected = EXACT_SEARCH_MODE;
+//		}
 		
-		if(searchModeSelected == null){
-			String msg = "the serch mode should be at one of: "+START_SEARCH_MODE+", "+
-			CONTAINS_SEARCH_MODE+", "+END_SEARCH_MODE+" or "+EXACT_SEARCH_MODE;
+		if(searchMode != SearchMode.startsWith && searchMode != SearchMode.contains && 
+				searchMode != SearchMode.exact && searchMode != SearchMode.endsWith){
+			String msg = "the serch mode should be one of: "+ SearchMode.startsWith +", "+
+					SearchMode.contains +", "+ SearchMode.endsWith +" or "+ SearchMode.exact;
 			//TODO change the exception (previously was a fail)
 			throw new IllegalArgumentException(msg);
 		}
 		
-		return searchModeSelected;
+//		return searchModeSelected;
 	}
 	
 	public Collection<AnnotatedValue<Resource>> executeGenericSearchQuery(String query, Resource[] namedGraphs,

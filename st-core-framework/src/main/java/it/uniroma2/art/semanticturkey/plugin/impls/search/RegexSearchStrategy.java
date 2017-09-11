@@ -16,6 +16,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -29,10 +30,6 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
 
-	private static String START_SEARCH_MODE = "start";
-	private static String CONTAINS_SEARCH_MODE = "contain";
-	private static String END_SEARCH_MODE = "end";
-	private static String EXACT_SEARCH_MODE = "exact";
 
 	@Override
 	public void initialize(Project project, RepositoryConnection connection) throws Exception {
@@ -46,13 +43,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, String searchMode,
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
-		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
-				stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		// create the query to be executed for the search
 		//@formatter:off
@@ -73,7 +69,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					searchModePrepareQuery("?localName", searchString, searchMode) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -83,7 +79,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+
-					searchModePrepareQuery("?complURI", searchString, searchModeSelected) +
+					searchModePrepareQuery("?complURI", searchString, searchMode) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -91,20 +87,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
-				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
+				searchModePrepareQuery("?rdfsLabel", searchString, searchMode) +
 				"\n}"+
 		//search in skos:prefLabel and skos:altLabel
 				"\nUNION" +
 				"\n{" +
 				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?skosLabel ."+
-				searchModePrepareQuery("?skosLabel", searchString, searchModeSelected) +
+				searchModePrepareQuery("?skosLabel", searchString, searchMode) +
 				"\n}" +
 				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				"\nUNION" +
 				"\n{" +
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
-				searchModePrepareQuery("?literalForm", searchString, searchModeSelected) +
+				searchModePrepareQuery("?literalForm", searchString, searchMode) +
 				"\n}"+
 		//add the show part according to the Lexicalization Model
 				ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
@@ -119,11 +115,10 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
-			@Optional String[] rolesArray, boolean useLocalName, String searchMode,
+			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
 			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
-				stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -140,7 +135,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					searchModePrepareQuery("?localName", searchString, searchMode) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -151,20 +146,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			//search in the rdfs:label
 			query+="\n{" +
 					"\n?resource <"+RDFS.LABEL+"> ?label ." +
-					searchModePrepareQuery("?label", searchString, searchModeSelected) +
+					searchModePrepareQuery("?label", searchString, searchMode) +
 					"\n}"+
 			//search in skos:prefLabel and skos:altLabel
 					"\nUNION" +
 					"\n{" +
 					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-					searchModePrepareQuery("?label", searchString, searchModeSelected) +
+					searchModePrepareQuery("?label", searchString, searchMode) +
 					"\n}" +
 			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 					"\nUNION" +
 					"\n{" +
 					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-					searchModePrepareQuery("?label", searchString, searchModeSelected) +
+					searchModePrepareQuery("?label", searchString, searchMode) +
 					"\n}";		
 		}
 		
@@ -179,14 +174,13 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
-			IRI cls, String searchString, boolean useLocalName, boolean useURI, String searchMode,
+			IRI cls, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional String lang) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		String searchModeSelected = serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
-				stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
@@ -208,7 +202,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		if(useLocalName){
 			query+="\n{" +
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchModePrepareQuery("?localName", searchString, searchModeSelected) +
+					searchModePrepareQuery("?localName", searchString, searchMode) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -217,7 +211,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		if(useURI){
 			query+="\n{" +
 					"\nBIND(str(?resource) AS ?complURI)"+
-					searchModePrepareQuery("?complURI", searchString, searchModeSelected) +
+					searchModePrepareQuery("?complURI", searchString, searchMode) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -225,7 +219,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
-				searchModePrepareQuery("?rdfsLabel", searchString, searchModeSelected) +
+				searchModePrepareQuery("?rdfsLabel", searchString, searchMode) +
 				"\n}";
 		
 		//add the show part in SPARQL query
@@ -240,17 +234,17 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				getThreadBoundTransaction(stServiceContext));
 	}
 
-	private String searchModePrepareQuery(String variable, String value, String searchMode) {
+	private String searchModePrepareQuery(String variable, String value, SearchMode searchMode) {
 		String query = "";
 
-		if (searchMode.equals(START_SEARCH_MODE)) {
+		if (searchMode == SearchMode.startsWith) {
 			query = "\nFILTER regex(str(" + variable + "), '^" + value + "', 'i')";
-		} else if (searchMode.equals(END_SEARCH_MODE)) {
+		} else if (searchMode == SearchMode.endsWith) {
 			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')";
-		} else if (searchMode.equals(CONTAINS_SEARCH_MODE)) {
+		} else if (searchMode == SearchMode.contains) {
 			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')";
 		} else { // searchMode.equals(contains)
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')";
+			query = "\nFILTER regex(str(" + variable + "), '^" + value + "$', 'i')";
 		}
 
 		return query;
