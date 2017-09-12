@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.rendering;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -75,6 +76,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	}
 
+	private static final Pattern rawLabelDestructuringPattern = Pattern
+			.compile("((?:\\\\@|\\\\,|[^@,])+)(?:@((?:\\\\@|\\\\,|[^@,])+))?");
+
 	private AbstractLabelBasedRenderingEngineConfiguration config;
 	protected String languages;
 
@@ -104,7 +108,8 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			if (languagesPropValue == null) {
 				try {
 					languagesPropValue = STPropertiesManager.getProjectPreference(
-							STPropertiesManager.PREF_LANGUAGES, currentProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+							STPropertiesManager.PREF_LANGUAGES, currentProject, UsersManager.getLoggedUser(),
+							RenderingEngine.class.getName());
 				} catch (STPropertyAccessException e) {
 					logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
 				}
@@ -135,8 +140,10 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			gp.append(String.format(" FILTER(LANG(?labelInternal) IN (%s))", acceptedLanguges.stream()
 					.map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"").collect(joining(", "))));
 		}
+		gp.append("BIND(REPLACE(str(?labelInternal), \"(,)|(@)\", \"\\\\\\\\$0\") as ?labelLexicalForm)");
+		gp.append("BIND(REPLACE(lang(?labelInternal), \"(,)|(@)\", \"\\\\\\\\$0\") as ?labelLang)");
 		gp.append(
-				"BIND(IF(LANG(?labelInternal) != \"\", CONCAT(STR(?labelInternal), \" (\", LANG(?labelInternal), \")\"), STR(?labelInternal)) AS ?labelInternal2)       \n");
+				"BIND(IF(?labelLang != \"\", CONCAT(STR(?labelLexicalForm), \"@\", ?labelLang), ?labelLexicalForm) AS ?labelInternal2)       \n");
 		return GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
 				.projection(ProjectionElementBuilder.groupConcat("labelInternal2", "label"))
 				.pattern(gp.toString()).graphPattern();
@@ -173,8 +180,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 		resultTable.forEach(bindingSet -> {
 			Resource resource = (Resource) bindingSet.getValue("resource");
-			String show = ((Literal) bindingSet.getValue("label")).getLabel();
-			if (show.isEmpty()) {
+			Literal rawLabelLiteral = ((Literal) bindingSet.getValue("label"));
+			String show;
+			if (rawLabelLiteral == null || rawLabelLiteral.getLabel().isEmpty()) {
 				show = resource.toString();
 				if (resource instanceof IRI) {
 					IRI resourceIRI = (IRI) resource;
@@ -184,6 +192,37 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 						show = prefix + ":" + resourceIRI.getLocalName();
 					}
 				}
+			} else {
+				Matcher matcher = rawLabelDestructuringPattern.matcher(rawLabelLiteral.getLabel());
+
+				List<String[]> labels = new ArrayList<>();
+
+				while (matcher.find()) {
+					String lexicalForm = matcher.group(1);
+					lexicalForm = lexicalForm.replace("\\,", ",").replace("\\@", "@").replace("\\\\", "\\");
+					String lang = matcher.group(2);
+					if (lang != null) {
+						lang = lang.replace("\\,", ",").replace("\\@", "@").replace("\\\\", "\\");
+						labels.add(new String[] { lexicalForm, lang });
+					} else {
+						labels.add(new String[] { lexicalForm });
+					}
+				}
+
+				labels.sort((spl1, spl2) -> {
+					if (spl1.length == 1 && spl2.length == 1) {
+						return 0;
+					} else if (spl1.length == 1) {
+						return -1;
+					} else if (spl2.length == 1) {
+						return +1;
+					} else {
+						return spl1[1].compareTo(spl2[1]);
+					}
+				});
+
+				show = labels.stream().map(spl -> spl.length == 1 ? spl[0] : spl[0] + " (" + spl[1] + ")")
+						.collect(joining(", "));
 			}
 
 			renderings.put(resource, vf.createLiteral(show));
