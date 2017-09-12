@@ -797,6 +797,26 @@ public class AlignmentModel {
 	}
 	
 	/**
+	 * Returns true if the alignment contains a custom relation (e.g. a relation not in knownRelations)
+	 * @return
+	 */
+	public boolean hasCustomRelation() {
+		String query = "SELECT DISTINCT ?relation WHERE {"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + ".\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation .\n"
+				+ "}";
+		TupleQuery tq = repoConnection.prepareTupleQuery(query);
+		TupleQueryResult results = tq.evaluate();
+		while (results.hasNext()) {
+			String relation = results.next().getValue("relation").stringValue();
+			if (!knownRelations.contains(relation)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Reverses the two ontologies aligned the alignment and the entities in the cells
 	 */
 	public void reverse() {

@@ -172,6 +172,14 @@ public class Alignment extends STServiceAdapter {
 		
 		if (!projectBaseURI.equals(onto1BaseURI)){
 			if (projectBaseURI.equals(onto2BaseURI)){
+				if (alignModel.hasCustomRelation()) {
+					throw new AlignmentInitializationException("The alignment file is reversed "
+							+ "(the source ontology in the alignment file is your target ontology in your project) "
+							+ "and it contains custom relations. It is possible to work with inverted alignment files "
+							+ "only when they do not contain custom relations. Please invert the order of ontologies "
+							+ "in the alignment file and adjust the custom relations by replacing them with their "
+							+ "inverse in the custom alignment model that is being adopted.");
+				}
 				alignModel.reverse();
 			} else {
 				throw new AlignmentInitializationException("Failed to open and validate the given alignment file. "
