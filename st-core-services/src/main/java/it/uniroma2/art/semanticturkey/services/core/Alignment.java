@@ -170,8 +170,8 @@ public class Alignment extends STServiceAdapter {
 			onto2BaseURI = onto2BaseURI.substring(0, onto2BaseURI.length()-1);
 		}
 		
-		if (!projectBaseURI.equals(alignModel.getOnto1())){
-			if (projectBaseURI.equals(alignModel.getOnto2())){
+		if (!projectBaseURI.equals(onto1BaseURI)){
+			if (projectBaseURI.equals(onto2BaseURI)){
 				alignModel.reverse();
 			} else {
 				throw new AlignmentInitializationException("Failed to open and validate the given alignment file. "
