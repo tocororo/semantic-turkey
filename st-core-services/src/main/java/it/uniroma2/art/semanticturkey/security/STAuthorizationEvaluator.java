@@ -255,8 +255,12 @@ public class STAuthorizationEvaluator {
 			return true;
 		}
 		Project project = stServiceContext.getProject();
-		return ProjectManager.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
-				.isAffirmative();
+		if (consumer.equals(project)) {
+			return true;
+		} else {
+			return ProjectManager.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
+					.isAffirmative();
+		}
 	}
 	
 	/**

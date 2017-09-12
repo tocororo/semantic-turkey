@@ -98,7 +98,7 @@ public class ResourceLocator {
 
 			String ns = proj.getDefaultNamespace();
 
-			if (ns.equals(iriResource.getNamespace())) {
+			if (iriResource.getNamespace().startsWith(ns)) {
 				return new LocalResourcePosition((Project) proj);
 			}
 		}
