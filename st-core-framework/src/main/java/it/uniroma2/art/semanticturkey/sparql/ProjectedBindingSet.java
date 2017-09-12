@@ -1,26 +1,34 @@
 package it.uniroma2.art.semanticturkey.sparql;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.AbstractBindingSet;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.algebra.evaluation.iterator.CollectionIteration;
+import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
+import org.eclipse.rdf4j.query.impl.ListBindingSet;
 import org.eclipse.rdf4j.query.impl.SimpleBinding;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Iterators;
 
-public class ProjectedBindingSet implements BindingSet {
+public class ProjectedBindingSet extends AbstractBindingSet implements BindingSet {
 
 	private static final long serialVersionUID = 1L;
 
 	private BindingSet baseBindingSet;
 
 	private BiMap<String, String> variableMapping;
-	
-	
+
 	public ProjectedBindingSet(BindingSet baseBindingSet, BiMap<String, String> variableMapping) {
 		this.baseBindingSet = baseBindingSet;
 		this.variableMapping = variableMapping;
@@ -28,7 +36,8 @@ public class ProjectedBindingSet implements BindingSet {
 
 	@Override
 	public Iterator<Binding> iterator() {
-		final Iterator<Binding> it = Iterators.filter(baseBindingSet.iterator(), b -> variableMapping.containsKey(b.getName()));
+		final Iterator<Binding> it = Iterators.filter(baseBindingSet.iterator(),
+				b -> variableMapping.containsKey(b.getName()));
 		return new Iterator<Binding>() {
 
 			@Override
@@ -54,7 +63,7 @@ public class ProjectedBindingSet implements BindingSet {
 	public Binding getBinding(String bindingName) {
 		String baseBindingName = variableMapping.inverse().get(bindingName);
 		Binding baseBinding = baseBindingSet.getBinding(baseBindingName);
-		return new SimpleBinding(bindingName, baseBinding.getValue());
+		return baseBinding != null ? new SimpleBinding(bindingName, baseBinding.getValue()) : null;
 	}
 
 	@Override
@@ -74,35 +83,5 @@ public class ProjectedBindingSet implements BindingSet {
 	@Override
 	public int size() {
 		return baseBindingSet.size();
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(baseBindingSet, variableMapping);
-	}
-	
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		
-		if (obj == this) {
-			return true;
-		}
-		
-		if (!(obj instanceof BindingSet)) {
-			return false;
-		}
-		
-		BindingSet objBS = (BindingSet)obj;
-		
-		Set<String> bindingNames = getBindingNames();
-	
-		if (!bindingNames.equals(objBS)) {
-			return false;
-		}
-		
-		return bindingNames.stream().allMatch(bn -> Objects.equals(objBS.getBinding(bn), getBinding(bn)));
 	}
 }
