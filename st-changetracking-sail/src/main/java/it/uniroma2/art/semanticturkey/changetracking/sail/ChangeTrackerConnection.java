@@ -318,14 +318,14 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					if (headList.size() == 1) {
 						previousTip = (Resource) headList.iterator().next().getObject();
 
-						boolean previousTipCommitted = supporRepoConn.hasStatement(previousTip,
-								CHANGELOG.STATUS, vf.createLiteral("committed"), false, sail.historyGraph);
-
-						if (!previousTipCommitted) {
-							throw new SailException(
-									"Could not commit the changeset metadata, since there is a pending commit: "
-											+ previousTip);
-						}
+//						boolean previousTipCommitted = supporRepoConn.hasStatement(previousTip,
+//								CHANGELOG.STATUS, vf.createLiteral("committed"), false, sail.historyGraph);
+//
+//						if (!previousTipCommitted) {
+//							throw new SailException(
+//									"Could not commit the changeset metadata, since there is a pending commit: "
+//											+ previousTip);
+//						}
 
 						BigInteger lastRevisionNumber = Models
 								.objectLiteral(QueryResults.asModel(supporRepoConn.getStatements(previousTip,
