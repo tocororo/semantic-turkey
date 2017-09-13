@@ -1,5 +1,5 @@
 version 1.0
-date: 12-09-2017
+date: 13-09-2017
 After eleven years from its first beta release, the first official stable version of Semantic Turkey is
 out there!
 There are way too many changes with respect to the original version. 
