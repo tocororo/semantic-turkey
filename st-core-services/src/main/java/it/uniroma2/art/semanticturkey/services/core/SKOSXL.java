@@ -392,7 +392,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xLabel)+ '''}', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xlabel)+ '''}', 'D')")
 	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -420,7 +420,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xLabel)+ '''}', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xlabel)+ '''}', 'D')")
 	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -448,7 +448,7 @@ public class SKOSXL extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xLabel)+ '''}', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xlabel)+ '''}', 'D')")
 	public void removeHiddenLabel(@LocallyDefined @Modified @Subject IRI concept, @LocallyDefined Resource xlabel){
 		RepositoryConnection repoConnection = getManagedConnection();
 		
