@@ -1,1 +1,1 @@
-capability(rdf, "V").
+capability(rdf, "RV").

@@ -1,4 +1,5 @@
 capability(rdf(lexicalization), "CRUD").
+capability(rdf, "R").
 
 /* examples of capabilities that should be authorized */
 
