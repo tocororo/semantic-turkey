@@ -235,8 +235,17 @@ public class Search extends STServiceAdapter {
 					"\nWHERE{" + 
 					"\n{" + 
 					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">+ ?superClass ." + 
+					
+					//check that the superClass belong to the default graph
+					"\n?metaClass1 rdfs:subClassOf* owl:Class ." +
+					"\n?superClass a ?metaClass1 ."+
+					
 					"\nOPTIONAL{" +
 					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass ." +
+					//check that the superSuperClass belong to the default graph
+					"\n?metaClass2 rdfs:subClassOf* owl:Class ." +
+					"\n?superSuperClass a ?metaClass2 ."+
+					
 					"\n}" + 
 					"\n}" +
 					"\nUNION" +
