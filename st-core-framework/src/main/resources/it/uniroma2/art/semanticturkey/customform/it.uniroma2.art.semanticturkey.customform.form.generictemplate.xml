@@ -48,8 +48,8 @@ rule it.uniroma2.art.semanticturkey.customform.form.generictemplate id:template 
 		// THE FOLLOWING NODES ARE JUST EXAMPLES, WHICH CREATE ADDITIONAL FIELDS IN THE FORM
 		
 		/*
-		altLabel literal userPrompt/altLabel  . // for skos or skosxl lexicalizations
-		
+		lang literal userPrompt/lang .
+		altLabel literal(coda:langString($lang)) userPrompt/altLabel  . // for skos or skosxl lexicalizations
 		altLabelURI uri(coda:randIdGen()) . // only for skosxl 
 		
 		*/
@@ -82,6 +82,7 @@ rule it.uniroma2.art.semanticturkey.customform.form.generictemplate id:template 
 		$xLabel dc:publisher $user .
 		
 		$resource skosxl:altLabel $altLabelURI .
+		$altLabelURI a skosxl:Label .
 		$altLabelURI skosxl:literalForm  $altLabel .		
 		
 		*/
