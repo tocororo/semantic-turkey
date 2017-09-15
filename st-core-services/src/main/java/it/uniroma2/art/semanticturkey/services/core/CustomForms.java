@@ -716,63 +716,55 @@ public class CustomForms extends STServiceAdapter {
 	public JsonNode getCustomFormRepresentation(String id) throws 
 			ProjectInconsistentException, PRParserException, RDFModelNotSetException,  CustomFormException {
 		CustomForm cForm = cfManager.getCustomForm(getProject(), id);
-		
 		if (cForm != null) {
 			CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 			Collection<UserPromptStruct> form = cForm.getForm(codaCore);
 			shutDownCodaCore(codaCore);
-			if (!form.isEmpty()) {
-				JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+			ArrayNode formArrayNode = jsonFactory.arrayNode();
+			for (UserPromptStruct formEntry : form){
+				ObjectNode formEntryNode = jsonFactory.objectNode();
+				formEntryNode.set("placeholderId", jsonFactory.textNode(formEntry.getPlaceholderId()));
+				formEntryNode.set("userPrompt", jsonFactory.textNode(formEntry.getUserPromptName()));
+				formEntryNode.set("type", jsonFactory.textNode(formEntry.getRdfType()));
+				formEntryNode.set("mandatory", jsonFactory.booleanNode(formEntry.isMandatory()));
 				
-				ArrayNode formArrayNode = jsonFactory.arrayNode();
+				ConverterMention converter = formEntry.getConverter();
+				ObjectNode converterNode = jsonFactory.objectNode();
+				converterNode.set("uri", jsonFactory.textNode(converter.getURI()));
 				
-				for (UserPromptStruct formEntry : form){
-					ObjectNode formEntryNode = jsonFactory.objectNode();
-					formEntryNode.set("placeholderId", jsonFactory.textNode(formEntry.getPlaceholderId()));
-					formEntryNode.set("userPrompt", jsonFactory.textNode(formEntry.getUserPromptName()));
-					formEntryNode.set("type", jsonFactory.textNode(formEntry.getRdfType()));
-					formEntryNode.set("mandatory", jsonFactory.booleanNode(formEntry.isMandatory()));
-					
-					ConverterMention converter = formEntry.getConverter();
-					ObjectNode converterNode = jsonFactory.objectNode();
-					converterNode.set("uri", jsonFactory.textNode(converter.getURI()));
-					
-					// for special case langString, specify the converter argument too
-					if (formEntry.getConverterArgPhId() != null) {
-						String phLangId = formEntry.getConverterArgPhId();
-						/*
-						 * the language placeholder (arguments of langString converter) is already added to
-						 * the xml as formEntry element since in PEARL it must be defined before it's used as
-						 * argument, so remove the element from formEntry and add it as argument of converter
-						 * xml element
-						 */
-						for (JsonNode entry : formArrayNode) {
-							if (entry.get("placeholderId").textValue().equals(phLangId)) {
-								ObjectNode convArgNode = jsonFactory.objectNode();
-								convArgNode.set("userPrompt", jsonFactory.textNode(entry.get("userPrompt").textValue()));
-								converterNode.set("arg", convArgNode);
-								break;
-							}
+				// for special case langString, specify the converter argument too
+				if (formEntry.getConverterArgPhId() != null) {
+					String phLangId = formEntry.getConverterArgPhId();
+					/*
+					 * the language placeholder (arguments of langString converter) is already added to
+					 * the xml as formEntry element since in PEARL it must be defined before it's used as
+					 * argument, so remove the element from formEntry and add it as argument of converter
+					 * xml element
+					 */
+					for (JsonNode entry : formArrayNode) {
+						if (entry.get("placeholderId").textValue().equals(phLangId)) {
+							ObjectNode convArgNode = jsonFactory.objectNode();
+							convArgNode.set("userPrompt", jsonFactory.textNode(entry.get("userPrompt").textValue()));
+							converterNode.set("arg", convArgNode);
+							break;
 						}
 					}
-					formEntryNode.set("converter", converterNode);
-					
-					if (formEntry.isLiteral()){
-						if (formEntry.hasDatatype()) {
-							formEntryNode.set("datatype", jsonFactory.textNode(formEntry.getLiteralDatatype()));
-						}
-						if (formEntry.hasLanguage()) {
-							formEntryNode.set("lang", jsonFactory.textNode(formEntry.getLiteralLang()));
-						}
-					}
-					
-					formArrayNode.add(formEntryNode);
 				}
-				return formArrayNode;
-			} else {
-				throw new CustomFormException("No userPrompt/ features found in CustomForm " + id);
+				formEntryNode.set("converter", converterNode);
+				
+				if (formEntry.isLiteral()){
+					if (formEntry.hasDatatype()) {
+						formEntryNode.set("datatype", jsonFactory.textNode(formEntry.getLiteralDatatype()));
+					}
+					if (formEntry.hasLanguage()) {
+						formEntryNode.set("lang", jsonFactory.textNode(formEntry.getLiteralLang()));
+					}
+				}
+				
+				formArrayNode.add(formEntryNode);
 			}
-			
+			return formArrayNode;
 		} else {
 			throw new CustomFormException("CustomForm with id " + id + " not found in project " + getProject().getName());
 		}
@@ -1002,6 +994,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException 
 	 */
 	@STServiceOperation (method = RequestMethod.POST)
+	@Read
 	public JsonNode validatePearl(String pearl, String formType) throws ProjectInconsistentException, RDFModelNotSetException, CustomFormException {
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (formType.equals(CustomForm.Types.graph.toString())) {

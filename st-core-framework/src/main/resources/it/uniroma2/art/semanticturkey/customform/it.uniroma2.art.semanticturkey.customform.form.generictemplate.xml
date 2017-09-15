@@ -10,14 +10,24 @@ rule it.uniroma2.art.semanticturkey.customform.form.generictemplate id:template 
 	nodes = {
 		
 		/*
-		The standard form for skos resources (skos:Concept, skos:ConceptScheme, skos:Collection)
-		is composed by two input field:
-			uri: (optional) prompts the URI of the creating resource
-			label: prompts the label of the creating resource with the related language selection
-		These info can be referenced in the node section.
+		features available as subpaths of "stdForm" are those provided by the standard fields prompted by the standard
+		form associated to the various resource types (skos:Concept, skos:ConceptScheme, etc...).
 		
-		The standard form for other resources (classes, instances, properties) is composed by the sole uri.
+		features available as subpaths of "session" are contextual information always available in the generation of any
+		resource
+		
+		The standard form for skos resources (skos:Concept, skos:ConceptScheme, skos:Collection)
+		is composed by two input fields:
+			uri (optional): prompts the URI of the creating resource. If not filled, the stdForm/resource feature is in 
+			                any case filled with the generated URI assigned to the resource, so that the $resource node
+			                will always be valued
+			label: prompts the label (and the related language section) of the resource to be created 
+		
+		The standard form for other resources (classes, instances, properties) is composed of the sole uri.
+		
 		*/
+	
+	    // THE FOLLOWING NODES ARE ALWAYS CREATED (DEPENDING ON THE RESOURCE TYPE)
 	
 		//uri of the new resource
 		resource uri stdForm/resource .
@@ -35,16 +45,47 @@ rule it.uniroma2.art.semanticturkey.customform.form.generictemplate id:template 
 		//the user logged in the current session can be referenced too
 		user uri session/user .
 		
+		// THE FOLLOWING NODES ARE JUST EXAMPLES, WHICH CREATE ADDITIONAL FIELDS IN THE FORM
+		
+		/*
+		altLabel literal userPrompt/altLabel  . // for skos or skosxl lexicalizations
+		
+		altLabelURI uri(coda:randIdGen()) . // only for skosxl 
+		
+		*/
 	}
 	graph = {
 		/*
-		use here the nodes defined in the above section, if necessary, like the following:
-		$resource a skos:Concept .
-		$resource skosxl:prefLabel $xLabel .
-		$xLabel a skosxl:Label .
-		$xLabel skosxl:literalForm $lexicalForm .
+		Please use the OPTIONAL pattern for all the information that might not be available. A triple with non ground 
+		nodes will make the rule (silently) fail and its whole information will not be added to the created resource 
+				
+		e.g. please use only the nodes from the standard form of the resource you intend to build with this form.
+		Nodes from the standard form not available (e.g. a label for a generic resource, not a skos one) used here 
+		without an OPTIONAL will make the rule fail and thus all the produced information will be lost
+		*/
+		
+		
+		// some example, using the example material above
+		
+		/*
+		this works for all resources:		
 		$resource dc:publisher $user .
 		*/
+		
+		/*
+		can be used for concepts with skos lexicalizations, adding information for the further altLabel in the form
+		$resource skos:altLabel $altLabel .
+		*/
+		
+		/*
+		can be used for concepts with skosxl lexicalizations, adding information for the further altLabel in the form
+		$xLabel dc:publisher $user .
+		
+		$resource skosxl:altLabel $altLabelURI .
+		$altLabelURI skosxl:literalForm  $altLabel .		
+		
+		*/
+			
 	}
 }
 ]]></ref>

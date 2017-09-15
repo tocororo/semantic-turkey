@@ -46,7 +46,8 @@ public class RDF4JRepositoryUtils {
 			if (canCreate) {
 				conn = repository.getConnection();
 			} else {
-				throw new IllegalStateException("No connection is bound to the thread");
+				throw new IllegalStateException("No connection is bound to the thread. Please check service metadata,"
+						+ " it might have not been marked with proper @Read or @Write tags");
 			}
 		}
 
