@@ -51,8 +51,6 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.MoreObjects;
-
 import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
@@ -198,15 +196,38 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					UUID.randomUUID().toString());
 
 			conn.add(stmtRes, RDF.TYPE, CHANGELOG.QUADRUPLE, sail.validationGraph);
-			conn.add(stmtRes, CHANGELOG.SUBJECT, MoreObjects.firstNonNull(quad.getSubject(), SESAME.NIL),
-					sail.validationGraph);
-			conn.add(stmtRes, CHANGELOG.PREDICATE, MoreObjects.firstNonNull(quad.getPredicate(), SESAME.NIL),
-					sail.validationGraph);
-			conn.add(stmtRes, CHANGELOG.OBJECT, MoreObjects.firstNonNull(quad.getObject(), SESAME.NIL),
-					sail.validationGraph);
 
-			conn.add(stmtRes, CHANGELOG.CONTEXT, MoreObjects.firstNonNull(quad.getContext(), SESAME.NIL),
-					sail.validationGraph);
+			Resource subj = quad.getSubject();
+			if (subj != null) {
+				subj = HistoryRepositories.cloneValue(subj, conn.getValueFactory(), null);
+			} else {
+				subj = SESAME.NIL;
+			}
+
+			IRI pred = quad.getPredicate();
+			if (pred != null) {
+				pred = HistoryRepositories.cloneValue(pred, conn.getValueFactory(), null);
+			} else {
+				pred = SESAME.NIL;
+			}
+
+			Value obj = quad.getObject();
+			if (obj != null) {
+				obj = HistoryRepositories.cloneValue(obj, conn.getValueFactory(), null);
+			} else {
+				obj = SESAME.NIL;
+			}
+
+			Resource ctx = quad.getContext();
+			if (ctx != null) {
+				ctx = HistoryRepositories.cloneValue(ctx, conn.getValueFactory(), null);
+			} else {
+				ctx = SESAME.NIL;
+			}
+			conn.add(stmtRes, CHANGELOG.SUBJECT, subj, sail.validationGraph);
+			conn.add(stmtRes, CHANGELOG.PREDICATE, pred, sail.validationGraph);
+			conn.add(stmtRes, CHANGELOG.OBJECT, obj, sail.validationGraph);
+			conn.add(stmtRes, CHANGELOG.CONTEXT, ctx, sail.validationGraph);
 			conn.add(modifiedTriples, predicate, stmtRes, sail.validationGraph);
 		};
 
@@ -318,14 +339,14 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					if (headList.size() == 1) {
 						previousTip = (Resource) headList.iterator().next().getObject();
 
-//						boolean previousTipCommitted = supporRepoConn.hasStatement(previousTip,
-//								CHANGELOG.STATUS, vf.createLiteral("committed"), false, sail.historyGraph);
-//
-//						if (!previousTipCommitted) {
-//							throw new SailException(
-//									"Could not commit the changeset metadata, since there is a pending commit: "
-//											+ previousTip);
-//						}
+						// boolean previousTipCommitted = supporRepoConn.hasStatement(previousTip,
+						// CHANGELOG.STATUS, vf.createLiteral("committed"), false, sail.historyGraph);
+						//
+						// if (!previousTipCommitted) {
+						// throw new SailException(
+						// "Could not commit the changeset metadata, since there is a pending commit: "
+						// + previousTip);
+						// }
 
 						BigInteger lastRevisionNumber = Models
 								.objectLiteral(QueryResults.asModel(supporRepoConn.getStatements(previousTip,
