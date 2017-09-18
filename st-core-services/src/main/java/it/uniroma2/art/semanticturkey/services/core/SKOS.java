@@ -1820,13 +1820,25 @@ class CollectionsMoreProcessor implements QueryBuilderProcessor {
 				.projection(ProjectionElementBuilder.variable("attr_more"))
 				.pattern(
 					// @formatter:off
-					" BIND(EXISTS { {                                                                    \n" +
-					"                 ?resource a skos:Collection .                                      \n" +
-					"                 ?resource skos:member [rdf:type/rdfs:subClassOf* skos:Collection] .\n" +
-					"               } union {                                                            \n" +
-					"                 ?resource rdf:type/rdfs:subClassOf* skos:OrderedCollection .       \n" +
-					"                 ?resource skos:memberList/rdf:rest*/rdf:first [rdf:type/rdfs:subClassOf* skos:Collection] . \n" +
-					"             } } AS ?attr_more)                                                     \n"
+					"BIND(EXISTS { {                                                                   \n" +
+					"				FILTER EXISTS {                                                    \n" +
+					"					?collClassSubj rdfs:subClassOf* skos:Collection .              \n" +
+					"					MINUS {                                                        \n" +
+					"						?collClassSubj rdfs:subClassOf* skos:OrderedCollection .   \n" +
+					"					}                                                              \n" +
+					"					?resource a ?collClassSubj .                                   \n" +
+					"				}															       \n" +
+					"                ?resource skos:member ?member .                                   \n" +
+					"              } union {                                                           \n" +
+					"				FILTER EXISTS {                                                    \n" +
+					"					?ordCollClassSubj rdfs:subClassOf* skos:OrderedCollection .    \n" +
+					"					?resource a ?ordCollClassSubj .                                \n" +
+					"				}															       \n" +
+					"                ?resource skos:memberList/rdf:rest*/rdf:first ?member .           \n" +
+					"              }                                                                   \n" +
+					"			?collClassMember rdfs:subClassOf* skos:Collection .                    \n" +
+					"			?member a ?collClassMember .                                           \n" +
+					"			} AS ?attr_more)                                                       \n"
 					// @formatter:on
 		).graphPattern();
 	}
