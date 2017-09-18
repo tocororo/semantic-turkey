@@ -46,7 +46,7 @@ public class Resources extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'U')")
 	public void updateTriple(@Subject @Modified Resource subject, IRI property, Value value, Value newValue) {
-		logger.info("request to update a triple");
+		logger.debug("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		String query = "DELETE  {							\n"

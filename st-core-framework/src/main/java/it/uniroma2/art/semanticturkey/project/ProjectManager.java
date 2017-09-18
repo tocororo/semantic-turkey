@@ -425,7 +425,7 @@ public class ProjectManager {
 
 		// ProjectType projectType = ProjectType.valueOf(stp_properties.getProperty(Project.PROJECT_TYPE));
 		// String ontManagerID = stp_properties.getProperty(Project.ONTOLOGY_MANAGER_ID_PROP);
-		// logger.info("type: " + projectType);
+		// logger.debug("type: " + projectType);
 
 		Project newProj;
 		try {
@@ -463,7 +463,7 @@ public class ProjectManager {
 	 */
 	public static Project getProjectDescription(String projectName)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
-		logger.info("opening project: " + projectName);
+		logger.debug("opening project: " + projectName);
 
 		File projectDir = getProjectDir(projectName);
 
@@ -473,7 +473,7 @@ public class ProjectManager {
 
 		try {
 			proj = new PersistentStoreProject(projectName, projectDir);
-			logger.info("created project description for: " + proj);
+			logger.debug("created project description for: " + proj);
 			return proj;
 		} catch (Exception e) {
 			throw new ProjectAccessException(e);

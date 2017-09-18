@@ -69,7 +69,7 @@ public class ICV extends STServiceAdapter {
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?resource .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} } GROUP BY ?resource";
-		logger.info("query [listDanglingConcepts]:\n" + q);
+		logger.debug("query [listDanglingConcepts]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -110,7 +110,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?top (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?cyclicConcept .\n"
 //				+ "?cyclicConcept (<" + SKOS.BROADER + "> | ^ <" + SKOS.NARROWER + ">)+ ?top .\n"
 //				+ "?top (<" + SKOS.TOP_CONCEPT_OF + "> | ^ <" + SKOS.HAS_TOP_CONCEPT + ">)+ ?scheme .} }";
-//		logger.info("query [listCyclicConcepts]:\n" + q);
+//		logger.debug("query [listCyclicConcepts]:\n" + q);
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
 //		TupleQueryResult tupleQueryResult = query.evaluate();
@@ -142,7 +142,7 @@ public class ICV extends STServiceAdapter {
 				+ "} UNION {\n"
 				+ "?topConcept <" + SKOS.TOP_CONCEPT_OF + "> ?resource . } } }\n"
 				+ "GROUP BY ?resource";
-		logger.info("query [listConceptSchemesWithNoTopConcept]:\n" + q);
+		logger.debug("query [listConceptSchemesWithNoTopConcept]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -162,7 +162,7 @@ public class ICV extends STServiceAdapter {
 				+ "?resource a <" + SKOS.CONCEPT + "> .\n"
 				+ "FILTER NOT EXISTS { ?resource <" + SKOS.IN_SCHEME + "> ?scheme . } }\n"
 				+ "GROUP BY ?resource";
-		logger.info("query [listConceptsWithNoScheme]:\n" + q);
+		logger.debug("query [listConceptsWithNoScheme]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -182,7 +182,7 @@ public class ICV extends STServiceAdapter {
 				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "?broader <" + SKOS.IN_SCHEME + "> | <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme . }";
-		logger.info("query [listTopConceptsWithBroader]:\n" + q);
+		logger.debug("query [listTopConceptsWithBroader]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		TupleQuery query = conn.prepareTupleQuery(q);
 		query.setIncludeInferred(false);
@@ -219,7 +219,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?narrower (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?middle .\n"
 //				+ "?middle <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 //				+ "FILTER(?narrower != ?middle)\n}";
-//		logger.info("query [listHierarchicallyRedundantConcepts]:\n" + q);
+//		logger.debug("query [listHierarchicallyRedundantConcepts]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -258,7 +258,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?concept2 <" + SKOS.PREF_LABEL + "> ?label .\n"
 //				+ "bind(lang(?label) as ?lang)\n"
 //				+ "FILTER (str(?concept1) < str(?concept2)) }";
-//		logger.info("query [listConceptsWithSameSKOSPrefLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithSameSKOSPrefLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -302,7 +302,7 @@ public class ICV extends STServiceAdapter {
 //				+ "FILTER (?label1 = ?label2)\n"
 //				+ "FILTER (str(?concept1) < str(?concept2))\n"
 //				+ "bind(lang(?label1) as ?lang) }";
-//		logger.info("query [listConceptsWithSameSKOSXLPrefLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithSameSKOSXLPrefLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -343,7 +343,7 @@ public class ICV extends STServiceAdapter {
 //				+ "FILTER NOT EXISTS {\n"
 //				+ "?resource <" + SKOS.PREF_LABEL + "> ?pref .\n"
 //				+ "FILTER (lang(?pref) = ?lang) } }";
-//		logger.info("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
+//		logger.debug("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -395,7 +395,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?resource <" + SKOSXL.PREF_LABEL + "> ?pref . \n"
 //				+ "?pref <" + SKOSXL.LITERAL_FORM + "> ?literalFormPref . \n"
 //				+ "FILTER (lang(?literalFormPref) = ?lang) } }";
-//		logger.info("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
+//		logger.debug("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -446,7 +446,7 @@ public class ICV extends STServiceAdapter {
 				+ "FILTER NOT EXISTS {\n"
 				+ "?resource <" + SKOS.PREF_LABEL + "> ?prefLabel .\n"
 				+ "} } GROUP BY ?resource";
-		logger.info("query [listResourcesWithNoSKOSPrefLabel]:\n" + q);
+		logger.debug("query [listResourcesWithNoSKOSPrefLabel]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -473,7 +473,7 @@ public class ICV extends STServiceAdapter {
 				+ "FILTER NOT EXISTS {\n"
 				+ "?resource <" + SKOSXL.PREF_LABEL + "> ?prefLabel .\n"
 				+ "} } GROUP BY ?resource";
-		logger.info("query [listResourcesWithNoSKOSXLPrefLabel]:\n" + q);
+		logger.debug("query [listResourcesWithNoSKOSXLPrefLabel]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -500,7 +500,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?concept <" + SKOS.PREF_LABEL + "> ?label2.\n"
 //				+ "FILTER ( ?label1 != ?label2 && lang(?label1) = lang(?label2) )\n"
 //				+ "bind(lang(?label1) as ?lang) }";
-//		logger.info("query [listConceptsWithMultipleSKOSPrefLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithMultipleSKOSPrefLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -537,7 +537,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?label2 <" + SKOSXL.LITERAL_FORM + "> ?lit2 .\n"
 //				+ "bind(lang(?lit1) as ?lang)\n"
 //				+ "FILTER ( ?label1 != ?label2 && lang(?lit1) = lang(?lit2) ) }";
-//		logger.info("query [listConceptsWithMultipleSKOSXLPrefLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithMultipleSKOSXLPrefLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -575,7 +575,7 @@ public class ICV extends STServiceAdapter {
 //				+ "{bind(<" + SKOS.ALT_LABEL + "> as ?labelPred)}\n"
 //				+ "?resource ?labelPred ?label .\n"
 //				+ "FILTER (lang(?label) = '') }";
-//		logger.info("query [listResourcesWithNoLanguageTagSKOSLabel]:\n" + q);
+//		logger.debug("query [listResourcesWithNoLanguageTagSKOSLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 //		Element dataElement = response.getDataElement();
@@ -630,7 +630,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?resource ?labelPred ?xlabel .\n"
 //				+ "?xlabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
 //				+ "FILTER (lang(?literalForm)= '') }";
-//		logger.info("query [listConceptsWithNoLanguageTagSKOSXLLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithNoLanguageTagSKOSXLLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
 //		Element dataElement = response.getDataElement();
@@ -683,7 +683,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?resource <" + SKOS.PREF_LABEL + "> ?label .\n"
 //				+ "?resource <" + SKOS.ALT_LABEL + "> ?label .\n"
 //				+ "bind(lang(?label) as ?lang) . }";
-//		logger.info("query [listResourcesWithOverlappedSKOSLabel]:\n" + q);
+//		logger.debug("query [listResourcesWithOverlappedSKOSLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -731,7 +731,7 @@ public class ICV extends STServiceAdapter {
 //				+ "?prefLabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
 //				+ "?altLabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
 //				+ "bind(lang(?literalForm) as ?lang) . }";
-//		logger.info("query [listResourcesWithOverlappedSKOSXLLabel]:\n" + q);
+//		logger.debug("query [listResourcesWithOverlappedSKOSXLLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -793,7 +793,7 @@ public class ICV extends STServiceAdapter {
 //				+ "bind(str(?skoslabel) as ?label)\n"
 //				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 //				+ "bind(lang(?skoslabel) as ?lang) }";
-//		logger.info("query [listConceptsWithExtraWhitespaceInSKOSLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithExtraWhitespaceInSKOSLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -837,7 +837,7 @@ public class ICV extends STServiceAdapter {
 //				+ "bind(str(?litForm) as ?label)\n"
 //				+ "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, ' {2,}?'))\n"
 //				+ "bind(lang(?litForm) as ?lang) }";
-//		logger.info("query [listConceptsWithExtraWhitespaceInSKOSXLLabel]:\n" + q);
+//		logger.debug("query [listConceptsWithExtraWhitespaceInSKOSXLLabel]:\n" + q);
 //		RepositoryConnection conn = getManagedConnection();
 //		TupleQuery query = conn.prepareTupleQuery(q);
 //		query.setIncludeInferred(false);
@@ -870,7 +870,7 @@ public class ICV extends STServiceAdapter {
 				+ "FILTER NOT EXISTS {\n" 
 				+ "?concept <" + SKOSXL.PREF_LABEL + "> | <" + SKOSXL.ALT_LABEL + "> | <" + SKOSXL.HIDDEN_LABEL + "> ?resource.\n"
 				+ "} } GROUP BY ?resource";
-		logger.info("query [listDanglingXLabels]:\n" + q);
+		logger.debug("query [listDanglingXLabels]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -893,7 +893,7 @@ public class ICV extends STServiceAdapter {
 				"bind(str(?resource) as ?uri) \n"+
 				"FILTER (regex(?uri, ' +?')) \n"+ //uri has 1+ space
 				"FILTER (isURI(?resource)) \n } GROUP BY ?resource";
-		logger.info("query [listResourcesURIWithSpace]:\n" + q);
+		logger.debug("query [listResourcesURIWithSpace]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
 		qb.processRendering();
@@ -937,7 +937,7 @@ public class ICV extends STServiceAdapter {
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} }";
-		logger.info("query [setAllDanglingAsTopConcept]:\n" + q);
+		logger.debug("query [setAllDanglingAsTopConcept]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -978,7 +978,7 @@ public class ICV extends STServiceAdapter {
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "} }";
-		logger.info("query [setBroaderForAllDangling]:\n" + q);
+		logger.debug("query [setBroaderForAllDangling]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1016,7 +1016,7 @@ public class ICV extends STServiceAdapter {
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "}\n}";
-		logger.info("query [removeAllDanglingFromScheme]:\n" + q);
+		logger.debug("query [removeAllDanglingFromScheme]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1058,7 +1058,7 @@ public class ICV extends STServiceAdapter {
 				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
 				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
 				+ "}\n}";
-		logger.info("query [deleteAllDanglingConcepts]:\n" + q);
+		logger.debug("query [deleteAllDanglingConcepts]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1079,7 +1079,7 @@ public class ICV extends STServiceAdapter {
 				+ "} WHERE {\n"
 				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
 				+ "FILTER NOT EXISTS { ?concept <" + SKOS.IN_SCHEME + "> ?scheme . } }";
-		logger.info("query [addAllConceptsToScheme]:\n" + q);
+		logger.debug("query [addAllConceptsToScheme]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1103,7 +1103,7 @@ public class ICV extends STServiceAdapter {
 				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
-		logger.info("query [removeBroadersToConcept]:\n" + q);
+		logger.debug("query [removeBroadersToConcept]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1125,7 +1125,7 @@ public class ICV extends STServiceAdapter {
 				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
 				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
-		logger.info("query [removeBroadersToAllConcepts]:\n" + q);
+		logger.debug("query [removeBroadersToAllConcepts]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1146,7 +1146,7 @@ public class ICV extends STServiceAdapter {
 				+ "?concept <" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + "> ?scheme .\n"
    				+ "?concept <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
    				+ "?broader <" + SKOS.IN_SCHEME + "> ?scheme . }";
-		logger.info("query [removeAllAsTopConceptsWithBroader]:\n" + q);
+		logger.debug("query [removeAllAsTopConceptsWithBroader]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1168,7 +1168,7 @@ public class ICV extends STServiceAdapter {
 				+ "?narrower (<" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + ">)+ ?middle .\n"
 				+ "?middle <" + SKOS.BROADER + "> | ^<" + SKOS.NARROWER + "> ?broader .\n"
 				+ "FILTER(?narrower != ?middle) }";
-		logger.info("query [removeAllHierarchicalRedundancy]:\n" + q);
+		logger.debug("query [removeAllHierarchicalRedundancy]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1192,7 +1192,7 @@ public class ICV extends STServiceAdapter {
 				+ "FILTER NOT EXISTS {\n"
 				+ "?concept <" + SKOSXL.PREF_LABEL + "> | <" + SKOSXL.ALT_LABEL + "> | <" + SKOSXL.HIDDEN_LABEL + "> ?xlabel.\n"
 				+ "} }";
-		logger.info("query [deleteAllDanglingXLabel]:\n" + q);
+		logger.debug("query [deleteAllDanglingXLabel]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();
@@ -1226,7 +1226,7 @@ public class ICV extends STServiceAdapter {
 					+ "<" + concept.stringValue() + "> <" + xlabelPred.stringValue() + "> <" + xlabel.stringValue() + "> \n"
 					+ "}\n}";
 		}
-		logger.info("query [setDanglingXLabel]:\n" + q);
+		logger.debug("query [setDanglingXLabel]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
 		update.execute();

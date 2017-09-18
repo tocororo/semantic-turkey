@@ -270,7 +270,7 @@ public class Refactor extends STServiceAdapter  {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(lexicalization)', 'CD')")
 	public void SKOStoSKOSXL(boolean reifyNotes) throws URIGenerationException{
-		logger.info("request to refactor SKOS data to SKOSXL");
+		logger.debug("request to refactor SKOS data to SKOSXL");
 		
 		List<ConceptLabelValueGraph> conceptLabelValueGraphList = new ArrayList<ConceptLabelValueGraph>();
 		List<ConceptNoteValueGraph> conceptNoteValueGraphList = new ArrayList<ConceptNoteValueGraph>();
@@ -472,7 +472,7 @@ public class Refactor extends STServiceAdapter  {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(lexicalization)', 'CD')")
 	public void SKOSXLtoSKOS(boolean flattenNotes){
-		logger.info("request to refactor SKOSXL data to SKOS");
+		logger.debug("request to refactor SKOSXL data to SKOS");
 		
 		IRI workingGraph = (IRI) getWorkingGraph();
 		String workingGraphString = SPARQLHelp.toSPARQL(workingGraph);

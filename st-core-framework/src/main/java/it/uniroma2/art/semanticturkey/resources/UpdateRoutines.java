@@ -81,13 +81,13 @@ public class UpdateRoutines {
 		// I suggest to rename it as dataTouchVersion or dataTouchVersionNumber 
 		VersionNumber currentVersionNumber = Config.getVersionNumber();
 
-		logger.info("version number of installed Semantic Turkey is: " + versionNumber);
-		logger.info("version number of Semantic Turkey currently saved in data folder is: "
+		logger.debug("version number of installed Semantic Turkey is: " + versionNumber);
+		logger.debug("version number of Semantic Turkey currently saved in data folder is: "
 				+ currentVersionNumber);
 
 		if (versionNumber.compareTo(currentVersionNumber) > 0) {
 
-			logger.info("updating resources from version: " + currentVersionNumber + " to version: "
+			logger.debug("updating resources from version: " + currentVersionNumber + " to version: "
 					+ versionNumber);
 
 			if (currentVersionNumber.compareTo(new VersionNumber(0, 7, 0)) < 0)
@@ -108,7 +108,7 @@ public class UpdateRoutines {
 	 * @throws IOException
 	 */
 	private static void align_from_06x_to_07x() {
-		logger.info("versions prior to 0.7.x had no project folder, creating it");
+		logger.debug("versions prior to 0.7.x had no project folder, creating it");
 		File projDir = Resources.getProjectsDir();
 		if (!projDir.exists())
 			projDir.mkdir();
@@ -128,7 +128,7 @@ public class UpdateRoutines {
 		File mainProjDir = new File(Resources.getSemTurkeyDataDir(), mainProjectName);
 
 		if (mainProjDir.exists()) {
-			logger.info("version 0.7.1 had a main project folder, main project is no more present (any project can be a project loaded at startup now, and this feature is completely handled by the client)");
+			logger.debug("version 0.7.1 had a main project folder, main project is no more present (any project can be a project loaded at startup now, and this feature is completely handled by the client)");
 			try {
 				String newMainProjectName = "wasMainProject";
 				ProjectManager.cloneProjectToNewProject(mainProjectName, newMainProjectName);
@@ -184,15 +184,15 @@ public class UpdateRoutines {
 	private static void checkAndInitializeMissingProperty(String projectName, String propertyName,
 			String defaultValue, String stversion) throws IOException, InvalidProjectNameException,
 			ProjectInexistentException {
-		logger.info("checking existence of a value for property: " + propertyName);
+		logger.debug("checking existence of a value for property: " + propertyName);
 		String propertyValue = ProjectManager.getProjectProperty(projectName, propertyName);
 		if (propertyValue == null) {
-			logger.info(projectName + " is present, though it shows no property: " + propertyName
+			logger.debug(projectName + " is present, though it shows no property: " + propertyName
 					+ ". Since it is a project previous to version: " + stversion
 					+ ", its configuration type is probably (and being set to): " + defaultValue);
 			ProjectManager.setProjectProperty(projectName, propertyName, defaultValue);
 		} else {
-			logger.info("property " + propertyName + " is already initialized to value: " + propertyValue);
+			logger.debug("property " + propertyName + " is already initialized to value: " + propertyValue);
 		}
 	}
 

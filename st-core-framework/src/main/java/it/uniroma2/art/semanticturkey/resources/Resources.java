@@ -101,13 +101,13 @@ public class Resources {
 
 	public static void initializeUserResources(String extensionPathName) throws STInitializationException {
 
-		logger.info("initializing resources:");
+		logger.debug("initializing resources:");
 
 		setExtensionPath(extensionPathName);
-		logger.info("extension path: " + getExtensionPath());
+		logger.debug("extension path: " + getExtensionPath());
 
 		OSGiPath = new File(getExtensionPath(), _OSGiDirName);
-		logger.info("OSGi path: " + OSGiPath);
+		logger.debug("OSGi path: " + OSGiPath);
 
 		// currently managed here with file system API. However, it is now an OSGi file, and should be
 		// accessed through proper OSGi APIs
@@ -125,7 +125,7 @@ public class Resources {
 		}
 		// sourceUserDirectory = new File(getExtensionPath(),
 		// _sourceUserDirectoryRelPathName);
-		// logger.info("user directory template: " + sourceUserDirectory);
+		// logger.debug("user directory template: " + sourceUserDirectory);
 
 		// InstallConfigFile installConfigFileManager;
 		// try {
@@ -144,7 +144,7 @@ public class Resources {
 			stDataDirectory = dataDir;
 		else
 			stDataDirectory = new File(getExtensionPath(), dataDir.getPath());
-		logger.info("st data directory: " + getSemTurkeyDataDir());
+		logger.debug("st data directory: " + getSemTurkeyDataDir());
 
 		ontLibraryDir = new File(stDataDirectory, _ontLibraryDirLocalName);
 		ontTempDir = new File(stDataDirectory, _ontTempDirLocalName);

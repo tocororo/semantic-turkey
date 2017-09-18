@@ -399,7 +399,7 @@ public class Projects extends STServiceAdapter {
 	public void cloneProject(String projectName, String newProjectName) throws InvalidProjectNameException,
 			DuplicatedResourceException, IOException, ProjectInexistentException, ProjectAccessException {
 
-		logger.info("requested to export current project");
+		logger.debug("requested to export current project");
 
 		ProjectManager.cloneProjectToNewProject(projectName, newProjectName);
 	}
@@ -410,7 +410,7 @@ public class Projects extends STServiceAdapter {
 			@RequestParam(value = "projectName") String projectName)
 			throws IOException, ProjectAccessException {
 		File tempServerFile = File.createTempFile("export", ".zip");
-		logger.info("requested to export current project");
+		logger.debug("requested to export current project");
 		ProjectManager.exportProject(projectName, tempServerFile);
 		oRes.setHeader("Content-Disposition", "attachment; filename=export.zip");
 		FileInputStream is = new FileInputStream(tempServerFile);
@@ -442,7 +442,7 @@ public class Projects extends STServiceAdapter {
 			ProjectInconsistentException, ProjectUpdateException, InvalidProjectNameException,
 			PUBindingException, ProjectInexistentException, ProjectAccessException {
 
-		logger.info("requested to import project from file: " + importPackage);
+		logger.debug("requested to import project from file: " + importPackage);
 
 		File projectFile = File.createTempFile("prefix", "suffix");
 		importPackage.transferTo(projectFile);

@@ -92,7 +92,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopProperties() {
-		logger.info("request to get all the top properties");
+		logger.debug("request to get all the top properties");
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -157,7 +157,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopRDFProperties() {
-		logger.info("request to get the top RDF properties");
+		logger.debug("request to get the top RDF properties");
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -191,7 +191,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(objectProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopObjectProperties() {
-		logger.info("request to get the top Object properties");
+		logger.debug("request to get the top Object properties");
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -225,7 +225,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(datatypeProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopDatatypeProperties() {
-		logger.info("request to get the top Datatype properties");
+		logger.debug("request to get the top Datatype properties");
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -259,7 +259,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(annotationProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopAnnotationProperties() {
-		logger.info("request to get the top Annotation properties");
+		logger.debug("request to get the top Annotation properties");
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -293,7 +293,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontologyProperty, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopOntologyProperties() {
-		logger.info("request to get the top Ontology properties");
+		logger.debug("request to get the top Ontology properties");
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -329,7 +329,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getPropertiesInfo(IRI[] propList) {
-		logger.info("request to get the Propery info, given a property List");
+		logger.debug("request to get the Propery info, given a property List");
 
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
@@ -363,7 +363,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSubProperties(@LocallyDefined Resource superProperty) {
-		logger.info("request to get the top sub properties for " + superProperty.stringValue());
+		logger.debug("request to get the top sub properties for " + superProperty.stringValue());
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -392,7 +392,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getSuperProperties(@LocallyDefined Resource subProperty) {
-		logger.info("request to get the top super properties for " + subProperty.stringValue());
+		logger.debug("request to get the top super properties for " + subProperty.stringValue());
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -426,7 +426,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForResource(
 			@LocallyDefined Resource res) {
-		logger.info("request to get the top all properties having their domain on any of the types for "
+		logger.debug("request to get the top all properties having their domain on any of the types for "
 				+ res.stringValue());
 
 		QueryBuilder qb;
@@ -467,7 +467,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantPropertiesForClass(
 			@LocallyDefined Resource classUri) {
-		logger.info("request to get all properties having their domain on " + classUri.stringValue());
+		logger.debug("request to get all properties having their domain on " + classUri.stringValue());
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -505,7 +505,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public Collection<AnnotatedValue<Resource>> getRelevantDomainClasses(@LocallyDefined Resource property) {
-		logger.info("request to get any named class which is relevant in the domain of "
+		logger.debug("request to get any named class which is relevant in the domain of "
 				+ property.stringValue());
 
 		QueryBuilder qb;
@@ -540,7 +540,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getRelevantRangeClasses(@LocallyDefined Resource property) {
-		logger.info(
+		logger.debug(
 				"request to get any named class which is relevant in the range of " + property.stringValue());
 		QueryBuilder qb;
 		qb = createQueryBuilder(
@@ -566,7 +566,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public JsonNode getRange(@LocallyDefined IRI property) {
-		logger.info(
+		logger.debug(
 				"request to get any named class which is relevant in the range of " + property.stringValue());
 
 		ObjectNode response = JsonNodeFactory.instance.objectNode();
@@ -1234,7 +1234,7 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Literal>> getDatarangeLiterals(BNode datarange) {
-		logger.info("getLiteralEnumeration");
+		logger.debug("getLiteralEnumeration");
 		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<AnnotatedValue<Literal>>();
 
 		DataRangeDataOneOf dataOneOf = null;

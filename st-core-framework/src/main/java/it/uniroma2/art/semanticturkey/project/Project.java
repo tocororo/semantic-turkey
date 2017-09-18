@@ -368,7 +368,7 @@ public abstract class Project extends AbstractProject {
 			String defaultNamespace = getDefaultNamespace();
 			if (defaultNamespace == null) {
 				defaultNamespace = ModelUtilities.createDefaultNamespaceFromBaseURI(baseURI);
-				logger.info("generating defaultNamespace from baseuri: " + defaultNamespace);
+				logger.debug("generating defaultNamespace from baseuri: " + defaultNamespace);
 			}
 
 			try (RepositoryConnection conn = coreRepository.getConnection()) {
@@ -381,9 +381,9 @@ public abstract class Project extends AbstractProject {
 					logger.debug(
 							"activation of project: " + getName() + ": found defaultnamespace: " + liveGotNS);
 					conn.setNamespace("", defaultNamespace);
-					logger.info("activation of project: " + getName() + ": defaultnamespace set to: "
+					logger.debug("activation of project: " + getName() + ": defaultnamespace set to: "
 							+ defaultNamespace);
-					logger.info("activation of project: " + getName() + ": defaultnamespace set to@@@@ : "
+					logger.debug("activation of project: " + getName() + ": defaultnamespace set to@@@@ : "
 							+ conn.getNamespace(""));
 					// it may seem strange that ST is reporting the msg:
 					// "a mapping already exists for" <def namespace here of the current project>
@@ -410,7 +410,7 @@ public abstract class Project extends AbstractProject {
 				loadingCoreVocabularies();
 
 				SemanticTurkey.initializeVocabularies(conn);
-				logger.info("defaultnamespace set to: " + defaultNamespace);
+				logger.debug("defaultnamespace set to: " + defaultNamespace);
 			}
 		} catch (Exception e) {
 			try {

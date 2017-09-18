@@ -293,9 +293,9 @@ public abstract class ServiceTest {
 		}
 		boolean cleaned = Utilities.deleteDir(semTurkeyDataDir);
 		if (!cleaned)
-			logger.info("SemanticTurkeyData not cleaned, directory cannot be deleted");
+			logger.debug("SemanticTurkeyData not cleaned, directory cannot be deleted");
 		else
-			logger.info("SemanticTurkeyData cleaned");
+			logger.debug("SemanticTurkeyData cleaned");
 	}
 
 	protected void tearDown() throws Exception {
