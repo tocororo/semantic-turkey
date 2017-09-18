@@ -189,7 +189,7 @@ public class ResourceView extends STServiceAdapter {
 
 			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
 					predicate2resourceCreShow, null, retrievedStatements);
-
+			AbstractStatementConsumer.addQName(annotatedResource, resource2attributes);
 			description.put("resource", new ResourceSection(annotatedResource));
 
 			List<StatementConsumer> viewTemplate = statementConsumerProvider
