@@ -166,10 +166,10 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 									addNature((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 									addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedMember,
 											resource2attributes, predicate2resourceCreShow, null, statements);
+									addQName((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
 								annotatedMember.setAttribute("index", topContext.getIndex() + 1);
-								addNature((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 								annotatedObjectWithMembers.getMembers()
 										.add((AnnotatedValue<Value>) annotatedMember);
 							}
@@ -197,6 +197,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					addNature((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
 					addShowOrRenderXLabelOrCRE((AnnotatedValue<Resource>) annotatedObject,
 							resource2attributes, predicate2resourceCreShow, predicate, statements);
+					addQName((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
 				}
 
 				if (annotatedObject == null) {

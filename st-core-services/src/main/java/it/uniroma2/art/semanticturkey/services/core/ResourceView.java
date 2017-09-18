@@ -454,6 +454,7 @@ public class ResourceView extends STServiceAdapter {
 
 			QueryBuilder qb = createQueryBuilder(sb.toString());
 			qb.processRendering();
+			qb.processQName();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
 			qb.setBinding("subjectResource", resource);
 			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign

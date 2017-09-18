@@ -178,4 +178,17 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 		}
 	}
 	
+	public static <T extends Resource> void addQName(AnnotatedValue<T> annotatedResource,
+			Map<Resource, Map<String, Value>> resource2attributes) {
+		Map<String, Value> attr2values = resource2attributes.get(annotatedResource.getValue());
+		
+		if (attr2values != null) {
+			Value qname = attr2values.get("qname");
+			if (qname != null) {
+				annotatedResource.setAttribute("qname", qname);
+			}
+			
+		}
+	}
+
 }
