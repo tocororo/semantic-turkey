@@ -242,7 +242,7 @@ public class RBACManager {
 			List<Term> capabilitiesTerm = rbac.getCapabilitiesAsTermList();
 			
 			for (Term c : capabilitiesTerm) {
-				capabilities.add(c.toString());
+				capabilities.add(c.toString().replace("'", "\""));
 				if (c.toString().equals(capability)) {
 					throw new RBACException("Duplicated capability '" + capability + "' in role " + role);
 				}
@@ -269,7 +269,7 @@ public class RBACManager {
 			Collection<String> capabilities = new ArrayList<>();
 			List<Term> capabilitiesTerm = rbac.getCapabilitiesAsTermList();
 			for (Term c : capabilitiesTerm) {
-				if (!c.toString().equals(capability)) {
+				if (!c.toString().replace("'", "\"").equals(capability)) {
 					capabilities.add(c.toString());
 				}
 			}
