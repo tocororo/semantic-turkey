@@ -15,6 +15,8 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.json.JSONException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -57,6 +59,8 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
  */
 @Component("auth")
 public class STAuthorizationEvaluator {
+	
+	private static Logger logger = LoggerFactory.getLogger(STAuthorizationEvaluator.class);
 
 	@Autowired
 	private STServiceContext stServiceContext;
@@ -146,15 +150,15 @@ public class STAuthorizationEvaluator {
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
 		
-//		System.out.println("Role base access control:");
-//		System.out.println("\tprolog goal = " + prologGoal);
-//		System.out.println("\tuser responsibility map = " + userRespMap);
-//		System.out.println("\tproject consumer = " + stServiceContext.getProjectConsumer().getName());
-//		System.out.println("\taccessed project = " + (targetForRBAC != null ? targetForRBAC.getName() : "SYSTEM"));
-//		System.out.println("\trequested access level = " + requestedAccessLevel);
-//		System.out.println("\taclCheck = " + aclSatisfied);
-//		System.out.println("\tlogged User = " + loggedUser.getEmail());
-//		System.out.println("\t\troles = " + userRoles);
+		logger.debug("Role base access control:");
+		logger.debug("\tprolog goal = " + prologGoal);
+		logger.debug("\tuser responsibility map = " + userRespMap);
+		logger.debug("\tproject consumer = " + stServiceContext.getProjectConsumer().getName());
+		logger.debug("\taccessed project = " + (targetForRBAC != null ? targetForRBAC.getName() : "SYSTEM"));
+		logger.debug("\trequested access level = " + requestedAccessLevel);
+		logger.debug("\taclCheck = " + aclSatisfied);
+		logger.debug("\tlogged User = " + loggedUser.getEmail());
+		logger.debug("\t\troles = " + userRoles);
 
 		if (!aclSatisfied) {
 			return false;
@@ -173,10 +177,11 @@ public class STAuthorizationEvaluator {
 //					System.out.println(e);
 //				}
 				RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
-//				System.out.println("check satisfaction for goal " + prologGoal);
 				if (rbac.authorizes(prologGoal)) {
 					authorized = true;
 					break;
+				} else {
+					logger.debug("Goal not authorized: " + prologGoal);
 				}
 			}
 			//check on the user responsibilities
@@ -195,6 +200,7 @@ public class STAuthorizationEvaluator {
 				
 				//if the lang capability is not in project languages or is not assigned to the user, do not authorize
 				if (!assignedLangs.contains(lang) || !projLangTags.contains(lang)) {
+					logger.debug("language proficiency '" + lang + "' not authorized");
 					authorized = false;
 				}
 			}

@@ -2,3 +2,4 @@
 
 capability(rdf(skos),"CRUD").
 capability(rdf(sparql),"R").
+capability(rdf,"R").
