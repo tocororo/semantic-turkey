@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,27 +49,18 @@ public class ICV extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listDanglingConcepts(IRI scheme)  {
 		String q = "SELECT ?resource WHERE { \n"
-				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)"
-				+ "FILTER NOT EXISTS {?resource <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?resource }\n"
-				+ "{?resource a <" + SKOS.CONCEPT + "> .\n"
-				+ "?resource <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?resource <" + SKOS.BROADER + "> ?broaderConcept1  . }\n"
-				+ "} UNION {\n"
-				+ "?resource a <" + SKOS.CONCEPT + "> .\n"
-				+ "?resource <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?resource <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
-				+ "} {\n"
-				+ "?resource a <" + SKOS.CONCEPT + "> .\n"
-				+ "?resource <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?resource . }\n"
-				+ "} UNION {\n"
-				+ "?resource a <" + SKOS.CONCEPT + "> .\n"
-				+ "?resource <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?resource .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
-				+ "} } GROUP BY ?resource";
+				+ "BIND(" + NTriplesUtil.toNTriplesString(scheme) + " as ?scheme) \n"
+				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + ". \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.HAS_TOP_CONCEPT) + "  ?scheme \n"
+				+ "} \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOS.BROADER) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.NARROWER) + "  ?broader . \n"
+				+ "?broader " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "} \n } GROUP BY ?resource";
 		logger.debug("query [listDanglingConcepts]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
@@ -913,30 +905,21 @@ public class ICV extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void setAllDanglingAsTopConcept(IRI scheme) {
 		String q = "INSERT {\n"
-				+ "GRAPH <" + getWorkingGraph().stringValue() + ">\n"
-				+ "{ ?concept <" + SKOS.TOP_CONCEPT_OF + "> <" + scheme.stringValue() + "> }\n"
+				+ "GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "\n"
+				+ "{ ?concept " + NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF) + " " + NTriplesUtil.toNTriplesString(scheme) + " }\n"
 				+ "} WHERE {\n"
-				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
-				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
-				+ "} UNION {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
-				+ "} {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
-				+ "} UNION {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
-				+ "} }";
+				+ "BIND(" + NTriplesUtil.toNTriplesString(scheme) + " as ?scheme) \n"
+				+ "?concept a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + ". \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.HAS_TOP_CONCEPT) + "  ?scheme \n"
+				+ "} \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.BROADER) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.NARROWER) + "  ?broader . \n"
+				+ "?broader " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "} \n}";
 		logger.debug("query [setAllDanglingAsTopConcept]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
@@ -954,30 +937,21 @@ public class ICV extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void setBroaderForAllDangling(IRI scheme, IRI broader) {
 		String q = "INSERT {\n"
-				+ "GRAPH <" + getWorkingGraph().stringValue() + ">\n"
-				+ "{ ?concept <" + SKOS.BROADER + "> <" + broader.stringValue() + "> }\n"
+				+ "GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " \n"
+				+ "{ ?concept " + NTriplesUtil.toNTriplesString(SKOS.BROADER) + " " + NTriplesUtil.toNTriplesString(broader) + " }\n"
 				+ "} WHERE {\n"
-				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
-				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
-				+ "} UNION {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
-				+ "} {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
-				+ "} UNION {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
-				+ "} }";
+				+ "BIND(" + NTriplesUtil.toNTriplesString(scheme) + " as ?scheme) \n"
+				+ "?concept a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + ". \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.HAS_TOP_CONCEPT) + "  ?scheme \n"
+				+ "} \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.BROADER) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.NARROWER) + "  ?broader . \n"
+				+ "?broader " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "} \n}";
 		logger.debug("query [setBroaderForAllDangling]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
@@ -993,29 +967,21 @@ public class ICV extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
 	public void removeAllDanglingFromScheme(IRI scheme) {
-		String q = "DELETE { ?concept <" + SKOS.IN_SCHEME + "> <" + scheme.stringValue() + "> }\n"
+		String q = "DELETE { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " " + NTriplesUtil.toNTriplesString(scheme) + " }\n"
 				+ "WHERE {\n"
-				+ "BIND(<" + scheme.stringValue() + "> as ?scheme)\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.TOP_CONCEPT_OF + "> ?scheme}\n"
-				+ "FILTER NOT EXISTS {?scheme <" + SKOS.HAS_TOP_CONCEPT + "> ?concept }\n"
-				+ "{ ?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?concept <" + SKOS.BROADER + "> ?broaderConcept1 . }\n"
-				+ "} UNION {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?concept <" + SKOS.BROADER + "> ?broaderConcept1 .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept1 <" + SKOS.IN_SCHEME + "> ?scheme  . }\n"
-				+ "} {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.NARROWER + "> ?concept . }\n"
-				+ "} UNION {\n"
-				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-				+ "?concept <" + SKOS.IN_SCHEME + "> ?scheme .\n"
-				+ "?broaderConcept2 <" + SKOS.NARROWER + "> ?concept .\n"
-				+ "FILTER NOT EXISTS {?broaderConcept2 <" + SKOS.IN_SCHEME + "> ?scheme . }\n"
-				+ "}\n}";
+				+ "BIND(" + NTriplesUtil.toNTriplesString(scheme) + " as ?scheme) \n"
+				+ "?concept a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + ". \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.HAS_TOP_CONCEPT) + "  ?scheme \n"
+				+ "} \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?concept " + NTriplesUtil.toNTriplesString(SKOS.BROADER) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.NARROWER) + "  ?broader . \n"
+				+ "?broader " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?scheme . \n"
+				+ "} \n }";
 		logger.debug("query [removeAllDanglingFromScheme]:\n" + q);
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(q);
