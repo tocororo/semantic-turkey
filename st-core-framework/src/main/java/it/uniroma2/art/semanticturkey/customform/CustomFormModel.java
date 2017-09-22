@@ -20,6 +20,8 @@ public class CustomFormModel {
 	private Collection<FormCollection> formCollections;
 	private Collection<CustomForm> customForms;
 	
+	private Collection<BrokenCFStructure> brokenCustomForms = new ArrayList<>();
+	
 	private Project project;
 	
 	/**
@@ -29,11 +31,11 @@ public class CustomFormModel {
 	public CustomFormModel() throws CustomFormParseException {
 		logger.debug("Loading Custom Form architecture at system level");
 		//CustomForm: load files from forms/ folder and store them in the forms map
-		customForms = CustomFormXMLHelper.loadSystemCustomForms();
+		customForms = CustomFormXMLHelper.loadSystemCustomForms(brokenCustomForms);
 		//FormCollection: load files from formCollections/ folder
-		formCollections = CustomFormXMLHelper.loadSystemFormCollections(customForms);
+		formCollections = CustomFormXMLHelper.loadSystemFormCollections(customForms, brokenCustomForms);
 		//CustomFormConfig: create config with mappings loaded from system customForms/customFormsConfig.xml file
-		cfConfig = new CustomFormsConfig(CustomFormXMLHelper.loadSysyemFormsMapping(formCollections));
+		cfConfig = new CustomFormsConfig(CustomFormXMLHelper.loadSysyemFormsMapping(formCollections, brokenCustomForms));
 	}
 	
 	/**
@@ -52,17 +54,27 @@ public class CustomFormModel {
 		} else {
 			logger.debug("CustomForm folders architecture for project " + project.getName() + " exists. Loading it.");
 			//CustomForm: load files from forms/ folder and store them in the forms map
-			customForms = CustomFormXMLHelper.loadProjectCustomForms(project, systemCFModel.getCustomForms());
+			customForms = CustomFormXMLHelper.loadProjectCustomForms(project, systemCFModel.getCustomForms(), brokenCustomForms);
 			//FormCollection: load files from formCollections/ folder
-			formCollections = CustomFormXMLHelper.loadProjectFormCollections(project, customForms, systemCFModel.getCustomForms());
+			formCollections = CustomFormXMLHelper.loadProjectFormCollections(project, customForms, 
+					systemCFModel.getCustomForms(), brokenCustomForms);
 			//CustomFormConfig: create config with mappings loaded from project customForms/customFormsConfig.xml file
-			cfConfig = new CustomFormsConfig(CustomFormXMLHelper.loadProjectFormsMapping(project, formCollections, systemCFModel.getFormCollections()));
+			cfConfig = new CustomFormsConfig(CustomFormXMLHelper.loadProjectFormsMapping(project, formCollections, 
+					systemCFModel.getFormCollections(), brokenCustomForms));
 		}
 	}
 	
 	/* ##################
 	 * ###### READ ######
 	 * ################## */
+	
+	/**
+	 * Returns the broken CustomForms that are ignore during initialization
+	 * @return
+	 */
+	public Collection<BrokenCFStructure> getBrokenCustomForms() {
+		return this.brokenCustomForms;
+	}
 	
 	// FORM MAPPING
 	

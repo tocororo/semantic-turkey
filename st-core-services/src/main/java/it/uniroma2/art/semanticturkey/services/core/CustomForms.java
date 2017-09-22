@@ -59,6 +59,7 @@ import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
+import it.uniroma2.art.semanticturkey.customform.BrokenCFStructure;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
@@ -552,8 +553,14 @@ public class CustomForms extends STServiceAdapter {
 		try {
 			inputFile.transferTo(tempServerFile);
 			try {
-				FormCollection parsedFormColl = CustomFormXMLHelper.parseAndCreateFormCollection(
-						tempServerFile, cfManager.getCustomForms(getProject()), CustomFormLevel.project);
+				Collection<BrokenCFStructure> brokenCFS = new ArrayList<>();
+				FormCollection parsedFormColl = CustomFormXMLHelper.parseAndCreateFormCollection(tempServerFile,
+						cfManager.getCustomForms(getProject()), CustomFormLevel.project, brokenCFS);
+				if (brokenCFS.size() != 0) {
+					//if the form collection contains some error (reference to missing CF or duplicate ID) throws an exception 
+					throw new CustomFormException("Failed to load the input FormCollection. Reason: " 
+							+ brokenCFS.iterator().next().getReason());
+				}
 				String newFormCollId;
 				if (newId != null) {
 					if (!newId.startsWith(FormCollection.PREFIX) || newId.contains(" ") || newId.trim().isEmpty()) { //check if ID is valid
@@ -1094,6 +1101,31 @@ public class CustomForms extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'U')")
 	public void updateReplace(IRI resource, boolean replace) throws CustomFormException {
 		cfManager.setReplace(getProject(), resource, replace);
+	}
+	
+	//================================================
+	
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
+	public JsonNode getBrokenCustomForms() {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode bcfArrayNode = jsonFactory.arrayNode();
+		Collection<BrokenCFStructure> brokenCFS = cfManager.getBrokenCustomForms(getProject());
+		for (BrokenCFStructure bcf : brokenCFS) {
+			ObjectNode bcfNode = jsonFactory.objectNode();
+			bcfNode.set("id", jsonFactory.textNode(bcf.getId()));
+			bcfNode.set("type", jsonFactory.textNode(bcf.getType()));
+			CustomFormLevel level = bcf.getLevel();
+			if (level != null) {
+				bcfNode.set("level", jsonFactory.textNode(bcf.getLevel().name()));
+			} else {
+				bcfNode.set("level", jsonFactory.textNode("---"));
+			}
+			bcfNode.set("file", jsonFactory.textNode(bcf.getFile().getName()));
+			bcfNode.set("reason", jsonFactory.textNode(bcf.getReason()));
+			bcfArrayNode.add(bcfNode);
+		}
+		return bcfArrayNode;
 	}
 	
 }

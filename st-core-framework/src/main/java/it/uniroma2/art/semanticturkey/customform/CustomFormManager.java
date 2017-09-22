@@ -89,6 +89,18 @@ public class CustomFormManager {
 	 * ###### READ ######
 	 * ################## */
 	
+	/**
+	 * Returns all the broken CF structures, both at system and project level.
+	 * @param project
+	 * @return
+	 */
+	public Collection<BrokenCFStructure> getBrokenCustomForms(Project project) {
+		Collection<BrokenCFStructure> brokenCFs = new ArrayList<>();
+		brokenCFs.addAll(cfModelMap.get(project.getName()).getBrokenCustomForms());
+		brokenCFs.addAll(cfModelMap.get(SYSTEM_LEVEL_ID).getBrokenCustomForms());
+		return brokenCFs;
+	}
+	
 	// FORM MAPPING
 	
 	/**
