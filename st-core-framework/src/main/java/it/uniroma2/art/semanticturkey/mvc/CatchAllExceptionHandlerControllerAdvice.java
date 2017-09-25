@@ -43,7 +43,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 	@ExceptionHandler(AccessDeniedException.class)
 	public void handleException(AccessDeniedException ex, HttpServletRequest request) {
 		
-		logger.debug("Exception catched by the Controller Advice", ex);
+		logger.error("Exception catched by the Controller Advice", ex);
 		throw new AccessDeniedException(ex.getMessage());
 	}
 	
@@ -51,7 +51,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 	public ResponseEntity<String> handleException(MethodConstraintViolationException ex,
 			HttpServletRequest request) {
 		
-		logger.debug("Exception catched by the Controller Advice", ex);
+		logger.error("Exception catched by the Controller Advice", ex);
 		
 		ServletUtilities servUtils = ServletUtilities.getService();
 
@@ -73,7 +73,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 	public ResponseEntity<String> handleException(Exception ex, HttpServletRequest request) {
 		ServletUtilities servUtils = ServletUtilities.getService();
 
-		logger.debug("Exception catched by the Controller Advice", ex);
+		logger.error("Exception catched by the Controller Advice", ex);
 		
 		Response stResp;
 
