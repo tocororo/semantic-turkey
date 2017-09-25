@@ -1347,11 +1347,16 @@ public class ProjectManager {
 
 		// Checks the suitability of the project name
 		checkProjectName(projectName);
+		
+		if (projectDir.exists()) {
+			throw new DuplicatedResourceException("Project: " + projectName
+					+ " already exists; choose a different project name for a new project");
+		}
 
 		// Creates the directory for the project, checking whether it already existed
-		if (!projectDir.mkdir())
-			throw new DuplicatedResourceException("project: " + projectName
-					+ " already exists; choose a different project name for a new project");
+		if (!projectDir.mkdir()) {
+			throw new ProjectCreationException("Creation of project directory failed");
+		}
 
 		if (!Arrays.stream(updateForRoles)
 				.allMatch(s -> "resource".equals(s) || EnumUtils.isValidEnum(RDFResourceRole.class, s))) {
