@@ -1,19 +1,17 @@
 package it.uniroma2.art.semanticturkey.validation;
 
-import java.util.Optional;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.BooleanLiteral;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 
 /**
  * Utility class about validation.
@@ -28,18 +26,17 @@ public class ValidationUtilities {
 	 * Disables validation (if enabled) on the given connection to the core repository of the provided
 	 * project.
 	 * 
+	 * @param validationEnabled
 	 * @param conn
 	 * @param consumer
 	 * @throws Y
 	 */
-	public static <Y extends Exception> void executeWithoutValidation(RepositoryConnection conn,
-			ThrowingConsumer<RepositoryConnection, Y> consumer) throws Y {
+	public static <Y extends Exception> void executeWithoutValidation(boolean validationEnabled,
+			RepositoryConnection conn, ThrowingConsumer<RepositoryConnection, Y> consumer) throws Y {
 
 		logger.debug("Disable validation on connection: " + conn.toString());
 
-		boolean validationEnabled = isValidationEnabled(conn);
-
-		logger.debug("Is validation enabled: " + validationEnabled);
+		logger.debug("Is validation enabled6: " + validationEnabled);
 
 		if (validationEnabled) {
 			conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.FALSE,
@@ -67,11 +64,22 @@ public class ValidationUtilities {
 	 * @return
 	 */
 	public static boolean isValidationEnabled(RepositoryConnection conn) {
-		Optional<Value> enablmentHodler = Models
-				.object(QueryResults.asModel(conn.getStatements(CHANGETRACKER.VALIDATION,
-						CHANGETRACKER.ENABLED, null, CHANGETRACKER.VALIDATION)));
-		if (enablmentHodler.isPresent()) {
-			return enablmentHodler.get().equals(BooleanLiteral.TRUE);
+		return conn.hasStatement(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.TRUE, false,
+				CHANGETRACKER.VALIDATION);
+	}
+
+	/**
+	 * Determines whether validation is enabled on the provided service context. It assumes that validation is
+	 * never enabled on a repository other than the core one.
+	 * 
+	 * @param stServiceContext
+	 * @return
+	 */
+	public static boolean isValidationEnabled(STServiceContext stServiceContext) {
+		String repositoryId = STServiceContextUtils.getRepostoryId(stServiceContext);
+
+		if (repositoryId.equals(Project.CORE_REPOSITORY)) {
+			return stServiceContext.getProject().isValidationEnabled();
 		} else {
 			return false;
 		}
@@ -110,4 +118,5 @@ public class ValidationUtilities {
 	public static interface ThrowingConsumer<X, Y extends Exception> {
 		void accept(X input) throws Y;
 	}
+
 }

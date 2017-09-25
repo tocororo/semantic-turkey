@@ -27,9 +27,8 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.ProjectUtils;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
-import it.uniroma2.art.semanticturkey.project.VersionInfo;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.project.VersionInfo;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -127,7 +126,7 @@ public class Versions extends STServiceAdapter {
 					.instantiateSearchStrategy(STRepositoryInfoUtils
 							.getSearchStrategy(getProject().getRepositoryManager().getSTRepositoryInfo(
 									STServiceContextUtils.getRepostoryId(stServiceContext))))
-					.initialize(getProject(), outConn);
+					.initialize(outConn);
 
 			outConn.commit();
 		}

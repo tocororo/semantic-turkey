@@ -25,16 +25,17 @@ public interface SearchStrategy {
 	 * Performs initialization steps, such as the creation of indexes. It may be a no-op method, if no
 	 * specific initialization is required.
 	 */
-	void initialize(Project project, RepositoryConnection connection) throws Exception;
+	void initialize(RepositoryConnection connection) throws Exception;
 
 	/**
 	 * Updates support resources (usually created inside {@link SearchStrategy#initialize(Project)}).
 	 */
-	void update(Project project, RepositoryConnection connection) throws Exception;
+	void update(RepositoryConnection connection) throws Exception;
 
 	Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Nullable List<IRI> schemes) throws IllegalStateException, STPropertyAccessException;
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI,
+			SearchMode searchMode, @Nullable List<IRI> schemes)
+			throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,

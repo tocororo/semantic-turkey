@@ -444,7 +444,7 @@ public abstract class Project extends AbstractProject {
 
 			MutableBoolean anyWritten = new MutableBoolean(false);
 
-			ValidationUtilities.executeWithoutValidation(conn, (connection) -> {
+			ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 				logger.debug("Loading core vocabularies");
 
 				if (!contexts.contains(rdfBaseURI)) {
@@ -498,7 +498,9 @@ public abstract class Project extends AbstractProject {
 				SearchStrategy searchStrategy = SearchStrategyUtils
 						.instantiateSearchStrategy(STRepositoryInfoUtils
 								.getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
-				searchStrategy.initialize(this, conn);
+				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
+					searchStrategy.initialize(conn);
+				});
 				conn.commit();
 			}
 
@@ -829,6 +831,8 @@ public abstract class Project extends AbstractProject {
 
 	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";
 	private static final String AUXILIARY_METADATA_GRAPH_SUFFIX = "/meta";
+	public static final String CORE_REPOSITORY = "core";
+	public static final String SUPPORT_REPOSITORY = "support";
 
 	public Resource getMetadataGraph(String extensionPathComponent) {
 		return SimpleValueFactory.getInstance().createIRI(AUXILIARY_METADATA_GRAPH_NAME_BASE

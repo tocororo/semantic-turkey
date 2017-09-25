@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
-import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
@@ -32,12 +31,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 
 	@Override
-	public void initialize(Project project, RepositoryConnection connection) throws Exception {
+	public void initialize(RepositoryConnection connection) throws Exception {
 		// Nothing to do
 	}
 
 	@Override
-	public void update(Project project, RepositoryConnection connection) throws Exception {
+	public void update(RepositoryConnection connection) throws Exception {
 		// Nothing to do
 	}
 
