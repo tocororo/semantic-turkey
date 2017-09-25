@@ -38,6 +38,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -61,9 +62,10 @@ public class Search extends STServiceAdapter {
 	// TODO decide the @PreAuthorize
 	// #@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'w')")
 	public void createIndexes() throws Exception {
-
-		instantiateSearchStrategy().initialize(getProject(), getManagedConnection());
-
+		ValidationUtilities.executeWithoutValidation(
+				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {
+					instantiateSearchStrategy().initialize(conn);
+				});
 	}
 
 	@STServiceOperation
@@ -71,9 +73,10 @@ public class Search extends STServiceAdapter {
 	// TODO decide the @PreAuthorize
 	// #@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'w')")
 	public void updateIndexes() throws Exception {
-
-		instantiateSearchStrategy().update(getProject(), getManagedConnection());
-
+		ValidationUtilities.executeWithoutValidation(
+				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {
+					instantiateSearchStrategy().update(getManagedConnection());
+				});
 	}
 
 	@STServiceOperation

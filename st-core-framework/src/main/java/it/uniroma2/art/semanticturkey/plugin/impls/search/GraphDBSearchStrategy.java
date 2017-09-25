@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 public class GraphDBSearchStrategy extends AbstractSearchStrategy implements SearchStrategy {
@@ -35,12 +36,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	final static private String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
 
 	@Override
-	public void initialize(Project project, RepositoryConnection connection) throws Exception {
+	public void initialize(RepositoryConnection connection) throws Exception {
 		System.out.println("inizio createIndexes"); // da cancellare
 
-		ValidationUtilities.executeWithoutValidation(connection, (RepositoryConnection conn) -> {
-
-			//@formatter:off
+		//@formatter:off
 			//the index LUCENEINDEXLABEL indexes labels
 			String query = "PREFIX luc: <http://www.ontotext.com/owlim/lucene#>"+
 					"\nINSERT DATA {"+
@@ -53,26 +52,26 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\n}";
 			
 			//@formatter:on
-			logger.debug("query = " + query);
-			System.out.println("\n\nINDEXES FOR LABELS = \n\n" + query); // da cancellare
-			// execute this query
-			Update update = connection.prepareUpdate(query);
-			update.execute();
-			
-			//@formatter:off
+		logger.debug("query = " + query);
+		System.out.println("\n\nINDEXES FOR LABELS = \n\n" + query); // da cancellare
+		// execute this query
+		Update update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
 			query="PREFIX luc: <"+LUCENEIMPORT+"> "+
 				"\nINSERT DATA { " +
 				"\n<"+LUCENEINDEXLITERAL+"> luc:createIndex \"true\" . " + 
 				"\n}";
 			//@formatter:on
-	
-			logger.debug("query = " + query);
-			System.out.println(query); // da cancellare
-			// execute this query
-			update = connection.prepareUpdate(query);
-			update.execute();
-	
-			//@formatter:off
+
+		logger.debug("query = " + query);
+		System.out.println(query); // da cancellare
+		// execute this query
+		update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
 			//the index LUCENEINDEX indexes both labels and localNames
 			query = "PREFIX luc: <http://www.ontotext.com/owlim/lucene#>"+
 					"\nINSERT DATA {"+
@@ -85,63 +84,62 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\n}";
 			
 			//@formatter:on
-			logger.debug("query = " + query);
-			System.out.println("\n\nINDEXES FOR LOCAL NAME = \n\n" + query); // da cancellare
-			// execute this query
-			update = connection.prepareUpdate(query);
-			update.execute();
-	
-			//@formatter:off
+		logger.debug("query = " + query);
+		System.out.println("\n\nINDEXES FOR LOCAL NAME = \n\n" + query); // da cancellare
+		// execute this query
+		update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
 			query="PREFIX luc: <"+LUCENEIMPORT+"> "+
 				"\nINSERT DATA { " +
 				"\n<"+LUCENEINDEXLOCALNAME+"> luc:createIndex \"true\" . " + 
 				"\n}";
 			//@formatter:on
-	
-			logger.debug("query = " + query);
-			System.out.println("second INSERT = " + query); // da cancellare
-			// execute this query
-			update = connection.prepareUpdate(query);
-			update.execute();
-		});
+
+		logger.debug("query = " + query);
+		System.out.println("second INSERT = " + query); // da cancellare
+		// execute this query
+		update = connection.prepareUpdate(query);
+		update.execute();
 	}
 
 	@Override
-	public void update(Project project, RepositoryConnection connection) throws Exception {
+	public void update(RepositoryConnection connection) throws Exception {
 		// it does not work with resources already present in the indexes (it does not consider the new label)
 		// this is not a problem, since now the indexes (both of them) use molecules of size 0
 
-		ValidationUtilities.executeWithoutValidation(connection, (RepositoryConnection conn) -> {
-			//@formatter:off
+		//@formatter:off
 			String query = 	"PREFIX luc: <"+LUCENEIMPORT+">" + 
 							"\nINSERT DATA { " +
 							"\n<"+LUCENEINDEXLITERAL+"> luc:updateIndex _:b1 . " +
 							"\n}";
 			//@formatter:on
-			logger.debug("query = " + query);
-			Update update;
-			update = connection.prepareUpdate(query);
-			update.execute();
-	
-			//@formatter:off
+		logger.debug("query = " + query);
+		Update update;
+		update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
 			query = "PREFIX luc: <"+LUCENEIMPORT+">" + 
 					"\nINSERT DATA { " +
 					"\n<"+LUCENEINDEXLOCALNAME+"> luc:updateIndex _:b1 . " +
 					"\n}";
 			//@formatter:on
-			logger.debug("query = " + query);
-			update = connection.prepareUpdate(query);
-			update.execute();
-		});
+		logger.debug("query = " + query);
+		update = connection.prepareUpdate(query);
+		update.execute();
 	}
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useURI, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
+			String searchString, String[] rolesArray, boolean useURI, boolean useLocalName,
+			SearchMode searchMode, @Optional List<IRI> schemes)
+			throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
+				stServiceContext.getProject());
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?type ?show ?scheme"+ 
@@ -216,7 +214,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
 			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
+				stServiceContext.getProject());
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -288,7 +287,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode,
+				stServiceContext.getProject());
 
 		//@formatter:off
 				String query = "SELECT DISTINCT ?resource ?type ?show"+ 

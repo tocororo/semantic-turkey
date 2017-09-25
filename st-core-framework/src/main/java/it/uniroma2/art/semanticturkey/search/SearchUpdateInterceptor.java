@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 /**
  * An AOP Alliance {@link MethodInterceptor} implementation that manages search-relevant resources after the
@@ -69,10 +70,15 @@ public class SearchUpdateInterceptor implements MethodInterceptor {
 					try {
 						connection.begin();
 						try {
-							SearchStrategyUtils.instantiateSearchStrategy(searchStrategy)
-									.update(stServiceContext.getProject(), connection);
+							ValidationUtilities.executeWithoutValidation(
+									ValidationUtilities.isValidationEnabled(stServiceContext), connection,
+									conn -> {
+										SearchStrategyUtils.instantiateSearchStrategy(searchStrategy)
+												.update(connection);
+									});
 							connection.commit();
 						} catch (Exception e) {
+							logger.debug("Exception while updating search indexes", e);
 							connection.rollback();
 						}
 					} catch (Exception e) {

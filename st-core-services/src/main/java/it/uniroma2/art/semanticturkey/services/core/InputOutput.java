@@ -93,16 +93,16 @@ public class InputOutput extends STServiceAdapter {
 			}
 
 			Collection<OntologyImport> rv = new ArrayList<>();
-
-			ValidationUtilities.executeWithoutValidation(conn, (RepositoryConnection c) -> {
-				try {
-					Collection<OntologyImport> tempRv = loadRDFInternal(inputFile, baseURI, rdfFormat,
-							transitiveImportAllowance, conn);
-					rv.addAll(tempRv);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			});
+			ValidationUtilities.executeWithoutValidation(
+					ValidationUtilities.isValidationEnabled(stServiceContext), conn, (conn2) -> {
+						try {
+							Collection<OntologyImport> tempRv = loadRDFInternal(inputFile, baseURI, rdfFormat,
+									transitiveImportAllowance, conn2);
+							rv.addAll(tempRv);
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					});
 
 			return rv;
 		} else {
