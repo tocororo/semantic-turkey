@@ -144,7 +144,7 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			defaultWriteIsolationLevel = IsolationLevels.SERIALIZABLE;
 		}
 
-		customizeSearch = false; // ignores search customization until we decide it is safe
+		//customizeSearch = false; // ignores search customization until we decide it is safe
 		
 		SearchStrategies searchStrategy = customizeSearch && isGraphDBBackEnd(backendType)
 				? SearchStrategies.GRAPH_DB : SearchStrategies.REGEX;
