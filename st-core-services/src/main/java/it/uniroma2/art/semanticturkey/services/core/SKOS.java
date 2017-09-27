@@ -229,7 +229,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
 					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {?aNarrowerConcept skos:broader ?resource . } as ?attr_more ) \n" +
+					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 
