@@ -277,6 +277,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		String query="";
 		
+		
+		//prepare an inner query, which seesm to be working faster (since it executed by GraphDB before the
+		// rest of the query and it uses the Lucene indexes)
+		query+="\n{SELECT ?resource ?type "+
+				"\nWHERE{";
+		
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
@@ -323,6 +329,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLocalName || useURI){
 			query+="\n}";
 		}
+		
+		//close the nested query
+		query+="\n}"+
+			 "\n}";
 		
 		return query;
 		
