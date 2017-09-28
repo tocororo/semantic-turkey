@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -226,49 +227,77 @@ public class History extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-	public CommitDelta getCommitDelta(IRI commit) {
+	public CommitDelta getCommitDelta(IRI commit, @Optional(defaultValue="100") int limit) {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
-			TupleQuery query = conn.prepareTupleQuery(
-				// @formatter:off
-				" prefix cl: <http://semanticturkey.uniroma2.it/ns/changelog#>              \n" +
-				" prefix prov: <http://www.w3.org/ns/prov#>                                 \n" +
-                "                                                                           \n" +
-				" select ?delta ?s ?p ?o ?c {                                               \n" +
-				"     ?commit prov:generated ?m .                                           \n" +
-				"     ?m ?deltaProp ?q .                                                    \n" +
-				"     ?q cl:subject ?s .                                                    \n" +
-				"     ?q cl:predicate ?p .                                                  \n" +
-				"     ?q cl:object ?o .                                                     \n" +
-				"     ?q cl:context ?c2 .                                                   \n" +
-				"     BIND(IF(sameTerm(?c2, sesame:nil), ?c3, ?c2) as ?c)                   \n" +
-				" }                                                                         \n" +
-				" ORDER BY ?s ?p ?o ?c                                                      \n"
-				// @formatter:on
-			);
-
-			query.setIncludeInferred(false);
-
+			
+			Function<IRI, TupleQuery> prepareQuery = deltaProp -> {
+				TupleQuery query = conn.prepareTupleQuery(
+						// @formatter:off
+						" prefix cl: <http://semanticturkey.uniroma2.it/ns/changelog#>              \n" +
+						" prefix prov: <http://www.w3.org/ns/prov#>                                 \n" +
+		                "                                                                           \n" +
+						" select ?s ?p ?o ?c {                                                      \n" +
+		                "     select * {                                                            \n" +
+						"     	" + RenderUtils.toSPARQL(commit) + " prov:generated ?m .            \n" +
+						"     	?m " + RenderUtils.toSPARQL(deltaProp) + " ?q .                     \n" +
+						"     	?q cl:subject ?s .                                                  \n" +
+						"    	?q cl:predicate ?p .                                                \n" +
+						"     	?q cl:object ?o .                                                   \n" +
+						"     	?q cl:context ?c2 .                                                 \n" +
+						"    	BIND(IF(sameTerm(?c2, sesame:nil), ?c3, ?c2) as ?c)                 \n" +
+						"     }                                                                     \n" +
+						(limit != 0 ? "     LIMIT " + (limit + 1) +"\n": "") +
+						" }                                                                         \n" +
+						" ORDER BY ?s ?p ?o ?c                                                      \n"
+						// @formatter:on
+					);
+				query.setIncludeInferred(false);
+				return query;
+			};
+			
 			ValueFactory vf = SimpleValueFactory.getInstance();
 
-			query.setBinding("commit", commit);
-
-			query.setBinding("deltaProp", CHANGELOG.ADDED_STATEMENT);
-			List<Statement> addedStatements = QueryResults.stream(query.evaluate()).map(bindingSet -> {
+			TupleQuery additionsQuery = prepareQuery.apply(CHANGELOG.ADDED_STATEMENT);
+			List<Statement> addedStatements = QueryResults.stream(additionsQuery.evaluate()).map(bindingSet -> {
+				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),
+						bindingSet.getValue("o"), (Resource) bindingSet.getValue("c"));
+			}).collect(Collectors.toList());
+			
+			TupleQuery removalsQuery = prepareQuery.apply(CHANGELOG.REMOVED_STATEMENT);
+			List<Statement> removedStatements = QueryResults.stream(removalsQuery.evaluate()).map(bindingSet -> {
 				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),
 						bindingSet.getValue("o"), (Resource) bindingSet.getValue("c"));
 			}).collect(Collectors.toList());
 
-			query.setBinding("deltaProp", CHANGELOG.REMOVED_STATEMENT);
-			List<Statement> removedStatements = QueryResults.stream(query.evaluate()).map(bindingSet -> {
-				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),
-						bindingSet.getValue("o"), (Resource) bindingSet.getValue("c"));
-			}).collect(Collectors.toList());
-
+			int additionsTruncated;
+			int removalsTruncated;
+			
+			if (limit > 0) {
+				if (addedStatements.size() > limit) {
+					additionsTruncated = limit;
+					addedStatements = addedStatements.subList(0, limit);
+				} else {
+					additionsTruncated = 0;
+				}
+				
+				if (removedStatements.size() > limit) {
+					removalsTruncated = limit;
+					removedStatements = removedStatements.subList(0, limit);
+				} else {
+					removalsTruncated = 0;
+				}
+			} else {
+				additionsTruncated = 0;
+				removalsTruncated = 0;
+			}
+			
 			CommitDelta commitDelta = new CommitDelta();
 			commitDelta.setAdditions(new TreeModel(addedStatements));
 			commitDelta.setRemovals(new TreeModel(removedStatements));
+			commitDelta.setAdditionsTruncated(additionsTruncated);
+			commitDelta.setRemovalsTruncated(removalsTruncated);
 			return commitDelta;
 		}
 	}

@@ -26,6 +26,8 @@ import it.uniroma2.art.semanticturkey.services.core.history.CommitDelta.CommitDe
 public class CommitDelta {
 	private Model additions;
 	private Model removals;
+	private int additionsTruncated;
+	private int removalsTruncated;
 
 	public Model getAdditions() {
 		return additions;
@@ -41,6 +43,22 @@ public class CommitDelta {
 
 	public void setRemovals(Model removals) {
 		this.removals = removals;
+	}
+
+	public int getAdditionsTruncated() {
+		return additionsTruncated;
+	}
+
+	public void setAdditionsTruncated(int additionsTruncated) {
+		this.additionsTruncated = additionsTruncated;
+	}
+
+	public int getRemovalsTruncated() {
+		return removalsTruncated;
+	}
+
+	public void setRemovalsTruncated(int removalsTruncated) {
+		this.removalsTruncated = removalsTruncated;
 	}
 
 	public static class CommitDeltaSerializer extends StdSerializer<CommitDelta> {
@@ -59,6 +77,14 @@ public class CommitDelta {
 		public void serialize(CommitDelta value, JsonGenerator gen, SerializerProvider provider)
 				throws IOException {
 			gen.writeStartObject();
+
+			if (value.additionsTruncated != 0) {
+				gen.writeNumberField("additionsTruncated", value.additionsTruncated);
+			}
+
+			if (value.removalsTruncated != 0) {
+				gen.writeNumberField("removalsTruncated", value.removalsTruncated);
+			}
 
 			gen.writeArrayFieldStart("additions");
 			for (Statement st : value.additions) {
