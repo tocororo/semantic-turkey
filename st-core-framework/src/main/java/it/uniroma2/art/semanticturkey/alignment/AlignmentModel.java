@@ -336,13 +336,13 @@ public class AlignmentModel {
 	 */
 	public List<Cell> listCellsByStatus(Status status) {
 		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
-				+ "BIND('" + status + "' AS ?status)"
 				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . "
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . "
+				+ "FILTER (STR(?status) = '" + status + "')"
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
 				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
 				+ "ORDERBY ?entity1 ?entity2";
