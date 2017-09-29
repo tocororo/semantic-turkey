@@ -132,10 +132,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useURI, boolean useLocalName, SearchMode searchMode,
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
 
-		logger.debug("searchResource in GraphDBSearchStrategy");
+		logger.debug("searchResource in GraphDBSearchStrategy, useURI="+useURI+", useLocalName="+useLocalName);
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
@@ -274,7 +274,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	private String prepareQueryforResource(String searchString, SearchMode searchMode, boolean useLocalName, 
 			boolean useURI ) {
-		
 		String query="";
 		
 		
