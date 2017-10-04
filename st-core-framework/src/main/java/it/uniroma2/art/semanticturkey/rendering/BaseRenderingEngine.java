@@ -220,8 +220,6 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 					}
 				}
 
-				System.out.println("### ACCEPTED LANGUAGES = " + acceptedLanguges);
-				
 				Iterator<String> keyIt;
 				if (acceptedLanguges.isEmpty()) {
 					keyIt = lang2label.keySet().iterator();
