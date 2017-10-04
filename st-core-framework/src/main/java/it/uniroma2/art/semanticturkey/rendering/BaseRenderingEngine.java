@@ -1,16 +1,15 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -95,12 +97,14 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			.compile("\\$\\{" + Pattern.quote(STPropertiesManager.PREF_LANGUAGES) + "\\}");
 
 	/**
-	 * Computes the set of languages by interpolating the configured langues with ST Properties.
+	 * Computes the list of languages by interpolating the configured languages with ST Properties. The order
+	 * of languages is significative, since it may determine the order of labels displayed by concrete
+	 * rendering engines.
 	 * 
 	 * @param currentProject
 	 * @return
 	 */
-	private Set<String> computeLanguages(Project currentProject) {
+	private List<String> computeLanguages(Project currentProject) {
 		StringBuffer sb = new StringBuffer();
 		Matcher m = propPattern.matcher(languages);
 		String languagesPropValue = null;
@@ -123,9 +127,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 		String interpolatedLanguages = sb.toString();
 		if (interpolatedLanguages.isEmpty() || interpolatedLanguages.equals("*")) {
-			return Collections.emptySet();
+			return Collections.emptyList();
 		} else {
-			return Arrays.stream(interpolatedLanguages.split(",")).map(String::trim).collect(toSet());
+			return Arrays.stream(interpolatedLanguages.split(",")).map(String::trim).collect(toList());
 		}
 	}
 
@@ -134,7 +138,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		StringBuilder gp = new StringBuilder();
 		getGraphPatternInternal(gp);
 
-		Set<String> acceptedLanguges = computeLanguages(currentProject);
+		List<String> acceptedLanguges = computeLanguages(currentProject);
 
 		if (!acceptedLanguges.isEmpty()) {
 			gp.append(String.format(" FILTER(LANG(?labelInternal) IN (%s))", acceptedLanguges.stream()
@@ -178,6 +182,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		Map<Value, Literal> renderings = new HashMap<>();
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
+		// note: there amy be a race condition between this invocation and the generation of the graph pattern
+		List<String> acceptedLanguges = computeLanguages(currentProject);
+
 		resultTable.forEach(bindingSet -> {
 			Resource resource = (Resource) bindingSet.getValue("resource");
 			Literal rawLabelLiteral = ((Literal) bindingSet.getValue("label"));
@@ -195,34 +202,52 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			} else {
 				Matcher matcher = rawLabelDestructuringPattern.matcher(rawLabelLiteral.getLabel());
 
-				List<String[]> labels = new ArrayList<>();
+				// If no language has been specified (or *), then all labels are displayed in alphabetic order
+				// of language tag; otherwise, the order is based on the configured list of languages
+				Multimap<String, String> lang2label = acceptedLanguges.isEmpty() ? TreeMultimap.create()
+						: HashMultimap.create();
 
 				while (matcher.find()) {
 					String lexicalForm = matcher.group(1);
-					lexicalForm = lexicalForm.replace("\\,", ",").replace("\\@", "@").replace("\\\\", "\\");
+					lexicalForm = lexicalForm.replace("\\,", ",").replace("\\@", "@").replace("\\\\", "\\")
+							.trim();
 					String lang = matcher.group(2);
 					if (lang != null) {
-						lang = lang.replace("\\,", ",").replace("\\@", "@").replace("\\\\", "\\");
-						labels.add(new String[] { lexicalForm, lang });
+						lang = lang.replace("\\,", ",").replace("\\@", "@").replace("\\\\", "\\").trim();
+						lang2label.put(lang, lexicalForm);
 					} else {
-						labels.add(new String[] { lexicalForm });
+						lang2label.put("", lexicalForm);
 					}
 				}
 
-				labels.sort((spl1, spl2) -> {
-					if (spl1.length == 1 && spl2.length == 1) {
-						return 0;
-					} else if (spl1.length == 1) {
-						return -1;
-					} else if (spl2.length == 1) {
-						return +1;
-					} else {
-						return spl1[1].compareTo(spl2[1]);
-					}
-				});
+				System.out.println("### ACCEPTED LANGUAGES = " + acceptedLanguges);
+				
+				Iterator<String> keyIt;
+				if (acceptedLanguges.isEmpty()) {
+					keyIt = lang2label.keySet().iterator();
+				} else {
+					keyIt = acceptedLanguges.iterator();
+				}
 
-				show = labels.stream().map(spl -> spl.length == 1 ? spl[0] : spl[0] + " (" + spl[1] + ")")
-						.collect(joining(", "));
+				StringBuilder sb = new StringBuilder();
+
+				while (keyIt.hasNext()) {
+					String lang = keyIt.next();
+
+					if (sb.length() != 0) {
+						sb.append(", ");
+					}
+
+					if (lang.isEmpty()) {
+						sb.append(lang2label.get(lang).stream().collect(joining(", ")));
+					} else {
+						sb.append(lang2label.get(lang).stream().map(l -> l + " (" + lang + ")")
+								.collect(joining(", ")));
+					}
+
+				}
+				
+				show = sb.toString();
 			}
 
 			renderings.put(resource, vf.createLiteral(show));
