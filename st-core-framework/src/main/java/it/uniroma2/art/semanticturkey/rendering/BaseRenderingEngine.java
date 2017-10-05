@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -232,14 +233,18 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				while (keyIt.hasNext()) {
 					String lang = keyIt.next();
 
+					Collection<String> labels = lang2label.get(lang);
+					
+					if (labels.isEmpty()) continue;
+					
 					if (sb.length() != 0) {
 						sb.append(", ");
 					}
 
 					if (lang.isEmpty()) {
-						sb.append(lang2label.get(lang).stream().collect(joining(", ")));
+						sb.append(labels.stream().collect(joining(", ")));
 					} else {
-						sb.append(lang2label.get(lang).stream().map(l -> l + " (" + lang + ")")
+						sb.append(labels.stream().map(l -> l + " (" + lang + ")")
 								.collect(joining(", ")));
 					}
 
