@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.properties;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -17,6 +18,7 @@ import java.lang.annotation.RetentionPolicy;
  *         see also {@link ContentTypeVocabulary}
  */
 @Retention(RetentionPolicy.RUNTIME)
+@Documented
 public @interface ContentType {
 	String value();
 }

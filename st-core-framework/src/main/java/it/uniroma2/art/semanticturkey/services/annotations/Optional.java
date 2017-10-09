@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
  * .com/javase/tutorial/java/nutsandbolts/datatypes.html</a>}</li>
  * </ul>
  */
+@Documented
 @Qualifier
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.PARAMETER)
