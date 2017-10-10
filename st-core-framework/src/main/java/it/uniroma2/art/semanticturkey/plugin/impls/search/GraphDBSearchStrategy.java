@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
@@ -37,8 +38,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public void initialize(RepositoryConnection connection) throws Exception {
-
-
 		
 			//@formatter:off
 			//the index LUCENEINDEXLABEL indexes labels
@@ -141,10 +140,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type ?show ?scheme"+ 
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 			"\nWHERE{";
 		
-		//prepare the part relative to the ?resource, specifing the searchString, the searchMode, 
+		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI);
 		
@@ -154,15 +153,25 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
 				serviceForSearches.isCollectionWanted(), schemes);
 
+		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
-		query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-				"\n}";
-		//@formatter:on
+		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
+		//		"\n}";
 
+		query+="\n}"+
+				"\nGROUP BY ?resource ";
+		//@formatter:on
+		
 		logger.debug("query = " + query);
 
-		return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
-				getThreadBoundTransaction(stServiceContext));
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+		
+		//return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
+		//		getThreadBoundTransaction(stServiceContext));
 	}
 
 	@Override
@@ -245,7 +254,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
+		String query = "SELECT DISTINCT ?resource "+ 
 			"\nWHERE{"; // +
 
 		//do a subquery to get the candidate resources
@@ -260,14 +269,24 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		// the useLocalName and useURI
 		query += prepareQueryforResource(searchString, searchMode, useLocalName, useURI);
 				
-		
+		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
-		query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-				"\n}";
+		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
+		//		"\n}";
 		
-		logger.debug("query = "+query);
+		query+="\n}"+
+				"\nGROUP BY ?resource ";
+		//@formatter:on
 		
-		return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(), getThreadBoundTransaction(stServiceContext));
+		logger.debug("query = " + query);
+
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+		
+		//return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(), getThreadBoundTransaction(stServiceContext));
 	}
 	
 	

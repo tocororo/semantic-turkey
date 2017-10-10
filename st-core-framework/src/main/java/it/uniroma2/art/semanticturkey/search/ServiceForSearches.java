@@ -164,7 +164,7 @@ public class ServiceForSearches {
 		return filterQuery;
 	}
 	
-	public static String addShowPart(String variable, String[] langArray, Project project){
+	/*public static String addShowPart(String variable, String[] langArray, Project project){
 		//according to the Lexicalization Model, prepare the show considering one of the following properties:
 		// - rdfs:label (Project.RDFS_LEXICALIZATION_MODEL)
 		// - skos:prefLabel (Project.SKOS_LEXICALIZATION_MODEL)
@@ -184,7 +184,7 @@ public class ServiceForSearches {
 				"\n}";
 		
 		return query;
-	}
+	}*/
 	
 
 	private static String filterAccordingToLanguage(String variable, String[] languages){
@@ -294,7 +294,7 @@ public class ServiceForSearches {
 //		return searchModeSelected;
 	}
 	
-	public Collection<AnnotatedValue<Resource>> executeGenericSearchQuery(String query, Resource[] namedGraphs,
+	/*public Collection<AnnotatedValue<Resource>> executeGenericSearchQuery(String query, Resource[] namedGraphs,
 			RepositoryConnection repositoryConnection){
 		
 		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
@@ -436,7 +436,7 @@ public class ServiceForSearches {
 			results.add(annotatedValue);
 		}
 		return results;
-	}
+	}*/
 	
 	public Collection<String> executeGenericSearchQueryForStringList(String query, Resource[] namedGraphs,
 			RepositoryConnection repositoryConnection){

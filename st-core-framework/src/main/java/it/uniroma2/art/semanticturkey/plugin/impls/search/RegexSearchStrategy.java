@@ -20,6 +20,7 @@ import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
 public class RegexSearchStrategy extends AbstractSearchStrategy implements SearchStrategy {
 
@@ -51,7 +52,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		// create the query to be executed for the search
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type ?show ?scheme"+ 
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 			"\nWHERE{"; // +
 		//get the candidate resources
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
@@ -100,16 +101,27 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
 				searchModePrepareQuery("?literalForm", searchString, searchMode) +
-				"\n}"+
-		//add the show part according to the Lexicalization Model
-				ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
 				"\n}";
+				
+		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!		
+		//add the show part according to the Lexicalization Model
+		//		ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
+		//		"\n}";
+
+		query+="\n}"+
+				"\nGROUP BY ?resource ";
 		//@formatter:on
+		
 
 		logger.debug("query = " + query);
-
-		return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
-				getThreadBoundTransaction(stServiceContext));
+		
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+		//return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
+		//		getThreadBoundTransaction(stServiceContext));
 	}
 
 	@Override
@@ -182,7 +194,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?type ?show"+ 
+		String query = "SELECT DISTINCT ?resource "+ 
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
@@ -221,16 +233,26 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				searchModePrepareQuery("?rdfsLabel", searchString, searchMode) +
 				"\n}";
 		
+		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part in SPARQL query
-		query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject());
-		
-		query+="\n}";
+		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject());
+		//query+="\n}";
+
+		query+="\n}"+
+				"\nGROUP BY ?resource ";
 		//@formatter:on
+		
 
 		logger.debug("query = " + query);
+		
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
 
-		return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(),
-				getThreadBoundTransaction(stServiceContext));
+		//return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(),
+		//		getThreadBoundTransaction(stServiceContext));
 	}
 
 	private String searchModePrepareQuery(String variable, String value, SearchMode searchMode) {
