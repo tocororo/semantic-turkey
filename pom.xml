@@ -13,12 +13,13 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<developer>
 			<id>starred</id>
 			<name>Armando Stellato</name>
-			<email>stellato@info.uniroma2.it</email>
+			<email>stellato@uniroma2.it</email>
 			<url>http://art.uniroma2.it/stellato</url>
 			<organization>ART Group, University of Rome, Tor Vergata</organization>
 			<organizationUrl>http://art.uniroma2.it</organizationUrl>
 			<roles>
 				<role>General Concept and Design</role>
+				<role>Project Management</role>
 				<role>st-core-framework Development</role>
 				<role>st-core-services Development</role>
 				<role>contributions on business logic in st-firefox-ext module</role>
@@ -152,13 +153,12 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 				<version>2.10.1</version>
 				<configuration>
 					<links>
-						<link>http://art.uniroma2.it/owlart/documentation/apidocs/</link>
-						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-codegen-annotations/apidocs/</link>
-						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-codegen-processor/apidocs/</link>
-						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-core-framework/apidocs/</link>
-						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-core-services/apidocs/</link>
-						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-sesame2-ontmanager/apidocs/</link>
-						<link>http://semanticturkey.uniroma2.it/documentation/dev/modules/st-core-framework/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-codegen-annotations/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-codegen-processor/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-core-framework/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-core-services/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-console/apidocs/</link>
+						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-changetracking-sail/apidocs/</link>
 					</links>
 				</configuration>
 			</plugin>
