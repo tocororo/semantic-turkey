@@ -365,6 +365,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'R')")
 	public void exportRole(HttpServletResponse oRes, String roleName) throws RBACException, IOException {
 		Project project = null;
 		if (stServiceContext.hasContextParameter("project")) {
@@ -402,6 +403,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws RoleCreationException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'C')")
 	public void importRole(MultipartFile inputFile, String newRoleName) 
 			throws IOException, CustomFormException, RBACException, RoleCreationException {
 		if (RBACManager.getRBACProcessor(getProject(), newRoleName) != null) {
@@ -427,6 +429,30 @@ public class Administration extends STServiceAdapter {
 		} finally {
 			tempServerFile.delete();
 		}
+	}
+	
+	/**
+	 * This service allows to create a role by cloning an existing one. Since a role can be created just at
+	 * project level, this service should be called only when a project is open.
+	 * @param sourceRoleName
+	 * @param targetRoleName
+	 * @throws RBACException
+	 * @throws RoleCreationException 
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'CR')")
+	public void cloneRole(String sourceRoleName, String targetRoleName) throws RoleCreationException, RBACException {
+		Project project = getProject();
+		if (stServiceContext.hasContextParameter("project")) {
+			project = getProject();
+		}
+		Role sourceRole = RBACManager.getRole(project, sourceRoleName);
+		if (sourceRole == null) {
+			throw new RoleCreationException("No role '" + sourceRoleName + "' found");
+		}
+		//doesn't check the existence of targetRoleName since it is already done by createRole()
+		RBACManager.createRole(getProject(), targetRoleName);
+		RBACManager.addCapabilities(getProject(), targetRoleName, RBACManager.getRoleCapabilities(project, sourceRoleName));
 	}
 	
 	/**
