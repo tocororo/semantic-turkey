@@ -375,6 +375,9 @@ public class Administration extends STServiceAdapter {
 					+ " A role with that name doesn't exist");
 		}
 		File roleFile = RBACManager.getRoleFile(project, roleName);
+		if (!roleFile.exists()) { //in case the role file was not found at project level)
+			roleFile = RBACManager.getRoleFile(null, roleName); //TODO seems not to work
+		}
 		File tempServerFile = File.createTempFile("roleExport", ".pl");
 		try {
 			FileUtils.copyFile(roleFile, tempServerFile);

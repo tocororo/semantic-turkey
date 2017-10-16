@@ -5,7 +5,6 @@
 prefix	rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 prefix	dc:		<http://purl.org/dc/terms/>
 prefix	coda: 	<http://art.uniroma2.it/coda/contracts/>
-prefix	codaImpl: 	<http://art.uniroma2.it/coda/converters/>
 			
 rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
 	nodes = {
