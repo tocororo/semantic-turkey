@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -26,14 +27,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
+import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormParseUtils;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SessionFormData;
+import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
@@ -53,6 +62,7 @@ import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * Base class of Semantic Turkey services.
@@ -70,6 +80,9 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
+	
+	@Autowired
+	private CustomFormManager cfManager;
 
 	private final ValueFactory sesVf;
 	private final ServletUtilities servletUtilities;
@@ -240,6 +253,74 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		} finally {
 			shutDownCodaCore(codaCore);
 		}
+	}
+	
+	protected void addValue(RepositoryConnection repoConn, Resource subject, IRI predicate, SpecialValue value)
+			throws ProjectInconsistentException, CODAException {
+		if (value.isRdf4jValue()) {
+			repoConn.add(subject, predicate, value.getRdf4jValue(), getWorkingGraph());
+		} else { //value.isCustomFormValue()
+			CustomFormValue cfValue = value.getCustomFormValue();
+			CODACore codaCore = getInitializedCodaCore(repoConn);
+			try {
+				Model modelAdditions = new LinkedHashModel();
+				Model modelRemovals = new LinkedHashModel();
+				
+				CustomForm cForm = cfManager.getCustomForm(getProject(), cfValue.getCustomFormId());
+				if (cForm.isTypeGraph()){
+					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
+					SessionFormData sessionData = new SessionFormData();
+					sessionData.addSessionParameter(SessionFormData.Data.user, UsersManager.getLoggedUser().getIRI().stringValue());
+					UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore, cfValue.getUserPromptMap(), sessionData);
+					//link the generated graph with the resource
+					List<ARTTriple> insertTriples = updates.getInsertTriples();
+					if (!insertTriples.isEmpty()) {
+						Resource graphEntry = detectGraphEntry(insertTriples);
+						VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set created for versioning
+						modelAdditions.add(subject, predicate, graphEntry);
+						for (ARTTriple t : insertTriples){
+							modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
+						}
+					}
+					for (ARTTriple t : updates.getDeleteTriples()){
+						modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject());
+					}
+				} else if (cForm.isTypeNode()){
+					String nodeValue = cfValue.getUserPromptMap().entrySet().iterator().next().getValue().toString();//get the only value
+					ProjectionOperator projOperator = CustomFormParseUtils.getProjectionOperator(codaCore, cForm.getRef());
+					Value generatedValue = codaCore.executeProjectionOperator(projOperator, nodeValue);
+					//link the generated value with the resource
+					modelAdditions.add(subject, predicate, generatedValue);
+				}
+				repoConn.add(modelAdditions, getWorkingGraph());
+				repoConn.remove(modelRemovals, getWorkingGraph());
+			} catch (PRParserException | ComponentProvisioningException | ConverterException |
+					ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
+				throw new CODAException(e);
+			} finally {
+				shutDownCodaCore(codaCore);
+			}
+		}
+	}
+	
+	/**
+	 * This method detects the entry of a graph (list of triples) based on an heuristic: entry is that subject that never appears as object
+	 * @param triples
+	 * @return
+	 */
+	private Resource detectGraphEntry(List<ARTTriple> triples) {
+		for (ARTTriple t1 : triples){
+			Resource subj = t1.getSubject();
+			boolean neverObj = true;
+			for (ARTTriple t2 : triples){
+				if (subj.equals(t2.getObject()))
+					neverObj = false;
+			}
+			if (neverObj) {
+				return subj;
+			}
+		}
+		return null;
 	}
 
 	// Semi-deprecated

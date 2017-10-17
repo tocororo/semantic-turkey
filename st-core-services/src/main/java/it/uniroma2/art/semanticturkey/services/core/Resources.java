@@ -19,8 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
@@ -88,8 +91,8 @@ public class Resources extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'C')")
 	public void addValue(@LocallyDefined @Modified @Subject Resource subject, @LocallyDefined IRI property,
-			Value value) {
-		getManagedConnection().add(subject, property, value, getWorkingGraph());
+			SpecialValue value) throws ProjectInconsistentException, CODAException {
+		addValue(getManagedConnection(), subject, property, value);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
