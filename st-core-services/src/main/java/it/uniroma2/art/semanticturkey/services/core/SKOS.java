@@ -1085,7 +1085,6 @@ public class SKOS extends STServiceAdapter {
 				+ "		?s4 ?p4 ?o2	.													\n"	
 				+ "	}																	\n"
 				+ "} WHERE {															\n"
-				+ "	BIND(URI('" + scheme.stringValue() + "') AS ?scheme)				\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		{ ?s1 ?p1 ?scheme . }											\n"
 				+ "		UNION															\n"
@@ -1105,7 +1104,9 @@ public class SKOS extends STServiceAdapter {
 				+ "	}																	\n"
 				+ "}";
 		RepositoryConnection repoConnection = getManagedConnection();
-		repoConnection.prepareUpdate(query).execute();
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("scheme", scheme);
+		update.execute();
 	}
 	
 	/**
