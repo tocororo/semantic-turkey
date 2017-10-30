@@ -1,3 +1,11 @@
+version 2.0
+date: 30-10-2017
+  * Implemented support for ordered languages in the render.
+  * Implemented a more generic API in order to add both 'classic' and custom values.
+  * Added the possibility to clone user's roles.
+  * Improved the render of search results.
+  * Fixed minor bugs.
+
 version 1.0
 date: 13-09-2017
 After eleven years from its first beta release, the first official stable version of Semantic Turkey is
