@@ -272,13 +272,13 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//if at least one language is specified, then filter the results of the label having such language
 		if(langs!=null && langs.size()>0) {
 			boolean first=true;
-			query+="FILTER(";
+			query+="\nFILTER(";
 			for(String lang : langs) {
 				if(!first) {
 					query+=" || ";
 				}
 				first=false;
-				query+="lang(?label)="+"'"+lang+"'";
+				query+="lang("+variable+")="+"'"+lang+"'";
 			}
 			query+=")";
 		}
