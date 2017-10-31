@@ -34,14 +34,15 @@ public interface SearchStrategy {
 
 	Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI,
-			SearchMode searchMode, @Nullable List<IRI> schemes)
+			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs)
 			throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Nullable List<IRI> schemes) throws IllegalStateException, STPropertyAccessException;
+			@Nullable List<IRI> schemes, @Nullable List<String> langs) throws IllegalStateException, 
+			STPropertyAccessException;
 
 	Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext, IRI cls,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Nullable String lang) throws IllegalStateException, STPropertyAccessException;
+			@Nullable List<String> langs) throws IllegalStateException, STPropertyAccessException;
 }

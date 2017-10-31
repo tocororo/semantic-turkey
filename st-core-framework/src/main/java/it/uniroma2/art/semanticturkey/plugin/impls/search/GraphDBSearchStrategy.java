@@ -132,7 +132,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
 
 		logger.debug("searchResource in GraphDBSearchStrategy, useURI="+useURI+", useLocalName="+useLocalName);
 		
@@ -145,7 +145,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI);
+		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs);
 		
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
@@ -177,7 +177,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
@@ -189,7 +189,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME)+
+							LUCENEINDEXLOCALNAME, null)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -201,7 +201,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL);
+		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs);
 		
 		//if the user specify a role, then get the resource associated to the label, since it will be use 
 		// later to filter the results
@@ -246,7 +246,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
 			IRI cls, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional String lang) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -265,9 +265,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			"\n}" +
 			"\n}";
 
-		//prepare the part relative to the ?resource, specifing the searchString, the searchMode, 
+		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query += prepareQueryforResource(searchString, searchMode, useLocalName, useURI);
+		query += prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs);
 				
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -292,7 +292,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	private String prepareQueryforResource(String searchString, SearchMode searchMode, boolean useLocalName, 
-			boolean useURI ) {
+			boolean useURI, List<String> langs) {
 		String query="";
 		
 		
@@ -305,7 +305,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME)+
+							LUCENEINDEXLOCALNAME, null)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -326,8 +326,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL);
-				
+		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs);
+		
+		
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?label ." +
@@ -358,23 +359,37 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	private String searchModePrepareQueryWithIndexes(String variable, String value, SearchMode searchMode, 
-			String indexToUse){
+			String indexToUse, List<String> langs){
 		String query ="";
 		
 		if(searchMode == SearchMode.startsWith){
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
-				// the GraphDB indexes (Lucene) consider as the start of the string all the sterts of the 
+				// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 				//single word, so filter them afterward
 				"\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
 		} else if(searchMode == SearchMode.endsWith){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
-			// the GraphDB indexes (Lucene) consider as the start of the string all the sterts of the 
+			// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 			//single word, so filter them afterward
 			"\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
 		} else if(searchMode == SearchMode.contains){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' .";
 		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' .";
+		}
+		
+		//if at least one language is specified, then filter the results of the label having such language
+		if(langs!=null && langs.size()>0) {
+			boolean first=true;
+			query+="FILTER(";
+			for(String lang : langs) {
+				if(!first) {
+					query+=" || ";
+				}
+				first=false;
+				query+="lang("+variable+")="+"'"+lang+"'";
+			}
+			query+=")";
 		}
 		
 		return query;

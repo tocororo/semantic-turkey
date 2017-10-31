@@ -1,3 +1,7 @@
+version 2.1.0-SNAPSHOT
+date: dd/mm/yyyy
+  * added the list langs parameter in search ( ST-838 )  
+
 version 2.0
 date: 30-10-2017
   * Implemented support for ordered languages in the render.
