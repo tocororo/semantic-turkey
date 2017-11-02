@@ -182,6 +182,23 @@ public class PreferencesSettings extends STServiceAdapter {
 	}
 	
 	/**
+	 * Sets a project preference
+	 * @param property
+	 * @param value
+	 * @param pluginID
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws STPropertyUpdateException
+	 * @throws JSONException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void setProjectPreference(String property, @Optional String value)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
+		STPropertiesManager.setProjectPreference(property, value, getProject(), UsersManager.getLoggedUser());
+	}
+	
+	/**
 	 * Returns the specified project settings
 	 * @param properties
 	 * @param projectName
