@@ -870,6 +870,40 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	
+	/**
+	 * Return a list of <concept> with skosxl:altlabel(s) but not a corresponding 
+	 * skosxl:prefLabel for the same language locale. 
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listConceptNoSkosxlPrefLang()  {
+		
+		String q = "SELECT DISTINCT ?resource \n"
+				+ "WHERE {\n"
+				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " .  \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) +" ?altLabel . \n" 
+				+ "?altLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?altTerm . \n" 
+				+ "bind (lang(?altTerm) as ?lang) .\n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) +" ?prefLabel . \n" 
+				+ "?prefLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?prefTerm . \n"
+				+ "FILTER(lang(?prefTerm) = ?lang)"
+				+ "}\n"
+				+ "}\n"
+				+"GROUP BY ?resource";
+				
+				
+		logger.debug("query [listConceptNoSkosxlPrefLang]:\n" + q);
+		QueryBuilder qb = createQueryBuilder(q);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
