@@ -1103,6 +1103,49 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Return a list of <concept> that have more than one skosxl:prefLabel for the same language locale
+	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listConceptsWithMorePrefLabelSameLang() 
+			throws UnsupportedLexicalizationModelException  {
+		IRI lexModel = getProject().getLexicalizationModel();
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}
+		
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_duplicateLang)\n"
+				+ "WHERE {\n"
+				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n";
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
+			query += "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?xlabel1 .\n"
+					+ "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?xlabel2 .\n"
+					+ "FILTER(?xlabel1 != ?xlabel2) \n"
+					+ "?xlabel1 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label1 .\n"
+					+ "?xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label2 .\n";
+		} else {
+			query += "?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?label1 .\n"
+					+ "?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?label2 .\n"
+					+ "FILTER(?label1 != ?label2) \n";
+		}
+		query += "FILTER(lang(?label1) = lang(?label2)) \n"
+				+ "BIND(lang(?label1) AS ?lang) \n"
+				+"}\n"
+				+ "GROUP BY ?resource ";
+		
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
