@@ -4,6 +4,9 @@ import java.util.Collection;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -21,6 +24,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -898,6 +903,117 @@ public class ICV extends STServiceAdapter {
 				
 		logger.debug("query [listConceptNoSkosxlPrefLang]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
+	/**
+	 * Return a list of <resources> with no lexicalization (rdfs:label, skos:prefLabel or skosxl:prefLabel)
+	 *  in one or more input languages
+	 * skosxl:prefLabel for the same language locale.
+	 * @param rolesArray
+	 * @param languagesArray 
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcesNoLexicalization(String[] rolesArray, 
+			String[] languagesArray)  {
+		
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_lang)\n"
+				+ "WHERE {\n";
+		
+		//now look for the roles
+		boolean first=true;
+		String union="";
+		query += "{SELECT ?resource \n"
+				+ "WHERE {\n";
+		for(String role : rolesArray) {
+			if(!first) {
+				union = "UNION\n";
+			}
+			
+			if(role.toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())) {
+				query+=union+"{ ?resource a <"+SKOS.CONCEPT.stringValue()+"> . } \n";
+				first=false;
+			} else if(role.toLowerCase().equals(RDFResourceRole.cls.name().toLowerCase())) {
+				query+=union+"{ ?resource a ?type .  \n"
+						+ "\nFILTER(?type = <"+OWL.CLASS.stringValue()+"> || "
+								+ "?type = <"+RDFS.CLASS.stringValue()+"> ) } \n";
+				first = false;
+			} else if(role.toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())) {
+				query+=union+"{ ?resource a ?type .  \n"
+						+ "\nFILTER(?type = <"+RDF.PROPERTY.stringValue()+"> || "
+						+ "?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "
+						+ "?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "
+						+ "?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " 
+						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
+						"\n}";
+				first = false;
+			} else if(role.toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())) {
+				query+=union+"{ ?resource a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
+				first=false;
+			} else if(role.toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())) {
+				query+=union+"{ ?resource a ?type .  \n"
+						+ "\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> || "
+						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }\n";
+				first = false;
+			} else if (role.toLowerCase().equals(RDFResourceRole.individual.name().toLowerCase())) {
+				query+=union+"{ ?resource a ?type .  \n"
+						+"?type a ?classType . \n"
+						+ "\nFILTER(?classType = <"+OWL.CLASS.stringValue()+"> || "
+								+ "?classType = <"+RDFS.CLASS.stringValue()+"> ) } \n";
+				first = false;
+			}
+		}
+		
+		query +="}\n}\n";
+		
+		//now add the part that, using the lexicalization model, search for resources not having a language
+		IRI lexModel = getProject().getLexicalizationModel();
+		first = true;
+		union = "";
+		for(String lang : languagesArray) {
+			if(!first) {
+				union = "UNION\n";
+			}
+			first=false;
+			if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+				query+=union+"{ \n"
+						+"?resource a ?fakeType .\n" // otherwise the FILTER NOT EXISTS does not work
+						+"BIND('"+lang+"' as ?lang)\n"
+						+ "FILTER NOT EXISTS { \n"
+						+"?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?label .\n"
+						+"FILTER(lang(?label) = ?lang)\n"
+						+ "}\n}";
+			} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+				query+=union+"{ \n"
+						+"?resource a ?fakeType .\n" // otherwise the FILTER NOT EXISTS does not work
+						+"BIND('"+lang+"' as ?lang)\n"
+						+ "FILTER NOT EXISTS { \n"
+						+"?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?label .\n"
+						+"FILTER(lang(?label) = ?lang)\n"
+						+ "}\n}";
+			} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+				query+=union+"{ \n"
+						+"?resource a ?fakeType .\n" // otherwise the FILTER NOT EXISTS does not work
+						+"BIND('"+lang+"' as ?lang)\n"
+						+ "FILTER NOT EXISTS { \n"
+						+"?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?xlabel .\n"
+						+"?xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label .\n"
+						+"FILTER(lang(?label) = ?lang)\n"
+						+ "}\n}";
+			} 
+		}
+		
+		query+="}\n"
+				+ "GROUP BY ?resource ";
+				
+		logger.debug("query [listResourcesNoLexicalization]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
