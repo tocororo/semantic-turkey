@@ -895,7 +895,7 @@ public class ICV extends STServiceAdapter {
 			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
 			throw new UnsupportedLexicalizationModelException(msg);
 		}
-		String q = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_lang)\n"
+		String q = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang)\n"
 				+ "WHERE {\n"
 				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " .  \n";
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
@@ -940,7 +940,7 @@ public class ICV extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> listResourcesNoLexicalization(RDFResourceRole[] rolesArray, 
 			String[] languagesArray)  {
 		
-		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_lang)\n"
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang)\n"
 				+ "WHERE {\n";
 		
 		//now look for the roles
