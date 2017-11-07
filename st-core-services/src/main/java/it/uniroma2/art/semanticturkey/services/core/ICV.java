@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -880,22 +881,39 @@ public class ICV extends STServiceAdapter {
 	 * Return a list of <concept> with skosxl:altlabel(s) but not a corresponding 
 	 * skosxl:prefLabel for the same language locale. 
 	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listConceptNoSkosxlPrefLang()  {
+	public Collection<AnnotatedValue<Resource>> listConceptNoSkosxlPrefLang() 
+			throws UnsupportedLexicalizationModelException  {
+		IRI lexModel = getProject().getLexicalizationModel();
 		
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}
 		String q = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_lang)\n"
 				+ "WHERE {\n"
-				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " .  \n"
-				+ "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) +" ?altLabel . \n" 
-				+ "?altLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?altTerm . \n" 
-				+ "bind (lang(?altTerm) as ?lang) .\n"
-				+ "FILTER NOT EXISTS { \n"
-				+ "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) +" ?prefLabel . \n" 
-				+ "?prefLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?prefTerm . \n"
-				+ "FILTER(lang(?prefTerm) = ?lang)"
+				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " .  \n";
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			q+= "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) +" ?altLabel . \n" 
+				+ "?altLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?altTerm . \n";
+		} else {
+			q+= "?resource " + NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL) +" ?altTerm . \n"; 
+		}
+			q+= "bind (lang(?altTerm) as ?lang) .\n"
+				+ "FILTER NOT EXISTS { \n";
+			
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			q+=  "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) +" ?prefLabel . \n" 
+				+ "?prefLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?prefTerm . \n";
+		} else {
+			q+=  "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) +" ?prefTerm . \n"; 
+		}
+		q += "FILTER(lang(?prefTerm) = ?lang)"
 				+ "}\n"
 				+ "}\n"
 				+"GROUP BY ?resource ";
@@ -912,7 +930,6 @@ public class ICV extends STServiceAdapter {
 	/**
 	 * Return a list of <resources> with no lexicalization (rdfs:label, skos:prefLabel or skosxl:prefLabel)
 	 *  in one or more input languages
-	 * skosxl:prefLabel for the same language locale.
 	 * @param rolesArray
 	 * @param languagesArray 
 	 * @return
@@ -920,7 +937,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcesNoLexicalization(String[] rolesArray, 
+	public Collection<AnnotatedValue<Resource>> listResourcesNoLexicalization(RDFResourceRole[] rolesArray, 
 			String[] languagesArray)  {
 		
 		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_lang)\n"
@@ -931,20 +948,20 @@ public class ICV extends STServiceAdapter {
 		String union="";
 		query += "{SELECT ?resource \n"
 				+ "WHERE {\n";
-		for(String role : rolesArray) {
+		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
 				union = "UNION\n";
 			}
 			
-			if(role.toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())) {
+			if(role.equals(RDFResourceRole.concept)) {
 				query+=union+"{ ?resource a <"+SKOS.CONCEPT.stringValue()+"> . } \n";
 				first=false;
-			} else if(role.toLowerCase().equals(RDFResourceRole.cls.name().toLowerCase())) {
+			} else if(role.equals(RDFResourceRole.cls)) {
 				query+=union+"{ ?resource a ?type .  \n"
 						+ "\nFILTER(?type = <"+OWL.CLASS.stringValue()+"> || "
 								+ "?type = <"+RDFS.CLASS.stringValue()+"> ) } \n";
 				first = false;
-			} else if(role.toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())) {
+			} else if(role.equals(RDFResourceRole.property)) {
 				query+=union+"{ ?resource a ?type .  \n"
 						+ "\nFILTER(?type = <"+RDF.PROPERTY.stringValue()+"> || "
 						+ "?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "
@@ -953,15 +970,15 @@ public class ICV extends STServiceAdapter {
 						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
 						"\n}";
 				first = false;
-			} else if(role.toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())) {
+			} else if(role.equals(RDFResourceRole.conceptScheme)) {
 				query+=union+"{ ?resource a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
 				first=false;
-			} else if(role.toLowerCase().equals(RDFResourceRole.conceptScheme.name().toLowerCase())) {
+			} else if(role.equals(RDFResourceRole.conceptScheme)) {
 				query+=union+"{ ?resource a ?type .  \n"
 						+ "\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> || "
 						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }\n";
 				first = false;
-			} else if (role.toLowerCase().equals(RDFResourceRole.individual.name().toLowerCase())) {
+			} else if (role.equals(RDFResourceRole.individual)) {
 				query+=union+"{ ?resource a ?type .  \n"
 						+"?type a ?classType . \n"
 						+ "\nFILTER(?classType = <"+OWL.CLASS.stringValue()+"> || "
