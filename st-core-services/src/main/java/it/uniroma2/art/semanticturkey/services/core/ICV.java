@@ -886,7 +886,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listConceptNoSkosxlPrefLang() 
+	public Collection<AnnotatedValue<Resource>> listConceptsWithAltNoPrefLabel() 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
@@ -1047,8 +1047,8 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcesExactMatchDisjoint()  {
-		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang)\n"
+	public Collection<AnnotatedValue<Resource>> listConceptsExactMatchDisjoint()  {
+		String query = "SELECT DISTINCT ?resource \n"
 				+ "WHERE {\n"
 				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
 				+ "?concept2 a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
@@ -1073,6 +1073,35 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Return a list of <concept> connected to each other with both the skos:related and the 
+	 * skos:broaderTransitive as the related relation is disjoint with broaderTransitive
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listConceptsRelatedDisjoint()  {
+		String query = "SELECT DISTINCT ?resource \n"
+				+ "WHERE {\n"
+				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
+				+ "?concept2 a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
+				+ "?resource " +NTriplesUtil.toNTriplesString(SKOS.RELATED) +" ?concepts .\n"
+				
+				+ "{?resource "+NTriplesUtil.toNTriplesString(SKOS.BROADER_TRANSITIVE) +" ?concept2 . }\n"
+				+ "UNION \n"
+				+ "{?concept2 "+NTriplesUtil.toNTriplesString(SKOS.BROADER_TRANSITIVE) +" ?resource . }\n";
+				
+		
+		query+="}\n"
+				+ "GROUP BY ?resource ";
+		
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
 	
 	//-----GENERICS-----
 	
