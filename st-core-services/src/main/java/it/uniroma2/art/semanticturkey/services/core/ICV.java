@@ -881,7 +881,7 @@ public class ICV extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listConceptNoSkosxlPrefLang()  {
 		
-		String q = "SELECT DISTINCT ?resource \n"
+		String q = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_lang)\n"
 				+ "WHERE {\n"
 				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " .  \n"
 				+ "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) +" ?altLabel . \n" 
@@ -893,7 +893,7 @@ public class ICV extends STServiceAdapter {
 				+ "FILTER(lang(?prefTerm) = ?lang)"
 				+ "}\n"
 				+ "}\n"
-				+"GROUP BY ?resource";
+				+"GROUP BY ?resource ";
 				
 				
 		logger.debug("query [listConceptNoSkosxlPrefLang]:\n" + q);
