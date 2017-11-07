@@ -1037,6 +1037,43 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	
+	/**
+	 * Return a list of <concept> mapped to each other using both skos:exactMatch and one of skos:broadMatch 
+	 * or skos:relatedMatch mapping properties as the exactMatch relation is disjoint with both broadMatch 
+	 * and relatedMatch
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcesExactMatchDisjoint()  {
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang)\n"
+				+ "WHERE {\n"
+				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
+				+ "?concept2 a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
+				+ " ?resource " +NTriplesUtil.toNTriplesString(SKOS.EXACT_MATCH) +" ?concepts .\n"
+				
+				+ "{?resource "+NTriplesUtil.toNTriplesString(SKOS.BROAD_MATCH) +" ?concept2 . }\n"
+				+ "UNION \n"
+				+ "{?resource "+NTriplesUtil.toNTriplesString(SKOS.RELATED_MATCH) +" ?concept2 . }\n"
+				+ "UNION \n"
+				+ "{?concept2 "+NTriplesUtil.toNTriplesString(SKOS.BROAD_MATCH) +" ?resource . }\n"
+				+ "UNION \n"
+				+ "{?concept2 "+NTriplesUtil.toNTriplesString(SKOS.RELATED_MATCH) +" ?resource . }\n";
+				
+		
+		query+="}\n"
+				+ "GROUP BY ?resource ";
+		
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
