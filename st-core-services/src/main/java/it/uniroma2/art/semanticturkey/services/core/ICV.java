@@ -1009,6 +1009,49 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Return a list of <resources> that have a SKOS/SKOSXL label without any language tag 
+	 * @param rolesArray
+	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcessWithNoLanguageTagForLabel(RDFResourceRole[] rolesArray) 
+			throws UnsupportedLexicalizationModelException  {
+		IRI lexModel = getProject().getLexicalizationModel();
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}
+		
+		String query = "SELECT DISTINCT ?resource \n"
+				+ "WHERE {\n";
+		
+		query+=rolePartForQuery(rolesArray, "?resource");
+		
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
+			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?xlabel .\n"
+					+ "?xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label .\n";
+		} else {
+			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+"|"+
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?label .\n";
+		}
+		query += "FILTER(lang(?label) = '') \n"
+				+"}\n"
+				+ "GROUP BY ?resource ";
+		
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
