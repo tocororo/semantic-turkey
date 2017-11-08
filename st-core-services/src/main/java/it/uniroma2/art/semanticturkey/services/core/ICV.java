@@ -320,106 +320,6 @@ public class ICV extends STServiceAdapter {
 //		return response;
 //	}
 //	
-//	/**
-//	 * Returns a list of records resource-lang, of concept that have a skos:altLabel for a lang but not a skos:prefLabel
-//	 * @return
-//	 * @throws QueryEvaluationException
-//	 * @throws UnsupportedQueryLanguageException
-//	 * @throws ModelAccessException
-//	 * @throws MalformedQueryException
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-//	public Response listResourcesWithOnlySKOSAltLabel() {
-//		String q = "SELECT DISTINCT ?resource ?lang ?type WHERE {\n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT + "> . } \n"
-//				+ "UNION \n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . } \n"
-//				+ "?resource a ?type . \n"
-//				+ "?resource <" + SKOS.ALT_LABEL + "> ?alt .\n"
-//				+ "bind (lang(?alt) as ?lang) .\n"
-//				+ "FILTER NOT EXISTS {\n"
-//				+ "?resource <" + SKOS.PREF_LABEL + "> ?pref .\n"
-//				+ "FILTER (lang(?pref) = ?lang) } }";
-//		logger.debug("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElem = response.getDataElement();
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			IRI resource = (IRI) tb.getValue("resource");
-//			String type = tb.getBinding("type").getValue().stringValue();
-//			RDFResourceRole role = RDFResourceRole.concept;
-//			if (type.equals(SKOS.CONCEPT)) {
-//				role = RDFResourceRole.concept;
-//			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
-//				role = RDFResourceRole.conceptScheme;
-//			}
-//			String lang = tb.getBinding("lang").getValue().stringValue();
-//			
-//			Element recordElem = XMLHelp.newElement(dataElem, "record");
-//			
-//			addResourceToElement(recordElem, resource, role, resource.stringValue());
-//			
-//			XMLHelp.newElement(recordElem, "lang", lang);
-//		}
-//		return response;
-//	}
-//	
-//	/**
-//	 * Returns a list of records resource-lang, of concept or scheme that have a skos:altLabel
-//	 * for a lang but not a skos:prefLabel
-//	 * @return
-//	 * @throws QueryEvaluationException
-//	 * @throws UnsupportedQueryLanguageException
-//	 * @throws ModelAccessException
-//	 * @throws MalformedQueryException
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-//	public Response listResourcesWithOnlySKOSXLAltLabel() {
-//		String q = "SELECT DISTINCT ?resource ?lang ?type WHERE { \n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT + "> . } \n"
-//				+ "UNION \n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . } \n"
-//				+ "?resource a ?type . \n"
-//				+ "?resource <" + SKOSXL.ALT_LABEL + "> ?alt . \n"
-//				+ "?alt <" + SKOSXL.LITERAL_FORM + "> ?literalFormAlt . \n"
-//				+ "bind (lang(?literalFormAlt) as ?lang) . \n"
-//				+ "FILTER NOT EXISTS { \n"
-//				+ "?resource <" + SKOSXL.PREF_LABEL + "> ?pref . \n"
-//				+ "?pref <" + SKOSXL.LITERAL_FORM + "> ?literalFormPref . \n"
-//				+ "FILTER (lang(?literalFormPref) = ?lang) } }";
-//		logger.debug("query [listResourcesWithOnlySKOSAltLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElem = response.getDataElement();
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			IRI resource = (IRI) tb.getValue("resource");
-//			String type = tb.getBinding("type").getValue().stringValue();
-//			RDFResourceRole role = RDFResourceRole.concept;
-//			if (type.equals(SKOS.CONCEPT)) {
-//				role = RDFResourceRole.concept;
-//			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
-//				role = RDFResourceRole.conceptScheme;
-//			}
-//			String lang = tb.getBinding("lang").getValue().stringValue();
-//			
-//			Element recordElem = XMLHelp.newElement(dataElem, "record");
-//			
-//			addResourceToElement(recordElem, resource, role, resource.stringValue());
-//			
-//			XMLHelp.newElement(recordElem, "lang", lang);
-//		}
-//		return response;
-//	}
 	
 	/**
 	 * Returns a list of concepts or schemes that have no skos:prefLabel
@@ -878,15 +778,16 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <concept> with skosxl:altlabel(s) but not a corresponding 
-	 * skosxl:prefLabel for the same language locale. 
+	 * Return a list of <resources> with skos:altLabel(s) (or skosxl:altLabel) but not a corresponding 
+	 * skos:prefLabel (or skos:prefLabel) for the same language locale. 
+	 * @param rolesArray
 	 * @return
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listConceptsWithAltNoPrefLabel() 
+	public Collection<AnnotatedValue<Resource>> listResourcesWithAltNoPrefLabel(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
@@ -896,8 +797,10 @@ public class ICV extends STServiceAdapter {
 			throw new UnsupportedLexicalizationModelException(msg);
 		}
 		String q = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang)\n"
-				+ "WHERE {\n"
-				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " .  \n";
+				+ "WHERE {\n";
+		
+		q += rolePartForQuery(rolesArray, "?resource");
+		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 			q+= "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) +" ?altLabel . \n" 
 				+ "?altLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?altTerm . \n";
@@ -944,55 +847,12 @@ public class ICV extends STServiceAdapter {
 				+ "WHERE {\n";
 		
 		//now look for the roles
-		boolean first=true;
-		String union="";
-		query += "{SELECT ?resource \n"
-				+ "WHERE {\n";
-		for(RDFResourceRole role : rolesArray) {
-			if(!first) {
-				union = "UNION\n";
-			}
-			
-			if(role.equals(RDFResourceRole.concept)) {
-				query+=union+"{ ?resource a <"+SKOS.CONCEPT.stringValue()+"> . } \n";
-				first=false;
-			} else if(role.equals(RDFResourceRole.cls)) {
-				query+=union+"{ ?resource a ?type .  \n"
-						+ "\nFILTER(?type = <"+OWL.CLASS.stringValue()+"> || "
-								+ "?type = <"+RDFS.CLASS.stringValue()+"> ) } \n";
-				first = false;
-			} else if(role.equals(RDFResourceRole.property)) {
-				query+=union+"{ ?resource a ?type .  \n"
-						+ "\nFILTER(?type = <"+RDF.PROPERTY.stringValue()+"> || "
-						+ "?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "
-						+ "?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "
-						+ "?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " 
-						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
-						"\n}";
-				first = false;
-			} else if(role.equals(RDFResourceRole.conceptScheme)) {
-				query+=union+"{ ?resource a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
-				first=false;
-			} else if(role.equals(RDFResourceRole.conceptScheme)) {
-				query+=union+"{ ?resource a ?type .  \n"
-						+ "\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> || "
-						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }\n";
-				first = false;
-			} else if (role.equals(RDFResourceRole.individual)) {
-				query+=union+"{ ?resource a ?type .  \n"
-						+"?type a ?classType . \n"
-						+ "\nFILTER(?classType = <"+OWL.CLASS.stringValue()+"> || "
-								+ "?classType = <"+RDFS.CLASS.stringValue()+"> ) } \n";
-				first = false;
-			}
-		}
-		
-		query +="}\n}\n";
+		query+=rolePartForQuery(rolesArray, "?resource");
 		
 		//now add the part that, using the lexicalization model, search for resources not having a language
 		IRI lexModel = getProject().getLexicalizationModel();
-		first = true;
-		union = "";
+		boolean first = true;
+		String union = "";
 		for(String lang : languagesArray) {
 			if(!first) {
 				union = "UNION\n";
@@ -1104,14 +964,15 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <concept> that have more than one skosxl:prefLabel for the same language locale
+	 * Return a list of <resources> that have more than one skosxl:prefLabel for the same language locale
+	 * @param rolesArray
 	 * @return
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listConceptsWithMorePrefLabelSameLang() 
+	public Collection<AnnotatedValue<Resource>> listResourcessWithMorePrefLabelSameLang(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
@@ -1121,8 +982,10 @@ public class ICV extends STServiceAdapter {
 		}
 		
 		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_duplicateLang)\n"
-				+ "WHERE {\n"
-				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n";
+				+ "WHERE {\n";
+		
+		query+=rolePartForQuery(rolesArray, "?resource");
+		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?xlabel1 .\n"
 					+ "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?xlabel2 .\n"
@@ -1522,4 +1385,53 @@ public class ICV extends STServiceAdapter {
 //				toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 //	}
 //	
+	
+	private String rolePartForQuery(RDFResourceRole[] rolesArray, String var) {
+		String query = "";
+		String union="";
+		boolean first=true;
+		query += "{SELECT "+var+" \n"
+				+ "WHERE {\n";
+		for(RDFResourceRole role : rolesArray) {
+			if(!first) {
+				union = "UNION\n";
+			}
+			
+			if(role.equals(RDFResourceRole.concept)) {
+				query+=union+"{ "+var+" a <"+SKOS.CONCEPT.stringValue()+"> . } \n";
+				first=false;
+			} else if(role.equals(RDFResourceRole.cls)) {
+				query+=union+"{ "+var+" a ?type .  \n"
+						+ "\nFILTER(?type = <"+OWL.CLASS.stringValue()+"> || "
+								+ "?type = <"+RDFS.CLASS.stringValue()+"> ) } \n";
+				first = false;
+			} else if(role.equals(RDFResourceRole.property)) {
+				query+=union+"{ "+var+" a ?type .  \n"
+						+ "\nFILTER(?type = <"+RDF.PROPERTY.stringValue()+"> || "
+						+ "?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "
+						+ "?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "
+						+ "?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " 
+						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
+						"\n}";
+				first = false;
+			} else if(role.equals(RDFResourceRole.conceptScheme)) {
+				query+=union+"{ "+var+" a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
+				first=false;
+			} else if(role.equals(RDFResourceRole.conceptScheme)) {
+				query+=union+"{ "+var+" a ?type .  \n"
+						+ "\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> || "
+						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }\n";
+				first = false;
+			} else if (role.equals(RDFResourceRole.individual)) {
+				query+=union+"{ "+var+" a ?type .  \n"
+						+"?type a ?classType . \n"
+						+ "\nFILTER(?classType = <"+OWL.CLASS.stringValue()+"> || "
+								+ "?classType = <"+RDFS.CLASS.stringValue()+"> ) } \n";
+				first = false;
+			}
+		}
+		
+		query +="}\n}\n";
+		return query;
+	}
 }
