@@ -379,190 +379,6 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
-//	/**
-//	 * Returns a list of pairs concept-lang of that concept that have more skos:prefLabel in a same language
-//	 * @return
-//	 * @throws QueryEvaluationException
-//	 * @throws UnsupportedQueryLanguageException
-//	 * @throws ModelAccessException
-//	 * @throws MalformedQueryException
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-//	public Response listConceptsWithMultipleSKOSPrefLabel() {
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElement = response.getDataElement();
-//		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
-//				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-//				+ "?concept <" + SKOS.PREF_LABEL + "> ?label1.\n"
-//				+ "?concept <" + SKOS.PREF_LABEL + "> ?label2.\n"
-//				+ "FILTER ( ?label1 != ?label2 && lang(?label1) = lang(?label2) )\n"
-//				+ "bind(lang(?label1) as ?lang) }";
-//		logger.debug("query [listConceptsWithMultipleSKOSPrefLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			String concept = tb.getBinding("concept").getValue().stringValue();
-//			String lang = tb.getBinding("lang").getValue().stringValue();
-//			Element recordElem = XMLHelp.newElement(dataElement, "record");
-//			recordElem.setAttribute("concept", concept);
-//			recordElem.setAttribute("lang", lang);
-//		}
-//		return response;
-//	}
-//	
-//	/**
-//	 * Returns a list of records concept-lang of that concept that have more skosxl:prefLabel in a same language
-//	 * @return
-//	 * @throws QueryEvaluationException
-//	 * @throws UnsupportedQueryLanguageException
-//	 * @throws ModelAccessException
-//	 * @throws MalformedQueryException
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-//	public Response listConceptsWithMultipleSKOSXLPrefLabel() {
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElement = response.getDataElement();
-//		String q = "SELECT DISTINCT ?concept ?lang WHERE {\n"
-//				+ "?concept a <" + SKOS.CONCEPT + "> .\n"
-//				+ "?concept <" + SKOSXL.PREF_LABEL + "> ?label1 .\n"
-//				+ "?concept <" + SKOSXL.PREF_LABEL + "> ?label2 .\n"
-//				+ "?label1 <" + SKOSXL.LITERAL_FORM + "> ?lit1 .\n"
-//				+ "?label2 <" + SKOSXL.LITERAL_FORM + "> ?lit2 .\n"
-//				+ "bind(lang(?lit1) as ?lang)\n"
-//				+ "FILTER ( ?label1 != ?label2 && lang(?lit1) = lang(?lit2) ) }";
-//		logger.debug("query [listConceptsWithMultipleSKOSXLPrefLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			String concept = tb.getBinding("concept").getValue().stringValue();
-//			String lang = tb.getBinding("lang").getValue().stringValue();
-//			Element recordElem = XMLHelp.newElement(dataElement, "record");
-//			recordElem.setAttribute("concept", concept);
-//			recordElem.setAttribute("lang", lang);
-//		}
-//		return response;
-//	}
-//	
-//	/**
-//	 * Returns a list of records resource-labelPred-label of concepts or scheme that have 
-//	 * a skos label without languageTag
-//	 * @return
-//	 * @throws QueryEvaluationException
-//	 * @throws UnsupportedQueryLanguageException
-//	 * @throws ModelAccessException
-//	 * @throws MalformedQueryException
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-//	public Response listResourcesWithNoLanguageTagSKOSLabel() {
-//		String q = "SELECT ?resource ?labelPred ?label ?type WHERE {\n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
-//				+ "UNION \n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
-//				+ "?resource a ?type \n"
-//				+ "{ bind(<" + SKOS.PREF_LABEL + "> as ?labelPred)}\n"
-//				+ "UNION\n"
-//				+ "{bind(<" + SKOS.ALT_LABEL + "> as ?labelPred)}\n"
-//				+ "?resource ?labelPred ?label .\n"
-//				+ "FILTER (lang(?label) = '') }";
-//		logger.debug("query [listResourcesWithNoLanguageTagSKOSLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElement = response.getDataElement();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			IRI resource = (IRI) tb.getValue("resource");
-//			String type = tb.getBinding("type").getValue().stringValue();
-//			RDFResourceRole role = RDFResourceRole.concept;
-//			if (type.equals(SKOS.CONCEPT)) {
-//				role = RDFResourceRole.concept;
-//			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
-//				role = RDFResourceRole.conceptScheme;
-//			}
-//			Element recordElem = XMLHelp.newElement(dataElement, "record");
-//			
-//			Element resourceElem = XMLHelp.newElement(recordElem, "resource");
-//			addResourceToElement(resourceElem, resource, role, resource.stringValue());
-//			
-//			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
-//			IRI labelPred = (IRI) tb.getValue("labelPred");
-//			addResourceToElement(predicateElem, labelPred, RDFResourceRole.annotationProperty, 
-//					TurtleHelp.toQname(labelPred, ns2PrefixMapping(conn)));
-//			
-//			Element objectElem = XMLHelp.newElement(recordElem, "object");
-//			Literal label = (Literal) tb.getValue("label");
-//			addLiteralToElement(objectElem, label);
-//		}
-//		return response;
-//	}
-//	
-//	/**
-//	 * Returns a list of records resource-labelPred-xlabel-literal of concepts or schemes that
-//	 * have a skosxl:Label without languageTag
-//	 * @return
-//	 * @throws QueryEvaluationException
-//	 * @throws UnsupportedQueryLanguageException
-//	 * @throws ModelAccessException
-//	 * @throws MalformedQueryException
-//	 */
-//	@GenerateSTServiceController
-//	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-//	public Response listResourcesWithNoLanguageTagSKOSXLLabel() {
-//		String q = "SELECT ?resource ?labelPred ?xlabel ?literalForm ?type WHERE {\n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT + "> . }\n"
-//				+ "UNION \n"
-//				+ "{ ?resource a <" + SKOS.CONCEPT_SCHEME + "> . }\n"
-//				+ "?resource a ?type . \n"
-//				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
-//				+ "?resource ?labelPred ?xlabel .\n"
-//				+ "?xlabel <" + SKOSXL.LITERAL_FORM + "> ?literalForm .\n"
-//				+ "FILTER (lang(?literalForm)= '') }";
-//		logger.debug("query [listConceptsWithNoLanguageTagSKOSXLLabel]:\n" + q);
-//		RepositoryConnection conn = getManagedConnection();
-//		XMLResponseREPLY response = createReplyResponse(RepliesStatus.ok);
-//		Element dataElement = response.getDataElement();
-//		TupleQuery query = conn.prepareTupleQuery(q);
-//		query.setIncludeInferred(false);
-//		TupleQueryResult tupleQueryResult = query.evaluate();
-//		while (tupleQueryResult.hasNext()){
-//			BindingSet tb = tupleQueryResult.next();
-//			IRI resource = (IRI) tb.getValue("resource");
-//			String type = tb.getBinding("type").getValue().stringValue();
-//			RDFResourceRole role = RDFResourceRole.concept;
-//			if (type.equals(SKOS.CONCEPT)) {
-//				role = RDFResourceRole.concept;
-//			} else if (type.equals(SKOS.CONCEPT_SCHEME)) {
-//				role = RDFResourceRole.conceptScheme;
-//			}
-//			Element recordElem = XMLHelp.newElement(dataElement, "record");
-//			
-//			Element resourceElem = XMLHelp.newElement(recordElem, "resource");
-//			addResourceToElement(resourceElem, resource, role, resource.stringValue());
-//			
-//			Element predicateElem = XMLHelp.newElement(recordElem, "predicate");
-//			IRI labelPred = (IRI) tb.getValue("labelPred");
-//			addResourceToElement(predicateElem, labelPred, RDFResourceRole.objectProperty,
-//					TurtleHelp.toQname(labelPred, ns2PrefixMapping(conn)) );
-//			
-//			Element objectElem = XMLHelp.newElement(recordElem, "object");
-//			Resource label = (Resource) tb.getValue("xlabel");
-//			Literal literalForm = (Literal) tb.getValue("literalForm");
-//			addResourceToElement(objectElem, label, RDFResourceRole.xLabel,  literalForm.getLabel());
-//		}
-//		return response;
-//		
-//	}
 //	
 //	/**
 //	 * Returns a list of records resource-label-lang. A record like that means that the concept ?concept has 
@@ -972,7 +788,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcessWithMorePrefLabelSameLang(RDFResourceRole[] rolesArray) 
+	public Collection<AnnotatedValue<Resource>> listResourcesWithMorePrefLabelSameLang(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
@@ -1018,7 +834,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcessWithNoLanguageTagForLabel(RDFResourceRole[] rolesArray) 
+	public Collection<AnnotatedValue<Resource>> listResourcesWithNoLanguageTagForLabel(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
@@ -1051,6 +867,47 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Return a list of <resources> with extra whitespace(s) in skos(xl):label(s) annotation properties
+	 * @param rolesArray
+	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcesWitExtraSpacesInLabel(RDFResourceRole[] rolesArray) 
+			throws UnsupportedLexicalizationModelException  {
+		IRI lexModel = getProject().getLexicalizationModel();
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}
+		
+		String query = "SELECT DISTINCT ?resource \n"
+				+ "WHERE {\n";
+		
+		query+=rolePartForQuery(rolesArray, "?resource");
+		
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
+			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?xlabel .\n"
+					+ "?xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label .\n";
+		} else {
+			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+"|"+
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?label .\n";
+		}
+		query += "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, '  '))\n"
+				+"}\n"
+				+ "GROUP BY ?resource ";
+		
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
 	
 	//-----GENERICS-----
 	
