@@ -602,7 +602,7 @@ public class ICV extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listResourcesWithAltNoPrefLabel(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
@@ -655,7 +655,7 @@ public class ICV extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listResourcesNoLexicalization(RDFResourceRole[] rolesArray, 
 			String[] languagesArray)  {
 		
@@ -787,7 +787,7 @@ public class ICV extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listResourcesWithMorePrefLabelSameLang(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
@@ -833,32 +833,34 @@ public class ICV extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listResourcesWithNoLanguageTagForLabel(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
-		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
 				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
 			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
 			throw new UnsupportedLexicalizationModelException(msg);
-		}
+		}*/
 		
-		String query = "SELECT DISTINCT ?resource \n"
+		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label \n"
 				+ "WHERE {\n";
 		
 		query+=rolePartForQuery(rolesArray, "?resource");
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
-						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?xlabel .\n"
-					+ "?xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label .\n";
-		} else {
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?attr_xlabel .\n"
+					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n";
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+"|"+
-						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?label .\n";
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?attr_label .\n";
+		} else {
+			query += "?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label .\n";
 		}
-		query += "FILTER(lang(?label) = '') \n"
+		query += "FILTER(lang(?attr_label) = '') \n"
 				+"}\n"
-				+ "GROUP BY ?resource ";
+				+ "GROUP BY ?resource ?attr_xlabel ?attr_label";
 		
 		QueryBuilder qb = createQueryBuilder(query);
 		qb.processRole();
@@ -875,32 +877,35 @@ public class ICV extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listResourcesWitExtraSpacesInLabel(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
-		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+		
+		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
 				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
 			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
 			throw new UnsupportedLexicalizationModelException(msg);
-		}
+		}*/
 		
-		String query = "SELECT DISTINCT ?resource \n"
+		String query = "SELECT ?resource ?attr_xlabel ?attr_label \n"
 				+ "WHERE {\n";
 		
 		query+=rolePartForQuery(rolesArray, "?resource");
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
-						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?xlabel .\n"
-					+ "?xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?label .\n";
-		} else {
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?attr_xlabel .\n"
+					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n";
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+"|"+
-						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?label .\n";
+						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?attr_label .\n";
+		} else {
+			query += "?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label .\n";
 		}
-		query += "FILTER (regex (?label, '^ +') || regex (?label, ' +$') || regex(?label, '  '))\n"
+		query += "FILTER (regex (?attr_label, '^ +') || regex (?attr_label, ' +$') || regex(?attr_label, '  '))\n"
 				+"}\n"
-				+ "GROUP BY ?resource ";
+				+ "GROUP BY ?resource ?attr_xlabel ?attr_label";
 		
 		QueryBuilder qb = createQueryBuilder(query);
 		qb.processRole();
