@@ -728,7 +728,7 @@ public class ICV extends STServiceAdapter {
 				+ "WHERE {\n"
 				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
 				+ "?concept2 a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
-				+ " ?resource " +NTriplesUtil.toNTriplesString(SKOS.EXACT_MATCH) +" ?concepts .\n"
+				+ " ?resource " +NTriplesUtil.toNTriplesString(SKOS.EXACT_MATCH) +" ?concept2 .\n"
 				
 				+ "{?resource "+NTriplesUtil.toNTriplesString(SKOS.BROAD_MATCH) +" ?concept2 . }\n"
 				+ "UNION \n"
@@ -762,7 +762,7 @@ public class ICV extends STServiceAdapter {
 				+ "WHERE {\n"
 				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
 				+ "?concept2 a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
-				+ "?resource " +NTriplesUtil.toNTriplesString(SKOS.RELATED) +" ?concepts .\n"
+				+ "?resource " +NTriplesUtil.toNTriplesString(SKOS.RELATED) +" ?concept2 .\n"
 				
 				+ "{?resource "+NTriplesUtil.toNTriplesString(SKOS.BROADER_TRANSITIVE) +" ?concept2 . }\n"
 				+ "UNION \n"
@@ -878,7 +878,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcesWitExtraSpacesInLabel(RDFResourceRole[] rolesArray) 
+	public Collection<AnnotatedValue<Resource>> listResourcesWithExtraSpacesInLabel(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
