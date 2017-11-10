@@ -969,6 +969,62 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	
+	/**
+	 * Return a list of <resources> not having the property skos:definition for the given languages
+	 * @param rolesArray
+	 * @param languagesArray
+	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcesNoDef(RDFResourceRole[] rolesArray,
+			String[] languagesArray) {
+		//IRI lexModel = getProject().getLexicalizationModel();
+		
+		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}*/
+		
+		String query = "SELECT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang) \n"
+				+ "WHERE {\n";
+		
+		query+=rolePartForQuery(rolesArray, "?resource");
+		
+		
+		boolean first = true;
+		String union = "";
+		for(String lang : languagesArray) {
+			if(!first) {
+				union = "UNION\n";
+			}
+			first=false;
+			query+=union+"{ \n"
+					+"?resource a ?fakeType .\n" // otherwise the FILTER NOT EXISTS does not work
+					+"BIND('"+lang+"' as ?lang)\n"
+					+ "FILTER NOT EXISTS { \n"
+					+ "{ ?resource "+NTriplesUtil.toNTriplesString(SKOS.DEFINITION)+ "?definition . } \n"
+					+" UNION\n"
+					+ "{ ?resource "+NTriplesUtil.toNTriplesString(SKOS.DEFINITION)+ "?definitionRef . "
+					+ "?definitionRef "+NTriplesUtil.toNTriplesString(RDF.VALUE)+"?definition . } \n"
+					+"FILTER(lang(?definition) = ?lang)\n"
+					+ "}\n}";
+		}
+		query += "}\n"
+				+ "GROUP BY ?resource ?attr_xlabel ?attr_label";
+		
+		logger.debug("query [listResourcesNoDef]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
