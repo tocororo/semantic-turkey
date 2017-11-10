@@ -27,6 +27,7 @@ import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -346,8 +347,12 @@ public class SKOSXL extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("set preferred label")
 	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal,
-			XLabelCreationMode mode) throws URIGenerationException, AlreadyExistingLiteralFormForResourceException{
+			XLabelCreationMode mode, @Optional(defaultValue="true") boolean checkExistingAltLabel) 
+					throws URIGenerationException, AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
 		RepositoryConnection repoConnection = getManagedConnection();
+		if(checkExistingAltLabel) {
+			checkIfPrefAltLabelClash(repoConnection, literal, concept);
+		}
 		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -530,6 +535,26 @@ public class SKOSXL extends STServiceAdapter {
 					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
 					+ "with the same value";
 			throw new AlreadyExistingLiteralFormForResourceException(text);
+		}
+	}
+	
+	public static void checkIfPrefAltLabelClash(RepositoryConnection repoConnection, Literal newLabel, 
+			Resource resource) throws PrefAltLabelClashException{
+		//see if there is no other resource that has a altLabel with the same Literal 
+		String query = "ASK {"+
+				"\n?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" "+
+					"?xlabel ."+
+				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
+					NTriplesUtil.toNTriplesString(newLabel)+" . "+
+				"\n}";
+		
+		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
+		booleanQuery.setIncludeInferred(false);
+		boolean check = booleanQuery.evaluate();
+		if(check){
+			String text = "WARNING: prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
+					+ "there is already a resource with the same altLabel.";
+			throw new PrefAltLabelClashException(text);
 		}
 	}
 	
