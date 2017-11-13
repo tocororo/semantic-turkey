@@ -181,7 +181,7 @@ public class SKOS extends STServiceAdapter {
                     "                                                                                    \n" +
 					//" SELECT ?resource ?attr_more WHERE {                                                \n" +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
+					" SELECT DISTINCT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
@@ -200,8 +200,8 @@ public class SKOS extends STServiceAdapter {
 			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" +
-					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
-					"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
+					"         			?subPropInScheme2 rdfs:subPropertyOf* skos:inScheme .         	 \n" +
+					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 
@@ -224,7 +224,7 @@ public class SKOS extends STServiceAdapter {
                     "                                                                                    \n" +
 					//" SELECT ?resource ?attr_more WHERE {                                                \n" +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
+					" SELECT DISTINCT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
