@@ -1,6 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -1025,6 +1031,149 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	
+	/**
+	 * Return a list of <concepts> belong to  hierarchical cyclic
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	//public Collection<AnnotatedValue<Resource>> listConceptsHierarchicalCycles() {
+	public JsonNode listConceptsHierarchicalCycles() {
+		//IRI lexModel = getProject().getLexicalizationModel();
+		
+		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}*/
+		
+		String query = "SELECT ?resource ?attr_broader_concept \n"
+				+ "WHERE {\n"
+				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n"
+				+ "?resource "+broaderOrInverseNarrower()+" ?attr_broader_concept .\n"
+				+ "?attr_broader_concept "+broaderOrInverseNarrower()+"* ?resource .\n"
+				+ "} \n"
+				+ "GROUP BY ?resource ?attr_broader_concept";
+		logger.debug("query [listConceptsHierarchicalCycles]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		//return qb.runQuery();
+		
+		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
+		
+		//now do a post process of the results, to find the cycles
+		
+		//first of all, read all the result and prepare the two map containing all the relevant information
+		Map<String, List<String>> conceptToBroadersConceptMap = new HashMap<>();
+		Map<String, AnnotatedValue<Resource>> conceptToAnnotatedValue = new HashMap<>();
+		for(AnnotatedValue<Resource>annotatedValue : annotatedValueList) {
+			String concept = annotatedValue.getStringValue();
+			//add the AnnotatedValue to the map
+			conceptToAnnotatedValue.put(concept, annotatedValue);
+			//add the concept and the broader to the map
+			String broaderConcept = annotatedValue.getAttributes().get("broader_concept").stringValue();
+			//remove the attribute "broader_concept" from the AnnotatedValue
+			annotatedValue.getAttributes().remove("broader_concept");
+			if(!conceptToBroadersConceptMap.containsKey(concept)) {
+				conceptToBroadersConceptMap.put(concept, new ArrayList<>());
+			}
+			conceptToBroadersConceptMap.get(concept).add(broaderConcept);
+		}
+		
+		//now iterate over conceptToBroadersConceptMap to extract the cycles (if any)
+		List<List<String>> cyclesList = new ArrayList<>();
+		for( String concept : conceptToBroadersConceptMap.keySet()) {
+				calculateCycle(concept, new ArrayList<String>(), conceptToBroadersConceptMap, 
+						cyclesList );
+		}
+		
+		//remove the duplicate cycles
+		List<List<String>> cyclesReduxList = removeDuplicateCycles(cyclesList);
+		
+		//now the duplicates cycles have been removed, so construct the answer
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode response = jsonFactory.objectNode();
+		
+		ArrayNode cycles = jsonFactory.arrayNode();
+		for(List<String> conceptList: cyclesReduxList) {
+			ArrayNode singleCycle = jsonFactory.arrayNode();
+			for(String concept : conceptList) {
+				singleCycle.addPOJO(conceptToAnnotatedValue.get(concept));
+			}
+			cycles.add(singleCycle);
+		}
+		response.set("cycles", cycles);
+		
+		return response;
+		
+		
+	}
+	
+	private void calculateCycle(String concept, ArrayList<String> currentCycle,
+			Map<String, List<String>> conceptToBroadersConceptMap,
+			List<List<String>> cyclesList) {
+		//check if the current concept is the first element of the currentCycle, in this case a cycle was 
+		// found, so add it to the cyclesToConceptsInCycleList
+		if(currentCycle.size()>0 && currentCycle.get(0).equals(concept)) {
+			cyclesList.add(currentCycle);
+			return;
+		}
+		
+		//check if the current concept is present in the currentCycle,in this case an inner cycle was found,
+		// return without doing nothing (this cycle will be found by starting from this concept)
+		if(currentCycle.contains(concept)) {
+			return;
+		}
+		
+		//add concept to currentCycle
+		currentCycle.add(concept);
+		
+		//the cycle is not completed, so get the broader of the current concept
+		List<String> broaderList = conceptToBroadersConceptMap.get(concept);
+		for(String broader : broaderList) {
+			//clone the currentCycle, then add the concept and call calculateCycle
+			calculateCycle(broader, (ArrayList<String>)currentCycle.clone(), conceptToBroadersConceptMap, 
+					cyclesList);
+		}
+	}
+
+	private List<List<String>> removeDuplicateCycles(List<List<String>> cyclesList) {
+		List<List<String>> cyclesReduxList = new ArrayList<>();
+		for(int i=0; i<cyclesList.size(); ++i) {
+			boolean toBeAdded = true;
+			for(int k=i+1; k<cyclesList.size(); ++k) {
+				//check if cycles i and k contain the same elements or not
+				if(compareCycles(cyclesList.get(i), cyclesList.get(k))) {
+					toBeAdded=false;
+					break;
+				}
+			}
+			if(toBeAdded) {
+				cyclesReduxList.add(cyclesList.get(i));
+			}
+		}
+		return cyclesReduxList;
+	}
+	
+	private boolean compareCycles(List<String> cycle1, List<String> cycle2) {
+		if(cycle1.size() != cycle2.size()) {
+			//since they have different sizes, they are different
+			return false;
+		}
+		for(int i=0; i<cycle1.size(); ++i) {
+			if(!cycle2.contains(cycle1.get(i))) {
+				// the i element of cycle1 is not contained in cycle2, so they do not contain the same
+				// elements
+				return false;
+			}
+		}
+		//the cycles contains the same elements
+		return true;
+	}
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
@@ -1463,5 +1612,11 @@ public class ICV extends STServiceAdapter {
 				NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+" | " +
 				NTriplesUtil.toNTriplesString(SKOS.HIDDEN_LABEL)+" )";
 		return or;
+	}
+	
+	private String broaderOrInverseNarrower() {
+		String broaderOrInverceNarrower = "("+NTriplesUtil.toNTriplesString(SKOS.BROADER)+" | ^" +
+				NTriplesUtil.toNTriplesString(SKOS.NARROWER)+" )";
+		return broaderOrInverceNarrower;
 	}
 }

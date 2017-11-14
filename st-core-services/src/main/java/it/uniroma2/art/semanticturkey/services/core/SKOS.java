@@ -508,7 +508,8 @@ public class SKOS extends STServiceAdapter {
 		
 		IRI xLabelIRI = null;
 		if (label != null) { //?conc skos:prefLabel ?label
-			xLabelIRI = createLabelUsingLexicalizationModel(newConceptIRI, label, modelAdditions, checkExistingAltLabel);
+			xLabelIRI = createLabelUsingLexicalizationModel(newConceptIRI, label, modelAdditions, checkExistingAltLabel,
+					true);
 		}
 		for(IRI conceptScheme : conceptSchemes){
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
@@ -570,7 +571,7 @@ public class SKOS extends STServiceAdapter {
 		IRI xLabelIRI = null;
 		if (label != null) {
 			xLabelIRI = createLabelUsingLexicalizationModel(newSchemeIRI, label, modelAdditions, 
-					checkExistingAltLabel);
+					checkExistingAltLabel, true);
 		}
 
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -599,10 +600,10 @@ public class SKOS extends STServiceAdapter {
 			@Optional(defaultValue="true") boolean checkExistingAltLabel) 
 			throws AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
 		RepositoryConnection repoConnection = getManagedConnection();
+		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false);
 		if(checkExistingAltLabel) {
 			checkIfPrefAltLabelClash(repoConnection, literal, concept);
 		}
-		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		//check if there is always an existing prefLabel for the given language, in this case, delete it and
@@ -1250,7 +1251,7 @@ public class SKOS extends STServiceAdapter {
 		IRI xLabelIRI = null;
 		if (label != null) {
 			xLabelIRI = createLabelUsingLexicalizationModel(newCollectionRes, label, modelAdditions,
-					checkExistingAltLabel);
+					checkExistingAltLabel, true);
 		}
 		
 		
@@ -1681,7 +1682,7 @@ public class SKOS extends STServiceAdapter {
 	 * @throws PrefAltLabelClashException 
 	 */
 	private IRI createLabelUsingLexicalizationModel(Resource resource, Literal label, Model modelAdditions,
-			boolean checkPrefAltLabelClash) 
+			boolean checkPrefAltLabelClash, boolean newResource) 
 			throws URIGenerationException, UnsupportedLexicalizationModelException, 
 			AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
 		IRI lexModel = getProject().getLexicalizationModel();
@@ -1689,10 +1690,10 @@ public class SKOS extends STServiceAdapter {
 		if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 			modelAdditions.add(resource, RDFS.LABEL, label);
 		} else if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource, newResource);
 			if(checkPrefAltLabelClash) {
 				checkIfPrefAltLabelClash(getManagedConnection(), label, resource);
 			}
-			checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource);
 			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		} else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 			if(checkPrefAltLabelClash) {
@@ -1783,7 +1784,7 @@ public class SKOS extends STServiceAdapter {
 	
 	
 	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+			Resource resource, boolean newResouerce) throws AlreadyExistingLiteralFormForResourceException{
 		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
 		// to which the Literal will be added has not already an alternative label with the input
 		String query = "ASK {"+
@@ -1799,9 +1800,15 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
+			String text;
+			if(!newResouerce) {
+			text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
 					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
 					+ "with the same value";
+			} else {
+				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
+						+ "there is already a resource with the same prefLabel";
+			}
 			throw new AlreadyExistingLiteralFormForResourceException(text);
 		}
 	}
@@ -1817,7 +1824,7 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text = "WARNING: prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
+			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
 					+ "there is already a resource with the same altLabel.";
 			throw new PrefAltLabelClashException(text);
 		}
