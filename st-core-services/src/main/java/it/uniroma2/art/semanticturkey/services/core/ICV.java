@@ -1181,7 +1181,7 @@ public class ICV extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	//public Collection<AnnotatedValue<Resource>> listConceptsHierarchicalCycles() {
-	public JsonNode listConceptsHierarchicalRedundancies(@Optional(defaultValue="true") boolean sameGraph) 
+	public JsonNode listConceptsHierarchicalRedundancies(@Optional(defaultValue="true") boolean sameScheme) 
 			throws UnsupportedLexicalizationModelException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
@@ -1198,7 +1198,7 @@ public class ICV extends STServiceAdapter {
 				+ "?broader_concept "+broaderOrInverseNarrower()+"+ ?attr_other_concept .\n"
 				+ "FILTER(?broader_concept != ?attr_other_concept)\n"
 				+ "?attr_concept "+broaderOrInverseNarrower()+" ?attr_other_concept .\n";
-		if(sameGraph) {
+		if(sameScheme) {
 			query += "?attr_concept "+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" ?scheme .\n"
 					+"?broader_concept "+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" ?scheme .\n"
 					+"?attr_other_concept "+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" ?scheme .\n";
