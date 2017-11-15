@@ -3,10 +3,8 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -16,8 +14,11 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -35,6 +36,7 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelE
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -1095,7 +1097,6 @@ public class ICV extends STServiceAdapter {
 		
 		//now the duplicates cycles have been removed, so construct the answer
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode response = jsonFactory.objectNode();
 		
 		ArrayNode cycles = jsonFactory.arrayNode();
 		for(List<String> conceptList: cyclesReduxList) {
@@ -1105,11 +1106,8 @@ public class ICV extends STServiceAdapter {
 			}
 			cycles.add(singleCycle);
 		}
-		response.set("cycles", cycles);
 		
-		return response;
-		
-		
+		return cycles;
 	}
 	
 	private void calculateCycle(String concept, ArrayList<String> currentCycle,
@@ -1135,7 +1133,7 @@ public class ICV extends STServiceAdapter {
 		List<String> broaderList = conceptToBroadersConceptMap.get(concept);
 		for(String broader : broaderList) {
 			//clone the currentCycle, then add the concept and call calculateCycle
-			calculateCycle(broader, (ArrayList<String>)currentCycle.clone(), conceptToBroadersConceptMap, 
+			calculateCycle(broader, new ArrayList<>(currentCycle), conceptToBroadersConceptMap, 
 					cyclesList);
 		}
 	}
@@ -1172,6 +1170,140 @@ public class ICV extends STServiceAdapter {
 		}
 		//the cycles contains the same elements
 		return true;
+	}
+	
+	/**
+	 * Return a list of <triples> that are redundant from the hierarchical point of view
+	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	//public Collection<AnnotatedValue<Resource>> listConceptsHierarchicalCycles() {
+	public JsonNode listConceptsHierarchicalRedundancies(@Optional(defaultValue="true") boolean sameGraph) 
+			throws UnsupportedLexicalizationModelException {
+		IRI lexModel = getProject().getLexicalizationModel();
+		
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}
+		
+		String query = "SELECT ?resource ?attr_concept ?attr_other_concept ?attr_predicate \n"
+				+ "WHERE {\n"
+				+ "?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n"
+				+ "?attr_concept "+broaderOrInverseNarrower()+" ?broader_concept .\n"
+				+ "?broader_concept "+broaderOrInverseNarrower()+"+ ?attr_other_concept .\n"
+				+ "FILTER(?broader_concept != ?attr_other_concept)\n"
+				+ "?attr_concept "+broaderOrInverseNarrower()+" ?attr_other_concept .\n";
+		if(sameGraph) {
+			query += "?attr_concept "+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" ?scheme .\n"
+					+"?broader_concept "+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" ?scheme .\n"
+					+"?attr_other_concept "+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" ?scheme .\n";
+		}
+		//now check if the used property is BROADER or NARROWER
+		query+= "{?attr_concept "+NTriplesUtil.toNTriplesString(SKOS.BROADER)+" ?attr_other_concept .\n"
+				+ "BIND( "+NTriplesUtil.toNTriplesString(SKOS.BROADER)+"AS ?attr_predicate)}\n"
+				+ "UNION\n"
+				+ "{?attr_concept ^"+NTriplesUtil.toNTriplesString(SKOS.NARROWER)+" ?attr_other_concept .\n"
+				+ "BIND( "+NTriplesUtil.toNTriplesString(SKOS.NARROWER)+"AS ?attr_predicate)}\n"
+		//now bind the three elements (?attr_concept, ?attr_predicate and ?attr_other_concept )
+				+ "{?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n" //added to have some results
+				+ "BIND(?attr_concept AS ?resource)}\n"
+				+ "UNION\n"
+				+ "{?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n"//added to have some results
+				+ "BIND(?attr_predicate AS ?resource)}\n"
+				+ "UNION\n"
+				+ "{?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n" //added to have some results
+				+ "BIND(?attr_other_concept AS ?resource)}\n"
+
+				+ "} \n"
+				+ "GROUP BY ?resource ?attr_concept ?attr_other_concept ?attr_predicate ";
+		logger.debug("query [listConceptsHierarchicalRedundancies]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		//return qb.runQuery();
+		
+		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
+		//iterate over the response to construct the structure which will be used for the answer
+		Map<String, TripleForRedundancy> tripleForRedundancyMap = new HashMap<>();
+		for(AnnotatedValue<Resource> annotatedValue: annotatedValueList) {
+			String concept = annotatedValue.getAttributes().get("concept").stringValue();
+			annotatedValue.getAttributes().remove("concept");
+			String predicate = annotatedValue.getAttributes().get("predicate").stringValue();
+			annotatedValue.getAttributes().remove("predicate");
+			String other_concept = annotatedValue.getAttributes().get("other_concept").stringValue();
+			annotatedValue.getAttributes().remove("other_concept");
+			String key = concept+predicate+other_concept; 
+			if(!tripleForRedundancyMap.containsKey(key)) {
+				tripleForRedundancyMap.put(key, new TripleForRedundancy());
+			}
+			TripleForRedundancy tripleForRedundancy = tripleForRedundancyMap.get(key);
+			//check the AnnotatedValue to which of its "elements"refer to
+			String value = annotatedValue.getValue().stringValue();
+			boolean invert=false;
+			if(predicate.equals(NTriplesUtil.toNTriplesString(SKOS.NARROWER))) {
+				invert=true;
+			}
+			if(value.equals(concept)) {
+				if(invert) {
+					tripleForRedundancy.setObject(annotatedValue);
+				} else {
+					tripleForRedundancy.setSubject(annotatedValue);
+				}
+			} else if(value.equals(predicate)) {
+				tripleForRedundancy.setPredicate(annotatedValue);
+			} else { //value.equals(other_concept)
+				if(invert) {
+					tripleForRedundancy.setSubject(annotatedValue);
+				} else {
+					tripleForRedundancy.setObject(annotatedValue);
+				}
+			}
+		}
+		
+		//now construct the response
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode redundancies = jsonFactory.arrayNode();
+		for(TripleForRedundancy tripleForRedundancy : tripleForRedundancyMap.values()) {
+			ArrayNode singleRedundancy = jsonFactory.arrayNode();
+			singleRedundancy.addPOJO(tripleForRedundancy.getSubject());
+			singleRedundancy.addPOJO(tripleForRedundancy.getPredicate());
+			singleRedundancy.addPOJO(tripleForRedundancy.getObject());
+			redundancies.add(singleRedundancy);
+		}
+		return redundancies;
+	}
+	
+	private class TripleForRedundancy {
+		AnnotatedValue<Resource> subject;
+		AnnotatedValue<Resource> predicate;
+		AnnotatedValue<Resource> object;
+		
+		public AnnotatedValue<Resource> getSubject() {
+			return subject;
+		}
+		public void setSubject(AnnotatedValue<Resource> subject) {
+			this.subject = subject;
+		}
+		public AnnotatedValue<Resource> getPredicate() {
+			return predicate;
+		}
+		public void setPredicate(AnnotatedValue<Resource> predicate) {
+			this.predicate = predicate;
+		}
+		public AnnotatedValue<Resource> getObject() {
+			return object;
+		}
+		public void setObject(AnnotatedValue<Resource> object) {
+			this.object = object;
+		}
+		
+		
 	}
 	
 	//-----GENERICS-----
