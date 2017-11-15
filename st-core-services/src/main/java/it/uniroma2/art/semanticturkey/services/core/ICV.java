@@ -1270,10 +1270,10 @@ public class ICV extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode redundancies = jsonFactory.arrayNode();
 		for(TripleForRedundancy tripleForRedundancy : tripleForRedundancyMap.values()) {
-			ArrayNode singleRedundancy = jsonFactory.arrayNode();
-			singleRedundancy.addPOJO(tripleForRedundancy.getSubject());
-			singleRedundancy.addPOJO(tripleForRedundancy.getPredicate());
-			singleRedundancy.addPOJO(tripleForRedundancy.getObject());
+			ObjectNode singleRedundancy = jsonFactory.objectNode();
+			singleRedundancy.putPOJO("subject", tripleForRedundancy.getSubject());
+			singleRedundancy.putPOJO("predicate", tripleForRedundancy.getPredicate());
+			singleRedundancy.putPOJO("object", tripleForRedundancy.getObject());
 			redundancies.add(singleRedundancy);
 		}
 		return redundancies;
