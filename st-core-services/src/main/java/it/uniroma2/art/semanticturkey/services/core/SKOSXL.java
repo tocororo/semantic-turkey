@@ -353,7 +353,7 @@ public class SKOSXL extends STServiceAdapter {
 		if(checkExistingAltLabel) {
 			checkIfPrefAltLabelClash(repoConnection, literal, concept);
 		}
-		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept);
+		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false);
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -510,7 +510,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+			Resource resource, boolean newResource) throws AlreadyExistingLiteralFormForResourceException{
 		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
 		// to which the Literal will be added has not already an alternative label with the input
 		String query = "ASK {"+
@@ -531,9 +531,15 @@ public class SKOSXL extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		boolean check = booleanQuery.evaluate();
 		if(check){
-			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
+			String text;
+			if(!newResource) {
+				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
 					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
 					+ "with the same value";
+			} else {
+				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
+						+ "there is already a resource with the same prefLabel";
+			}
 			throw new AlreadyExistingLiteralFormForResourceException(text);
 		}
 	}

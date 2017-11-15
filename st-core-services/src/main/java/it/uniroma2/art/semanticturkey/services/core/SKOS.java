@@ -1696,10 +1696,10 @@ public class SKOS extends STServiceAdapter {
 			}
 			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		} else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource, newResource);
 			if(checkPrefAltLabelClash) {
 				it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfPrefAltLabelClash(getManagedConnection(), label, resource);
 			}
-			it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource);
 			xLabelIRI = generateXLabelIRI(resource, label, SKOSXL.PREF_LABEL);
 			modelAdditions.add(resource, SKOSXL.PREF_LABEL, xLabelIRI);
 			modelAdditions.add(xLabelIRI, RDF.TYPE, SKOSXL.LABEL);
@@ -1784,7 +1784,7 @@ public class SKOS extends STServiceAdapter {
 	
 	
 	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource, boolean newResouerce) throws AlreadyExistingLiteralFormForResourceException{
+			Resource resource, boolean newResource) throws AlreadyExistingLiteralFormForResourceException{
 		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
 		// to which the Literal will be added has not already an alternative label with the input
 		String query = "ASK {"+
@@ -1801,8 +1801,8 @@ public class SKOS extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
 			String text;
-			if(!newResouerce) {
-			text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
+			if(!newResource) {
+				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
 					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
 					+ "with the same value";
 			} else {
