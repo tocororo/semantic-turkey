@@ -233,5 +233,11 @@
 			<artifactId>lime-profiler</artifactId>
 			<version>${lime-api.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>annotations</artifactId>
+			<version>${annotations.version}</version>
+		</dependency>
 	</dependencies>
 </project>

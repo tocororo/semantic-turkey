@@ -38,6 +38,12 @@
 			<artifactId>st-core-framework</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>it.uniroma2.art.sheet2rdf</groupId>
+			<artifactId>sheet2rdf-osgi-bundle</artifactId>
+			<version>${sheet2rdf.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -182,6 +188,7 @@
 							it.uniroma2.art.semanticturkey.servlet,
 							it.uniroma2.art.semanticturkey.utilities,
 							it.uniroma2.art.semanticturkey.vocabulary,
+							it.uniroma2.art.sheet2rdf.*,
 							org.springframework.web.servlet.view,
 							org.springframework.web.servlet,
 							org.springframework.context.*,
