@@ -134,7 +134,7 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
 					"\nWHERE{" +
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )+ ?broader .";
+					"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )* ?broader .";
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
@@ -150,7 +150,7 @@ public class Search extends STServiceAdapter {
 						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme2") +
 						"\n}";
 			}
-			else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is wither null or an empty list
+			else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is either null or an empty list
 				//check if the selected broader has no brother itself, in this case it is consider a topConcept
 				query +="\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
@@ -212,7 +212,7 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
 					"\nWHERE{" + 
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBPROPERTYOF.stringValue() + ">+ ?superProperty ." +
+					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBPROPERTYOF.stringValue() + ">* ?superProperty ." +
 					"\nOPTIONAL{" +
 					"\n?superProperty <" + RDFS.SUBPROPERTYOF.stringValue() + "> ?superSuperProperty ." +
 					"\n}" + 
@@ -238,7 +238,7 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
 					"\nWHERE{" + 
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">+ ?superClass ." + 
+					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ." + 
 					
 					//check that the superClass belong to the default graph
 					"\n?metaClass1 rdfs:subClassOf* owl:Class ." +
@@ -270,7 +270,7 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
 					"\nWHERE {"+
 					"\n{"+
-					"\n?superCollection "+complexPropPath+"+ <"+resourceURI.stringValue()+"> ." +
+					"\n?superCollection "+complexPropPath+"* <"+resourceURI.stringValue()+"> ." +
 					"\nOPTIONAL {"+
 					"?superSuperCollection "+complexPropPath+" ?superCollection ." +
 					"\n}" +
@@ -302,24 +302,29 @@ public class Search extends STServiceAdapter {
 		}
 		tupleQuery.setDataset(dataset);
 
+		//execute the query
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		//the map containing the resource with all the added values taken from the response of the query
 		Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = new HashMap<String, ResourceForHierarchy>();
 		boolean isTopResource = false;
 		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
+			//get the value of the superResource (broader for concepts, superClass for classes, etc). This is not
+			// just the direct super type, but it uses the transitive closure in SPARQL
 			if (bindingSet.hasBinding(superResourceVar)) {
-				Value superArtNode = bindingSet.getBinding(superResourceVar).getValue();
+				Value superNode = bindingSet.getBinding(superResourceVar).getValue();
 				boolean isResNotURI = false;
 				String superResourceShow = null;
 				String superResourceId;
-				if (superArtNode instanceof IRI) {
-					superResourceId = superArtNode.stringValue();
-					superResourceShow = ((IRI) superArtNode).getLocalName();
+				if (superNode instanceof IRI) {
+					superResourceId = superNode.stringValue();
+					superResourceShow = ((IRI) superNode).getLocalName();
 				} else { // BNode or Literal
-					superResourceId = "NOT URI " + superArtNode.stringValue();
+					superResourceId = "NOT URI " + superNode.stringValue();
 					isResNotURI = true;
 				}
-
+				
+				//get the superSuperResource
 				String superSuperResourceId = null;
 				String superSuperResourceShow = null;
 				Value superSuperResNode = null;
@@ -334,9 +339,11 @@ public class Search extends STServiceAdapter {
 						isSuperResABNode = true;
 					}
 				}
+				
+				//now add the information about superResource and superSuperResource to the map
 				if (!resourceToResourceForHierarchyMap.containsKey(superResourceId)) {
 					resourceToResourceForHierarchyMap.put(superResourceId,
-							new ResourceForHierarchy(superArtNode, superResourceShow, isResNotURI));
+							new ResourceForHierarchy(superNode, superResourceShow, isResNotURI));
 				}
 				if (!bindingSet.hasBinding("isTopConcept")) { // use only for concept
 					resourceToResourceForHierarchyMap.get(superResourceId).setTopConcept(false);
@@ -347,10 +354,12 @@ public class Search extends STServiceAdapter {
 						resourceToResourceForHierarchyMap.put(superSuperResourceId, new ResourceForHierarchy(
 								superSuperResNode, superSuperResourceShow, isSuperResABNode));
 					}
+					//get the structure in the map for the superResource to add the superSuperResource
+					//(the superResource is added to the structure containing the superSuperResource)
 					ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
 							.get(superSuperResourceId);
 					resourceForHierarchy.addSubResource(superResourceId);
-
+					
 					resourceToResourceForHierarchyMap.get(superResourceId).setHasNoSuperResource(false);
 				}
 			}
@@ -379,11 +388,11 @@ public class Search extends STServiceAdapter {
 				}
 			}
 			List<String> currentList = new ArrayList<String>();
-			currentList.add(resourceForHierarchy.getValue().stringValue());
-			getSubResourcesListUsingResourceFroHierarchy(resourceForHierarchy, currentList, pathList,
-					resourceToResourceForHierarchyMap);
+			//currentList.add(resourceForHierarchy.getValue().stringValue());
+			getSubResourcesListUsingResourceFroHierarchy(resourceURI.stringValue(), resourceForHierarchy, 
+					currentList, pathList, resourceToResourceForHierarchyMap);
 		}
-
+		
 		// now construct the response
 		// to order the path (from the shortest to the longest) first find the maximum length
 		int maxLength = -1;
@@ -410,6 +419,7 @@ public class Search extends STServiceAdapter {
 
 		for (int currentLength = 1; currentLength <= maxLength && !pathFound; ++currentLength) {
 			for (List<String> path : pathList) {
+				boolean targetResNotPresent = true;
 				if (currentLength != path.size()) {
 					// it is not the right iteration to add this path
 					continue;
@@ -417,6 +427,9 @@ public class Search extends STServiceAdapter {
 				pathFound = true;
 
 				for (String conceptInPath : path) {
+					if(resourceURI.stringValue().equals(conceptInPath)) {
+						targetResNotPresent = false;
+					}
 					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
 							(Resource) resourceToResourceForHierarchyMap.get(conceptInPath).getValue());
 					annotatedValue.setAttribute("explicit", true);
@@ -424,11 +437,13 @@ public class Search extends STServiceAdapter {
 							resourceToResourceForHierarchyMap.get(conceptInPath).getShow());
 					results.add(annotatedValue);
 				}
-				// add, at the end, the input concept
-				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
-				annotatedValue.setAttribute("explicit", true);
-				annotatedValue.setAttribute("show", resourceURI.getLocalName());
-				results.add(annotatedValue);
+				// add, if necessary, at the end, the input concept
+				if(targetResNotPresent) {
+					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
+					annotatedValue.setAttribute("explicit", true);
+					annotatedValue.setAttribute("show", resourceURI.getLocalName());
+					results.add(annotatedValue);
+				}
 
 			}
 		}
@@ -494,10 +509,9 @@ public class Search extends STServiceAdapter {
 	// return filterQuery;
 	// }
 
-	private void getSubResourcesListUsingResourceFroHierarchy(ResourceForHierarchy resource,
+	private void getSubResourcesListUsingResourceFroHierarchy(String targetRes, ResourceForHierarchy resource,
 			List<String> currentPathList, List<List<String>> pathList,
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap) {
-		List<String> subResourceList = resource.getSubResourcesList();
 
 		if (resource.isNotURI) {
 			// since this resource is not a URI, then the path to which this resource belong to must not be
@@ -505,27 +519,30 @@ public class Search extends STServiceAdapter {
 			return;
 		}
 
-		if (subResourceList.isEmpty()) {
+		//check if the current element is already in the path, in this case do nothing and return, since
+		// it is a cycle
+		if(currentPathList.contains(resource.getValue().stringValue())) {
+			return;
+		} 
+		
+		//add the current resource to the current path
+		currentPathList.add(resource.getValue().stringValue());
+		
+		//check if the current resource (the one just added) is the target element, in this case add the 
+		// current path to the list of the possible path and return
+		if(targetRes.equals(resource.getValue().stringValue())) {
 			pathList.add(currentPathList);
-		} else {
-			for (String subResource : subResourceList) {
-				List<String> updatedPath = new ArrayList<String>(currentPathList);
-				if (updatedPath.contains(subResource)) {
-					// this element already exist in the path, it is a cycle, so, skip this element
-					continue;
-				}
-				updatedPath.add(subResource);
-				// check if the subResource has no element above (broader or superClass), this mean that it
-				// is the last element in the path
-				if (resourceToResourceForHierarchyMap.get(subResource).getSubResourcesList().isEmpty()) {
-					pathList.add(updatedPath);
-					continue;
-				}
-				ResourceForHierarchy updatedResourceForHierarchy = resourceToResourceForHierarchyMap
-						.get(subResource);
-				getSubResourcesListUsingResourceFroHierarchy(updatedResourceForHierarchy, updatedPath,
-						pathList, resourceToResourceForHierarchyMap);
-			}
+			return;
+		}
+		
+		//iterate over subResources of the current resource
+		for(String subResource : resource.getSubResourcesList()) {
+			//create a copy of the currentList
+			List<String> updatedPath = new ArrayList<String>(currentPathList);
+			//call getSubResourcesListUsingResourceFroHierarchy on subResource
+			getSubResourcesListUsingResourceFroHierarchy(targetRes, 
+					resourceToResourceForHierarchyMap.get(subResource), updatedPath, pathList, 
+					resourceToResourceForHierarchyMap);
 		}
 	}
 
