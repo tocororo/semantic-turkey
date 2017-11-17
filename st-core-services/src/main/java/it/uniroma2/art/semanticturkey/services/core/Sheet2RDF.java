@@ -570,7 +570,6 @@ public class Sheet2RDF extends STServiceAdapter {
 	@STServiceOperation
 	public void closeSession() {
 		if (stServiceContext.hasContextParameter("token")) {
-			System.out.println("closing session for token " + stServiceContext.getSessionToken());
 			String token = stServiceContext.getSessionToken();
 			contextMap.remove(token);
 		}
