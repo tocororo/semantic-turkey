@@ -21,7 +21,9 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1598,7 +1600,6 @@ public class ICV extends STServiceAdapter {
 				// decide what to do, maybe e HTTP request TODO
 				continue;
 			} 
-			
 			RepositoryConnection connectionToOtherRepository;
 			if(checkLocalRes && resourcePosition instanceof LocalResourcePosition) {
 				LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
@@ -1608,14 +1609,20 @@ public class ICV extends STServiceAdapter {
 			}
 			else if(checkRemoteRes && resourcePosition instanceof RemoteResourcePosition) {
 				RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
+				//get the SPARQL endpoint for the remote position
 				String sparqlEndPoint = remoteResourcePosition.getDatasetMetadata().getSparqlEndpoint();
-				//TODO see what to do in this case, for the moment, skip this case
-				continue;
+				if(sparqlEndPoint != null) {
+					Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
+					sparqlRepository.initialize();
+					connectionToOtherRepository = sparqlRepository.getConnection();
+				} else {
+					//TODO see what to do in this case, for the moment, skip this case
+					continue;
+				}
 			} else {
 				//This should never happen, decide what to do
 				continue;
 			}
-			
 			
 			//first implementation, do a SPARQL query for each resource
 			for(TripleForAnnotatedValue tripleForAnnotatedValue : namespaceToTripleMap.get(namespace)) {
