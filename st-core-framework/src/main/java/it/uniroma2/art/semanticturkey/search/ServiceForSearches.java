@@ -39,7 +39,7 @@ public class ServiceForSearches {
 //	final static public String END_SEARCH_MODE = "endsWith";
 //	final static public String EXACT_SEARCH_MODE = "exact";
 	
-	public static boolean isClassWanted = false;
+	private boolean isClassWanted = false;
 	private boolean isConceptWanted = false;
 	private boolean isConceptSchemeWanted = false;
 	private boolean isInstanceWanted = false;
@@ -465,9 +465,9 @@ public class ServiceForSearches {
 			if(tupleBindings.hasBinding("label")){
 				Literal label = (Literal) tupleBindings.getBinding("label").getValue();
 				result = label.getLabel();
-				if(label.getLanguage().isPresent()){
+				/*if(label.getLanguage().isPresent()){
 					result += "@"+label.getLanguage().get();
-				}
+				}*/
 			} else{
 				Value value = tupleBindings.getBinding("resource").getValue();
 				if(value instanceof IRI){
