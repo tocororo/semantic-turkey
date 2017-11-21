@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -24,6 +25,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,9 +33,19 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -43,10 +55,18 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 
 @STService
 public class ICV extends STServiceAdapter {
+	
+	@Autowired
+	private ResourceLocator resourceLocator;
+	
+	private ThreadLocal<Map<Project, RepositoryConnection>> projectConnectionHolder = ThreadLocal
+			.withInitial(HashMap::new);
 	
 	protected static Logger logger = LoggerFactory.getLogger(ICV.class);
 	
@@ -1230,7 +1250,7 @@ public class ICV extends STServiceAdapter {
 		
 		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
 		//iterate over the response to construct the structure which will be used for the answer
-		Map<String, TripleForRedundancy> tripleForRedundancyMap = new HashMap<>();
+		Map<String, TripleForAnnotatedValue> tripleForRedundancyMap = new HashMap<>();
 		for(AnnotatedValue<Resource> annotatedValue: annotatedValueList) {
 			String concept = annotatedValue.getAttributes().get("concept").stringValue();
 			annotatedValue.getAttributes().remove("concept");
@@ -1240,9 +1260,9 @@ public class ICV extends STServiceAdapter {
 			annotatedValue.getAttributes().remove("other_concept");
 			String key = concept+predicate+other_concept; 
 			if(!tripleForRedundancyMap.containsKey(key)) {
-				tripleForRedundancyMap.put(key, new TripleForRedundancy());
+				tripleForRedundancyMap.put(key, new TripleForAnnotatedValue());
 			}
-			TripleForRedundancy tripleForRedundancy = tripleForRedundancyMap.get(key);
+			TripleForAnnotatedValue tripleForRedundancy = tripleForRedundancyMap.get(key);
 			//check the AnnotatedValue to which of its "elements"refer to
 			String value = annotatedValue.getValue().stringValue();
 			boolean invert=false;
@@ -1269,7 +1289,7 @@ public class ICV extends STServiceAdapter {
 		//now construct the response
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode redundancies = jsonFactory.arrayNode();
-		for(TripleForRedundancy tripleForRedundancy : tripleForRedundancyMap.values()) {
+		for(TripleForAnnotatedValue tripleForRedundancy : tripleForRedundancyMap.values()) {
 			ObjectNode singleRedundancy = jsonFactory.objectNode();
 			singleRedundancy.putPOJO("subject", tripleForRedundancy.getSubject());
 			singleRedundancy.putPOJO("predicate", tripleForRedundancy.getPredicate());
@@ -1279,7 +1299,7 @@ public class ICV extends STServiceAdapter {
 		return redundancies;
 	}
 	
-	private class TripleForRedundancy {
+	private class TripleForAnnotatedValue {
 		AnnotatedValue<Resource> subject;
 		AnnotatedValue<Resource> predicate;
 		AnnotatedValue<Resource> object;
@@ -1302,9 +1322,357 @@ public class ICV extends STServiceAdapter {
 		public void setObject(AnnotatedValue<Resource> object) {
 			this.object = object;
 		}
-		
-		
 	}
+	
+	/**
+	 * Return a list of namespaces of alignments concepts with the number of alignments per namespace
+	 * @param rolesArray
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public JsonNode listAlignedNamespaces(RDFResourceRole[] rolesArray) {
+		//IRI lexModel = getProject().getLexicalizationModel();
+		
+		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}*/
+		boolean first = true;
+		String query = "SELECT ?namespace (count(?namespace) as ?count) \n"
+				+ "WHERE {\n";
+		
+		
+		for(RDFResourceRole role : rolesArray) {
+			if(!first) {
+				query += "UNION\n";
+				first = false;
+			}
+			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
+					role.equals(RDFResourceRole.skosCollection)) {
+				query +=
+						// ?propMapping rdfs:subPropertyOf skos:mappingRelation
+						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+							NTriplesUtil.toNTriplesString(SKOS.MAPPING_RELATION)+" . } \n";
+				
+			} else if(role.equals(RDFResourceRole.cls)) {
+				query += 
+						// ?propMapping rdfs:subPropertyOf owl:equivalentClass
+						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTCLASS)+" . } \n"
+						+ " UNION \n"
+						// ?propMapping rdfs:subPropertyOf owl:disjointWith
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.DISJOINTWITH)+" . } \n"
+						+ " UNION \n"
+						// ?propMapping rdfs:subPropertyOf rdfs:subClassOf
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+" . } \n";
+			} else if(role.equals(RDFResourceRole.property)) {
+				query +=
+						// ?propMapping rdfs:subPropertyOf owl:equivalentProperty
+						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTPROPERTY)+" . } \n"
+						//+ " UNION \n"
+						//NTriplesUtil.toNTriplesString(OWL.PROPERTYDISJOINTWITH)+" . } \n"
+						// ?propMapping rdfs:subPropertyOf owl:equivalentProperty
+						+ " UNION \n"
+						// ?propMapping rdfs:subPropertyOf rdfs.subPropertyOfy
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+" . } \n";
+			} else if(role.equals(RDFResourceRole.individual)) {
+				query +=
+						// ?propMapping rdfs:subPropertyOf owl:sameAs
+						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.SAMEAS)+" . } \n"
+						+ " UNION \n"
+						// ?propMapping rdfs:subPropertyOf owl:differentFrom
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.DIFFERENTFROM)+" . } \n";
+			}
+		}
+		
+		query += "?resource ?propMapping ?resource2 .\n"
+				+ "BIND(REPLACE(str(?resource2), '[^(#|/)]+$', \"\") AS ?namespace)\n"
+				+ "}\n"
+				+ "GROUP BY ?namespace";
+		
+		
+		logger.debug("query [listAlignedNamespaces]:\n" + query);
+		TupleQuery tupleQuery = getManagedConnection().prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		
+		//now iterate over the result to create the response
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode responce = jsonFactory.arrayNode();
+		while(tupleQueryResult.hasNext()) {
+			BindingSet bindingSet = tupleQueryResult.next();
+			String namespace = bindingSet.getBinding("namespace").getValue().stringValue();
+			String count = bindingSet.getBinding("count").getValue().stringValue();
+			ObjectNode objectNode = jsonFactory.objectNode();
+			objectNode.put("namespace", namespace);
+			objectNode.put("count", count);
+			responce.add(objectNode);
+		}
+		
+		return responce;
+	}
+	
+	/**
+	 * Return a list of <triples> of broken alignments among concepts
+	 * @return
+	 * @throws ProjectAccessException 
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public JsonNode listBrokenAlignments(RDFResourceRole[] rolesArray,
+			String[] namespaces, boolean checkLocalRes, boolean checkRemoteRes) throws ProjectAccessException {
+		
+		//check that at least one of localConcepts and remoteConcepts
+		if(!checkLocalRes && !checkRemoteRes) {
+			String text = "At least of of the two paramters, localConcepts and remoteConcepts should be"
+					+ "true";
+			throw new IllegalArgumentException(text);
+		}
+		
+		
+		//use the input namespaces to get the list of resources which need to be checked 
+		// (to see which propety to use, check the rolesArray)
+		boolean first = true;
+		String query = "SELECT ?resource ?attr_subj ?attr_propMapping ?attr_obj ?attr_namespace \n"
+				+ "WHERE {\n";
+		
+		
+		for(RDFResourceRole role : rolesArray) {
+			if(!first) {
+				query += "UNION\n";
+				first = false;
+			}
+			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
+					role.equals(RDFResourceRole.skosCollection)) {
+				query +=
+						// ?attr_propMapping rdfs:subPropertyOf skos:mappingRelation
+						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+							NTriplesUtil.toNTriplesString(SKOS.MAPPING_RELATION)+" . } \n";
+				
+			} else if(role.equals(RDFResourceRole.cls)) {
+				query += 
+						// ?attr_propMapping rdfs:subPropertyOf owl:equivalentClass
+						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTCLASS)+" . } \n"
+						+ " UNION \n"
+						// ?attr_propMapping rdfs:subPropertyOf owl:disjointWith
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.DISJOINTWITH)+" . } \n"
+						+ " UNION \n"
+						// ?attr_propMapping rdfs:subPropertyOf rdfs:subClassOf
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+" . } \n";
+			} else if(role.equals(RDFResourceRole.property)) {
+				query +=
+						// ?attr_propMapping rdfs:subPropertyOf owl:equivalentProperty
+						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTPROPERTY)+" . } \n"
+						//+ " UNION \n"
+						//NTriplesUtil.toNTriplesString(OWL.PROPERTYDISJOINTWITH)+" . } \n"
+						// ?attr_propMapping rdfs:subPropertyOf owl:equivalentProperty
+						+ " UNION \n"
+						// ?attr_propMapping rdfs:subPropertyOf rdfs.subPropertyOfy
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+" . } \n";
+			} else if(role.equals(RDFResourceRole.individual)) {
+				query +=
+						// ?attr_propMapping rdfs:subPropertyOf owl:sameAs
+						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.SAMEAS)+" . } \n"
+						+ " UNION \n"
+						// ?attr_propMapping rdfs:subPropertyOf owl:differentFrom
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						NTriplesUtil.toNTriplesString(OWL.DIFFERENTFROM)+" . } \n";
+			}
+		}
+		
+		query += "?attr_subj ?attr_propMapping ?attr_obj .\n"
+				+ "BIND(REPLACE(str(?attr_obj), '[^(#|/)]+$', \"\") AS ?attr_namespace)\n";
+		query += "FILTER(";
+		first = true;
+		for(String namespace : namespaces) {
+			if(!first) {
+				query += " || ";
+			}
+			first = false;
+			query += "?attr_namespace = \""+namespace+"\"";
+		}
+		query += ")\n"
+		
+		//put ?attr_subj ?attr_propMapping ?obj in ?resource (so the will be in the annotated value)
+				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n" //added to have some results
+				+ "BIND(?attr_subj AS ?resource)}\n"
+				+ "UNION\n"
+				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n"//added to have some results
+				+ "BIND(?attr_propMapping AS ?resource)}\n"
+				+ "UNION\n"
+				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n" //added to have some results
+				+ "BIND(?attr_obj AS ?resource)}\n"		
+				
+				+ "}\n"
+				+ "GROUP BY ?resource ?attr_subj ?attr_propMapping ?attr_obj ?attr_namespace";
+		
+		logger.debug("query [listBrokenAlignments1]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		
+		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
+		
+		//iterate over the result from the SPARQL query to contruct a temp map containing the
+		// TripleForAnnotatedValue (used as key for the map the subj_pred_obj)
+		Map <String, TripleForAnnotatedValue> tripleForAnnotatedValueMap = new HashMap<>();
+		for(AnnotatedValue<Resource> annotatedValue : annotatedValueList) {
+			String subj = annotatedValue.getAttributes().get("subj").stringValue();
+			annotatedValue.getAttributes().remove("subj");
+			String propMapping = annotatedValue.getAttributes().get("propMapping").stringValue();
+			annotatedValue.getAttributes().remove("propMapping");
+			String obj = annotatedValue.getAttributes().get("obj").stringValue();
+			annotatedValue.getAttributes().remove("obj");
+			String key = subj+propMapping+obj; 
+			if(!tripleForAnnotatedValueMap.containsKey(key)) {
+				tripleForAnnotatedValueMap.put(key, new TripleForAnnotatedValue());
+			}
+			TripleForAnnotatedValue tripleForAnnotatedValue = tripleForAnnotatedValueMap.get(key);
+			//check the AnnotatedValue to which of its "elements"refer to
+			String value = annotatedValue.getValue().stringValue();
+			if(value.equals(subj)) {
+				tripleForAnnotatedValue.setSubject(annotatedValue);
+			} else if(value.equals(propMapping)) {
+				tripleForAnnotatedValue.setPredicate(annotatedValue);
+			} else { //value.equals(obj)
+				tripleForAnnotatedValue.setObject(annotatedValue);
+			}
+		}
+		
+		//use the just created tripleForAnnotatedValueMap to construct a map linking the namespace of the
+		// objct of the list of triple of annotatedValue (all the Triple having having that namespace 
+		// in their object)
+		Map<String, List<TripleForAnnotatedValue>> namespaceToTripleMap = new HashMap<>();
+		for(TripleForAnnotatedValue tripleForAnnotatedValue : tripleForAnnotatedValueMap.values()) {
+			String namespace = tripleForAnnotatedValue.getObject().getAttributes().get("namespace").stringValue();
+			if(!namespaceToTripleMap.containsKey(namespace)) {
+				namespaceToTripleMap.put(namespace, new ArrayList<>());
+			}
+			tripleForAnnotatedValue.getSubject().getAttributes().remove("namespace");
+			tripleForAnnotatedValue.getPredicate().getAttributes().remove("namespace");
+			tripleForAnnotatedValue.getObject().getAttributes().remove("namespace");
+			//add only the the triples having an IRI as object
+			if(tripleForAnnotatedValue.getObject().getValue() instanceof IRI) {
+				namespaceToTripleMap.get(namespace).add(tripleForAnnotatedValue);
+			}
+		}
+		
+		//now iterate over the map, consider just one resource per given namespace, since all resources
+		// with the same namespace belong to the same location (TODO check this statement)
+		Map<String, ResourcePosition> namespaceToPositionMap = new HashMap<>();
+		for(String namespace : namespaceToTripleMap.keySet()) {
+			IRI firstResForNamespace = (IRI) namespaceToTripleMap.get(namespace).get(0).getObject().getValue();
+			ResourcePosition resourcePosition = 
+					resourceLocator.locateResource(getProject(), getRepository(), firstResForNamespace);
+			namespaceToPositionMap.put(namespace, resourcePosition);
+		}
+		
+		//prepare the empty response, which will be fill everytime a broken alignment is found
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode response = jsonFactory.arrayNode();
+		
+		//now iterate over the map of namespace-resources and namespace-location to check if each 
+		// resource is present in the associated location (check the two boolean values)
+		for(String namespace : namespaceToTripleMap.keySet()) {
+			ResourcePosition resourcePosition = namespaceToPositionMap.get(namespace);
+			if(resourcePosition.equals(ResourceLocator.UNKNOWN_RESOURCE_POSITION)) {
+				//the resource locator was not able to find the project containg such resoruce (namespace)
+				// decide what to do, maybe e HTTP request TODO
+				continue;
+			} 
+			
+			RepositoryConnection connectionToOtherRepository;
+			if(checkLocalRes && resourcePosition instanceof LocalResourcePosition) {
+				LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
+				Project otherLocalProject = localResourcePosition.getProject();
+				connectionToOtherRepository = acquireManagedConnectionToProject(getProject(),
+						otherLocalProject);
+			}
+			else if(checkRemoteRes && resourcePosition instanceof RemoteResourcePosition) {
+				RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
+				String sparqlEndPoint = remoteResourcePosition.getDatasetMetadata().getSparqlEndpoint();
+				//TODO see what to do in this case, for the moment, skip this case
+				continue;
+			} else {
+				//This should never happen, decide what to do
+				continue;
+			}
+			
+			
+			//first implementation, do a SPARQL query for each resource
+			for(TripleForAnnotatedValue tripleForAnnotatedValue : namespaceToTripleMap.get(namespace)) {
+				//prepare the query
+				IRI resource = (IRI) tripleForAnnotatedValue.getObject().getValue();
+				query = "SELECT ?deprecated ?hasType"
+						+" WHERE {\n"
+						//check if the resourse is deprecated
+						+ "{ "+NTriplesUtil.toNTriplesString(resource)+ " "+
+							NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
+						+ "BIND(true AS ?deprecated )\n"
+						+ "}\n"
+						+ "UNION\n"
+						//check if the 
+						+ "{ "+NTriplesUtil.toNTriplesString(resource) + " a ?type .\n"  
+						+ "BIND(true AS ?hasType)\n "
+						+ "}\n"
+						+ "}";
+				logger.debug("query [listBrokenAlignments2]:\n" + query);
+				boolean hasType = false;
+				boolean isDeprecated = false;
+				TupleQuery tupleQuery = connectionToOtherRepository.prepareTupleQuery(query);
+				tupleQuery.setIncludeInferred(false);
+				TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+				//analyze the response of the query to see if the resource has a type and/or is deprecated
+				if(tupleQueryResult.hasNext()) {
+					//it has at least a type or it is deprecated
+					BindingSet bindingSet = tupleQueryResult.next();
+					if(bindingSet.hasBinding("hasType")) {
+						hasType = true;
+					}
+					if(bindingSet.hasBinding("deprecated")) {
+						isDeprecated = true;
+					}
+				}
+				
+				//if the resource has no type or is deprecated, then return it (the triple from which the 
+				// resource was taken)
+				if(!hasType || isDeprecated) {
+					ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+					singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
+					singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
+					if(isDeprecated) {
+						tripleForAnnotatedValue.getObject().setAttribute("deprecated", true);
+					} else {
+						tripleForAnnotatedValue.getObject().setAttribute("deprecated", false);
+					}
+					singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
+					response.add(singleBrokenAlign);
+				}
+			}
+			//close the connection to the other repository
+			connectionToOtherRepository.close();
+		}
+		return response;
+	}
+	
 	
 	//-----GENERICS-----
 	
@@ -1750,5 +2118,22 @@ public class ICV extends STServiceAdapter {
 		String broaderOrInverceNarrower = "("+NTriplesUtil.toNTriplesString(SKOS.BROADER)+" | ^" +
 				NTriplesUtil.toNTriplesString(SKOS.NARROWER)+" )";
 		return broaderOrInverceNarrower;
+	}
+	
+	private RepositoryConnection acquireManagedConnectionToProject(ProjectConsumer consumer,
+			Project resourceHoldingProject) throws ProjectAccessException {
+		if (consumer.equals(resourceHoldingProject)) {
+			return getManagedConnection();
+		} else {
+			AccessResponse accessResponse = ProjectManager.checkAccessibility(consumer,
+					resourceHoldingProject, AccessLevel.R, LockLevel.NO);
+
+			if (!accessResponse.isAffirmative()) {
+				throw new ProjectAccessException(accessResponse.getMsg());
+			}
+
+			return projectConnectionHolder.get().computeIfAbsent(resourceHoldingProject,
+					p -> RDF4JRepositoryUtils.wrapReadOnlyConnection(p.getRepository().getConnection()));
+		}
 	}
 }
