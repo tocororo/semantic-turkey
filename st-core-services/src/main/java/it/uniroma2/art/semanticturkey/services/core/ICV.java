@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,7 +16,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -1427,13 +1429,15 @@ public class ICV extends STServiceAdapter {
 	 * Return a list of <triples> of broken alignments among concepts
 	 * @return
 	 * @throws ProjectAccessException 
+	 * @throws IOException 
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public JsonNode listBrokenAlignments(RDFResourceRole[] rolesArray,
-			String[] namespaces, boolean checkLocalRes, boolean checkRemoteRes) throws ProjectAccessException {
+			String[] namespaces, boolean checkLocalRes, boolean checkRemoteRes) throws ProjectAccessException, 
+				IOException {
 		
 		//check that at least one of localConcepts and remoteConcepts
 		if(!checkLocalRes && !checkRemoteRes) {
@@ -1595,12 +1599,8 @@ public class ICV extends STServiceAdapter {
 		// resource is present in the associated location (check the two boolean values)
 		for(String namespace : namespaceToTripleMap.keySet()) {
 			ResourcePosition resourcePosition = namespaceToPositionMap.get(namespace);
-			if(resourcePosition.equals(ResourceLocator.UNKNOWN_RESOURCE_POSITION)) {
-				//the resource locator was not able to find the project containg such resoruce (namespace)
-				// decide what to do, maybe e HTTP request TODO
-				continue;
-			} 
-			RepositoryConnection connectionToOtherRepository;
+			boolean doHttpRequest = false;
+			RepositoryConnection connectionToOtherRepository = null;
 			if(checkLocalRes && resourcePosition instanceof LocalResourcePosition) {
 				LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 				Project otherLocalProject = localResourcePosition.getProject();
@@ -1616,66 +1616,92 @@ public class ICV extends STServiceAdapter {
 					sparqlRepository.initialize();
 					connectionToOtherRepository = sparqlRepository.getConnection();
 				} else {
-					//TODO see what to do in this case, for the moment, skip this case
-					continue;
+					doHttpRequest = true;
 				}
+			} else if(checkRemoteRes &&  resourcePosition.equals(ResourceLocator.UNKNOWN_RESOURCE_POSITION)) {
+				doHttpRequest = true;
 			} else {
-				//This should never happen, decide what to do
-				continue;
+				//this shoyld never happen, decide what to do
 			}
 			
 			//first implementation, do a SPARQL query for each resource
 			for(TripleForAnnotatedValue tripleForAnnotatedValue : namespaceToTripleMap.get(namespace)) {
-				//prepare the query
 				IRI resource = (IRI) tripleForAnnotatedValue.getObject().getValue();
-				query = "SELECT ?deprecated ?hasType"
-						+" WHERE {\n"
-						//check if the resourse is deprecated
-						+ "{ "+NTriplesUtil.toNTriplesString(resource)+ " "+
-							NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
-						+ "BIND(true AS ?deprecated )\n"
-						+ "}\n"
-						+ "UNION\n"
-						//check if the 
-						+ "{ "+NTriplesUtil.toNTriplesString(resource) + " a ?type .\n"  
-						+ "BIND(true AS ?hasType)\n "
-						+ "}\n"
-						+ "}";
-				logger.debug("query [listBrokenAlignments2]:\n" + query);
-				boolean hasType = false;
-				boolean isDeprecated = false;
-				TupleQuery tupleQuery = connectionToOtherRepository.prepareTupleQuery(query);
-				tupleQuery.setIncludeInferred(false);
-				TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-				//analyze the response of the query to see if the resource has a type and/or is deprecated
-				if(tupleQueryResult.hasNext()) {
-					//it has at least a type or it is deprecated
-					BindingSet bindingSet = tupleQueryResult.next();
-					if(bindingSet.hasBinding("hasType")) {
-						hasType = true;
+				if(doHttpRequest) {
+					//do an httpRequest to see if the which IRIs are associated to an existing web page
+					URL url = new URL(resource.stringValue());
+					HttpURLConnection con = (HttpURLConnection) url.openConnection();
+					con.setRequestMethod("GET");
+					con.setRequestProperty("Content-Type", "application/json");
+					con.setConnectTimeout(5000);
+					con.setReadTimeout(5000);
+					//connect to the remote site
+					con.connect();
+					
+					int code = con.getResponseCode();
+					if(code!=200) {
+						//if the page cannot be found, then the resource does not exist, so return it
+						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+						singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
+						singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
+						singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
+						response.add(singleBrokenAlign);
 					}
-					if(bindingSet.hasBinding("deprecated")) {
-						isDeprecated = true;
+					//close the connection with the remote site
+					con.disconnect();
+				} else {
+					//do the sparql query
+					query = "SELECT ?deprecated ?hasType"
+							+" WHERE {\n"
+							//check if the resourse is deprecated
+							+ "{ "+NTriplesUtil.toNTriplesString(resource)+ " "+
+								NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
+							+ "BIND(true AS ?deprecated )\n"
+							+ "}\n"
+							+ "UNION\n"
+							//check if the 
+							+ "{ "+NTriplesUtil.toNTriplesString(resource) + " a ?type .\n"  
+							+ "BIND(true AS ?hasType)\n "
+							+ "}\n"
+							+ "}";
+					logger.debug("query [listBrokenAlignments2]:\n" + query);
+					boolean hasType = false;
+					boolean isDeprecated = false;
+					TupleQuery tupleQuery = connectionToOtherRepository.prepareTupleQuery(query);
+					tupleQuery.setIncludeInferred(false);
+					TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+					//analyze the response of the query to see if the resource has a type and/or is deprecated
+					if(tupleQueryResult.hasNext()) {
+						//it has at least a type or it is deprecated
+						BindingSet bindingSet = tupleQueryResult.next();
+						if(bindingSet.hasBinding("hasType")) {
+							hasType = true;
+						}
+						if(bindingSet.hasBinding("deprecated")) {
+							isDeprecated = true;
+						}
 					}
-				}
-				
-				//if the resource has no type or is deprecated, then return it (the triple from which the 
-				// resource was taken)
-				if(!hasType || isDeprecated) {
-					ObjectNode singleBrokenAlign = jsonFactory.objectNode();
-					singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
-					singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
-					if(isDeprecated) {
-						tripleForAnnotatedValue.getObject().setAttribute("deprecated", true);
-					} else {
-						tripleForAnnotatedValue.getObject().setAttribute("deprecated", false);
+					
+					//if the resource has no type or is deprecated, then return it (the triple from which the 
+					// resource was taken)
+					if(!hasType || isDeprecated) {
+						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+						singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
+						singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
+						if(isDeprecated) {
+							tripleForAnnotatedValue.getObject().setAttribute("deprecated", true);
+						} else {
+							tripleForAnnotatedValue.getObject().setAttribute("deprecated", false);
+						}
+						singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
+						response.add(singleBrokenAlign);
 					}
-					singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
-					response.add(singleBrokenAlign);
 				}
 			}
-			//close the connection to the other repository
-			connectionToOtherRepository.close();
+			//close the connection to the other repository (if it not null)
+			if(connectionToOtherRepository != null) {
+				connectionToOtherRepository.close();
+			}
 		}
 		return response;
 	}
