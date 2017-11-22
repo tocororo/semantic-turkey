@@ -37,6 +37,7 @@ import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
@@ -274,8 +275,8 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'C')")
-	public AnnotatedValue<IRI> createClass(@Subject @NotLocallyDefined @Created(role=RDFResourceRole.cls) IRI newClass, @LocallyDefined IRI superClass,
-			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+	public AnnotatedValue<IRI> createClass(@Subject @NotLocallyDefined @Created(role=RDFResourceRole.cls) IRI newClass, 
+			@LocallyDefined IRI superClass, @Optional CustomFormValue customFormValue)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		
 		Model modelAdditions = new LinkedHashModel();
@@ -287,11 +288,11 @@ public class Classes extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		//CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newClass.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(), stdForm);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -354,7 +355,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'C')")
 	public AnnotatedValue<IRI> createInstance(@Subject @NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
-			@Optional String customFormId, @Optional Map<String, Object> userPromptMap)
+			@Optional CustomFormValue customFormValue)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		
 		Model modelAdditions = new LinkedHashModel();
@@ -365,11 +366,11 @@ public class Classes extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		//CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newInstance.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(), stdForm);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());

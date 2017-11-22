@@ -41,6 +41,7 @@ import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -621,8 +622,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public AnnotatedValue<IRI> createProperty(IRI propertyType,
 			@Subject @NotLocallyDefined @Created(role = RDFResourceRole.property) IRI newProperty,
-			@Optional IRI superProperty, @Optional String customFormId,
-			@Optional Map<String, Object> userPromptMap)
+			@Optional IRI superProperty, @Optional CustomFormValue customFormValue)
 			throws ProjectInconsistentException, CODAException, CustomFormException {
 
 		Model modelAdditions = new LinkedHashModel();
@@ -643,11 +643,11 @@ public class Properties extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		// CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newProperty.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap,
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(),
 					stdForm);
 		}
 

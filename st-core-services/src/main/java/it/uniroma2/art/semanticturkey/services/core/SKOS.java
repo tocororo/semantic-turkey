@@ -38,6 +38,7 @@ import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
@@ -478,7 +479,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
-			@Optional String customFormId, @Optional Map<String, Object> userPromptMap, 
+			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
 					CODAException, UnsupportedLexicalizationModelException, 
@@ -523,9 +524,9 @@ public class SKOS extends STServiceAdapter {
 		}
 		
 		//CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			enrichWithCustomFormUsingLexicalizationModel(newConceptIRI, label, repoConnection, modelAdditions, modelRemovals,
-					userPromptMap, customFormId, xLabelIRI);
+					customFormValue, xLabelIRI);
 		}
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -543,7 +544,7 @@ public class SKOS extends STServiceAdapter {
 	public AnnotatedValue<IRI> createConceptScheme(
 			@Optional @NotLocallyDefined IRI newScheme, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#ConceptScheme") IRI schemeCls,
-			@Optional String customFormId, @Optional Map<String, Object> userPromptMap,
+			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException,
 					CODAException, UnsupportedLexicalizationModelException, 
@@ -577,9 +578,9 @@ public class SKOS extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		//CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			enrichWithCustomFormUsingLexicalizationModel(newSchemeIRI, label, repoConnection, modelAdditions, modelRemovals,
-					userPromptMap, customFormId, xLabelIRI);
+					customFormValue, xLabelIRI);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -1193,7 +1194,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LanguageTaggedString Literal label, @Optional @LocallyDefined IRI containingCollection,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Collection") IRI collectionCls,
 			@Optional(defaultValue = "false") boolean bnodeCreationMode,
-			@Optional String customFormId, @Optional Map<String, Object> userPromptMap,
+			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, 
 					IllegalAccessException, UnsupportedLexicalizationModelException, 
@@ -1296,9 +1297,9 @@ public class SKOS extends STServiceAdapter {
 		}
 		
 		//CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			enrichWithCustomFormUsingLexicalizationModel(newCollectionRes, label, repoConnection, modelAdditions, 
-					modelRemovals, userPromptMap, customFormId, xLabelIRI);
+					modelRemovals, customFormValue, xLabelIRI);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -1714,14 +1715,14 @@ public class SKOS extends STServiceAdapter {
 	
 	private void enrichWithCustomFormUsingLexicalizationModel(Resource resource, Literal label, 
 			RepositoryConnection repoConnection, Model modelAdditions, Model modelRemovals, 
-			Map<String, Object> userPromptMap, String customFormId, IRI xLabelIRI) 
+			CustomFormValue customFormValue, IRI xLabelIRI) 
 					throws ProjectInconsistentException, CODAException, CustomFormException{
 		IRI lexModel = getProject().getLexicalizationModel();
 		
 		StandardForm stdForm = new StandardForm();
 		stdForm.addFormEntry(StandardForm.Prompt.resource, resource.stringValue());
 		
-		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
+		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
 		
 		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 			if (label != null) {
@@ -1735,7 +1736,7 @@ public class SKOS extends STServiceAdapter {
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
 		}
-		enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+		enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(), stdForm);
 	}
 	
 	

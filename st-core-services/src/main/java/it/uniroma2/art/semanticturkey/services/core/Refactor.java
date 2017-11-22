@@ -39,6 +39,7 @@ import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
@@ -565,7 +566,7 @@ public class Refactor extends STServiceAdapter  {
 	 * a refactoring service for moving xLabels to new concepts ( ST-498 ) 
 	 * @return the newCoceptIRI as an AnnotatedValue
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
 	public AnnotatedValue<IRI> spawnNewConceptFromLabel(
@@ -574,8 +575,7 @@ public class Refactor extends STServiceAdapter  {
 			@Optional @LocallyDefined IRI oldConcept,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, 
 			@LocallyDefinedResources List<IRI> conceptSchemes,
-			@Optional String customFormId, 
-			@Optional Map<String, Object> userPromptMap)
+			@Optional CustomFormValue customFormValue)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
 					CODAException, NonExistingLiteralFormForResourceException{
 		Model modelAdditions = new LinkedHashModel();
@@ -653,7 +653,7 @@ public class Refactor extends STServiceAdapter  {
 		modelRemovals.add(oldConcept, predicate, xLabel);*/
 		
 		//CustomForm further info
-		if (customFormId != null && userPromptMap != null) {
+		if (customFormValue != null) {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newConceptIRI.stringValue());
 			if (xLabel != null) {
@@ -661,8 +661,8 @@ public class Refactor extends STServiceAdapter  {
 				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
 				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
 			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormId);
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, userPromptMap, stdForm);
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(), stdForm);
 		}
 		
 		repoConnection.add(modelAdditions, getWorkingGraph());
