@@ -1,6 +1,12 @@
-version 2.1.0-SNAPSHOT
+version 3.0-SNAPSHOT
 date: dd/mm/yyyy
-  * added the list langs parameter in search ( ST-838 )  
+  * Added the list langs parameter in search ( ST-838 ).  
+  * Implemented new ICVs.
+  * Implemented export of SPARQL query results in datasheet (for tuple and graph query) and rdf (only for graph
+  	query) formats.
+  * Updated signature of creation services (createClass, createInstance, createProperty, createConcept, 
+  	createConceptScheme, createCollection, spawnNewConceptFromLabel) using CustomFormValue parameter.
+  * Bug fixes.
 
 version 2.0
 date: 30-10-2017
