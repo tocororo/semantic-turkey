@@ -1348,7 +1348,7 @@ public class ICV extends STServiceAdapter {
 		String query = "SELECT ?namespace (count(?namespace) as ?count) \n"
 				+ "WHERE {\n";
 		
-		
+		boolean alreadyAddedMappingRel = false;
 		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
 				query += "UNION\n";
@@ -1356,11 +1356,13 @@ public class ICV extends STServiceAdapter {
 			}
 			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
 					role.equals(RDFResourceRole.skosCollection)) {
-				query +=
+				if(!alreadyAddedMappingRel) {
+					query +=
 						// ?propMapping rdfs:subPropertyOf skos:mappingRelation
 						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 							NTriplesUtil.toNTriplesString(SKOS.MAPPING_RELATION)+" . } \n";
-				
+				}
+				alreadyAddedMappingRel=true;
 			} else if(role.equals(RDFResourceRole.cls)) {
 				query += 
 						// ?propMapping rdfs:subPropertyOf owl:equivalentClass
@@ -1414,12 +1416,14 @@ public class ICV extends STServiceAdapter {
 		ArrayNode responce = jsonFactory.arrayNode();
 		while(tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
-			String namespace = bindingSet.getBinding("namespace").getValue().stringValue();
-			String count = bindingSet.getBinding("count").getValue().stringValue();
-			ObjectNode objectNode = jsonFactory.objectNode();
-			objectNode.put("namespace", namespace);
-			objectNode.put("count", count);
-			responce.add(objectNode);
+			if(bindingSet.hasBinding("namespace")){
+				String namespace = bindingSet.getBinding("namespace").getValue().stringValue();
+				String count = bindingSet.getBinding("count").getValue().stringValue();
+				ObjectNode objectNode = jsonFactory.objectNode();
+				objectNode.put("namespace", namespace);
+				objectNode.put("count", count);
+				responce.add(objectNode);
+			}
 		}
 		
 		return responce;
