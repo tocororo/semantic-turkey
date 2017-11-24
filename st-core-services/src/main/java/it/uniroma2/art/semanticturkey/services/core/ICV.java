@@ -1434,17 +1434,17 @@ public class ICV extends STServiceAdapter {
 				//iterate over the list of location to construct the response
 				for(ResourcePosition resourcePosition : resourcePositionList) {
 					ObjectNode locationNode = jsonFactory.objectNode();
-					locationNode.put("type", resourcePosition.toString());
 					if(resourcePosition instanceof LocalResourcePosition) {
+						locationNode.put("type", "local");
 						LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 						locationNode.put("name",localResourcePosition.getProject().getName());
 					} else if (resourcePosition instanceof RemoteResourcePosition) {
+						locationNode.put("type", "remote");
 						RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
 						DatasetMetadata datasetMetadata = remoteResourcePosition.getDatasetMetadata();
-						String sparqlEndpoint = datasetMetadata.getSparqlEndpoint();
-						boolean deferenceable = datasetMetadata.isDereferenceable();
-						locationNode.put("sparqlEndpoint", sparqlEndpoint);
-						locationNode.put("deferenceable", deferenceable);
+						locationNode.put("title", datasetMetadata.getTitle());
+						locationNode.put("sparqlEndpoint", datasetMetadata.getSparqlEndpoint());
+						locationNode.put("deferenceable", datasetMetadata.isDereferenceable());
 					}
 					locationsNode.add(locationNode);
 				}
