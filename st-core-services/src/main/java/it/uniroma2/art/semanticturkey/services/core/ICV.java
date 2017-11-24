@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -50,6 +51,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -1332,11 +1334,12 @@ public class ICV extends STServiceAdapter {
 	 * Return a list of namespaces of alignments concepts with the number of alignments per namespace
 	 * @param rolesArray
 	 * @return
+	 * @throws ProjectAccessException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public JsonNode listAlignedNamespaces(RDFResourceRole[] rolesArray) {
+	public JsonNode listAlignedNamespaces(RDFResourceRole[] rolesArray) throws ProjectAccessException {
 		//IRI lexModel = getProject().getLexicalizationModel();
 		
 		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
@@ -1414,14 +1417,38 @@ public class ICV extends STServiceAdapter {
 		//now iterate over the result to create the response
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode responce = jsonFactory.arrayNode();
+		SimpleValueFactory simpleValueFactory = SimpleValueFactory.getInstance();
 		while(tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
 			if(bindingSet.hasBinding("namespace")){
+				//add the namespace and the count
 				String namespace = bindingSet.getBinding("namespace").getValue().stringValue();
 				String count = bindingSet.getBinding("count").getValue().stringValue();
 				ObjectNode objectNode = jsonFactory.objectNode();
 				objectNode.put("namespace", namespace);
 				objectNode.put("count", count);
+				//get all the assoicated location for the given namaspace
+				ArrayNode locationsNode = jsonFactory.arrayNode();
+				List<ResourcePosition> resourcePositionList = 
+						resourceLocator.locateResources(getProject(), getRepository(), simpleValueFactory.createIRI(namespace));
+				//iterate over the list of location to construct the response
+				for(ResourcePosition resourcePosition : resourcePositionList) {
+					ObjectNode locationNode = jsonFactory.objectNode();
+					locationNode.put("type", resourcePosition.toString());
+					if(resourcePosition instanceof LocalResourcePosition) {
+						LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
+						locationNode.put("name",localResourcePosition.getProject().getName());
+					} else if (resourcePosition instanceof RemoteResourcePosition) {
+						RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
+						DatasetMetadata datasetMetadata = remoteResourcePosition.getDatasetMetadata();
+						String sparqlEndpoint = datasetMetadata.getSparqlEndpoint();
+						boolean deferenceable = datasetMetadata.isDereferenceable();
+						locationNode.put("sparqlEndpoint", sparqlEndpoint);
+						locationNode.put("deferenceable", deferenceable);
+					}
+					locationsNode.add(locationNode);
+				}
+				objectNode.set("locations", locationsNode);
 				responce.add(objectNode);
 			}
 		}
