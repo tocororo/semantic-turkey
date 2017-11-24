@@ -1430,7 +1430,7 @@ public class ICV extends STServiceAdapter {
 				//get all the assoicated location for the given namaspace
 				ArrayNode locationsNode = jsonFactory.arrayNode();
 				List<ResourcePosition> resourcePositionList = 
-						resourceLocator.locateResources(getProject(), getRepository(), simpleValueFactory.createIRI(namespace));
+						resourceLocator.listResourceLocations(getProject(), getRepository(), simpleValueFactory.createIRI(namespace));
 				//iterate over the list of location to construct the response
 				for(ResourcePosition resourcePosition : resourcePositionList) {
 					ObjectNode locationNode = jsonFactory.objectNode();

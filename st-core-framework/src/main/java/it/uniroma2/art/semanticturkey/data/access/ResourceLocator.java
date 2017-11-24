@@ -163,7 +163,7 @@ public class ResourceLocator {
 	 * @throws ModelAccessException
 	 * @throws ProjectAccessException
 	 */
-	public List<ResourcePosition> locateResources(Project project, Repository projectRepository,
+	public List<ResourcePosition> listResourceLocations(Project project, Repository projectRepository,
 			Resource resource, AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
 			throws ProjectAccessException {
 		List<ResourcePosition> resourcePositionList = new ArrayList<>();
@@ -220,7 +220,7 @@ public class ResourceLocator {
 	}
 	
 	/**
-	 * An overload of {@link #locateResources(Project, Repository, Resource)}, with the last two
+	 * An overload of {@link #listResourceLocations(Project, Repository, Resource)}, with the last two
 	 * parameters set to {@link AccessLevel#R} and {@link LockLevel#NO}, respectively.
 	 * 
 	 * @param project
@@ -230,8 +230,8 @@ public class ResourceLocator {
 	 * @throws ProjectAccessException
 	 * @throws ModelAccessException
 	 */
-	public List<ResourcePosition> locateResources(Project project, Repository projectRepository,
+	public List<ResourcePosition> listResourceLocations(Project project, Repository projectRepository,
 			Resource resource) throws ProjectAccessException {
-		return locateResources(project, projectRepository, resource, AccessLevel.R, LockLevel.NO);
+		return listResourceLocations(project, projectRepository, resource, AccessLevel.R, LockLevel.NO);
 	}
 }
