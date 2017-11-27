@@ -1449,7 +1449,7 @@ public class ICV extends STServiceAdapter {
 						DatasetMetadata datasetMetadata = remoteResourcePosition.getDatasetMetadata();
 						locationNode.put("title", datasetMetadata.getTitle());
 						locationNode.put("sparqlEndpoint", datasetMetadata.getSparqlEndpoint());
-						locationNode.put("deferenceable", datasetMetadata.isDereferenceable());
+						locationNode.put("dereferenceable", datasetMetadata.isDereferenceable());
 					}
 					locationsNode.add(locationNode);
 				}
@@ -1526,7 +1526,7 @@ public class ICV extends STServiceAdapter {
 				IOException {
 		//the values of the map are one of the above:
 		// - local:PROJECT_NAME
-		// - remote:deference
+		// - remote:dereference
 		// - remote:SPARQL_ENDPOINT
 		
 		//do a spqarql query to obtain all the resources in a mapping relations and consider just the resources
@@ -1688,11 +1688,8 @@ public class ICV extends STServiceAdapter {
 				String projName = typeAndLocation.split("local:")[1]; //TODO check this thing
 				connectionToOtherRepository = acquireManagedConnectionToProject(getProject(), ProjectManager.getProject(projName));
 			} else { // it is a remote alignments
-				boolean toDef = false;
-				if(typeAndLocation.equals("remote:deference")) {
-					toDef = true;
-				}  else { // it is a SPARQL endpoint
-					String sparqlEndPoint = typeAndLocation.split("local:")[1]; // TODO check this thing
+				if(!typeAndLocation.equals("remote:dereference")) { // it is a SPARQL endpoint
+					String sparqlEndPoint = typeAndLocation.split("remote:")[1]; // TODO check this thing
 					if(sparqlEndPoint != null) {
 						Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
 						sparqlRepository.initialize();
