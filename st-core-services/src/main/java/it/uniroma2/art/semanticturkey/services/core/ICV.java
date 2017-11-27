@@ -1355,8 +1355,8 @@ public class ICV extends STServiceAdapter {
 		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
 				query += "UNION\n";
-				first = false;
 			}
+			first = false;
 			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
 					role.equals(RDFResourceRole.skosCollection)) {
 				if(!alreadyAddedMappingRel) {
@@ -1403,8 +1403,12 @@ public class ICV extends STServiceAdapter {
 			}
 		}
 		
-		query += "?resource ?propMapping ?resource2 .\n"
-				+ "BIND(REPLACE(str(?resource2), '[^(#|/)]+$', \"\") AS ?namespace)\n"
+		query += "?resource ?propMapping ?resource2 .\n";
+		
+		//now check the type of the ?resoruce
+		query += getTypesFromRoles("?resource", rolesArray);
+		
+		query += "BIND(REPLACE(str(?resource2), '[^(#|/)]+$', \"\") AS ?namespace)\n"
 				+ "}\n"
 				+ "GROUP BY ?namespace";
 		
@@ -1456,40 +1460,85 @@ public class ICV extends STServiceAdapter {
 		return responce;
 	}
 	
+	private String getTypesFromRoles(String resource, RDFResourceRole[] rolesArray) {
+		String query = resource+" a ?type . \n"
+				+"FILTER(";
+		boolean first = true;
+		boolean isIndividualPresent = false;
+		for(RDFResourceRole role : rolesArray) {
+			if(role.equals(RDFResourceRole.individual)) {
+				isIndividualPresent = true;
+				continue;
+			}
+			if(!first) {
+					query += " || ";
+			}
+			first = false;
+			if(role.equals(RDFResourceRole.concept)) {
+				query +="?type = "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT);
+			} else if(role.equals(RDFResourceRole.conceptScheme)) {
+				query +="?type = "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT_SCHEME);
+			} else if(role.equals(RDFResourceRole.skosCollection)) {
+				query +="?type = "+NTriplesUtil.toNTriplesString(SKOS.COLLECTION) + " || "
+						+ "?type = "+NTriplesUtil.toNTriplesString(SKOS.ORDERED_COLLECTION);
+			} else if(role.equals(RDFResourceRole.cls)) {
+				query +="?type = "+NTriplesUtil.toNTriplesString(OWL.CLASS) + " || "
+						+ "?type = "+NTriplesUtil.toNTriplesString(RDFS.CLASS);
+			} else if(role.equals(RDFResourceRole.property)) {
+				query += "?type = "+NTriplesUtil.toNTriplesString(RDF.PROPERTY)+" || "+
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.OBJECTPROPERTY)+"> || "+
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY)+"> || "+
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.ANNOTATIONPROPERTY)+"> || " +
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.ONTOLOGYPROPERTY)+"> ";
+			} 
+		}
+		query += ")\n";
+		if(isIndividualPresent) {
+			String queryforInd = resource+" a ?type . \n"
+					+"?type a "+NTriplesUtil.toNTriplesString(OWL.CLASS)+" .\n";
+			
+			if(rolesArray.length>1) {
+			query = "{\n"+query+"}\n"
+					+ "UNION \n"
+					+ "{\n"
+					+ queryforInd 
+					+ "}\n";
+			} else {
+				query = queryforInd;
+			}
+		} 
+		return query;
+	}
+
 	/**
 	 * Return a list of <triples> of broken alignments among concepts
+	 * @param nsToLocationMap
+	 * @param rolesArray
 	 * @return
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
-	 * @throws UnsupportedLexicalizationModelException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public JsonNode listBrokenAlignments(RDFResourceRole[] rolesArray,
-			String[] namespaces, boolean checkLocalRes, boolean checkRemoteRes) throws ProjectAccessException, 
+	public JsonNode listBrokenAlignments(Map<String, String> nsToLocationMap, RDFResourceRole[] rolesArray) throws ProjectAccessException, 
 				IOException {
+		//the values of the map are one of the above:
+		// - local:PROJECT_NAME
+		// - remote:deference
+		// - remote:SPARQL_ENDPOINT
 		
-		//check that at least one of localConcepts and remoteConcepts
-		if(!checkLocalRes && !checkRemoteRes) {
-			String text = "At least of of the two paramters, localConcepts and remoteConcepts should be"
-					+ "true";
-			throw new IllegalArgumentException(text);
-		}
-		
-		
-		//use the input namespaces to get the list of resources which need to be checked 
-		// (to see which propety to use, check the rolesArray)
+		//do a spqarql query to obtain all the resources in a mapping relations and consider just the resources
 		boolean first = true;
-		String query = "SELECT ?resource ?attr_subj ?attr_propMapping ?attr_obj ?attr_namespace \n"
+		String query = "SELECT ?resource ?attr_subj ?attr_propMapping ?attr_obj\n"
 				+ "WHERE {\n";
-		
 		
 		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
 				query += "UNION\n";
-				first = false;
+				
 			}
+			first = false;
 			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
 					role.equals(RDFResourceRole.skosCollection)) {
 				query +=
@@ -1535,17 +1584,8 @@ public class ICV extends STServiceAdapter {
 		}
 		
 		query += "?attr_subj ?attr_propMapping ?attr_obj .\n"
-				+ "BIND(REPLACE(str(?attr_obj), '[^(#|/)]+$', \"\") AS ?attr_namespace)\n";
-		query += "FILTER(";
-		first = true;
-		for(String namespace : namespaces) {
-			if(!first) {
-				query += " || ";
-			}
-			first = false;
-			query += "?attr_namespace = \""+namespace+"\"";
-		}
-		query += ")\n"
+				+ "FILTER isIRI(?attr_obj) \n"
+				+ getTypesFromRoles("?attr_subj", rolesArray)
 		
 		//put ?attr_subj ?attr_propMapping ?obj in ?resource (so the will be in the annotated value)
 				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n" //added to have some results
@@ -1558,9 +1598,10 @@ public class ICV extends STServiceAdapter {
 				+ "BIND(?attr_obj AS ?resource)}\n"		
 				
 				+ "}\n"
-				+ "GROUP BY ?resource ?attr_subj ?attr_propMapping ?attr_obj ?attr_namespace";
+				+ "GROUP BY ?resource ?attr_subj ?attr_propMapping ?attr_obj ";
 		
-		logger.debug("query [listBrokenAlignments1]:\n" + query);
+		
+		logger.debug("query [listBrokenAlignments]:\n" + query);
 		QueryBuilder qb = createQueryBuilder(query);
 		qb.processRole();
 		qb.processRendering();
@@ -1568,8 +1609,9 @@ public class ICV extends STServiceAdapter {
 		
 		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
 		
-		//iterate over the result from the SPARQL query to contruct a temp map containing the
-		// TripleForAnnotatedValue (used as key for the map the subj_pred_obj)
+		//iterate over the results of the query to filter out those triples which have an object not starting with 
+		// one of the namespaces (or their redux versions). Those triples that pass the test, are placed in the 
+		// data structure which will be use to check the alignments
 		Map <String, TripleForAnnotatedValue> tripleForAnnotatedValueMap = new HashMap<>();
 		for(AnnotatedValue<Resource> annotatedValue : annotatedValueList) {
 			String subj = annotatedValue.getAttributes().get("subj").stringValue();
@@ -1578,12 +1620,26 @@ public class ICV extends STServiceAdapter {
 			annotatedValue.getAttributes().remove("propMapping");
 			String obj = annotatedValue.getAttributes().get("obj").stringValue();
 			annotatedValue.getAttributes().remove("obj");
+			
+			//check that the obj belong to one of the desired namespaces
+			boolean found = false;
+			for(String namespace : nsToLocationMap.keySet()) {
+				if(obj.startsWith(namespace)) {
+					found = true;
+					break;
+				}
+			}
+			if(!found) {
+				//the obj does not belong to any desired namespace, so do not consider this triple (singular element)
+				continue;
+			}
+			//the obj belongs to any desired namespace, so add this triple (singular element) to the map
 			String key = subj+propMapping+obj; 
 			if(!tripleForAnnotatedValueMap.containsKey(key)) {
 				tripleForAnnotatedValueMap.put(key, new TripleForAnnotatedValue());
 			}
 			TripleForAnnotatedValue tripleForAnnotatedValue = tripleForAnnotatedValueMap.get(key);
-			//check the AnnotatedValue to which of its "elements"refer to
+			//check the AnnotatedValue to see which of its "elements"refer to
 			String value = annotatedValue.getValue().stringValue();
 			if(value.equals(subj)) {
 				tripleForAnnotatedValue.setSubject(annotatedValue);
@@ -1594,104 +1650,67 @@ public class ICV extends STServiceAdapter {
 			}
 		}
 		
-		//use the just created tripleForAnnotatedValueMap to construct a map linking the namespace of the
-		// objct of the list of triple of annotatedValue (all the Triple having having that namespace 
+		
+		//use the just created tripleForAnnotatedValueMap to construct a map linking the namespace (or redux version)
+		// of the objct of the list of triple of annotatedValue (all the Triple having that namespace 
 		// in their object)
 		Map<String, List<TripleForAnnotatedValue>> namespaceToTripleMap = new HashMap<>();
-		for(TripleForAnnotatedValue tripleForAnnotatedValue : tripleForAnnotatedValueMap.values()) {
-			String namespace = tripleForAnnotatedValue.getObject().getAttributes().get("namespace").stringValue();
-			if(!namespaceToTripleMap.containsKey(namespace)) {
-				namespaceToTripleMap.put(namespace, new ArrayList<>());
-			}
-			tripleForAnnotatedValue.getSubject().getAttributes().remove("namespace");
-			tripleForAnnotatedValue.getPredicate().getAttributes().remove("namespace");
-			tripleForAnnotatedValue.getObject().getAttributes().remove("namespace");
-			//add only the the triples having an IRI as object
-			if(tripleForAnnotatedValue.getObject().getValue() instanceof IRI) {
-				namespaceToTripleMap.get(namespace).add(tripleForAnnotatedValue);
-			}
+		//first of all, create a map having the desired keys (the namespaces or redux versions)
+		for(String namespace : nsToLocationMap.keySet()) {
+			namespaceToTripleMap.put(namespace, new ArrayList<>());
 		}
-		
-		//now iterate over the map, consider just one resource per given namespace, since all resources
-		// with the same namespace belong to the same location (TODO check this statement)
-		Map<String, ResourcePosition> namespaceToPositionMap = new HashMap<>();
-		for(String namespace : namespaceToTripleMap.keySet()) {
-			IRI firstResForNamespace = (IRI) namespaceToTripleMap.get(namespace).get(0).getObject().getValue();
-			ResourcePosition resourcePosition = 
-					resourceLocator.locateResource(getProject(), getRepository(), firstResForNamespace);
-			namespaceToPositionMap.put(namespace, resourcePosition);
+		//now fill the just created empty map namespaceToTripleMap
+		for(TripleForAnnotatedValue tripleForAnnotatedValue : tripleForAnnotatedValueMap.values()) {
+			for(String namespace : namespaceToTripleMap.keySet()) {
+				if(tripleForAnnotatedValue.getObject().getValue().toString().startsWith(namespace)) {
+					namespaceToTripleMap.get(namespace).add(tripleForAnnotatedValue);
+					//now focus on the next triple
+					break;
+				}
+			}
 		}
 		
 		//prepare the empty response, which will be fill everytime a broken alignment is found
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode response = jsonFactory.arrayNode();
 		
-		//now iterate over the map of namespace-resources and namespace-location to check if each 
-		// resource is present in the associated location (check the two boolean values)
+		//now iterate over the map namespaceToTripleMap, get the value of the location from the input map 
+		// nsToLocationMap, and check every resource associated to that namespace
+		// 
 		for(String namespace : namespaceToTripleMap.keySet()) {
-			ResourcePosition resourcePosition = namespaceToPositionMap.get(namespace);
-			boolean doHttpRequest = false;
 			RepositoryConnection connectionToOtherRepository = null;
-			if(checkLocalRes && resourcePosition instanceof LocalResourcePosition) {
-				LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
-				Project otherLocalProject = localResourcePosition.getProject();
-				connectionToOtherRepository = acquireManagedConnectionToProject(getProject(),
-						otherLocalProject);
-			}
-			else if(checkRemoteRes && resourcePosition instanceof RemoteResourcePosition) {
-				RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
-				//get the SPARQL endpoint for the remote position
-				String sparqlEndPoint = remoteResourcePosition.getDatasetMetadata().getSparqlEndpoint();
-				if(sparqlEndPoint != null) {
-					Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
-					sparqlRepository.initialize();
-					connectionToOtherRepository = sparqlRepository.getConnection();
-				} else {
-					doHttpRequest = true;
-				}
-			} else if(checkRemoteRes &&  resourcePosition.equals(ResourceLocator.UNKNOWN_RESOURCE_POSITION)) {
-				doHttpRequest = true;
-			} else {
-				//this shoyld never happen, decide what to do
-			}
-			
-			//first implementation, do a SPARQL query for each resource
-			for(TripleForAnnotatedValue tripleForAnnotatedValue : namespaceToTripleMap.get(namespace)) {
-				IRI resource = (IRI) tripleForAnnotatedValue.getObject().getValue();
-				if(doHttpRequest) {
-					//do an httpRequest to see if the which IRIs are associated to an existing web page
-					URL url = new URL(resource.stringValue());
-					HttpURLConnection con = (HttpURLConnection) url.openConnection();
-					con.setRequestMethod("GET");
-					con.setRequestProperty("Content-Type", "application/json");
-					con.setConnectTimeout(5000);
-					con.setReadTimeout(5000);
-					//connect to the remote site
-					con.connect();
-					
-					int code = con.getResponseCode();
-					if(code!=200) {
-						//if the page cannot be found, then the resource does not exist, so return it
-						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
-						singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
-						singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
-						singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
-						response.add(singleBrokenAlign);
+			String typeAndLocation = nsToLocationMap.get(namespace);
+			if(typeAndLocation.startsWith("local")) {
+				String projName = typeAndLocation.split("local:")[1]; //TODO check this thing
+				connectionToOtherRepository = acquireManagedConnectionToProject(getProject(), ProjectManager.getProject(projName));
+			} else { // it is a remote alignments
+				boolean toDef = false;
+				if(typeAndLocation.equals("remote:deference")) {
+					toDef = true;
+				}  else { // it is a SPARQL endpoint
+					String sparqlEndPoint = typeAndLocation.split("local:")[1]; // TODO check this thing
+					if(sparqlEndPoint != null) {
+						Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
+						sparqlRepository.initialize();
+						connectionToOtherRepository = sparqlRepository.getConnection();
 					}
-					//close the connection with the remote site
-					con.disconnect();
-				} else {
-					//do the sparql query
+				}
+			}
+			//now check each resource associated to the current namespace
+			for( TripleForAnnotatedValue triple : namespaceToTripleMap.get(namespace)) {
+				Resource obj = triple.getObject().getValue();
+				
+				if(connectionToOtherRepository != null) {
 					query = "SELECT ?deprecated ?hasType"
 							+" WHERE {\n"
-							//check if the resourse is deprecated
-							+ "{ "+NTriplesUtil.toNTriplesString(resource)+ " "+
+							//check if the resource is deprecated
+							+ "{ "+NTriplesUtil.toNTriplesString(obj)+ " "+
 								NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
 							+ "BIND(true AS ?deprecated )\n"
 							+ "}\n"
 							+ "UNION\n"
-							//check if the 
-							+ "{ "+NTriplesUtil.toNTriplesString(resource) + " a ?type .\n"  
+							//check if the resource has a type
+							+ "{ "+NTriplesUtil.toNTriplesString(obj) + " a ?type .\n"  
 							+ "BIND(true AS ?hasType)\n "
 							+ "}\n"
 							+ "}";
@@ -1712,28 +1731,54 @@ public class ICV extends STServiceAdapter {
 							isDeprecated = true;
 						}
 					}
-					
 					//if the resource has no type or is deprecated, then return it (the triple from which the 
 					// resource was taken)
 					if(!hasType || isDeprecated) {
 						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
-						singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
-						singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
+						singleBrokenAlign.putPOJO("subject", triple.getSubject());
+						singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
 						if(isDeprecated) {
-							tripleForAnnotatedValue.getObject().setAttribute("deprecated", true);
+							triple.getObject().setAttribute("deprecated", true);
 						} else {
-							tripleForAnnotatedValue.getObject().setAttribute("deprecated", false);
+							triple.getObject().setAttribute("deprecated", false);
 						}
-						singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
+						singleBrokenAlign.putPOJO("object", triple.getObject());
 						response.add(singleBrokenAlign);
 					}
+				} else {
+					//the connction to the reposiotory (local or remote) is not possible, so use the 
+					// HTTP connection
+					//do an httpRequest to see if the which IRIs are associated to an existing web page
+					IRI resource = (IRI) triple.getObject().getValue();
+					URL url = new URL(resource.stringValue());
+					HttpURLConnection con = (HttpURLConnection) url.openConnection();
+					con.setRequestMethod("GET");
+					con.setRequestProperty("Content-Type", "application/json");
+					con.setConnectTimeout(5000);
+					con.setReadTimeout(5000);
+					//connect to the remote site
+					con.connect();
+					
+					int code = con.getResponseCode();
+					if(code!=200) {
+						//if the page cannot be found, then the resource does not exist, so return it
+						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+						singleBrokenAlign.putPOJO("subject", triple.getSubject());
+						singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
+						singleBrokenAlign.putPOJO("object", triple.getObject());
+						response.add(singleBrokenAlign);
+					}
+					//close the connection with the remote site
+					con.disconnect();
 				}
 			}
-			//close the connection to the other repository (if it not null)
+			
+			//if a connection was used to query the other repository, close it
 			if(connectionToOtherRepository != null) {
 				connectionToOtherRepository.close();
 			}
 		}
+		
 		return response;
 	}
 	
