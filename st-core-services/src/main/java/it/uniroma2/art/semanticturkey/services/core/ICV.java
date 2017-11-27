@@ -1522,8 +1522,8 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public JsonNode listBrokenAlignments(Map<String, String> nsToLocationMap, RDFResourceRole[] rolesArray) throws ProjectAccessException, 
-				IOException {
+	public JsonNode listBrokenAlignments(Map<String, String> nsToLocationMap, RDFResourceRole[] rolesArray) 
+			throws ProjectAccessException {
 		//the values of the map are one of the above:
 		// - local:PROJECT_NAME
 		// - remote:dereference
@@ -1747,30 +1747,42 @@ public class ICV extends STServiceAdapter {
 						response.add(singleBrokenAlign);
 					}
 				} else {
-					//the connction to the reposiotory (local or remote) is not possible, so use the 
+					//the connection to the repository (local or remote) is not possible, so use the 
 					// HTTP connection
 					//do an httpRequest to see if the which IRIs are associated to an existing web page
 					IRI resource = (IRI) triple.getObject().getValue();
-					URL url = new URL(resource.stringValue());
-					HttpURLConnection con = (HttpURLConnection) url.openConnection();
-					con.setRequestMethod("GET");
-					con.setRequestProperty("Content-Type", "application/json");
-					con.setConnectTimeout(5000);
-					con.setReadTimeout(5000);
-					//connect to the remote site
-					con.connect();
-					
-					int code = con.getResponseCode();
-					if(code!=200) {
-						//if the page cannot be found, then the resource does not exist, so return it
-						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
-						singleBrokenAlign.putPOJO("subject", triple.getSubject());
-						singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
-						singleBrokenAlign.putPOJO("object", triple.getObject());
-						response.add(singleBrokenAlign);
+					boolean toAdd = false;
+					HttpURLConnection con = null;
+					try {
+						URL url = new URL(resource.stringValue());
+						con = (HttpURLConnection) url.openConnection();
+						con.setRequestMethod("GET");
+						con.setRequestProperty("Content-Type", "application/json");
+						con.setConnectTimeout(5000);
+						con.setReadTimeout(5000);
+						//connect to the remote site
+						con.connect();
+						int code = con.getResponseCode();
+						if(code!=200) {
+							//the resource was not found, so this triple will be returned
+							toAdd = true;
+						}
+					} catch (IOException e) {
+						//the connection was not possible, so this triple will be returned
+						toAdd = true;
+					} finally {
+						if(toAdd) {
+							//if the page cannot be found, then the resource does not exist, so return it
+							ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+							singleBrokenAlign.putPOJO("subject", triple.getSubject());
+							singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
+							singleBrokenAlign.putPOJO("object", triple.getObject());
+							response.add(singleBrokenAlign);
+						}
+						//close the connection with the remote site
+						con.disconnect();
 					}
-					//close the connection with the remote site
-					con.disconnect();
+					
 				}
 			}
 			
