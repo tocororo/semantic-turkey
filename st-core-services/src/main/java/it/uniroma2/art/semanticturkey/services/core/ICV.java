@@ -1352,24 +1352,25 @@ public class ICV extends STServiceAdapter {
 				+ "WHERE {\n";
 		
 		boolean alreadyAddedMappingRel = false;
+		String union = "";
 		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
-				query += "UNION\n";
+				union = "UNION\n";
 			}
 			first = false;
 			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
 					role.equals(RDFResourceRole.skosCollection)) {
 				if(!alreadyAddedMappingRel) {
-					query +=
+					query += union
 						// ?propMapping rdfs:subPropertyOf skos:mappingRelation
-						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 							NTriplesUtil.toNTriplesString(SKOS.MAPPING_RELATION)+" . } \n";
 				}
 				alreadyAddedMappingRel=true;
 			} else if(role.equals(RDFResourceRole.cls)) {
-				query += 
+				query += union
 						// ?propMapping rdfs:subPropertyOf owl:equivalentClass
-						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTCLASS)+" . } \n"
 						+ " UNION \n"
 						// ?propMapping rdfs:subPropertyOf owl:disjointWith
@@ -1380,9 +1381,9 @@ public class ICV extends STServiceAdapter {
 						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+" . } \n";
 			} else if(role.equals(RDFResourceRole.property)) {
-				query +=
+				query += union
 						// ?propMapping rdfs:subPropertyOf owl:equivalentProperty
-						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTPROPERTY)+" . } \n"
 						//+ " UNION \n"
 						//NTriplesUtil.toNTriplesString(OWL.PROPERTYDISJOINTWITH)+" . } \n"
@@ -1392,9 +1393,9 @@ public class ICV extends STServiceAdapter {
 						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+" . } \n";
 			} else if(role.equals(RDFResourceRole.individual)) {
-				query +=
+				query += union
 						// ?propMapping rdfs:subPropertyOf owl:sameAs
-						"{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(OWL.SAMEAS)+" . } \n"
 						+ " UNION \n"
 						// ?propMapping rdfs:subPropertyOf owl:differentFrom
@@ -1532,24 +1533,27 @@ public class ICV extends STServiceAdapter {
 		boolean first = true;
 		String query = "SELECT ?resource ?attr_subj ?attr_propMapping ?attr_obj\n"
 				+ "WHERE {\n";
-		
+		boolean alreadyAddedMappingRel = false;
+		String union="";
 		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
-				query += "UNION\n";
+				union = "UNION\n";
 				
 			}
 			first = false;
 			if(role.equals(RDFResourceRole.concept) || role.equals(RDFResourceRole.conceptScheme) ||
 					role.equals(RDFResourceRole.skosCollection)) {
-				query +=
+				if(!alreadyAddedMappingRel) {
+					query += union
 						// ?attr_propMapping rdfs:subPropertyOf skos:mappingRelation
-						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 							NTriplesUtil.toNTriplesString(SKOS.MAPPING_RELATION)+" . } \n";
-				
+				}
+				alreadyAddedMappingRel=true;
 			} else if(role.equals(RDFResourceRole.cls)) {
-				query += 
+				query += union
 						// ?attr_propMapping rdfs:subPropertyOf owl:equivalentClass
-						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTCLASS)+" . } \n"
 						+ " UNION \n"
 						// ?attr_propMapping rdfs:subPropertyOf owl:disjointWith
@@ -1560,9 +1564,9 @@ public class ICV extends STServiceAdapter {
 						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+" . } \n";
 			} else if(role.equals(RDFResourceRole.property)) {
-				query +=
+				query += union
 						// ?attr_propMapping rdfs:subPropertyOf owl:equivalentProperty
-						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(OWL.EQUIVALENTPROPERTY)+" . } \n"
 						//+ " UNION \n"
 						//NTriplesUtil.toNTriplesString(OWL.PROPERTYDISJOINTWITH)+" . } \n"
@@ -1572,9 +1576,9 @@ public class ICV extends STServiceAdapter {
 						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+" . } \n";
 			} else if(role.equals(RDFResourceRole.individual)) {
-				query +=
+				query += union
 						// ?attr_propMapping rdfs:subPropertyOf owl:sameAs
-						"{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+						+ "{?attr_propMapping "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 						NTriplesUtil.toNTriplesString(OWL.SAMEAS)+" . } \n"
 						+ " UNION \n"
 						// ?attr_propMapping rdfs:subPropertyOf owl:differentFrom
