@@ -50,6 +50,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
@@ -146,6 +147,7 @@ public class Projects extends STServiceAdapter {
 			boolean validationEnabled = false;
 			boolean open = false;
 			AccessResponse access = null;
+			RepositoryLocation repoLocation = new RepositoryLocation(null);
 			ProjectStatus status = new ProjectStatus(Status.ok);
 
 			if (absProj instanceof Project) {
@@ -160,6 +162,7 @@ public class Projects extends STServiceAdapter {
 				open = ProjectManager.isOpen(proj);
 				access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
 						requestedLockLevel);
+				repoLocation = proj.getDefaultRepositoryLocation();
 
 				if (onlyOpen && !open) {
 					continue;
@@ -173,7 +176,7 @@ public class Projects extends STServiceAdapter {
 				status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 			}
 			ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model,
-					lexicalizationModel, historyEnabled, validationEnabled, access, status);
+					lexicalizationModel, historyEnabled, validationEnabled, access, repoLocation, status);
 			listProjInfo.add(projInfo);
 		}
 

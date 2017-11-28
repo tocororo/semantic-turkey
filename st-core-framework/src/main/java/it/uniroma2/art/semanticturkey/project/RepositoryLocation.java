@@ -6,10 +6,17 @@ import java.net.URL;
 import javax.annotation.Nullable;
 
 public class RepositoryLocation {
+	
+	public enum Location {
+		local, remote
+	}
+	
+	private Location location;
 	private URL serverURL;
 
 	public RepositoryLocation(@Nullable URL serverURL) {
 		this.serverURL = serverURL;
+		this.location = (serverURL == null) ? Location.local : Location.remote;
 	}
 
 	public static RepositoryLocation fromRepositoryAccess(RepositoryAccess repositoryAccess) {
@@ -24,11 +31,7 @@ public class RepositoryLocation {
 
 	@Override
 	public String toString() {
-		if (serverURL == null) {
-			return "local";
-		}
-
-		return "remote:" + serverURL.toString();
+		return location + ((location == Location.remote) ? ":" + serverURL : ""); 
 	}
 
 	public static RepositoryLocation fromString(String serialized) {
@@ -51,6 +54,14 @@ public class RepositoryLocation {
 		} else {
 			return new CreateRemote(serverURL, null, null);
 		}
+	}
+
+	public Location getLocation() {
+		return location;
+	}
+	
+	public URL getServerURL() {
+		return serverURL;
 	}
 
 }

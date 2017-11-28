@@ -13,11 +13,12 @@ public class ProjectInfo {
 	private final boolean historyEnabled;
 	private final boolean validationEnabled;
 	private final AccessResponse accessible;
+	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
 	
 	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
-			String model, String lexicalizationModel, 
-			boolean historyEnabled, boolean validationEnabled, AccessResponse accessible, ProjectStatus status) {
+			String model, String lexicalizationModel, boolean historyEnabled, boolean validationEnabled, 
+			AccessResponse accessible, RepositoryLocation repositoryLocation, ProjectStatus status) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;
@@ -27,6 +28,7 @@ public class ProjectInfo {
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
 		this.accessible = accessible;
+		this.repositoryLocation = repositoryLocation;
 		this.status = status;
 	}
 	
@@ -66,6 +68,10 @@ public class ProjectInfo {
 		return accessible;
 	}
 	
+	public RepositoryLocation getRepositoryLocation() {
+		return repositoryLocation;
+	}
+
 	public ProjectStatus getStatus() {
 		return this.status;
 	}
