@@ -26,6 +26,7 @@ import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -1681,117 +1682,125 @@ public class ICV extends STServiceAdapter {
 		
 		//now iterate over the map namespaceToTripleMap, get the value of the location from the input map 
 		// nsToLocationMap, and check every resource associated to that namespace
-		// 
-		for(String namespace : namespaceToTripleMap.keySet()) {
-			RepositoryConnection connectionToOtherRepository = null;
-			String typeAndLocation = nsToLocationMap.get(namespace);
-			if(typeAndLocation.startsWith(RepositoryLocation.Location.local.toString())) {
-				String projName = typeAndLocation.split(RepositoryLocation.Location.local.toString()+":")[1]; 
-				connectionToOtherRepository = acquireManagedConnectionToProject(getProject(), ProjectManager.getProject(projName));
-			} else { // it is a remote alignments
-				if(!typeAndLocation.equals("remote:dereference")) { // it is a SPARQL endpoint
-					String sparqlEndPoint = typeAndLocation.split(
-							RepositoryLocation.Location.remote.toString()+":")[1]; 
-					if(sparqlEndPoint != null) {
-						Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
-						sparqlRepository.initialize();
-						connectionToOtherRepository = sparqlRepository.getConnection();
+		//
+		try {
+			for(String namespace : namespaceToTripleMap.keySet()) {
+				RepositoryConnection connectionToOtherRepository = null;
+				String typeAndLocation = nsToLocationMap.get(namespace);
+				if(typeAndLocation.startsWith(RepositoryLocation.Location.local.toString())) {
+					String projName = typeAndLocation.split(RepositoryLocation.Location.local.toString()+":")[1]; 
+					connectionToOtherRepository = acquireManagedConnectionToProject(getProject(), ProjectManager.getProject(projName));
+				} else { // it is a remote alignments
+					if(!typeAndLocation.equals("remote:dereference")) { // it is a SPARQL endpoint
+						String sparqlEndPoint = typeAndLocation.split(
+								RepositoryLocation.Location.remote.toString()+":")[1]; 
+						if(sparqlEndPoint != null) {
+							Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
+							sparqlRepository.initialize();
+							connectionToOtherRepository = sparqlRepository.getConnection();
+						}
 					}
 				}
-			}
-			//now check each resource associated to the current namespace
-			for( TripleForAnnotatedValue triple : namespaceToTripleMap.get(namespace)) {
-				Resource obj = triple.getObject().getValue();
-				
-				if(connectionToOtherRepository != null) {
-					query = "SELECT ?deprecated ?hasType"
-							+" WHERE {\n"
-							//check if the resource is deprecated
-							+ "{ "+NTriplesUtil.toNTriplesString(obj)+ " "+
-								NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
-							+ "BIND(true AS ?deprecated )\n"
-							+ "}\n"
-							+ "UNION\n"
-							//check if the resource has a type
-							+ "{ "+NTriplesUtil.toNTriplesString(obj) + " a ?type .\n"  
-							+ "BIND(true AS ?hasType)\n "
-							+ "}\n"
-							+ "}";
-					logger.debug("query [listBrokenAlignments2]:\n" + query);
-					boolean hasType = false;
-					boolean isDeprecated = false;
-					TupleQuery tupleQuery = connectionToOtherRepository.prepareTupleQuery(query);
-					tupleQuery.setIncludeInferred(false);
-					TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-					//analyze the response of the query to see if the resource has a type and/or is deprecated
-					if(tupleQueryResult.hasNext()) {
-						//it has at least a type or it is deprecated
-						BindingSet bindingSet = tupleQueryResult.next();
-						if(bindingSet.hasBinding("hasType")) {
-							hasType = true;
+				//now check each resource associated to the current namespace
+				for( TripleForAnnotatedValue triple : namespaceToTripleMap.get(namespace)) {
+					Resource obj = triple.getObject().getValue();
+					
+					if(connectionToOtherRepository != null) {
+						query = "SELECT ?deprecated ?hasType"
+								+" WHERE {\n"
+								//check if the resource is deprecated
+								+ "{ "+NTriplesUtil.toNTriplesString(obj)+ " "+
+									NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
+								+ "BIND(true AS ?deprecated )\n"
+								+ "}\n"
+								+ "UNION\n"
+								//check if the resource has a type
+								+ "{ "+NTriplesUtil.toNTriplesString(obj) + " a ?type .\n"  
+								+ "BIND(true AS ?hasType)\n "
+								+ "}\n"
+								+ "}";
+						logger.debug("query [listBrokenAlignments2]:\n" + query);
+						boolean hasType = false;
+						boolean isDeprecated = false;
+						TupleQuery tupleQuery = connectionToOtherRepository.prepareTupleQuery(query);
+						tupleQuery.setIncludeInferred(false);
+						TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+						//analyze the response of the query to see if the resource has a type and/or is deprecated
+						if(tupleQueryResult.hasNext()) {
+							//it has at least a type or it is deprecated
+							BindingSet bindingSet = tupleQueryResult.next();
+							if(bindingSet.hasBinding("hasType")) {
+								hasType = true;
+							}
+							if(bindingSet.hasBinding("deprecated")) {
+								isDeprecated = true;
+							}
 						}
-						if(bindingSet.hasBinding("deprecated")) {
-							isDeprecated = true;
-						}
-					}
-					//if the resource has no type or is deprecated, then return it (the triple from which the 
-					// resource was taken)
-					if(!hasType || isDeprecated) {
-						ObjectNode singleBrokenAlign = jsonFactory.objectNode();
-						singleBrokenAlign.putPOJO("subject", triple.getSubject());
-						singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
-						if(isDeprecated) {
-							triple.getObject().setAttribute("deprecated", true);
-						} else {
-							triple.getObject().setAttribute("deprecated", false);
-						}
-						singleBrokenAlign.putPOJO("object", triple.getObject());
-						response.add(singleBrokenAlign);
-					}
-				} else {
-					//the connection to the repository (local or remote) is not possible, so use the 
-					// HTTP connection
-					//do an httpRequest to see if the which IRIs are associated to an existing web page
-					IRI resource = (IRI) triple.getObject().getValue();
-					boolean toAdd = false;
-					HttpURLConnection con = null;
-					try {
-						URL url = new URL(resource.stringValue());
-						con = (HttpURLConnection) url.openConnection();
-						con.setRequestMethod("GET");
-						con.setRequestProperty("Content-Type", "application/json");
-						con.setConnectTimeout(5000);
-						con.setReadTimeout(5000);
-						//connect to the remote site
-						con.connect();
-						int code = con.getResponseCode();
-						if(code!=200) {
-							//the resource was not found, so this triple will be returned
-							toAdd = true;
-						}
-					} catch (IOException e) {
-						//the connection was not possible, so this triple will be returned
-						toAdd = true;
-					} finally {
-						if(toAdd) {
-							//if the page cannot be found, then the resource does not exist, so return it
+						//if the resource has no type or is deprecated, then return it (the triple from which the 
+						// resource was taken)
+						if(!hasType || isDeprecated) {
 							ObjectNode singleBrokenAlign = jsonFactory.objectNode();
 							singleBrokenAlign.putPOJO("subject", triple.getSubject());
 							singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
+							if(isDeprecated) {
+								triple.getObject().setAttribute("deprecated", true);
+							} else {
+								triple.getObject().setAttribute("deprecated", false);
+							}
 							singleBrokenAlign.putPOJO("object", triple.getObject());
 							response.add(singleBrokenAlign);
 						}
-						//close the connection with the remote site
-						con.disconnect();
+					} else {
+						//the connection to the repository (local or remote) is not possible, so use the 
+						// HTTP connection
+						//do an httpRequest to see if the which IRIs are associated to an existing web page
+						IRI resource = (IRI) triple.getObject().getValue();
+						boolean toAdd = false;
+						HttpURLConnection con = null;
+						try {
+							URL url = new URL(resource.stringValue());
+							con = (HttpURLConnection) url.openConnection();
+							con.setRequestMethod("GET");
+							con.setRequestProperty("Content-Type", "application/json");
+							con.setConnectTimeout(5000);
+							con.setReadTimeout(5000);
+							//connect to the remote site
+							con.connect();
+							int code = con.getResponseCode();
+							if(code!=200) {
+								//the resource was not found, so this triple will be returned
+								toAdd = true;
+							}
+						} catch (IOException e) {
+							//the connection was not possible, so this triple will be returned
+							toAdd = true;
+						} finally {
+							if(toAdd) {
+								//if the page cannot be found, then the resource does not exist, so return it
+								ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+								singleBrokenAlign.putPOJO("subject", triple.getSubject());
+								singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
+								singleBrokenAlign.putPOJO("object", triple.getObject());
+								response.add(singleBrokenAlign);
+							}
+							//close the connection with the remote site
+							con.disconnect();
+						}
+						
 					}
-					
+				}
+			} 
+			
+		} finally {
+			//check all the connections used and close them
+			for (RepositoryConnection otherConn : projectConnectionHolder.get().values()) {
+				try {
+					otherConn.close();
+				} catch (RepositoryException e) {
+					logger.debug("Exception closing additional project", e);
 				}
 			}
-			
-			//if a connection was used to query the other repository, close it
-			if(connectionToOtherRepository != null) {
-				connectionToOtherRepository.close();
-			}
+			projectConnectionHolder.remove();
 		}
 		
 		return response;
