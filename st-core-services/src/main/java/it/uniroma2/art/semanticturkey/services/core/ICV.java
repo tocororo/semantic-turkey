@@ -51,6 +51,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -1440,11 +1441,11 @@ public class ICV extends STServiceAdapter {
 				for(ResourcePosition resourcePosition : resourcePositionList) {
 					ObjectNode locationNode = jsonFactory.objectNode();
 					if(resourcePosition instanceof LocalResourcePosition) {
-						locationNode.put("type", "local");
+						locationNode.put("type", RepositoryLocation.Location.local.toString());
 						LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 						locationNode.put("name",localResourcePosition.getProject().getName());
 					} else if (resourcePosition instanceof RemoteResourcePosition) {
-						locationNode.put("type", "remote");
+						locationNode.put("type", RepositoryLocation.Location.remote.toString());
 						RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
 						DatasetMetadata datasetMetadata = remoteResourcePosition.getDatasetMetadata();
 						locationNode.put("title", datasetMetadata.getTitle());
@@ -1512,7 +1513,7 @@ public class ICV extends STServiceAdapter {
 	}
 
 	/**
-	 * Return a list of <triples> of broken alignments among concepts
+	 * Return a list of <triples> of broken alignments
 	 * @param nsToLocationMap
 	 * @param rolesArray
 	 * @return
@@ -1684,12 +1685,13 @@ public class ICV extends STServiceAdapter {
 		for(String namespace : namespaceToTripleMap.keySet()) {
 			RepositoryConnection connectionToOtherRepository = null;
 			String typeAndLocation = nsToLocationMap.get(namespace);
-			if(typeAndLocation.startsWith("local")) {
-				String projName = typeAndLocation.split("local:")[1]; //TODO check this thing
+			if(typeAndLocation.startsWith(RepositoryLocation.Location.local.toString())) {
+				String projName = typeAndLocation.split(RepositoryLocation.Location.local.toString()+":")[1]; 
 				connectionToOtherRepository = acquireManagedConnectionToProject(getProject(), ProjectManager.getProject(projName));
 			} else { // it is a remote alignments
 				if(!typeAndLocation.equals("remote:dereference")) { // it is a SPARQL endpoint
-					String sparqlEndPoint = typeAndLocation.split("remote:")[1]; // TODO check this thing
+					String sparqlEndPoint = typeAndLocation.split(
+							RepositoryLocation.Location.remote.toString()+":")[1]; 
 					if(sparqlEndPoint != null) {
 						Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
 						sparqlRepository.initialize();
@@ -1795,6 +1797,141 @@ public class ICV extends STServiceAdapter {
 		return response;
 	}
 	
+	
+	/**
+	 * Return a list of <triples> of broken definitions 
+	 * @param nsToLocationMap
+	 * @param rolesArray
+	 * @return
+	 * @throws ProjectAccessException 
+	 * @throws IOException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public JsonNode listBrokenDefinition(RDFResourceRole[] rolesArray, IRI property) {
+		
+		//do a spqarql query to obtain all the resources linked with the desired property (or one of its 
+		// subproperties)
+		String query = "SELECT ?resource ?attr_subj ?attr_prop ?attr_obj\n"
+				+ "WHERE {\n"
+				+ "?attr_prop "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+					NTriplesUtil.toNTriplesString(property)+" .\n"
+				+ "?attr_subj ?attr_prop ?attr_obj ."
+				+ "FILTER isIRI(?attr_obj) \n"
+				
+				//exclude the obj defined in this ontology
+				+ "MINUS{?attr_obj a ?type} \n"
+				
+				//filter the subject according to the input rolesArray
+				+ getTypesFromRoles("?attr_subj", rolesArray)
+				
+				//put ?attr_subj ?attr_propMapping ?obj in ?resource (so the will be in the annotated value)
+				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n" //added to have some results
+				+ "BIND(?attr_subj AS ?resource)}\n"
+				+ "UNION\n"
+				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n"//added to have some results
+				+ "BIND(?attr_propMapping AS ?resource)}\n"
+				+ "UNION\n"
+				+ "{?attr_subj ?attr_propMapping ?attr_obj .\n" //added to have some results
+				+ "BIND(?attr_obj AS ?resource)}\n"	
+				
+				+ "} "
+				+ "GROUP BY ?resource ?attr_subj ?attr_prop ?attr_obj ";
+		
+		logger.debug("query [listBrokenDefinition]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		
+		//execute the query
+		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
+		
+		//now iterate over the response of the SPARQL query to consctruct the structure which will contain the
+		// the triples wit the definition
+		Map <String, TripleForAnnotatedValue> tripleForAnnotatedValueMap = new HashMap<>();
+		for(AnnotatedValue<Resource> annotatedValue : annotatedValueList) {
+			String subj = annotatedValue.getAttributes().get("subj").stringValue();
+			annotatedValue.getAttributes().remove("subj");
+			String propMapping = annotatedValue.getAttributes().get("prop").stringValue();
+			annotatedValue.getAttributes().remove("prop");
+			String obj = annotatedValue.getAttributes().get("obj").stringValue();
+			annotatedValue.getAttributes().remove("obj");
+			String key = subj+propMapping+obj; 
+			if(!tripleForAnnotatedValueMap.containsKey(key)) {
+				tripleForAnnotatedValueMap.put(key, new TripleForAnnotatedValue());
+			}
+			TripleForAnnotatedValue tripleForAnnotatedValue = tripleForAnnotatedValueMap.get(key);
+			//check the AnnotatedValue to see which of its "elements"refer to
+			String value = annotatedValue.getValue().stringValue();
+			if(value.equals(subj)) {
+				tripleForAnnotatedValue.setSubject(annotatedValue);
+			} else if(value.equals(propMapping)) {
+				tripleForAnnotatedValue.setPredicate(annotatedValue);
+			} else { //value.equals(obj)
+				tripleForAnnotatedValue.setObject(annotatedValue);
+			}
+		}
+		
+		
+		//prepare the empty response, which will be fill everytime a broken alignment is found
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode response = jsonFactory.arrayNode();
+		
+		String namespace = getProject().getDefaultNamespace();
+		
+		//now iterate over the structure containg all the returned triples from the SPARQL query
+		for(TripleForAnnotatedValue tripleForAnnotatedValue : tripleForAnnotatedValueMap.values()) {
+			//check tha the obj does not belong to the current project
+			if(!(tripleForAnnotatedValue.getObject().getValue() instanceof IRI)) {
+				//the obj is not an IRI, this could not be possible, since in the SPARQL query I filter the
+				// non-IRI value, but better to be safe than sorry
+				continue;
+			}
+			IRI obj = (IRI)tripleForAnnotatedValue.getObject().getValue();
+			if(obj.stringValue().startsWith(namespace)) {
+				//the obj belong to the current project, so do not consider it
+				continue;
+			}
+			//now try the to HTTP deference
+			IRI resource = (IRI) tripleForAnnotatedValue.getObject().getValue();
+			boolean toAdd = false;
+			HttpURLConnection con = null;
+			try {
+				URL url = new URL(resource.stringValue());
+				con = (HttpURLConnection) url.openConnection();
+				con.setRequestMethod("GET");
+				con.setRequestProperty("Content-Type", "application/json");
+				con.setConnectTimeout(5000);
+				con.setReadTimeout(5000);
+				//connect to the remote site
+				con.connect();
+				int code = con.getResponseCode();
+				if(code!=200) {
+					//the resource was not found, so this triple will be returned
+					toAdd = true;
+				}
+			} catch (IOException e) {
+				//the connection was not possible, so this triple will be returned
+				toAdd = true;
+			} finally {
+				if(toAdd) {
+					//if the page cannot be found, then the resource does not exist, so return it
+					ObjectNode singleBrokenAlign = jsonFactory.objectNode();
+					singleBrokenAlign.putPOJO("subject", tripleForAnnotatedValue.getSubject());
+					singleBrokenAlign.putPOJO("predicate", tripleForAnnotatedValue.getPredicate());
+					singleBrokenAlign.putPOJO("object", tripleForAnnotatedValue.getObject());
+					response.add(singleBrokenAlign);
+				}
+				//close the connection with the remote site
+				con.disconnect();
+			}
+		
+		}
+		
+		return response;
+	}
 	
 	//-----GENERICS-----
 	
