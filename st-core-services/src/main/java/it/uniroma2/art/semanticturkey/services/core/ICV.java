@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
@@ -1489,10 +1490,10 @@ public class ICV extends STServiceAdapter {
 						+ "?type = "+NTriplesUtil.toNTriplesString(RDFS.CLASS);
 			} else if(role.equals(RDFResourceRole.property)) {
 				query += "?type = "+NTriplesUtil.toNTriplesString(RDF.PROPERTY)+" || "+
-						"?type = "+NTriplesUtil.toNTriplesString(OWL.OBJECTPROPERTY)+"> || "+
-						"?type = "+NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY)+"> || "+
-						"?type = "+NTriplesUtil.toNTriplesString(OWL.ANNOTATIONPROPERTY)+"> || " +
-						"?type = "+NTriplesUtil.toNTriplesString(OWL.ONTOLOGYPROPERTY)+"> ";
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.OBJECTPROPERTY)+" || "+
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY)+" || "+
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.ANNOTATIONPROPERTY)+" || " +
+						"?type = "+NTriplesUtil.toNTriplesString(OWL.ONTOLOGYPROPERTY)+" ";
 			} 
 		}
 		query += ")\n";
@@ -1818,7 +1819,8 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public JsonNode listBrokenDefinition(RDFResourceRole[] rolesArray, IRI property) {
+	public JsonNode listBrokenDefinitions(RDFResourceRole[] rolesArray,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI property) {
 		
 		//do a spqarql query to obtain all the resources linked with the desired property (or one of its 
 		// subproperties)
@@ -2347,6 +2349,7 @@ public class ICV extends STServiceAdapter {
 						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
 						"\n}";
 				first = false;
+				System.out.println(query);
 			} else if(role.equals(RDFResourceRole.conceptScheme)) {
 				query+=union+"{ "+var+" a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
 				first=false;
