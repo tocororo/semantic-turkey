@@ -1944,6 +1944,43 @@ public class ICV extends STServiceAdapter {
 		return response;
 	}
 	
+	
+	/**
+	 * Return a list of <resources> having an invalid URI according to complex regex 
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listInvalidURIs() {
+		
+		//this complex regex was copied from: 
+		//	http://snipplr.com/view/6889/regular-expressions-for-uri-validationparsing/
+		
+		String regex = "^([a-z0-9+.-]+):(?://(?:((?:[a-z0-9-._~!$&'()*+,;=:]|%[0-9A-F]{2})*)@)?"
+				+ "((?:[a-z0-9-._~!$&'()*+,;=]|%[0-9A-F]{2})*)(?::(\\\\d*))?"
+				+ "(/(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?|"
+				+ "(/?(?:[a-z0-9-._~!$&'()*+,;=:@]|%[0-9A-F]{2})+"
+				+ "(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?)"
+				+ "(?:\\\\?((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?"
+				+ "(?:#((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?";
+		
+		
+		String query = "SELECT DISTINCT ?resource \n" 
+				+ "WHERE{ \n"
+				+ "?resource ?pred ?obj .\n"
+				+ "FILTER (!REGEX( str(?resource), \""+regex+"\", \"i\")) \n"
+				+ "}\n"
+				+ "GROUP BY ?resource ";
+		
+		logger.debug("query [listInvalidURIs]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
 	//-----GENERICS-----
 	
 	@STServiceOperation
@@ -2349,7 +2386,6 @@ public class ICV extends STServiceAdapter {
 						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
 						"\n}";
 				first = false;
-				System.out.println(query);
 			} else if(role.equals(RDFResourceRole.conceptScheme)) {
 				query+=union+"{ "+var+" a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
 				first=false;
