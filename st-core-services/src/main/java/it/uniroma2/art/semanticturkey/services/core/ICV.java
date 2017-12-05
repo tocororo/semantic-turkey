@@ -1969,7 +1969,7 @@ public class ICV extends STServiceAdapter {
 		String query = "SELECT DISTINCT ?resource \n" 
 				+ "WHERE{ \n"
 				+ "?resource ?pred ?obj .\n"
-				+ "FILTER (!REGEX( str(?resource), \""+regex+"\", \"i\")) \n"
+				+ "FILTER ( (REGEX( str(?resource), \" \")) || !REGEX( str(?resource), \""+regex+"\", \"i\") ) \n"
 				+ "}\n"
 				+ "GROUP BY ?resource ";
 		
