@@ -1952,24 +1952,12 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listInvalidURIs() {
-		
-		//this complex regex was copied from: 
-		//	http://snipplr.com/view/6889/regular-expressions-for-uri-validationparsing/
-		
-		String regex = "^([a-z0-9+.-]+):(?://(?:((?:[a-z0-9-._~!$&'()*+,;=:]|%[0-9A-F]{2})*)@)?"
-				+ "((?:[a-z0-9-._~!$&'()*+,;=]|%[0-9A-F]{2})*)(?::(\\\\d*))?"
-				+ "(/(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?|"
-				+ "(/?(?:[a-z0-9-._~!$&'()*+,;=:@]|%[0-9A-F]{2})+"
-				+ "(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?)"
-				+ "(?:\\\\?((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?"
-				+ "(?:#((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?";
-		
+	public Collection<AnnotatedValue<Resource>> listLocalInvalidURIs() {
 		
 		String query = "SELECT DISTINCT ?resource \n" 
 				+ "WHERE{ \n"
-				+ "?resource ?pred ?obj .\n"
-				+ "FILTER ( (REGEX( str(?resource), \" \")) || !REGEX( str(?resource), \""+regex+"\", \"i\") ) \n"
+				+ "?resource a ?type .\n"
+				+ getFilterForCheckingUris("?resource")
 				+ "}\n"
 				+ "GROUP BY ?resource ";
 		
@@ -1979,6 +1967,25 @@ public class ICV extends STServiceAdapter {
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
+	}
+	
+	
+	private String getFilterForCheckingUris(String resource) {
+		//this complex regex was copied from: 
+		//	http://snipplr.com/view/6889/regular-expressions-for-uri-validationparsing/
+				
+		String regex = "^([a-z0-9+.-]+):(?://(?:((?:[a-z0-9-._~!$&'()*+,;=:]|%[0-9A-F]{2})*)@)?"
+				+ "((?:[a-z0-9-._~!$&'()*+,;=]|%[0-9A-F]{2})*)(?::(\\\\d*))?"
+				+ "(/(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?|"
+				+ "(/?(?:[a-z0-9-._~!$&'()*+,;=:@]|%[0-9A-F]{2})+"
+				+ "(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?)"
+				+ "(?:\\\\?((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?"
+				+ "(?:#((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?";
+		
+		String queryPart ="FILTER ( (REGEX( str(?resource), \" \")) "
+				+ "|| !REGEX( str(?resource), \""+regex+"\", \"i\") ) \n";
+		
+		return queryPart;
 	}
 	
 	//-----GENERICS-----
