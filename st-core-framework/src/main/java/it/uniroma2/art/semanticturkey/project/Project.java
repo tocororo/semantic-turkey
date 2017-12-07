@@ -907,6 +907,11 @@ public abstract class Project extends AbstractProject {
 							.instatiatePlugin();
 					RepositoryImplConfig remoteRepositoryImplConfig = repoConfigurer
 							.buildRepositoryImplConfig(null);
+					if (backendType == null) {
+						/* Creating a remote repository: try to detect the backend type */
+						backendType = STLocalRepositoryManager.detectBackendType(remoteRepositoryImplConfig);
+					}
+
 					RepositoryConfig remoteRepositoryConfig = new RepositoryConfig(repositoryId, "",
 							remoteRepositoryImplConfig);
 
