@@ -115,8 +115,9 @@ public class Versions extends STServiceAdapter {
 			outConn.begin(IsolationLevels.READ_COMMITTED);
 
 			// Unwraps the read-only connection wrapper to access the underlying writable connection
+			RepositoryConnection delegateWritableConnection = ((DelegatingRepositoryConnection) outConn).getDelegate();
 			getManagedConnection()
-					.export(new RDFInserter(((DelegatingRepositoryConnection) outConn).getDelegate()));
+					.export(new RDFInserter(delegateWritableConnection));
 
 			outConn.commit();
 
@@ -126,7 +127,7 @@ public class Versions extends STServiceAdapter {
 					.instantiateSearchStrategy(STRepositoryInfoUtils
 							.getSearchStrategy(getProject().getRepositoryManager().getSTRepositoryInfo(
 									STServiceContextUtils.getRepostoryId(stServiceContext))))
-					.initialize(outConn);
+					.initialize(delegateWritableConnection);
 
 			outConn.commit();
 		}
