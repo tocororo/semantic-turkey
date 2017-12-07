@@ -78,7 +78,7 @@ public class ServiceForSearches {
 	
 	public String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
 			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isConceptSchemeWanted, boolean isCollectionWanted, List<IRI> schemes){
+			boolean isConceptSchemeWanted, boolean isCollectionWanted, List<IRI> schemes, IRI cls){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
@@ -152,13 +152,20 @@ public class ServiceForSearches {
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
-					//"\n?type a ?classType ." +
-					//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
-					"\n}";
+			if(otherWanted || cls==null ) {
+				filterQuery += "\n{\n"+resource+" a "+type+" . " +
+						"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
+						//"\n?type a ?classType ." +
+						//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
+						"\n}";
 				
 				otherWanted = true;
+			} else {
+				//since only individuals are wanted and cls is not null, filter the individuals just for the 
+				// desired class
+				filterQuery += "\n{\n"+resource+" a <"+cls.stringValue()+"> . } ";
+				otherWanted = true;
+			}
 		}
 		
 		return filterQuery;

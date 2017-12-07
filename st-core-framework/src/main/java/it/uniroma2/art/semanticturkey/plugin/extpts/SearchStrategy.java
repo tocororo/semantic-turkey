@@ -39,7 +39,7 @@ public interface SearchStrategy {
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Nullable List<IRI> schemes, @Nullable List<String> langs) throws IllegalStateException, 
+			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls) throws IllegalStateException, 
 			STPropertyAccessException;
 
 	Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext, IRI cls,

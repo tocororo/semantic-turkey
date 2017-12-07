@@ -96,11 +96,12 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<String> searchStringList(String searchString, @Optional String[] rolesArray,
-			boolean useLocalName, SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs)
+			boolean useLocalName, SearchMode searchMode, @Optional List<IRI> schemes, 
+			@Optional List<String> langs, @Optional IRI cls)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchStringList(stServiceContext, searchString, rolesArray,
-				useLocalName, searchMode, schemes, langs);
+				useLocalName, searchMode, schemes, langs, cls);
 	}
 
 	@STServiceOperation

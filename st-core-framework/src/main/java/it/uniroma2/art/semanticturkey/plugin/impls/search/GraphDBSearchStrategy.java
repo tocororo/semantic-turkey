@@ -151,7 +151,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes);
+				serviceForSearches.isCollectionWanted(), schemes, null);
 
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -177,7 +177,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
@@ -203,25 +203,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//use the indexes to search in the literals, and then get the associated resource
 		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs);
 		
-		//if the user specify a role, then get the resource associated to the label, since it will be use 
-		// later to filter the results
-		if(rolesArray!=null && rolesArray.length>0){
-			//search in the rdfs:label
-			query+="\n{" +
-					"\n?resource <"+RDFS.LABEL+"> ?label ." +
-					"\n}"+
-			//search in skos:prefLabel and skos:altLabel
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-					"\n}" +
-			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-					"\n}";		
-		}
+		//search in the rdfs:label
+		query+="\n{" +
+				"\n?resource <"+RDFS.LABEL+"> ?label ." +
+				"\n}"+
+		//search in skos:prefLabel and skos:altLabel
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+				"\n}" +
+		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+				"\n}";		
 		if(useLocalName ){
 			query+="\n}";
 		}
@@ -232,7 +228,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes);
+				serviceForSearches.isCollectionWanted(), schemes, cls);
 		}
 		query+="\n}";
 		//@formatter:on

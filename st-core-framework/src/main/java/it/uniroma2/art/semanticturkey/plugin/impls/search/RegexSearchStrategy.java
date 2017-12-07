@@ -58,7 +58,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes);
+				serviceForSearches.isCollectionWanted(), schemes, null);
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
@@ -127,7 +127,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
@@ -139,7 +139,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes);
+				serviceForSearches.isCollectionWanted(), schemes, cls);
 		
 		//check if the request want to search in the local name
 		if(useLocalName){
@@ -151,28 +151,24 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					"\nUNION";
 		}
 		
-		//if the user specify a role, then get the resource associated to the label, since it will be use 
-		// later to filter the results
-		if(rolesArray!=null && rolesArray.length>0){
-			//search in the rdfs:label
-			query+="\n{" +
-					"\n?resource <"+RDFS.LABEL+"> ?label ." +
-					searchModePrepareQuery("?label", searchString, searchMode, langs) +
-					"\n}"+
-			//search in skos:prefLabel and skos:altLabel
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-					searchModePrepareQuery("?label", searchString, searchMode, langs) +
-					"\n}" +
-			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-					searchModePrepareQuery("?label", searchString, searchMode, langs) +
-					"\n}";		
-		}
+		//search in the rdfs:label
+		query+="\n{" +
+				"\n?resource <"+RDFS.LABEL+"> ?label ." +
+				searchModePrepareQuery("?label", searchString, searchMode, langs) +
+				"\n}"+
+		//search in skos:prefLabel and skos:altLabel
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+				searchModePrepareQuery("?label", searchString, searchMode, langs) +
+				"\n}" +
+		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+				searchModePrepareQuery("?label", searchString, searchMode, langs) +
+				"\n}";		
 		
 		query+="\n}";
 		//@formatter:on
