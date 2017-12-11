@@ -1,2 +1,3 @@
 show_instances_number=true
 show_flags=true
+class_tree_preferences={"rootClassUri"\:"http\://www.w3.org/2002/07/owl\#Thing","filterEnabled"\:true,"filterMap"\:{"http\://www.w3.org/2002/07/owl\#Thing"\:["http\://www.w3.org/2002/07/owl\#Nothing","http\://www.w3.org/2004/02/skos/core\#Collection","http\://www.w3.org/2004/02/skos/core\#Concept","http\://www.w3.org/2004/02/skos/core\#ConceptScheme","http\://www.w3.org/2008/05/skos-xl\#Label"]}}
