@@ -106,6 +106,10 @@ chk_capability(rdf(xLabel), CRUDV) :-
 chk_capability(rdf(xLabel,_), CRUDV) :-
 %	write('no language lexicalization expansion for editing SKOSXL labels  | '),
 	capability(rdf(lexicalization), CRUDV).	
+	
+chk_capability(rdf(_,notes), CRUDV) :-
+% write('notes expansion'),
+capability(rdf(notes), CRUDV).
 
 
 /*********************************
