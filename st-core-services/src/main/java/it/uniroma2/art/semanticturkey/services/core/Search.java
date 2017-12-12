@@ -119,14 +119,15 @@ public class Search extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resourceURI)+ ')', 'R')")
-	public Collection<AnnotatedValue<Resource>> getPathFromRoot(String role, IRI resourceURI,
-			@Optional List<IRI> schemesIRI) throws InvalidParameterException {
+	public Collection<AnnotatedValue<Resource>> getPathFromRoot(RDFResourceRole role, IRI resourceURI,
+			@Optional List<IRI> schemesIRI, 
+			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root) throws InvalidParameterException {
 
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 
 		String query = null;
 		String superResourceVar = null, superSuperResourceVar = null;
-		if (role.toLowerCase().equals(RDFResourceRole.concept.name().toLowerCase())) {
+		if (role.equals(RDFResourceRole.concept)) {
 			superResourceVar = "broader";
 			superSuperResourceVar = "broaderOfBroader";
 			String inSchemeOrTopConcept = "<" + SKOS.IN_SCHEME.stringValue() + ">|<" + SKOS.TOP_CONCEPT_OF
@@ -206,7 +207,7 @@ public class Search extends STServiceAdapter {
 					
 			query+="\n}";
 			//@formatter:on
-		} else if (role.toLowerCase().equals(RDFResourceRole.property.name().toLowerCase())) {
+		} else if (role.equals(RDFResourceRole.property)) {
 			superResourceVar = "superProperty";
 			superSuperResourceVar = "superSuperProperty";
 			//@formatter:off
@@ -232,23 +233,35 @@ public class Search extends STServiceAdapter {
 					"\n}" +
 					"\n}";
 			//@formatter:on
-		} else if (role.toLowerCase().equals(RDFResourceRole.cls.name().toLowerCase())) {
+		} else if (role.equals(RDFResourceRole.cls)) {
 			superResourceVar = "superClass";
 			superSuperResourceVar = "superSuperClass";
 			//@formatter:off
 			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
 					"\nWHERE{" + 
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ." + 
-					
+					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ."; 
+			
+			//if the input root is different from owl:Thing e rdfs:Resoruce the ?superClass should be 
+			// rdfs:subClass of such root
+			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
+				query += "\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+root.stringValue()+"> ."; 	
+			}
+			
 					//check that the superClass belong to the default graph
-					"\n?metaClass1 rdfs:subClassOf* owl:Class ." +
+			query +="\n?metaClass1 <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+RDFS.CLASS.stringValue()+"> ." +
 					"\n?superClass a ?metaClass1 ."+
 					
 					"\nOPTIONAL{" +
-					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass ." +
+					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass .";
+			//if the input root is different from owl:Thing e rdfs:Resoruce the ?superClass, in this OPTIONAL,
+			// should be different from the input root
+			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
+				query += "\n FILTER(?superClass != <"+root.stringValue()+"> )"; 	
+			}
+			
 					//check that the superSuperClass belong to the default graph
-					"\n?metaClass2 rdfs:subClassOf* owl:Class ." +
+			query +="\n?metaClass2 <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+RDFS.CLASS.stringValue()+"> ." +
 					"\n?superSuperClass a ?metaClass2 ."+
 					
 					"\n}" + 
@@ -261,7 +274,7 @@ public class Search extends STServiceAdapter {
 					"\n}" +
 					"\n}";
 			//@formatter:on
-		} else if (role.toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())) {
+		} else if (role.equals(RDFResourceRole.skosCollection)) {
 			superResourceVar = "superCollection";
 			superSuperResourceVar = "superSuperCollection";
 			String complexPropPath = "(<" + SKOS.MEMBER.stringValue() + "> | (<"
@@ -356,7 +369,8 @@ public class Search extends STServiceAdapter {
 								superSuperResNode, superSuperResourceShow, isSuperResABNode));
 					}
 					//get the structure in the map for the superResource to add the superSuperResource
-					//(the superResource is added to the structure containing the superSuperResource)
+					//(the superResource is added to the structure containing the superSuperResource as
+					// its subResource)
 					ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
 							.get(superSuperResourceId);
 					resourceForHierarchy.addSubResource(superResourceId);
@@ -381,7 +395,7 @@ public class Search extends STServiceAdapter {
 				// it cannot be the first element of a path
 				continue;
 			}
-			if (role.toLowerCase().equals(RDFResourceRole.concept.name())) {
+			if (role.equals(RDFResourceRole.concept)) {
 				// the role is a concept, so check if an input scheme was passed, if so, if it is not a
 				// top concept (for that particular scheme) then pass to the next concept
 				if (schemesIRI != null && !resourceForHierarchy.isTopConcept) {
@@ -390,7 +404,7 @@ public class Search extends STServiceAdapter {
 			}
 			List<String> currentList = new ArrayList<String>();
 			//currentList.add(resourceForHierarchy.getValue().stringValue());
-			getSubResourcesListUsingResourceFroHierarchy(resourceURI.stringValue(), resourceForHierarchy, 
+			addSubResourcesListUsingResourceFroHierarchy(resourceURI.stringValue(), resourceForHierarchy, 
 					currentList, pathList, resourceToResourceForHierarchyMap);
 		}
 		
@@ -418,33 +432,84 @@ public class Search extends STServiceAdapter {
 			results.add(annotatedValue);
 		}
 
+		//iterate over all possible found path
 		for (int currentLength = 1; currentLength <= maxLength && !pathFound; ++currentLength) {
+			//for the given path length, get all the path (having such length)
 			for (List<String> path : pathList) {
 				boolean targetResNotPresent = true;
 				if (currentLength != path.size()) {
 					// it is not the right iteration to add this path
 					continue;
 				}
-				pathFound = true;
 
-				for (String conceptInPath : path) {
-					if(resourceURI.stringValue().equals(conceptInPath)) {
+				boolean first = true;
+				for (String resourceInPath : path) {
+					//if it is the first element, the role is cls, and the desired root is either 
+					// rdfs:Resoruce or owl:Thing, a special check should be perform, 
+					//since it could be necessary to add rdfs:Resource and even owl:Thing
+					boolean addRdfsResource = false, addOwlThing=false;
+					if(first && role.equals(RDFResourceRole.cls) && 
+							(root.equals(OWL.THING) || root.equals(RDFS.RESOURCE))) {
+						if(root.equals(RDFS.RESOURCE) && !resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
+							//the desired first element should be rdfs:Resoruce, but it is not, 
+							// so add rdfs:Resource as first element
+							addRdfsResource=true;
+							if(!resourceInPath.equals(OWL.THING.stringValue())) {
+								//the first element in the list is not Thing, but it should be, since under
+								// rdfs:Resource there should be owl:Thing, so add it (after adding rdfs:Resoruce)
+								addOwlThing=true;
+							}
+						}
+						else if(root.equals(OWL.THING) && resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
+							//do not consider this path, since the root should be owl:Thing and the current
+							// found root is rdfs:Resource, which is a superClass of owl:Thing
+							
+							//analyze the next path
+							break;
+						}
+						else if(root.equals(OWL.THING) && !resourceInPath.equals(OWL.THING.stringValue())) {
+							//the desired first element should be owl:Thing, but it is not, 
+							// so add owl:Thing as first element
+							addOwlThing=true;
+						} 
+						
+						if(addRdfsResource) {
+							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(RDFS.RESOURCE);
+							annotatedValue.setAttribute("explicit", true);
+							annotatedValue.setAttribute("show", RDFS.RESOURCE.getLocalName());
+							results.add(annotatedValue);
+						} if(addOwlThing) {
+							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(OWL.THING);
+							annotatedValue.setAttribute("explicit", true);
+							annotatedValue.setAttribute("show", OWL.THING.getLocalName());
+							results.add(annotatedValue);
+						}
+					}
+					
+					first = false;
+					if(resourceURI.stringValue().equals(resourceInPath)) {
 						targetResNotPresent = false;
 					}
 					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
-							(Resource) resourceToResourceForHierarchyMap.get(conceptInPath).getValue());
+							(Resource) resourceToResourceForHierarchyMap.get(resourceInPath).getValue());
 					annotatedValue.setAttribute("explicit", true);
 					annotatedValue.setAttribute("show",
-							resourceToResourceForHierarchyMap.get(conceptInPath).getShow());
+							resourceToResourceForHierarchyMap.get(resourceInPath).getShow());
 					results.add(annotatedValue);
 				}
 				// add, if necessary, at the end, the input concept
-				if(targetResNotPresent) {
+				if(results.size()!=0 && targetResNotPresent) {
 					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
 					annotatedValue.setAttribute("explicit", true);
 					annotatedValue.setAttribute("show", resourceURI.getLocalName());
 					results.add(annotatedValue);
 				}
+				
+				//the first path having such length was found, so, do not do the next iteration 
+				pathFound = true;
+				
+				//since a minimal path was found, stop looking for another minimal path
+				break;
 
 			}
 		}
@@ -510,7 +575,7 @@ public class Search extends STServiceAdapter {
 	// return filterQuery;
 	// }
 
-	private void getSubResourcesListUsingResourceFroHierarchy(String targetRes, ResourceForHierarchy resource,
+	private void addSubResourcesListUsingResourceFroHierarchy(String targetRes, ResourceForHierarchy resource,
 			List<String> currentPathList, List<List<String>> pathList,
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap) {
 
@@ -541,7 +606,7 @@ public class Search extends STServiceAdapter {
 			//create a copy of the currentList
 			List<String> updatedPath = new ArrayList<String>(currentPathList);
 			//call getSubResourcesListUsingResourceFroHierarchy on subResource
-			getSubResourcesListUsingResourceFroHierarchy(targetRes, 
+			addSubResourcesListUsingResourceFroHierarchy(targetRes, 
 					resourceToResourceForHierarchyMap.get(subResource), updatedPath, pathList, 
 					resourceToResourceForHierarchyMap);
 		}
