@@ -987,14 +987,4 @@ public abstract class Project extends AbstractProject {
 		return Collections.unmodifiableSet(updateForRoles);
 	}
 
-	public String computeOntoType() {
-		if (lexicalizationModel.equals(SKOSXL_LEXICALIZATION_MODEL)) {
-			return "it.uniroma2.art.owlart.models.SKOSXLModel";
-		} else if (model.equals(SKOS_MODEL) || lexicalizationModel.equals(SKOS_MODEL)) {
-			return "it.uniroma2.art.owlart.models.SKOSModel";
-		} else {
-			return "it.uniroma2.art.owlart.models.OWLModel";
-		}
-	}
-
 }

@@ -34,6 +34,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -276,13 +277,16 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'C')")
 	public AnnotatedValue<IRI> createClass(@Subject @NotLocallyDefined @Created(role=RDFResourceRole.cls) IRI newClass, 
-			@LocallyDefined IRI superClass, @Optional CustomFormValue customFormValue)
+			@LocallyDefined IRI superClass,
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2000/01/rdf-schema#Class") IRI classType,
+			@Optional CustomFormValue customFormValue)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
-		modelAdditions.add(newClass, RDF.TYPE, OWL.CLASS);
+		IRI classCls = (classType != null) ? classType : OWL.CLASS;
+		modelAdditions.add(newClass, RDF.TYPE, classCls);
 		modelAdditions.add(newClass, RDFS.SUBCLASSOF, superClass);
 		
 		RepositoryConnection repoConnection = getManagedConnection();
