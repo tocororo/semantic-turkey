@@ -408,6 +408,14 @@ public class Search extends STServiceAdapter {
 					currentList, pathList, resourceToResourceForHierarchyMap);
 		}
 		
+		//if the input resource is a topResource, then add it to the pathList as a list containing just one 
+		// element
+		if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) {
+			List<String> listWithOneElem = new ArrayList<>();
+			listWithOneElem.add(resourceURI.stringValue());
+			pathList.add(listWithOneElem);
+		}
+		
 		// now construct the response
 		// to order the path (from the shortest to the longest) first find the maximum length
 		int maxLength = -1;
