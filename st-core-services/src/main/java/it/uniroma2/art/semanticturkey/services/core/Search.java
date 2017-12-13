@@ -431,14 +431,14 @@ public class Search extends STServiceAdapter {
 
 		// if it is explicitly a topResource or if no path is returned while there was at least one
 		// result from the SPARQL query (this mean that all the paths contained at least one non-URI resource)
-		if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) {
+		/*if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) {
 			// the input resource is a top resource for its role (concept, class or property)
 			pathFound = true;
 			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
 			annotatedValue.setAttribute("explicit", true);
 			annotatedValue.setAttribute("show", resourceURI.getLocalName());
 			results.add(annotatedValue);
-		}
+		}*/
 
 		//iterate over all possible found path
 		for (int currentLength = 1; currentLength <= maxLength && !pathFound; ++currentLength) {
