@@ -315,7 +315,7 @@ public class Projects extends STServiceAdapter {
 	public void updateAccessLevel(String projectName, String consumerName, @Optional AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProject(projectName, true);
 		if (accessLevel != null) {
 			project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
 		} else {
@@ -468,7 +468,7 @@ public class Projects extends STServiceAdapter {
 	public void updateLockLevel(String projectName, LockLevel lockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProject(projectName, true);
 		project.getACL().setLockableWithLevel(lockLevel);
 	}
 

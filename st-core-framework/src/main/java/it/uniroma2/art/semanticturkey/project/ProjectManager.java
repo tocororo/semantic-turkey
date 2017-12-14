@@ -265,6 +265,16 @@ public class ProjectManager {
 	 */
 	public static Project getProject(String projectName) {
 		return openProjects.getProject(projectName);
+		//TODO should check for existing project and valid project name
+	}
+	
+	public static Project getProject(String projectName, boolean descriptionAllowed) 
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		Project proj = openProjects.getProject(projectName);
+		if (proj == null && descriptionAllowed) {
+			proj = getProjectDescription(projectName);
+		}
+		return proj;
 	}
 
 	public static boolean existsProject(String projectName) throws InvalidProjectNameException {
