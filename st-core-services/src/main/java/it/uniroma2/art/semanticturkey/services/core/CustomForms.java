@@ -625,7 +625,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
+	//This service has no authorization in that the UI representation of a CF is necessary for prompting data 
 	public JsonNode getCustomFormRepresentation(String id) throws 
 			ProjectInconsistentException, PRParserException, RDFModelNotSetException,  CustomFormException {
 		CustomForm cForm = cfManager.getCustomForm(getProject(), id);
