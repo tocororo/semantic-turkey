@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
+import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -187,7 +189,7 @@ public class STAuthorizationEvaluator {
 			//check on the user responsibilities
 			//at the moment the only check is to the lang capability
 			String lang = (String) userRespMap.get("lang");
-			if (lang != null) {
+			if (lang != null && !lang.equals("null")) {
 				Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
 						loggedUser, targetForRBAC).getLanguages();
 				
@@ -338,6 +340,20 @@ public class STAuthorizationEvaluator {
 			return lang;
 		} finally {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
+		}
+	}
+	
+	public String langof(SpecialValue value) {
+		if (value.isCustomFormValue()) {
+			CustomFormValue cfValue = value.getCustomFormValue();
+			return cfValue.getUserPromptMap().get("lang")+"";
+		} else { //value.isRdf4jValue()
+			Value rdf4jValue = value.getRdf4jValue();
+			if (rdf4jValue instanceof Literal) {
+				return langof((Literal)rdf4jValue);
+			} else {
+				return null;
+			}
 		}
 	}
 	

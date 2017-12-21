@@ -1595,7 +1595,7 @@ public class SKOS extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
 	@DisplayName("add alternative label")
 	public void addNote(@LocallyDefined @Modified @Subject IRI resource, 
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,

@@ -89,7 +89,7 @@ public class Resources extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
 	public void addValue(@LocallyDefined @Modified @Subject Resource subject, @LocallyDefined IRI property,
 			SpecialValue value) throws ProjectInconsistentException, CODAException {
 		addValue(getManagedConnection(), subject, property, value);
