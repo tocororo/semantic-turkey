@@ -42,6 +42,11 @@ public interface SearchStrategy {
 			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls) throws IllegalStateException, 
 			STPropertyAccessException;
 
+	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
+			@Optional String[] rolesArray, SearchMode searchMode,
+			@Nullable List<IRI> schemes, @Nullable IRI cls) throws IllegalStateException, 
+			STPropertyAccessException;
+	
 	Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext, IRI cls,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Nullable List<String> langs) throws IllegalStateException, STPropertyAccessException;

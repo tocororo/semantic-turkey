@@ -238,6 +238,41 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		return serviceForSearches.executeGenericSearchQueryForStringList(query, stServiceContext.getRGraphs(),
 				getThreadBoundTransaction(stServiceContext));
 	}
+	
+	@Override
+	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
+			@Optional String[] rolesArray, SearchMode searchMode,
+			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+
+		//@formatter:off
+		String query = "SELECT DISTINCT ?resource "+ 
+			"\nWHERE{";
+		
+		//if the user specify a role, filter the results according to the type
+		if(rolesArray!=null && rolesArray.length>0){
+			//filter the resource according to its type
+			query+= "\n{ SELECT ?resource \nWHERE {\n" +
+					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
+				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
+				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
+				serviceForSearches.isCollectionWanted(), schemes, cls) +
+				"\n}" +
+				"\n}";
+		} else {
+			//no roles is selected, so add a simple triple, otherwise the FILTER may not work
+			query += "\n?resource a ?type .";
+		}
+		query += searchModePrepareQueryNoIndexes("?resource", searchString, searchMode)+
+				"\n}";
+		//@formatter:on
+
+		logger.debug("query = " + query);
+
+		return serviceForSearches.executeGenericSearchQueryForStringList(query, stServiceContext.getRGraphs(),
+				getThreadBoundTransaction(stServiceContext));
+	}
 
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
