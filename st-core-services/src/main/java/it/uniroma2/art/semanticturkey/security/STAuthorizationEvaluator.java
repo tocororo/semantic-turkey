@@ -189,27 +189,22 @@ public class STAuthorizationEvaluator {
 			}
 			//check on the user responsibilities
 			//at the moment the only check is to the lang capability
-			for (String key : userRespMap.keySet()) {
-				if (key.equals("lang") || key.startsWith("lang_")) {
-					String lang = (String) userRespMap.get(key);
-					if (lang != null && !lang.equals("null")) {
-						Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
-								loggedUser, targetForRBAC).getLanguages();
-						
-						Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(
-								STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, targetForRBAC));
-						Collection<String> projLangTags = new ArrayList<>();
-						for (Language l : projectLangs) {
-							projLangTags.add(l.getTag());
-						}
-						
-						//if the lang capability is not in project languages or is not assigned to the user, do not authorize
-						if (!assignedLangs.contains(lang) || !projLangTags.contains(lang)) {
-							logger.debug("language proficiency '" + lang + "' not authorized");
-							authorized = false;
-							break;
-						}
-					}
+			String lang = (String) userRespMap.get("lang");
+			if (lang != null && !lang.equals("null")) {
+				Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
+						loggedUser, targetForRBAC).getLanguages();
+				
+				Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(
+						STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, targetForRBAC));
+				Collection<String> projLangTags = new ArrayList<>();
+				for (Language l : projectLangs) {
+					projLangTags.add(l.getTag());
+				}
+				
+				//if the lang capability is not in project languages or is not assigned to the user, do not authorize
+				if (!assignedLangs.contains(lang) || !projLangTags.contains(lang)) {
+					logger.debug("language proficiency '" + lang + "' not authorized");
+					authorized = false;
 				}
 			}
 		}
@@ -350,17 +345,22 @@ public class STAuthorizationEvaluator {
 	}
 	
 	public String langof(SpecialValue value) {
+		String lang = null;
 		if (value.isCustomFormValue()) {
 			CustomFormValue cfValue = value.getCustomFormValue();
-			return cfValue.getUserPromptMap().get("lang")+"";
+			Map<String, Object> userRespMap = cfValue.getUserPromptMap();
+			for (String key : userRespMap.keySet()) {
+				if (key.equals("lang") || key.startsWith("lang_")) {
+					lang = (String) userRespMap.get(key);
+				}
+			}			
 		} else { //value.isRdf4jValue()
 			Value rdf4jValue = value.getRdf4jValue();
 			if (rdf4jValue instanceof Literal) {
-				return langof((Literal)rdf4jValue);
-			} else {
-				return null;
+				lang = langof((Literal)rdf4jValue);
 			}
 		}
+		return lang;
 	}
 	
 	/**
