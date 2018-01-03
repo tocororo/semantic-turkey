@@ -2,7 +2,7 @@
  ** tu-prolog implementation **
  *******************************/
 
-char_subset(CRUDVRequest, CRUDV).
+char_subset(CRUDVRequest, CRUDV) :-
 	atom_chars(CRUDVRequest,CRUDVRequestList),
 	atom_chars(CRUDV,CRUDVList),
 	subset(CRUDVRequestList, CRUDVList).
