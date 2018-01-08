@@ -6,6 +6,7 @@ date: dd/mm/yyyy
   	query) formats.
   * Updated signature of creation services (createClass, createInstance, createProperty, createConcept, 
   	createConceptScheme, createCollection, spawnNewConceptFromLabel) using CustomFormValue parameter.
+  * Fixed RepositoryReadOnlyException and NullPointerException when creating a version dump
   * Bug fixes.
 
 version 2.0
