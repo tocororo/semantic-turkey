@@ -67,6 +67,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.MapMaker;
+import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -293,7 +294,7 @@ public abstract class Project extends AbstractProject {
 			}
 
 			try {
-				PluginFactory<?, ?, ?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
+				PluginFactory<?, ?, ?, ?, ?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
 				STProperties uriGenConfig;
 
 				if (uriGenConfigType != null) {
@@ -322,7 +323,7 @@ public abstract class Project extends AbstractProject {
 			}
 
 			try {
-				PluginFactory<?, ?, ?> renderingEngineFactory = PluginManager
+				PluginFactory<?, ?, ?, ?, ?> renderingEngineFactory = PluginManager
 						.getPluginFactory(renderingEngineFactoryID);
 				STProperties renderingEngineConfig;
 

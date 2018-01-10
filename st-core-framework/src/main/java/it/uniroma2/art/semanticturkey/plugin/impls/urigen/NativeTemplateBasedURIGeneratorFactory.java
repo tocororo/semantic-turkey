@@ -9,8 +9,8 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
-public class NativeTemplateBasedURIGeneratorFactory
-		implements PluginFactory<NativeTemplateBasedURIGeneratorConfiguration, STProperties, STProperties> {
+public class NativeTemplateBasedURIGeneratorFactory implements
+		PluginFactory<NativeTemplateBasedURIGeneratorConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

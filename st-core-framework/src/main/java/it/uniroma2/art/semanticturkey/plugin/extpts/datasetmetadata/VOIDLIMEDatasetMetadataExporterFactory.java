@@ -10,6 +10,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 
 /**
  * Factory for the instantiation of {@link VOIDLIMEDatasetMetadataExporter}.
@@ -17,9 +18,9 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class VOIDLIMEDatasetMetadataExporterFactory extends
-		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings>
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings, STProperties, STProperties>
 		implements
-		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings> {
+		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings, STProperties, STProperties> {
 
 	public VOIDLIMEDatasetMetadataExporterFactory() {
 		super(DatasetMetadataExporter.class.getName());
@@ -70,5 +71,28 @@ public class VOIDLIMEDatasetMetadataExporterFactory extends
 	@Override
 	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
 		return new DatasetMetadataExporterSettings();
+	}
+	
+	
+	@Override
+	protected STProperties buildProjectPreferencesInternal() {
+		return new STPropertiesImpl() {
+			
+			@Override
+			public String getShortName() {
+				return "empty";
+			}
+		};
+	}
+	
+	@Override
+	protected STProperties buildExtensionPointProjectPreferencesInternal() {
+		return new STPropertiesImpl() {
+			
+			@Override
+			public String getShortName() {
+				return "empty";
+			}
+		};
 	}
 }

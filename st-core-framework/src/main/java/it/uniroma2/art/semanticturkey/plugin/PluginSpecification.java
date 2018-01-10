@@ -47,7 +47,7 @@ public class PluginSpecification {
 
 	public Object instatiatePlugin() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException {
-		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
+		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
 
 		STProperties config;
 		if (configTypeHolder.isPresent()) {
@@ -65,7 +65,7 @@ public class PluginSpecification {
 
 	public void expandDefaults() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException {
-		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
+		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
 
 		if (!configTypeHolder.isPresent()) {
 			configTypeHolder = Optional

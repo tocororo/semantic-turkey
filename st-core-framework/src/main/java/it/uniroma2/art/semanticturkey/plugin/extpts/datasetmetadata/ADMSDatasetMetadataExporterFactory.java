@@ -10,6 +10,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 
 /**
  * Factory for the instantiation of {@link ADMSDatasetMetadataExporter}.
@@ -17,9 +18,9 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class ADMSDatasetMetadataExporterFactory extends
-		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings>
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings, STProperties, STProperties>
 		implements
-		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings> {
+		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, ADMSDatasetMetadataExporterSettings, STProperties, STProperties> {
 
 	public ADMSDatasetMetadataExporterFactory() {
 		super(DatasetMetadataExporter.class.getName());
@@ -61,9 +62,31 @@ public class ADMSDatasetMetadataExporterFactory extends
 	protected ADMSDatasetMetadataExporterSettings buildProjectSettingsInternal() {
 		return new ADMSDatasetMetadataExporterSettings();
 	}
-	
+
 	@Override
 	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
 		return new DatasetMetadataExporterSettings();
+	}
+	
+	@Override
+	protected STProperties buildProjectPreferencesInternal() {
+		return new STPropertiesImpl() {
+			
+			@Override
+			public String getShortName() {
+				return "empty";
+			}
+		};
+	}
+	
+	@Override
+	protected STProperties buildExtensionPointProjectPreferencesInternal() {
+		return new STPropertiesImpl() {
+			
+			@Override
+			public String getShortName() {
+				return "empty";
+			}
+		};
 	}
 }

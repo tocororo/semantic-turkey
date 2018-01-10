@@ -14,8 +14,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class UpdatePropertyValueExportFilterFactory
-		implements PluginFactory<UpdatePropertyValueExportFilterConfiguration, STProperties, STProperties> {
+public class UpdatePropertyValueExportFilterFactory implements
+		PluginFactory<UpdatePropertyValueExportFilterConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

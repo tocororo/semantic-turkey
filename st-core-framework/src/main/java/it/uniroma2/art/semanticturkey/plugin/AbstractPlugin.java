@@ -3,16 +3,17 @@ package it.uniroma2.art.semanticturkey.plugin;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.user.STUser;
 
 /**
  * Abstract base-class of {@link Plugin} implementations.
  * 
  */
-public class AbstractPlugin<Q extends STProperties, R extends STProperties, T extends PluginFactory<?, Q, R>>
+public class AbstractPlugin<Q extends STProperties, R extends STProperties, S extends STProperties, T extends STProperties, F extends PluginFactory<?, Q, R, S, T>>
 		implements Plugin {
-	private T factory;
+	private F factory;
 
-	public AbstractPlugin(T factory) {
+	public AbstractPlugin(F factory) {
 		this.factory = factory;
 	}
 
@@ -22,6 +23,14 @@ public class AbstractPlugin<Q extends STProperties, R extends STProperties, T ex
 
 	protected R getClassLevelProjectSettings(Project project) throws STPropertyAccessException {
 		return factory.getProjectSettings(project);
+	}
+
+	protected S getExtensionPointProjectPreferences(Project project) throws STPropertyAccessException {
+		return factory.getExtensonPointProjectPreferences(project);
+	}
+
+	protected T getClassLevelProjectPreferences(Project project, STUser user) throws STPropertyAccessException {
+		return factory.getProjectPreferences(project, user);
 	}
 
 }

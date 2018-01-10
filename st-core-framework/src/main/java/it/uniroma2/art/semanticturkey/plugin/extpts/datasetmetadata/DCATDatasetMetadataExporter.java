@@ -21,6 +21,7 @@ import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
@@ -30,7 +31,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati </a>
  */
 public class DCATDatasetMetadataExporter extends
-		AbstractPlugin<DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings, DCATDatasetMetadataExporterFactory>
+		AbstractPlugin<DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings, STProperties, STProperties, DCATDatasetMetadataExporterFactory>
 		implements DatasetMetadataExporter {
 
 	public DCATDatasetMetadataExporter(DCATDatasetMetadataExporterFactory factory) {

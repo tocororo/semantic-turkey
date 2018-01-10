@@ -35,6 +35,7 @@ import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
@@ -43,7 +44,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
  * the <a href="https://www.w3.org/TR/void/">Vocabulary of Interlinked Datasets (VoID)</a>
  */
 public class VOIDLIMEDatasetMetadataExporter extends
-		AbstractPlugin<DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterFactory>
+		AbstractPlugin<DatasetMetadataExporterSettings, VOIDLIMEDatasetMetadataExporterSettings, STProperties, STProperties, VOIDLIMEDatasetMetadataExporterFactory>
 		implements DatasetMetadataExporter {
 
 	public VOIDLIMEDatasetMetadataExporter(VOIDLIMEDatasetMetadataExporterFactory factory) {
@@ -53,10 +54,12 @@ public class VOIDLIMEDatasetMetadataExporter extends
 	@Override
 	public Model produceDatasetMetadata(Project project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException, STPropertyAccessException {
-		LIMERepositoryWrapper tempMetadataRepository = new LIMERepositoryWrapper(new SailRepository(new MemoryStore()));
+		LIMERepositoryWrapper tempMetadataRepository = new LIMERepositoryWrapper(
+				new SailRepository(new MemoryStore()));
 		tempMetadataRepository.initialize();
 		try {
-			try (LIMERepositoryConnectionWrapper metadataConnection = tempMetadataRepository.getConnection()) {
+			try (LIMERepositoryConnectionWrapper metadataConnection = tempMetadataRepository
+					.getConnection()) {
 				// DatasetMetadataExporterSettings extensionPointSettings = getExtensionPointProjectSettings(
 				// project);
 				VOIDLIMEDatasetMetadataExporterSettings pluginSettings = getClassLevelProjectSettings(

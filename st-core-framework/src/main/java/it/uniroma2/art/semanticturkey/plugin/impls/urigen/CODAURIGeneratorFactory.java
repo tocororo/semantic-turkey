@@ -18,8 +18,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 /**
  * Factory for the instantiation of {@link CODAURIGenerator}.
  */
-public class CODAURIGeneratorFactory
-		implements PluginFactory<CODAURIGeneratorConfiguration, STProperties, STProperties> {
+public class CODAURIGeneratorFactory implements
+		PluginFactory<CODAURIGeneratorConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;

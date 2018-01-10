@@ -9,13 +9,14 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.user.STUser;
 
 /**
  * A factory responsible for the instantiation of a plugin.
  * 
  * @param <T>
  */
-public interface PluginFactory<T extends STProperties, R extends STProperties, Q extends STProperties> {
+public interface PluginFactory<T extends STProperties, R extends STProperties, Q extends STProperties, P extends STProperties, S extends STProperties> {
 
 	/**
 	 * Returns the factory identifier.
@@ -68,7 +69,7 @@ public interface PluginFactory<T extends STProperties, R extends STProperties, Q
 	 */
 	default R getExtensonPointProjectSettings(Project project) throws STPropertyAccessException {
 		return null;
-	};
+	}
 
 	/**
 	 * Stores the provided project settings for the implemented extension point.
@@ -103,7 +104,7 @@ public interface PluginFactory<T extends STProperties, R extends STProperties, Q
 	 */
 	default Q getProjectSettings(Project project) throws STPropertyAccessException {
 		return null;
-	};
+	}
 
 	/**
 	 * Stores the provided class-level project settings.
@@ -127,4 +128,78 @@ public interface PluginFactory<T extends STProperties, R extends STProperties, Q
 	default void storeProjectSettings(Project project, Map<String, Object> settings)
 			throws STPropertyUpdateException, STPropertyAccessException {
 	}
+
+	/**
+	 * Returns preferences for the implemented extension point. The returned {@link STProperties} is filled
+	 * with information already stored in the project.
+	 * 
+	 * @param project
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	default P getExtensonPointProjectPreferences(Project project) throws STPropertyAccessException {
+		return null;
+	}
+
+	/**
+	 * Stores the provided project settings for the implemented extension point.
+	 * 
+	 * @param project
+	 * @param settings
+	 * @throws STPropertyUpdateException
+	 */
+	default void storeExtensonPointProjectPreferencences(Project project, STProperties settings)
+			throws STPropertyUpdateException {
+	}
+
+	/**
+	 * Stores the provided project settings for the implemented extension point.
+	 * 
+	 * @param project
+	 * @param settings
+	 * @throws STPropertyUpdateException
+	 * @throws STPropertyAccessException
+	 */
+	default void storeExtensonPointProjectPreferences(Project project, Map<String, Object> settings)
+			throws STPropertyUpdateException, STPropertyAccessException {
+	}
+
+	/**
+	 * Returns class-level project preferences for this plugin. The returned {@link STProperties} is filled
+	 * with information already stored in the project.
+	 * 
+	 * @param project
+	 * @param user 
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	default S getProjectPreferences(Project project, STUser user) throws STPropertyAccessException {
+		return null;
+	}
+
+	/**
+	 * Stores the provided class-level project preferences.
+	 * 
+	 * @param project
+	 * @param user
+	 * @param settings
+	 * @throws STPropertyUpdateException
+	 */
+	default void storeProjectPreferences(Project project, STUser user, STProperties settings)
+			throws STPropertyUpdateException {
+	}
+
+	/**
+	 * Stores the provided class-level project preferences.
+	 * 
+	 * @param project
+	 * @param user
+	 * @param settings
+	 * @throws STPropertyUpdateException
+	 * @throws STPropertyAccessException
+	 */
+	default void storeProjectPreferences(Project project, STUser user, Map<String, Object> settings)
+			throws STPropertyUpdateException, STPropertyAccessException {
+	}
+
 }

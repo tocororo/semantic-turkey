@@ -15,7 +15,8 @@
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey" />
 
 	<!-- Registers the it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperFactory -->
-	<bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+	<bean
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
 		<property name="staticMethod"
 			value="it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperFactory.registerFactory" />
 	</bean>
@@ -212,6 +213,18 @@
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer" />
+		</osgi:service-properties>
+	</osgi:service>
+
+	<!-- Publishes the Jira Backend implementation of the extension point CollaborationBakend -->
+	<bean id="JiraBackendFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.collaboration.JiraBackendFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="JiraBackendFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend" />
 		</osgi:service-properties>
 	</osgi:service>
 

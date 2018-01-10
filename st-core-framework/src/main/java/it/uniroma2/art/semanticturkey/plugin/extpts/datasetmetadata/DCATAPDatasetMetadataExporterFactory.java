@@ -10,6 +10,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 
 /**
  * Factory for the instantiation of {@link DCATAPDatasetMetadataExporter}.
@@ -17,11 +18,10 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
  */
 public class DCATAPDatasetMetadataExporterFactory extends
-		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATAPDatasetMetadataExporterSettings>
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATAPDatasetMetadataExporterSettings, STProperties, STProperties>
 		implements
-		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATAPDatasetMetadataExporterSettings> {
+		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATAPDatasetMetadataExporterSettings, STProperties, STProperties> {
 
-	
 	public DCATAPDatasetMetadataExporterFactory() {
 		super(DatasetMetadataExporter.class.getName());
 	}
@@ -71,5 +71,28 @@ public class DCATAPDatasetMetadataExporterFactory extends
 	@Override
 	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
 		return new DatasetMetadataExporterSettings();
+	}
+	
+	
+	@Override
+	protected STProperties buildProjectPreferencesInternal() {
+		return new STPropertiesImpl() {
+			
+			@Override
+			public String getShortName() {
+				return "empty";
+			}
+		};
+	}
+	
+	@Override
+	protected STProperties buildExtensionPointProjectPreferencesInternal() {
+		return new STPropertiesImpl() {
+			
+			@Override
+			public String getShortName() {
+				return "empty";
+			}
+		};
 	}
 }

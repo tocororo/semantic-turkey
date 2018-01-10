@@ -65,7 +65,7 @@ public class DatasetMetadata extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rdf(dataset, metadata)', 'R')")
 	public ExporterSettingsInfo getDatasetMetadata(String exporterId) throws STPropertyAccessException {
-		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
+		PluginFactory<?,?,?,?,?> pluginFactory = PluginManager
 				.getPluginFactory(exporterId);
 
 		STProperties extensionPointSettings = pluginFactory.getExtensonPointProjectSettings(getProject());
@@ -113,7 +113,7 @@ public class DatasetMetadata extends STServiceAdapter {
 	public void setDatasetMetadata(String exporterId, Map<String, Object> extensionPointProperties,
 			Map<String, Object> pluginProperties)
 			throws STPropertyAccessException, STPropertyUpdateException {
-		PluginFactory<STProperties, STProperties, STProperties> pluginFactory = PluginManager
+		PluginFactory<?,?,?,?,?> pluginFactory = PluginManager
 				.getPluginFactory(exporterId);
 		pluginFactory.storeExtensonPointProjectSettings(getProject(), extensionPointProperties);
 		pluginFactory.storeProjectSettings(getProject(), pluginProperties);

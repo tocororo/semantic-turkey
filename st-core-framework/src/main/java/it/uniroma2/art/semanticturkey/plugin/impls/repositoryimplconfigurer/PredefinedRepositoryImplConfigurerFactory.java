@@ -18,7 +18,7 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class PredefinedRepositoryImplConfigurerFactory implements
-		PluginFactory<PredefinedRepositoryImplConfigurerConfiguration, STProperties, STProperties> {
+		PluginFactory<PredefinedRepositoryImplConfigurerConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

@@ -128,7 +128,7 @@ public abstract class AbstractExportFilterTest {
 								"missing element <FactoryID>")
 						.getTextContent();
 
-				PluginFactory<?,?,?> factory = (PluginFactory<?,?,?>) Class.forName(factoryID).newInstance();
+				PluginFactory<?,?,?,?,?> factory = (PluginFactory<?,?,?,?,?>) Class.forName(factoryID).newInstance();
 
 				Element configElement = Optional
 						.ofNullable(testCaseElement.getElementsByTagName("Config").item(0))

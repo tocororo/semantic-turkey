@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata;
+package it.uniroma2.art.semanticturkey.plugin.impls.collaboration;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,22 +13,17 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 
 /**
- * Factory for the instantiation of {@link DCATDatasetMetadataExporter}.
+ * Factory for the instantiation of {@link ADMSDatasetMetadataExporter}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class DCATDatasetMetadataExporterFactory extends
-		AbstractPluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings, STProperties, STProperties>
+public class JiraBackendFactory extends
+		AbstractPluginFactory<DatasetMetadataExporterConfiguration, STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences>
 		implements
-		PluginFactory<DatasetMetadataExporterConfiguration, DatasetMetadataExporterSettings, DCATDatasetMetadataExporterSettings, STProperties, STProperties> {
+		PluginFactory<DatasetMetadataExporterConfiguration, STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences> {
 
-	public DCATDatasetMetadataExporterFactory() {
+	public JiraBackendFactory() {
 		super(DatasetMetadataExporter.class.getName());
-	}
-
-	@Override
-	public String getID() {
-		return this.getClass().getName();
 	}
 
 	@Override
@@ -60,35 +55,34 @@ public class DCATDatasetMetadataExporterFactory extends
 
 	@Override
 	public Object createInstance(STProperties conf) {
-		return new DCATDatasetMetadataExporter(this);
+		return new JiraBackend(this);
 	}
 
 	@Override
-	protected DCATDatasetMetadataExporterSettings buildProjectSettingsInternal() {
-		return new DCATDatasetMetadataExporterSettings();
+	protected JiraBackendSettings buildProjectSettingsInternal() {
+		return new JiraBackendSettings();
 	}
 
 	@Override
-	protected DatasetMetadataExporterSettings buildExtensionPointProjectSettingsInternal() {
-		return new DatasetMetadataExporterSettings();
-	}
-	
-	
-	@Override
-	protected STProperties buildProjectPreferencesInternal() {
+	protected STProperties buildExtensionPointProjectSettingsInternal() {
 		return new STPropertiesImpl() {
-			
+
 			@Override
 			public String getShortName() {
 				return "empty";
 			}
 		};
 	}
-	
+
+	@Override
+	protected JiraBackendPreferences buildProjectPreferencesInternal() {
+		return new JiraBackendPreferences();
+	}
+
 	@Override
 	protected STProperties buildExtensionPointProjectPreferencesInternal() {
 		return new STPropertiesImpl() {
-			
+
 			@Override
 			public String getShortName() {
 				return "empty";

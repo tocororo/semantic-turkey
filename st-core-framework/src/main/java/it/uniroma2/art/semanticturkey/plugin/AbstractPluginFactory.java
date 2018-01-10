@@ -9,14 +9,15 @@ import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.user.STUser;
 
 /**
  * Abstract base class of concrete {@link PluginFactory} implementations.
  * 
  * @param <T>
  */
-public abstract class AbstractPluginFactory<T extends STProperties, Q extends STProperties, R extends STProperties>
-		implements PluginFactory<T, Q, R> {
+public abstract class AbstractPluginFactory<T extends STProperties, Q extends STProperties, R extends STProperties, P extends STProperties, S extends STProperties>
+		implements PluginFactory<T, Q, R, P, S> {
 
 	private String extensionPointId;
 
@@ -37,6 +38,10 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 	protected abstract R buildProjectSettingsInternal();
 
 	protected abstract Q buildExtensionPointProjectSettingsInternal();
+
+	protected abstract S buildProjectPreferencesInternal();
+
+	protected abstract P buildExtensionPointProjectPreferencesInternal();
 
 	/*
 	 * (non-Javadoc)
@@ -60,6 +65,13 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 	}
 
 	@Override
+	public S getProjectPreferences(Project project, STUser user) throws STPropertyAccessException {
+		S projectPreferences = buildProjectPreferencesInternal();
+		STPropertiesManager.getProjectPreferences(projectPreferences, project, user, getID());
+		return projectPreferences;
+	}
+
+	@Override
 	public void storeProjectSettings(Project project, Map<String, Object> settings)
 			throws STPropertyUpdateException, STPropertyAccessException {
 		storeProjectSettingInternal(project, settings, this::buildProjectSettingsInternal, getID());
@@ -69,6 +81,19 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 	public void storeProjectSettings(Project project, STProperties settings)
 			throws STPropertyUpdateException {
 		storeProjectSettingInternal(project, settings, getID());
+	}
+
+	@Override
+	public void storeProjectPreferences(Project project, STUser user, STProperties settings)
+			throws STPropertyUpdateException {
+		storeProjectPreferencesInternal(project, user, settings, getID());
+	}
+
+	@Override
+	public void storeProjectPreferences(Project project, STUser user, Map<String, Object> settings)
+			throws STPropertyUpdateException, STPropertyAccessException {
+		storeProjectPreferencesInternal(project, user, settings, this::buildProjectPreferencesInternal,
+				getID());
 	}
 
 	@Override
@@ -107,4 +132,29 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 			throw new STPropertyUpdateException(e);
 		}
 	}
+
+	public void storeProjectPreferencesInternal(Project project, STUser user, STProperties settings,
+			String pluginId) throws STPropertyUpdateException {
+		STPropertiesManager.setProjectPreferences(settings, project, user, pluginId);
+	}
+
+	public void storeProjectPreferencesInternal(Project project, STUser user, Map<String, Object> preferences,
+			Supplier<? extends STProperties> propertiesSupplier, String pluginId)
+			throws STPropertyUpdateException, STPropertyAccessException {
+		try {
+			STProperties preferencesObject = propertiesSupplier.get();
+
+			for (Map.Entry<String, Object> entry : preferences.entrySet()) {
+				String key = entry.getKey();
+				Object value = entry.getValue();
+
+				preferencesObject.setPropertyValue(key, value);
+			}
+
+			STPropertiesManager.setProjectPreferences(preferencesObject, project, user, pluginId);
+		} catch (WrongPropertiesException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
 }

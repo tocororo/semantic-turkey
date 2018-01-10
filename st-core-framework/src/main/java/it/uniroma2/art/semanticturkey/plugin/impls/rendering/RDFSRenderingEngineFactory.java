@@ -12,8 +12,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 /**
  * Factory for the instantiation of {@link RDFSRenderingEngine}.
  */
-public class RDFSRenderingEngineFactory
-		implements PluginFactory<RDFSRenderingEngineConfiguration, STProperties, STProperties> {
+public class RDFSRenderingEngineFactory implements
+		PluginFactory<RDFSRenderingEngineConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

@@ -12,8 +12,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 /**
  * Factory for the instantiation of {@link SKOSXLRenderingEngine}.
  */
-public class SKOSXLRenderingEngineFactory
-		implements PluginFactory<SKOSXLRenderingEngineConfiguration, STProperties, STProperties> {
+public class SKOSXLRenderingEngineFactory implements
+		PluginFactory<SKOSXLRenderingEngineConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

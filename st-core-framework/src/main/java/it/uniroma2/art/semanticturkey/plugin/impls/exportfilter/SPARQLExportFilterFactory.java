@@ -14,8 +14,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class SPARQLExportFilterFactory
-		implements PluginFactory<SPARQLExportFilterConfiguration, STProperties, STProperties> {
+public class SPARQLExportFilterFactory implements
+		PluginFactory<SPARQLExportFilterConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

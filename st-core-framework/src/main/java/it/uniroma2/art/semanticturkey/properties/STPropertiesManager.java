@@ -33,14 +33,14 @@ public class STPropertiesManager {
 	public static final String PREF_SHOW_INSTANCES_NUMBER = "show_instances_number";
 	public static final String PREF_ACTIVE_SCHEMES = "active_schemes";
 	public static final String PREF_PROJ_THEME = "project_theme";
-	
+
 	public static final String SETTING_EMAIL_ADMIN_ADDRESS = "mail.admin.address";
 	public static final String SETTING_EMAIL_FROM_ADDRESS = "mail.from.address";
 	public static final String SETTING_EMAIL_FROM_PASSWORD = "mail.from.password";
 	public static final String SETTING_EMAIL_FROM_ALIAS = "mail.from.alias";
 	public static final String SETTING_EMAIL_FROM_HOST = "mail.from.host";
 	public static final String SETTING_EMAIL_FROM_PORT = "mail.from.port";
-	
+
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
 
 	/*
@@ -102,8 +102,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static String getProjectPreference(String propName, Project project, STUser user,
-			String pluginID) throws STPropertyAccessException {
+	public static String getProjectPreference(String propName, Project project, STUser user, String pluginID)
+			throws STPropertyAccessException {
 		// PP: project-preference: user-project -> default(pp,project) -> default(pp,user) ->
 		// default(pp,system)
 		String value;
@@ -121,6 +121,30 @@ public class STPropertiesManager {
 	}
 
 	/**
+	 * Returns the project preferences about a plugin. See
+	 * {@link #getProjectPreference(String, Project, STUser, String)} for details about the lookup procedure.
+	 * 
+	 * @param projectPreferences
+	 * @param project
+	 * @param user
+	 * @param pluginId
+	 * @throws STPropertyAccessException
+	 */
+	public static void getProjectPreferences(STProperties projectPreferences, Project project, STUser user,
+			String pluginID) throws STPropertyAccessException {
+		Properties defaultStoredProperties = loadProperties(
+				getProjectPreferencesDefaultsFile(project, pluginID));
+		Properties storedProperties = loadProperties(getPUBindingsPreferencesFile(project, user, pluginID));
+
+		try {
+			projectPreferences.setProperties(defaultStoredProperties);
+			projectPreferences.setProperties(storedProperties);
+		} catch (WrongPropertiesException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+
+	/**
 	 * Sets the value of a project preference for the given user
 	 * 
 	 * @param project
@@ -129,8 +153,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreference(String propName, String propValue, Project project,
-			STUser user) throws STPropertyUpdateException {
+	public static void setProjectPreference(String propName, String propValue, Project project, STUser user)
+			throws STPropertyUpdateException {
 		setProjectPreference(propName, propValue, project, user, CORE_PLUGIN_ID);
 	}
 
@@ -144,8 +168,8 @@ public class STPropertiesManager {
 	 * @param propValue
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectPreference(String propName, String propValue, Project project,
-			STUser user, String pluginID) throws STPropertyUpdateException {
+	public static void setProjectPreference(String propName, String propValue, Project project, STUser user,
+			String pluginID) throws STPropertyUpdateException {
 		try {
 			File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
 			Properties properties = loadProperties(propFile);
@@ -154,6 +178,48 @@ public class STPropertiesManager {
 		} catch (STPropertyAccessException e) {
 			throw new STPropertyUpdateException(e);
 		}
+	}
+	
+	/**
+	 * Sets the values of project preferences related to a plugin for the given user.
+	 * 
+	 * @param preferences
+	 * @param project
+	 * @param user
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setProjectPreferences(STProperties preferences, Project project, STUser user,
+			String pluginID, boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker preferencesChecker = STPropertiesChecker
+						.getModelConfigurationChecker(preferences);
+				if (!preferencesChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Preferences not valid: " + preferencesChecker.getErrorMessage());
+				}
+			}
+			File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
+			preferences.storeProperties(propFile);
+		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	/**
+	 * Convenience overload of {@link #setProjectPreferences(STProperties, Project, STUser, String, boolean)}
+	 * that disallows the storage of incomplete preferences (i.e. missing values for required property).
+	 * 
+	 * @param settings
+	 * @param project
+	 * @param user
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setProjectPreferences(STProperties settings, Project project, STUser user,
+			String pluginID) throws STPropertyUpdateException {
+		setProjectPreferences(settings, project, user, pluginID, false);
 	}
 
 	/*
@@ -569,8 +635,8 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setProjectSetting(String propName, String propValue, Project project,
-			String pluginID) throws STPropertyUpdateException {
+	public static void setProjectSetting(String propName, String propValue, Project project, String pluginID)
+			throws STPropertyUpdateException {
 		try {
 			File propFile = getProjectSettingsFile(project, pluginID);
 			Properties properties = loadProperties(propFile);

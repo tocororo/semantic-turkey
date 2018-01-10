@@ -14,8 +14,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class XLabelDereificationExportFilterFactory
-		implements PluginFactory<XLabelDereificationExportFilterConfiguration, STProperties, STProperties> {
+public class XLabelDereificationExportFilterFactory implements
+		PluginFactory<XLabelDereificationExportFilterConfiguration, STProperties, STProperties, STProperties, STProperties> {
 
 	@Override
 	public String getID() {

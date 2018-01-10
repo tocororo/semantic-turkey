@@ -32,10 +32,10 @@ public class Plugins extends STServiceAdapter {
 	 * @throws PropertyNotFoundException
 	 */
 	@STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')") //temporarily disabled (maybe not required)
+	// @PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')") //temporarily disabled (maybe not required)
 	public Collection<STProperties> getPluginConfigurations(String factoryID)
 			throws PropertyNotFoundException {
-		PluginFactory<?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryID);
+		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryID);
 
 		return pluginFactory.getPluginConfigurations();
 	}
@@ -49,9 +49,9 @@ public class Plugins extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')") //temporarily disabled (maybe not required)
+	// @PreAuthorize("@auth.isAuthorized('sys(plugins)', 'R')") //temporarily disabled (maybe not required)
 	public Collection<PluginInfo> getAvailablePlugins(String extensionPoint) {
-		Collection<PluginFactory<?, ?, ?>> pluginFactoryCollection = PluginManager
+		Collection<PluginFactory<?, ?, ?, ?, ?>> pluginFactoryCollection = PluginManager
 				.getPluginFactories(extensionPoint);
 
 		return pluginFactoryCollection.stream().map(fact -> new PluginInfo(fact.getClass().getName()))

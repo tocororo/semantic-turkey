@@ -46,7 +46,7 @@ public class PluginManager {
 	private static BundleContext m_felix = null;
 
 	private static boolean directAccessTest = false;
-	private static Collection<PluginFactory<?, ?, ?>> testPluginFactoryCls = new ArrayList<>();
+	private static Collection<PluginFactory<?, ?, ?, ?, ?>> testPluginFactoryCls = new ArrayList<>();
 
 	public static boolean isDirectAccessTest() {
 		return directAccessTest;
@@ -60,7 +60,7 @@ public class PluginManager {
 		m_felix = toSet;
 	}
 
-	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?, ?, ?>> impls) {
+	public static void setTestPluginFactoryImpls(Collection<PluginFactory<?, ?, ?, ?, ?>> impls) {
 		testPluginFactoryCls = impls;
 	}
 
@@ -98,21 +98,21 @@ public class PluginManager {
 	}
 
 	// // New Methods
-	public static <T extends STProperties, Q extends STProperties, R extends STProperties> PluginFactory<T, Q, R> getPluginFactory(
+	public static <T extends STProperties, Q extends STProperties, R extends STProperties, P extends STProperties, S extends STProperties> PluginFactory<T, Q, R, P, S> getPluginFactory(
 			String factoryID) {
 		// test preamble
 		if (isDirectAccessTest()) {
-			return (PluginFactory<T, Q, R>) testPluginFactoryCls.stream()
+			return (PluginFactory<T, Q, R, P, S>) testPluginFactoryCls.stream()
 					.filter(pf -> pf.getID().equals(factoryID)).findFirst().orElse(null);
 		} else {
 			// real use
 			ServiceTracker tracker = new ServiceTracker(m_felix, PluginFactory.class.getName(), null);
 			tracker.open();
-			PluginFactory<T, Q, R> repImpl = null;
+			PluginFactory<T, Q, R, P, S> repImpl = null;
 			Object[] services = tracker.getServices();
 			for (int i = 0; (services != null) && i < services.length; ++i) {
-				if (((PluginFactory<T, Q, R>) services[i]).getID().equals(factoryID)) {
-					repImpl = (PluginFactory<T, Q, R>) services[i];
+				if (((PluginFactory<T, Q, R, P, S>) services[i]).getID().equals(factoryID)) {
+					repImpl = (PluginFactory<T, Q, R, P, S>) services[i];
 					break;
 				}
 			}
@@ -121,7 +121,7 @@ public class PluginManager {
 		}
 	}
 
-	public static Collection<PluginFactory<?, ?, ?>> getPluginFactories(String extensionPoint) {
+	public static Collection<PluginFactory<?, ?, ?, ?, ?>> getPluginFactories(String extensionPoint) {
 		ServiceTracker tracker = null;
 		try {
 			tracker = new ServiceTracker(m_felix,
@@ -134,10 +134,10 @@ public class PluginManager {
 		}
 
 		tracker.open();
-		Collection<PluginFactory<?, ?, ?>> pluginFactories = new ArrayList<PluginFactory<?, ?, ?>>();
+		Collection<PluginFactory<?, ?, ?, ?, ?>> pluginFactories = new ArrayList<PluginFactory<?, ?, ?, ?, ?>>();
 		Object[] services = tracker.getServices();
 		for (int i = 0; (services != null) && i < services.length; ++i) {
-			pluginFactories.add((PluginFactory<?, ?, ?>) services[i]);
+			pluginFactories.add((PluginFactory<?, ?, ?, ?, ?>) services[i]);
 		}
 		tracker.close();
 		return pluginFactories;
