@@ -70,25 +70,16 @@ public class UpdateRoutines {
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
 	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyAccessException {
-
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
-		
-		System.out.println("stVersionNumber " + stVersionNumber);
-		System.out.println("stDataVersionNumber " + stDataVersionNumber);
-
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
 		logger.debug("version number of Semantic Turkey currently saved in data folder is: "
 				+ stDataVersionNumber);
 		
 		if (stVersionNumber.compareTo(stDataVersionNumber) > 0) {
-			System.out.println("need to update STData folder");
-			
 			if (stDataVersionNumber.compareTo(new VersionNumber(3, 0, 0)) < 0) {
-				System.out.println("Update from 1.0 or 2.0 to 3.0");
 				alignFromPreviousTo3();
 			}
-			
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
