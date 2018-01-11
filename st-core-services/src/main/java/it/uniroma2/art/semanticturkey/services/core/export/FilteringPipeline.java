@@ -34,26 +34,30 @@ public class FilteringPipeline {
 		@Override
 		public FilteringPipeline deserialize(JsonParser p, DeserializationContext ctxt)
 				throws IOException, JsonProcessingException {
-			
-			
+
 			List<FilteringStep> steps = new ArrayList<>();
-			JsonToken tok =  p.getCurrentToken();
+			JsonToken tok = p.getCurrentToken();
 			if (tok != JsonToken.START_ARRAY) {
 				throw new JsonParseException(p, "Expected start of array");
 			}
-			while((tok = p.nextToken()) != null) {
-				if (tok == JsonToken.END_ARRAY)break;
-				
+			while ((tok = p.nextToken()) != null) {
+				if (tok == JsonToken.END_ARRAY)
+					break;
+
 				FilteringStep aStep = p.readValueAs(FilteringStep.class);
 				steps.add(aStep);
 			}
-			
+
 			if (tok != JsonToken.END_ARRAY) {
 				throw new JsonParseException(p, "Expected end of array");
 			}
-			
+
 			return new FilteringPipeline(steps.toArray(new FilteringStep[steps.size()]));
 		}
 
+	}
+
+	public boolean isEmpty() {
+		return steps.length == 0;
 	}
 }

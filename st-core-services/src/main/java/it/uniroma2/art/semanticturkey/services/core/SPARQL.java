@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
@@ -23,6 +24,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Dataset;
@@ -41,6 +43,7 @@ import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -56,6 +59,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -63,6 +69,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.Export.RDFReporter;
+import it.uniroma2.art.semanticturkey.services.core.export.FilteringPipeline;
 import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
 
 /**
@@ -207,28 +215,28 @@ public class SPARQL extends STServiceAdapter {
 
 		preparedUpdate.execute();
 	}
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
-	public void exportConstructResultAsRdf(HttpServletResponse oRes, RDFFormat format,
-			String query, @Optional(defaultValue = "SPARQL") QueryLanguage ql,
+	public void exportConstructResultAsRdf(HttpServletResponse oRes, RDFFormat format, String query,
+			@Optional(defaultValue = "SPARQL") QueryLanguage ql,
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs) throws JsonProcessingException, IOException {
-		
+
 		RepositoryConnection conn = getManagedConnection();
 		Query preparedQuery = conn.prepareQuery(ql, query);
 		configureOperation(includeInferred, bindings, maxExecTime, defaultGraphs, namedGraphs, null, null,
 				preparedQuery);
-		
+
 		Repository rep = new SailRepository(new MemoryStore());
 		rep.initialize();
 		RepositoryConnection connection = rep.getConnection();
-		
-		File tempServerFile = File.createTempFile("sparqlExport", "."+format.getDefaultFileExtension());
-		
+
+		File tempServerFile = File.createTempFile("sparqlExport", "." + format.getDefaultFileExtension());
+
 		try {
 			if (preparedQuery instanceof GraphQuery) {
 				GraphQueryResult result = ((GraphQuery) preparedQuery).evaluate();
@@ -241,9 +249,11 @@ public class SPARQL extends STServiceAdapter {
 						"Unsupported query mode. Only construct query can be exported in an RDF format");
 			}
 			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
-				connection.exportStatements(null, null, null, false, Rio.createWriter(format, tempServerFileStream));
+				connection.exportStatements(null, null, null, false,
+						Rio.createWriter(format, tempServerFileStream));
 			}
-			oRes.setHeader("Content-Disposition", "attachment; filename=export." + format.getDefaultFileExtension());
+			oRes.setHeader("Content-Disposition",
+					"attachment; filename=export." + format.getDefaultFileExtension());
 			oRes.setContentType(format.getDefaultMIMEType());
 			oRes.setContentLength((int) tempServerFile.length());
 
@@ -256,11 +266,13 @@ public class SPARQL extends STServiceAdapter {
 			connection.close();
 		}
 	}
-	
+
 	/**
 	 * Exports the query result as spreadsheet
+	 * 
 	 * @param oRes
-	 * @param format xlsx for Microsoft Excel spreadsheet or ods for LibreOffice spreadsheet 
+	 * @param format
+	 *            xlsx for Microsoft Excel spreadsheet or ods for LibreOffice spreadsheet
 	 * @param query
 	 * @param ql
 	 * @param includeInferred
@@ -274,25 +286,25 @@ public class SPARQL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
-	public void exportQueryResultAsSpreadsheet(HttpServletResponse oRes, String format,
-			String query, @Optional(defaultValue = "SPARQL") QueryLanguage ql,
+	public void exportQueryResultAsSpreadsheet(HttpServletResponse oRes, String format, String query,
+			@Optional(defaultValue = "SPARQL") QueryLanguage ql,
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs) throws JsonProcessingException, IOException {
-		
+
 		if (!format.equals("xlsx") && !format.equals("ods")) {
-			throw new IllegalArgumentException("Invalid spreadsheet format " + format 
-					+ ". Available formats are: 'xlsx' and 'ods'");
+			throw new IllegalArgumentException(
+					"Invalid spreadsheet format " + format + ". Available formats are: 'xlsx' and 'ods'");
 		}
-		
+
 		RepositoryConnection conn = getManagedConnection();
 		Query preparedQuery = conn.prepareQuery(ql, query);
 		configureOperation(includeInferred, bindings, maxExecTime, defaultGraphs, namedGraphs, null, null,
 				preparedQuery);
-		
+
 		List<List<String>> table = new ArrayList<>();
-		
+
 		if (preparedQuery instanceof TupleQuery) {
 			TupleQueryResult result = ((TupleQuery) preparedQuery).evaluate();
 			List<String> bindingNames = result.getBindingNames();
@@ -317,12 +329,13 @@ public class SPARQL extends STServiceAdapter {
 				table.add(row);
 			}
 		}
-	    dumpSpreadsheet(oRes, table, format);
+		dumpSpreadsheet(oRes, table, format);
 	}
-	
-	private void dumpSpreadsheet(HttpServletResponse oRes, List<List<String>> table, String format) throws IOException {
+
+	private void dumpSpreadsheet(HttpServletResponse oRes, List<List<String>> table, String format)
+			throws IOException {
 		File tempServerFile = File.createTempFile("sparqlExport", "." + format);
-		
+
 		if (format.equals("xlsx")) {
 			Workbook wb = new XSSFWorkbook();
 			Sheet sheet = wb.createSheet();
@@ -336,18 +349,18 @@ public class SPARQL extends STServiceAdapter {
 			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
 				wb.write(tempServerFileStream);
 			}
-		} else { //format .ods (do not perform any check since it is already done in the calling method
+		} else { // format .ods (do not perform any check since it is already done in the calling method
 			SpreadSheet spreadSheet = SpreadSheet.create(1, table.get(0).size(), table.size());
-		    org.jopendocument.dom.spreadsheet.Sheet sheet = spreadSheet.getSheet(0);
-		    for (int rowIdx = 0; rowIdx < table.size(); rowIdx++) {
-		    	List<String> tableRow = table.get(rowIdx);
-		    	for (int colIdx = 0; colIdx < tableRow.size(); colIdx++) {
-		    		sheet.setValueAt(tableRow.get(colIdx), colIdx, rowIdx);
-		    	}
-		    }
-		    spreadSheet.saveAs(tempServerFile);
+			org.jopendocument.dom.spreadsheet.Sheet sheet = spreadSheet.getSheet(0);
+			for (int rowIdx = 0; rowIdx < table.size(); rowIdx++) {
+				List<String> tableRow = table.get(rowIdx);
+				for (int colIdx = 0; colIdx < tableRow.size(); colIdx++) {
+					sheet.setValueAt(tableRow.get(colIdx), colIdx, rowIdx);
+				}
+			}
+			spreadSheet.saveAs(tempServerFile);
 		}
-		
+
 		try {
 			oRes.setHeader("Content-Disposition", "attachment; filename=export." + format);
 			if (format.equals("xlsx")) {
@@ -362,6 +375,80 @@ public class SPARQL extends STServiceAdapter {
 			oRes.flushBuffer();
 		} finally {
 			tempServerFile.delete();
+		}
+	}
+
+	/**
+	 * Evaluates a graph query and dumps its result (a graph) to an RDF file, using our filtered export
+	 * mechanism (see {@link Export}).
+	 * 
+	 * See {@link #evaluateQuery(String, QueryLanguage, boolean, Map, int, IRI[], IRI[])} and
+	 * {@link Export#export(HttpServletResponse, IRI[], FilteringPipeline, boolean, RDFFormat, boolean)} for
+	 * the meaning of the parameters.
+	 * 
+	 * The results of the query are stored in a randomly named graph, which would appear in the output if the
+	 * output format supports named graphs.
+	 * 
+	 * @param oRes
+	 * @param query
+	 * @param ql
+	 * @param includeInferred
+	 * @param bindings
+	 * @param maxExecTime
+	 * @param defaultGraphs
+	 * @param namedGraphs
+	 * @param filteringPipeline
+	 * @param outputFormat
+	 * @throws IOException
+	 * @throws WrongPropertiesException
+	 * @throws UnloadablePluginConfigurationException
+	 * @throws UnsupportedPluginConfigurationException
+	 * @throws ClassNotFoundException
+	 * @throws ExportPreconditionViolationException
+	 * @throws Exception
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
+	public void exportGraphQueryResult(HttpServletResponse oRes, String query,
+			@Optional(defaultValue = "SPARQL") QueryLanguage ql,
+			@Optional(defaultValue = "true") boolean includeInferred,
+			@Optional(defaultValue = "{}") Map<String, Value> bindings,
+			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
+			@Optional(defaultValue = "") IRI[] namedGraphs,
+			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
+			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat) throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException, WrongPropertiesException, ExportPreconditionViolationException {
+
+		RepositoryConnection conn = getManagedConnection();
+
+		Query preparedQuery = conn.prepareQuery(ql, query);
+
+		if (!(preparedQuery instanceof GraphQuery)) {
+			throw new IllegalArgumentException("Not a graph query");
+		}
+		configureOperation(includeInferred, bindings, maxExecTime, defaultGraphs, namedGraphs, null, null,
+				preparedQuery);
+
+		try (GraphQueryResult result = ((GraphQuery) preparedQuery).evaluate()) {
+			if (filteringPipeline.isEmpty()) {
+				Export.report2requestResponse(oRes, RDFReporter.fromGraphQueryResult(result), outputFormat);
+			} else {
+				Repository tempSourceRepository = new SailRepository(new MemoryStore());
+				tempSourceRepository.initialize();
+				try {
+					try (RepositoryConnection sourceConnection = tempSourceRepository.getConnection()) {
+						RDFInserter rdfInserter = new RDFInserter(sourceConnection);
+						rdfInserter.enforceContext(
+								SimpleValueFactory.getInstance().createIRI("urn:uuid:" + UUID.randomUUID()));
+						QueryResults.report(result, rdfInserter);
+
+						Export.exportHelper(oRes, getManagedConnection(), new IRI[0], filteringPipeline,
+								includeInferred, outputFormat, false);
+					}
+				} finally {
+					tempSourceRepository.shutDown();
+				}
+			}
 		}
 	}
 
