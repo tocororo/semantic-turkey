@@ -830,7 +830,7 @@ public abstract class Project extends AbstractProject {
 
 	// Auxiliary graphs management
 
-	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey/";
+	private static final String AUXILIARY_METADATA_GRAPH_NAME_BASE = "http://semanticturkey.uniroma2.it/";
 	private static final String AUXILIARY_METADATA_GRAPH_SUFFIX = "/meta";
 	public static final String CORE_REPOSITORY = "core";
 	public static final String SUPPORT_REPOSITORY = "support";
