@@ -46,9 +46,11 @@ import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.interfaces.ParserPR;
 import it.uniroma2.art.coda.interfaces.annotations.converters.RDFCapabilityType;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.parser.PearlParser;
+import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
@@ -392,7 +394,8 @@ public class Sheet2RDF extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public JsonNode validatePearl(String pearlCode){
 		InputStream pearlStream = new ByteArrayInputStream(pearlCode.getBytes(StandardCharsets.UTF_8));
-		PearlParser pearlParser = new PearlParser("", "");
+		//PearlParser pearlParser = new PearlParser("", "");
+		ParserPR pearlParser = new PearlParserAntlr4("", "");
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
 		boolean pearlValid;
