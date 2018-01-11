@@ -29,8 +29,6 @@ package it.uniroma2.art.semanticturkey.resources;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Properties;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -45,7 +43,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -61,7 +58,6 @@ import it.uniroma2.art.semanticturkey.utilities.Utilities;
  */
 public class Resources {
 
-	private static final String _ontLibraryDirLocalName = "ontlibrary";
 	private static final String _ontTempDirLocalName = "ont-temp";
 	private static final String _ontMirrorDirDefaultLocationLocalName = "ontologiesMirror";
 	private static final String _ontMirrorFileName = "OntologiesMirror.properties";
@@ -84,13 +80,10 @@ public class Resources {
 	private static String _OSGiDirName = "OSGi";
 	private static File OSGiPath;
 
-	private static File ontLibraryDir;
 	private static File ontTempDir;
 	private static File ontMirrorDirDefaultLocation;
 
 	private static File semTurkeyPropertyFile;
-	private static File annotOntologyFile;
-	private static File owlDefinitionFile;
 	private static File ontologiesMirrorFile;
 	private static File projectsDir;
 	private static File systemDir;
@@ -123,20 +116,6 @@ public class Resources {
 			throw new STInitializationException(
 					"Unable to initialize ST properties under /etc/custom.properties: " + e2.getMessage());
 		}
-		// sourceUserDirectory = new File(getExtensionPath(),
-		// _sourceUserDirectoryRelPathName);
-		// logger.debug("user directory template: " + sourceUserDirectory);
-
-		// InstallConfigFile installConfigFileManager;
-		// try {
-		// File installConfig = new File(getExtensionPath(),
-		// _installConfigurationFilePathName);
-		// installConfigFileManager = new InstallConfigFile(installConfig);
-		// } catch (IOException e) {
-		// throw new STInitializationException(
-		// "problems during ST installation with install configuration file: "
-		// + e.getMessage());
-		// }
 
 		/* new */
 		File dataDir = Config.getDataDir();
@@ -146,88 +125,39 @@ public class Resources {
 			stDataDirectory = new File(getExtensionPath(), dataDir.getPath());
 		logger.debug("st data directory: " + getSemTurkeyDataDir());
 
-		ontLibraryDir = new File(stDataDirectory, _ontLibraryDirLocalName);
 		ontTempDir = new File(stDataDirectory, _ontTempDirLocalName);
 		ontMirrorDirDefaultLocation = new File(stDataDirectory, _ontMirrorDirDefaultLocationLocalName);
-		owlDefinitionFile = new File(ontLibraryDir, "owl.rdfs");
-		annotOntologyFile = new File(ontLibraryDir, "annotation.owl");
 		ontologiesMirrorFile = new File(stDataDirectory, _ontMirrorFileName);
 		projectsDir = new File(stDataDirectory, _projectsDirName);
 		systemDir = new File(stDataDirectory, _systemDirName);
 		usersDir = new File(stDataDirectory, _usersDirName);
 		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
 
-		if (!stDataDirectory.exists()) {
+		if (!stDataDirectory.exists()) { //stData doens't exists => create from scratch
 			try {
-				// first Copy Of User Resources
-				// Utilities.recursiveCopy(sourceUserDirectory, userDirectory);
-
-				/* new */
 				createDataDirectoryFromScratch(stDataDirectory);
-
 			} catch (IOException e) {
 				throw new STInitializationException(
 						"initial copy of Semantic Turkey resources failed during first install: "
 								+ e.getMessage());
-			} catch (URISyntaxException e) {
-				throw new STInitializationException(
-						"owl and rdfs initial resources not present in the classpath: " + e.getMessage());
 			}
-		} else {
-			
-			// TODO: the current UpdateRoutines are wrong, see comments in UpdateRoutines
-			// UpdateRoutines.startUpdatesCheckAndRepair();
-			
-			//update routine: older ST didn't have "system", "users" and "pu_pindings" folders.
-			//Here check them and eventually create the folders. TODO in the future versions this could be removed
-			if (!systemDir.exists()) {
-				systemDir.mkdirs();
-			}
-			initializeOrUpdateSystemProperties();
-			
-			if (!usersDir.exists()) {
-				usersDir.mkdir();
-			}
-			
-			if (!projectUserBindingsDir.exists()) {
-				initializePUBindingFileStructure();
-			}
-			
-			if (!CustomFormManager.getCustomFormsFolder(null).exists()) {
-				initializeCustomFormFileStructure();
-			}
-			
-			if (!RBACManager.getRolesDir(null).exists()) {
-				initializeRoles();
+		} else { //stData exists => check if need to be updated
+			try {
+				UpdateRoutines.startUpdatesCheckAndRepair();
+			} catch (IOException | STPropertyAccessException e) {
+				throw new STInitializationException(e);
 			}
 		}
 
 		try {
 			OntologiesMirror.setOntologiesMirrorRegistry(ontologiesMirrorFile);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
 	public static File getSemTurkeyDataDir() {
 		return stDataDirectory;
-	}
-
-	public static File getAnnotOntologyFile() {
-		return annotOntologyFile;
-	}
-
-	public static File getOWLDefinitionFile() {
-		return owlDefinitionFile;
-	}
-
-	/**
-	 * @return the ontLibraryDir
-	 */
-	public static File getOntLibraryDir() {
-		return ontLibraryDir;
 	}
 
 	/**
@@ -303,12 +233,11 @@ public class Resources {
 	}
 
 	/* new */
-	public static void createDataDirectoryFromScratch(File userDir) throws IOException, URISyntaxException,
+	public static void createDataDirectoryFromScratch(File userDir) throws IOException,
 			STInitializationException {
 		if (userDir.mkdirs()) {
 			String usrPath = userDir.getAbsolutePath();
 			if (!new File(usrPath, _ontTempDirLocalName).mkdirs()
-					|| !new File(usrPath, _ontLibraryDirLocalName).mkdirs()
 					|| !new File(usrPath, _ontMirrorDirDefaultLocationLocalName).mkdirs()
 					|| !new File(usrPath, _projectsDirName).mkdirs()
 					|| !new File(usrPath, _systemDirName).mkdirs()
@@ -316,22 +245,14 @@ public class Resources {
 					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
 					|| !new File(usrPath,_ontMirrorFileName).createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/annotation.owl"), new File(usrPath
-							+ "/ontlibrary/annotation.owl"));
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/owl.rdfs"), new File(usrPath
-							+ "/ontlibrary/owl.rdfs"));
-			
 			initializeCustomFormFileStructure();
 			initializeRoles();
 			initializePUBindingFileStructure();
-			initializeOrUpdateSystemProperties();
+			initializeSystemProperties();
 						
-		} else
+		} else {
 			throw new STInitializationException("Unable to create the main data folder");
+		}
 	}
 
 	public static File getOSGiPath() {
@@ -435,54 +356,34 @@ public class Resources {
 		}
 	}
 	
-	private static void initializeOrUpdateSystemProperties() throws STInitializationException {
+	private static void initializeSystemProperties() throws STInitializationException {
 		try {
-			//System settings
-			Properties prop = new Properties();
-			prop.load(Resources.class.getClassLoader().getResourceAsStream(
-					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"));
-			for (Object k : prop.keySet()) {
-				String propName = (String) k;
-				String propValue = prop.getProperty(propName);
-				if (STPropertiesManager.getSystemSetting(propName) == null) {
-					STPropertiesManager.setSystemSetting(propName, propValue);
-				}
-			}
+			//system settings
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"),
+					STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID)
+			);
 			//default project settings
-			prop = new Properties();
-			prop.load(Resources.class.getClassLoader().getResourceAsStream(
-					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"));
-			for (Object k : prop.keySet()) {
-				String propName = (String) k;
-				String propValue = prop.getProperty(propName);
-				if (STPropertiesManager.getProjectSettingDefault(propName) == null) {
-					STPropertiesManager.setProjectSettingsDefault(propName, propValue);
-				}
-			}
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
+					STPropertiesManager.getSystemProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+			);
 			//project preferences default
-			// - core
-			prop = new Properties();
-			prop.load(Resources.class.getClassLoader().getResourceAsStream(
-					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-preferences-defaults.props"));
-			for (Object k : prop.keySet()) {
-				String propName = (String) k;
-				String propValue = prop.getProperty(propName);
-				if (STPropertiesManager.getProjectPreferenceDefault(propName) == null) {
-					STPropertiesManager.setProjectPreferenceDefault(propName, propValue);
-				}
-			}
-			// - rendering engine
-			prop = new Properties();
-			prop.load(Resources.class.getClassLoader().getResourceAsStream(
-					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/project-preferences-defaults.props"));
-			for (Object k : prop.keySet()) {
-				String propName = (String) k;
-				String propValue = prop.getProperty(propName);
-				if (STPropertiesManager.getProjectPreferenceDefault(propName, RenderingEngine.class.getName()) == null) {
-					STPropertiesManager.setProjectPreferenceDefault(propName, propValue, RenderingEngine.class.getName());
-				}
-			}
-		} catch (IOException | STPropertyAccessException | STPropertyUpdateException e) {
+			// * core plugin
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-preferences-defaults.props"),
+					STPropertiesManager.getSystemProjectPreferencesDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+			);
+			// * rendering engine
+			Utilities.copy(
+					Resources.class.getClassLoader().getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/project-preferences-defaults.props"),
+					STPropertiesManager.getSystemProjectPreferencesDefaultsFile(RenderingEngine.class.getName())
+			);
+		} catch (IOException | STPropertyAccessException e) {
 			throw new STInitializationException(e);
 		}
 	}

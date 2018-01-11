@@ -30,12 +30,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.user.Role;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 /**
  * This class contains various integrity checks which are launched when Semantic Turkey is being started and
@@ -66,92 +69,44 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	static void startUpdatesCheckAndRepair() throws ProjectAccessException {
+	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyAccessException {
 
-		// this method has been deactivated, it was originally invoked in the last "else" branch of the
-		// Resources.initializeUserResources(...) method
+		VersionNumber stVersionNumber = Config.getVersionNumber();
+		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
+		
+		System.out.println("stVersionNumber " + stVersionNumber);
+		System.out.println("stDataVersionNumber " + stDataVersionNumber);
 
-		// this "versionNumber" variable was originally in SemanticTurkey.java, not it should be superseded by
-		// the one in the it.uniroma2.art.semanticturkey.cfg of Karaf, which is synced with the Maven pom
-		// version and can be correctly parsed by the server
-		// I leave it here just to leave this method still operative (though not being invoked anymore)
-		VersionNumber versionNumber = new VersionNumber(0, 9, 0);
-
-		// while this one, should be data folder...has to be taken from a dedicated prop file in the folder
-		// I suggest to rename it as dataTouchVersion or dataTouchVersionNumber 
-		VersionNumber currentVersionNumber = Config.getVersionNumber();
-
-		logger.debug("version number of installed Semantic Turkey is: " + versionNumber);
+		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
 		logger.debug("version number of Semantic Turkey currently saved in data folder is: "
-				+ currentVersionNumber);
-
-		if (versionNumber.compareTo(currentVersionNumber) > 0) {
-
-			logger.debug("updating resources from version: " + currentVersionNumber + " to version: "
-					+ versionNumber);
-
-			if (currentVersionNumber.compareTo(new VersionNumber(0, 7, 0)) < 0)
-				align_from_06x_to_07x();
-
-			if (currentVersionNumber.compareTo(new VersionNumber(0, 7, 2)) < 0)
-				align_from_071_to_072();
-
-			Config.setVersionNumber(versionNumber);
-		}
-	}
-
-	/**
-	 * upgrade from version 0.6.x of SemanticTurkeyData
-	 * 
-	 * this limits to check that the Projects Folder exists and, in negative case, create it
-	 * 
-	 * @throws IOException
-	 */
-	private static void align_from_06x_to_07x() {
-		logger.debug("versions prior to 0.7.x had no project folder, creating it");
-		File projDir = Resources.getProjectsDir();
-		if (!projDir.exists())
-			projDir.mkdir();
-	}
-
-	/**
-	 * upgrade from version 0.7.1 of SemanticTurkeyData to 0.7.2
-	 * 
-	 * this checks that if main-project exists, and, in case copies it as any other project in the projects
-	 * directory
-	 * @throws ProjectAccessException 
-	 * 
-	 * @throws IOException
-	 */
-	private static void align_from_071_to_072() throws ProjectAccessException {
-		String mainProjectName = "project-main";
-		File mainProjDir = new File(Resources.getSemTurkeyDataDir(), mainProjectName);
-
-		if (mainProjDir.exists()) {
-			logger.debug("version 0.7.1 had a main project folder, main project is no more present (any project can be a project loaded at startup now, and this feature is completely handled by the client)");
-			try {
-				String newMainProjectName = "wasMainProject";
-				ProjectManager.cloneProjectToNewProject(mainProjectName, newMainProjectName);
-				repairProject("wasMainProject");
-
-				// Utilities.recursiveCopy(mainProjDir, new File(Resources.getProjectsDir(),
-				// newMainProjectName));
-				// ProjectManager.setProjectProperty(newMainProjectName, Project.PROJECT_NAME_PROP,
-				// newMainProjectName);
-
-			} catch (IOException e) {
-				logger.error("unable to access property file for main project (which seems however to exist)");
-				e.printStackTrace();
-			} catch (InvalidProjectNameException e) {
-				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: strangely, the project name is invalid");
-			} catch (ProjectInexistentException e) {
-				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: strangely, the main project does not exist, while it has been previously checked for existence");
-			} catch (DuplicatedResourceException e) {
-				logger.error("unable to copy main project to normal project wasMainProject cause a project with this name already exists");
-			} catch (ProjectInconsistentException e) {
-				logger.error("unable to repair old main project, because it is in an inconsistent state even for its original Semantic Turkey version");
+				+ stDataVersionNumber);
+		
+		if (stVersionNumber.compareTo(stDataVersionNumber) > 0) {
+			System.out.println("need to update STData folder");
+			
+			if (stDataVersionNumber.compareTo(new VersionNumber(3, 0, 0)) < 0) {
+				System.out.println("Update from 1.0 or 2.0 to 3.0");
+				alignFromPreviousTo3();
 			}
+			
+			Config.setSTDataVersionNumber(stVersionNumber);
 		}
+
+	}
+	
+	private static void alignFromPreviousTo3() throws IOException, STPropertyAccessException {
+		logger.debug("Version 3.0.0 added capabilities to some roles");
+		//In doubt, update all roles
+		Role[] roles = {
+				RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
+				RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER, 
+				RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR,
+				RBACManager.DefaultRole.VALIDATOR
+		};
+		updateRoles(roles);
+
+		logger.debug("Version 3.0.0 added new properties to the default project preferences");
+		updateSystemProjectPreferencesDefaults();
 	}
 
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
@@ -180,20 +135,57 @@ public class UpdateRoutines {
 //			}
 //		}
 	}
-
-	private static void checkAndInitializeMissingProperty(String projectName, String propertyName,
-			String defaultValue, String stversion) throws IOException, InvalidProjectNameException,
-			ProjectInexistentException {
-		logger.debug("checking existence of a value for property: " + propertyName);
-		String propertyValue = ProjectManager.getProjectProperty(projectName, propertyName);
-		if (propertyValue == null) {
-			logger.debug(projectName + " is present, though it shows no property: " + propertyName
-					+ ". Since it is a project previous to version: " + stversion
-					+ ", its configuration type is probably (and being set to): " + defaultValue);
-			ProjectManager.setProjectProperty(projectName, propertyName, defaultValue);
-		} else {
-			logger.debug("property " + propertyName + " is already initialized to value: " + propertyValue);
+	
+	private static void updateRoles(Role[] roles) throws IOException {
+		File rolesDir = RBACManager.getRolesDir(null);
+		for (Role r : roles) {
+			Utilities.copy(Resources.class.getClassLoader()
+					.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
+					new File(rolesDir, "role_" + r.getName() + ".pl")
+			);
 		}
+	}
+	
+	private static void updateSystemProjectPreferencesDefaults() throws IOException, STPropertyAccessException {
+		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
+				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-preferences-defaults.props"),
+				STPropertiesManager.getSystemProjectPreferencesDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+		);
+	}
+	
+	@SuppressWarnings("unused")
+	private static void updateSystemProjectSettingsDefaults() throws IOException, STPropertyAccessException {
+		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
+				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
+				STPropertiesManager.getSystemProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+		);
+	}
+	
+	@SuppressWarnings("unused")
+	private static void updateCustomFormStructure() throws IOException {
+		File customFormsFolder = CustomFormManager.getCustomFormsFolder(null);
+		File formCollFolder = CustomFormManager.getFormCollectionsFolder(null);
+		File formsFolder = CustomFormManager.getFormsFolder(null);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/customFormConfig.xml"),
+				new File(customFormsFolder, "customFormConfig.xml")
+		);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.collection.note.xml"),
+				new File(formCollFolder, "it.uniroma2.art.semanticturkey.customform.collection.note.xml")
+		);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
+				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
+		);
+		Utilities.copy(
+				Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
+				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml")
+		);
 	}
 
 }

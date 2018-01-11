@@ -30,6 +30,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+
 /**
  * Generic Configuration Properties for Semantic Turkey. These include:
  * <ul>
@@ -48,6 +52,7 @@ public class Config {
 	private static File propFile = null;
 	private static String adminStatusPropName = "adminStatus";
 	private static String versionNumberPropName = "version";
+	private static String stDataVersionNumberPropName = "stDataVersion";
 	private static String singleProjectModePropName = "singleProjectMode";
 	private static String dataDirPropName = "data.dir";
 	
@@ -119,6 +124,24 @@ public class Config {
 	public static VersionNumber getVersionNumber() {
 		String versionCode = stProperties.getProperty(versionNumberPropName);
 		return new VersionNumber(versionCode);
+	}
+	
+	public static VersionNumber getSTDataVersionNumber() {
+		String versionCode;
+		try {
+			versionCode = STPropertiesManager.getSystemSetting(stDataVersionNumberPropName);
+		} catch (STPropertyAccessException e) {
+			return new VersionNumber(0, 0, 0);
+		}
+		return new VersionNumber(versionCode);
+	}
+	
+	public static void setSTDataVersionNumber(VersionNumber vn) {
+		try {
+			STPropertiesManager.setSystemSetting(stDataVersionNumberPropName, vn.toString());
+		} catch (STPropertyUpdateException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

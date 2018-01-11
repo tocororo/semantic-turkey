@@ -852,7 +852,7 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getSystemProjectPreferencesDefaultsFile(String pluginID)
+	public static File getSystemProjectPreferencesDefaultsFile(String pluginID)
 			throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator
