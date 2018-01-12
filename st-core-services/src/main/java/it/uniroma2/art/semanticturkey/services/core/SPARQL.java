@@ -391,7 +391,7 @@ public class SPARQL extends STServiceAdapter {
 								SimpleValueFactory.getInstance().createIRI("urn:uuid:" + UUID.randomUUID()));
 						QueryResults.report(result, rdfInserter);
 
-						Export.exportHelper(oRes, getManagedConnection(), new IRI[0], filteringPipeline,
+						Export.exportHelper(oRes, sourceConnection, new IRI[0], filteringPipeline,
 								includeInferred, outputFormat, false);
 					}
 				} finally {
