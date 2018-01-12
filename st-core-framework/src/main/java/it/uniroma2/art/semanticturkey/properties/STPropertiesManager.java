@@ -42,6 +42,7 @@ public class STPropertiesManager {
 	public static final String SETTING_EMAIL_FROM_PORT = "mail.from.port";
 
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
+	public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
 
 	/*
 	 * Methods to get/set properties to/from the following Properties files

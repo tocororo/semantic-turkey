@@ -51,12 +51,10 @@
 			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/resetPassword"
 			access="permitAll" />
 		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getSystemLanguages"
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getStartupSystemSettings"
 			access="permitAll" />
 		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
 			access="isAuthenticated()" />
-		<!-- <intercept-url pattern="" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" 
-			/> -->
 
 		<!-- validity: 30 days -->
 		<!-- user-service-ref not strictly needed (if there is just one UserDetailsService 

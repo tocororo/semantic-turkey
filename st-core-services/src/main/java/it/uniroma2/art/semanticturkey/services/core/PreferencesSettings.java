@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -270,17 +271,29 @@ public class PreferencesSettings extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns the languages available in the system. This information could be retrieved calling
-	 * {@link #getDefaultProjectSettings(List, String)} passing the 'languages' property and null plugin.
+	 * Returns some settings needed at the system startup (languages and experimental_features_enabled).
+	 * This information could be retrieved calling {@link #getDefaultProjectSettings(List, String)} 
+	 * passing the above property names and null plugin.
 	 * Anyway, since this information should be available without be logged, this method is excluded from the 
 	 * intercepted url
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation
-	public JsonNode getSystemLanguages() throws STPropertyAccessException {
+	public JsonNode getStartupSystemSettings() throws STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		return jsonFactory.textNode(STPropertiesManager.getProjectSettingDefault(STPropertiesManager.SETTING_PROJ_LANGUAGES));
+		ObjectNode respNode = jsonFactory.objectNode();
+		
+		TextNode langsNode = jsonFactory.textNode(
+				STPropertiesManager.getProjectSettingDefault(STPropertiesManager.SETTING_PROJ_LANGUAGES));
+		respNode.set(STPropertiesManager.SETTING_PROJ_LANGUAGES, langsNode);
+		
+		String expFeatValue = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EXP_FEATURES_ENABLED);
+		System.out.println("expFeatValue " + expFeatValue);
+		boolean expFeatBool = "true".equals(expFeatValue);
+		respNode.set(STPropertiesManager.SETTING_EXP_FEATURES_ENABLED, jsonFactory.booleanNode(expFeatBool));
+		
+		return respNode;
 	}
 	
 	/**
