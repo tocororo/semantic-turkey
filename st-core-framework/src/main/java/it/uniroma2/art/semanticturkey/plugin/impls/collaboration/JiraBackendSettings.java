@@ -15,5 +15,14 @@ public class JiraBackendSettings extends STPropertiesImpl implements STPropertie
 	@STProperty(description = "Server URL")
 	@Required
 	public String serverURL;
-
+	
+	@STProperty(description = "Jira Project Name")
+	public String jiraPrjName;
+	
+	@STProperty(description = "Jira Project Key")
+	public String jiraPrjKey;
+	
+	@STProperty(description = "Jira Project Id")
+	public String jiraPrjId;
+	
 }

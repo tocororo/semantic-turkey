@@ -1,11 +1,16 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
@@ -16,7 +21,7 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -33,7 +38,6 @@ public class Collaboration extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Collaboration.class);
 
 	@STServiceOperation
-	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public STProperties getProjectSettings(String backendId) throws STPropertyAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
@@ -42,7 +46,6 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation
-	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public STProperties getProjectPreferences(String backendId) throws STPropertyAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
@@ -53,7 +56,6 @@ public class Collaboration extends STServiceAdapter {
 	// This is a stub implementation that just writes the project settings/preferences. Indeed, it depends on
 	// the fact that the backend is stateless and that it can be recreated on-demand.
 	@STServiceOperation(method = RequestMethod.POST)
-	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public void activateCollaboratioOnProject(String backendId, Map<String, Object> projectSettings,
 			Map<String, Object> currentUserPreferences) throws STPropertyAccessException,
@@ -61,6 +63,17 @@ public class Collaboration extends STServiceAdapter {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
 		Project project = getProject();
 		pluginFactory.storeProjectSettings(project, projectSettings);
+		pluginFactory.storeProjectPreferences(project, UsersManager.getLoggedUser(), currentUserPreferences);
+		project.setProperty(PROJ_PROP_BACKEND, backendId);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	public void addPreferenceiesForCurrentUser(String backendId, Map<String, Object> currentUserPreferences)
+			throws STPropertyAccessException, STPropertyUpdateException, ProjectUpdateException,
+			ReservedPropertyUpdateException {
+		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
+		Project project = getProject();
 		pluginFactory.storeProjectPreferences(project, UsersManager.getLoggedUser(), currentUserPreferences);
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
 		// For this test, we exploit the fact
@@ -77,31 +90,38 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	public void createIssue(/* .. */) throws STPropertyAccessException {
-		getCollaborationBackend().createIssue();
+	public void createIssue(IRI resource, String summary) throws STPropertyAccessException, IOException, HTTPJiraException {
+		getCollaborationBackend().createIssue(resource.stringValue(), summary);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	public void createProject(String projectName, String projectType) throws STPropertyAccessException {
-		getCollaborationBackend().createProject(projectName, projectType);
+	public void assignProject(String projectName, String projectKey, @Optional String projectId)
+			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException {
+		getCollaborationBackend().assignProject(projectName, projectKey, projectId);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	public void assignResourceToIssue(String issue, IRI resource) throws STPropertyAccessException {
+	public void createProject(String projectName, String projectKey)
+			throws STPropertyAccessException, JsonProcessingException, IOException, HTTPJiraException,
+			STPropertyUpdateException {
+		getCollaborationBackend().createProject(projectName, projectKey);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	public void assignResourceToIssue(String issue, IRI resource)
+			throws STPropertyAccessException, IOException, HTTPJiraException {
 		getCollaborationBackend().assignResourceToIssue(issue, resource);
 	}
 
-	@STServiceOperation(method = RequestMethod.POST)
-	@Read
+	@STServiceOperation(method = RequestMethod.GET)
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	public void assignIssueToResource(String issue, IRI resource) throws STPropertyAccessException {
-		getCollaborationBackend().assignIssueToResource(issue, resource);
+	public JsonNode listIssuesAssignedToResource(IRI resource)
+			throws STPropertyAccessException, IOException, HTTPJiraException {
+		return getCollaborationBackend().listIssuesAssignedToResource(resource);
 	}
 
 }
