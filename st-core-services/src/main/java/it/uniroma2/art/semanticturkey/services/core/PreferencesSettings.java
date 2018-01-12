@@ -289,7 +289,6 @@ public class PreferencesSettings extends STServiceAdapter {
 		respNode.set(STPropertiesManager.SETTING_PROJ_LANGUAGES, langsNode);
 		
 		String expFeatValue = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EXP_FEATURES_ENABLED);
-		System.out.println("expFeatValue " + expFeatValue);
 		boolean expFeatBool = "true".equals(expFeatValue);
 		respNode.set(STPropertiesManager.SETTING_EXP_FEATURES_ENABLED, jsonFactory.booleanNode(expFeatBool));
 		

@@ -216,57 +216,6 @@ public class SPARQL extends STServiceAdapter {
 		preparedUpdate.execute();
 	}
 
-	@STServiceOperation(method = RequestMethod.POST)
-	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
-	public void exportConstructResultAsRdf(HttpServletResponse oRes, RDFFormat format, String query,
-			@Optional(defaultValue = "SPARQL") QueryLanguage ql,
-			@Optional(defaultValue = "true") boolean includeInferred,
-			@Optional(defaultValue = "{}") Map<String, Value> bindings,
-			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
-			@Optional(defaultValue = "") IRI[] namedGraphs) throws JsonProcessingException, IOException {
-
-		RepositoryConnection conn = getManagedConnection();
-		Query preparedQuery = conn.prepareQuery(ql, query);
-		configureOperation(includeInferred, bindings, maxExecTime, defaultGraphs, namedGraphs, null, null,
-				preparedQuery);
-
-		Repository rep = new SailRepository(new MemoryStore());
-		rep.initialize();
-		RepositoryConnection connection = rep.getConnection();
-
-		File tempServerFile = File.createTempFile("sparqlExport", "." + format.getDefaultFileExtension());
-
-		try {
-			if (preparedQuery instanceof GraphQuery) {
-				GraphQueryResult result = ((GraphQuery) preparedQuery).evaluate();
-				while (result.hasNext()) {
-					Statement stmt = result.next();
-					connection.add(stmt);
-				}
-			} else {
-				throw new IllegalArgumentException(
-						"Unsupported query mode. Only construct query can be exported in an RDF format");
-			}
-			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
-				connection.exportStatements(null, null, null, false,
-						Rio.createWriter(format, tempServerFileStream));
-			}
-			oRes.setHeader("Content-Disposition",
-					"attachment; filename=export." + format.getDefaultFileExtension());
-			oRes.setContentType(format.getDefaultMIMEType());
-			oRes.setContentLength((int) tempServerFile.length());
-
-			try (InputStream is = new FileInputStream(tempServerFile)) {
-				IOUtils.copy(is, oRes.getOutputStream());
-			}
-			oRes.flushBuffer();
-		} finally {
-			tempServerFile.delete();
-			connection.close();
-		}
-	}
-
 	/**
 	 * Exports the query result as spreadsheet
 	 * 
@@ -410,7 +359,7 @@ public class SPARQL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
-	public void exportGraphQueryResult(HttpServletResponse oRes, String query,
+	public void exportGraphQueryResultAsRdf(HttpServletResponse oRes, String query,
 			@Optional(defaultValue = "SPARQL") QueryLanguage ql,
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
