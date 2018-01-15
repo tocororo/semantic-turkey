@@ -135,8 +135,8 @@ public class Versions extends STServiceAdapter {
 			}
 		} catch (Exception e) {
 			try {
-				logger.debug(
-						String.format("Version %s was not dumped correctly", localRepostoryId, versionId), e);
+				logger.debug(String.format("Version %s was not dumped correctly to repository %s", versionId,
+						localRepostoryId), e);
 				if (!(e instanceof AlreadyExistingRepositoryException)) { // if not an already existing repo,
 																			// delete it
 					getProject().deleteRepository(localRepostoryId,
