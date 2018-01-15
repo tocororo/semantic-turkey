@@ -11,12 +11,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -58,10 +62,11 @@ public class Collaboration extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public void activateCollaboratioOnProject(String backendId, Map<String, Object> projectSettings,
-			Map<String, Object> currentUserPreferences) throws STPropertyAccessException,
-			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException {
+			Map<String, Object> currentUserPreferences, String projectName) throws STPropertyAccessException,
+			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException, 
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
-		Project project = getProject();
+		Project project = ProjectManager.getProjectDescription(projectName);
 		pluginFactory.storeProjectSettings(project, projectSettings);
 		pluginFactory.storeProjectPreferences(project, UsersManager.getLoggedUser(), currentUserPreferences);
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
