@@ -20,11 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.RepositoryCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.project.CreateRemote;
 import it.uniroma2.art.semanticturkey.project.ProjectUtils;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
@@ -85,7 +86,7 @@ public class Versions extends STServiceAdapter {
 	 * @param versionId
 	 *            the version identifier
 	 * @return
-	 * @throws RepositoryCreationException
+	 * @throws AlreadyExistingRepositoryException
 	 * @throws ReservedPropertyUpdateException
 	 * @throws ProjectUpdateException
 	 * @throws JsonProcessingException
@@ -96,40 +97,55 @@ public class Versions extends STServiceAdapter {
 	public VersionInfo createVersionDump(@Optional RepositoryAccess repositoryAccess,
 			@Optional String repositoryId,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification repoConfigurerSpecification,
-			@Optional String backendType, String versionId) throws RepositoryCreationException,
+			@Optional String backendType, String versionId) throws AlreadyExistingRepositoryException,
 			JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException, Exception {
 
 		try {
 			repoConfigurerSpecification.expandDefaults();
 		} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
 				| UnloadablePluginConfigurationException e) {
-			throw new RepositoryCreationException(e);
+			throw new AlreadyExistingRepositoryException(e);
 		}
 
 		String localRepostoryId = ProjectUtils.computeVersionRepository(versionId);
 
-		Repository versionRepository = getProject().createReadOnlyRepository(repositoryAccess, repositoryId,
-				repoConfigurerSpecification, localRepostoryId, backendType, true);
+		try {
+			Repository versionRepository = getProject().createReadOnlyRepository(repositoryAccess,
+					repositoryId, repoConfigurerSpecification, localRepostoryId, backendType, true);
 
-		try (RepositoryConnection outConn = versionRepository.getConnection()) {
-			outConn.begin(IsolationLevels.READ_COMMITTED);
+			try (RepositoryConnection outConn = versionRepository.getConnection()) {
+				outConn.begin(IsolationLevels.READ_COMMITTED);
 
-			// Unwraps the read-only connection wrapper to access the underlying writable connection
-			RepositoryConnection delegateWritableConnection = ((DelegatingRepositoryConnection) outConn).getDelegate();
-			getManagedConnection()
-					.export(new RDFInserter(delegateWritableConnection));
+				// Unwraps the read-only connection wrapper to access the underlying writable connection
+				RepositoryConnection delegateWritableConnection = ((DelegatingRepositoryConnection) outConn)
+						.getDelegate();
+				getManagedConnection().export(new RDFInserter(delegateWritableConnection));
 
-			outConn.commit();
+				outConn.commit();
 
-			outConn.begin();
+				outConn.begin();
 
-			SearchStrategyUtils
-					.instantiateSearchStrategy(STRepositoryInfoUtils
-							.getSearchStrategy(getProject().getRepositoryManager().getSTRepositoryInfo(
-									STServiceContextUtils.getRepostoryId(stServiceContext))))
-					.initialize(delegateWritableConnection);
+				SearchStrategyUtils
+						.instantiateSearchStrategy(STRepositoryInfoUtils
+								.getSearchStrategy(getProject().getRepositoryManager().getSTRepositoryInfo(
+										STServiceContextUtils.getRepostoryId(stServiceContext))))
+						.initialize(delegateWritableConnection);
 
-			outConn.commit();
+				outConn.commit();
+			}
+		} catch (Exception e) {
+			try {
+				logger.debug(
+						String.format("Version %s was not dumped correctly", localRepostoryId, versionId), e);
+				if (!(e instanceof AlreadyExistingRepositoryException)) { // if not an already existing repo,
+																			// delete it
+					getProject().deleteRepository(localRepostoryId,
+							(repositoryAccess instanceof CreateRemote));
+				}
+			} catch (Exception e2) {
+				e.addSuppressed(e2);
+			}
+			throw e;
 		}
 
 		VersionInfo newVersionInfo = new VersionInfo(versionId, new Date(), localRepostoryId);

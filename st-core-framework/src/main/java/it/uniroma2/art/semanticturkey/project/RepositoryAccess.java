@@ -19,6 +19,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public abstract class RepositoryAccess {
 
 	public abstract boolean isLocal();
-
 	public abstract boolean isRemote();
+	public abstract boolean isCreation();
 }

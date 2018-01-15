@@ -19,4 +19,8 @@ public class AccessExistingRemote extends RemoteRepositoryAccess {
 		super(serverURL, username, password);
 	}
 
+	@Override
+	public boolean isCreation() {
+		return false;
+	}
 }

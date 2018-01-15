@@ -18,5 +18,9 @@ public class CreateRemote extends RemoteRepositoryAccess {
 			@JsonProperty("password") String password) {
 		super(serverURL, username, password);
 	}
-
+	
+	@Override
+	public boolean isCreation() {
+		return true;
+	}
 }

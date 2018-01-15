@@ -26,28 +26,28 @@
  */
 package it.uniroma2.art.semanticturkey.exceptions;
 
-public class RepositoryCreationException extends Exception {
+public class AlreadyExistingRepositoryException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 
-	public RepositoryCreationException() {
+	public AlreadyExistingRepositoryException() {
 		super();
 	}
 
-	public RepositoryCreationException(String message, Throwable cause, boolean enableSuppression,
+	public AlreadyExistingRepositoryException(String message, Throwable cause, boolean enableSuppression,
 			boolean writableStackTrace) {
 		super(message, cause, enableSuppression, writableStackTrace);
 	}
 
-	public RepositoryCreationException(String message, Throwable cause) {
+	public AlreadyExistingRepositoryException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
-	public RepositoryCreationException(String message) {
+	public AlreadyExistingRepositoryException(String message) {
 		super(message);
 	}
 
-	public RepositoryCreationException(Throwable cause) {
+	public AlreadyExistingRepositoryException(Throwable cause) {
 		super(cause);
 	}
 

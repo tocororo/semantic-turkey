@@ -59,6 +59,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
@@ -77,7 +78,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.RepositoryCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.RepositoryNotExistingException;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
@@ -863,12 +865,14 @@ public abstract class Project extends AbstractProject {
 	 * @param backendType
 	 * @param customizeSearch
 	 * @return
-	 * @throws RepositoryCreationException
+	 * @throws AlreadyExistingRepositoryException
+	 * @throws RepositoryNotExistingException
 	 */
 	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess,
 			@Nullable String repositoryId, PluginSpecification repoConfigurerSpecification,
 			String localRepostoryId, boolean readOnlyWrapper, @Nullable String backendType,
-			boolean customizeSearch) throws RepositoryCreationException {
+			boolean customizeSearch)
+			throws AlreadyExistingRepositoryException, RepositoryNotExistingException {
 
 		RepositoryImplConfig localRepositoryImplConfig;
 
@@ -888,7 +892,8 @@ public abstract class Project extends AbstractProject {
 
 		// TODO: not an atomic check
 		if (repositoryManager.hasRepositoryConfig(localRepostoryId)) {
-			throw new RepositoryCreationException("Local repository alread existing:" + localRepostoryId);
+			throw new AlreadyExistingRepositoryException(
+					"Local repository already existing:" + localRepostoryId);
 		}
 
 		try {
@@ -918,14 +923,14 @@ public abstract class Project extends AbstractProject {
 
 					// TODO: this check is not atomic!
 					if (remoteRepositoryManager.hasRepositoryConfig(repositoryId)) {
-						throw new RepositoryCreationException(
+						throw new AlreadyExistingRepositoryException(
 								"Remote repository already exists: " + repositoryId);
 					}
 
 					remoteRepositoryManager.addRepositoryConfig(remoteRepositoryConfig);
 				} else { // Access remote
 					if (!remoteRepositoryManager.hasRepositoryConfig(repositoryId)) {
-						throw new RepositoryCreationException(
+						throw new RepositoryNotExistingException(
 								"Remote repository does not exist: " + repositoryId);
 					}
 				}
@@ -955,16 +960,33 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
+	/**
+	 * Deletes a repository.
+	 * 
+	 * @param repositoryId
+	 *            the (local) identifier of the repository to delete
+	 * @param propagateDelete
+	 *            tells whether to delete the remote repository (if any).
+	 */
+	public void deleteRepository(String repositoryId, boolean propagateDelete) {
+		if (Sets.newHashSet("core", "support").contains(repositoryId)) {
+			throw new IllegalArgumentException(
+					"It is not allowed to delete a repository with this name: " + repositoryId);
+		}
+		getRepositoryManager().removeRepository(repositoryId, propagateDelete);
+	}
+
 	public Repository createRepository(RepositoryAccess repositoryAccess, String repositoryId,
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId)
-			throws RepositoryCreationException {
+			throws AlreadyExistingRepositoryException, RepositoryNotExistingException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
 				false, null, false);
 	}
 
 	public Repository createReadOnlyRepository(RepositoryAccess repositoryAccess, String repositoryId,
 			PluginSpecification repoConfigurerSpecification, String localRepostoryId, String backendType,
-			boolean customizeSearch) throws RepositoryCreationException {
+			boolean customizeSearch)
+			throws AlreadyExistingRepositoryException, RepositoryNotExistingException {
 		return createRepository(repositoryAccess, repositoryId, repoConfigurerSpecification, localRepostoryId,
 				true, backendType, customizeSearch);
 	}

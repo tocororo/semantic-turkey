@@ -18,4 +18,8 @@ public class CreateLocal extends RepositoryAccess {
 		return false;
 	}
 
+	@Override
+	public boolean isCreation() {
+		return true;
+	}
 }

@@ -7,19 +7,25 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
+import javax.sound.midi.MidiDevice.Info;
 
 import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.IsolationLevels;
+import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.repository.DelegatingRepository;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.config.DelegatingRepositoryImplConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
@@ -144,13 +150,112 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			defaultWriteIsolationLevel = IsolationLevels.SERIALIZABLE;
 		}
 
-		//customizeSearch = false; // ignores search customization until we decide it is safe
-		
+		// customizeSearch = false; // ignores search customization until we decide it is safe
+
 		SearchStrategies searchStrategy = customizeSearch && isGraphDBBackEnd(backendType)
-				? SearchStrategies.GRAPH_DB : SearchStrategies.REGEX;
+				? SearchStrategies.GRAPH_DB
+				: SearchStrategies.REGEX;
 
 		repo2Info.put(repositoryId, new STRepositoryInfo(backendType, username, password,
 				defaultReadIsolationLevel, defaultWriteIsolationLevel, searchStrategy));
+		writeAdditionalRepositoryInfo();
+	}
+
+	@Override
+	protected void cleanUpRepository(String repositoryID) throws IOException {
+		super.cleanUpRepository(repositoryID);
+		repo2Info.remove(repositoryID);
+		writeAdditionalRepositoryInfo();
+	}
+
+	public void removeRepository(String repositoryId, boolean propagateDelete)
+			throws RepositoryException, RepositoryConfigException {
+		logger.debug("Remove repository {} with propagateDelete={}", repositoryId, propagateDelete);
+		synchronized (initializedRepositories) {
+			@Nullable
+			RepositoryConfig repoConfig;
+			try { // if the configuration is not supported, it is impossible to parse it
+				repoConfig = getRepositoryConfig(repositoryId);
+			} catch (Exception e) {
+				repoConfig = null;
+			}
+			@Nullable
+			STRepositoryInfo repoInfo = repo2Info.get(repositoryId);
+
+			boolean removed = forceRemoveRepository(this, repositoryId);
+
+			logger.debug("Repository {} removed={}", removed);
+
+			// Skip the rest of the method, if the repository was not actually removed or deletion should not
+			// be propagated
+			if (!removed || !propagateDelete)
+				return;
+
+			RepositoryImplConfig repoImplConfig = repoConfig != null ? repoConfig.getRepositoryImplConfig()
+					: null;
+			while (repoImplConfig instanceof DelegatingRepositoryImplConfig) {
+				repoImplConfig = ((DelegatingRepositoryImplConfig) repoImplConfig).getDelegate();
+			}
+
+			if (repoImplConfig instanceof HTTPRepositoryConfig) {
+				
+				logger.debug("Delete remote counterpart");
+				
+				HTTPRepositoryConfig httpRepoImpl = (HTTPRepositoryConfig) repoImplConfig;
+				String username;
+				String password;
+
+				if (repoInfo != null) {
+					username = repoInfo.getUsername();
+					password = repoInfo.getPassword();
+				} else {
+					username = null;
+					password = null;
+				}
+				RemoteRepositoryManager remoteRepoMgr = RemoteRepositoryManager
+						.getInstance(Protocol.getServerLocation(httpRepoImpl.getURL()), username, password);
+				String remoteRepositoryId = Protocol.getRepositoryID(httpRepoImpl.getURL());
+
+				try {
+					try {
+						forceRemoveRepository(remoteRepoMgr, remoteRepositoryId);
+					} catch (Exception e) {
+						throw new RepositoryException(
+								"Unable to remove the remote counterpart of repository " + repositoryId, e);
+					}
+				} finally {
+					remoteRepoMgr.shutDown();
+				}
+			}
+		}
+	}
+
+	/**
+	 * Removes a repository. When the configuration of a repository is wrong, the method
+	 * {@link RepositoryManager#removeRepository(String)} throws {@link RepositoryConfigException}.
+	 * Conversely, this method would try to delete the repository, by manipulating the <em>system
+	 * repository</em> (see {@link #getSystemRepository()}).
+	 * 
+	 * @param repoMgr
+	 * @param repostoryId
+	 * @return
+	 * @throws RepositoryException
+	 * @throws RepositoryConfigException
+	 */
+	protected boolean forceRemoveRepository(RepositoryManager repoMgr, String repostoryId)
+			throws RepositoryException, RepositoryConfigException {
+		try {
+			return repoMgr.removeRepository(repostoryId);
+		} catch (RepositoryConfigException|RepositoryException e) {
+			/*
+			 * In case of incorrect repository configuration, the methdod above will throw, so an alternate
+			 * lower-layer mechanism is used
+			 */
+			return RepositoryConfigUtil.removeRepositoryConfigs(repoMgr.getSystemRepository(), repostoryId);
+		}
+	}
+
+	protected void writeAdditionalRepositoryInfo() throws RepositoryException {
 		try {
 			mapper.writeValue(repositoriesInfoFile, repo2Info);
 		} catch (IOException e) {
