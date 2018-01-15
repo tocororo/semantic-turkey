@@ -35,4 +35,7 @@ public interface CollaborationBackend extends Plugin {
 
 	public JsonNode listIssuesAssignedToResource(IRI resource)
 			throws STPropertyAccessException, IOException, HTTPJiraException;
+	
+	public JsonNode listProjects()
+			throws STPropertyAccessException, IOException, HTTPJiraException;
 }

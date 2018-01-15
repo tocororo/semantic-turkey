@@ -123,5 +123,12 @@ public class Collaboration extends STServiceAdapter {
 			throws STPropertyAccessException, IOException, HTTPJiraException {
 		return getCollaborationBackend().listIssuesAssignedToResource(resource);
 	}
+	
+	@STServiceOperation(method = RequestMethod.GET)
+	// @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	public JsonNode listProjects()
+			throws STPropertyAccessException, IOException, HTTPJiraException {
+		return getCollaborationBackend().listProjects();
+	}
 
 }

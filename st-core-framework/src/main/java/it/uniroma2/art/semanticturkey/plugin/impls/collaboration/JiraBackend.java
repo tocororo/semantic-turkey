@@ -411,6 +411,74 @@ public class JiraBackend extends
 	}
 	
 	
+	@Override
+	public JsonNode listProjects() throws STPropertyAccessException, IOException, 
+			HTTPJiraException {
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
+		
+		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+				UsersManager.getLoggedUser());
+		
+		//first of all, do the login
+		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
+				projectSettings.serverURL);
+		
+		//now ask jira for all the project
+		
+		String urlString = projectSettings.serverURL+"/rest/api/2/"+"project";
+
+		URL url = new URL(urlString);
+		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+
+		// By default it is GET request
+		httpcon.setRequestMethod("GET");
+
+		// add request header
+		httpcon.setRequestProperty("User-Agent", USER_AGENT);
+		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+		// Add the cookie
+		if (cookieManager.getCookieStore().getCookies().size() > 0) {
+			httpcon.setRequestProperty("Cookie",
+					cookieManager.getCookieStore().getCookies().get(0).toString());
+		}
+
+
+		executeAndCheckError(httpcon);
+
+		// Reading response from input Stream
+		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
+		String output;
+		StringBuffer response = new StringBuffer();
+
+		while ((output = in.readLine()) != null) {
+			response.append(output);
+		}
+		in.close();
+		
+		// create ObjectMapper instance
+		ObjectMapper objectMapper = new ObjectMapper();
+		
+		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response.toString());
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode prjResponseArray = jsonFactory.arrayNode();
+		for(JsonNode prjFromJiraNode : prjFromJiraArray) {
+			String prjId = prjFromJiraNode.get("id").asText();
+			String prjKey = prjFromJiraNode.get("key").asText();
+			String prjName = prjFromJiraNode.get("name").asText();
+			ObjectNode issueRedux = jsonFactory.objectNode();
+			issueRedux.set("id", jsonFactory.textNode(prjId));
+			issueRedux.set("key", jsonFactory.textNode(prjKey));
+			issueRedux.set("name", jsonFactory.textNode(prjName));
+			prjResponseArray.add(issueRedux);
+		}		
+		return prjResponseArray;
+	}
+
+	
 	/*** PRVATE METHODS ***/
 	private CookieManager login(String username, String password, String urlString) throws IOException, 
 			HTTPJiraException{
