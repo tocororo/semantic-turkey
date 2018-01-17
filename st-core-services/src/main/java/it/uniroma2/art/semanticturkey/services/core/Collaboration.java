@@ -20,7 +20,6 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -42,30 +41,28 @@ public class Collaboration extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Collaboration.class);
 
 	@STServiceOperation
-	public STProperties getProjectSettings(String backendId, String projectName)throws STPropertyAccessException, 
+	public STProperties getProjectSettings(String backendId)throws STPropertyAccessException, 
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
-		Project project = ProjectManager.getProjectDescription(projectName);
-		return pluginFactory.getProjectSettings(project);
+		return pluginFactory.getProjectSettings(getProject());
 	}
 
 	@STServiceOperation
-	public STProperties getProjectPreferences(String backendId, String projectName) throws STPropertyAccessException, 
+	public STProperties getProjectPreferences(String backendId) throws STPropertyAccessException, 
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
-		Project project = ProjectManager.getProjectDescription(projectName);
-		return pluginFactory.getProjectPreferences(project, UsersManager.getLoggedUser());
+		return pluginFactory.getProjectPreferences(getProject(), UsersManager.getLoggedUser());
 	}
 
 	// This is a stub implementation that just writes the project settings/preferences. Indeed, it depends on
 	// the fact that the backend is stateless and that it can be recreated on-demand.
 	@STServiceOperation(method = RequestMethod.POST)
 	public void activateCollaboratioOnProject(String backendId, Map<String, Object> projectSettings,
-			Map<String, Object> currentUserPreferences, String projectName) throws STPropertyAccessException,
+			Map<String, Object> currentUserPreferences) throws STPropertyAccessException,
 			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException, 
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
-		Project project = ProjectManager.getProjectDescription(projectName);
+		Project project = getProject();
 		pluginFactory.storeProjectSettings(project, projectSettings);
 		pluginFactory.storeProjectPreferences(project, UsersManager.getLoggedUser(), currentUserPreferences);
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
@@ -87,16 +84,16 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void assignProject(String collaborationProjectName, String projectKey, @Optional String projectId)
+	public void assignProject(String projectName, String projectKey, @Optional String projectId)
 			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException {
-		getCollaborationBackend().assignProject(collaborationProjectName, projectKey, projectId);
+		getCollaborationBackend().assignProject(projectName, projectKey, projectId);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void createProject(String collaborationProjectName, String projectKey)
+	public void createProject(String projectName, String projectKey)
 			throws STPropertyAccessException, JsonProcessingException, IOException, HTTPJiraException,
 			STPropertyUpdateException {
-		getCollaborationBackend().createProject(collaborationProjectName, projectKey);
+		getCollaborationBackend().createProject(projectName, projectKey);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
