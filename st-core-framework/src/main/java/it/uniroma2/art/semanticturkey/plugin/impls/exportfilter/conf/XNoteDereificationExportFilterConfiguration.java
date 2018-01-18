@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf;
 
 import it.uniroma2.art.semanticturkey.plugin.configuration.AbstractPluginConfiguration;
+import it.uniroma2.art.semanticturkey.properties.ContentType;
+import it.uniroma2.art.semanticturkey.properties.ContentTypeVocabulary;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
@@ -14,5 +16,6 @@ public class XNoteDereificationExportFilterConfiguration extends AbstractPluginC
 	}
 
 	@STProperty(description = "Preserves reified notes in the output")
+	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean preserveReifiedNotes = true;
 }
