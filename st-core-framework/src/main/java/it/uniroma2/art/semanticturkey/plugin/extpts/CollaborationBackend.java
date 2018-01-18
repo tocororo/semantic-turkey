@@ -19,7 +19,8 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
  */
 public interface CollaborationBackend extends Plugin {
 
-	public void createIssue(String resource, String summary) throws STPropertyAccessException, IOException, HTTPJiraException;
+	public void createIssue(String resource, String summary, String description, String assignee) 
+			throws STPropertyAccessException, IOException, HTTPJiraException;
 
 	public void assignProject(String projectName, String projectKey, String ProjectId)
 			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException;
@@ -34,6 +35,12 @@ public interface CollaborationBackend extends Plugin {
 	void bind2project(Project project);
 
 	public JsonNode listIssuesAssignedToResource(IRI resource)
+			throws STPropertyAccessException, IOException, HTTPJiraException;
+
+	public JsonNode listIssues()
+			throws STPropertyAccessException, IOException, HTTPJiraException;
+	
+	public JsonNode listUsers()
 			throws STPropertyAccessException, IOException, HTTPJiraException;
 	
 	public JsonNode listProjects()

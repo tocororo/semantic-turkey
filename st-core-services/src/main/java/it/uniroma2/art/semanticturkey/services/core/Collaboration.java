@@ -41,16 +41,16 @@ public class Collaboration extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(Collaboration.class);
 
 	@STServiceOperation
-	public STProperties getProjectSettings(String backendId)throws STPropertyAccessException, 
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+	public STProperties getProjectSettings(String backendId) throws STPropertyAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
+
 		return pluginFactory.getProjectSettings(getProject());
 	}
 
 	@STServiceOperation
-	public STProperties getProjectPreferences(String backendId) throws STPropertyAccessException, 
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+	public STProperties getProjectPreferences(String backendId) throws STPropertyAccessException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
+
 		return pluginFactory.getProjectPreferences(getProject(), UsersManager.getLoggedUser());
 	}
 
@@ -78,9 +78,20 @@ public class Collaboration extends STServiceAdapter {
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
 	}
 
+	private CollaborationBackend getCollaborationBackend() {
+		String backendId = getProject().getProperty(PROJ_PROP_BACKEND);
+
+		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
+		CollaborationBackend instance = (CollaborationBackend) pluginFactory
+				.createInstance(pluginFactory.createDefaultPluginConfiguration());
+		instance.bind2project(getProject());
+		return instance;
+	}
+
 	@STServiceOperation(method = RequestMethod.POST)
-	public void createIssue(IRI resource, String summary) throws STPropertyAccessException, IOException, HTTPJiraException {
-		getCollaborationBackend().createIssue(resource.stringValue(), summary);
+	public void createIssue(IRI resource, String summary, @Optional String description, 
+			@Optional String assignee) throws STPropertyAccessException, IOException, HTTPJiraException {
+		getCollaborationBackend().createIssue(resource.stringValue(), summary, description, assignee);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -109,20 +120,21 @@ public class Collaboration extends STServiceAdapter {
 	}
 	
 	@STServiceOperation(method = RequestMethod.GET)
+	public JsonNode listIssues()
+			throws STPropertyAccessException, IOException, HTTPJiraException {
+		return getCollaborationBackend().listIssues();
+	}
+	
+	@STServiceOperation(method = RequestMethod.GET)
+	public JsonNode listUsers()
+			throws STPropertyAccessException, IOException, HTTPJiraException {
+		return getCollaborationBackend().listUsers();
+	}
+	
+	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listProjects()
 			throws STPropertyAccessException, IOException, HTTPJiraException {
 		return getCollaborationBackend().listProjects();
-	}
-	
-	
-	private CollaborationBackend getCollaborationBackend() {
-		String backendId = getProject().getProperty(PROJ_PROP_BACKEND);
-
-		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
-		CollaborationBackend instance = (CollaborationBackend) pluginFactory
-				.createInstance(pluginFactory.createDefaultPluginConfiguration());
-		instance.bind2project(getProject());
-		return instance;
 	}
 
 }

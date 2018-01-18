@@ -9,7 +9,10 @@ import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -57,7 +60,8 @@ public class JiraBackend extends
 	}
 
 	@Override
-	public void createIssue(String resource, String summary) throws STPropertyAccessException, IOException, HTTPJiraException {
+	public void createIssue(String resource, String summary, String description, String assignee) 
+			throws STPropertyAccessException, IOException, HTTPJiraException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -92,8 +96,6 @@ public class JiraBackend extends
 				+"\n\"id\":\""+issueTypeId+"\","
 				+"\n\"description\":\""+issueTypeId+"\""
 				+"\n},"
-				//project
-				//+"\n\"project\": \""+newPrjKey+"\"," // use this or the other lines
 				+"\n\"project\": {"
 				//+"\n\"name\":\""+projectSettings.jiraPrjName+"\","
 				+"\n\"id\":\""+projectSettings.jiraPrjId+"\""
@@ -102,9 +104,22 @@ public class JiraBackend extends
 				//reporter
 				+"\n\"reporter\": {"
 				+"\n\"name\":\""+projectPreferences.username+"\""
-				+"\n},"
+				+"\n},";
+		if(assignee!=null && assignee.length()!=0) {
+			postJsonData +=
+				//assignee
+				"\n\"assignee\": {"
+				+"\n\"name\":\""+assignee+"\""
+				+"\n},";
+		}
+		if(description!=null && description.length() !=0) {
+			postJsonData +=
+				//description
+				"\n\"description\":\""+description+"\",";
+		}
+		postJsonData +=
 				//labels
-				+"\n\"labels\": ["
+				"\n\"labels\": ["
 				+"\n\""+resource+"\""
 				+"\n]"
 				//+"\n\"labels\":\"http://test.it/c_42\""
@@ -344,13 +359,13 @@ public class JiraBackend extends
 		
 		String postJsonData = "{"
 				+"\n\"jql\":\""+jqlString+"\","
-				+"\n\"startAt\":0,"
+				+"\n\"startAt\":0"
 				//+"\n\"maxResults\":100,"
-				+"\n\"fields\": ["
+				/*+"\n\"fields\": ["
 				+"\n\"status\","
 				+"\n\"labels\","
 				+"\n\"summary\""
-				+"\n]"
+				+"\n]"*/
 				+ "\n}"; 
 		
 		// Add the cookie
@@ -390,24 +405,185 @@ public class JiraBackend extends
 		ArrayNode issuesArray = (ArrayNode) rootNode.get("issues");
 		for(int i=0; i<issueNum; i++) {
 			JsonNode issue = issuesArray.get(i);
-			String issueId = issue.get("id").asText();
-			String issueStatus = issue.get("fields").get("status").get("name").asText();
-			String issueKey = issue.get("key").asText();
-			String urlIssue = projectSettings.serverURL+"/browse/"+issueKey;
-			/*ArrayNode labelsArray = (ArrayNode) issue.get("fields").get("labels");
-			String labels = "";
-			for(JsonNode labelNode : labelsArray) {
-				labels += labelNode.asText()+",";
-			}*/
-			ObjectNode issueRedux = jsonFactory.objectNode();
-			issueRedux.set("id", jsonFactory.textNode(issueId));
-			issueRedux.set("key", jsonFactory.textNode(issueKey));
-			issueRedux.set("status", jsonFactory.textNode(issueStatus));
-			issueRedux.set("url", jsonFactory.textNode(urlIssue));
+			ObjectNode issueRedux = parseIssue(issue, projectSettings);
 			issueArrayResponse.add(issueRedux);
 		}
 		
 		return issueArrayResponse;
+	}
+	
+	
+	@Override
+	public JsonNode listIssues() throws STPropertyAccessException, IOException, 
+			HTTPJiraException {
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
+		
+		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+				UsersManager.getLoggedUser());
+		
+		//first of all, do the login
+		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
+				projectSettings.serverURL);
+		
+		//now ask jira for all the issue asosciated to the desired Resource
+		
+		String urlString = projectSettings.serverURL+"/rest/api/2/"+"search";
+
+		URL url = new URL(urlString);
+		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+
+		// By default it is GET request
+		httpcon.setRequestMethod("POST");
+
+		// add request header
+		httpcon.setRequestProperty("User-Agent", USER_AGENT);
+		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+		String jqlString = "project =\\\""+projectSettings.jiraPrjId+"\\\"";
+		
+		String postJsonData = "{"
+				+"\n\"jql\":\""+jqlString+"\","
+				+"\n\"startAt\":0"
+				//+"\n\"maxResults\":100,"
+				/*+"\n\"fields\": ["
+				+"\n\"status\","
+				+"\n\"labels\","
+				+"\n\"summary\""
+				+"\n]"*/
+				+ "\n}"; 
+		
+		// Add the cookie
+		if (cookieManager.getCookieStore().getCookies().size() > 0) {
+			httpcon.setRequestProperty("Cookie",
+					cookieManager.getCookieStore().getCookies().get(0).toString());
+		}
+
+		// Send post request
+		httpcon.setDoOutput(true);
+		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
+		wr.writeBytes(postJsonData);
+		wr.flush();
+		wr.close();
+
+		executeAndCheckError(httpcon);
+
+		// Reading response from input Stream
+		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
+		String output;
+		StringBuffer response = new StringBuffer();
+
+		while ((output = in.readLine()) != null) {
+			response.append(output);
+		}
+		in.close();
+
+		
+		// create ObjectMapper instance
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode rootNode = objectMapper.readTree(response.toString());
+		
+		int issueNum = Integer.parseInt(rootNode.get("total").asText());
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		
+		
+		ArrayNode issuesArray = (ArrayNode) rootNode.get("issues");
+		Map<String, List<ObjectNode>> resToIssuesMap = new HashMap<>();
+		for(int i=0; i<issueNum; i++) {
+			JsonNode issue = issuesArray.get(i);
+			ObjectNode issueRedux = parseIssue(issue, projectSettings);
+			ArrayNode labelsArray = (ArrayNode) issueRedux.get("labels");
+			for(JsonNode labelNode : labelsArray) {
+				String res = labelNode.textValue();
+				if(resToIssuesMap.get(res)==null) {
+					resToIssuesMap.put(res, new ArrayList<>());
+				}
+				resToIssuesMap.get(res).add(issueRedux);
+			}
+		}
+		//now construct the response
+		ArrayNode resToIssuesCompleteResponse = jsonFactory.arrayNode();
+		for(String res : resToIssuesMap.keySet()) {
+			ObjectNode singleResToIssue = jsonFactory.objectNode();
+			singleResToIssue.set("resource", jsonFactory.textNode(res));
+			issuesArray = jsonFactory.arrayNode();
+			for(ObjectNode issue : resToIssuesMap.get(res)) {
+				issuesArray.add(issue);
+			}
+			singleResToIssue.set("issues", issuesArray);
+			resToIssuesCompleteResponse.add(singleResToIssue);
+			
+		}
+		return resToIssuesCompleteResponse;
+	}
+	
+	@Override
+	public JsonNode listUsers() throws STPropertyAccessException, IOException, 
+			HTTPJiraException {
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
+		
+		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+				UsersManager.getLoggedUser());
+		
+		//first of all, do the login
+		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
+				projectSettings.serverURL);
+		
+		//now ask jira for all the issue asosciated to the desired Resource
+		
+		String urlString = projectSettings.serverURL+"/rest/api/2/"+"user/assignable/search?";
+
+		
+		urlString += "project="+projectSettings.jiraPrjKey;
+		
+		URL url = new URL(urlString);
+		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+
+		// By default it is GET request
+		httpcon.setRequestMethod("GET");
+
+		// add request header
+		httpcon.setRequestProperty("User-Agent", USER_AGENT);
+		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		
+		// Add the cookie
+		if (cookieManager.getCookieStore().getCookies().size() > 0) {
+			httpcon.setRequestProperty("Cookie",
+					cookieManager.getCookieStore().getCookies().get(0).toString());
+		}
+
+		executeAndCheckError(httpcon);
+
+		// Reading response from input Stream
+		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
+		String output;
+		StringBuffer response = new StringBuffer();
+
+		while ((output = in.readLine()) != null) {
+			response.append(output);
+		}
+		in.close();
+
+		
+		// create ObjectMapper instance
+		ObjectMapper objectMapper = new ObjectMapper();
+		ArrayNode userArray = (ArrayNode) objectMapper.readTree(response.toString());
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode userArrayResponse = jsonFactory.arrayNode();
+		
+		for(int i=0; i<userArray.size(); i++) {
+			JsonNode user = userArray.get(i);
+			ObjectNode issueRedux = parseUser(user);
+			userArrayResponse.add(issueRedux);
+		}
+		
+		return userArrayResponse;
 	}
 	
 	
@@ -538,6 +714,50 @@ public class JiraBackend extends
 			errorStream.close();
 			throw new HTTPJiraException(respCode+" : "+errorString);
 		}
+	}
+	
+	private ObjectNode parseIssue(JsonNode issue, JiraBackendSettings projectSettings) {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		
+		String issueId = issue.get("id").asText();
+		String issueStatus = issue.get("fields").get("status").get("name").asText();
+		String issueKey = issue.get("key").asText();
+		String urlIssue = projectSettings.serverURL+"/browse/"+issueKey;
+		ArrayNode labelsArray = (ArrayNode) issue.get("fields").get("labels");
+		String resolution="";
+		if(issue.get("fields").get("resolution") != null && 
+				issue.get("fields").get("resolution").get("name")!=null) {
+			resolution = issue.get("fields").get("resolution").get("name").asText();
+		}
+		/*ArrayNode labelsArray = (ArrayNode) issue.get("fields").get("labels");
+		String labels = "";
+		for(JsonNode labelNode : labelsArray) {
+			labels += labelNode.asText()+",";
+		}*/
+		ObjectNode issueRedux = jsonFactory.objectNode();
+		issueRedux.set("id", jsonFactory.textNode(issueId));
+		issueRedux.set("key", jsonFactory.textNode(issueKey));
+		issueRedux.set("status", jsonFactory.textNode(issueStatus));
+		issueRedux.set("url", jsonFactory.textNode(urlIssue));
+		issueRedux.set("labels", labelsArray);
+		issueRedux.set("resolution", jsonFactory.textNode(resolution));
+		return issueRedux;
+	}
+	
+	private ObjectNode parseUser(JsonNode user){
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		
+		String userKey = user.get("key").asText();
+		String userName = user.get("name").asText();
+		String userEmail = user.get("emailAddress").asText();
+		String displayName = user.get("displayName").asText();
+		
+		ObjectNode userRedux = jsonFactory.objectNode();
+		userRedux.set("key", jsonFactory.textNode(userKey));
+		userRedux.set("name", jsonFactory.textNode(userName));
+		userRedux.set("email", jsonFactory.textNode(userEmail));
+		userRedux.set("dispalyName", jsonFactory.textNode(displayName));
+		return userRedux;
 	}
 
 }
