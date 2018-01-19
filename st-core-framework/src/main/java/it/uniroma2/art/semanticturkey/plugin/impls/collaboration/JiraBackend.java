@@ -720,7 +720,17 @@ public class JiraBackend extends
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		
 		String issueId = issue.get("id").asText();
-		String issueStatus = issue.get("fields").get("status").get("name").asText();
+		String issueStatus="";
+		if(issue.get("fields")!=null && issue.get("fields").get("status") !=null &&
+				issue.get("fields").get("status").get("name")!=null) {
+			issueStatus=issue.get("fields").get("status").get("name").asText();
+		};
+		String category="";
+		if(issue.get("fields") != null && issue.get("fields").get("status") != null &&
+				issue.get("fields").get("status").get("statusCategory") != null && 
+				issue.get("fields").get("status").get("statusCategory").get("name") != null) {
+			category = issue.get("fields").get("status").get("statusCategory").get("name").asText();
+		};
 		String issueKey = issue.get("key").asText();
 		String urlIssue = projectSettings.serverURL+"/browse/"+issueKey;
 		ArrayNode labelsArray = (ArrayNode) issue.get("fields").get("labels");
@@ -741,6 +751,7 @@ public class JiraBackend extends
 		issueRedux.set("url", jsonFactory.textNode(urlIssue));
 		issueRedux.set("labels", labelsArray);
 		issueRedux.set("resolution", jsonFactory.textNode(resolution));
+		issueRedux.set("category", jsonFactory.textNode(category));
 		return issueRedux;
 	}
 	
