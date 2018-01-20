@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.AbstractGraphDBConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.GraphDBFreeConfigurerConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.GraphDBSEConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.PredefinedRepositoryImplConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JInMemorySailConfigurerConfiguration;
 import it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.conf.RDF4JNativeSailConfigurerConfiguration;
@@ -135,16 +136,18 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 			String gdbRepoType;
 			if (config instanceof GraphDBFreeConfigurerConfiguration) {
 				graphdbConfig.setType("graphdb:FreeSail");
-				if (decorationApplied) {
-					gdbRepoType = SailRepositoryFactory.REPOSITORY_TYPE;
-				} else {
-					gdbRepoType = "graphdb:FreeSailRepository";
-				}
+				gdbRepoType = "graphdb:FreeSailRepository";
+			} else if(config instanceof GraphDBSEConfigurerConfiguration) {
+				graphdbConfig.setType("owlim:Sail");
+				gdbRepoType = "owlim:MonitorRepository";
 			} else {
 				throw new IllegalArgumentException(
 						"Could not recognize GraphDB Sail Type from config object: " + config.getClass());
 			}
 
+			if (decorationApplied) {
+				gdbRepoType = SailRepositoryFactory.REPOSITORY_TYPE;	
+			}
 			
 			SailRepositoryConfig repositoryImplConfigTemp = new SailRepositoryConfig(sailImplConfig);
 			repositoryImplConfigTemp.setType(gdbRepoType);
