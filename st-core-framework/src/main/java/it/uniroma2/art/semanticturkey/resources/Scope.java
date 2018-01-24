@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension;
+package it.uniroma2.art.semanticturkey.resources;
 
 public enum Scope {
 	PROJECT, SYSTEM, USER, PROJECT_USER

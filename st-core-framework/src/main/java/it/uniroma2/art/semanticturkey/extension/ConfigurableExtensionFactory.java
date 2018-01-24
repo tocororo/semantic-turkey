@@ -2,9 +2,16 @@ package it.uniroma2.art.semanticturkey.extension;
 
 import java.util.Collection;
 
-import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 
-public interface ConfigurableExtensionFactory<ExtType extends Extension> extends ExtensionFactory<ExtType> {
+/**
+ * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
+ * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
+ *
+ * @param <EXTTYPE>
+ * @param <CONFIGTYPE>
+ */
+public interface ConfigurableExtensionFactory<EXTTYPE extends Extension, CONFIGTYPE extends Configuration> extends ExtensionFactory<EXTTYPE> {
 
 	/**
 	 * Instantiates an extension based on the given configuration object.
@@ -12,7 +19,7 @@ public interface ConfigurableExtensionFactory<ExtType extends Extension> extends
 	 * @param conf
 	 * @return
 	 */
-	ExtType createInstance(STProperties conf);
+	EXTTYPE createInstance(CONFIGTYPE conf);
 	
 	
 	/**
@@ -20,6 +27,6 @@ public interface ConfigurableExtensionFactory<ExtType extends Extension> extends
 	 * 
 	 * @return
 	 */
-	Collection<STProperties> getConfigurations();
+	Collection<CONFIGTYPE> getConfigurations();
 	
 }

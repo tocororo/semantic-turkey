@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.config;
+package it.uniroma2.art.semanticturkey.extension.settings;
 
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
@@ -7,6 +7,6 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  *
  */
-public interface Configuration extends STProperties {
+public interface Settings extends STProperties {
 
 }
