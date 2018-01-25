@@ -103,7 +103,7 @@ public class Projects extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI,
+		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
 				historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 				supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
