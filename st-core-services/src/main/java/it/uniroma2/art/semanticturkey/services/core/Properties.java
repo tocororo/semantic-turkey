@@ -741,7 +741,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removeSuperProperty(
 			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
-			@LocallyDefined IRI superProperty) {
+			IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
@@ -770,7 +770,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void removePropertyDomain(
 			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
-			@LocallyDefined Resource domain) {
+			Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
