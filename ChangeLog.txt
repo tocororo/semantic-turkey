@@ -1,5 +1,6 @@
 version 3.0-SNAPSHOT
 date: dd/mm/yyyy
+  * Changed license to BSD-3-Clause
   * Added the list langs parameter in search ( ST-838 ).  
   * Implemented new ICVs.
   * Implemented export of SPARQL query results in datasheet (for tuple and graph query) and rdf (only for graph
