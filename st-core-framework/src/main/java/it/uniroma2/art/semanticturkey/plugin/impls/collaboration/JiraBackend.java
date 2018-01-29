@@ -28,6 +28,7 @@ import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
 import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -652,6 +653,15 @@ public class JiraBackend extends
 			prjResponseArray.add(issueRedux);
 		}		
 		return prjResponseArray;
+	}
+	
+	@Override
+	public boolean isProjectLinked() throws STPropertyAccessException {
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
+		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null;
 	}
 
 	
