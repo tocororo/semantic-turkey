@@ -11,11 +11,20 @@ import java.util.Collection;
  */
 public interface SystemConfigurationManager<CONFTYPE extends Configuration> extends ConfigurationManager<CONFTYPE> {
 
-	Collection<String> getSystemConfigurationIdentifiers();
+	default Collection<String> getSystemConfigurationIdentifiers() {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	CONFTYPE getSystemConfiguration(String identifier);
+	default CONFTYPE getSystemConfiguration(String identifier) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	void storeSystemConfiguration(String identifier, CONFTYPE configuration);
+	default void storeSystemConfiguration(String identifier, CONFTYPE configuration) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
 	
 }

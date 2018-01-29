@@ -17,8 +17,13 @@ import org.apache.commons.lang3.reflect.TypeUtils;
  *
  * @param <EXTTYPE>
  */
-public interface ExtensionFactory<EXTTYPE extends Extension> {
+public interface ExtensionFactory<EXTTYPE extends Extension> extends IdentifiableComponent {
 
+	@Override
+	default String getId() {
+		return getExtensionType().getName();
+	}
+	
 	@SuppressWarnings("unchecked")
 	default Class<EXTTYPE> getExtensionType() {
 		for (Type t : getClass().getGenericInterfaces()) {

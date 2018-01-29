@@ -5,14 +5,19 @@ import it.uniroma2.art.semanticturkey.extension.config.SystemConfigurationManage
 import it.uniroma2.art.semanticturkey.resources.Scope;
 
 /**
- * A SystemScopedConfigurableExtensionPoint is able to look on configurations from the sole {@link Scope#SYSTEM} scope.
+ * A SystemScopedConfigurableComponent is able to look on configurations from the sole {@link Scope#SYSTEM} scope.
  * 
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  *
  * @param <CONFTYPE>
  */
-public interface SystemScopedConfigurableExtensionPoint<CONFTYPE extends Configuration>
-		extends ConfigurableExtensionPoint<CONFTYPE>, SystemConfigurationManager<CONFTYPE> {
+public interface SystemScopedConfigurableComponent<CONFTYPE extends Configuration>
+		extends ConfigurableComponent<CONFTYPE>, ScopedComponent, SystemConfigurationManager<CONFTYPE> {
+	
+	@Override
+	default Scope getScope() {
+		return Scope.SYSTEM;
+	}
 
 }

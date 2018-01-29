@@ -12,11 +12,20 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  */
 public interface UserConfigurationManager<CONFTYPE extends Configuration> extends ConfigurationManager<CONFTYPE> {
 
-	Collection<String> getUserConfigurationIdentifiers(STUser user);
+	default Collection<String> getUserConfigurationIdentifiers(STUser user) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	CONFTYPE getUserConfiguration(STUser user, String identifier);
+	default CONFTYPE getUserConfiguration(STUser user, String identifier) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	void storeUserConfiguration(STUser user, String identifier, CONFTYPE configuration);
+	default void storeUserConfiguration(STUser user, String identifier, CONFTYPE configuration) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
 	
 }

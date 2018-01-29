@@ -13,10 +13,19 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  */
 public interface PUConfigurationManager<CONFTYPE extends Configuration> extends ConfigurationManager<CONFTYPE> {
 
-	Collection<String> getProjectConfigurationIdentifiers(Project project, STUser user);
+	default Collection<String> getProjectConfigurationIdentifiers(Project project, STUser user) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	CONFTYPE getProjectConfiguration(Project project, STUser user, String identifier);
+	default CONFTYPE getProjectConfiguration(Project project, STUser user, String identifier) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	void storeProjectConfiguration(Project project, STUser user, String identifier, CONFTYPE configuration);
+	default void storeProjectConfiguration(Project project, STUser user, String identifier, CONFTYPE configuration) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
 }

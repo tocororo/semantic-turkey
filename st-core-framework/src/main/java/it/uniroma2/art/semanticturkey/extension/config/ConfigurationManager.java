@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.config;
 
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.extension.IdentifiableComponent;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -11,12 +12,22 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  *
  */
-public interface ConfigurationManager<CONFTYPE extends Configuration> {
+public interface ConfigurationManager<CONFTYPE extends Configuration> extends IdentifiableComponent {
 
-	Collection<Reference> getConfigurationReferences(Project project, STUser user);
+	/* @TODO implement! */
+	default Collection<Reference> getConfigurationReferences(Project project, STUser user) {
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	CONFTYPE getConfiguration(Reference reference);
+	/* @TODO implement! */
+	default CONFTYPE getConfiguration(Reference reference) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	void storeConfiguration(Reference reference, CONFTYPE configuration);
+	/* @TODO implement! */
+	default void storeConfiguration(Reference reference, CONFTYPE configuration) {
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
 }

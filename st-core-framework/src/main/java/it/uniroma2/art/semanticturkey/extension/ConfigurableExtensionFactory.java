@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.extension;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
+import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
@@ -11,7 +12,7 @@ import it.uniroma2.art.semanticturkey.extension.config.Configuration;
  * @param <EXTTYPE>
  * @param <CONFIGTYPE>
  */
-public interface ConfigurableExtensionFactory<EXTTYPE extends Extension, CONFIGTYPE extends Configuration> extends ExtensionFactory<EXTTYPE> {
+public interface ConfigurableExtensionFactory<EXTTYPE extends Extension, CONFIGTYPE extends Configuration> extends ExtensionFactory<EXTTYPE>, ConfigurationManager<CONFIGTYPE> {
 
 	/**
 	 * Instantiates an extension based on the given configuration object.

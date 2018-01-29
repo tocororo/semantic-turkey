@@ -19,7 +19,7 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  *
  * @param <T>
  */
-public interface PUSettingsManager<T extends Settings> extends SettingsManager<T> {
+public interface PUSettingsManager<T extends Settings> extends SettingsManager {
 
 	// Collection<String> getProjectSettingsIdentifiers(Project project, STUser user);
 
@@ -33,7 +33,7 @@ public interface PUSettingsManager<T extends Settings> extends SettingsManager<T
 						try {
 							T settings = (T) TypeUtils.getRawType(entry.getValue(), null).newInstance();
 							STPropertiesManager.getProjectPreferences(settings, project, user,
-									getExtensionId());
+									getId());
 							return settings;
 						} catch (InstantiationException | IllegalAccessException e) {
 							throw new STPropertyAccessException(e);
@@ -49,7 +49,7 @@ public interface PUSettingsManager<T extends Settings> extends SettingsManager<T
 
 	default void storeProjectSettings(Project project, STUser user, /* String identifier, */ T settings)
 			throws STPropertyUpdateException {
-		STPropertiesManager.setProjectPreferences(settings, project, user, getExtensionId(), true);
+		STPropertiesManager.setProjectPreferences(settings, project, user, getId(), true);
 	}
 
 }

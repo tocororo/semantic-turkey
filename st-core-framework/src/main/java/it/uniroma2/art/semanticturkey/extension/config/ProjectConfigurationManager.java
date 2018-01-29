@@ -12,10 +12,19 @@ import it.uniroma2.art.semanticturkey.project.Project;
  */
 public interface ProjectConfigurationManager<CONFTYPE extends Configuration> extends ConfigurationManager<CONFTYPE> {
 
-	Collection<String> getProjectConfigurationIdentifiers(Project project);
+	default Collection<String> getProjectConfigurationIdentifiers(Project project) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	CONFTYPE getProjectConfiguration(Project project, String identifier);
+	default CONFTYPE getProjectConfiguration(Project project, String identifier) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
-	void storeProjectConfiguration(Project project, String identifier, CONFTYPE configuration);
+	default void storeProjectConfiguration(Project project, String identifier, CONFTYPE configuration) {
+		// @TODO
+		throw new RuntimeException("still not implemented!!!");
+	}
 	
 }

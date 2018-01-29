@@ -9,10 +9,10 @@ import it.uniroma2.art.semanticturkey.extension.config.UserConfigurationManager;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 
 /**
- * A UserScopedConfigurableExtensionPoint is able to look on configurations from all different {@link Scope}s.
- * If a more restricted configuration management capability is needed for a certain extension point, it is
- * possible to separately implement the various {@link ConfigurationManager} subclasses. Please notice that if
- * the scope of the extension point is {@link Scope#USER}, neither {@link ProjectConfigurationManager} nor
+ * A UserScopedConfigurableComponent is able to look on configurations from all different {@link Scope}s. If a
+ * more restricted configuration management capability is needed for a certain extension point, it is possible
+ * to separately implement the various {@link ConfigurationManager} subinterfaces. Please notice that if the
+ * scope of the extension point is {@link Scope#USER}, neither {@link ProjectConfigurationManager} nor
  * {@link PUConfigurationManager} should be implemented, thus restricting the choice to the removal of
  * {@link SystemConfigurationManager} only
  * 
@@ -21,8 +21,13 @@ import it.uniroma2.art.semanticturkey.resources.Scope;
  *
  * @param <CONFTYPE>
  */
-public interface UserScopedConfigurableExtensionPoint<CONFTYPE extends Configuration>
-		extends ConfigurableExtensionPoint<CONFTYPE>, SystemConfigurationManager<CONFTYPE>,
+public interface UserScopedConfigurableComponent<CONFTYPE extends Configuration>
+		extends ConfigurableComponent<CONFTYPE>, ScopedComponent, SystemConfigurationManager<CONFTYPE>,
 		UserConfigurationManager<CONFTYPE> {
+
+	@Override
+	default Scope getScope() {
+		return Scope.USER;
+	}
 
 }

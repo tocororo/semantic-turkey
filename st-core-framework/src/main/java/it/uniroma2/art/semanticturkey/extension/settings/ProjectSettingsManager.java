@@ -18,7 +18,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
  *
  * @param <T>
  */
-public interface ProjectSettingsManager<T extends Settings> extends SettingsManager<T> {
+public interface ProjectSettingsManager<T extends Settings> extends SettingsManager {
 
 	// Collection<String> getProjectSettingsIdentifiers(Project project);
 
@@ -32,7 +32,7 @@ public interface ProjectSettingsManager<T extends Settings> extends SettingsMana
 						try {
 							T settings = (T) TypeUtils.getRawType(entry.getValue(), null)
 									.newInstance();
-							STPropertiesManager.getProjectSettings(settings, project, getExtensionId());
+							STPropertiesManager.getProjectSettings(settings, project, getId());
 							return settings;
 						} catch (InstantiationException | IllegalAccessException e) {
 							throw new STPropertyAccessException(e);
@@ -48,7 +48,7 @@ public interface ProjectSettingsManager<T extends Settings> extends SettingsMana
 
 	default void storeProjectSettings(Project project /* , String identifier */, T settings)
 			throws STPropertyUpdateException {
-		STPropertiesManager.setProjectSettings(settings, project, getExtensionId(), true);
+		STPropertiesManager.setProjectSettings(settings, project, getId(), true);
 	}
 
 }

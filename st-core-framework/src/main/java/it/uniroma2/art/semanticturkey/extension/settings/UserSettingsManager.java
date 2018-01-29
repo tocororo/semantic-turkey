@@ -18,7 +18,7 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  *
  * @param <T>
  */
-public interface UserSettingsManager<T extends Settings> extends SettingsManager<T> {
+public interface UserSettingsManager<T extends Settings> extends SettingsManager {
 
 	// Collection<String> getUserSettingsIdentifiers(STUser user);
 
@@ -31,7 +31,7 @@ public interface UserSettingsManager<T extends Settings> extends SettingsManager
 					if (entry.getKey().getGenericDeclaration() == UserSettingsManager.class) {
 						try {
 							T settings = (T) TypeUtils.getRawType(entry.getValue(), null).newInstance();
-							STPropertiesManager.getSystemPreferences(settings, user, getExtensionId());
+							STPropertiesManager.getSystemPreferences(settings, user, getId());
 							return settings;
 						} catch (InstantiationException | IllegalAccessException e) {
 							throw new STPropertyAccessException(e);
@@ -47,7 +47,7 @@ public interface UserSettingsManager<T extends Settings> extends SettingsManager
 
 	default void storeUserSettings(STUser user /* , String identifier */, T settings)
 			throws STPropertyUpdateException {
-		STPropertiesManager.setSystemPreferences(settings, user, getExtensionId(), true);
+		STPropertiesManager.setSystemPreferences(settings, user, getId(), true);
 	}
 
 }

@@ -1,11 +1,13 @@
 package it.uniroma2.art.semanticturkey.extension;
 
-import it.uniroma2.art.semanticturkey.resources.Scope;
+public interface ExtensionPoint extends IdentifiableComponent, ScopedComponent {
 
-public interface ExtensionPoint {
-
+	@Override
+	default String getId() {
+		return getInterface().getName();
+	}
+	
 	Class<?> getInterface();
 	
-	Scope getScope();
 	
 }
