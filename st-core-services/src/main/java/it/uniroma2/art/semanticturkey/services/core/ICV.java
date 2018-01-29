@@ -957,7 +957,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <resources> with overlapped lexicalization
+	 * Return a list of different <resources> with same lexicalization
 	 * @param rolesArray
 	 * @return
 	 * @throws UnsupportedLexicalizationModelException 
@@ -965,7 +965,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcesWithOverlappedLabels(RDFResourceRole[] rolesArray) 
+	public Collection<AnnotatedValue<Resource>> listResourcesWithSameLabels(RDFResourceRole[] rolesArray) 
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
@@ -983,18 +983,63 @@ public class ICV extends STServiceAdapter {
 			query += "?resource "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel .\n"
 					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
 					+ "?resource2 "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel2 .\n"
-					+ "?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label2 .\n";
+					+ "?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n";
 		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
 			query += "?resource "+getSkosPrefOrAltOrHidden()+" ?attr_label .\n"
-					+ "?resource2 "+getSkosPrefOrAltOrHidden()+" ?attr_label2 .\n";
+					+ "?resource2 "+getSkosPrefOrAltOrHidden()+" ?attr_label .\n";
 		} else {
 			query += "?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label .\n"
-					+ "?resource2 "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label2 .\n";
+					+ "?resource2 "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label .\n";
 		}
 		
 		query += "FILTER(?resource != ?resource2) \n"
-				+ "FILTER(?attr_label = ?attr_label2) \n"
 				+"}\n"
+				+ "GROUP BY ?resource ?attr_xlabel ?attr_label";
+		
+		logger.debug("query [listResourcesWithSameLabels]:\n" + query);
+		QueryBuilder qb = createQueryBuilder(query);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
+	
+	/**
+	 * Return a list of <resources> with overlapped lexicalization (resource with same label mutiple times)
+	 * @param rolesArray
+	 * @return
+	 * @throws UnsupportedLexicalizationModelException 
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listResourcesWithOverlappedLabels(RDFResourceRole[] rolesArray) 
+			throws UnsupportedLexicalizationModelException  {
+		IRI lexModel = getProject().getLexicalizationModel();
+		
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
+			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
+			throw new UnsupportedLexicalizationModelException(msg);
+		}
+		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label \n"
+				+ "WHERE {\n";
+		query+=rolePartForQuery(rolesArray, "?resource");
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
+			query += "?resource "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel .\n"
+					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
+					+ "?resource "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel2 .\n"
+					+ "?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
+					+ "FILTER(?attr_xlabel != ?attr_xlabel2)";
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
+			query += "?resource "+getSkosPrefOrAltOrHidden()+" ?attr_label .\n"
+					+ "?resource ?propLex1 ?attr_label .\n"
+					+ "?resource ?propLex2 ?attr_label .\n"
+					+ "FILTER(?propLex1 != ?propLex2)";
+		}
+		
+		query += "}\n"
 				+ "GROUP BY ?resource ?attr_xlabel ?attr_label";
 		
 		logger.debug("query [listResourcesWithOverlappedLabels]:\n" + query);
