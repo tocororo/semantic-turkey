@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf;
+package it.uniroma2.art.semanticturkey.extension.impl.urigen.coda;
 
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory;

@@ -261,4 +261,37 @@
 		ref="CODACoreProvider">
 	</osgi:service>
 
+
+	<!-- Instantiates the ExtensionPointManager implementation -->
+	<bean id="extensionPointManager"
+		class="it.uniroma2.art.semanticturkey.extension.impl.ExtensionPointManagerImpl" />
+
+	<!-- Publishes the ExtensionPointerManager as an OSGi service -->
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.extension.ExtensionPointManager"
+		ref="extensionPointManager">
+	</osgi:service>
+
+	<!-- Publishes the URIGenerator extension point -->
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.extension.ExtensionPoint">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the Native Template-based URIGenerator extension -->
+
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.extension.ExtensionFactory">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorFactory" />
+	</osgi:service>
+
+	<!-- Publishes the CODA-based URIGenerator extension -->
+
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.extension.ExtensionFactory">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory" />
+	</osgi:service>
 </beans>

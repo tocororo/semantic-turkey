@@ -15,9 +15,8 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
@@ -34,10 +33,10 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 
 	private Properties convProps;
 
-	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorConfiguration conf) {
+	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorSettings conf) {
 		this.converter = new TemplateBasedRandomIdGenerator();
 
-		convProps = new Properties(conf.getBackingProperties());
+		convProps = new Properties();
 
 		propsMap = new HashMap<>();
 		propsMap.put(TemplateBasedRandomIdGenerator.CONVERTER_URI, convProps);

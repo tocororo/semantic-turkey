@@ -1,10 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.settings;
 
-import java.util.Collection;
-
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.resources.Reference;
-import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
@@ -13,10 +10,21 @@ import it.uniroma2.art.semanticturkey.user.STUser;
  */
 public interface SettingsManager<T extends Settings> {
 
-	Collection<Reference> getSettingReferences(Project project, STUser user);
+	default String getExtensionId() {
+		if (this instanceof ExtensionFactory) {
+			return ((ExtensionFactory<?>)this).getExtensionType().getName();
+		} else if (this instanceof ExtensionPoint) {
+			return ((ExtensionPoint)this).getInterface().getName();
+		} else {
+			throw new IllegalStateException("Could not determine extension id");
+		}
+	}
 	
-	T getSetting(Reference reference);
 	
-	void storeSetting(Reference reference, T configuration);
+//	Collection<Reference> getSettingReferences(Project project, STUser user);
+	
+//	T getSetting(Reference reference);
+	
+//	void storeSetting(Reference reference, T configuration);
 	
 }

@@ -4,6 +4,8 @@ import it.uniroma2.art.semanticturkey.resources.Scope;
 
 public interface ExtensionPoint {
 
+	Class<?> getInterface();
+	
 	Scope getScope();
 	
 }

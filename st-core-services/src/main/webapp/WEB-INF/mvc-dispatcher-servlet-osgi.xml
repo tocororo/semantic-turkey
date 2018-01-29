@@ -22,6 +22,9 @@
 	<osgi:reference id="codaOSGiFactory"
 		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
 
+	<osgi:reference id="extensionPointManager"
+		interface="it.uniroma2.art.semanticturkey.extension.ExtensionPointManager" />
+
 
 	<osgi:service ref="stSpecificRandomIDGenerator"
 		interface="it.uniroma2.art.coda.interfaces.Converter">

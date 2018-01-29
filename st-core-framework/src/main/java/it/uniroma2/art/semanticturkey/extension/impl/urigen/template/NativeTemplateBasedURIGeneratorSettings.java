@@ -6,12 +6,12 @@ import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURI
 /**
  * Configuration class for {@link NativeTemplateBasedURIGeneratorFactory}.
  */
-public class NativeTemplateBasedURIGeneratorConfiguration implements Settings {
+public class NativeTemplateBasedURIGeneratorSettings implements Settings {
 
 //	private Properties props;
 //	private Properties propDescriptions;
 	
-	public NativeTemplateBasedURIGeneratorConfiguration() {
+	public NativeTemplateBasedURIGeneratorSettings() {
 //		this.props = new Properties(TemplateBasedRandomIdGenerator.defaultPropertyValues);
 //		this.propDescriptions = new Properties(TemplateBasedRandomIdGenerator.defaultPropertyDescriptions);
 	}
