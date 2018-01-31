@@ -619,8 +619,15 @@ public class ICV extends STServiceAdapter {
 		String q = "SELECT ?resource WHERE {\n"
 				+ "?resource a <" + SKOSXL.LABEL + "> .\n"
 				+ "FILTER NOT EXISTS {\n" 
-				+ "?concept <" + SKOSXL.PREF_LABEL + "> | <" + SKOSXL.ALT_LABEL + "> | <" + SKOSXL.HIDDEN_LABEL + "> ?resource.\n"
-				+ "} } GROUP BY ?resource";
+				+ "?concept <" + SKOSXL.PREF_LABEL + "> ?resource.\n"
+				+ "}\n"
+				+ "FILTER NOT EXISTS {\n" 
+				+ "?concept <" + SKOSXL.ALT_LABEL + "> ?resource.\n"
+				+ "}\n"
+				+ "FILTER NOT EXISTS {\n" 
+				+ "?concept <" + SKOSXL.HIDDEN_LABEL + "> ?resource.\n"
+				+ "}\n"
+				+ "} GROUP BY ?resource";
 		logger.debug("query [listDanglingXLabels]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRole();
