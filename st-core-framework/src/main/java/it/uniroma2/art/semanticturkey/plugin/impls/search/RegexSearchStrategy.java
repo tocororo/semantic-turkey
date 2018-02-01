@@ -44,7 +44,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
+					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -69,7 +70,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchModePrepareQuery("?localName", searchString, searchMode, null) +
+					searchModePrepareQuery("?localName", searchString, searchMode, null, includeLocales) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -79,7 +80,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+
-					searchModePrepareQuery("?complURI", searchString, searchMode, null) +
+					searchModePrepareQuery("?complURI", searchString, searchMode, null, includeLocales) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -87,20 +88,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
-				searchModePrepareQuery("?rdfsLabel", searchString, searchMode, langs) +
+				searchModePrepareQuery("?rdfsLabel", searchString, searchMode, langs, includeLocales) +
 				"\n}"+
 		//search in skos:prefLabel and skos:altLabel
 				"\nUNION" +
 				"\n{" +
 				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?skosLabel ."+
-				searchModePrepareQuery("?skosLabel", searchString, searchMode, langs) +
+				searchModePrepareQuery("?skosLabel", searchString, searchMode, langs, includeLocales) +
 				"\n}" +
 				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				"\nUNION" +
 				"\n{" +
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
-				searchModePrepareQuery("?literalForm", searchString, searchMode, langs) +
+				searchModePrepareQuery("?literalForm", searchString, searchMode, langs, includeLocales) +
 				"\n}";
 				
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!		
@@ -127,7 +128,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
+					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
@@ -146,7 +148,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchModePrepareQuery("?localName", searchString, searchMode, null) +
+					searchModePrepareQuery("?localName", searchString, searchMode, null, includeLocales) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -154,20 +156,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?label ." +
-				searchModePrepareQuery("?label", searchString, searchMode, langs) +
+				searchModePrepareQuery("?label", searchString, searchMode, langs, includeLocales) +
 				"\n}"+
 		//search in skos:prefLabel and skos:altLabel
 				"\nUNION" +
 				"\n{" +
 				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				searchModePrepareQuery("?label", searchString, searchMode, langs) +
+				searchModePrepareQuery("?label", searchString, searchMode, langs, includeLocales) +
 				"\n}" +
 		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				"\nUNION" +
 				"\n{" +
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				searchModePrepareQuery("?label", searchString, searchMode, langs) +
+				searchModePrepareQuery("?label", searchString, searchMode, langs, includeLocales) +
 				"\n}";		
 		
 		query+="\n}";
@@ -204,7 +206,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			//no roles is selected, so add a simple triple, otherwise the FILTER may not work
 			query += "\n?resource a ?type .";
 		}
-		query += searchModePrepareQuery("?resource", searchString, searchMode, null)+
+		query += searchModePrepareQuery("?resource", searchString, searchMode, null, false)+
 				"\n}";
 		//@formatter:on
 
@@ -217,7 +219,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
 			IRI cls, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<String> langs, boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -244,7 +246,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		if(useLocalName){
 			query+="\n{" +
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchModePrepareQuery("?localName", searchString, searchMode, null) +
+					searchModePrepareQuery("?localName", searchString, searchMode, null, false) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -253,7 +255,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		if(useURI){
 			query+="\n{" +
 					"\nBIND(str(?resource) AS ?complURI)"+
-					searchModePrepareQuery("?complURI", searchString, searchMode, null) +
+					searchModePrepareQuery("?complURI", searchString, searchMode, null, false) +
 					"\n}"+
 					"\nUNION";
 		}
@@ -261,7 +263,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
-				searchModePrepareQuery("?rdfsLabel", searchString, searchMode, langs) +
+				searchModePrepareQuery("?rdfsLabel", searchString, searchMode, langs, false) +
 				"\n}";
 		
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
@@ -287,7 +289,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	}
 
 	private String searchModePrepareQuery(String variable, String value, SearchMode searchMode,
-			List <String> langs) {
+			List <String> langs, boolean includeLocales) {
 		String query = "";
 
 		if (searchMode == SearchMode.startsWith) {
@@ -309,7 +311,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					query+=" || ";
 				}
 				first=false;
-				query+="lang("+variable+")="+"'"+lang+"'";
+				if(includeLocales) {
+					query+="regex(lang("+variable+"), '^"+lang+"')";
+				} else {
+					query+="lang("+variable+")="+"'"+lang+"'";
+				}
 			}
 			query+=")";
 		}

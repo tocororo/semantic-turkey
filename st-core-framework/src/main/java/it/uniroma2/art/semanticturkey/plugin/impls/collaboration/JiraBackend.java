@@ -28,6 +28,7 @@ import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
 import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -490,22 +491,26 @@ public class JiraBackend extends
 		
 		
 		ArrayNode issuesArray = (ArrayNode) rootNode.get("issues");
-		Map<String, List<ObjectNode>> resToIssuesMap = new HashMap<>();
+		//Map<String, List<ObjectNode>> resToIssuesMap = new HashMap<>();
+		List<ObjectNode> issueNodeList = new ArrayList<>();
+		List<String> issueIdList = new ArrayList<>();
+		
 		for(int i=0; i<issueNum; i++) {
 			JsonNode issue = issuesArray.get(i);
 			ObjectNode issueRedux = parseIssue(issue, projectSettings);
-			ArrayNode labelsArray = (ArrayNode) issueRedux.get("labels");
-			for(JsonNode labelNode : labelsArray) {
-				String res = labelNode.textValue();
-				if(resToIssuesMap.get(res)==null) {
-					resToIssuesMap.put(res, new ArrayList<>());
-				}
-				resToIssuesMap.get(res).add(issueRedux);
+			String issueId = issueRedux.get("id").asText();
+			if(!issueIdList.contains(issueId)) {
+				issueIdList.add(issueId);
+				issueNodeList.add(issueRedux);
 			}
 		}
-		//now construct the response
+		//now construct the response using the issue contained in the issueNodeList 
 		ArrayNode resToIssuesCompleteResponse = jsonFactory.arrayNode();
-		for(String res : resToIssuesMap.keySet()) {
+		for(ObjectNode issueRedux : issueNodeList) {
+			resToIssuesCompleteResponse.add(issueRedux);
+		}
+		
+		/*for(String res : resToIssuesMap.keySet()) {
 			ObjectNode singleResToIssue = jsonFactory.objectNode();
 			singleResToIssue.set("resource", jsonFactory.textNode(res));
 			issuesArray = jsonFactory.arrayNode();
@@ -515,7 +520,7 @@ public class JiraBackend extends
 			singleResToIssue.set("issues", issuesArray);
 			resToIssuesCompleteResponse.add(singleResToIssue);
 			
-		}
+		}*/
 		return resToIssuesCompleteResponse;
 	}
 	
@@ -653,6 +658,15 @@ public class JiraBackend extends
 		}		
 		return prjResponseArray;
 	}
+	
+	@Override
+	public boolean isProjectLinked() throws STPropertyAccessException {
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
+		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null;
+	}
 
 	
 	/*** PRVATE METHODS ***/
@@ -720,6 +734,10 @@ public class JiraBackend extends
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		
 		String issueId = issue.get("id").asText();
+		String summary ="";
+		if(issue.get("fields")!=null && issue.get("fields").get("status") !=null) {
+			summary = issue.get("fields").get("summary").asText();
+		}
 		String issueStatus="";
 		if(issue.get("fields")!=null && issue.get("fields").get("status") !=null &&
 				issue.get("fields").get("status").get("name")!=null) {
@@ -746,6 +764,7 @@ public class JiraBackend extends
 		}*/
 		ObjectNode issueRedux = jsonFactory.objectNode();
 		issueRedux.set("id", jsonFactory.textNode(issueId));
+		issueRedux.set("summary", jsonFactory.textNode(summary));
 		issueRedux.set("key", jsonFactory.textNode(issueKey));
 		issueRedux.set("status", jsonFactory.textNode(issueStatus));
 		issueRedux.set("url", jsonFactory.textNode(urlIssue));

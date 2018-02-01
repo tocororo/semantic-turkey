@@ -303,8 +303,8 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 	</repositories>
 	<licenses>
 		<license>
-			<name>BSD 2-Clause License</name>
-			<url>http://opensource.org/licenses/BSD-2-Clause</url>
+			<name>BSD-3-Clause</name>
+			<url>https://opensource.org/licenses/BSD-3-Clause</url>
 		</license>
 	</licenses>
 	<organization>

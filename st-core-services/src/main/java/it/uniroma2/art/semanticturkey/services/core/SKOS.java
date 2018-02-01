@@ -944,7 +944,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
-	public void removeConceptFromScheme(@LocallyDefined @Modified(role=RDFResourceRole.concept) @Subject IRI concept, @LocallyDefined IRI scheme){
+	public void removeConceptFromScheme(@LocallyDefined @Modified(role=RDFResourceRole.concept) @Subject IRI concept, IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -963,7 +963,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
 	public void removeTopConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
-			@LocallyDefined IRI scheme) {
+			IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -1030,7 +1030,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public void removeBroaderConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
-			@LocallyDefined IRI broaderConcept) {
+			IRI broaderConcept) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 

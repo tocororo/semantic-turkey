@@ -84,11 +84,11 @@ public class Search extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String[] rolesArray,
 			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<IRI> schemes,
-			@Optional List<String> langs)
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
-				useLocalName, useURI, searchMode, schemes, langs);
+				useLocalName, useURI, searchMode, schemes, langs, includeLocales);
 
 	}
 
@@ -97,11 +97,11 @@ public class Search extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<String> searchStringList(String searchString, @Optional String[] rolesArray,
 			boolean useLocalName, SearchMode searchMode, @Optional List<IRI> schemes, 
-			@Optional List<String> langs, @Optional IRI cls)
+			@Optional List<String> langs, @Optional IRI cls, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchStringList(stServiceContext, searchString, rolesArray,
-				useLocalName, searchMode, schemes, langs, cls);
+				useLocalName, searchMode, schemes, langs, cls, includeLocales);
 	}
 	
 	@STServiceOperation
@@ -119,11 +119,12 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString,
-			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<String> langs)
+			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<String> langs,
+			@Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, cls, searchString,
-				useLocalName, useURI, searchMode, langs);
+				useLocalName, useURI, searchMode, langs, includeLocales);
 
 	}
 

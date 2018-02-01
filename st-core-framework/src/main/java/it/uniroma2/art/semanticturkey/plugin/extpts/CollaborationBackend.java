@@ -45,4 +45,11 @@ public interface CollaborationBackend extends Plugin {
 	
 	public JsonNode listProjects()
 			throws STPropertyAccessException, IOException, HTTPJiraException;
+	
+	/**
+	 * Tells if a Collaboration project is linked to the VB project
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public boolean isProjectLinked() throws STPropertyAccessException;
 }
