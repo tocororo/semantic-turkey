@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
+import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -87,7 +89,8 @@ public class Projects extends STServiceAdapter {
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, PUBindingException, RBACException {
+			UnloadablePluginConfigurationException, PUBindingException, RBACException,
+			ChangeTrackerParameterMismatchException, ChangeTrackerNotDetectedException {
 
 		// Expands defaults in the specification of sail configurers
 		coreRepoSailConfigurerSpecification.expandDefaults();
@@ -103,7 +106,7 @@ public class Projects extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI,
+		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
 				historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
 				coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 				supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,

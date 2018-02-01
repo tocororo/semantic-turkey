@@ -274,24 +274,30 @@
 
 	<!-- Publishes the URIGenerator extension point -->
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.extension.ExtensionPoint">
+	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint" />
 	</osgi:service>
 
 	<!-- Publishes the Native Template-based URIGenerator extension -->
 
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.extension.ExtensionFactory">
+	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorFactory" />
 	</osgi:service>
 
 	<!-- Publishes the CODA-based URIGenerator extension -->
 
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.extension.ExtensionFactory">
+	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory" />
 	</osgi:service>
+	
+	<!-- Publishes the RDFTransformer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint" />
+	</osgi:service>
+
 </beans>

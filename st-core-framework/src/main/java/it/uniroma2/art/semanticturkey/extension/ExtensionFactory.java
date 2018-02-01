@@ -26,16 +26,6 @@ public interface ExtensionFactory<EXTTYPE extends Extension> extends Identifiabl
 	
 	@SuppressWarnings("unchecked")
 	default Class<EXTTYPE> getExtensionType() {
-		for (Type t : getClass().getGenericInterfaces()) {
-			Map<TypeVariable<?>, Type> typeArgs = TypeUtils.getTypeArguments(t, ExtensionFactory.class);
-			if (typeArgs != null) {
-				for (Entry<TypeVariable<?>, Type> entry : typeArgs.entrySet()) {
-					if (entry.getKey().getGenericDeclaration() == ExtensionFactory.class) {
-						return (Class<EXTTYPE>) TypeUtils.getRawType(entry.getValue(), null);
-					}
-				}
-			}
-		}
 
 		throw new IllegalStateException("Could not determine the extension type");
 	}

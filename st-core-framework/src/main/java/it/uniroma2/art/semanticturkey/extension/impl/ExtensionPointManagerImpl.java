@@ -1,9 +1,12 @@
 package it.uniroma2.art.semanticturkey.extension.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
@@ -16,8 +19,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionPointException;
+import it.uniroma2.art.semanticturkey.extension.config.Configuration;
+import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.user.STUser;
 
 public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
@@ -25,25 +37,33 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	private BundleContext context;
 	private ServiceTracker extensionPointTracker;
 	private ServiceTracker extensionFactoryTracker;
+	private ServiceTracker configurationManagerTracker;
 
 	@PostConstruct
 	public void init() {
 		extensionPointTracker = new ServiceTracker(context, ExtensionPoint.class.getName(), null);
 		extensionFactoryTracker = new ServiceTracker(context, ExtensionFactory.class.getName(), null);
-
+		configurationManagerTracker = new ServiceTracker(context, ConfigurationManager.class.getName(), null);
 		extensionPointTracker.open();
 		extensionFactoryTracker.open();
+		configurationManagerTracker.open();
 	}
 
 	@PreDestroy
 	public void destroy() {
-		if (extensionPointTracker != null) {
-			extensionPointTracker.close();
-		}
 		try {
+			if (extensionPointTracker != null) {
+				extensionPointTracker.close();
+			}
 		} finally {
-			if (extensionFactoryTracker != null) {
-				extensionFactoryTracker.close();
+			try {
+				if (extensionFactoryTracker != null) {
+					extensionFactoryTracker.close();
+				}
+			} finally {
+				if (configurationManagerTracker != null) {
+					configurationManagerTracker.close();
+				}
 			}
 		}
 	}
@@ -75,4 +95,36 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		throw new NoSuchExtensionPointException("Unrecognized extension point: " + identifier);
 	}
 
+	private ConfigurationManager<?> getConfigurationManager(String componentIdentifier)
+			throws NoSuchConfigurationManager {
+		for (Object confManager : configurationManagerTracker.getServices()) {
+			ConfigurationManager<?> confManager2 = (ConfigurationManager<?>) confManager;
+			if (Objects.equals(componentIdentifier, confManager2.getId())) {
+				return confManager2;
+			}
+		}
+
+		throw new NoSuchConfigurationManager("Unrecognized configuration manager: " + componentIdentifier);
+	}
+
+	@Override
+	public Collection<Reference> getConfigurationReferences(Project project, STUser user,
+			String componentIdentifier) throws NoSuchConfigurationManager {
+		return getConfigurationManager(componentIdentifier).getConfigurationReferences(project, user);
+	}
+
+	@Override
+	public Configuration getConfiguration(String componentIdentifier, Reference reference) throws IOException,
+			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager {
+		return getConfigurationManager(componentIdentifier).getConfiguration(reference);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void storeConfiguration(String componentIdentifier, Reference reference,
+			Map<String, Object> configuration) throws IOException, WrongPropertiesException, NoSuchConfigurationManager {
+		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
+		((ConfigurationManager) configurationManager).storeConfiguration(reference,
+				ConfigurationSupport.createConfiguration(configurationManager, configuration));
+	}
 }

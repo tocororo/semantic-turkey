@@ -1108,7 +1108,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getSystemPropertyFolder(String pluginID) {
+	public static File getSystemPropertyFolder(String pluginID) {
 		File prefFolder = new File(
 				Resources.getSystemDir() + File.separator + "plugins" + File.separator + pluginID);
 		if (!prefFolder.exists()) {
@@ -1124,7 +1124,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getProjectPropertyFolder(Project project, String pluginID) {
+	public static File getProjectPropertyFolder(Project project, String pluginID) {
 		File prefFolder = new File(Resources.getProjectsDir() + File.separator + project.getName()
 				+ File.separator + "plugins" + File.separator + pluginID);
 		if (!prefFolder.exists()) {
@@ -1140,7 +1140,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getUserPropertyFolder(STUser user, String pluginID) {
+	public static File getUserPropertyFolder(STUser user, String pluginID) {
 		File prefFolder = new File(
 				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
 						+ File.separator + "plugins" + File.separator + pluginID);
@@ -1158,7 +1158,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
+	public static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
 		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);

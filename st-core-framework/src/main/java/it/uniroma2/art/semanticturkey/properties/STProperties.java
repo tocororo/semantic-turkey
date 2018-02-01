@@ -12,6 +12,7 @@ import java.util.Enumeration;
 import java.util.Optional;
 import java.util.Properties;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 
 /**
@@ -19,6 +20,7 @@ import com.google.common.collect.Lists;
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
  *
  */
+@JsonSerialize(using = STPropertiesSerializer.class)
 public interface STProperties {
 
 	/**
