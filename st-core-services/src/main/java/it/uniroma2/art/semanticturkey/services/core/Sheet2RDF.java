@@ -64,12 +64,14 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.sheet2rdf.S2RDFContext;
 import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
 import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
 import it.uniroma2.art.sheet2rdf.header.Header;
 import it.uniroma2.art.sheet2rdf.header.HeadersStruct;
+import it.uniroma2.art.sheet2rdf.resolver.ConverterResolver;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManagerFactory;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
@@ -211,6 +213,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @throws PRParserException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Read
 	public void updateHeader(String headerId, 
 //			RDFTypesEnum rangeType,
 			@Optional IRI headerResource,
@@ -229,8 +232,18 @@ public class Sheet2RDF extends STServiceAdapter {
 		} else {
 			headers.add(header);
 		}
+		RepositoryConnection connection = getManagedConnection();
+		ConverterResolver converterResolver = new ConverterResolver(connection);
 		for (Header h : headers){
 			h.setHeaderResource(headerResource);
+			//TODO add a static method somewhere in order to run an update routine to the header?
+			//update isClass
+			h.setIsClass(S2RDFUtils.isClass(headerResource, connection)); 
+			//update converter
+			boolean explicitSubject = headersStruct.getHeader(0).getId().equals(header.getId()) && header.isClass(); 
+			CODAConverter converter = converterResolver.getConverter(headerResource, explicitSubject);
+			header.setConverter(converter);
+			
 //			h.setRangeType(rangeType);
 			
 			//set converter contract description retrieving the ConverterContractDescription object from its uri
@@ -511,26 +524,22 @@ public class Sheet2RDF extends STServiceAdapter {
 		return respJson;
 	}
 	
-//	/**
-//	 * Simply adds the triples generated to the model
-//	 * @return
-//	 * @throws UnsupportedRDFFormatException 
-//	 * @throws ModelUpdateException 
-//	 * @throws ModelAccessException 
-//	 * @throws IOException 
-//	 * @throws FileNotFoundException 
-//	 */
-//	@STServiceOperation
-//	public void addTriples() throws FileNotFoundException, IOException {
-//		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-//		List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
-//		for (SuggOntologyCoda sugg : suggTriples){
-//			List<ARTTriple> triples = sugg.getAllInsertARTTriple();
-//			for (ARTTriple t : triples){
-//				ctx.getConnection().add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-//			}
-//		}
-//	}
+	/**
+	 * Simply adds the triples generated to the model
+	 * @return
+	 */
+	@STServiceOperation
+	@Write
+	public void addTriples() {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
+		for (SuggOntologyCoda sugg : suggTriples){
+			List<ARTTriple> triples = sugg.getAllInsertARTTriple();
+			for (ARTTriple t : triples){
+				getManagedConnection().add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+			}
+		}
+	}
 	
 	@STServiceOperation
 	public void exportTriples(HttpServletResponse oRes, RDFFormat outputFormat) 
