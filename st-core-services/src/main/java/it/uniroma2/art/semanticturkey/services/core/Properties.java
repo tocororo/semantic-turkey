@@ -61,7 +61,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
@@ -621,7 +620,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public AnnotatedValue<IRI> createProperty(IRI propertyType,
-			@Subject @NotLocallyDefined @Created(role = RDFResourceRole.property) IRI newProperty,
+			@NotLocallyDefined @Created(role = RDFResourceRole.property) IRI newProperty,
 			@Optional IRI superProperty, @Optional CustomFormValue customFormValue)
 			throws ProjectInconsistentException, CODAException, CustomFormException {
 
@@ -683,7 +682,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void deleteProperty(@Subject @LocallyDefined IRI property) throws DeniedOperationException {
+	public void deleteProperty(@LocallyDefined IRI property) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		// first check if the property has any sub property
@@ -725,7 +724,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addSuperProperty(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@LocallyDefined IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -740,7 +739,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removeSuperProperty(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -755,7 +754,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public void addPropertyDomain(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@LocallyDefined Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -769,7 +768,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void removePropertyDomain(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -783,7 +782,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public void addPropertyRange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			Resource range) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -797,7 +796,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void removePropertyRange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			Resource range) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -812,7 +811,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void setDataRange(@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+	public void setDataRange(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2000/01/rdf-schema#range") IRI predicate,
 			List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -868,7 +867,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void removeDataranges(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject IRI property,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@LocallyDefined BNode datarange) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -925,7 +924,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'U')")
 	public void updateDataranges(
-			@Modified(role = RDFResourceRole.property) @Subject @LocallyDefined BNode datarange,
+			@Modified(role = RDFResourceRole.property) @LocallyDefined BNode datarange,
 			List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -967,7 +966,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public void addValueToDatarange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject Resource datarange,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange,
 			Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -1029,7 +1028,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public void addValuesToDatarange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject Resource datarange,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange,
 			@LocallyDefinedResources List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -1114,7 +1113,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
-	public Boolean hasValueInDatarange(@LocallyDefined @Subject Resource datarange, Literal literal) {
+	public Boolean hasValueInDatarange(@LocallyDefined Resource datarange, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		// @formatter:off
@@ -1145,7 +1144,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void removeValueFromDatarange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) @Subject Resource datarange,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange,
 			Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();

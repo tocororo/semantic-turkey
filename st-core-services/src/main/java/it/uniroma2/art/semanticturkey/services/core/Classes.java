@@ -55,7 +55,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
@@ -276,7 +275,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'C')")
-	public AnnotatedValue<IRI> createClass(@Subject @NotLocallyDefined @Created(role=RDFResourceRole.cls) IRI newClass, 
+	public AnnotatedValue<IRI> createClass(@NotLocallyDefined @Created(role=RDFResourceRole.cls) IRI newClass, 
 			@LocallyDefined IRI superClass,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2000/01/rdf-schema#Class") IRI classType,
 			@Optional CustomFormValue customFormValue)
@@ -316,7 +315,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'D')")
-	public void deleteClass(@Subject @LocallyDefined IRI cls) throws DeniedOperationException {
+	public void deleteClass(@LocallyDefined IRI cls) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		//first check if the class has any subClasses or instances
@@ -358,7 +357,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'C')")
-	public AnnotatedValue<IRI> createInstance(@Subject @NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
+	public AnnotatedValue<IRI> createInstance(@NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
 			@Optional CustomFormValue customFormValue)
 					throws ProjectInconsistentException, CODAException, CustomFormException {
 		
@@ -409,7 +408,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'D')")
-	public void deleteInstance(@Subject @LocallyDefined IRI instance) {
+	public void deleteInstance(@LocallyDefined IRI instance) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		String query = 
 				// @formatter:off
@@ -437,7 +436,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addSuperCls(@LocallyDefined @Modified(role=RDFResourceRole.cls) @Subject IRI cls, @LocallyDefined IRI supercls){
+	public void addSuperCls(@LocallyDefined @Modified(role=RDFResourceRole.cls) IRI cls, @LocallyDefined IRI supercls){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(cls, RDFS.SUBCLASSOF, supercls));
@@ -450,7 +449,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeSuperCls(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void removeSuperCls(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			IRI supercls) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -466,7 +465,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void addIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			List<String> clsDescriptions) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -484,7 +483,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void removeIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -502,7 +501,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void addUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			List<String> clsDescriptions) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -520,7 +519,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void removeUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -535,7 +534,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
-	public void addOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void addOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			List<IRI> individuals) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -550,7 +549,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
-	public void removeOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
+	public void removeOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();

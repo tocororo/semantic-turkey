@@ -11,14 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
@@ -67,7 +65,7 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'U')")
-	public void addType(@LocallyDefined @Modified @Subject Resource individual,
+	public void addType(@LocallyDefined @Modified Resource individual,
 			@LocallyDefined Resource type) {
 		String query =
 				//@formatter:off
@@ -93,7 +91,7 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'D')")
-	public void removeType(@LocallyDefined @Modified @Subject Resource individual, Resource type) {
+	public void removeType(@LocallyDefined @Modified Resource individual, Resource type) {
 		String query =
 				// @formatter:off
 				"DELETE WHERE {					\n" +
