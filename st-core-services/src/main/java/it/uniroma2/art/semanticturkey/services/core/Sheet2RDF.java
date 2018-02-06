@@ -404,7 +404,7 @@ public class Sheet2RDF extends STServiceAdapter {
 			pearlParser.parsePearlDocument(pearlStream);
 			pearlValid = true;
 		} catch (PRParserException e) {
-			System.out.println(e.getErrorAsString());
+//			System.out.println(e.getErrorAsString());
 			pearlValid = false;
 			details = e.getErrorAsString();
 		}

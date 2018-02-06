@@ -33,6 +33,7 @@ public class STUser implements UserDetails {
 	private String email;
 	private Collection<GrantedAuthority> authorities;
 	private String url;
+	private String avatarUrl;
 	private String phone;
 	private Date birthday;
 	private String gender;
@@ -147,6 +148,14 @@ public class STUser implements UserDetails {
 		this.url = url;
 	}
 	
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+	
+	public void setAvatarUrl(String avatarUrl) {
+		this.avatarUrl = avatarUrl;
+	}
+	
 	public String getPhone() {
 		return phone;
 	}
@@ -254,6 +263,7 @@ public class STUser implements UserDetails {
 		userJson.set("registrationDate", jsonFactory.textNode(new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(registrationDate)));
 		userJson.set("affiliation", jsonFactory.textNode(affiliation));
 		userJson.set("url", jsonFactory.textNode(url));
+		userJson.set("avatarUrl", jsonFactory.textNode(avatarUrl));
 		userJson.set("phone", jsonFactory.textNode(phone));
 		userJson.set("status", jsonFactory.textNode(status.name()));
 		userJson.set("admin", jsonFactory.booleanNode(isAdmin()));
@@ -275,6 +285,7 @@ public class STUser implements UserDetails {
 		s += "\nPassword: " + this.password;
 		s += "\ne-mail: " + this.email;
 		s += "\nUrl: " + this.url;
+		s += "\navatarUrl: " + this.avatarUrl;
 		s += "\nPhone: " + this.phone;
 		if (this.birthday != null) {
 			s += "\nBirthday: " + dateFormat.format(this.birthday);

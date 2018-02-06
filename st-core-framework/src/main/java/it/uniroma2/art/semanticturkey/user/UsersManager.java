@@ -290,6 +290,20 @@ public class UsersManager {
 	}
 	
 	/**
+	 * Updates the url of the given user and returns it updated
+	 * 
+	 * @param user
+	 * @param newValue
+	 * @return
+	 * @throws IOException
+	 */
+	public static STUser updateUserAvatarUrl(STUser user, String newValue) throws UserException {
+		user.setAvatarUrl(newValue);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+	
+	/**
 	 * Updates the language proficiencies of the given user and returns it updated
 	 * 
 	 * @param user
