@@ -93,7 +93,7 @@ public class Individuals extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'D')")
-	public void removeType(@LocallyDefined @Modified @Subject Resource individual, @LocallyDefined Resource type) {
+	public void removeType(@LocallyDefined @Modified @Subject Resource individual, Resource type) {
 		String query =
 				// @formatter:off
 				"DELETE WHERE {					\n" +

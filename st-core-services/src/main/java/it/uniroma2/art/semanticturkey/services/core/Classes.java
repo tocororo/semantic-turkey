@@ -451,7 +451,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeSuperCls(@LocallyDefined @Modified(role = RDFResourceRole.cls) @Subject IRI cls,
-			@LocallyDefined IRI supercls) {
+			IRI supercls) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(cls, RDFS.SUBCLASSOF, supercls));

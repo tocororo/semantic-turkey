@@ -34,12 +34,13 @@ public interface SearchStrategy {
 
 	Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI,
-			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs)
+			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs, boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls) throws IllegalStateException, 
+			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls, boolean includeLocales)
+					throws IllegalStateException, 
 			STPropertyAccessException;
 
 	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
@@ -49,5 +50,6 @@ public interface SearchStrategy {
 	
 	Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext, IRI cls,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Nullable List<String> langs) throws IllegalStateException, STPropertyAccessException;
+			@Nullable List<String> langs, boolean includeLocales) throws IllegalStateException, 
+			STPropertyAccessException;
 }

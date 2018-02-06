@@ -132,7 +132,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
+					throws IllegalStateException, STPropertyAccessException {
 
 		logger.debug("searchResource in GraphDBSearchStrategy, useURI="+useURI+", useLocalName="+useLocalName);
 		
@@ -145,7 +146,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs);
+		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
 		
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
@@ -177,7 +178,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
+					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
@@ -189,7 +191,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME, null)+
+							LUCENEINDEXLOCALNAME, null, false)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -201,7 +203,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs);
+		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
+				includeLocales);
 		
 		//search in the rdfs:label
 		query+="\n{" +
@@ -277,7 +280,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
 			IRI cls, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<String> langs) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<String> langs, boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -298,7 +301,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query += prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs);
+		query += prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
 				
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -323,7 +326,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	private String prepareQueryforResource(String searchString, SearchMode searchMode, boolean useLocalName, 
-			boolean useURI, List<String> langs) {
+			boolean useURI, List<String> langs, boolean includeLocales) {
 		String query="";
 		
 		
@@ -336,7 +339,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME, null)+
+							LUCENEINDEXLOCALNAME, null, false)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -357,7 +360,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs);
+		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
+				includeLocales);
 		
 		
 		//search in the rdfs:label
@@ -390,7 +394,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	private String searchModePrepareQueryWithIndexes(String variable, String value, SearchMode searchMode, 
-			String indexToUse, List<String> langs){
+			String indexToUse, List<String> langs, boolean includeLocales){
 		String query ="";
 		
 		if(searchMode == SearchMode.startsWith){
@@ -418,7 +422,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					query+=" || ";
 				}
 				first=false;
-				query+="lang("+variable+")="+"'"+lang+"'";
+				if(includeLocales) {
+					query+="regex(lang("+variable+"), '^"+lang+"')";
+				} else {
+					query+="lang("+variable+")="+"'"+lang+"'";
+				}
 			}
 			query+=")";
 		}
