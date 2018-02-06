@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -23,7 +22,6 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -83,46 +81,21 @@ public class Collaboration extends STServiceAdapter {
 		return pluginFactory.getProjectPreferences(getProject(), UsersManager.getLoggedUser());
 	}
 	
-	/*
-	 * TODO this service just tells if the required settings and the preferences of the collaboration system are set,
-	 * but it's not enough to know if it is enabled since in order to exploit the collaboration system,
-	 * it is necessary to have set the jiraPrjName and jiraPrjKey parameter in the settings, but this two parameters
-	 * are not required.
-	 */
-	@STServiceOperation
-	public Boolean isCollaborationEnabled(String backendId) throws STPropertyAccessException, PropertyNotFoundException {
-		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
-		//check if all mandatory settings are set
-		STProperties settings = pluginFactory.getProjectSettings(getProject());
-		Collection<String> propNames = settings.getProperties();
-		for (String pName : propNames) {
-			if (settings.isRequiredProperty(pName) && settings.getPropertyValue(pName) == null) {
-				return false;
-			}
-		}
-		//check if all mandatory preferences are set
-		STProperties preferences = pluginFactory.getProjectPreferences(getProject(), UsersManager.getLoggedUser());
-		propNames = preferences.getProperties();
-		for (String pName : propNames) {
-			if (settings.isRequiredProperty(pName) && settings.getPropertyValue(pName) == null) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	// This is a stub implementation that just writes the project settings/preferences. Indeed, it depends on
-	// the fact that the backend is stateless and that it can be recreated on-demand.
+	
 	@STServiceOperation(method = RequestMethod.POST)
 	public void activateCollaboratioOnProject(String backendId, Map<String, Object> projectSettings,
 			Map<String, Object> currentUserPreferences) throws STPropertyAccessException,
 			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException, 
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException, 
+			HTTPJiraException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
 		Project project = getProject();
 		pluginFactory.storeProjectSettings(project, projectSettings);
 		pluginFactory.storeProjectPreferences(project, UsersManager.getLoggedUser(), currentUserPreferences);
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
+		
+		//TODO check the parameters (url sbagliato, credenziali sbagliate, parametri progetto sbagliati)
+		getCollaborationBackend().checkPrjConfiguration();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -147,14 +120,16 @@ public class Collaboration extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createIssue(IRI resource, String summary, @Optional String description, 
-			@Optional String assignee) throws STPropertyAccessException, IOException, HTTPJiraException {
-		getCollaborationBackend().createIssue(resource.stringValue(), summary, description, assignee);
+			@Optional String assignee, @Optional String issueId) throws STPropertyAccessException, IOException, HTTPJiraException {
+		getCollaborationBackend().createIssue(resource.stringValue(), summary, description, assignee, issueId);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void assignProject(String projectName, String projectKey, @Optional String projectId)
+	public void assignProject(String projectName, String projectKey, String projectId)
 			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException {
 		getCollaborationBackend().assignProject(projectName, projectKey, projectId);
+		//TODO check the parameters (url sbagliato, credenziali sbagliate, parametri progetto sbagliati)
+		getCollaborationBackend().checkPrjConfiguration();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)

@@ -19,7 +19,9 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
  */
 public interface CollaborationBackend extends Plugin {
 
-	public void createIssue(String resource, String summary, String description, String assignee) 
+	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, HTTPJiraException ;
+	
+	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
 			throws STPropertyAccessException, IOException, HTTPJiraException;
 
 	public void assignProject(String projectName, String projectKey, String ProjectId)
