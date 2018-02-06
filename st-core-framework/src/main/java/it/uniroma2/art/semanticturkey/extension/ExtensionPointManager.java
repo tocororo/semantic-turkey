@@ -6,7 +6,10 @@ import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
@@ -61,5 +64,15 @@ public interface ExtensionPointManager {
 			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager;
 
 	void storeConfiguration(String componentIdentifier, Reference reference,
-			Map<String, Object> configuration) throws IOException, WrongPropertiesException, NoSuchConfigurationManager;
+			Map<String, Object> configuration)
+			throws IOException, WrongPropertiesException, NoSuchConfigurationManager;
+
+	Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
+			throws STPropertyAccessException, NoSuchSettingsManager;
+
+	Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
+
+	void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
+			Map<String, Object> settings)
+			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException;
 }

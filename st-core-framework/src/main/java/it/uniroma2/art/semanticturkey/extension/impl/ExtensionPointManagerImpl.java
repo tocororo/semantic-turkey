@@ -21,11 +21,17 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionPointException;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
@@ -38,15 +44,18 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	private ServiceTracker extensionPointTracker;
 	private ServiceTracker extensionFactoryTracker;
 	private ServiceTracker configurationManagerTracker;
+	private ServiceTracker settingsManagerTracker;
 
 	@PostConstruct
 	public void init() {
 		extensionPointTracker = new ServiceTracker(context, ExtensionPoint.class.getName(), null);
 		extensionFactoryTracker = new ServiceTracker(context, ExtensionFactory.class.getName(), null);
 		configurationManagerTracker = new ServiceTracker(context, ConfigurationManager.class.getName(), null);
+		settingsManagerTracker = new ServiceTracker(context, SettingsManager.class.getName(), null);
 		extensionPointTracker.open();
 		extensionFactoryTracker.open();
 		configurationManagerTracker.open();
+		settingsManagerTracker.open();
 	}
 
 	@PreDestroy
@@ -61,8 +70,14 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 					extensionFactoryTracker.close();
 				}
 			} finally {
-				if (configurationManagerTracker != null) {
-					configurationManagerTracker.close();
+				try {
+					if (configurationManagerTracker != null) {
+						configurationManagerTracker.close();
+					}
+				} finally {
+					if (settingsManagerTracker != null) {
+						settingsManagerTracker.close();
+					}
 				}
 			}
 		}
@@ -119,12 +134,45 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		return getConfigurationManager(componentIdentifier).getConfiguration(reference);
 	}
 
+	private SettingsManager getSettingsManager(String componentIdentifier) throws NoSuchSettingsManager {
+		for (Object settingsManager : settingsManagerTracker.getServices()) {
+			SettingsManager settingsManager2 = (SettingsManager) settingsManager;
+			if (Objects.equals(componentIdentifier, settingsManager2.getId())) {
+				return settingsManager2;
+			}
+		}
+
+		throw new NoSuchSettingsManager("Unrecognized settings manager: " + componentIdentifier);
+	}
+
+	@Override
+	public Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager {
+		return getSettingsManager(componentIdentifier).getSettingsScopes();
+	}
+
+	@Override
+	public Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
+			throws STPropertyAccessException, NoSuchSettingsManager {
+		return getSettingsManager(componentIdentifier).getSettings(project, user, scope);
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public void storeConfiguration(String componentIdentifier, Reference reference,
-			Map<String, Object> configuration) throws IOException, WrongPropertiesException, NoSuchConfigurationManager {
+			Map<String, Object> configuration)
+			throws IOException, WrongPropertiesException, NoSuchConfigurationManager {
 		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
 		((ConfigurationManager) configurationManager).storeConfiguration(reference,
 				ConfigurationSupport.createConfiguration(configurationManager, configuration));
 	}
+
+	@Override
+	public void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
+			Map<String, Object> settings)
+			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException {
+		SettingsManager settingsManager = getSettingsManager(componentIdentifier);
+		settingsManager.storeSettings(project, user, scope,
+				SettingsSupport.createSettings(settingsManager, scope, settings));
+	}
+
 }
