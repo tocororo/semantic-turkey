@@ -292,12 +292,110 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RDFTransformer extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the DeletePropertyValueRDFTransformer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the SPARQLRDFTransformer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the UpdatePropertyValueRDFTranformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTranformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the XLabelDereificationRDFTransformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the XNoteDereificationRDFTransformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the CollaborationBackend extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the JiraBackend extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendFactory" />
+	</osgi:service>
+
+	<!-- Publishes the DatasetMetadataExporter extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the ADMSDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the DCATDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the DCATAPDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the VOIDLIMEPDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the RepositoryImplConfigurer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the PredefinedRepositoryImplConfigurer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurerFactory" />
 	</osgi:service>
 
 </beans>

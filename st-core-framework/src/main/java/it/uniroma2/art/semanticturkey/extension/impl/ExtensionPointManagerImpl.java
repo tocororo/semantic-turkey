@@ -175,4 +175,17 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 				SettingsSupport.createSettings(settingsManager, scope, settings));
 	}
 
+	@Override
+	public Collection<ExtensionFactory<?>> getExtensions(String extensionPoint) {
+		ExtensionPoint expt = getExtensionPoint(extensionPoint);
+		Class<?> exptInt = expt.getInterface();
+		Collection<ExtensionFactory<?>> rv = new ArrayList<>();
+		for (Object extFactory : extensionFactoryTracker.getServices()) {
+			if (exptInt.isAssignableFrom(((ExtensionFactory<?>) extFactory).getExtensionType())) {
+				rv.add((ExtensionFactory<?>) extFactory);
+			}
+		}
+		return rv;
+	}
+
 }

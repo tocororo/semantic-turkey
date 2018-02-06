@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter;
+package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
@@ -9,25 +9,23 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.DeletePropertyValueExportFilterConfiguration;
-
 /**
- * An {@link ExportFilter} that removes some property values. If no <code>value</code> is provided, then it
+ * An {@link RDFTransformer} that removes some property values. If no <code>value</code> is provided, then it
  * will remove all triples with <code>resource</code> and <code>property</code> as subject an predicate,
  * respectively.
  *
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class DeletePropertyValueExportFilter implements ExportFilter {
+public class DeletePropertyValueRDFTransformer implements RDFTransformer {
 
 	private Resource resource;
 	private IRI property;
 	private Value value;
 
-	public DeletePropertyValueExportFilter(DeletePropertyValueExportFilterConfiguration config) {
+	public DeletePropertyValueRDFTransformer(DeletePropertyValueRDFTransformerConfiguration config) {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
 		this.resource = NTriplesUtil.parseResource(config.resource, vf);

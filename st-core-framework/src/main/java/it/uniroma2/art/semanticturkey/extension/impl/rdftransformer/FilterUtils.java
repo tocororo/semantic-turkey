@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter;
+package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer;
 
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -10,7 +10,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class FilterUtils {
+public abstract class FilterUtils {
 
 	/**
 	 * Returns the provided array of graphs, or return every graph (the name of which is an IRI) in case of an

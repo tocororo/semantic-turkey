@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.collaboration;
+package it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -24,11 +24,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendException;
-import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
-import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -37,8 +35,7 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
  * A {@link CollaborationBackend} for the <a href="https://jira.atlassian.com/">Atlassian Jira</a>
  *
  */
-public class JiraBackend extends
-		AbstractPlugin<STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences, JiraBackendFactory>
+public class JiraBackend
 		implements CollaborationBackend {
 
 	private Project stProject;
@@ -50,10 +47,12 @@ public class JiraBackend extends
 	
 	//private final String issueTypeId = "10002";
 	
-	private final String[] issueNameArray = {"Task", "New Feature", "Improvement", "Bug"}; 
+	private final String[] issueNameArray = {"Task", "New Feature", "Improvement", "Bug"};
+
+	private final JiraBackendFactory factory; 
 	
 	public JiraBackend(JiraBackendFactory factory) {
-		super(factory);
+		this.factory = factory;
 	}
 
 	@Override
@@ -68,8 +67,8 @@ public class JiraBackend extends
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
 		//first of all, do the login
@@ -140,8 +139,8 @@ public class JiraBackend extends
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
 		//first of all, do the login
@@ -233,14 +232,14 @@ public class JiraBackend extends
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		
 		//not used anymore, since projectId is mandatory, so there is no reason to get it from the projectKey
 		/*if(projectId==null) {
 			// since the projectId is not passed, ask Jira for the id associated to the project Key
 			//first of all, do the login
 			//the project ID is missing, so consult Jira to obtain such parameter
-			JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+			JiraBackendPreferences projectPreferences = factory.getProjectSettings(stProject,
 					UsersManager.getLoggedUser());
 			
 			CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
@@ -285,7 +284,7 @@ public class JiraBackend extends
 		projectSettings.jiraPrjId = projectId;
 		projectSettings.jiraPrjKey = projectKey;
 		projectSettings.jiraPrjName = projectName;
-		storeClassLevelProjectSettings(stProject, projectSettings);
+		factory.storeProjectSettings(stProject, projectSettings);
 	}
 		
 	@Override
@@ -295,8 +294,8 @@ public class JiraBackend extends
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
 		//first of all, do the login
@@ -357,7 +356,7 @@ public class JiraBackend extends
 		projectSettings.jiraPrjId = projectId;
 		projectSettings.jiraPrjKey = projectKey;
 		projectSettings.jiraPrjName = projectName;
-		storeClassLevelProjectSettings(stProject, projectSettings);
+		factory.storeProjectSettings(stProject, projectSettings);
 	}
 
 	@Override
@@ -365,8 +364,8 @@ public class JiraBackend extends
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
 		//first of all, do the login
@@ -419,8 +418,8 @@ public class JiraBackend extends
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
 		//first of all, do the login
@@ -507,8 +506,8 @@ public class JiraBackend extends
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
 		//first of all, do the login
@@ -617,8 +616,8 @@ public class JiraBackend extends
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
 		//first of all, do the login
@@ -685,8 +684,8 @@ public class JiraBackend extends
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
 		//first of all, do the login
@@ -750,7 +749,7 @@ public class JiraBackend extends
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
-		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null 
 				&& projectSettings.jiraPrjId!=null;
 	}
@@ -817,7 +816,7 @@ public class JiraBackend extends
 		}
 	}
 	
-	private ObjectNode parseIssue(JsonNode issue, JiraBackendSettings projectSettings) {
+	private ObjectNode parseIssue(JsonNode issue, JiraBackendProjectSettings projectSettings) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		
 		String issueId = issue.get("id").asText();
@@ -885,9 +884,9 @@ public class JiraBackend extends
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		String issueId = "";
 		
-		String urlString = getClassLevelProjectSettings(stProject).serverURL+"/rest/api/2/"+"issue/createmeta;"
+		String urlString = factory.getProjectSettings(stProject).serverURL+"/rest/api/2/"+"issue/createmeta;"
 				+ "?expand=projects.issuetypes.fields"
-				+ "&projectKeys="+getClassLevelProjectSettings(stProject).jiraPrjKey;
+				+ "&projectKeys="+factory.getProjectSettings(stProject).jiraPrjKey;
 		
 		URL url = new URL(urlString);
 		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();

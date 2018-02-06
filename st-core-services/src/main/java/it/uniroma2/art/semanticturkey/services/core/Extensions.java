@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
@@ -60,6 +61,17 @@ public class Extensions extends STServiceAdapter {
 	@STServiceOperation
 	public ExtensionPoint getExtensionPoint(String identifier) {
 		return exptManager.getExtensionPoint(identifier);
+	}
+	
+	/**
+	 * Returns known extensions for a given extension point
+	 * 
+	 * @param extensionPoint
+	 * @return
+	 */
+	@STServiceOperation
+	public Collection<ExtensionFactory<?>> getExtensions(String extensionPoint) {
+		return exptManager.getExtensions(extensionPoint);
 	}
 
 	/**

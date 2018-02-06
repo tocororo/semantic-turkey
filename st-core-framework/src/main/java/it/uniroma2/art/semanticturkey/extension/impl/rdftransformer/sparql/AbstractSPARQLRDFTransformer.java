@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter;
+package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql;
 
 import java.util.Arrays;
 
@@ -8,16 +8,16 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
 
 /**
- * An abstract {@link ExportFilter} that is based on the execution of a SPARQL Update supplied by a (concrete)
+ * An abstract {@link RDFTransformer} that is based on the execution of a SPARQL Update supplied by a (concrete)
  * subclass.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public abstract class AbstractSPARQLExportFilter implements ExportFilter {
+public abstract class AbstractSPARQLRDFTransformer implements RDFTransformer {
 
 	@Override
 	public void filter(RepositoryConnection sourceRepositoryConnection,

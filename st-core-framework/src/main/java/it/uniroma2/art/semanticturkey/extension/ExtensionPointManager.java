@@ -75,4 +75,6 @@ public interface ExtensionPointManager {
 	void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
 			Map<String, Object> settings)
 			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException;
+
+	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 }

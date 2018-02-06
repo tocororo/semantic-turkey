@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter;
+package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification;
 
 import java.util.List;
 
@@ -10,18 +10,17 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.XNoteDereificationExportFilterConfiguration;
 
 /**
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
  */
-public class XNoteDereificationExportFilter implements ExportFilter {
+public class XNoteDereificationRDFTransformer implements RDFTransformer {
 
 	private boolean preserveReifiedNotes;
 
-	public XNoteDereificationExportFilter(XNoteDereificationExportFilterConfiguration config) {
+	public XNoteDereificationRDFTransformer(XNoteDereificationRDFTransformerConfiguration config) {
 		preserveReifiedNotes = config.preserveReifiedNotes;
 	}
 

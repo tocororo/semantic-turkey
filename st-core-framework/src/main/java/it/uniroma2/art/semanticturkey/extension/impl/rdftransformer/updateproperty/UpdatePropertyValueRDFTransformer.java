@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.plugin.impls.exportfilter;
+package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
@@ -9,12 +9,11 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePropertyValueExportFilterConfiguration;
 
 /**
- * An {@link ExportFilter} that adds to a <code>resource</code> a given <code>value</code> for a certain
+ * An {@link RDFTransformer} that adds to a <code>resource</code> a given <code>value</code> for a certain
  * <code>property</code>. Before adding the new value, the filter does the following: if an
  * <code>oldValue</code> is specified, then the triple <code>&lt;resource, property,
  * oldValue&gt;</code> is deleted, otherwise every triple matching the pattern <code>&lt;resource, property,
@@ -23,14 +22,14 @@ import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.UpdatePrope
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class UpdatePropertyValueExportFilter implements ExportFilter {
+public class UpdatePropertyValueRDFTransformer implements RDFTransformer {
 
 	private Resource resource;
 	private IRI property;
 	private Value value;
 	private Value oldValue;
 
-	public UpdatePropertyValueExportFilter(UpdatePropertyValueExportFilterConfiguration config) {
+	public UpdatePropertyValueRDFTransformer(UpdatePropertyValueRDFTransformerConfiguration config) {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
 		this.resource = NTriplesUtil.parseResource(config.resource, vf);
