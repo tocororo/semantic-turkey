@@ -6,6 +6,7 @@ import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -77,4 +78,9 @@ public interface ExtensionPointManager {
 			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException;
 
 	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
+
+	ExtensionFactory<?> getExtension(String componentIdentifier);
+
+	URIGeneratorExtensionPoint getURIGenerator();
+	
 }

@@ -20,16 +20,20 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionPointException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -56,10 +60,14 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		extensionFactoryTracker.open();
 		configurationManagerTracker.open();
 		settingsManagerTracker.open();
+		
+		ProjectManager.setExtensionPointManager(this);
 	}
 
 	@PreDestroy
 	public void destroy() {
+		ProjectManager.setExtensionPointManager(null);
+
 		try {
 			if (extensionPointTracker != null) {
 				extensionPointTracker.close();
@@ -188,4 +196,19 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		return rv;
 	}
 
+	@Override
+	public ExtensionFactory<?> getExtension(String componentIdentifier) {
+		for (Object extFactory : extensionFactoryTracker.getServices()) {
+			if (((ExtensionFactory<?>)extFactory).getId().equals(componentIdentifier)) {
+				return (ExtensionFactory<?>)extFactory;
+			}
+		}
+		
+		throw new NoSuchExtensionException("Unrecognized extension: " + componentIdentifier);
+	}
+	
+	@Override
+	public URIGeneratorExtensionPoint getURIGenerator() {
+		return (URIGeneratorExtensionPoint)getExtensionPoint(URIGenerator.class.getName());
+	}
 }

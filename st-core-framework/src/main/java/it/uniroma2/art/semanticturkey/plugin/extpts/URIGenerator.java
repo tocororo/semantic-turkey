@@ -5,14 +5,13 @@ import java.util.Map;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 
-import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 /**
  * Extension point for the generation of URIs. Such a generation is performed, when it is not possible or
  * desired to generate a URI based on a provided local name.
  */
-public interface URIGenerator extends Extension {
+public interface URIGenerator {
 
 	public static final class Roles {
 		public static final String concept = "concept";
