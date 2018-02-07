@@ -27,6 +27,11 @@ import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
@@ -60,7 +65,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		extensionFactoryTracker.open();
 		configurationManagerTracker.open();
 		settingsManagerTracker.open();
-		
+
 		ProjectManager.setExtensionPointManager(this);
 	}
 
@@ -116,6 +121,41 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		}
 
 		throw new NoSuchExtensionPointException("Unrecognized extension point: " + identifier);
+	}
+
+	@Override
+	public CollaborationBackendExtensionPoint getCollaborationBackend() {
+		return ((CollaborationBackendExtensionPoint) getExtensionPoint(
+				CollaborationBackendExtensionPoint.class.getName()));
+	}
+
+	@Override
+	public DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter() {
+		return ((DatasetMetadataExporterExtensionPoint) getExtensionPoint(
+				DatasetMetadataExporterExtensionPoint.class.getName()));
+	}
+
+	@Override
+	public RDFTransformerExtensionPoint getRDFTransformer() {
+		return ((RDFTransformerExtensionPoint) getExtensionPoint(
+				RDFTransformerExtensionPoint.class.getName()));
+	}
+
+	@Override
+	public RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer() {
+		return ((RepositoryImplConfigurerExtensionPoint) getExtensionPoint(
+				RepositoryImplConfigurerExtensionPoint.class.getName()));
+	}
+
+	@Override
+	public SearchStrategyExtensionPoint getSearchStrategy() {
+		return ((SearchStrategyExtensionPoint) getExtensionPoint(
+				SearchStrategyExtensionPoint.class.getName()));
+	}
+
+	@Override
+	public URIGeneratorExtensionPoint getURIGenerator() {
+		return (URIGeneratorExtensionPoint) getExtensionPoint(URIGenerator.class.getName());
 	}
 
 	private ConfigurationManager<?> getConfigurationManager(String componentIdentifier)
@@ -199,16 +239,12 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@Override
 	public ExtensionFactory<?> getExtension(String componentIdentifier) {
 		for (Object extFactory : extensionFactoryTracker.getServices()) {
-			if (((ExtensionFactory<?>)extFactory).getId().equals(componentIdentifier)) {
-				return (ExtensionFactory<?>)extFactory;
+			if (((ExtensionFactory<?>) extFactory).getId().equals(componentIdentifier)) {
+				return (ExtensionFactory<?>) extFactory;
 			}
 		}
-		
+
 		throw new NoSuchExtensionException("Unrecognized extension: " + componentIdentifier);
 	}
-	
-	@Override
-	public URIGeneratorExtensionPoint getURIGenerator() {
-		return (URIGeneratorExtensionPoint)getExtensionPoint(URIGenerator.class.getName());
-	}
+
 }

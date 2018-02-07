@@ -6,6 +6,11 @@ import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -37,6 +42,15 @@ public interface ExtensionPointManager {
 	 */
 	ExtensionPoint getExtensionPoint(String identifier) throws NoSuchExtensionPointException;
 
+	CollaborationBackendExtensionPoint getCollaborationBackend();
+	DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter();
+	RDFTransformerExtensionPoint getRDFTransformer();
+	RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer();
+	SearchStrategyExtensionPoint getSearchStrategy();
+	URIGeneratorExtensionPoint getURIGenerator();
+	
+	
+	
 	/**
 	 * Returns the stored configurations associated with a given component
 	 * 
@@ -81,6 +95,4 @@ public interface ExtensionPointManager {
 
 	ExtensionFactory<?> getExtension(String componentIdentifier);
 
-	URIGeneratorExtensionPoint getURIGenerator();
-	
 }
