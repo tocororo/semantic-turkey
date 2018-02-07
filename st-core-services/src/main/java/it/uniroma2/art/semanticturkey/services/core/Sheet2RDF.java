@@ -193,8 +193,14 @@ public class Sheet2RDF extends STServiceAdapter {
 		
 		ObjectNode converterJson = jsonFactory.objectNode();
 		headerJson.set("converter", converterJson);
-		converterJson.set("uri", jsonFactory.textNode(h.getConverter().getContractUri()));
-		converterJson.set("type", jsonFactory.textNode(h.getConverter().getType().name()));
+		CODAConverter converter = h.getConverter();
+		if (converter != null) {
+			converterJson.set("uri", jsonFactory.textNode(h.getConverter().getContractUri()));
+			converterJson.set("type", jsonFactory.textNode(h.getConverter().getType().name()));
+		} else {
+			converterJson.set("uri", null);
+			converterJson.set("type", null);
+		}
 		
 		return headerJson;
 	}
@@ -240,8 +246,7 @@ public class Sheet2RDF extends STServiceAdapter {
 			//update isClass
 			h.setIsClass(S2RDFUtils.isClass(headerResource, connection)); 
 			//update converter
-			boolean explicitSubject = headersStruct.getHeader(0).getId().equals(header.getId()) && header.isClass(); 
-			CODAConverter converter = converterResolver.getConverter(headerResource, explicitSubject);
+			CODAConverter converter = converterResolver.getConverter(headerResource);
 			header.setConverter(converter);
 			
 //			h.setRangeType(rangeType);
@@ -417,7 +422,6 @@ public class Sheet2RDF extends STServiceAdapter {
 			pearlParser.parsePearlDocument(pearlStream);
 			pearlValid = true;
 		} catch (PRParserException e) {
-//			System.out.println(e.getErrorAsString());
 			pearlValid = false;
 			details = e.getErrorAsString();
 		}
