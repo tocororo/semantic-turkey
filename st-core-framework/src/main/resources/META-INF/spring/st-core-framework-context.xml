@@ -293,6 +293,35 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory" />
 	</osgi:service>
 
+	<!-- Publishes the RenderingEngine extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint" />
+	</osgi:service>
+	
+	<!-- Publishes the RDFSRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineFactory" />
+	</osgi:service>
+
+	<!-- Publishes the SKOSRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the SKOSXLRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineFactory" />
+	</osgi:service>
+
+	
 	<!-- Publishes the RDFTransformer extension point -->
 
 	<osgi:service auto-export="interfaces">

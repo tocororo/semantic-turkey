@@ -9,6 +9,7 @@ import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundExce
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
@@ -44,6 +45,7 @@ public interface ExtensionPointManager {
 
 	CollaborationBackendExtensionPoint getCollaborationBackend();
 	DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter();
+	RenderingEngineExtensionPoint getRenderingEngine();
 	RDFTransformerExtensionPoint getRDFTransformer();
 	RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer();
 	SearchStrategyExtensionPoint getSearchStrategy();

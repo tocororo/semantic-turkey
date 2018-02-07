@@ -27,10 +27,17 @@ import it.uniroma2.art.semanticturkey.extension.config.Configuration;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
@@ -125,32 +132,34 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 	@Override
 	public CollaborationBackendExtensionPoint getCollaborationBackend() {
-		return ((CollaborationBackendExtensionPoint) getExtensionPoint(
-				CollaborationBackendExtensionPoint.class.getName()));
+		return ((CollaborationBackendExtensionPoint) getExtensionPoint(CollaborationBackend.class.getName()));
 	}
 
 	@Override
 	public DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter() {
 		return ((DatasetMetadataExporterExtensionPoint) getExtensionPoint(
-				DatasetMetadataExporterExtensionPoint.class.getName()));
+				DatasetMetadataExporter.class.getName()));
+	}
+
+	@Override
+	public RenderingEngineExtensionPoint getRenderingEngine() {
+		return ((RenderingEngineExtensionPoint) getExtensionPoint(RenderingEngine.class.getName()));
 	}
 
 	@Override
 	public RDFTransformerExtensionPoint getRDFTransformer() {
-		return ((RDFTransformerExtensionPoint) getExtensionPoint(
-				RDFTransformerExtensionPoint.class.getName()));
+		return ((RDFTransformerExtensionPoint) getExtensionPoint(RDFTransformer.class.getName()));
 	}
 
 	@Override
 	public RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer() {
 		return ((RepositoryImplConfigurerExtensionPoint) getExtensionPoint(
-				RepositoryImplConfigurerExtensionPoint.class.getName()));
+				RepositoryImplConfigurer.class.getName()));
 	}
 
 	@Override
 	public SearchStrategyExtensionPoint getSearchStrategy() {
-		return ((SearchStrategyExtensionPoint) getExtensionPoint(
-				SearchStrategyExtensionPoint.class.getName()));
+		return ((SearchStrategyExtensionPoint) getExtensionPoint(SearchStrategy.class.getName()));
 	}
 
 	@Override
