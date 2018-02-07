@@ -398,4 +398,24 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurerFactory" />
 	</osgi:service>
 
+	<!-- Publishes the SearchStrategy extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint" />
+	</osgi:service>
+	
+	<!-- Publishes the GraphDBSearchStrategy extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategyFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the Regex extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategyFactory" />
+	</osgi:service>
 </beans>
