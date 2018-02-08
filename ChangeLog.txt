@@ -2,15 +2,23 @@ version 3.0
 date: 08/02/2018
   * Changed license to BSD-3-Clause.
   * Improved search enabling language restriction and including locales.  
+  * toggler for hiding the class instance count
   * Implemented new ICVs.
-  * Improved export of SPARQL query results, by adding the export in datasheet (for tuple and graph query) and rdf (only for graph
-  	query) formats and enabling the usage of export filters.
-  *	Implemented basic version of Collaboration System and Sheet2RDF tools.
+  * added the possibility to change the type of a class when creating it
+  * Enabled creation of RDFS projects (default type for classes is rdfs:Class)
+  * Improved export of SPARQL query results
+    * added the export to spreadsheet (for tuple and graph query) an rdf (only for graph query)
+    * introduced the export filters
+  *	Implemented alpha-test versions of Collaboration System and Sheet2RDF (marked as experimental)
+  * Introduced preferences for customization of class-tree viewing (e.g. default root class and filter on class' children).
   * Updated signature of creation services (createClass, createInstance, createProperty, createConcept, 
   	createConceptScheme, createCollection, spawnNewConceptFromLabel) using CustomFormValue parameter.
+  * Added support for the definition of mandatory languages for projects.
   * Fixed RepositoryReadOnlyException and NullPointerException when creating a version dump.
-  * Added the possibility to configure GraphDB SE repositories.
+  * Added the possibility to configure GraphDB SE (Standard Edition, paid version) repositories.
   * Changed capabilities of some default roles.
+  * Automatically update the ACL for a project after this has been modified
+  * intercept the exception of change tracking sail missing and provide a dedicated message
   * Bug fixes.
 
 version 2.0
