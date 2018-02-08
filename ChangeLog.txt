@@ -1,14 +1,16 @@
-version 3.0-SNAPSHOT
-date: dd/mm/yyyy
-  * Changed license to BSD-3-Clause
-  * Added the list langs parameter in search ( ST-838 ).  
+version 3.0
+date: 08/02/2018
+  * Changed license to BSD-3-Clause.
+  * Improved search enabling language restriction and including locales.  
   * Implemented new ICVs.
-  * Implemented export of SPARQL query results in datasheet (for tuple and graph query) and rdf (only for graph
-  	query) formats.
+  * Improved export of SPARQL query results, by adding the export in datasheet (for tuple and graph query) and rdf (only for graph
+  	query) formats and enabling the usage of export filters.
+  *	Implemented basic version of Collaboration System and Sheet2RDF tools.
   * Updated signature of creation services (createClass, createInstance, createProperty, createConcept, 
   	createConceptScheme, createCollection, spawnNewConceptFromLabel) using CustomFormValue parameter.
-  * Fixed RepositoryReadOnlyException and NullPointerException when creating a version dump
-  * Added the possibility to configure GraphDB SE repositories
+  * Fixed RepositoryReadOnlyException and NullPointerException when creating a version dump.
+  * Added the possibility to configure GraphDB SE repositories.
+  * Changed capabilities of some default roles.
   * Bug fixes.
 
 version 2.0
