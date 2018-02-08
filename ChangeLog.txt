@@ -19,6 +19,7 @@ date: 08/02/2018
   * Changed capabilities of some default roles.
   * Automatically update the ACL for a project after this has been modified
   * intercept the exception of change tracking sail missing and provide a dedicated message
+  * avatar URL property for users
   * Bug fixes.
 
 version 2.0
