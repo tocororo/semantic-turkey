@@ -20,6 +20,7 @@ date: 08/02/2018
   * Automatically update the ACL for a project after this has been modified
   * intercept the exception of change tracking sail missing and provide a dedicated message
   * avatar URL property for users
+  •	fixed the windows-carriage returns in some of the batch files to be used for UNIX operating systems
   * Bug fixes.
 
 version 2.0
