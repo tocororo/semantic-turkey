@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.Configuration;
 
 public class RDFTransformerChainConfiguration implements Configuration {
 

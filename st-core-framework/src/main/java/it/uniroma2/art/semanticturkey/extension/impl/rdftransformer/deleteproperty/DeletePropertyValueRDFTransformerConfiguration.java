@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 

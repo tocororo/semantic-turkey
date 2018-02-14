@@ -24,8 +24,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
-import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
+//import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
+//import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -89,8 +89,7 @@ public class Projects extends STServiceAdapter {
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, PUBindingException, RBACException,
-			ChangeTrackerParameterMismatchException, ChangeTrackerNotDetectedException {
+			UnloadablePluginConfigurationException, PUBindingException, RBACException {
 
 		// Expands defaults in the specification of sail configurers
 		coreRepoSailConfigurerSpecification.expandDefaults();

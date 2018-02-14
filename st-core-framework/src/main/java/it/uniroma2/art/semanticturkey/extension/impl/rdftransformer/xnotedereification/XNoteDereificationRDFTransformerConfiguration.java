@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.properties.ContentType;
 import it.uniroma2.art.semanticturkey.properties.ContentTypeVocabulary;
 import it.uniroma2.art.semanticturkey.properties.STProperty;

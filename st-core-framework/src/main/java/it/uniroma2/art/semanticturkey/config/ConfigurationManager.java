@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.config;
+package it.uniroma2.art.semanticturkey.config;
 
 import java.io.IOException;
 import java.util.ArrayList;

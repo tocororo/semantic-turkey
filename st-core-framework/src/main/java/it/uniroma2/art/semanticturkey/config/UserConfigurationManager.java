@@ -1,10 +1,10 @@
-package it.uniroma2.art.semanticturkey.extension.config;
+package it.uniroma2.art.semanticturkey.config;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
-import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 

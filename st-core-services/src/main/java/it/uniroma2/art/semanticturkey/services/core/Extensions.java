@@ -8,13 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -66,33 +66,33 @@ public class Extensions extends STServiceAdapter {
 	/**
 	 * Returns known extensions for a given extension point
 	 * 
-	 * @param extensionPoint
+	 * @param extensionPointID
 	 * @return
 	 */
 	@STServiceOperation
-	public Collection<ExtensionFactory<?>> getExtensions(String extensionPoint) {
-		return exptManager.getExtensions(extensionPoint);
+	public Collection<ExtensionFactory<?>> getExtensions(String extensionPointID) {
+		return exptManager.getExtensions(extensionPointID);
 	}
 
 	/**
 	 * Returns the stored configurations associated with the given component
 	 * 
-	 * @param componentIdentifier
+	 * @param componentID
 	 * @return
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
-	public Collection<Reference> getConfigurationReferences(String componentIdentifier)
+	public Collection<Reference> getConfigurationReferences(String componentID)
 			throws NoSuchConfigurationManager {
 		return exptManager.getConfigurationReferences(getProject(), UsersManager.getLoggedUser(),
-				componentIdentifier);
+				componentID);
 	}
 
 	/**
-	 * Returns a stored configurations given its reference
+	 * Returns a stored configuration given its relative reference
 	 * 
-	 * @param componentIdentifier
-	 * @param reference
+	 * @param componentID
+	 * @param relativeReference
 	 * @return
 	 * @throws NoSuchConfigurationManager
 	 * @throws WrongPropertiesException
@@ -100,17 +100,17 @@ public class Extensions extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
-	public Configuration getConfiguration(String componentIdentifier, String reference)
+	public Configuration getConfiguration(String componentID, String relativeReference)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
 			WrongPropertiesException {
-		return exptManager.getConfiguration(componentIdentifier, parseReference(reference));
+		return exptManager.getConfiguration(componentID, parseReference(relativeReference));
 	}
 
 	/**
 	 * Stores a configurations
 	 * 
-	 * @param componentIdentifier
-	 * @param reference
+	 * @param componentID
+	 * @param relativeReference
 	 * @return
 	 * @throws NoSuchConfigurationManager
 	 * @throws WrongPropertiesException
@@ -118,66 +118,66 @@ public class Extensions extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void storeConfiguration(String componentIdentifier, String reference,
+	public void storeConfiguration(String componentID, String relativeReference,
 			Map<String, Object> configuration) throws NoSuchConfigurationManager, IOException,
 			ConfigurationNotFoundException, WrongPropertiesException {
-		exptManager.storeConfiguration(componentIdentifier, parseReference(reference), configuration);
+		exptManager.storeConfiguration(componentID, parseReference(relativeReference), configuration);
 	}
 
-	private Reference parseReference(String reference) {
-		int colonPos = reference.indexOf(":");
+	private Reference parseReference(String relativeReference) {
+		int colonPos = relativeReference.indexOf(":");
 
 		if (colonPos == -1)
-			throw new IllegalArgumentException("Invalid reference: " + reference);
+			throw new IllegalArgumentException("Invalid reference: " + relativeReference);
 
-		String refType = reference.substring(0, colonPos);
-		String identifier = reference.substring(colonPos + 1);
+		Scope scope = Scope.deserializeScope(relativeReference.substring(0, colonPos)) ;
+		String identifier = relativeReference.substring(colonPos + 1);
 
-		switch (refType) {
-		case "system":
+		switch (scope) {
+		case SYSTEM :
 			return new Reference(null, null, identifier);
-		case "project":
+		case PROJECT :
 			return new Reference(getProject(), null, identifier);
-		case "user":
+		case USER :
 			return new Reference(null, UsersManager.getLoggedUser(), identifier);
-		case "pu":
+		case PROJECT_USER :
 			return new Reference(getProject(), UsersManager.getLoggedUser(), identifier);
 		default:
-			throw new IllegalArgumentException("Invalid reference: " + reference);
+			throw new IllegalArgumentException("Unsupported scope: " + scope);
 		}
 	}
 
 	/**
 	 * Returns the settings scopes supported by a component
 	 * 
-	 * @param componentIdentifier
+	 * @param componentID
 	 * @return
 	 * @throws NoSuchSettingsManager
 	 */
 	@STServiceOperation
-	public Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager {
-		return exptManager.getSettingsScopes(componentIdentifier);
+	public Collection<Scope> getSettingsScopes(String componentID) throws NoSuchSettingsManager {
+		return exptManager.getSettingsScopes(componentID);
 	}
 
 	/**
 	 * Returns the settings stored in a given scope for a component
 	 * 
-	 * @param componentIdentifier
+	 * @param componentID
 	 * @return
 	 * @throws NoSuchSettingsManager
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation
-	public Settings getSettings(String componentIdentifier, Scope scope)
+	public Settings getSettings(String componentID, Scope scope)
 			throws NoSuchSettingsManager, STPropertyAccessException {
-		return exptManager.getSettings(getProject(), UsersManager.getLoggedUser(), componentIdentifier,
+		return exptManager.getSettings(getProject(), UsersManager.getLoggedUser(), componentID,
 				scope);
 	}
 
 	/**
 	 * Stores the settings in a given scope for a component
 	 * 
-	 * @param componentIdentifier
+	 * @param componentID
 	 * @param scope
 	 * @param settings
 	 * @throws NoSuchSettingsManager
@@ -187,10 +187,10 @@ public class Extensions extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void storeSettings(String componentIdentifier, Scope scope, Map<String, Object> settings)
+	public void storeSettings(String componentID, Scope scope, Map<String, Object> settings)
 			throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
 			STPropertyUpdateException, WrongPropertiesException {
-		exptManager.storeSettings(componentIdentifier, getProject(), UsersManager.getLoggedUser(), scope,
+		exptManager.storeSettings(componentID, getProject(), UsersManager.getLoggedUser(), scope,
 				settings);
 	}
 

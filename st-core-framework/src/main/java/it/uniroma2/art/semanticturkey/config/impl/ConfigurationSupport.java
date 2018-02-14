@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.config.impl;
+package it.uniroma2.art.semanticturkey.config.impl;
 
 import static java.util.stream.Collectors.toList;
 
@@ -19,14 +19,14 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationReflectionException;
-import it.uniroma2.art.semanticturkey.extension.config.PUConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.ProjectConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.SystemConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.UserConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.ConfigurationReflectionException;
+import it.uniroma2.art.semanticturkey.config.PUConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.ProjectConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.SystemConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.UserConfigurationManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;

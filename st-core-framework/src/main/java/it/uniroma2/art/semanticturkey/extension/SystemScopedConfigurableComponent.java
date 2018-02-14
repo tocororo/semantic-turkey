@@ -1,7 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
-import it.uniroma2.art.semanticturkey.extension.config.SystemConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.SystemConfigurationManager;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 
 /**

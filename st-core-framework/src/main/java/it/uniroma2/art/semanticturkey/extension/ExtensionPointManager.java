@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;

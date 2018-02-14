@@ -1,11 +1,11 @@
 package it.uniroma2.art.semanticturkey.extension;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.PUConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.ProjectConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.SystemConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.config.UserConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.PUConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.ProjectConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.SystemConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.UserConfigurationManager;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 
 /**

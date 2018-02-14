@@ -2,8 +2,8 @@ package it.uniroma2.art.semanticturkey.extension;
 
 import java.util.Collection;
 
-import it.uniroma2.art.semanticturkey.extension.config.Configuration;
-import it.uniroma2.art.semanticturkey.extension.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
