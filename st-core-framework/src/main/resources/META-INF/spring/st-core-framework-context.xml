@@ -261,4 +261,190 @@
 		ref="CODACoreProvider">
 	</osgi:service>
 
+
+	<!-- Instantiates the ExtensionPointManager implementation -->
+	<bean id="extensionPointManager"
+		class="it.uniroma2.art.semanticturkey.extension.impl.ExtensionPointManagerImpl" />
+
+	<!-- Publishes the ExtensionPointerManager as an OSGi service -->
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.extension.ExtensionPointManager"
+		ref="extensionPointManager">
+	</osgi:service>
+
+	<!-- Publishes the URIGenerator extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the Native Template-based URIGenerator extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorFactory" />
+	</osgi:service>
+
+	<!-- Publishes the CODA-based URIGenerator extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory" />
+	</osgi:service>
+
+	<!-- Publishes the RenderingEngine extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint" />
+	</osgi:service>
+	
+	<!-- Publishes the RDFSRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineFactory" />
+	</osgi:service>
+
+	<!-- Publishes the SKOSRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the SKOSXLRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineFactory" />
+	</osgi:service>
+
+	
+	<!-- Publishes the RDFTransformer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the DeletePropertyValueRDFTransformer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the SPARQLRDFTransformer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the UpdatePropertyValueRDFTranformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTranformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the XLabelDereificationRDFTransformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the XNoteDereificationRDFTransformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the CollaborationBackend extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the JiraBackend extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendFactory" />
+	</osgi:service>
+
+	<!-- Publishes the DatasetMetadataExporter extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the ADMSDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the DCATDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the DCATAPDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the VOIDLIMEPDatasetMetadataExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterFactory" />
+	</osgi:service>
+
+	<!-- Publishes the RepositoryImplConfigurer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the PredefinedRepositoryImplConfigurer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the SearchStrategy extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint" />
+	</osgi:service>
+	
+	<!-- Publishes the GraphDBSearchStrategy extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategyFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the Regex extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategyFactory" />
+	</osgi:service>
 </beans>

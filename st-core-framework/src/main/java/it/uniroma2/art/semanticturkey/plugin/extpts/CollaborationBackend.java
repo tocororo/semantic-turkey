@@ -7,7 +7,7 @@ import org.eclipse.rdf4j.model.IRI;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendException;
 import it.uniroma2.art.semanticturkey.plugin.Plugin;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -19,34 +19,34 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
  */
 public interface CollaborationBackend extends Plugin {
 
-	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, HTTPJiraException ;
+	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, CollaborationBackendException ;
 	
 	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
-			throws STPropertyAccessException, IOException, HTTPJiraException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
 	public void assignProject(String projectName, String projectKey, String ProjectId)
-			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException;
 
 	public void createProject(String projectName, String projectKey)
-			throws STPropertyAccessException, IOException, JsonProcessingException, HTTPJiraException,
+			throws STPropertyAccessException, IOException, JsonProcessingException, CollaborationBackendException,
 			STPropertyUpdateException;
 
 	public void assignResourceToIssue(String issue, IRI resource)
-			throws STPropertyAccessException, IOException, HTTPJiraException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
 	void bind2project(Project project);
 
 	public JsonNode listIssuesAssignedToResource(IRI resource)
-			throws STPropertyAccessException, IOException, HTTPJiraException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
 	public JsonNode listIssues()
-			throws STPropertyAccessException, IOException, HTTPJiraException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
 	
 	public JsonNode listUsers()
-			throws STPropertyAccessException, IOException, HTTPJiraException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
 	
 	public JsonNode listProjects()
-			throws STPropertyAccessException, IOException, HTTPJiraException;
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
 	
 	/**
 	 * Tells if a Collaboration project is linked to the VB project

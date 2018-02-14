@@ -55,6 +55,7 @@ import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
@@ -76,6 +77,9 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
@@ -139,6 +143,12 @@ public class ProjectManager {
 
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
 
+	private static volatile ExtensionPointManager exptManager;
+	
+	public static void setExtensionPointManager(ExtensionPointManager exptManager) {
+		ProjectManager.exptManager = exptManager;
+	}
+	
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
 	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain

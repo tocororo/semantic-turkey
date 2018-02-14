@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendException;
 import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -63,7 +63,7 @@ public class JiraBackend extends
 
 
 	@Override 
-	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, HTTPJiraException {
+	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -128,7 +128,7 @@ public class JiraBackend extends
 		
 		//if no project was found having the desired id-key, then throw and exception
 		if(!found) {
-			throw new HTTPJiraException("Invalid Configuration: there is no Jira project having id:"+
+			throw new CollaborationBackendException("Invalid Configuration: there is no Jira project having id:"+
 					prjId+" and key:"+prjKey);
 		}
 		
@@ -136,7 +136,7 @@ public class JiraBackend extends
 	
 	@Override
 	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -229,7 +229,7 @@ public class JiraBackend extends
 
 	@Override
 	public void assignProject(String projectName, String projectKey, String projectId) 
-			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -290,7 +290,7 @@ public class JiraBackend extends
 		
 	@Override
 	public void createProject(String projectName, String projectKey) 
-			throws STPropertyAccessException, JsonProcessingException, IOException, HTTPJiraException, 
+			throws STPropertyAccessException, JsonProcessingException, IOException, CollaborationBackendException, 
 			STPropertyUpdateException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
@@ -361,7 +361,7 @@ public class JiraBackend extends
 	}
 
 	@Override
-	public void assignResourceToIssue(String issueKey, IRI resource) throws STPropertyAccessException, IOException, HTTPJiraException {
+	public void assignResourceToIssue(String issueKey, IRI resource) throws STPropertyAccessException, IOException, CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -414,7 +414,7 @@ public class JiraBackend extends
 
 	@Override
 	public JsonNode listIssuesAssignedToResource(IRI resource) throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -502,7 +502,7 @@ public class JiraBackend extends
 	
 	@Override
 	public JsonNode listIssues() throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -612,7 +612,7 @@ public class JiraBackend extends
 	
 	@Override
 	public JsonNode listUsers() throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -680,7 +680,7 @@ public class JiraBackend extends
 	
 	@Override
 	public JsonNode listProjects() throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -758,7 +758,7 @@ public class JiraBackend extends
 	
 	/*** PRVATE METHODS ***/
 	private CookieManager login(String username, String password, String urlString) throws IOException, 
-			HTTPJiraException{
+			CollaborationBackendException{
 		
 
 		String url = urlString+"/rest/auth/1/session";
@@ -804,7 +804,7 @@ public class JiraBackend extends
 		
 	}
 	
-	private void executeAndCheckError(HttpURLConnection httpcon) throws IOException, HTTPJiraException {
+	private void executeAndCheckError(HttpURLConnection httpcon) throws IOException, CollaborationBackendException {
 		int respCode = httpcon.getResponseCode();
 		InputStream errorStream = httpcon.getErrorStream();
 		if (errorStream != null) {
@@ -813,7 +813,7 @@ public class JiraBackend extends
 			String errorString = s.hasNext() ? s.next() : "";
 			s.close();
 			errorStream.close();
-			throw new HTTPJiraException(respCode+" : "+errorString);
+			throw new CollaborationBackendException(respCode+" : "+errorString);
 		}
 	}
 	
@@ -882,7 +882,7 @@ public class JiraBackend extends
 	}
 	
 	private String getIssueIdToCreate(CookieManager cookieManager) 
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		String issueId = "";
 		
 		String urlString = getClassLevelProjectSettings(stProject).serverURL+"/rest/api/2/"+"issue/createmeta;"

@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
+import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
 
 /**

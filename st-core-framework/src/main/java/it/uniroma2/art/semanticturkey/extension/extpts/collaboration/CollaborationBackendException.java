@@ -24,9 +24,9 @@
   /*
    * Contributor(s): Andrea Turbati turbati@info.uniroma2.it
   */
-package it.uniroma2.art.semanticturkey.exceptions;
+package it.uniroma2.art.semanticturkey.extension.extpts.collaboration;
 
-public class HTTPJiraException extends Exception {
+public class CollaborationBackendException extends Exception {
 
 	
 	/**
@@ -34,7 +34,7 @@ public class HTTPJiraException extends Exception {
 	 */
 	private static final long serialVersionUID = 751210705961497317L;
 
-	public HTTPJiraException(String errorText) {
+	public CollaborationBackendException(String errorText) {
 		super("ERROR: " + errorText);
 	}
 	

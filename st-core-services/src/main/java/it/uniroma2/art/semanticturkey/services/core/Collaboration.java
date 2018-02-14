@@ -12,12 +12,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendException;
 import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
@@ -87,7 +87,7 @@ public class Collaboration extends STServiceAdapter {
 			Map<String, Object> currentUserPreferences) throws STPropertyAccessException,
 			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException, 
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
 		Project project = getProject();
 		pluginFactory.storeProjectSettings(project, projectSettings);
@@ -120,13 +120,13 @@ public class Collaboration extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createIssue(IRI resource, String summary, @Optional String description, 
-			@Optional String assignee, @Optional String issueId) throws STPropertyAccessException, IOException, HTTPJiraException {
+			@Optional String assignee, @Optional String issueId) throws STPropertyAccessException, IOException, CollaborationBackendException {
 		getCollaborationBackend().createIssue(resource.stringValue(), summary, description, assignee, issueId);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void assignProject(String projectName, String projectKey, String projectId)
-			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException {
 		getCollaborationBackend().assignProject(projectName, projectKey, projectId);
 		//TODO check the parameters (url sbagliato, credenziali sbagliate, parametri progetto sbagliati)
 		getCollaborationBackend().checkPrjConfiguration();
@@ -134,38 +134,38 @@ public class Collaboration extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createProject(String projectName, String projectKey)
-			throws STPropertyAccessException, JsonProcessingException, IOException, HTTPJiraException,
+			throws STPropertyAccessException, JsonProcessingException, IOException, CollaborationBackendException,
 			STPropertyUpdateException {
 		getCollaborationBackend().createProject(projectName, projectKey);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void assignResourceToIssue(String issue, IRI resource)
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		getCollaborationBackend().assignResourceToIssue(issue, resource);
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listIssuesAssignedToResource(IRI resource)
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		return getCollaborationBackend().listIssuesAssignedToResource(resource);
 	}
 	
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listIssues()
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		return getCollaborationBackend().listIssues();
 	}
 	
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listUsers()
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		return getCollaborationBackend().listUsers();
 	}
 	
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listProjects()
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		return getCollaborationBackend().listProjects();
 	}
 

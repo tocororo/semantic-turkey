@@ -57,7 +57,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
@@ -79,7 +78,7 @@ public class Refactor extends STServiceAdapter  {
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#oldResource)+ ')', 'U')")
-	public void changeResourceURI(@LocallyDefined @Subject IRI oldResource, IRI newResource) throws DuplicatedResourceException {
+	public void changeResourceURI(@LocallyDefined IRI oldResource, IRI newResource) throws DuplicatedResourceException {
 		RepositoryConnection conn = getManagedConnection();
 		//check if a resource with the new IRI already exists
 		// @formatter:off

@@ -182,7 +182,7 @@ public abstract class STPropertiesImpl implements STProperties {
 		}
 	}
 
-	private Object convertToPropertValue(Field prop, Object value) {
+	public Object convertToPropertValue(Field prop, Object value) {
 		if (prop.getGenericType() == Boolean.class || prop.getGenericType() == boolean.class) {
 			value = Boolean.parseBoolean((String) value);
 		} else if (prop.getGenericType() == Long.class || prop.getGenericType() == long.class)

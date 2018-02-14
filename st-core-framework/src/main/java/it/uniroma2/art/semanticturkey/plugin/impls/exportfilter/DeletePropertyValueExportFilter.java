@@ -9,6 +9,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
 import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.conf.DeletePropertyValueExportFilterConfiguration;
 

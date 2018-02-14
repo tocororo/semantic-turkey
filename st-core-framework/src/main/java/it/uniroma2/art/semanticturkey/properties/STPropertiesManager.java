@@ -180,7 +180,7 @@ public class STPropertiesManager {
 			throw new STPropertyUpdateException(e);
 		}
 	}
-	
+
 	/**
 	 * Sets the values of project preferences related to a plugin for the given user.
 	 * 
@@ -450,6 +450,18 @@ public class STPropertiesManager {
 		return value;
 	}
 
+	public static void getSystemPreferences(STProperties settings, STUser user, String pluginID)
+			throws STPropertyAccessException {
+		File propFile = getUserSystemPreferencesFile(user, pluginID);
+		File defaultPropFile = getSystemPreferencesDefaultsFile(pluginID);
+		try {
+			settings.loadProperties(defaultPropFile);
+			settings.loadProperties(propFile);
+		} catch (WrongPropertiesException | IOException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+
 	/**
 	 * Sets the value of a system preference for the given user
 	 * 
@@ -480,6 +492,29 @@ public class STPropertiesManager {
 			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	public static void setSystemPreferences(STProperties preferences, STUser user, String pluginID)
+			throws STPropertyUpdateException {
+		setSystemPreferences(preferences, user, pluginID);
+	}
+
+	public static void setSystemPreferences(STProperties preferences, STUser user, String pluginID,
+			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker preferencesChecker = STPropertiesChecker
+						.getModelConfigurationChecker(preferences);
+				if (!preferencesChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Preferences not valid: " + preferencesChecker.getErrorMessage());
+				}
+			}
+			File propFile = getUserSystemPreferencesFile(user, pluginID);
+			preferences.storeProperties(propFile);
+		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -781,6 +816,15 @@ public class STPropertiesManager {
 		return loadProperties(getSystemSettingsFile(pluginID)).getProperty(propName);
 	}
 
+	public static void getSystemSettings(STProperties settings, String pluginID)
+			throws STPropertyAccessException {
+		try {
+			settings.loadProperties(getSystemSettingsFile(pluginID));
+		} catch (WrongPropertiesException | IOException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+
 	/**
 	 * Sets the value of a system setting
 	 * 
@@ -808,6 +852,29 @@ public class STPropertiesManager {
 			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	public static void setSystemSettings(STProperties settings, String pluginID)
+			throws STPropertyUpdateException {
+		setSystemSettings(settings, pluginID, false);
+	}
+
+	public static void setSystemSettings(STProperties settings, String pluginID,
+			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
+			File propFile = getSystemSettingsFile(pluginID);
+			settings.storeProperties(propFile);
+		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -1041,7 +1108,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getSystemPropertyFolder(String pluginID) {
+	public static File getSystemPropertyFolder(String pluginID) {
 		File prefFolder = new File(
 				Resources.getSystemDir() + File.separator + "plugins" + File.separator + pluginID);
 		if (!prefFolder.exists()) {
@@ -1057,7 +1124,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getProjectPropertyFolder(Project project, String pluginID) {
+	public static File getProjectPropertyFolder(Project project, String pluginID) {
 		File prefFolder = new File(Resources.getProjectsDir() + File.separator + project.getName()
 				+ File.separator + "plugins" + File.separator + pluginID);
 		if (!prefFolder.exists()) {
@@ -1073,7 +1140,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getUserPropertyFolder(STUser user, String pluginID) {
+	public static File getUserPropertyFolder(STUser user, String pluginID) {
 		File prefFolder = new File(
 				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
 						+ File.separator + "plugins" + File.separator + pluginID);
@@ -1091,7 +1158,7 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @return
 	 */
-	private static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
+	public static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
 		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
