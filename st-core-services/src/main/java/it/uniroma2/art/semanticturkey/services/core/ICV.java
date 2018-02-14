@@ -1013,7 +1013,7 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <resources> with overlapped lexicalization (resource with same label mutiple times)
+	 * Return a list of <resources> with overlapped lexicalization (resource with same label multiple times)
 	 * @param rolesArray
 	 * @return
 	 * @throws UnsupportedLexicalizationModelException 
@@ -1487,7 +1487,7 @@ public class ICV extends STServiceAdapter {
 				ObjectNode objectNode = jsonFactory.objectNode();
 				objectNode.put("namespace", namespace);
 				objectNode.put("count", count);
-				//get all the assoicated location for the given namaspace
+				//get all the associated location for the given namespace
 				ArrayNode locationsNode = jsonFactory.arrayNode();
 				List<ResourcePosition> resourcePositionList = 
 						resourceLocator.listResourceLocations(getProject(), getRepository(), simpleValueFactory.createIRI(namespace));

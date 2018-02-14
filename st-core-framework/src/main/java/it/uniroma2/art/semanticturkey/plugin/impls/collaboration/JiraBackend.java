@@ -24,11 +24,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.exceptions.HTTPJiraException;
+import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendException;
 import it.uniroma2.art.semanticturkey.plugin.AbstractPlugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -49,7 +48,9 @@ public class JiraBackend extends
 	private final String projectTypeKey = "software";
 	private final String projectTemplateKey = "com.pyxis.greenhopper.jira:basic-software-development-template";
 	
-	private final String issueTypeId = "10002";
+	//private final String issueTypeId = "10002";
+	
+	private final String[] issueNameArray = {"Task", "New Feature", "Improvement", "Bug"}; 
 	
 	public JiraBackend(JiraBackendFactory factory) {
 		super(factory);
@@ -60,9 +61,82 @@ public class JiraBackend extends
 		this.stProject = project;
 	}
 
+
+	@Override 
+	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, CollaborationBackendException {
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
+		
+		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
+		JiraBackendPreferences projectPreferences = getClassLevelProjectPreferences(stProject,
+				UsersManager.getLoggedUser());
+		
+		//first of all, do the login
+		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
+				projectSettings.serverURL);
+		
+		//now check that there a JIRA project having such id and key
+		boolean found = false;
+		String prjId = projectSettings.jiraPrjId;
+		String prjKey = projectSettings.jiraPrjKey;
+		//get all the projects and see if one of them has the desired id and key
+		String urlString = projectSettings.serverURL+"/rest/api/2/"+"project";
+
+		URL url = new URL(urlString);
+		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+
+		// By default it is GET request
+		httpcon.setRequestMethod("GET");
+
+		// add request header
+		httpcon.setRequestProperty("User-Agent", USER_AGENT);
+		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+		// Add the cookie
+		if (cookieManager.getCookieStore().getCookies().size() > 0) {
+			httpcon.setRequestProperty("Cookie",
+					cookieManager.getCookieStore().getCookies().get(0).toString());
+		}
+
+
+		executeAndCheckError(httpcon);
+
+		// Reading response from input Stream
+		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
+		String output;
+		StringBuffer response = new StringBuffer();
+
+		while ((output = in.readLine()) != null) {
+			response.append(output);
+		}
+		in.close();
+		
+		// create ObjectMapper instance
+		ObjectMapper objectMapper = new ObjectMapper();
+		
+		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response.toString());
+		Map<String, String> prjIdToPrjKeyMap = new HashMap<>();
+		for(JsonNode prjFromJiraNode : prjFromJiraArray) {
+			String currentPrjId = prjFromJiraNode.get("id").asText();
+			String currentPrjKey = prjFromJiraNode.get("key").asText();
+			prjIdToPrjKeyMap.put(currentPrjId, currentPrjKey);
+		}
+		if(prjIdToPrjKeyMap.containsKey(prjId) && prjIdToPrjKeyMap.get(prjId).equals(prjKey)) {
+			found = true;
+		}
+		
+		//if no project was found having the desired id-key, then throw and exception
+		if(!found) {
+			throw new CollaborationBackendException("Invalid Configuration: there is no Jira project having id:"+
+					prjId+" and key:"+prjKey);
+		}
+		
+	}
+	
 	@Override
-	public void createIssue(String resource, String summary, String description, String assignee) 
-			throws STPropertyAccessException, IOException, HTTPJiraException {
+	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -73,6 +147,15 @@ public class JiraBackend extends
 		//first of all, do the login
 		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
 				projectSettings.serverURL);
+		
+		//if String issueId is null, then get all the possibile issueId for the desired project and select one 
+		//according to a specific list
+		String issueTypeId = "";
+		if(issueId==null) {
+			issueTypeId = getIssueIdToCreate(cookieManager);
+		} else {
+			issueTypeId = issueId;
+		}
 		
 		//now create the issue
 
@@ -101,11 +184,11 @@ public class JiraBackend extends
 				//+"\n\"name\":\""+projectSettings.jiraPrjName+"\","
 				+"\n\"id\":\""+projectSettings.jiraPrjId+"\""
 				//+"\n\"description\":\""+newPrjId+"\""
-				+"\n},"
-				//reporter
-				+"\n\"reporter\": {"
-				+"\n\"name\":\""+projectPreferences.username+"\""
 				+"\n},";
+				//reporter
+				//+"\n\"reporter\": {"
+				//+"\n\"name\":\""+projectPreferences.username+"\""
+				//+"\n},";
 		if(assignee!=null && assignee.length()!=0) {
 			postJsonData +=
 				//assignee
@@ -146,12 +229,14 @@ public class JiraBackend extends
 
 	@Override
 	public void assignProject(String projectName, String projectKey, String projectId) 
-			throws STPropertyAccessException, IOException, HTTPJiraException, STPropertyUpdateException {
+			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		if(projectId==null) {
+		
+		//not used anymore, since projectId is mandatory, so there is no reason to get it from the projectKey
+		/*if(projectId==null) {
 			// since the projectId is not passed, ask Jira for the id associated to the project Key
 			//first of all, do the login
 			//the project ID is missing, so consult Jira to obtain such parameter
@@ -194,7 +279,8 @@ public class JiraBackend extends
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode rootNode = objectMapper.readTree(response.toString());
 			projectId = rootNode.get("id").asText();
-		}
+		}*/
+		
 		//now save all the information related to the Jira project
 		projectSettings.jiraPrjId = projectId;
 		projectSettings.jiraPrjKey = projectKey;
@@ -204,7 +290,7 @@ public class JiraBackend extends
 		
 	@Override
 	public void createProject(String projectName, String projectKey) 
-			throws STPropertyAccessException, JsonProcessingException, IOException, HTTPJiraException, 
+			throws STPropertyAccessException, JsonProcessingException, IOException, CollaborationBackendException, 
 			STPropertyUpdateException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
@@ -275,7 +361,7 @@ public class JiraBackend extends
 	}
 
 	@Override
-	public void assignResourceToIssue(String issueKey, IRI resource) throws STPropertyAccessException, IOException, HTTPJiraException {
+	public void assignResourceToIssue(String issueKey, IRI resource) throws STPropertyAccessException, IOException, CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -328,7 +414,7 @@ public class JiraBackend extends
 
 	@Override
 	public JsonNode listIssuesAssignedToResource(IRI resource) throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -416,7 +502,7 @@ public class JiraBackend extends
 	
 	@Override
 	public JsonNode listIssues() throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -526,7 +612,7 @@ public class JiraBackend extends
 	
 	@Override
 	public JsonNode listUsers() throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -594,7 +680,7 @@ public class JiraBackend extends
 	
 	@Override
 	public JsonNode listProjects() throws STPropertyAccessException, IOException, 
-			HTTPJiraException {
+			CollaborationBackendException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
@@ -665,13 +751,14 @@ public class JiraBackend extends
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		JiraBackendSettings projectSettings = getClassLevelProjectSettings(stProject);
-		return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null;
+		return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null 
+				&& projectSettings.jiraPrjId!=null;
 	}
 
 	
 	/*** PRVATE METHODS ***/
 	private CookieManager login(String username, String password, String urlString) throws IOException, 
-			HTTPJiraException{
+			CollaborationBackendException{
 		
 
 		String url = urlString+"/rest/auth/1/session";
@@ -717,7 +804,7 @@ public class JiraBackend extends
 		
 	}
 	
-	private void executeAndCheckError(HttpURLConnection httpcon) throws IOException, HTTPJiraException {
+	private void executeAndCheckError(HttpURLConnection httpcon) throws IOException, CollaborationBackendException {
 		int respCode = httpcon.getResponseCode();
 		InputStream errorStream = httpcon.getErrorStream();
 		if (errorStream != null) {
@@ -726,7 +813,7 @@ public class JiraBackend extends
 			String errorString = s.hasNext() ? s.next() : "";
 			s.close();
 			errorStream.close();
-			throw new HTTPJiraException(respCode+" : "+errorString);
+			throw new CollaborationBackendException(respCode+" : "+errorString);
 		}
 	}
 	
@@ -750,7 +837,11 @@ public class JiraBackend extends
 			category = issue.get("fields").get("status").get("statusCategory").get("name").asText();
 		};
 		String issueKey = issue.get("key").asText();
-		String urlIssue = projectSettings.serverURL+"/browse/"+issueKey;
+		String optionalSlash = "";
+		if(!projectSettings.serverURL.endsWith("/")) {
+			optionalSlash = "/";
+		}
+		String urlIssue = projectSettings.serverURL+optionalSlash+"browse/"+issueKey;
 		ArrayNode labelsArray = (ArrayNode) issue.get("fields").get("labels");
 		String resolution="";
 		if(issue.get("fields").get("resolution") != null && 
@@ -788,6 +879,76 @@ public class JiraBackend extends
 		userRedux.set("email", jsonFactory.textNode(userEmail));
 		userRedux.set("dispalyName", jsonFactory.textNode(displayName));
 		return userRedux;
+	}
+	
+	private String getIssueIdToCreate(CookieManager cookieManager) 
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
+		String issueId = "";
+		
+		String urlString = getClassLevelProjectSettings(stProject).serverURL+"/rest/api/2/"+"issue/createmeta;"
+				+ "?expand=projects.issuetypes.fields"
+				+ "&projectKeys="+getClassLevelProjectSettings(stProject).jiraPrjKey;
+		
+		URL url = new URL(urlString);
+		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+
+		// By default it is GET request
+		httpcon.setRequestMethod("GET");
+
+		// add request header
+		httpcon.setRequestProperty("User-Agent", USER_AGENT);
+
+		// Add the cookie
+		if (cookieManager.getCookieStore().getCookies().size() > 0) {
+			httpcon.setRequestProperty("Cookie",
+					cookieManager.getCookieStore().getCookies().get(0).toString());
+		}
+
+		executeAndCheckError(httpcon);
+		
+		// Reading response from input Stream
+		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
+		String output;
+		StringBuffer response = new StringBuffer();
+
+		while ((output = in.readLine()) != null) {
+			response.append(output);
+		}
+		in.close();
+		
+		// analyze the json response and print all the value inside it
+		// create ObjectMapper instance
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode rootNode = objectMapper.readTree(response.toString());
+		
+		Map<String, String> issueNameToIdMap = new HashMap<>();
+		
+		ArrayNode projectArrayNode = (ArrayNode) rootNode.get("projects");
+		ArrayNode issueTypesArrayNode = (ArrayNode) projectArrayNode.get(0).get("issuetypes");
+		for(int i=0; i<issueTypesArrayNode.size(); ++i) {
+			JsonNode issueNode = issueTypesArrayNode.get(i);
+			String id = issueNode.get("id").textValue();
+			String name = issueNode.get("name").textValue().toLowerCase();
+			issueNameToIdMap.put(name, id);
+		}
+		
+		//now consult the array containing the desired issue type and get the first id to the first matching name
+		boolean foundId = false;
+		for(String name : issueNameArray) {
+			if(issueNameToIdMap.containsKey(name.toLowerCase())) {
+				issueId = issueNameToIdMap.get(name.toLowerCase());
+				//a possible id was found, so exit the for
+				foundId = true;
+				break;
+			}
+		}
+		if(!foundId) {
+			//no candidate id was found, so just take one element from the map 
+			issueId = issueNameToIdMap.values().iterator().next();
+		}
+			
+		
+		return issueId;
 	}
 
 }

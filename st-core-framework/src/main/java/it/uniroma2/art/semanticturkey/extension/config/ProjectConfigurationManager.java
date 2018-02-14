@@ -1,8 +1,12 @@
 package it.uniroma2.art.semanticturkey.extension.config;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.extension.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
@@ -10,21 +14,24 @@ import it.uniroma2.art.semanticturkey.project.Project;
  *
  * @param <CONFTYPE>
  */
-public interface ProjectConfigurationManager<CONFTYPE extends Configuration> extends ConfigurationManager<CONFTYPE> {
+public interface ProjectConfigurationManager<CONFTYPE extends Configuration>
+		extends ConfigurationManager<CONFTYPE> {
 
 	default Collection<String> getProjectConfigurationIdentifiers(Project project) {
-		// @TODO
-		throw new RuntimeException("still not implemented!!!");
+		File folder = ConfigurationSupport.getConfigurationFolder(this, project);
+		return ConfigurationSupport.listConfigurationIdentifiers(folder);
 	}
-	
-	default CONFTYPE getProjectConfiguration(Project project, String identifier) {
-		// @TODO
-		throw new RuntimeException("still not implemented!!!");
+
+	default CONFTYPE getProjectConfiguration(Project project, String identifier)
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException {
+		return ConfigurationSupport.loadConfiguration(this,
+				ConfigurationSupport.getConfigurationFolder(this, project), identifier);
 	}
-	
-	default void storeProjectConfiguration(Project project, String identifier, CONFTYPE configuration) {
-		// @TODO
-		throw new RuntimeException("still not implemented!!!");
+
+	default void storeProjectConfiguration(Project project, String identifier, CONFTYPE configuration)
+			throws IOException, WrongPropertiesException {
+		ConfigurationSupport.storeConfiguration(ConfigurationSupport.getConfigurationFolder(this, project),
+				identifier, configuration);
 	}
-	
+
 }

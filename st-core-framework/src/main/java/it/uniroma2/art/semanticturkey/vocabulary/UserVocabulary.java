@@ -25,6 +25,7 @@ public class UserVocabulary {
 	public static final IRI USER;
 	public static final IRI PASSWORD;
 	public static final IRI URL;
+	public static final IRI AVATAR_URL;
 	public static final IRI COUNTRY;
 	public static final IRI ADDRESS;
 	public static final IRI REGISTRATION_DATE;
@@ -42,6 +43,7 @@ public class UserVocabulary {
 		USER = fact.createIRI(UserVocabulary.NAMESPACE, "User");
     	PASSWORD = fact.createIRI(UserVocabulary.PUVOC_NS, "password");
     	URL = fact.createIRI(UserVocabulary.PUVOC_NS, "url");
+    	AVATAR_URL = fact.createIRI(UserVocabulary.PUVOC_NS, "avatar_url");
     	COUNTRY = fact.createIRI(UserVocabulary.PUVOC_NS, "country");
     	ADDRESS = fact.createIRI(UserVocabulary.PUVOC_NS, "address");
     	REGISTRATION_DATE = fact.createIRI(UserVocabulary.PUVOC_NS, "registration_date");

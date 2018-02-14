@@ -62,7 +62,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
@@ -599,7 +598,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("set preferred label")
-	public void setPrefLabel(@LocallyDefined @Modified @Subject IRI concept, @LanguageTaggedString Literal literal,
+	public void setPrefLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel) 
 			throws AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -643,7 +642,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add alternative label")
-	public void addAltLabel(@LocallyDefined @Modified @Subject IRI concept,
+	public void addAltLabel(@LocallyDefined @Modified IRI concept,
 			@LanguageTaggedString Literal literal) throws AlreadyExistingLiteralFormForResourceException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
@@ -658,7 +657,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add hidden label")
-	public void addHiddenLabel(@LocallyDefined @Modified @Subject IRI concept,
+	public void addHiddenLabel(@LocallyDefined @Modified IRI concept,
 			@LanguageTaggedString Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -672,7 +671,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void addBroaderConcept(
-			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
 			@LocallyDefined IRI broaderConcept) {
 
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -688,7 +687,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addConceptToScheme(
-			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
 			@LocallyDefined IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -702,7 +701,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
-	public void addTopConcept(@Subject @Modified(role = RDFResourceRole.concept) IRI concept,
+	public void addTopConcept(@Modified(role = RDFResourceRole.concept) IRI concept,
 			@LocallyDefined IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -722,7 +721,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addToCollection(
-			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) Resource collection,
 			@LocallyDefined Resource element) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -746,7 +745,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addFirstToOrderedCollection(
-			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) Resource collection,
 			@LocallyDefined Resource element) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -772,7 +771,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addInPositionToOrderedCollection(
-			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) Resource collection,
 			@LocallyDefined Resource element, int index) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -810,7 +809,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addLastToOrderedCollection(
-			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) @Subject Resource collection,
+			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) Resource collection,
 			@LocallyDefined Resource element) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -944,7 +943,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
-	public void removeConceptFromScheme(@LocallyDefined @Modified(role=RDFResourceRole.concept) @Subject IRI concept, IRI scheme){
+	public void removeConceptFromScheme(@LocallyDefined @Modified(role=RDFResourceRole.concept) IRI concept, IRI scheme){
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -962,7 +961,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'D')")
 	public void removeTopConcept(
-			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
 			IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -979,7 +978,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'D')")
-	public void removePrefLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
+	public void removePrefLabel(@LocallyDefined @Modified IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
@@ -992,7 +991,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'D')")
-	public void removeAltLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
+	public void removeAltLabel(@LocallyDefined @Modified IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
@@ -1029,7 +1028,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public void removeBroaderConcept(
-			@LocallyDefined @Modified(role = RDFResourceRole.concept) @Subject IRI concept,
+			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
 			IRI broaderConcept) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -1045,7 +1044,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', 'D')")
-	public void removeHiddenLabel(@LocallyDefined @Modified @Subject IRI concept, Literal literal) {
+	public void removeHiddenLabel(@LocallyDefined @Modified IRI concept, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
@@ -1089,7 +1088,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
-	public void deleteConceptScheme(@LocallyDefined @Subject IRI scheme) {
+	public void deleteConceptScheme(@LocallyDefined IRI scheme) {
 		String query = 
 				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n"
 				+ "DELETE {																\n"
@@ -1132,7 +1131,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'D')")
-	public void deleteConcept(@Subject @LocallyDefined IRI concept) throws DeniedOperationException {
+	public void deleteConcept(@LocallyDefined IRI concept) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		//first check if the concept has any narrower (or is it broader to any other concept)
@@ -1321,7 +1320,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'D')")
-	public void deleteCollection(@Subject @LocallyDefined Resource collection) throws DeniedOperationException{
+	public void deleteCollection(@LocallyDefined Resource collection) throws DeniedOperationException{
 		
 		RepositoryConnection repConn = getManagedConnection();
 		String query = "ASK {?resource <http://www.w3.org/2004/02/skos/core#member> ?member ."
@@ -1414,7 +1413,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'D')")
-	public void deleteOrderedCollection(@Subject @LocallyDefined Resource collection) throws DeniedOperationException{
+	public void deleteOrderedCollection(@LocallyDefined Resource collection) throws DeniedOperationException{
 		
 		RepositoryConnection repConn = getManagedConnection();
 		String query = "ASK {?resource <http://www.w3.org/2004/02/skos/core#memberList> ?memberList . "
@@ -1519,7 +1518,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void removeFromCollection(@LocallyDefined Resource element,
-			@Subject @Modified(role = RDFResourceRole.skosCollection) @LocallyDefined Resource collection)
+			@Modified(role = RDFResourceRole.skosCollection) @LocallyDefined Resource collection)
 			throws DeniedOperationException {
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -1544,7 +1543,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void removeFromOrderedCollection(
 			@LocallyDefined Resource element,
-			@Subject @Modified(role = RDFResourceRole.skosCollection) @LocallyDefined Resource collection)
+			@Modified(role = RDFResourceRole.skosCollection) @LocallyDefined Resource collection)
 			throws DeniedOperationException {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -1597,7 +1596,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
 	@DisplayName("add alternative label")
-	public void addNote(@LocallyDefined @Modified @Subject IRI resource, 
+	public void addNote(@LocallyDefined @Modified IRI resource, 
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
 			SpecialValue value) throws ProjectInconsistentException, CODAException {
 		addValue(getManagedConnection(), resource, predicate, value);

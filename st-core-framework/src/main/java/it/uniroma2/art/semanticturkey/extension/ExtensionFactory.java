@@ -1,11 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension;
 
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.apache.commons.lang3.reflect.TypeUtils;
+import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
 /**
  * An ExtensionFactory provides instances of a given {@link Extension}. The metadata provided by the factory
@@ -23,21 +18,10 @@ public interface ExtensionFactory<EXTTYPE extends Extension> extends Identifiabl
 	default String getId() {
 		return getExtensionType().getName();
 	}
-	
-	@SuppressWarnings("unchecked")
-	default Class<EXTTYPE> getExtensionType() {
-		for (Type t : getClass().getGenericInterfaces()) {
-			Map<TypeVariable<?>, Type> typeArgs = TypeUtils.getTypeArguments(t, ExtensionFactory.class);
-			if (typeArgs != null) {
-				for (Entry<TypeVariable<?>, Type> entry : typeArgs.entrySet()) {
-					if (entry.getKey().getGenericDeclaration() == ExtensionFactory.class) {
-						return (Class<EXTTYPE>) TypeUtils.getRawType(entry.getValue(), null);
-					}
-				}
-			}
-		}
 
-		throw new IllegalStateException("Could not determine the extension type");
+	default Class<EXTTYPE> getExtensionType() {
+		return ReflectionUtilities.getInterfaceArgumentTypeAsClass(this.getClass(), ExtensionFactory.class,
+				0);
 	}
 
 	/**

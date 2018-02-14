@@ -53,6 +53,7 @@ public class UsersRepoHelper {
 	private String BINDING_PASSWORD = "password";
 	private String BINDING_EMAIL = "email";
 	private String BINDING_URL = "url";
+	private String BINDING_AVATAR_URL = "avatarUrl";
 	private String BINDING_PHONE = "phone";
 	private String BINDING_BIRTHDAY = "birthday";
 	private String BINDING_GENDER = "gender";
@@ -92,6 +93,9 @@ public class UsersRepoHelper {
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.STATUS) + " '" + user.getStatus() + "' .";
 		if (user.getUrl() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " '" + user.getUrl() + "' .";
+		}
+		if (user.getAvatarUrl() != null) {
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.AVATAR_URL) + " '" + user.getAvatarUrl() + "' .";
 		}
 		if (user.getPhone() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " '" + user.getPhone() + "' .";
@@ -142,6 +146,7 @@ public class UsersRepoHelper {
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " ?" + BINDING_REGISTRATION_DATE + " ."
 				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.STATUS) + " ?" + BINDING_STATUS + " ."
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " ?" + BINDING_URL + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.AVATAR_URL) + " ?" + BINDING_AVATAR_URL + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.BIRTHDAY) + " ?" + BINDING_BIRTHDAY + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GENDER) + " ?" + BINDING_GENDER + " . }"
@@ -224,6 +229,9 @@ public class UsersRepoHelper {
 			//Optional fields
 			if (tuple.getBinding(BINDING_URL) != null) {
 				user.setUrl(tuple.getValue(BINDING_URL).stringValue());
+			}
+			if (tuple.getBinding(BINDING_AVATAR_URL) != null) {
+				user.setAvatarUrl(tuple.getValue(BINDING_AVATAR_URL).stringValue());
 			}
 			if (tuple.getBinding(BINDING_PHONE) != null) {
 				user.setPhone(tuple.getValue(BINDING_PHONE).stringValue());

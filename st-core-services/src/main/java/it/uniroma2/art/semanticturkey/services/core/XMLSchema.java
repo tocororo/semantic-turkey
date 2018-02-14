@@ -2,17 +2,11 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.text.ParseException;
 
-import org.w3c.dom.Element;
-
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.xmlschema.FormattedValue;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
-import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 import it.uniroma2.art.semanticturkey.utilities.XmlSchemaUtils;
 import it.uniroma2.art.semanticturkey.validators.XSDDatatypeValidator;
 

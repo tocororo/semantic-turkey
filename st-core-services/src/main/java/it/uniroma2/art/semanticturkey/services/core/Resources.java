@@ -31,7 +31,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Subject;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
@@ -48,7 +47,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'U')")
-	public void updateTriple(@Subject @Modified Resource subject, IRI property, Value value, Value newValue) {
+	public void updateTriple(@Modified Resource subject, IRI property, Value value, Value newValue) {
 		logger.debug("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
 
@@ -82,7 +81,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
-	public void removeValue(@LocallyDefined @Modified @Subject Resource subject, @LocallyDefined IRI property,
+	public void removeValue(@LocallyDefined @Modified Resource subject, @LocallyDefined IRI property,
 			Value value) {
 		getManagedConnection().remove(subject, property, value, getWorkingGraph());
 	}
@@ -90,7 +89,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
-	public void addValue(@LocallyDefined @Modified @Subject Resource subject, @LocallyDefined IRI property,
+	public void addValue(@LocallyDefined @Modified Resource subject, @LocallyDefined IRI property,
 			SpecialValue value) throws ProjectInconsistentException, CODAException {
 		addValue(getManagedConnection(), subject, property, value);
 	}
@@ -98,7 +97,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'U')")
-	public void setDeprecated(@LocallyDefined @Modified @Subject IRI resource) {
+	public void setDeprecated(@LocallyDefined @Modified IRI resource) {
 		RepositoryConnection conn = getManagedConnection();
 		Literal literalTrue = conn.getValueFactory().createLiteral("true", XMLSchema.BOOLEAN);
 		conn.add(resource, OWL2Fragment.DEPRECATED, literalTrue, getWorkingGraph());

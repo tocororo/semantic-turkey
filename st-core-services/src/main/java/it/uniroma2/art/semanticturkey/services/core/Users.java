@@ -193,7 +193,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String birthday, @Optional String gender, @Optional String country, @Optional String address,
-			@Optional String affiliation, @Optional String url, @Optional String phone, 
+			@Optional String affiliation, @Optional String url, @Optional String avatarUrl, @Optional String phone, 
 			@Optional Collection<String> languageProficiencies)
 					throws ProjectAccessException, UserException, ParseException, PUBindingException, STPropertyUpdateException {
 		STUser user;
@@ -219,6 +219,9 @@ public class Users extends STServiceAdapter {
 		}
 		if (url != null) {
 			user.setUrl(url);
+		}
+		if (avatarUrl != null) {
+			user.setAvatarUrl(avatarUrl);
 		}
 		if (phone != null) {
 			user.setPhone(phone);
@@ -309,7 +312,7 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserPhone(String email, String phone) throws UserException {
+	public ObjectNode updateUserPhone(String email, @Optional String phone) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
@@ -342,7 +345,7 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserGender(String email, String gender) throws UserException {
+	public ObjectNode updateUserGender(String email, @Optional String gender) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserGender(user, gender);
 		updateUserInSecurityContext(user);
@@ -374,7 +377,7 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserAddress(String email, String address) throws UserException {
+	public ObjectNode updateUserAddress(String email, @Optional String address) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
@@ -390,7 +393,7 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserAffiliation(String email, String affiliation) throws UserException {
+	public ObjectNode updateUserAffiliation(String email, @Optional String affiliation) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
@@ -406,12 +409,29 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserUrl(String email, String url) throws UserException {
+	public ObjectNode updateUserUrl(String email, @Optional String url) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserUrl(user, url);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
+	
+	/**
+	 * Update avatarUrl of the given user.
+	 * @param email
+	 * @param avatarUrl
+	 * @return
+	 * @throws IOException 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
+	public ObjectNode updateUserAvatarUrl(String email, @Optional String avatarUrl) throws UserException {
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserAvatarUrl(user, avatarUrl);
+		updateUserInSecurityContext(user);
+		return user.getAsJsonObject();
+	}
+	
 	
 	/**
 	 * Update language proficiencies of the given user
