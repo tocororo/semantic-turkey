@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -180,6 +182,12 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	}
 
 	@Override
+	public Collection<ConfigurationManager<?>> getConfigurationManagers() {
+		return Arrays.stream(configurationManagerTracker.getServices()).map(o -> (ConfigurationManager<?>) o)
+				.collect(toList());
+	}
+
+	@Override
 	public Collection<Reference> getConfigurationReferences(Project project, STUser user,
 			String componentIdentifier) throws NoSuchConfigurationManager {
 		return getConfigurationManager(componentIdentifier).getConfigurationReferences(project, user);
@@ -216,8 +224,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void storeConfiguration(String componentIdentifier, Reference reference,
-			Map<String, Object> configuration)
-			throws IOException, WrongPropertiesException, NoSuchConfigurationManager {
+			Map<String, Object> configuration) throws IOException, WrongPropertiesException,
+			NoSuchConfigurationManager, STPropertyUpdateException {
 		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
 		((ConfigurationManager) configurationManager).storeConfiguration(reference,
 				ConfigurationSupport.createConfiguration(configurationManager, configuration));

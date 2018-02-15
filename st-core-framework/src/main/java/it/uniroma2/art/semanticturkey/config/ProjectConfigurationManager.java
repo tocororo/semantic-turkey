@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
 /**
@@ -29,7 +30,7 @@ public interface ProjectConfigurationManager<CONFTYPE extends Configuration>
 	}
 
 	default void storeProjectConfiguration(Project project, String identifier, CONFTYPE configuration)
-			throws IOException, WrongPropertiesException {
+			throws IOException, WrongPropertiesException, STPropertyUpdateException {
 		ConfigurationSupport.storeConfiguration(ConfigurationSupport.getConfigurationFolder(this, project),
 				identifier, configuration);
 	}

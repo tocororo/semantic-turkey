@@ -28,7 +28,9 @@ import it.uniroma2.art.semanticturkey.config.ProjectConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.SystemConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.UserConfigurationManager;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
@@ -55,7 +57,8 @@ public abstract class ConfigurationSupport {
 	}
 
 	public static Collection<String> listConfigurationIdentifiers(File folder) {
-		return Arrays.stream(folder.list(new WildcardFileFilter("*.cfg"))).collect(toList());
+		return Arrays.stream(folder.list(new WildcardFileFilter("*.cfg")))
+				.map(name -> name.substring(0, name.length() - 4 /* .cfg length */)).collect(toList());
 	}
 
 	public static <CONFTYPE extends Configuration> CONFTYPE loadConfiguration(
@@ -123,7 +126,12 @@ public abstract class ConfigurationSupport {
 	}
 
 	public static <CONFTYPE extends Configuration> void storeConfiguration(File folder, String identifier,
-			CONFTYPE configuration) throws IOException, WrongPropertiesException {
+			CONFTYPE configuration) throws IOException, WrongPropertiesException, STPropertyUpdateException {
+		STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configuration);
+
+		if (!checker.isValid()) {
+			throw new STPropertyUpdateException("Invalid configuration: " + checker.getErrorMessage());
+		}
 		Properties props = new Properties();
 		configuration.storeProperties(props);
 		props.setProperty(CONFIG_TYPE_PARAM, configuration.getClass().getName());

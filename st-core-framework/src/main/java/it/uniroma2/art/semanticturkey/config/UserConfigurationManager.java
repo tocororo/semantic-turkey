@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 
@@ -29,7 +30,7 @@ public interface UserConfigurationManager<CONFTYPE extends Configuration>
 	}
 
 	default void storeUserConfiguration(STUser user, String identifier, CONFTYPE configuration)
-			throws IOException, WrongPropertiesException {
+			throws IOException, WrongPropertiesException, STPropertyUpdateException {
 		ConfigurationSupport.storeConfiguration(ConfigurationSupport.getConfigurationFolder(this, user),
 				identifier, configuration);
 	}

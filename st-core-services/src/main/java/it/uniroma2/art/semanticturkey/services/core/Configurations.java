@@ -9,20 +9,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
-import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
-import it.uniroma2.art.semanticturkey.extension.settings.Settings;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -39,6 +34,11 @@ public class Configurations extends STServiceAdapter {
 	@Autowired
 	private ExtensionPointManager exptManager;
 
+	@STServiceOperation
+	public Collection<ConfigurationManager<?>> getConfigurationManagers() {
+		return exptManager.getConfigurationManagers();
+	}
+	
 	/**
 	 * Returns the stored configurations associated with the given component
 	 * 
@@ -81,11 +81,12 @@ public class Configurations extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
+	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void storeConfiguration(String componentID, String relativeReference,
 			Map<String, Object> configuration)
-			throws NoSuchConfigurationManager, IOException, WrongPropertiesException {
+			throws NoSuchConfigurationManager, IOException, WrongPropertiesException, STPropertyUpdateException {
 		exptManager.storeConfiguration(componentID, parseReference(relativeReference), configuration);
 	}
 

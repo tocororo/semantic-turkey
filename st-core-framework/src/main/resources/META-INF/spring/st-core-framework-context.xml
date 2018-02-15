@@ -447,4 +447,10 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategyFactory" />
 	</osgi:service>
+
+	<!-- Publishes the manager of saved queries -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.config.query.SavedQueryManager" />
+	</osgi:service>
 </beans>

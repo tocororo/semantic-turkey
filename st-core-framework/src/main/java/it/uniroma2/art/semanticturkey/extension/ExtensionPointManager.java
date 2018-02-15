@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
@@ -44,15 +45,21 @@ public interface ExtensionPointManager {
 	ExtensionPoint getExtensionPoint(String identifier) throws NoSuchExtensionPointException;
 
 	CollaborationBackendExtensionPoint getCollaborationBackend();
+
 	DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter();
+
 	RenderingEngineExtensionPoint getRenderingEngine();
+
 	RDFTransformerExtensionPoint getRDFTransformer();
+
 	RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer();
+
 	SearchStrategyExtensionPoint getSearchStrategy();
+
 	URIGeneratorExtensionPoint getURIGenerator();
-	
-	
-	
+
+	Collection<ConfigurationManager<?>> getConfigurationManagers();
+
 	/**
 	 * Returns the stored configurations associated with a given component
 	 * 
@@ -81,8 +88,8 @@ public interface ExtensionPointManager {
 			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager;
 
 	void storeConfiguration(String componentIdentifier, Reference reference,
-			Map<String, Object> configuration)
-			throws IOException, WrongPropertiesException, NoSuchConfigurationManager;
+			Map<String, Object> configuration) throws IOException, WrongPropertiesException,
+			NoSuchConfigurationManager, STPropertyUpdateException;
 
 	Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
 			throws STPropertyAccessException, NoSuchSettingsManager;
@@ -96,5 +103,4 @@ public interface ExtensionPointManager {
 	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 
 	ExtensionFactory<?> getExtension(String componentIdentifier);
-
 }
