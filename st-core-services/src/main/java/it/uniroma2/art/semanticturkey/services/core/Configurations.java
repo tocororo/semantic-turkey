@@ -38,7 +38,13 @@ public class Configurations extends STServiceAdapter {
 	public Collection<ConfigurationManager<?>> getConfigurationManagers() {
 		return exptManager.getConfigurationManagers();
 	}
-	
+
+	@STServiceOperation
+	public ConfigurationManager<?> getConfigurationManager(String componentID)
+			throws NoSuchConfigurationManager {
+		return exptManager.getConfigurationManager(componentID);
+	}
+
 	/**
 	 * Returns the stored configurations associated with the given component
 	 * 
@@ -81,12 +87,12 @@ public class Configurations extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
-	 * @throws STPropertyUpdateException 
+	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void storeConfiguration(String componentID, String relativeReference,
-			Map<String, Object> configuration)
-			throws NoSuchConfigurationManager, IOException, WrongPropertiesException, STPropertyUpdateException {
+			Map<String, Object> configuration) throws NoSuchConfigurationManager, IOException,
+			WrongPropertiesException, STPropertyUpdateException {
 		exptManager.storeConfiguration(componentID, parseReference(relativeReference), configuration);
 	}
 

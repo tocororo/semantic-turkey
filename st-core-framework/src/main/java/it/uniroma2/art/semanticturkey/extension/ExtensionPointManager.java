@@ -59,6 +59,7 @@ public interface ExtensionPointManager {
 	URIGeneratorExtensionPoint getURIGenerator();
 
 	Collection<ConfigurationManager<?>> getConfigurationManagers();
+	ConfigurationManager<?> getConfigurationManager(String componentID) throws NoSuchConfigurationManager;
 
 	/**
 	 * Returns the stored configurations associated with a given component
@@ -103,4 +104,5 @@ public interface ExtensionPointManager {
 	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 
 	ExtensionFactory<?> getExtension(String componentIdentifier);
+
 }
