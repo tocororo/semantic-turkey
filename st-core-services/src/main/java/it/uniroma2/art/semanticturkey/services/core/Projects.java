@@ -637,6 +637,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void modifyRepositoryAccessCredentials(String projectName, String repositoryID,
 			@Optional String newUsername, @Optional String newPassword)
 			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
@@ -669,6 +670,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
 	public void batchModifyRepostoryAccessCredentials(String projectName, String serverURL,
 			@Optional(defaultValue = "false") boolean matchUsername, @Optional String currentUsername,
 			@Optional String newUsername, @Optional String newPassword)
