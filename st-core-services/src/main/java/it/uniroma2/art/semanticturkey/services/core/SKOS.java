@@ -21,6 +21,8 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -88,8 +90,14 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes) {
+	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes,
+			@Optional @LocallyDefined IRI hierachicalProp) {
 		QueryBuilder qb;
+		
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = checkHierachicalProp(hierachicalProp);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, getManagedConnection());
 		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -109,6 +117,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
 					"FILTER(";
 			boolean first=true;
+			//filter according to the scheme
 			for(IRI scheme : schemes){
 				if(!first){
 					query+= " || ";
@@ -118,7 +127,10 @@ public class SKOS extends STServiceAdapter {
 			}		
 			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" +
+					"         BIND( EXISTS {															 \n" +
+					//"					?aNarrowerConcept skos:broader|^skos:narrower ?resource .    	 \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?aNarrowerConcept", 
+							"?resource") +
 					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
 					"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
@@ -146,9 +158,18 @@ public class SKOS extends STServiceAdapter {
 					" WHERE {																			 \n" + 
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     FILTER NOT EXISTS {?resource skos:broader|^skos:narrower []}                   \n" +
+					//TODO, this should be done now with MINUS
+					//"     FILTER NOT EXISTS {?resource skos:broader|^skos:narrower []}                   \n" +
+					"\nMINUS {																			 \n" +
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?resource", 
+							"?aNarrowerConcept") +
+					"\n}																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
+					"         BIND( EXISTS {															 \n" +
+						//"?aNarrowerConcept skos:broader|^skos:narrower ?resource . 					 \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?aNarrowerConcept", 
+								"?resource") +
+						"} as ?attr_more ) \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 
@@ -169,9 +190,14 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefinedResources List<IRI> schemes) {
+			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI hierachicalProp) {
 		QueryBuilder qb;
 
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = checkHierachicalProp(hierachicalProp);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, getManagedConnection());
+		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
 					// @formatter:off
@@ -187,7 +213,9 @@ public class SKOS extends STServiceAdapter {
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
+					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?resource", 
+							"?concept") +
 					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
 					"     ?resource ?subPropInScheme ?scheme .                                             \n" +
 					"FILTER (";
@@ -201,7 +229,10 @@ public class SKOS extends STServiceAdapter {
 			}	
 			query += ") 																				 \n" +
 					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" +
+					"         BIND( EXISTS {															 \n" +
+					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?aNarrowerConcept", 
+							"?resource") +
 					"         			?subPropInScheme2 rdfs:subPropertyOf* skos:inScheme .         	 \n" +
 					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
@@ -230,7 +261,9 @@ public class SKOS extends STServiceAdapter {
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?resource skos:broader|^skos:narrower ?concept .                               \n" +
+					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?resource", 
+							"?concept") +
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
 					"     }                                                                              \n" +
@@ -254,9 +287,14 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getBroaderConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefinedResources List<IRI> schemes) {
+			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI hierachicalProp) {
 		QueryBuilder qb;
 
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = checkHierachicalProp(hierachicalProp);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, getManagedConnection());
+		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
 					// @formatter:off
@@ -270,7 +308,9 @@ public class SKOS extends STServiceAdapter {
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?resource skos:narrower|^skos:broader ?concept .                               \n" +
+					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?concept", 
+							"?resource") +
 					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
 					"     ?resource ?subPropInScheme ?scheme .                                             \n" +
 					"FILTER (";
@@ -302,7 +342,9 @@ public class SKOS extends STServiceAdapter {
 					" WHERE {																			 \n" +
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?resource skos:narrower|^skos:broader ?concept .                               \n" +
+					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
+					prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?concept", 
+							"?resource") +
 					generateNatureSPARQLWherePart("?resource") +
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n"
@@ -481,10 +523,13 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional CustomFormValue customFormValue,
-			@Optional(defaultValue="true") boolean checkExistingAltLabel)
+			@Optional(defaultValue="true") boolean checkExistingAltLabel, @Optional @LocallyDefined IRI hierachicalProp)
 					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
 					CODAException, UnsupportedLexicalizationModelException, 
 					AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
+		
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = checkHierachicalProp(hierachicalProp);
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		
@@ -517,7 +562,9 @@ public class SKOS extends STServiceAdapter {
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
 		}
 		if (broaderConcept != null) {//?conc skos:broader ?broad
-			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept);
+			//modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept); OLD
+			modelAdditions.add(newConceptIRI, hierachicalProp, broaderConcept);
+			
 		} else { //?conc skos:topConceptOf ?sc
 			for(IRI conceptScheme : conceptSchemes){
 				modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, conceptScheme);
@@ -672,13 +719,19 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void addBroaderConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined IRI broaderConcept) {
+			@LocallyDefined IRI broaderConcept, @Optional @LocallyDefined IRI hierachicalProp) {
 
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = checkHierachicalProp(hierachicalProp);
+		
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 
+		//modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
+		//		org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept)); OLD
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
-				org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept));
+				hierachicalProp, broaderConcept));
+		
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}	
@@ -1029,15 +1082,25 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public void removeBroaderConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
-			IRI broaderConcept) {
+			IRI broaderConcept, @Optional @LocallyDefined IRI hierachicalProp) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = checkHierachicalProp(hierachicalProp);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, repoConnection);
+		
+		/* OLD
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept));
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER, concept));
-
+		 */
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
+				hierachicalProp, broaderConcept));
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept,
+				inversHierachicalProp, concept));
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}	
 	
@@ -1133,14 +1196,20 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'D')")
 	public void deleteConcept(@LocallyDefined IRI concept) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
+
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		IRI hierachicalProp = checkHierachicalProp(null);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, repoConnection);
 		
 		//first check if the concept has any narrower (or is it broader to any other concept)
-		
 		String query =
 			// @formatter:off
 			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 			"ASK {                                                                              \n" +
-			"	[] skos:broader|^skos:narrower ?concept                                         \n" +
+			//"	[] skos:broader|^skos:narrower ?concept                                         \n" + OLD
+			prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?aNarrowerConcept", 
+					"?concept") +
 			"}                                                                                  \n";
 			// @formatter:on
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
@@ -1861,6 +1930,82 @@ public class SKOS extends STServiceAdapter {
 			throw new AlreadyExistingLiteralFormForResourceException(text);
 		}
 	}
+	
+	public IRI checkHierachicalProp(IRI hierachicalProp) {
+		if(hierachicalProp == null) {
+			hierachicalProp = org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER;
+		}
+		return hierachicalProp;
+	}
+	
+	/**
+	 * return the inverse of the input hierachicalProp or null if it ha no inverse
+	 */
+	public IRI getInverseOfHierachicalProp(IRI hierachicalProp, RepositoryConnection repoConnection) {
+		//if the hierachical property is null or BROADER, then its inverse is NARROWER, so return it immediatelly
+		if(hierachicalProp == null || hierachicalProp.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER)){
+			return org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER;
+		}
+		// @formatter:off
+		String query = "SELECT ?inverseProp"
+				+ "\nWHERE{"
+				+ "\n{<"+hierachicalProp.stringValue()+"> <"+org.eclipse.rdf4j.model.vocabulary.OWL.INVERSEOF+"> "
+						+ "?inverseProp}"
+				+ "\nUNION"
+				+ "\n{?inverseProp <"+org.eclipse.rdf4j.model.vocabulary.OWL.INVERSEOF+"> "
+						+ "<"+hierachicalProp.stringValue()+">}"		
+				+ "\n}\n";
+		// @formatter:on
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		IRI inverseHierarchicalProp = null;
+		if(tupleQueryResult.hasNext()) {
+			inverseHierarchicalProp = (IRI) tupleQueryResult.next().getValue("inverseProp");
+		}
+		return inverseHierarchicalProp;
+		
+	}
+	
+	public String prepareHierarchicalPartForQuery(IRI hierachicalProp, IRI inverseHierachicalProp, String var, 
+			String superVar) {
+		if(!var.startsWith("?")) {
+			var = "?"+var;
+		}
+		if(!superVar.startsWith("?")) {
+			superVar = "?"+superVar;
+		}
+		String query = "\n?subPropH1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
+							"<"+hierachicalProp.stringValue()+"> .";
+		if(inverseHierachicalProp!=null) {
+			query +="\n?subPropHInv1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
+							"<"+inverseHierachicalProp.stringValue()+"> ."+
+					"\n{";
+		}
+		query += "\n"+var+" ?subPropH1 "+superVar+" .";
+		if(inverseHierachicalProp!=null) {
+			query +="\n}" +
+					"\nUNION" +
+					"\n{" +
+					"\n "+superVar+ "?subPropHInv1 "+var+" ." +
+					"\n}";
+		}
+		
+		return query;
+	}
+	
+	/*public String prepareInnerQueryForHierarchicalProp(IRI hierachicalProp, String varName) {
+		if(!varName.startsWith("?")) {
+			varName ="?"+varName;
+		}
+		String subQuery = "SELECT "+varName+""
+				+ "\nWEHERE{"
+				+ "\n"+varName+" <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+"> "
+						+ "<"+hierachicalProp.stringValue()+">"
+				+ "\n}";
+		
+		return subQuery;
+	}*/
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
 		Method m = SKOS.class.getMethod("getNarrowerConcepts", Resource.class, Resource.class,
