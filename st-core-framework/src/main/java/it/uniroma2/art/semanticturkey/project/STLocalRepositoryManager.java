@@ -3,11 +3,11 @@ package it.uniroma2.art.semanticturkey.project;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
-import javax.sound.midi.MidiDevice.Info;
 
 import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.IsolationLevels;
@@ -15,7 +15,6 @@ import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.repository.DelegatingRepository;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.config.DelegatingRepositoryImplConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
@@ -25,6 +24,7 @@ import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.LocalRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.sail.config.DelegatingSailImplConfig;
@@ -198,9 +198,9 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			}
 
 			if (repoImplConfig instanceof HTTPRepositoryConfig) {
-				
+
 				logger.debug("Delete remote counterpart");
-				
+
 				HTTPRepositoryConfig httpRepoImpl = (HTTPRepositoryConfig) repoImplConfig;
 				String username;
 				String password;
@@ -246,7 +246,7 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 			throws RepositoryException, RepositoryConfigException {
 		try {
 			return repoMgr.removeRepository(repostoryId);
-		} catch (RepositoryConfigException|RepositoryException e) {
+		} catch (RepositoryConfigException | RepositoryException e) {
 			/*
 			 * In case of incorrect repository configuration, the methdod above will throw, so an alternate
 			 * lower-layer mechanism is used
@@ -279,4 +279,62 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 		}
 		return null;
 	}
+
+	public synchronized void modifyAccessCredentials(String repositoryID, @Nullable String newUsername,
+			@Nullable String newPassword) {
+		RepositoryConfig repConfig = this.getRepositoryConfig(repositoryID);
+
+		RepositoryImplConfig repImplConfig = getUnfoldedRepositoryImplConfig(repConfig);
+
+		if (!(repImplConfig instanceof HTTPRepositoryConfig)) {
+			throw new IllegalArgumentException("Not a remote repository: " + repositoryID);
+		}
+
+		STRepositoryInfo stRepInfo = repo2Info.getOrDefault(repositoryID, STRepositoryInfo.createDefault());
+
+		STRepositoryInfo newStRepInfo = stRepInfo.withNewAccessCredentials(newUsername, newPassword);
+
+		repo2Info.put(repositoryID, newStRepInfo);
+		writeAdditionalRepositoryInfo();
+	}
+
+	public synchronized void batchModifyAccessCredentials(String serverURL, boolean matchUsername,
+			@Nullable String currentUserName, @Nullable String newUsername, @Nullable String newPassword) {
+		for (RepositoryInfo repositoryInfo : getAllRepositoryInfos(true)) {
+			RepositoryConfig repConfig = this.getRepositoryConfig(repositoryInfo.getId());
+			RepositoryImplConfig repImplConfig = getUnfoldedRepositoryImplConfig(repConfig);
+
+			if (!(repImplConfig instanceof HTTPRepositoryConfig)) {
+				continue; // skip non-remote repositories
+			}
+
+			HTTPRepositoryConfig httpRepImplConfig = (HTTPRepositoryConfig) repImplConfig;
+
+			// Skip repositories on irrelevant servers
+			if (!Protocol.getServerLocation(httpRepImplConfig.getURL()).equals(serverURL))
+				continue;
+
+			STRepositoryInfo stRepInfo = repo2Info.getOrDefault(repositoryInfo.getId(),
+					STRepositoryInfo.createDefault());
+
+			if (matchUsername && !Objects.equals(currentUserName, stRepInfo.getUsername())) {
+				continue; // skip repositories for irrelevant usernames
+			}
+
+			STRepositoryInfo newStRepInfo = stRepInfo.withNewAccessCredentials(newUsername, newPassword);
+
+			repo2Info.put(repositoryInfo.getId(), newStRepInfo);
+		}
+
+		writeAdditionalRepositoryInfo();
+	}
+
+	public static RepositoryImplConfig getUnfoldedRepositoryImplConfig(RepositoryConfig config) {
+		RepositoryImplConfig repImplConfig = config.getRepositoryImplConfig();
+		if (repImplConfig instanceof DelegatingRepositoryImplConfig) {
+			repImplConfig = ((DelegatingRepositoryImplConfig) repImplConfig).getDelegate();
+		}
+		return repImplConfig;
+	}
+
 }

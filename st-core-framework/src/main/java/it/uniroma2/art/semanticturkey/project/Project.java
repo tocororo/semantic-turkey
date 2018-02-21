@@ -1009,5 +1009,13 @@ public abstract class Project extends AbstractProject {
 	public Set<RDFResourceRole> getUpdateForRoles() {
 		return Collections.unmodifiableSet(updateForRoles);
 	}
+	
+	/**
+	 * Returns the directory associated with this project
+	 * @return
+	 */
+	public File getProjectDirectory() {
+		return _projectDir;
+	}
 
 }

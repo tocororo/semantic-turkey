@@ -9,10 +9,18 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.felix.bundlerepository.impl.RepositoryImpl;
+import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.repository.config.DelegatingRepositoryImplConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,6 +61,8 @@ import it.uniroma2.art.semanticturkey.project.ProjectStatus;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
@@ -62,6 +72,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
+import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
+import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -547,4 +559,131 @@ public class Projects extends STServiceAdapter {
 		Project project = ProjectManager.getProjectDescription(projectName);
 		project.setProperty(propName, propValue);
 	}
-};
+
+	/**
+	 * Returns the repositories associated with a (closed) project. Optionally, it is possible to skip local
+	 * repositories.
+	 * 
+	 * @param projectName
+	 * @param excludeLocal
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+	public Collection<RepositorySummary> getRepositories(String projectName,
+			@Optional(defaultValue = "false") boolean excludeLocal)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+
+		Collection<RepositorySummary> rv = new ArrayList<>();
+
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
+					project.getProjectDirectory());
+			repoManager.initialize();
+			try {
+				Collection<RepositoryInfo> repos = repoManager.getAllUserRepositoryInfos();
+
+				for (RepositoryInfo rep : repos) {
+
+					RepositoryConfig config = repoManager.getRepositoryConfig(rep.getId());
+					RepositoryImplConfig repImplConfig = STLocalRepositoryManager
+							.getUnfoldedRepositoryImplConfig(config);
+
+					RemoteRepositorySummary remoteRepoSummary;
+
+					if (repImplConfig instanceof HTTPRepositoryConfig) {
+						HTTPRepositoryConfig httpRepConfig = ((HTTPRepositoryConfig) repImplConfig);
+
+						java.util.Optional<STRepositoryInfo> stRepositoryInfo = repoManager
+								.getSTRepositoryInfo(rep.getId());
+
+						remoteRepoSummary = new RemoteRepositorySummary(
+								Protocol.getServerLocation(httpRepConfig.getURL()),
+								Protocol.getRepositoryID(httpRepConfig.getURL()),
+								stRepositoryInfo.map(STRepositoryInfo::getUsername).orElse(null),
+								stRepositoryInfo.map(STRepositoryInfo::getPassword).orElse(null));
+					} else {
+						if (excludeLocal) {
+							continue; // as indicated in the parameters, skip local repositories
+						}
+						remoteRepoSummary = null;
+					}
+
+					RepositorySummary repSummary = new RepositorySummary(rep.getId(), rep.getDescription(),
+							remoteRepoSummary);
+					rv.add(repSummary);
+				}
+			} finally {
+				repoManager.shutDown();
+			}
+		});
+
+		return rv;
+	}
+
+	/**
+	 * Modifies the access credentials of a repository associated with a given (closed) project. The new
+	 * username and password are optional: if they are not given, they are considered <code>null</code>, thus
+	 * indicating an unprotected repository.
+	 * 
+	 * @param projectName
+	 * @param repositoryID
+	 * @param newUsername
+	 * @param newPassword
+	 * @throws ProjectAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void modifyRepositoryAccessCredentials(String projectName, String repositoryID,
+			@Optional String newUsername, @Optional String newPassword)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
+					project.getProjectDirectory());
+			repoManager.initialize();
+			try {
+				repoManager.modifyAccessCredentials(repositoryID, newUsername, newPassword);
+			} finally {
+				repoManager.shutDown();
+			}
+		});
+	}
+
+	/**
+	 * Modifies the access credentials of (possibly) many repositories at once. The repositories shall match
+	 * the provided <code>serverURL</code> and <code>currentUsername</code> (only if
+	 * <code>matchUsername</code> is <code>true</code>). When username matching is active, a <code>null</code>
+	 * value for <code>currentUsername</code> indicates repositories with no associated username.
+	 * 
+	 * @param projectName
+	 * @param serverURL
+	 * @param matchUsername
+	 * @param currentUsername
+	 * @param newUsername
+	 * @param newPassword
+	 * @throws ProjectAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void batchModifyRepostoryAccessCredentials(String projectName, String serverURL,
+			@Optional(defaultValue = "false") boolean matchUsername, @Optional String currentUsername,
+			@Optional String newUsername, @Optional String newPassword)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
+					project.getProjectDirectory());
+			repoManager.initialize();
+			try {
+				repoManager.batchModifyAccessCredentials(serverURL, matchUsername, currentUsername,
+						newUsername, newPassword);
+			} finally {
+				repoManager.shutDown();
+			}
+		});
+
+	}
+}

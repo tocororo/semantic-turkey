@@ -47,6 +47,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.EnumUtils;
@@ -144,6 +147,8 @@ public class ProjectManager {
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
 
 	private static volatile ExtensionPointManager exptManager;
+	
+	private static Set<Project> projectsLockedForAccess = ConcurrentHashMap.newKeySet();
 	
 	public static void setExtensionPointManager(ExtensionPointManager exptManager) {
 		ProjectManager.exptManager = exptManager;
@@ -898,6 +903,10 @@ public class ProjectManager {
 
 		Project project = getProjectDescription(projectName);
 
+		if (projectsLockedForAccess.contains(project)) {
+			throw new ProjectAccessException("Project locked for access: " + project.getName());
+		}
+		
 		AccessResponse accessResponse = checkAccessibility(consumer, project, requestedAccessLevel,
 				requestedLockLevel);
 
@@ -1766,4 +1775,26 @@ public class ProjectManager {
 			throw new ProjectCreationException(e);
 		}
 	}
+
+	public static void handleProjectExclusively(String projectName, Consumer<Project> projectConsumer)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		Project project = getProject(projectName, true);
+
+		boolean alreadyLocked = !projectsLockedForAccess.add(project);
+
+		if (alreadyLocked) {
+			throw new ProjectAccessException("Project \'" + projectName + "\' is already locked");
+		}
+
+		try {
+			if (isOpen(project)) {
+				throw new ProjectAccessException("Project \'" + projectName + "\' is open");
+			}
+
+			projectConsumer.accept(project);
+		} finally {
+			projectsLockedForAccess.remove(project);
+		}
+	}
+
 }

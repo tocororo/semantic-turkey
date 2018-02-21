@@ -113,4 +113,13 @@ public class STRepositoryInfo {
 
 	}
 
+	public static STRepositoryInfo createDefault() {
+		return new STRepositoryInfo(null, null, null, null, null, null);
+	}
+
+	public STRepositoryInfo withNewAccessCredentials(String newUsername, String newPassword) {
+		return new STRepositoryInfo(backendType, newUsername, newPassword, defaultReadIsolationLevel,
+				defaultWriteIsolationLevel, searchStrategy);
+	}
+
 }
