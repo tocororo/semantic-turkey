@@ -91,13 +91,13 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes,
-			@Optional @LocallyDefined IRI hierachicalProp) {
+			@Optional @LocallyDefined IRI hierachicalProp, @Optional @LocallyDefined IRI inversHierachicalProp) {
 		QueryBuilder qb;
 		
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
 		hierachicalProp = checkHierachicalProp(hierachicalProp);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
-		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, getManagedConnection());
+		inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, inversHierachicalProp);
 		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -190,13 +190,14 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI hierachicalProp) {
+			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI hierachicalProp,
+			@Optional @LocallyDefined IRI inversHierachicalProp) {
 		QueryBuilder qb;
 
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
 		hierachicalProp = checkHierachicalProp(hierachicalProp);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
-		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, getManagedConnection());
+		inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, inversHierachicalProp);
 		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -287,13 +288,14 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getBroaderConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI hierachicalProp) {
+			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI hierachicalProp,
+			@Optional @LocallyDefined IRI inversHierachicalProp) {
 		QueryBuilder qb;
 
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
 		hierachicalProp = checkHierachicalProp(hierachicalProp);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
-		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, getManagedConnection());
+		inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, inversHierachicalProp);
 		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -1082,14 +1084,15 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'D')")
 	public void removeBroaderConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
-			IRI broaderConcept, @Optional @LocallyDefined IRI hierachicalProp) {
+			IRI broaderConcept, @Optional @LocallyDefined IRI hierachicalProp, 
+			@Optional @LocallyDefined IRI inversHierachicalProp) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
 		hierachicalProp = checkHierachicalProp(hierachicalProp);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
-		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, repoConnection);
+		inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, inversHierachicalProp);
 		
 		/* OLD
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
@@ -1200,7 +1203,7 @@ public class SKOS extends STServiceAdapter {
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
 		IRI hierachicalProp = checkHierachicalProp(null);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
-		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, repoConnection);
+		IRI inversHierachicalProp = getInverseOfHierachicalProp(hierachicalProp, null);
 		
 		//first check if the concept has any narrower (or is it broader to any other concept)
 		String query =
@@ -1931,7 +1934,7 @@ public class SKOS extends STServiceAdapter {
 		}
 	}
 	
-	public IRI checkHierachicalProp(IRI hierachicalProp) {
+	public static IRI checkHierachicalProp(IRI hierachicalProp) {
 		if(hierachicalProp == null) {
 			hierachicalProp = org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER;
 		}
@@ -1941,11 +1944,18 @@ public class SKOS extends STServiceAdapter {
 	/**
 	 * return the inverse of the input hierachicalProp or null if it ha no inverse
 	 */
-	public IRI getInverseOfHierachicalProp(IRI hierachicalProp, RepositoryConnection repoConnection) {
+	public static IRI getInverseOfHierachicalProp(IRI hierachicalProp, IRI inversHierachicalProp) {
+		if (inversHierachicalProp != null) {
+			return inversHierachicalProp;
+		}
 		//if the hierachical property is null or BROADER, then its inverse is NARROWER, so return it immediatelly
-		if(hierachicalProp == null || hierachicalProp.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER)){
+		else if(hierachicalProp == null || hierachicalProp.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER)){
 			return org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER;
 		}
+		else {
+			return null;
+		}
+		/*
 		// @formatter:off
 		String query = "SELECT ?inverseProp"
 				+ "\nWHERE{"
@@ -1964,15 +1974,33 @@ public class SKOS extends STServiceAdapter {
 			inverseHierarchicalProp = (IRI) tupleQueryResult.next().getValue("inverseProp");
 		}
 		return inverseHierarchicalProp;
-		
+		*/
 	}
 	
-	public String prepareHierarchicalPartForQuery(IRI hierachicalProp, IRI inverseHierachicalProp, String var, 
+	public static  String prepareHierarchicalPartForQuery(IRI hierachicalProp, IRI inverseHierachicalProp, IRI iri, 
+			IRI superIri) {
+		return prepareHierarchicalPartForQuery(hierachicalProp, inverseHierachicalProp, 
+				"<"+iri.stringValue()+">", "<"+superIri.stringValue()+">");
+	}
+	
+	public static  String prepareHierarchicalPartForQuery(IRI hierachicalProp, IRI inverseHierachicalProp, String var, 
+			IRI superIri) {
+		return prepareHierarchicalPartForQuery(hierachicalProp, inverseHierachicalProp, var,
+				"<"+superIri.stringValue()+">");
+	}
+	
+	public static  String prepareHierarchicalPartForQuery(IRI hierachicalProp, IRI inverseHierachicalProp, IRI iri, 
 			String superVar) {
-		if(!var.startsWith("?")) {
+		return prepareHierarchicalPartForQuery(hierachicalProp, inverseHierachicalProp, 
+				"<"+iri.stringValue()+">", superVar);
+	}
+	
+	public static  String prepareHierarchicalPartForQuery(IRI hierachicalProp, IRI inverseHierachicalProp, String var, 
+			String superVar) {
+		if(!var.startsWith("?") && !var.startsWith("<")) {
 			var = "?"+var;
 		}
-		if(!superVar.startsWith("?")) {
+		if(!superVar.startsWith("?") && !superVar.startsWith("<")) {
 			superVar = "?"+superVar;
 		}
 		String query = "\n?subPropH1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
@@ -1987,9 +2015,107 @@ public class SKOS extends STServiceAdapter {
 			query +="\n}" +
 					"\nUNION" +
 					"\n{" +
-					"\n "+superVar+ "?subPropHInv1 "+var+" ." +
+					"\n "+superVar+ " ?subPropHInv1 "+var+" ." +
 					"\n}";
 		}
+		
+		return query;
+	}
+
+	public static String preparePropPathForHierarchicalforQuery(IRI hierachicalProp, IRI inverseHierachicalProp, 
+			IRI iri, IRI superIri, RepositoryConnection repoConnection) {
+		return preparePropPathForHierarchicalforQuery(hierachicalProp, inverseHierachicalProp, 
+				"<"+iri.stringValue()+">", "<"+superIri.stringValue()+">", repoConnection);
+	}
+	
+	public static String preparePropPathForHierarchicalforQuery(IRI hierachicalProp, IRI inverseHierachicalProp, 
+			IRI iri, String superVar, RepositoryConnection repoConnection) {
+		return preparePropPathForHierarchicalforQuery(hierachicalProp, inverseHierachicalProp, 
+				"<"+iri.stringValue()+">", superVar, repoConnection);
+	}
+	
+	public static String preparePropPathForHierarchicalforQuery(IRI hierachicalProp, IRI inverseHierachicalProp, 
+			String var, IRI superIri, RepositoryConnection repoConnection) {
+		return preparePropPathForHierarchicalforQuery(hierachicalProp, inverseHierachicalProp, 
+				var, "<"+superIri.stringValue()+">", repoConnection);
+	}
+	
+	public static String preparePropPathForHierarchicalforQuery(IRI hierachicalProp, IRI inverseHierachicalProp, 
+			String var, String superVar, RepositoryConnection repoConnection) {
+		if(!var.startsWith("?") && !var.startsWith("<")) {
+			var = "?"+var;
+		}
+		if(!superVar.startsWith("?") && !superVar.startsWith("<")) {
+			superVar = "?"+superVar;
+		}
+		
+		List<IRI> subPropList = new ArrayList<>();
+		List<IRI> inverseSubPropList = new ArrayList<>();
+		
+		
+		// @formatter:off
+		String query = "SELECT ?subProp ?subInverseProp"
+				+ "\nWHERE{";
+		if(inverseHierachicalProp!=null) {
+			query+= "\n{";
+		}
+		query +="\n?subProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
+				+ "<"+hierachicalProp.stringValue()+"> .";
+		if(inverseHierachicalProp!=null) {
+			query +="\n}"
+				+ "\nUNION"
+				+ "\n{"
+				+ "\n?subInverseProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
+						+ "<"+inverseHierachicalProp.stringValue()+"> ."
+				+ "\n}";
+		}		
+		query +="\n}";
+		// @formatter:on
+		logger.debug("query: " + query);
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		//get the subProperties from the results of the SPARQL query
+		while(tupleQueryResult.hasNext()) {
+			BindingSet bindingSet = tupleQueryResult.next();
+			if(bindingSet.hasBinding("subProp")) {
+				Value value = bindingSet.getValue("subProp");
+				if(value instanceof IRI && !subPropList.contains((IRI)value)) {
+					subPropList.add((IRI)value);
+				}
+			}
+			if(bindingSet.hasBinding("subInverseProp")) {
+				Value value = bindingSet.getValue("subInverseProp");
+				if(value instanceof IRI && !inverseSubPropList.contains((IRI)value)) {
+					inverseSubPropList.add((IRI)value);
+				}
+			}
+		}
+		tupleQueryResult.close();
+		//now construct the propertyPath
+		String propertyPath = "";
+		boolean first = true;
+		for(IRI subProp : subPropList) {
+			if(!first) {
+				propertyPath += " | ";
+			}
+			else {
+				first = false;
+			}
+			propertyPath += "<"+subProp.stringValue()+">";
+		}
+		for(IRI inverseSubProp : inverseSubPropList) {
+			if(!first) {
+				propertyPath += " | ";
+			}
+			else {
+				first = false;
+			}
+			propertyPath += "^<"+inverseSubProp.stringValue()+">";
+		}
+		
+		
+		query ="\n" + var + " (" + propertyPath  + " )* "+superVar+" .";
 		
 		return query;
 	}

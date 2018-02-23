@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
@@ -133,10 +134,19 @@ public class Search extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resourceURI)+ ')', 'R')")
 	public Collection<AnnotatedValue<Resource>> getPathFromRoot(RDFResourceRole role, IRI resourceURI,
 			@Optional List<IRI> schemesIRI, 
-			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root) throws InvalidParameterException {
+			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root,
+			@Optional @LocallyDefined IRI hierachicalProp, @Optional @LocallyDefined IRI inversHierachicalProp) 
+					throws InvalidParameterException {
 
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		hierachicalProp = it.uniroma2.art.semanticturkey.services.core.SKOS.checkHierachicalProp(hierachicalProp);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		inversHierachicalProp = it.uniroma2.art.semanticturkey.services.core.SKOS
+				.getInverseOfHierachicalProp(hierachicalProp, inversHierachicalProp);
+
+		
 		String query = null;
 		String superResourceVar = null, superSuperResourceVar = null;
 		if (role.equals(RDFResourceRole.concept)) {
@@ -148,7 +158,10 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
 					"\nWHERE{" +
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )* ?broader .";
+					//"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )* ?broader ."; OLD
+					it.uniroma2.art.semanticturkey.services.core.SKOS
+					.preparePropPathForHierarchicalforQuery(hierachicalProp, inversHierachicalProp,
+							resourceURI, "?broader", getManagedConnection() );
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
@@ -168,13 +181,22 @@ public class Search extends STServiceAdapter {
 				//check if the selected broader has no brother itself, in this case it is consider a topConcept
 				query +="\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
-						"\nFILTER NOT EXISTS{ " +
+						//OLD
+						/*"\nFILTER NOT EXISTS{ " +
 						"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader ."+
-						"}"+
+						"}"+*/
+						"\nMINUS{" +
+						it.uniroma2.art.semanticturkey.services.core.SKOS
+							.prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?broader", 
+								"?broaderOfBroader") +
+						"\n}" +
 						"\n}";
 			}
 			query += "\nOPTIONAL{" +
-					"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader .";
+					//"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader ."; OLD
+					it.uniroma2.art.semanticturkey.services.core.SKOS
+						.prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, "?broader", 
+							"?broaderOfBroader");
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
@@ -203,14 +225,20 @@ public class Search extends STServiceAdapter {
 			query+="\nBIND(\"true\" AS ?isTop )" +
 					"\n}";
 					
-			// this using, used only when no scheme is selected, is used when the concept does not have any
+			// this part, used only when no scheme is selected, is used when the concept does not have any
 			// broader and it is not topConcept of any scheme
 			if(schemesIRI == null){
 				query+="\nUNION" +
 						"\n{" +
 						"\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> ." +
-						"\nFILTER(NOT EXISTS{<"+resourceURI.stringValue()+"> "
-								+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +
+						//OLD
+						/*"\nFILTER(NOT EXISTS{<"+resourceURI.stringValue()+"> "
+								+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +*/
+						"\nMINUS{" +
+						it.uniroma2.art.semanticturkey.services.core.SKOS
+							.prepareHierarchicalPartForQuery(hierachicalProp, inversHierachicalProp, resourceURI, 
+								"?genericConcept") +
+						"\n}" +
 						"\nFILTER (NOT EXISTS{ <"+resourceURI.stringValue()+"> "
 								+ "(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+"> ) ?genericScheme})" +
 						"\nBIND(\"true\" AS ?isTop )" +
