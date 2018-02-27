@@ -616,6 +616,30 @@ public class Properties extends STServiceAdapter {
 		return response;
 	}
 
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
+	public Boolean areSubPropertiesUsed(@LocallyDefined IRI property) {
+		logger.debug(
+				"request to check whether at least one of the subproperties of the property " 
+						+ property.stringValue()+" is used");
+
+		ObjectNode response = JsonNodeFactory.instance.objectNode();
+
+		String query = "ASK"
+				+ "\nWHERE{"
+				+ "\n ?subProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">+ <"
+					+property .stringValue()+ "> ."
+				+ "\n ?subj ?subProp ?obj ."
+				+ "\n}";
+		
+		BooleanQuery booleanQuery = getManagedConnection().prepareBooleanQuery(query);
+		booleanQuery.setIncludeInferred(false);
+		boolean result = booleanQuery.evaluate();
+		
+		return result;
+	}
+	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")

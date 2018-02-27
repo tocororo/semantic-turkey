@@ -135,7 +135,8 @@ public class Search extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getPathFromRoot(RDFResourceRole role, IRI resourceURI,
 			@Optional List<IRI> schemesIRI, 
 			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root,
-			@Optional @LocallyDefined IRI broaderProp, @Optional @LocallyDefined IRI narrowerProp) 
+			@Optional @LocallyDefined IRI broaderProp, @Optional @LocallyDefined IRI narrowerProp,
+			@Optional(defaultValue="true") boolean useSubProperties) 
 					throws InvalidParameterException {
 
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
@@ -160,8 +161,8 @@ public class Search extends STServiceAdapter {
 					"\n{" + 
 					//"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )* ?broader ."; OLD
 					it.uniroma2.art.semanticturkey.services.core.SKOS
-					.preparePropPathForHierarchicalforQuery(broaderProp, narrowerProp,
-							resourceURI, "?broader", getManagedConnection() );
+					.preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp,
+							resourceURI, "?broader", getManagedConnection(), true, useSubProperties);
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
@@ -188,7 +189,7 @@ public class Search extends STServiceAdapter {
 						"\nMINUS{" +
 						it.uniroma2.art.semanticturkey.services.core.SKOS
 							.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, "?broader", 
-								"?broaderOfBroader", false) +
+								"?broaderOfBroader", false, useSubProperties) +
 						"\n}" +
 						"\n}";
 			}
@@ -196,7 +197,7 @@ public class Search extends STServiceAdapter {
 					//"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader ."; OLD
 					it.uniroma2.art.semanticturkey.services.core.SKOS
 						.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, "?broader", 
-							"?broaderOfBroader", false);
+							"?broaderOfBroader", false, useSubProperties);
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
@@ -237,7 +238,7 @@ public class Search extends STServiceAdapter {
 						"\nMINUS{" +
 						it.uniroma2.art.semanticturkey.services.core.SKOS
 							.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, resourceURI, 
-								"?genericConcept", false) +
+								"?genericConcept", false, useSubProperties) +
 						"\n}" +
 						"\nFILTER (NOT EXISTS{ <"+resourceURI.stringValue()+"> "
 								+ "(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+"> ) ?genericScheme})" +

@@ -91,7 +91,8 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes,
-			@Optional @LocallyDefined IRI broaderProp , @Optional @LocallyDefined IRI narrowerProp) {
+			@Optional @LocallyDefined IRI broaderProp , @Optional @LocallyDefined IRI narrowerProp,
+			@Optional(defaultValue="true") boolean useSubProperties) {
 		QueryBuilder qb;
 		
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -126,11 +127,13 @@ public class SKOS extends STServiceAdapter {
 				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
 			}		
 			query += ") 																				 \n" +
-					"     OPTIONAL {                                                                     \n" +
+					prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?aNarrowerConcept", 
+							"?resource", false, useSubProperties) +
+					"     \nOPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {															 \n" +
 					//"					?aNarrowerConcept skos:broader|^skos:narrower ?resource .    	 \n" + OLD
-					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
-							"?resource", false) +
+					prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?aNarrowerConcept", 
+							"?resource", false, useSubProperties) +										"\n" +
 					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
 					"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
@@ -160,15 +163,24 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//TODO, this should be done now with MINUS
 					//"     FILTER NOT EXISTS {?resource skos:broader|^skos:narrower []}                   \n" +
-					"\nMINUS {																			 \n" +
-					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
-							"?aNarrowerConcept", false) +
-					"\n}																				 \n" +
+					//"\nMINUS {																			 \n" +
+					
+					" FILTER NOT EXISTS { 																 \n"+
+					preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
+							"?aNarrowerConcept", getManagedConnection(), false, useSubProperties) +		 "\n" +	
+					"}																					  \n" +
+					prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?resource", 
+							"?aNarrowerConcept", false, useSubProperties) +
+					/*"\nFILTER NOT EXISTS {																 \n" +
+					prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?resource", 
+							"?aNarrowerConcept", false, useSubProperties) +
+					"\n}																				 \n" +*/
+					
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {															 \n" +
 						//"?aNarrowerConcept skos:broader|^skos:narrower ?resource . 					 \n" + OLD
-					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
-								"?resource", false) +
+					prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?aNarrowerConcept2", 
+								"?resource", false, useSubProperties) +
 						"} as ?attr_more ) \n" +
 					"     }                                                                              \n" +
 					
@@ -191,7 +203,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
 			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI broaderProp ,
-			@Optional @LocallyDefined IRI narrowerProp) {
+			@Optional @LocallyDefined IRI narrowerProp, @Optional(defaultValue="true") boolean useSubProperties) {
 		QueryBuilder qb;
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -216,9 +228,9 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
 					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
-							"?concept", false) +
-					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
-					"     ?resource ?subPropInScheme ?scheme .                                             \n" +
+							(IRI)concept, false, useSubProperties) +
+					"\n     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                         \n" +
+					"     ?resource ?subPropInScheme ?scheme .                                           \n" +
 					"FILTER (";
 			boolean first=true;
 			for(IRI scheme : schemes){
@@ -233,7 +245,7 @@ public class SKOS extends STServiceAdapter {
 					"         BIND( EXISTS {															 \n" +
 					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
 					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
-							"?resource", true) +
+							"?resource", true, useSubProperties) + 										 "\n"+
 					"         			?subPropInScheme2 rdfs:subPropertyOf* skos:inScheme .         	 \n" +
 					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme . } as ?attr_more )   \n" +
 					"     }                                                                              \n" +
@@ -263,10 +275,19 @@ public class SKOS extends STServiceAdapter {
 					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
-					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
-							"?concept", false) +
+					
+					
+					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
+					//		"?concept", false, useSubProperties) +
+					preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
+							(IRI)concept, getManagedConnection(), false, useSubProperties) +	 	    "\n" +	
+					
 					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
+					//"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
+					"         BIND( EXISTS {															 \n" +
+					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
+					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
+							"?resource", false, useSubProperties) + " } as ?attr_more )					 \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 
@@ -280,7 +301,7 @@ public class SKOS extends STServiceAdapter {
 		}
 		qb.processRendering();
 		qb.processQName();
-		qb.setBinding("concept", concept);
+		//qb.setBinding("concept", concept);
 		return qb.runQuery();
 	}
 	
@@ -289,7 +310,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getBroaderConcepts(@LocallyDefined Resource concept,
 			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI broaderProp ,
-			@Optional @LocallyDefined IRI narrowerProp) {
+			@Optional @LocallyDefined IRI narrowerProp, @Optional(defaultValue="true") boolean useSubProperties) {
 		QueryBuilder qb;
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -312,7 +333,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
 					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?concept", 
-							"?resource", false) +
+							"?resource", false, useSubProperties) +
 					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
 					"     ?resource ?subPropInScheme ?scheme .                                             \n" +
 					"FILTER (";
@@ -346,7 +367,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
 					prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?concept", 
-							"?resource", false) +
+							"?resource", false, useSubProperties) +
 					generateNatureSPARQLWherePart("?resource") +
 					" }                                                                                  \n" +
 					" GROUP BY ?resource ?attr_more                                                      \n"
@@ -1212,7 +1233,7 @@ public class SKOS extends STServiceAdapter {
 			"ASK {                                                                              \n" +
 			//"	[] skos:broader|^skos:narrower ?concept                                         \n" + OLD
 			prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					"?concept", false) +
+					"?concept", false, true) +
 			"}                                                                                  \n";
 			// @formatter:on
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
@@ -1978,25 +1999,25 @@ public class SKOS extends STServiceAdapter {
 	}
 	
 	public static  String prepareHierarchicalPartForQuery(IRI broaderProp , IRI inverseHierachicalProp, IRI iri, 
-			IRI superIri, boolean alreadyCalcInSameQuery) {
+			IRI superIri, boolean alreadyCalcInSameQuery, boolean useSubProperties) {
 		return prepareHierarchicalPartForQuery(broaderProp , inverseHierachicalProp, 
-				"<"+iri.stringValue()+">", "<"+superIri.stringValue()+">", alreadyCalcInSameQuery);
+				"<"+iri.stringValue()+">", "<"+superIri.stringValue()+">", alreadyCalcInSameQuery, useSubProperties);
 	}
 	
 	public static  String prepareHierarchicalPartForQuery(IRI broaderProp , IRI inverseHierachicalProp, String var, 
-			IRI superIri, boolean alreadyCalcInSameQuery) {
+			IRI superIri, boolean alreadyCalcInSameQuery, boolean useSubProperties) {
 		return prepareHierarchicalPartForQuery(broaderProp , inverseHierachicalProp, var,
-				"<"+superIri.stringValue()+">", alreadyCalcInSameQuery);
+				"<"+superIri.stringValue()+">", alreadyCalcInSameQuery, useSubProperties);
 	}
 	
 	public static  String prepareHierarchicalPartForQuery(IRI broaderProp , IRI inverseHierachicalProp, IRI iri, 
-			String superVar, boolean alreadyCalcInSameQuery) {
+			String superVar, boolean alreadyCalcInSameQuery, boolean useSubProperties) {
 		return prepareHierarchicalPartForQuery(broaderProp , inverseHierachicalProp, 
-				"<"+iri.stringValue()+">", superVar, alreadyCalcInSameQuery);
+				"<"+iri.stringValue()+">", superVar, alreadyCalcInSameQuery, useSubProperties);
 	}
 	
 	public static  String prepareHierarchicalPartForQuery(IRI broaderProp , IRI inverseHierachicalProp, String var, 
-			String superVar, boolean alreadyCalcInSameQuery) {
+			String superVar, boolean alreadyCalcInSameQuery, boolean useSubProperties) {
 		if(!var.startsWith("?") && !var.startsWith("<")) {
 			var = "?"+var;
 		}
@@ -2004,53 +2025,135 @@ public class SKOS extends STServiceAdapter {
 			superVar = "?"+superVar;
 		}
 		String query="";
-		if(!alreadyCalcInSameQuery) {
-			query += "\n{SELECT ?subPropH1 ?subPropHInv1" + 
-					"\nWHERE {" +
-					"\n?subPropH1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
-					"<"+broaderProp .stringValue()+"> .";
-			if(inverseHierachicalProp!=null) {
-				query +="\n?subPropHInv1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
-								"<"+inverseHierachicalProp.stringValue()+"> .";
-			}
-			query += "\n}\n}";
-		}
 		
-		if(inverseHierachicalProp!=null) {
-			query +="\n{";
-		}
-		query += "\n"+var+" ?subPropH1 "+superVar+" .";
-		if(inverseHierachicalProp!=null) {
-			query +="\n}" +
-					"\nUNION" +
-					"\n{" +
-					"\n "+superVar+ " ?subPropHInv1 "+var+" ." +
-					"\n}";
-		}
+		query +=prepareHierarchicalPartForQueryPart1(broaderProp, inverseHierachicalProp, var, superVar, 
+				alreadyCalcInSameQuery, useSubProperties);
+		
+		query +=prepareHierarchicalPartForQueryPart2(broaderProp, inverseHierachicalProp, var, superVar, 
+				alreadyCalcInSameQuery, useSubProperties);
+		
+		
+		/*if(useSubProperties) {
+			if(!alreadyCalcInSameQuery) {
+				query += "\n{SELECT ?subPropH1 ?subPropHInv1" + 
+						"\nWHERE {" +
+						"\n?subPropH1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
+						"<"+broaderProp .stringValue()+"> .";
+				if(inverseHierachicalProp!=null) {
+					query +="\n?subPropHInv1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
+									"<"+inverseHierachicalProp.stringValue()+"> .";
+				}
+				query += "\n}\n}";
+			}
+			
+			if(inverseHierachicalProp!=null) {
+				query +="\n{";
+			}
+			query += "\n"+var+" ?subPropH1 "+superVar+" .";
+			if(inverseHierachicalProp!=null) {
+				query +="\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n "+superVar+ " ?subPropHInv1 "+var+" ." +
+						"\n}";
+			}
+		} else {
+			//do not use subProperties, so just use the input broader/narrower one
+			String propertyPath = "<"+broaderProp.stringValue()+">";
+			if(inverseHierachicalProp!=null) {
+				query += "|^<"+inverseHierachicalProp.stringValue()+">";
+			}
+			query += "\n"+var+" "+propertyPath+" "+superVar+" .";
+		}*/
 		
 		return query;
 	}
+	
+	
+	public static  String prepareHierarchicalPartForQueryPart1(IRI broaderProp , IRI inverseHierachicalProp, String var, 
+			String superVar, boolean alreadyCalcInSameQuery, boolean useSubProperties) {
+		if(!var.startsWith("?") && !var.startsWith("<")) {
+			var = "?"+var;
+		}
+		if(!superVar.startsWith("?") && !superVar.startsWith("<")) {
+			superVar = "?"+superVar;
+		}
+		String query="";
+		if(useSubProperties) {
+			if(!alreadyCalcInSameQuery) {
+				query += "\n{SELECT ?subPropH1 ?subPropHInv1" + 
+						"\nWHERE {" +
+						"\n?subPropH1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
+						"<"+broaderProp .stringValue()+"> .";
+				if(inverseHierachicalProp!=null) {
+					query +="\n?subPropHInv1 <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* " +
+									"<"+inverseHierachicalProp.stringValue()+"> .";
+				}
+				query += "\n}\n}";
+			}
+			
+		} 
+		return query;
+	}
+	
+	public static  String prepareHierarchicalPartForQueryPart2(IRI broaderProp , IRI inverseHierachicalProp, String var, 
+			String superVar, boolean alreadyCalcInSameQuery, boolean useSubProperties) {
+		if(!var.startsWith("?") && !var.startsWith("<")) {
+			var = "?"+var;
+		}
+		if(!superVar.startsWith("?") && !superVar.startsWith("<")) {
+			superVar = "?"+superVar;
+		}
+		String query="";
+		if(useSubProperties) {
+			if(inverseHierachicalProp!=null) {
+				query +="\n{";
+			}
+			query += "\n"+var+" ?subPropH1 "+superVar+" .";
+			if(inverseHierachicalProp!=null) {
+				query +="\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n "+superVar+ " ?subPropHInv1 "+var+" ." +
+						"\n}";
+			}
+		} else {
+			//do not use subProperties, so just use the input broader/narrower one
+			String propertyPath = "<"+broaderProp.stringValue()+">";
+			if(inverseHierachicalProp!=null) {
+				propertyPath += "|^<"+inverseHierachicalProp.stringValue()+">";
+			}
+			query += "\n"+var+" "+propertyPath+" "+superVar+" .";
+		}
+		return query;
+	}
 
-	public static String preparePropPathForHierarchicalforQuery(IRI broaderProp , IRI inverseHierachicalProp, 
-			IRI iri, IRI superIri, RepositoryConnection repoConnection) {
-		return preparePropPathForHierarchicalforQuery(broaderProp , inverseHierachicalProp, 
-				"<"+iri.stringValue()+">", "<"+superIri.stringValue()+">", repoConnection);
+	public static String preparePropPathForHierarchicalForQuery(IRI broaderProp , IRI inverseHierachicalProp, 
+			IRI iri, IRI superIri, RepositoryConnection repoConnection, boolean transitiveClosure,
+			boolean useSubProperties) {
+		return preparePropPathForHierarchicalForQuery(broaderProp , inverseHierachicalProp, 
+				"<"+iri.stringValue()+">", "<"+superIri.stringValue()+">", repoConnection, transitiveClosure,
+				useSubProperties);
 	}
 	
-	public static String preparePropPathForHierarchicalforQuery(IRI broaderProp , IRI inverseHierachicalProp, 
-			IRI iri, String superVar, RepositoryConnection repoConnection) {
-		return preparePropPathForHierarchicalforQuery(broaderProp , inverseHierachicalProp, 
-				"<"+iri.stringValue()+">", superVar, repoConnection);
+	public static String preparePropPathForHierarchicalForQuery(IRI broaderProp , IRI inverseHierachicalProp, 
+			IRI iri, String superVar, RepositoryConnection repoConnection, boolean transitiveClosure,
+			boolean useSubProperties) {
+		return preparePropPathForHierarchicalForQuery(broaderProp , inverseHierachicalProp, 
+				"<"+iri.stringValue()+">", superVar, repoConnection, transitiveClosure,
+				useSubProperties);
 	}
 	
-	public static String preparePropPathForHierarchicalforQuery(IRI broaderProp , IRI inverseHierachicalProp, 
-			String var, IRI superIri, RepositoryConnection repoConnection) {
-		return preparePropPathForHierarchicalforQuery(broaderProp , inverseHierachicalProp, 
-				var, "<"+superIri.stringValue()+">", repoConnection);
+	public static String preparePropPathForHierarchicalForQuery(IRI broaderProp , IRI inverseHierachicalProp, 
+			String var, IRI superIri, RepositoryConnection repoConnection, boolean transitiveClosure, 
+			boolean useSubProperties) {
+		return preparePropPathForHierarchicalForQuery(broaderProp , inverseHierachicalProp, 
+				var, "<"+superIri.stringValue()+">", repoConnection, transitiveClosure, useSubProperties);
 	}
 	
-	public static String preparePropPathForHierarchicalforQuery(IRI broaderProp , IRI inverseHierachicalProp, 
-			String var, String superVar, RepositoryConnection repoConnection) {
+	public static String preparePropPathForHierarchicalForQuery(IRI broaderProp , IRI inverseHierachicalProp, 
+			String var, String superVar, RepositoryConnection repoConnection, boolean transitiveClosure,
+			boolean useSubProperties) {
 		if(!var.startsWith("?") && !var.startsWith("<")) {
 			var = "?"+var;
 		}
@@ -2061,46 +2164,55 @@ public class SKOS extends STServiceAdapter {
 		List<IRI> subPropList = new ArrayList<>();
 		List<IRI> inverseSubPropList = new ArrayList<>();
 		
-		
-		// @formatter:off
-		String query = "SELECT ?subProp ?subInverseProp"
-				+ "\nWHERE{";
-		if(inverseHierachicalProp!=null) {
-			query+= "\n{";
-		}
-		query +="\n?subProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
-				+ "<"+broaderProp .stringValue()+"> .";
-		if(inverseHierachicalProp!=null) {
-			query +="\n}"
-				+ "\nUNION"
-				+ "\n{"
-				+ "\n?subInverseProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
-						+ "<"+inverseHierachicalProp.stringValue()+"> ."
-				+ "\n}";
-		}		
-		query +="\n}";
-		// @formatter:on
-		logger.debug("query: " + query);
-		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
-		tupleQuery.setIncludeInferred(false);
-		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-		//get the subProperties from the results of the SPARQL query
-		while(tupleQueryResult.hasNext()) {
-			BindingSet bindingSet = tupleQueryResult.next();
-			if(bindingSet.hasBinding("subProp")) {
-				Value value = bindingSet.getValue("subProp");
-				if(value instanceof IRI && !subPropList.contains((IRI)value)) {
-					subPropList.add((IRI)value);
+		if(useSubProperties) {
+			// @formatter:off
+			String query = "SELECT ?subProp ?subInverseProp"
+					+ "\nWHERE{";
+			if(inverseHierachicalProp!=null) {
+				query+= "\n{";
+			}
+			query +="\n?subProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
+					+ "<"+broaderProp .stringValue()+"> .";
+			if(inverseHierachicalProp!=null) {
+				query +="\n}"
+					+ "\nUNION"
+					+ "\n{"
+					+ "\n?subInverseProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
+							+ "<"+inverseHierachicalProp.stringValue()+"> ."
+					+ "\n}";
+			}		
+			query +="\n}";
+			// @formatter:on
+			logger.debug("query: " + query);
+			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+			tupleQuery.setIncludeInferred(false);
+			TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+			//get the subProperties from the results of the SPARQL query
+			while(tupleQueryResult.hasNext()) {
+				BindingSet bindingSet = tupleQueryResult.next();
+				if(bindingSet.hasBinding("subProp")) {
+					Value value = bindingSet.getValue("subProp");
+					if(value instanceof IRI && !subPropList.contains((IRI)value)) {
+						subPropList.add((IRI)value);
+					}
+				}
+				if(bindingSet.hasBinding("subInverseProp")) {
+					Value value = bindingSet.getValue("subInverseProp");
+					if(value instanceof IRI && !inverseSubPropList.contains((IRI)value)) {
+						inverseSubPropList.add((IRI)value);
+					}
 				}
 			}
-			if(bindingSet.hasBinding("subInverseProp")) {
-				Value value = bindingSet.getValue("subInverseProp");
-				if(value instanceof IRI && !inverseSubPropList.contains((IRI)value)) {
-					inverseSubPropList.add((IRI)value);
-				}
+			tupleQueryResult.close();
+		} else {
+			//do not use the sub properties, so there was no need to execute the SPARQL query, just set in
+			// subPropList and inverseSubPropList the input properties
+			subPropList.add(broaderProp);
+			if(inverseHierachicalProp!=null) {
+				inverseSubPropList.add(inverseHierachicalProp);
 			}
 		}
-		tupleQueryResult.close();
+			
 		//now construct the propertyPath
 		String propertyPath = "";
 		boolean first = true;
@@ -2123,8 +2235,12 @@ public class SKOS extends STServiceAdapter {
 			propertyPath += "^<"+inverseSubProp.stringValue()+">";
 		}
 		
+		String starOrNot = "";
+		if(transitiveClosure) {
+			starOrNot = "*";
+		}
 		
-		query ="\n" + var + " (" + propertyPath  + " )* "+superVar+" .";
+		String query ="\n" + var + " (" + propertyPath  + " ) "+starOrNot+" "+superVar+" .";
 		
 		return query;
 	}
