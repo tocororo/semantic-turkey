@@ -1,6 +1,8 @@
 version 4.0
 date: dd/mm/yyyy
   * Enabled the refinement of label type when creating/linking a skosxl:Label
+  * Enabled the possibility to specify a specific broader and narrower properties when dealing with the concept tree and
+    also whether to use their subproperties
 
 version 3.0
 date: 08/02/2018
