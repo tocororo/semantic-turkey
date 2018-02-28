@@ -25,6 +25,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
@@ -226,7 +227,9 @@ public class SKOSXL extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add alternative label")
-	public void addAltLabel(@LocallyDefined @Modified IRI concept, Literal literal, XLabelCreationMode mode) 
+	public void addAltLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
+			XLabelCreationMode mode) 
 			throws URIGenerationException, AlreadyExistingLiteralFormForResourceException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
@@ -238,10 +241,12 @@ public class SKOSXL extends STServiceAdapter {
 		} else{
 			xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL);
 		}
+		if (labelCls == null) {
+			labelCls = org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL;
+		}
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, xlabel));
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
-				RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, RDF.TYPE, labelCls));
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -264,6 +269,7 @@ public class SKOSXL extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add hidden label")
 	public void addHiddenLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal, 
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode) throws URIGenerationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -274,10 +280,12 @@ public class SKOSXL extends STServiceAdapter {
 		} else{
 			xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL);
 		}
+		if (labelCls == null) {
+			labelCls = org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL;
+		}
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL, xlabel));
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
-				RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, RDF.TYPE, labelCls));
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, 
 				org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
 		
@@ -346,6 +354,7 @@ public class SKOSXL extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("set preferred label")
 	public void setPrefLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
+			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode, @Optional(defaultValue="true") boolean checkExistingAltLabel) 
 					throws URIGenerationException, AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -384,8 +393,12 @@ public class SKOSXL extends STServiceAdapter {
 			} else{
 				xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
 			}
+			
+			if (labelCls == null) {
+				labelCls = org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL;
+			}
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, xlabel));
-			modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LABEL));
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, RDF.TYPE, labelCls));
 			modelAdditions.add(repoConnection.getValueFactory().createStatement(xlabel, org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM, literal));
 		}
 		

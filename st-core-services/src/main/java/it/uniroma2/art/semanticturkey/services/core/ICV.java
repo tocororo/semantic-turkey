@@ -617,7 +617,8 @@ public class ICV extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(xLabel)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listDanglingXLabels() {
 		String q = "SELECT ?resource WHERE {\n"
-				+ "?resource a <" + SKOSXL.LABEL + "> .\n"
+				+ "?subLabel <" + RDFS.SUBCLASSOF + ">* <" + SKOSXL.LABEL + "> .\n" 
+				+ "?resource a ?subLabel .\n"
 				+ "FILTER NOT EXISTS {\n" 
 				+ "?concept <" + SKOSXL.PREF_LABEL + "> ?resource.\n"
 				+ "}\n"
@@ -2322,7 +2323,8 @@ public class ICV extends STServiceAdapter {
 				+ "?s ?p1 ?xlabel .\n"
 				+ "?xlabel ?p2 ?o .\n"
 				+ "} WHERE {\n"
-				+ "?xlabel a <" + SKOSXL.LABEL + "> .\n"
+				+ "?subLabel <" + RDFS.SUBCLASSOF + ">* <" + SKOSXL.LABEL + "> .\n" 
+				+ "?xlabel a ?subLabel .\n"
 				+ "OPTIONAL { ?s ?p1 ?xlabel . }\n"
 				+ "OPTIONAL { ?xlabel ?p2 ?o . }\n"
 				+ "FILTER NOT EXISTS {\n"
