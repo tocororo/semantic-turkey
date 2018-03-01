@@ -69,7 +69,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -444,6 +443,7 @@ public abstract class Project extends AbstractProject {
 			ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 				logger.debug("Loading core vocabularies");
 
+				newOntManager.declareSupportOntology(rdfBaseURI, true, false, false);
 				if (!contexts.contains(rdfBaseURI)) {
 
 					logger.debug("Loading RDF vocabulary...");
@@ -452,6 +452,7 @@ public abstract class Project extends AbstractProject {
 					anyWritten.setValue(true);
 				}
 
+				newOntManager.declareSupportOntology(rdfsBaseURI, true, false, false);
 				if (!contexts.contains(rdfsBaseURI)) {
 					logger.debug("Loading RDFS vocabulary...");
 					conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
@@ -459,6 +460,7 @@ public abstract class Project extends AbstractProject {
 					anyWritten.setValue(true);
 				}
 
+				newOntManager.declareSupportOntology(owlBaseURI, true, false, false);
 				if (!contexts.contains(owlBaseURI)) {
 					logger.debug("Loading OWL vocabulary...");
 					conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
@@ -470,18 +472,24 @@ public abstract class Project extends AbstractProject {
 						|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
 						|| Objects.equals(getModel(), SKOS_MODEL);
 
-				if (isSKOS && !contexts.contains(skosBaseURI)) {
-					logger.debug("Loading SKOS vocabulary...");
-					conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
-							RDFFormat.RDFXML, skosBaseURI);
-					anyWritten.setValue(true);
+				if (isSKOS) {
+					newOntManager.declareSupportOntology(skosBaseURI, true, false, false);
+					if (!contexts.contains(skosBaseURI)) {
+						logger.debug("Loading SKOS vocabulary...");
+						conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
+								RDFFormat.RDFXML, skosBaseURI);
+						anyWritten.setValue(true);
+					}
 				}
 
-				if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
-					logger.debug("Loading SKOS-XL vocabulary...");
-					conn.add(OntologyManager.class.getResource("skos-xl.rdf"), skosxlBaseURI.stringValue(),
-							RDFFormat.RDFXML, skosxlBaseURI);
-					anyWritten.setValue(true);
+				if (isSKOSXL) {
+					newOntManager.declareSupportOntology(skosxlBaseURI, true, false, false);
+					if (!contexts.contains(skosxlBaseURI)) {
+						logger.debug("Loading SKOS-XL vocabulary...");
+						conn.add(OntologyManager.class.getResource("skos-xl.rdf"),
+								skosxlBaseURI.stringValue(), RDFFormat.RDFXML, skosxlBaseURI);
+						anyWritten.setValue(true);
+					}
 				}
 
 			});

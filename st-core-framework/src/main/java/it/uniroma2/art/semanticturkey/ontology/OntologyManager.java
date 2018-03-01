@@ -187,7 +187,7 @@ public interface OntologyManager {
 	 * @param conn
 	 * @param baseURI
 	 * @param altURL
-	 * @param rdfFormat 
+	 * @param rdfFormat
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws MalformedURLException
@@ -196,7 +196,8 @@ public interface OntologyManager {
 	 * @throws IOException
 	 */
 	void downloadImportedOntologyFromWeb(RepositoryConnection conn, String baseURI, String altURL,
-			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports)
 			throws MalformedURLException, ImportManagementException, RDF4JException, IOException;
 
 	/**
@@ -206,7 +207,7 @@ public interface OntologyManager {
 	 * @param baseURI
 	 * @param altURL
 	 * @param toLocalFile
-	 * @param rdfFormat 
+	 * @param rdfFormat
 	 * @param transitiveImportAllowance
 	 * @param failedImports
 	 * @throws ImportManagementException
@@ -215,8 +216,8 @@ public interface OntologyManager {
 	 * @throws IOException
 	 */
 	void downloadImportedOntologyFromWebToMirror(RepositoryConnection conn, String baseURI, String altURL,
-			String toLocalFile, RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports)
+			String toLocalFile, RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, MalformedURLException, IOException;
 
 	/**
@@ -241,19 +242,25 @@ public interface OntologyManager {
 	// Application/Support ontologies management
 
 	/**
-	 * can be used by ST extensions to declare use of application ontologies for supporting their
-	 * functionalities<br/>
-	 * if <code>ng</code> is <b>true</b>, this prevents triples in the namedgraph of this ontology to be shown
-	 * (when ST is in <code>user</code> mode)<br/>
-	 * if <code>ns</code> is <b>true</b>, this prevents triples having a predicate with namespace matching the
-	 * name of ontology <code>ont</code> to be shown (again, when ST is in <code>user</code> mode)<br/>
-	 * One of the two boolean arguments must obviously be true, otherwise this declaration has no effect
+	 * It can be used by ST extensions to declare use of application ontologies for supporting their
+	 * functionalities. The boolean parameters can be used to declare different facets of an application
+	 * ontology. If no parameter is set to <code>, this declaration has no effect.
+	
+	 * @param declareImport if <code>true</code>, declares an import with modality
+	 *            {@link ImportModality#APPLICATION}.
+	 * 
+	 * @param ng
+	 *            if <b>true</b>, this prevents triples in the namedgraph of this ontology to be shown (when
+	 *            ST is in <code>user</code> mode)
+	 * @param ns
+	 *            if <b>true</b>, this prevents triples having a predicate with namespace matching the name of
+	 *            ontology <code>ont</code> to be shown (again, when ST is in <code>user</code> mode)
 	 * 
 	 * @param ont
 	 * @param ng
 	 * @param ns
 	 */
-	void declareApplicationOntology(IRI iri, boolean ng, boolean ns);
+	void declareApplicationOntology(IRI ont, boolean declareImport, boolean ng, boolean ns);
 
 	/**
 	 * Checks whether <code>ns</code> is an application ontology
@@ -262,6 +269,28 @@ public interface OntologyManager {
 	 * @return
 	 */
 	boolean isApplicationOntNamespace(String ns);
+
+	/**
+	 * It can be used to declare use of an ontology, the presence of which is required by the system to work
+	 * properly. As an example, core modeling vocabularies are usually declared as such. The boolean
+	 * parameters can be used to declare different facets of a support ontology. If no parameter is set
+	 * to <code>, this declaration has no effect.
+	
+	 * @param declareImport if <code>true</code>, declares an import with modality
+	 *            {@link ImportModality#SUPPORT}.
+	 * 
+	 * @param ng
+	 *            if <b>true</b>, this prevents triples in the namedgraph of this ontology to be shown (when
+	 *            ST is in <code>user</code> mode)
+	 * @param ns
+	 *            if <b>true</b>, this prevents triples having a predicate with namespace matching the name of
+	 *            ontology <code>ont</code> to be shown (again, when ST is in <code>user</code> mode)
+	 * 
+	 * @param ont
+	 * @param ng
+	 * @param ns
+	 */
+	void declareSupportOntology(IRI ont, boolean declareImport, boolean ng, boolean ns);
 
 	/**
 	 * Checks whether <code>ns</code> is a support ontology

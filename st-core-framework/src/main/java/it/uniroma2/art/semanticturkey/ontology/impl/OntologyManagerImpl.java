@@ -17,12 +17,12 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
@@ -107,14 +107,14 @@ public class OntologyManagerImpl implements OntologyManager {
 	public OntologyManagerImpl(Repository repository, boolean validationEnabled) {
 		this.validationEnabled = validationEnabled;
 		// initializes user, application and support ontology sets
-		applicationOntologiesNG = new HashSet<>();
+		applicationOntologiesNG = ConcurrentHashMap.newKeySet();
 		applicationOntologiesNamespace = new ConcurrentSkipListSet<>();
-		supportOntologiesNG = new HashSet<>();
+		supportOntologiesNG = ConcurrentHashMap.newKeySet();
 		supportOntologiesNamespace = new ConcurrentSkipListSet<>();
 
-		importModalityMap = new HashMap<>();
-		importModalityMap.put(ImportModality.APPLICATION, applicationOntologiesNG);
-		importModalityMap.put(ImportModality.SUPPORT, supportOntologiesNG);
+		importModalityMap = new ConcurrentHashMap<>();
+		importModalityMap.put(ImportModality.APPLICATION, ConcurrentHashMap.newKeySet());
+		importModalityMap.put(ImportModality.SUPPORT, ConcurrentHashMap.newKeySet());
 
 		this.repository = repository;
 	}
@@ -660,7 +660,9 @@ public class OntologyManagerImpl implements OntologyManager {
 							.filter(stmt -> !toBeRemovedOntologies.contains(stmt.getSubject()))
 							.filter(stmt -> !removedImport.equals(stmt)).collect(Collectors.toList()));
 
-			if (liveImportsForOnt.stream()
+			// if liveImportsForOnt.isEmpty(), then the ontology has been saved by a non-user import
+			// declaration
+			if (!liveImportsForOnt.isEmpty() && liveImportsForOnt.stream()
 					.filter(stmt -> !VALIDATION.isAddGraph(stmt.getContext())
 							&& !VALIDATION.isRemoveGraph(stmt.getContext()))
 					.allMatch(stmt -> liveImportsForOnt.contains(stmt.getSubject(), stmt.getPredicate(),
@@ -752,13 +754,31 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void declareApplicationOntology(IRI ont, boolean ng, boolean ns) {
+	public void declareApplicationOntology(IRI ont, boolean declareImport, boolean ng, boolean ns) {
+		if (declareImport) {
+			importModalityMap.get(ImportModality.APPLICATION).add(ont);
+		}
 		if (ng) {
 			applicationOntologiesNG.add(ont);
 		}
 
 		if (ns) {
 			applicationOntologiesNamespace
+					.add(ModelUtilities.createDefaultNamespaceFromBaseURI(ont.stringValue()));
+		}
+	}
+	
+	@Override
+	public void declareSupportOntology(IRI ont, boolean declareImport, boolean ng, boolean ns) {
+		if (declareImport) {
+			importModalityMap.get(ImportModality.SUPPORT).add(ont);
+		}
+		if (ng) {
+			supportOntologiesNG.add(ont);
+		}
+
+		if (ns) {
+			supportOntologiesNamespace
 					.add(ModelUtilities.createDefaultNamespaceFromBaseURI(ont.stringValue()));
 		}
 	}
