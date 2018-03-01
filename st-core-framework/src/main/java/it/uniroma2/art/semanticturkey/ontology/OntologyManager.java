@@ -253,7 +253,7 @@ public interface OntologyManager {
 	 * @param ng
 	 * @param ns
 	 */
-	void declareApplicationOntology(IRI iri, boolean b, boolean c);
+	void declareApplicationOntology(IRI iri, boolean ng, boolean ns);
 
 	/**
 	 * Checks whether <code>ns</code> is an application ontology

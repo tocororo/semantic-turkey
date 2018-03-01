@@ -59,7 +59,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
@@ -72,6 +71,7 @@ import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
@@ -79,7 +79,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.RepositoryNotExistingException;
-import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
@@ -107,7 +106,6 @@ import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 public abstract class Project extends AbstractProject {
 
@@ -403,16 +401,12 @@ public abstract class Project extends AbstractProject {
 					// the "" prefix, and no redundanc should be present
 				}
 
-				newOntManager.declareApplicationOntology(
-						SimpleValueFactory.getInstance().createIRI(SemAnnotVocab.NAMESPACE), false, true);
-
 				// nsPrefixMappingsPersistence must have been already created by constructor of Project
 				// subclasses
 				newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
 
 				loadingCoreVocabularies();
 
-				SemanticTurkey.initializeVocabularies(conn);
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
 			}
 		} catch (Exception e) {

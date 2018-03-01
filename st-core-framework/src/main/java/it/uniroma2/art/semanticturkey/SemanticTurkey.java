@@ -26,7 +26,6 @@ package it.uniroma2.art.semanticturkey;
 import java.io.File;
 import java.net.URISyntaxException;
 
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.mortbay.http.HttpServer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
-import it.uniroma2.art.semanticturkey.vocabulary.SemAnnotVocab;
 
 /**
  * <p>
@@ -117,13 +115,6 @@ public class SemanticTurkey implements BundleActivator {
 	 */
 	public static HttpServer getHTTPServer() {
 		return server;
-	}
-
-	/**
-	 * this method builds up the HTTP Server in charge of replying to user requests
-	 */
-	public static void initializeVocabularies(RepositoryConnection conn) {
-		SemAnnotVocab.Res.initialize();
 	}
 
 	public void start(BundleContext arg0) throws Exception {
