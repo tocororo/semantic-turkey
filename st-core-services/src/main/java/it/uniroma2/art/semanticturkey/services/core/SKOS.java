@@ -87,6 +87,18 @@ public class SKOS extends STServiceAdapter {
 	@Autowired
 	private CustomFormManager cfManager;
 
+	/**
+	 * Returns the list of top concepts
+	 * @param schemes an optional list of schemes. When passed, only concept being topConcept of one of the 
+	 * passed schemes will be returned. When not passed, all concepts not having a broader concept will be 
+	 * returned
+	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
+	 * @param narrowerProp an optional property used as narrower. if skos:broader is passed as broaderProp 
+	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
+	 * @param useSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
+	 * used in the concept hierarchy
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
@@ -203,7 +215,20 @@ public class SKOS extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-
+	
+	
+	/**
+	 * Returns the list of narrower concepts
+	 * @param concept the concept to which the returned concepts are the narrower of
+	 * @param schemes an optional list of schemes. When passed, only narrower concepts belonging to of one of the 
+	 * passed schemes will be returned. When not passed, all narrower concepts will be returned
+	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
+	 * @param narrowerProp an optional property used as narrower. If skos:broader is passed as broaderProp 
+	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
+	 * @param useSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
+	 * used in the concept hierarchy
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
@@ -315,6 +340,19 @@ public class SKOS extends STServiceAdapter {
 		//qb.setBinding("concept", concept);
 		return qb.runQuery();
 	}
+	
+	/**
+	 * Returns the list of broader concepts
+	 * @param concept the concept to which the returned concepts are the broader of 
+	 * @param schemes an optional list of schemes. When passed, only broader concepts belonging to of one of the 
+	 * passed schemes will be returned. When not passed, all broader concepts will be returned
+	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
+	 * @param narrowerProp an optional property used as narrower. If skos:broader is passed as broaderProp 
+	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
+	 * @param useSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
+	 * used in the concept hierarchy
+	 * @return
+	 */
 	
 	@STServiceOperation
 	@Read
