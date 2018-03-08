@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -570,12 +571,11 @@ public class Properties extends STServiceAdapter {
 				"request to get any named class which is relevant in the range of " + property.stringValue());
 
 		ObjectNode response = JsonNodeFactory.instance.objectNode();
-
 		// first of all, check if there is a form collection that replace the standard range(s)
 		boolean replace = cfManager.getReplace(getProject(), property, true);
 		if (!replace) {
 			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
-
+			
 			ObjectNode rangesObjectNode = JsonNodeFactory.instance.objectNode();
 			rangesObjectNode.set("type",
 					JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
@@ -1292,11 +1292,17 @@ public class Properties extends STServiceAdapter {
 				"<" + property.stringValue() + "> rdf:type ?type . \n" +
 				"<" + property.stringValue() + "> rdfs:subPropertyOf* ?superProperty  \n" +
 				"OPTIONAL { \n " +
+					"{\n" +
 					"?superProperty  rdfs:range ?range . \n" +
-					"OPTIONAL {\n" +
-						"?range a <" + RDFS.DATATYPE +"> . \n" +
-						"?range <" + OWL.ONEOF +"> ?oneOf . \n" +
-					"} \n" +
+					"FILTER isIRI(?range) \n" +
+					"}\n" +
+					"UNION\n" +
+					"{\n" +
+					"?superProperty  rdfs:range ?range . \n" +
+					"FILTER isBlank(?range)\n"+
+					"?range a <" + RDFS.DATATYPE +"> . \n" +
+					"?range <" + OWL.ONEOF +"> ?oneOf . \n" +
+					"}\n" +
 				"} \n " +
 			"}";
 			// @formatter:on
@@ -1334,6 +1340,46 @@ public class Properties extends STServiceAdapter {
 			}
 		}
 		tupleQueryResult.close();
+		
+		//If the desired property has only a range, then do a specific check, since its normalizedType 
+		// could be a 'literal', in particular set it as 'isLiteral' in one of the following conditions:
+		//	range with namespace == XMLSchema namespace
+	    //	range being a rdfs:subClassOf rdfs:Literal
+	    //	range being an instance of rdfs:Datatype
+		if(typesAndRanges.getRanges() != null && typesAndRanges.getRanges().size() == 1) {
+			Range range = typesAndRanges.getRanges().iterator().next();
+			if(range instanceof IRIRange) {
+				IRIRange iriRange = (IRIRange)range;
+				IRI rangeIRI = iriRange.getIRI();
+				if(rangeIRI.getNamespace().equals(XMLSchema.NAMESPACE)) {
+					//range with namespace == XMLSchema namespace
+					typesAndRanges.setIsLiteral(true);
+				} else {
+					//do an ASK SPARQL to see if the iriRange is a subClass of rdfs:Literal
+					String query = "ASK WHERE{"+
+							"\n{" +
+							// range being a rdfs:subClassOf rdfs:Literal
+						    "\n"+NTriplesUtil.toNTriplesString(rangeIRI)+" "+
+							NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "+
+							NTriplesUtil.toNTriplesString(RDFS.LITERAL)+" "+
+							"\n}" +
+							"\nUNION" +
+							"\n{" +
+							// range being an instance of rdfs:Datatype
+							"\n"+NTriplesUtil.toNTriplesString(rangeIRI)+" "+
+							NTriplesUtil.toNTriplesString(RDF.TYPE)+"* "+
+							NTriplesUtil.toNTriplesString(RDFS.DATATYPE)+" "+
+							"\n}" +
+							
+							"\n}"
+							;
+					BooleanQuery booleanQuery = getManagedConnection().prepareBooleanQuery(query);
+					booleanQuery.setIncludeInferred(false);
+					typesAndRanges.setIsLiteral(booleanQuery.evaluate());
+				}
+			}
+		}
+		
 		return typesAndRanges;
 
 	}
@@ -1349,6 +1395,10 @@ class IRIRange extends Range {
 
 	public IRIRange(IRI iri) {
 		this.iri = iri;
+	}
+	
+	public IRI getIRI() {
+		return iri;
 	}
 
 	@Override
@@ -1418,6 +1468,8 @@ class TypesAndRanges {
 	private Set<String> types;
 	private Set<Range> ranges;
 
+	private boolean isLiteral = false;
+	
 	public TypesAndRanges() {
 		types = new HashSet<>();
 		ranges = new HashSet<>();
@@ -1427,6 +1479,10 @@ class TypesAndRanges {
 		types.add(type); // deduplication is performed by the set class
 	}
 
+	public void setIsLiteral(boolean isLiteral) {
+		this.isLiteral = isLiteral;
+	}
+	
 	public void addRange(Range range) {
 		ranges.add(range);
 	}
@@ -1436,6 +1492,14 @@ class TypesAndRanges {
 	}
 
 	public String getTypeNormalized() {
+		
+		//check if it was said that it type is literal, in this case no other checks are required,
+		// return immediately 'literal'
+		if(isLiteral) {
+			return "literal";
+		}
+		
+		//since its type was not set to be literal, do the other checks
 		if (types.contains(OWL.OBJECTPROPERTY.stringValue())) {
 			return "resource";
 		} else if (types.contains(OWL.DATATYPEPROPERTY.stringValue())) {
