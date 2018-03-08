@@ -632,7 +632,7 @@ public class SKOS extends STServiceAdapter {
 		IRI xLabelIRI = null;
 		if (label != null) { //?conc skos:prefLabel ?label
 			xLabelIRI = createLabelUsingLexicalizationModel(newConceptIRI, label, modelAdditions, checkExistingAltLabel,
-					true);
+					true, conceptSchemes);
 		}
 		for(IRI conceptScheme : conceptSchemes){
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
@@ -696,7 +696,7 @@ public class SKOS extends STServiceAdapter {
 		IRI xLabelIRI = null;
 		if (label != null) {
 			xLabelIRI = createLabelUsingLexicalizationModel(newSchemeIRI, label, modelAdditions, 
-					checkExistingAltLabel, true);
+					checkExistingAltLabel, true, null);
 		}
 
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -725,7 +725,8 @@ public class SKOS extends STServiceAdapter {
 			@Optional(defaultValue="true") boolean checkExistingAltLabel) 
 			throws AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
 		RepositoryConnection repoConnection = getManagedConnection();
-		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false);
+		List<IRI> conceptSchemeList = getAllSchemesForConcept(concept, repoConnection);
+		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false, conceptSchemeList);
 		if(checkExistingAltLabel) {
 			checkIfPrefAltLabelClash(repoConnection, literal, concept);
 		}
@@ -760,6 +761,32 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
 	
+	
+	public static List<IRI> getAllSchemesForConcept(IRI concept, RepositoryConnection repoConnection){
+		// @formatter:off
+		String query="SELECT DISTINCT ?scheme" +
+				"\nWHERE{"+
+				"\n?subPropInScheme "+
+				NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF)+"* "+
+				NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME)+" ." +
+				"\n"+NTriplesUtil.toNTriplesString(concept)+" ?subPropInScheme ?scheme" +
+				"\nFILTER isIRI(?scheme)" +
+				"\n}";
+		// @formatter:on
+		logger.debug("query: " + query);
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		
+		List<IRI> schemeList = new ArrayList<>();
+		while(tupleQueryResult.hasNext()) {
+			schemeList.add((IRI) tupleQueryResult.next().getValue("scheme"));
+		}
+		tupleQueryResult.close();
+		
+		return schemeList;
+		
+	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -1403,7 +1430,7 @@ public class SKOS extends STServiceAdapter {
 		IRI xLabelIRI = null;
 		if (label != null) {
 			xLabelIRI = createLabelUsingLexicalizationModel(newCollectionRes, label, modelAdditions,
-					checkExistingAltLabel, true);
+					checkExistingAltLabel, true, null);
 		}
 		
 		
@@ -1845,7 +1872,7 @@ public class SKOS extends STServiceAdapter {
 	 * @throws PrefAltLabelClashException 
 	 */
 	private IRI createLabelUsingLexicalizationModel(Resource resource, Literal label, Model modelAdditions,
-			boolean checkPrefAltLabelClash, boolean newResource) 
+			boolean checkPrefAltLabelClash, boolean newResource, List<IRI> conceptSchemes) 
 			throws URIGenerationException, UnsupportedLexicalizationModelException, 
 			AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
 		IRI lexModel = getProject().getLexicalizationModel();
@@ -1853,15 +1880,17 @@ public class SKOS extends STServiceAdapter {
 		if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 			modelAdditions.add(resource, RDFS.LABEL, label);
 		} else if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
-			checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource, newResource);
+			checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource, newResource, conceptSchemes);
 			if(checkPrefAltLabelClash) {
 				checkIfPrefAltLabelClash(getManagedConnection(), label, resource);
 			}
 			modelAdditions.add(resource, org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, label);
 		} else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
-			it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource, newResource);
+			it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfAddPrefLabelIsPossible(
+					getManagedConnection(), label, resource, newResource, conceptSchemes);
 			if(checkPrefAltLabelClash) {
-				it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfPrefAltLabelClash(getManagedConnection(), label, resource);
+				it.uniroma2.art.semanticturkey.services.core.SKOSXL.checkIfPrefAltLabelClash(
+						getManagedConnection(), label, resource);
 			}
 			xLabelIRI = generateXLabelIRI(resource, label, SKOSXL.PREF_LABEL);
 			modelAdditions.add(resource, SKOSXL.PREF_LABEL, xLabelIRI);
@@ -1947,12 +1976,39 @@ public class SKOS extends STServiceAdapter {
 	
 	
 	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource, boolean newResource) throws AlreadyExistingLiteralFormForResourceException{
+			Resource resource, boolean newResource, List<IRI> conceptSchemes) 
+					throws AlreadyExistingLiteralFormForResourceException{
+		
+		
 		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
 		// to which the Literal will be added has not already an alternative label with the input
 		String query = "ASK {"+
 				"\n{?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL)+" "+
-					NTriplesUtil.toNTriplesString(newLabel)+" . }"+
+					NTriplesUtil.toNTriplesString(newLabel)+" . ";
+		//if at least one concept scheme is passed, filter the ?resource to that scheme(s)
+		if(conceptSchemes!=null && conceptSchemes.size()>0) {
+			query+="\n?subPropInScheme "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF)+"* "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME)+" .";
+			if(conceptSchemes.size()==1) {
+				//since it is a single scheme, there is no need to use the FILTER, check check the triple
+				query+="\n?resource ?subPropInScheme "+NTriplesUtil.toNTriplesString(conceptSchemes.get(0))+" .";
+			}else {
+				//since there are at least two schemes, use the filter
+				boolean first=true;
+				query+="\n?resource ?subPropInScheme ?scheme ."+
+						"\nFILTER(";
+				for(IRI scheme : conceptSchemes) {
+					if(!first) {
+						query+= " || ";
+					}
+					first = false;
+					query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
+				}
+				query+=")";
+			}
+		}
+		query+= "\n}"+
 				"\nUNION"+
 				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
 					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL)+" "+
@@ -1960,6 +2016,7 @@ public class SKOS extends STServiceAdapter {
 				//see the type to check
 		query+="\n}";
 		
+		logger.debug("query: " + query);
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){

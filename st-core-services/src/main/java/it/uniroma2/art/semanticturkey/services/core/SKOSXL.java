@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -361,7 +362,9 @@ public class SKOSXL extends STServiceAdapter {
 		if(checkExistingAltLabel) {
 			checkIfPrefAltLabelClash(repoConnection, literal, concept);
 		}
-		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false);
+		
+		List<IRI> conceptSchemeList = SKOS.getAllSchemesForConcept(concept, repoConnection);
+		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false, conceptSchemeList);
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -522,14 +525,40 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource, boolean newResource) throws AlreadyExistingLiteralFormForResourceException{
+			Resource resource, boolean newResource, List<IRI> conceptSchemes) 
+					throws AlreadyExistingLiteralFormForResourceException{
 		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
 		// to which the Literal will be added has not already an alternative label with the input
+		// @formatter:off
 		String query = "ASK {"+
 				"\n{?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" "+
 					"?xlabel ."+
 				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
-					NTriplesUtil.toNTriplesString(newLabel)+" . }"+
+					NTriplesUtil.toNTriplesString(newLabel)+" .";
+		//if at least one concept scheme is passed, filter the ?resource to that scheme(s)
+		if(conceptSchemes!=null && conceptSchemes.size()>0) {
+			query+="\n?subPropInScheme "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF)+"* "+
+					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME)+" .";
+			if(conceptSchemes.size()==1) {
+				//since it is a single scheme, there is no need to use the FILTER, check check the triple
+				query+="\n?resource ?subPropInScheme "+NTriplesUtil.toNTriplesString(conceptSchemes.get(0))+" .";
+			}else {
+				//since there are at least two schemes, use the filter
+				boolean first=true;
+				query+="\n?resource ?subPropInScheme ?scheme ."+
+						"\nFILTER(";
+				for(IRI scheme : conceptSchemes) {
+					if(!first) {
+						query+= " || ";
+					}
+					first = false;
+					query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
+				}
+				query+=")";
+			}
+		}
+		query+="\n}"+
 				"\nUNION"+
 				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
 					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" "+
@@ -538,7 +567,8 @@ public class SKOSXL extends STServiceAdapter {
 					NTriplesUtil.toNTriplesString(newLabel)+" . }";	
 				//see the type to check
 		query+="\n}";
-		
+		// @formatter:on
+		logger.debug("query: " + query);
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		boolean check = booleanQuery.evaluate();
