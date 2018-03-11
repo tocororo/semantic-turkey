@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +24,9 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -34,14 +38,27 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.stringContainsInOrder;
+
 import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
@@ -115,13 +132,14 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 				assertTrue(Models.isomorphic(expectedAdditions, actualAdditions));
 				assertTrue(Models.isomorphic(expectedRemovals, actualRemovals));
 
-				
-				Optional<Literal> startTimeHolder = Models.objectLiteral(QueryResults.asModel(conn.getStatements(tip, PROV.STARTED_AT_TIME, null)));
-				Optional<Literal> endTimeHolder = Models.objectLiteral(QueryResults.asModel(conn.getStatements(tip, PROV.ENDED_AT_TIME, null)));
+				Optional<Literal> startTimeHolder = Models.objectLiteral(
+						QueryResults.asModel(conn.getStatements(tip, PROV.STARTED_AT_TIME, null)));
+				Optional<Literal> endTimeHolder = Models.objectLiteral(
+						QueryResults.asModel(conn.getStatements(tip, PROV.ENDED_AT_TIME, null)));
 
 				assertTrue(startTimeHolder.isPresent());
 				assertTrue(endTimeHolder.isPresent());
-				
+
 				Literal startTime = startTimeHolder.get();
 				Literal endTime = endTimeHolder.get();
 
@@ -130,9 +148,9 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 				XMLGregorianCalendar startTimeValue = Literals.getCalendarValue(startTime, null);
 				XMLGregorianCalendar endTimeValue = Literals.getCalendarValue(endTime, null);
-				
+
 				assertTrue(startTimeValue.compare(endTimeValue) < 0);
-				
+
 				strategy.checkCommit(conn, tip);
 			});
 		}
@@ -367,11 +385,11 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 			return tip;
 		});
-		
+
 		Repositories.consume(supportRepo, conn -> {
 			conditionalPrintHistory(conn);
 		});
-		
+
 		Repositories.consume(supportRepo, conn -> {
 			Optional<Resource> parentHolder = HistoryRepositories.getParent(conn, secondCommit,
 					HISTORY_GRAPH);
@@ -584,22 +602,23 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 			}
 		});
 	}
-	
+
 	@Test
 	public void testReadHistoryValidationGraphs() {
 		Repositories.consume(coreRepo, conn -> {
-			IRI historyGraph = Models.objectIRI(QueryResults
-					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.HISTORY_GRAPH,
-							null, CHANGETRACKER.GRAPH_MANAGEMENT))).get();
-			IRI validationGraph = Models.objectIRI(QueryResults
-					.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.VALIDATION_GRAPH,
-							null, CHANGETRACKER.GRAPH_MANAGEMENT))).orElse(null);
+			IRI historyGraph = Models
+					.objectIRI(QueryResults.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT,
+							CHANGETRACKER.HISTORY_GRAPH, null, CHANGETRACKER.GRAPH_MANAGEMENT)))
+					.get();
+			IRI validationGraph = Models
+					.objectIRI(QueryResults.asModel(conn.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT,
+							CHANGETRACKER.VALIDATION_GRAPH, null, CHANGETRACKER.GRAPH_MANAGEMENT)))
+					.orElse(null);
 
 			assertEquals(HISTORY_GRAPH, historyGraph);
 			assertEquals(null, validationGraph);
 		});
 	}
-
 
 	@Test
 	public void testCommitMetadata1() {
@@ -650,13 +669,71 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 
 			@Override
 			public void checkCommit(RepositoryConnection historyConn, Resource commit) {
-				String metadataCheckQuery = commitMetadata.stream().map(s -> RenderUtils.toSPARQL(s.getSubject()) + " " + RenderUtils.toSPARQL(s.getPredicate()) + " " + RenderUtils.toSPARQL(s.getObject()) + ".").collect(Collectors.joining("\n", "ASK {\n", "\n}\n"));
-				metadataCheckQuery = metadataCheckQuery.replace("<http://semanticturkey.uniroma2.it/ns/change-tracker#commit-metadata>", RenderUtils.toSPARQL(commit));
+				String metadataCheckQuery = commitMetadata.stream()
+						.map(s -> RenderUtils.toSPARQL(s.getSubject()) + " "
+								+ RenderUtils.toSPARQL(s.getPredicate()) + " "
+								+ RenderUtils.toSPARQL(s.getObject()) + ".")
+						.collect(Collectors.joining("\n", "ASK {\n", "\n}\n"));
+				metadataCheckQuery = metadataCheckQuery.replace(
+						"<http://semanticturkey.uniroma2.it/ns/change-tracker#commit-metadata>",
+						RenderUtils.toSPARQL(commit));
 				BooleanQuery metadataCheckQueryObj = historyConn.prepareBooleanQuery(metadataCheckQuery);
 				assertTrue(metadataCheckQueryObj.evaluate());
-				
-					
+
 			}
 		});
 	}
+
+	@Test
+	public void testSystemInfoJava() {
+		String actualVersion = ChangeTracker.getVersion();
+		assertThat(actualVersion, not(Matchers.blankOrNullString()));
+		assertThat(actualVersion, not(stringContainsInOrder("$")));
+	}
+
+	@Test
+	public void testSystemInfo() throws IOException {
+		try (RepositoryConnection conn = coreRepo.getConnection()) {
+			IRI sysinfo = CHANGETRACKER.SYSINFO;
+			testSystemInfoHelper(conn, sysinfo);
+		}
+	}
+
+	@Test
+	public void testSystemInfoWithNonce() throws IOException {
+		try (RepositoryConnection conn = coreRepo.getConnection()) {
+			IRI sysinfo = SimpleValueFactory.getInstance()
+					.createIRI(CHANGETRACKER.SYSINFO.toString() + "?nonce=" + System.currentTimeMillis());
+			testSystemInfoHelper(conn, sysinfo);
+		}
+	}
+
+	protected void testSystemInfoHelper(RepositoryConnection conn, IRI sysinfo)
+			throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+		GraphQuery query = conn.prepareGraphQuery("describe" + NTriplesUtil.toNTriplesString(sysinfo)
+				+ " from " + NTriplesUtil.toNTriplesString(CHANGETRACKER.SYSINFO));
+
+		Model actualInfo = QueryResults.asModel(query.evaluate());
+
+		String expectedVersion = ChangeTracker.getVersion();
+		Literal expectedVersionLit = SimpleValueFactory.getInstance().createLiteral(expectedVersion);
+
+		Set<Value> actualVersions = actualInfo.filter(sysinfo,
+				SimpleValueFactory.getInstance().createIRI("http://schema.org/version"), null).objects();
+
+		assertThat(actualVersions, everyItem(instanceOf(Literal.class)));
+		assertThat(actualVersions, hasSize(1));
+		assertThat(actualVersions, hasItem(equalTo(expectedVersionLit)));
+
+		Set<Value> actualSupportRepoIds = actualInfo
+				.filter(sysinfo, ChangeTrackerSchema.SUPPORT_REPOSITORY_ID, null).objects();
+
+		assertThat(actualSupportRepoIds, everyItem(instanceOf(Literal.class)));
+		assertThat(actualSupportRepoIds, hasSize(1));
+		assertThat(actualSupportRepoIds,
+				hasItem(equalTo(SimpleValueFactory.getInstance().createLiteral(HISTORY_REPO_ID))));
+
+		assertThat(actualInfo.filter(sysinfo, ChangeTrackerSchema.SERVER_URL, null), empty());
+	}
+
 }

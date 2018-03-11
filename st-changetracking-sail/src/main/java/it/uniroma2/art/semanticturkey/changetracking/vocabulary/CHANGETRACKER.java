@@ -28,22 +28,25 @@ public abstract class CHANGETRACKER {
 
 	/** ct:staged-additions */
 	public static final IRI STAGED_ADDITIONS;
-	
+
 	/** ct:staged-removals */
 	public static final IRI STAGED_REMOVALS;
 
+	/** ct:SYSINFO **/
+	public static final IRI SYSINFO;
+
 	/** ct:graph-management */
 	public static final IRI GRAPH_MANAGEMENT;
-	
+
 	/** ct:history-graph */
 	public static final IRI HISTORY_GRAPH;
 
 	/** ct:validation-graph */
 	public static final IRI VALIDATION_GRAPH;
-	
+
 	/** ct:includeGraph */
 	public static final IRI INCLUDE_GRAPH;
-	
+
 	/** ct:excludeGraph */
 	public static final IRI EXCLUDE_GRAPH;
 
@@ -64,10 +67,12 @@ public abstract class CHANGETRACKER {
 
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
-		
+
 		STAGED_ADDITIONS = vf.createIRI(NAMESPACE, "staged-additions");
 		STAGED_REMOVALS = vf.createIRI(NAMESPACE, "staged-removals");
-		
+
+		SYSINFO = vf.createIRI(NAMESPACE, "SYSINFO");
+
 		GRAPH_MANAGEMENT = vf.createIRI(NAMESPACE, "graph-management");
 		INCLUDE_GRAPH = vf.createIRI(NAMESPACE, "includeGraph");
 		EXCLUDE_GRAPH = vf.createIRI(NAMESPACE, "excludeGraph");
@@ -75,7 +80,7 @@ public abstract class CHANGETRACKER {
 		VALIDATION_GRAPH = vf.createIRI(NAMESPACE, "validation-graph");
 
 		COMMIT_METADATA = vf.createIRI(NAMESPACE, "commit-metadata");
-		
+
 		VALIDATION = vf.createIRI(NAMESPACE, "validation");
 		ACCEPT = vf.createIRI(NAMESPACE, "accept");
 		REJECT = vf.createIRI(NAMESPACE, "reject");

@@ -3,6 +3,12 @@ date: dd/mm/yyyy
   * Enabled the refinement of label type when creating/linking a skosxl:Label
   * Enabled the possibility to specify a specific broader and narrower properties when dealing with the concept tree and
     also whether to use their subproperties
+  * Improvements to the OntologyManager component (e.g. core vocabularies are no longer deleted when an
+    explicit import of them is removed)
+  * Improvements to the change tracker Sail (e.g. possibility to query the version of the Sail)
+  * Enabled the possibility to edit the credentials for the repositories associated with a project
+  * New Extension Management framework (partial release)
+  * Introduction of a SPARQL store (e.g. saved queries/updates)
 
 version 3.0
 date: 08/02/2018

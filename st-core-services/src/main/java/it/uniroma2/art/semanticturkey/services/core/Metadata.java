@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.toList;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,12 +13,6 @@ import java.util.Set;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
@@ -27,12 +20,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
-import it.uniroma2.art.semanticturkey.ontology.ImportStatus.Values;
+import it.uniroma2.art.semanticturkey.ontology.ImportModality;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
+import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
@@ -44,8 +36,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport;
-import it.uniroma2.art.semanticturkey.services.core.metadata.OntologyImport.Statuses;
 
 /**
  * This class provides services for manipulating metadata associated with a project.
@@ -256,57 +246,9 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	// @PreAuthorize("@auth.isAuthorized('rdf(import)', 'R')") temporarily disabled (maybe not required)
-	public Collection<OntologyImport> getImports() throws RepositoryException {
-		RepositoryConnection conn = getManagedConnection();
-
-		IRI ont = conn.getValueFactory().createIRI(getBaseURI());
-		Set<IRI> importsBranch = new HashSet<>();
-
-		logger.debug("listing ontology imports");
-		return getImportsHelper(conn, ont, importsBranch);
-	}
-
-	private Collection<OntologyImport> getImportsHelper(RepositoryConnection conn, IRI ont,
-			Set<IRI> importsBranch) throws RepositoryException {
-		Collection<OntologyImport> rv = new ArrayList<>();
-
-		Model importStatements = QueryResults.asModel(conn.getStatements(ont, OWL.IMPORTS, null, false));
-
-		for (IRI importedOnt : Models.objectIRIs(importStatements)) {
-
-			logger.debug("\timport: " + importedOnt);
-
-			Statuses status;
-			Collection<OntologyImport> importsOfImporteddOntology = null;
-
-			if (importsBranch.contains(importedOnt)) {
-				status = Statuses.LOOP;
-			} else {
-				Resource addGraph = VALIDATION.stagingAddGraph(ont);
-				Resource removeGraph = VALIDATION.stagingRemoveGraph(ont);
-
-				ImportStatus importStatus;
-
-				if (importStatements.contains(null, null, importedOnt, addGraph)) {
-					importStatus = new ImportStatus(Values.STAGED_ADDITION, null);
-				} else if (importStatements.contains(null, null, importedOnt, removeGraph)) {
-					importStatus = new ImportStatus(Values.STAGED_REMOVAL, null);
-				} else {
-					importStatus = getOntologyManager().getImportStatus(conn, importedOnt.stringValue());
-				}
-				status = OntologyImport.Statuses.fromImportStatus(importStatus);
-				Set<IRI> newImportsBranch = new HashSet<>(importsBranch);
-				newImportsBranch.add(importedOnt);
-
-				importsOfImporteddOntology = getImportsHelper(conn, importedOnt, newImportsBranch);
-			}
-
-			OntologyImport importedOntologyElem = new OntologyImport(importedOnt, status,
-					importsOfImporteddOntology);
-			rv.add(importedOntologyElem);
-		}
-
-		return rv;
+	public Collection<it.uniroma2.art.semanticturkey.ontology.OntologyImport> getImports()
+			throws RepositoryException {
+		return getOntologyManager().getUserOntologyImportTree(getManagedConnection());
 	}
 
 	/**
@@ -332,7 +274,8 @@ public class Metadata extends STServiceAdapter {
 		try {
 			localFile.transferTo(inputServerFile);
 			getOntologyManager().addOntologyImportFromLocalFile(getManagedConnection(), baseURI,
-					inputServerFile.getPath(), mirrorFile, transitiveImportAllowance, failedImports);
+					ImportModality.USER, inputServerFile.getPath(), mirrorFile, transitiveImportAllowance,
+					failedImports);
 
 			return OntologyImport.fromImportFailures(failedImports);
 		} finally {
@@ -360,8 +303,8 @@ public class Metadata extends STServiceAdapter {
 			throws RDF4JException, MalformedURLException, OntologyManagerException {
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().addOntologyImportFromMirror(getManagedConnection(), baseURI, mirrorFile,
-				transitiveImportAllowance, failedImports);
+		getOntologyManager().addOntologyImportFromMirror(getManagedConnection(), baseURI, ImportModality.USER,
+				mirrorFile, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -389,8 +332,8 @@ public class Metadata extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().addOntologyImportFromWeb(getManagedConnection(), baseURI, url, rdfFormat,
-				transitiveImportAllowance, failedImports);
+		getOntologyManager().addOntologyImportFromWeb(getManagedConnection(), baseURI, ImportModality.USER,
+				url, rdfFormat, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}
@@ -419,8 +362,8 @@ public class Metadata extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		getOntologyManager().addOntologyImportFromWebToMirror(getManagedConnection(), baseURI, url,
-				mirrorFile, rdfFormat, transitiveImportAllowance, failedImports);
+		getOntologyManager().addOntologyImportFromWebToMirror(getManagedConnection(), baseURI,
+				ImportModality.USER, url, mirrorFile, rdfFormat, transitiveImportAllowance, failedImports);
 
 		return OntologyImport.fromImportFailures(failedImports);
 	}

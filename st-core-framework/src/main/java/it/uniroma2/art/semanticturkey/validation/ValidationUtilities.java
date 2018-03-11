@@ -101,6 +101,22 @@ public class ValidationUtilities {
 	}
 
 	/**
+	 * Returns a graph that indicates to clear staged additions if validation is enabled, or to clear the
+	 * already asserted graph
+	 * 
+	 * @param validationEnabled
+	 * @param ont
+	 * @return
+	 */
+	public static Resource getClearThroughGraphIfValidationEnabled(boolean validationEnabled, IRI graph) {
+		if (validationEnabled) {
+			return (IRI) VALIDATION.clearThroughGraph(graph);
+		} else {
+			return graph;
+		}
+	}
+
+	/**
 	 * Returns the remove graph if validation is enabled
 	 * 
 	 * @param validationEnabled
@@ -117,6 +133,10 @@ public class ValidationUtilities {
 
 	public static interface ThrowingConsumer<X, Y extends Exception> {
 		void accept(X input) throws Y;
+	}
+
+	public static interface ThrowingProcedure<Y extends Exception> {
+		void execute() throws Y;
 	}
 
 }

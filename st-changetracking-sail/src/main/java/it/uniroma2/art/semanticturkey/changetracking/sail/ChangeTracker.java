@@ -1,7 +1,9 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,7 +81,12 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	public static final Optional<Boolean> OPTIONAL_TRUE = Optional.of(true);
 	public static final Optional<Boolean> OPTIONAL_FALSE = Optional.of(false);
 
+	public static final String PROPERTIES = "changetracker.properties";
+
 	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
+	private static final Properties props;
+	private static final String PROP_VERSION = "version";
+	private static final String version;
 
 	final String supportRepoId;
 	final String serverURL;
@@ -95,6 +102,19 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	final Optional<Boolean> interactiveNotifications;
 
 	private RepositoryResolver repositoryResolver;
+
+	static {
+		props = new Properties();
+		try {
+			props.load(ChangeTracker.class.getResourceAsStream(PROPERTIES));
+			version = props.getProperty(PROP_VERSION);
+
+			if (version == null || version.equals("") || version.contains("$"))
+				throw new IllegalStateException("Wrong version number detected: " + version);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
 
 	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
 			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean validationEnabled,
@@ -125,6 +145,7 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	@Override
 	public void initialize() throws SailException {
 		super.initialize();
+
 		if (serverURL != null) {
 			supportRepo = new HTTPRepository(serverURL, supportRepoId);
 		} else {
@@ -191,6 +212,10 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	@Override
 	public void setRepositoryResolver(RepositoryResolver resolver) {
 		repositoryResolver = resolver;
+	}
+
+	public static String getVersion() {
+		return version;
 	}
 
 }

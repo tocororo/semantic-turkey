@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -33,10 +34,18 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
+import org.eclipse.rdf4j.query.Binding;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.algebra.DescribeOperator;
+import org.eclipse.rdf4j.query.algebra.TupleExpr;
+import org.eclipse.rdf4j.query.algebra.UnaryTupleOperator;
 import org.eclipse.rdf4j.query.algebra.evaluation.iterator.CollectionIteration;
+import org.eclipse.rdf4j.query.impl.MapBindingSet;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -52,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
@@ -598,6 +608,52 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	}
 
 	@Override
+	public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
+			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
+
+		if (tupleExpr instanceof DescribeOperator) {
+			if (dataset != null
+					&& dataset.getDefaultGraphs().contains(CHANGETRACKER.SYSINFO)) {
+				TupleExpr argTupleExpr = ((UnaryTupleOperator) tupleExpr).getArg();
+				Model generatedTriples = new LinkedHashModel();
+				QueryResults.stream(super.evaluate(argTupleExpr, dataset, bindings, includeInferred))
+						.flatMap(bs -> StreamSupport.stream(bs.spliterator(), false)).map(Binding::getValue)
+						.filter(v -> v instanceof IRI
+								&& v.stringValue().startsWith(CHANGETRACKER.SYSINFO.toString()))
+						.forEach(v -> {
+							IRI vIRI = (IRI) v;
+
+							generatedTriples.add(vIRI,
+									SimpleValueFactory.getInstance().createIRI("http://schema.org/version"),
+									SimpleValueFactory.getInstance()
+											.createLiteral(ChangeTracker.getVersion()));
+							generatedTriples.add(vIRI, ChangeTrackerSchema.SUPPORT_REPOSITORY_ID,
+									SimpleValueFactory.getInstance().createLiteral(sail.supportRepoId));
+							if (sail.serverURL != null) {
+								generatedTriples.add(vIRI, ChangeTrackerSchema.SERVER_URL,
+										SimpleValueFactory.getInstance().createLiteral(sail.serverURL));
+							}
+						});
+
+				List<MapBindingSet> statementCollection = generatedTriples.stream().map(st -> {
+					MapBindingSet bs = new MapBindingSet();
+					bs.addBinding("subject", st.getSubject());
+					bs.addBinding("predicate", st.getPredicate());
+					bs.addBinding("object", st.getObject());
+					if (st.getContext() != null) {
+						bs.addBinding("context", st.getContext());
+					}
+					return bs;
+				}).collect(Collectors.toList());
+
+				return new CollectionIteration<>(statementCollection);
+			}
+		}
+
+		return super.evaluate(tupleExpr, dataset, bindings, includeInferred);
+	}
+
+	@Override
 	public void addStatement(Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
 		List<Resource> contextList = new ArrayList<>(contexts.length);
 		Arrays.stream(contexts).forEach(c -> contextList.add(c));
@@ -757,16 +813,31 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		List<Resource> contextsToClear = new ArrayList<>();
 
 		try {
-			if (validationEnabled) {
+			if (sail.validationEnabled) {
 				for (int i = 0; i < contexts.length; i++) {
 					Resource ctx = contexts[i];
-					if (VALIDATION.isAddGraph(ctx)) {
-						IRI unmangleGraph = VALIDATION.unmangleAddGraph((IRI) ctx);
-						validatableOpertionHandler.clearHandler(unmangleGraph);
-						contextsToClear.add(ctx);
-					} else if (!VALIDATION.isRemoveGraph(ctx)) {
-						validatableOpertionHandler.removeStatements(null, null, null, new Resource[] { ctx });
-						contextsToCopy.add(ctx);
+
+					// a clear-through only cancels staged additions if validation is currently enabled;
+					// otherwise, it clears the actual graph
+					if (VALIDATION.isClearThroughGraph(ctx)) {
+						Resource unmangled = VALIDATION.unmangleClearThroughGraph(ctx);
+						if (validationEnabled) {
+							ctx = VALIDATION.stagingAddGraph(unmangled);
+						} else {
+							contextsToClear.add(unmangled);
+						}
+					}
+
+					if (validationEnabled) {
+						if (VALIDATION.isAddGraph(ctx)) {
+							IRI unmangleGraph = VALIDATION.unmangleAddGraph((IRI) ctx);
+							validatableOpertionHandler.clearHandler(unmangleGraph);
+							contextsToClear.add(ctx);
+						} else if (!VALIDATION.isRemoveGraph(ctx)) {
+							validatableOpertionHandler.removeStatements(null, null, null,
+									new Resource[] { ctx });
+							contextsToCopy.add(ctx);
+						}
 					}
 				}
 
@@ -774,15 +845,18 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					super.clear(contextsToClear.toArray(new Resource[contextsToClear.size()]));
 				}
 
-				if (contexts.length == 0) {
-					contextsToCopy = QueryResults.stream(getContextIDs())
-							.filter(r -> !VALIDATION.isAddGraph(r) && !VALIDATION.isRemoveGraph(r))
-							.collect(Collectors.toList());
-				}
+				if (validationEnabled) {
 
-				if (!contextsToCopy.isEmpty()) {
-					removeStatements(null, null, null,
-							contextsToCopy.toArray(new Resource[contextsToCopy.size()]));
+					if (contexts.length == 0) {
+						contextsToCopy = QueryResults.stream(getContextIDs())
+								.filter(r -> !VALIDATION.isAddGraph(r) && !VALIDATION.isRemoveGraph(r))
+								.collect(Collectors.toList());
+					}
+
+					if (!contextsToCopy.isEmpty()) {
+						removeStatements(null, null, null,
+								contextsToCopy.toArray(new Resource[contextsToCopy.size()]));
+					}
 				}
 			} else {
 				super.clear(contexts);

@@ -26,6 +26,8 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -427,7 +429,8 @@ public abstract class Project extends AbstractProject {
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
 
-			Set<Resource> contexts = QueryResults.asSet(conn.getContextIDs());
+			Set<Resource> contexts = QueryResults.stream(conn.getContextIDs()).filter(IRI.class::isInstance)
+					.map(r -> OntologyManager.computeCanonicalURI((IRI) r)).collect(toSet());
 
 			ValueFactory vf = conn.getValueFactory();
 			IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
@@ -1011,9 +1014,10 @@ public abstract class Project extends AbstractProject {
 	public Set<RDFResourceRole> getUpdateForRoles() {
 		return Collections.unmodifiableSet(updateForRoles);
 	}
-	
+
 	/**
 	 * Returns the directory associated with this project
+	 * 
 	 * @return
 	 */
 	public File getProjectDirectory() {

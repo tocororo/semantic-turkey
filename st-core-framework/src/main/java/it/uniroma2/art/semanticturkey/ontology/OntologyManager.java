@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,6 +15,7 @@ import javax.annotation.Nullable;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
@@ -96,6 +100,7 @@ public interface OntologyManager {
 	 * 
 	 * @param conn
 	 * @param baseURI
+	 * @param modality
 	 * @param fromLocalFilePath
 	 * @param toLocalFile
 	 * @param transitiveImportAllowance
@@ -103,15 +108,17 @@ public interface OntologyManager {
 	 * @throws MalformedURLException
 	 * @throws RDF4JException
 	 */
-	void addOntologyImportFromLocalFile(RepositoryConnection conn, String baseURI, String fromLocalFilePath,
-			String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws MalformedURLException, RDF4JException;
+	void addOntologyImportFromLocalFile(RepositoryConnection conn, String baseURI, ImportModality modality,
+			String fromLocalFilePath, String toLocalFile,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			throws MalformedURLException, RDF4JException;
 
 	/**
 	 * Imports an ontology from the ontology mirror
 	 * 
 	 * @param conn
 	 * @param baseURI
+	 * @param modality
 	 * @param mirFileString
 	 * @param transitiveImportAllowance
 	 * @param failedImports
@@ -119,15 +126,16 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
-	void addOntologyImportFromMirror(RepositoryConnection conn, String baseURI, String mirFileString,
-			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
-			throws MalformedURLException, RDF4JException, OntologyManagerException;
+	void addOntologyImportFromMirror(RepositoryConnection conn, String baseURI, ImportModality modality,
+			String mirFileString, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Imports an ontology from the web
 	 *
 	 * @param conn
 	 * @param baseUriToBeImported
+	 * @param modality
 	 * @param url
 	 * @param rdfFormat
 	 * @param transitiveImportAllowance
@@ -136,15 +144,18 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
-	void addOntologyImportFromWeb(RepositoryConnection conn, String baseUriToBeImported, String url,
-			@Nullable RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException;
+	void addOntologyImportFromWeb(RepositoryConnection conn, String baseUriToBeImported,
+			ImportModality modality, String url, @Nullable RDFFormat rdfFormat,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
+			throws MalformedURLException, RDF4JException, OntologyManagerException;
 
 	/**
 	 * Imports an ontology from the web and copies it to the ontology mirror
 	 * 
 	 * @param conn
 	 * @param baseURI
+	 * @param modality
+	 *            TODO
 	 * @param sourceURL
 	 * @param toLocalFile
 	 * @param rdfFormat
@@ -154,10 +165,18 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
 	 */
-	void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI, String sourceURL,
-			String toLocalFile, RDFFormat rdfFormat,
+	void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI, ImportModality modality,
+			String sourceURL, String toLocalFile, RDFFormat rdfFormat,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException;
+
+	/**
+	 * Returns a hierarchical representation of user ontology Imports.
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	Collection<OntologyImport> getUserOntologyImportTree(RepositoryConnection conn);
 
 	/**
 	 * Removes an ontology import
@@ -171,13 +190,16 @@ public interface OntologyManager {
 	// Ontology import status
 
 	/**
-	 * Returns the status of an ontology import. The only relevant information is
+	 * Returns the status of an ontology import. It is possible to indicate whether comparisons should be
+	 * based on canonical names (i.e. stripping terminating #).The only relevant information is
 	 * {@link ImportStatus#getValue()}
 	 * 
 	 * @param baseURI
+	 * @param canonicalComparison
+	 * 
 	 * @return
 	 */
-	ImportStatus getImportStatus(RepositoryConnection conn, String baseURI);
+	ImportStatus getImportStatus(RepositoryConnection conn, String baseURI, boolean canonicalComparison);
 
 	// Recover failed imports
 
@@ -273,8 +295,8 @@ public interface OntologyManager {
 	/**
 	 * It can be used to declare use of an ontology, the presence of which is required by the system to work
 	 * properly. As an example, core modeling vocabularies are usually declared as such. The boolean
-	 * parameters can be used to declare different facets of a support ontology. If no parameter is set
-	 * to <code>, this declaration has no effect.
+	 * parameters can be used to declare different facets of a support ontology. If no parameter is set to
+	 * <code>, this declaration has no effect.
 	
 	 * @param declareImport if <code>true</code>, declares an import with modality
 	 *            {@link ImportModality#SUPPORT}.
@@ -367,5 +389,40 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 */
 	void startOntModel(String baseURI, File repoDir, RepositoryConfig repoConfig) throws RDF4JException;
+
+	public static IRI computeCanonicalURI(IRI iri) {
+		if (iri.stringValue().endsWith("#")) {
+			return SimpleValueFactory.getInstance()
+					.createIRI(iri.stringValue().substring(0, iri.stringValue().length() - 1));
+		} else {
+			return iri;
+		}
+	}
+
+	public static List<String> computeURIVariants(String baseURI) {
+		List<String> baseURIVariants = new ArrayList<>();
+		baseURIVariants.add(baseURI);
+		if (baseURI.endsWith("#")) {
+			baseURIVariants.add(baseURI.substring(0, baseURI.length() - 1));
+		} else if (!baseURI.endsWith("/")) {
+			baseURIVariants.add(baseURI + "#");
+		}
+		return baseURIVariants;
+	}
+
+	public static List<IRI> computeURIVariants(IRI baseURI) {
+		List<IRI> baseURIVariants = new ArrayList<>();
+		baseURIVariants.add(baseURI);
+
+		String stringValue = baseURI.stringValue();
+
+		if (stringValue.endsWith("#")) {
+			baseURIVariants.add(SimpleValueFactory.getInstance()
+					.createIRI(stringValue.substring(0, stringValue.length() - 1)));
+		} else if (!stringValue.endsWith("/")) {
+			baseURIVariants.add(SimpleValueFactory.getInstance().createIRI(stringValue + "#"));
+		}
+		return baseURIVariants;
+	}
 
 }

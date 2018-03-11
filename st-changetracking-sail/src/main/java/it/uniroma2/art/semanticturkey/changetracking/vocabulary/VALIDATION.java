@@ -33,11 +33,15 @@ public abstract class VALIDATION {
 	/** val:staging-remove-graph/ */
 	public static final IRI STAGING_REMOVE_GRAPH;
 
+	/** val:clear-through/ */
+	public static final IRI CLEAR_THROUGH_GRAPH;
+
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
 		STAGING_ADD_GRAPH = vf.createIRI(NAMESPACE, "staging-add-graph/");
 		STAGING_REMOVE_GRAPH = vf.createIRI(NAMESPACE, "staging-remove-graph/");
+		CLEAR_THROUGH_GRAPH = vf.createIRI(NAMESPACE, "clear-through-graph/");
 	}
 
 	public static Resource stagingAddGraph(Resource context) {
@@ -68,6 +72,22 @@ public abstract class VALIDATION {
 	public static IRI unmangleRemoveGraph(IRI ctx) {
 		return SimpleValueFactory.getInstance()
 				.createIRI(ctx.stringValue().substring(STAGING_REMOVE_GRAPH.stringValue().length()));
+	}
+
+	public static boolean isClearThroughGraph(Resource ctx) {
+		return ctx instanceof IRI && ((IRI) ctx).stringValue().startsWith(CLEAR_THROUGH_GRAPH.stringValue());
+
+	}
+
+	public static Resource unmangleClearThroughGraph(Resource ctx) {
+		return SimpleValueFactory.getInstance()
+				.createIRI(ctx.stringValue().substring(CLEAR_THROUGH_GRAPH.stringValue().length()));
+	}
+
+	public static IRI clearThroughGraph(IRI context) {
+		IRI contextIRI = (IRI) context;
+
+		return SimpleValueFactory.getInstance().createIRI(CLEAR_THROUGH_GRAPH.stringValue() + contextIRI);
 	}
 
 }

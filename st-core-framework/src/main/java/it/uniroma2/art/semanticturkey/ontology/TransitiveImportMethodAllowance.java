@@ -13,6 +13,10 @@ import java.util.List;
  */
 public enum TransitiveImportMethodAllowance {
 	/**
+	 * Transitive imports are disallowed
+	 */
+	nowhere(Collections.emptyList()),
+	/**
 	 * Only the download from the web is allowed
 	 */
 	web(Arrays.asList(ImportMethod.fromWeb)),

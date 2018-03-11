@@ -5,6 +5,7 @@ import static it.uniroma2.art.semanticturkey.ontology.ImportMethod.fromOntologyM
 import static it.uniroma2.art.semanticturkey.ontology.ImportMethod.fromWeb;
 import static it.uniroma2.art.semanticturkey.ontology.ImportMethod.fromWebToMirror;
 import static it.uniroma2.art.semanticturkey.ontology.ImportMethod.toOntologyMirror;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.io.File;
@@ -15,32 +16,39 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.impl.BackgroundGraphResult;
@@ -58,6 +66,8 @@ import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Sets;
+
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.ontology.ImportAndOntologyMismatchException;
@@ -67,6 +77,8 @@ import it.uniroma2.art.semanticturkey.ontology.ImportStatus;
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus.Values;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
+import it.uniroma2.art.semanticturkey.ontology.OntologyImport.Statuses;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
@@ -79,6 +91,7 @@ import it.uniroma2.art.semanticturkey.utilities.IterationSpy;
 import it.uniroma2.art.semanticturkey.utilities.OptionalUtils;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities.ThrowingProcedure;
 
 /**
  * Native implementation of {@link OntologyManager} for RDF4J.
@@ -139,21 +152,92 @@ public class OntologyManagerImpl implements OntologyManager {
 		}
 	}
 
+	private void addOntologyImportSkeleton(RepositoryConnection conn, String baseURI,
+			boolean updateImportStatement, ImportModality modality, Set<IRI> importedOntologies,
+			ThrowingProcedure<Exception> procedure) throws OntologyManagerException {
+
+		@Nullable
+		ImmutablePair<IRI, Values> importStatus = OntologyManager.computeURIVariants(baseURI).stream()
+				.map(uri -> new ImmutablePair<>(SimpleValueFactory.getInstance().createIRI(uri),
+						getImportStatus(conn, uri, importedOntologies).getValue()))
+				.filter(p -> !Values.FAILED.equals((p.getRight()))).findFirst().orElse(null);
+		if (importStatus != null) {
+			if (Values.STAGED_REMOVAL.equals(importStatus.getValue())) {
+				throw new OntologyManagerException(
+						"Could not import ontology already staged for deletion: " + baseURI);
+			} else if (updateImportStatement) {
+				checkOntologyNotExplicitlyImported(conn, baseURI, modality);
+				String correctedImport = findMatchingImportIRI(baseURI, conn, importStatus.getLeft());
+				declareOntologyImport(conn, correctedImport, modality);
+				return;
+			}
+		}
+
+		if (updateImportStatement) {
+			checkOntologyNotExplicitlyImported(conn, baseURI, modality);
+		}
+
+		if (importStatus == null) {
+			try {
+				procedure.execute();
+			} catch (OntologyManagerException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new OntologyManagerException(e);
+			}
+		} else {
+			if (updateImportStatement) {
+				declareOntologyImport(conn, baseURI, modality);
+			}
+		}
+	}
+
+	private String findMatchingImportIRI(String importURI, RepositoryConnection conn, IRI ctx) {
+		IRI canonicalImport = OntologyManager
+				.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(importURI));
+
+		for (IRI candidateOnt : Models
+				.subjectIRIs(QueryResults.asModel(conn.getStatements(null, RDF.TYPE, OWL.ONTOLOGY, ctx)))) {
+			if (OntologyManager.computeCanonicalURI(candidateOnt).equals(canonicalImport)) {
+				return candidateOnt.stringValue();
+			}
+		}
+
+		for (IRI candidateOnt : Models
+				.objectIRIs(QueryResults.asModel(conn.getStatements(null, RDF.TYPE, OWL.VERSIONIRI, ctx)))) {
+			if (OntologyManager.computeCanonicalURI(candidateOnt).equals(canonicalImport)) {
+				return candidateOnt.stringValue();
+			}
+		}
+
+		return importURI;
+	}
+
+	private void declareOntologyImport(RepositoryConnection conn, String ontURI, ImportModality modality) {
+		ValueFactory vf = conn.getValueFactory();
+
+		if (modality == ImportModality.USER) {
+			IRI baseURI = vf.createIRI(getBaseURI());
+			conn.add(baseURI, OWL.IMPORTS, vf.createIRI(ontURI), baseURI);
+		} else {
+			importModalityMap.get(modality).add(vf.createIRI(ontURI));
+		}
+	}
+
 	@Override
 	public void addOntologyImportFromLocalFile(RepositoryConnection conn, String baseURI,
-			String fromLocalFilePath, String toLocalFile,
+			ImportModality modality, String fromLocalFilePath, String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException {
 		try {
-			addOntologyImportFromLocalFile(baseURI, fromLocalFilePath, toLocalFile, ImportModality.USER, true,
-					conn, transitiveImportAllowance, failedImports, new HashSet<>());
+			addOntologyImportFromLocalFile(baseURI, fromLocalFilePath, toLocalFile, modality, true, conn,
+					transitiveImportAllowance, failedImports, new HashSet<>());
 		} catch (ImportAndOntologyMismatchException e) {
 			if (!e.getOnt().stringValue().equals(baseURI))
 				throw e;
 
 			addOntologyImportFromLocalFile(e.getRealOnt().stringValue(), fromLocalFilePath, toLocalFile,
-					ImportModality.USER, true, conn, transitiveImportAllowance, failedImports,
-					new HashSet<>());
+					modality, true, conn, transitiveImportAllowance, failedImports, new HashSet<>());
 		}
 	}
 
@@ -164,10 +248,9 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		logger.debug("adding: " + baseURI + " from localfile: " + fromLocalFilePath + " to Mirror: "
 				+ toLocalFile);
-		File inputFile = new File(fromLocalFilePath);
-		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
-		try {
-			checkOntologyNotExplicitlyImported(conn, baseURI);
+		addOntologyImportSkeleton(conn, baseURI, updateImportStatement, modality, importedOntologies, () -> {
+			File inputFile = new File(fromLocalFilePath);
+			MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
 
 			RDFFormat rdfFormat = Rio.getParserFormatForFileName(inputFile.getName())
 					.orElseThrow(() -> new OntologyManagerException(
@@ -184,26 +267,24 @@ public class OntologyManagerImpl implements OntologyManager {
 			notifiedAddedOntologyImport(fromLocalFile, baseURI, fromLocalFilePath, mirFile, modality,
 					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
 					failedImports, importedOntologies);
-		} catch (OntologyManagerException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new OntologyManagerException(e);
-		}
+
+		});
 	}
 
 	@Override
-	public void addOntologyImportFromMirror(RepositoryConnection conn, String baseURI, String mirFileString,
+	public void addOntologyImportFromMirror(RepositoryConnection conn, String baseURI,
+			ImportModality modality, String mirFileString,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException {
 		try {
-			addOntologyImportFromMirror(baseURI, mirFileString, ImportModality.USER, true, conn,
+			addOntologyImportFromMirror(baseURI, mirFileString, modality, true, conn,
 					transitiveImportAllowance, failedImports, new HashSet<>());
 		} catch (ImportAndOntologyMismatchException e) {
 			if (!e.getOnt().stringValue().equals(baseURI))
 				throw e;
 
-			addOntologyImportFromMirror(e.getRealOnt().stringValue(), mirFileString, ImportModality.USER,
-					true, conn, transitiveImportAllowance, failedImports, new HashSet<>());
+			addOntologyImportFromMirror(e.getRealOnt().stringValue(), mirFileString, modality, true, conn,
+					transitiveImportAllowance, failedImports, new HashSet<>());
 		}
 	}
 
@@ -211,11 +292,10 @@ public class OntologyManagerImpl implements OntologyManager {
 			boolean updateImportStatement, RepositoryConnection conn,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
 			Set<IRI> importedOntologies) throws OntologyManagerException {
-		MirroredOntologyFile mirFile = new MirroredOntologyFile(mirFileString);
-		File physicalMirrorFile = new File(mirFile.getAbsolutePath());
-		try {
-			checkOntologyNotExplicitlyImported(conn, baseURI);
 
+		addOntologyImportSkeleton(conn, baseURI, updateImportStatement, modality, importedOntologies, () -> {
+			MirroredOntologyFile mirFile = new MirroredOntologyFile(mirFileString);
+			File physicalMirrorFile = new File(mirFile.getAbsolutePath());
 			RDFFormat rdfFormat = Rio.getParserFormatForFileName(physicalMirrorFile.getName())
 					.orElseThrow(() -> new OntologyManagerException(
 							"Could not match a parser for file name: " + physicalMirrorFile.getName()));
@@ -231,26 +311,22 @@ public class OntologyManagerImpl implements OntologyManager {
 			notifiedAddedOntologyImport(fromOntologyMirror, baseURI, null, mirFile, modality,
 					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
 					failedImports, importedOntologies);
-		} catch (OntologyManagerException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new OntologyManagerException(e);
-		}
+		});
 	}
 
 	@Override
-	public void addOntologyImportFromWeb(RepositoryConnection conn, String baseURI, String sourceURL,
-			RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+	public void addOntologyImportFromWeb(RepositoryConnection conn, String baseURI, ImportModality modality,
+			String sourceURL, RDFFormat rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports) throws MalformedURLException, RDF4JException, OntologyManagerException {
 		try {
-			addOntologyImportFromWeb(baseURI, sourceURL, rdfFormat, ImportModality.USER, true, conn,
+			addOntologyImportFromWeb(baseURI, sourceURL, rdfFormat, modality, true, conn,
 					transitiveImportAllowance, failedImports, new HashSet<>());
 		} catch (ImportAndOntologyMismatchException e) {
 			if (!e.getOnt().stringValue().equals(baseURI))
 				throw e;
 
-			addOntologyImportFromWeb(e.getRealOnt().stringValue(), sourceURL, rdfFormat, ImportModality.USER,
-					true, conn, transitiveImportAllowance, failedImports, new HashSet<>());
+			addOntologyImportFromWeb(e.getRealOnt().stringValue(), sourceURL, rdfFormat, modality, true, conn,
+					transitiveImportAllowance, failedImports, new HashSet<>());
 		}
 	}
 
@@ -258,41 +334,33 @@ public class OntologyManagerImpl implements OntologyManager {
 			ImportModality modality, boolean updateImportStatement, RepositoryConnection conn,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
 			Set<IRI> importedOntologies) throws OntologyManagerException {
-		try {
-			checkOntologyNotExplicitlyImported(conn, baseURI);
 
-			if (baseURI == null) {
-				baseURI = sourceURL;
-			}
+		String baseURI2 = baseURI != null ? baseURI : sourceURL;
 
+		addOntologyImportSkeleton(conn, baseURI2, updateImportStatement, modality, importedOntologies, () -> {
 			Model caputeredImports = new LinkedHashModel();
 			IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createURLImportsSpyingIteration(
-					baseURI, sourceURL, rdfFormat, caputeredImports);
-			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI));
-			notifiedAddedOntologyImport(fromWeb, baseURI, sourceURL, null, modality, updateImportStatement,
+					baseURI2, sourceURL, rdfFormat, caputeredImports);
+			conn.add(spyConcurrentIter, conn.getValueFactory().createIRI(baseURI2));
+			notifiedAddedOntologyImport(fromWeb, baseURI2, sourceURL, null, modality, updateImportStatement,
 					conn, caputeredImports, transitiveImportAllowance, failedImports, importedOntologies);
-		} catch (OntologyManagerException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new OntologyManagerException(e);
-		}
+		});
 	}
 
 	@Override
-	public void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI, String sourceURL,
-			String toLocalFile, RDFFormat rdfFormat,
+	public void addOntologyImportFromWebToMirror(RepositoryConnection conn, String baseURI,
+			ImportModality modality, String sourceURL, String toLocalFile, RDFFormat rdfFormat,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException, OntologyManagerException {
 		try {
-			addOntologyImportFromWebToMirror(baseURI, sourceURL, toLocalFile, rdfFormat, ImportModality.USER,
-					true, conn, transitiveImportAllowance, failedImports, new HashSet<>());
+			addOntologyImportFromWebToMirror(baseURI, sourceURL, toLocalFile, rdfFormat, modality, true, conn,
+					transitiveImportAllowance, failedImports, new HashSet<>());
 		} catch (ImportAndOntologyMismatchException e) {
 			if (!e.getOnt().stringValue().equals(baseURI))
 				throw e;
 
 			addOntologyImportFromWebToMirror(e.getRealOnt().stringValue(), sourceURL, toLocalFile, rdfFormat,
-					ImportModality.USER, true, conn, transitiveImportAllowance, failedImports,
-					new HashSet<>());
+					modality, true, conn, transitiveImportAllowance, failedImports, new HashSet<>());
 		}
 	}
 
@@ -307,9 +375,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		MirroredOntologyFile mirFile = getMirFile(toLocalFile, rdfFormat);
 
-		try {
-			checkOntologyNotExplicitlyImported(conn, baseURI);
-
+		addOntologyImportSkeleton(conn, baseURI, updateImportStatement, modality, importedOntologies, () -> {
 			Model capturedOntologyMetadata = new LinkedHashModel();
 			// try to download the ontology
 			notifiedAddedOntologyImport(fromWebToMirror, baseURI, sourceURL, mirFile, modality,
@@ -329,11 +395,72 @@ public class OntologyManagerImpl implements OntologyManager {
 					updateImportStatement, conn, capturedOntologyMetadata, transitiveImportAllowance,
 					failedImports, importedOntologies);
 
-		} catch (OntologyManagerException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new OntologyManagerException(e);
+		});
+	}
+
+	@Override
+	public Collection<OntologyImport> getUserOntologyImportTree(RepositoryConnection conn) {
+		IRI ont = conn.getValueFactory().createIRI(getBaseURI());
+
+		Model importStatements = QueryResults.asModel(conn.getStatements(null, OWL.IMPORTS, null, false));
+		Model versionStatements = QueryResults.asModel(conn.getStatements(null, OWL.VERSIONIRI, null, false));
+		Set<IRI> importsBranch = new HashSet<>();
+
+		logger.debug("listing ontology imports");
+		return getImportsHelper(conn, importStatements, versionStatements, ont, importsBranch);
+	}
+
+	private Collection<OntologyImport> getImportsHelper(RepositoryConnection conn, Model importStatements,
+			Model versionStatements, IRI ont, Set<IRI> importsBranch) throws RepositoryException {
+		Collection<OntologyImport> rv = new ArrayList<>();
+
+		for (Entry<Value, Set<Resource>> importedOnt2graphs : OntologyManager.computeURIVariants(ont).stream()
+				.flatMap(ontVariant -> Stream.concat(Stream.of(ontVariant),
+						Models.subjectIRIs(versionStatements.filter(null, OWL.VERSIONIRI, ontVariant))
+								.stream()))
+				.distinct().flatMap(ontVariant -> importStatements.filter(ontVariant, null, null).stream())
+				.filter(stmt -> stmt.getObject() instanceof IRI)
+				.collect(Collectors.groupingBy(stmt -> stmt.getObject(),
+						Collectors.mapping(Statement::getContext, toSet())))
+				.entrySet()) {
+
+			IRI importedOnt = (IRI) importedOnt2graphs.getKey();
+
+			logger.debug("\timport: " + importedOnt);
+
+			IRI canonicalImportOnt = OntologyManager.computeCanonicalURI(importedOnt);
+
+			Statuses status;
+			Collection<OntologyImport> importsOfImporteddOntology = null;
+
+			if (importsBranch.contains(canonicalImportOnt)) {
+				status = Statuses.LOOP;
+			} else {
+				ImportStatus importStatus;
+
+				Set<Resource> importingCtxs = importedOnt2graphs.getValue();
+
+				if (importingCtxs.stream().anyMatch(VALIDATION::isAddGraph)) {
+					importStatus = new ImportStatus(Values.STAGED_ADDITION, null);
+				} else if (importingCtxs.stream().anyMatch(VALIDATION::isRemoveGraph)) {
+					importStatus = new ImportStatus(Values.STAGED_REMOVAL, null);
+				} else {
+					importStatus = getImportStatus(conn, importedOnt.stringValue(), true);
+				}
+				status = OntologyImport.Statuses.fromImportStatus(importStatus);
+				Set<IRI> newImportsBranch = new HashSet<>(importsBranch);
+				newImportsBranch.add(canonicalImportOnt);
+
+				importsOfImporteddOntology = getImportsHelper(conn, importStatements, versionStatements,
+						importedOnt, newImportsBranch);
+			}
+
+			OntologyImport importedOntologyElem = new OntologyImport(importedOnt, status,
+					importsOfImporteddOntology);
+			rv.add(importedOntologyElem);
 		}
+
+		return rv;
 	}
 
 	protected MirroredOntologyFile getMirFile(String toLocalFile, RDFFormat rdfFormat) {
@@ -405,12 +532,11 @@ public class OntologyManagerImpl implements OntologyManager {
 			InputStream in, RDFParser parser, Model caputeredImports) {
 		BackgroundGraphResult concurrentIter = new BackgroundGraphResult(parser, in, null, baseURI);
 		new Thread(concurrentIter).start();
-		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = new IterationSpy<>(
-				concurrentIter,
+		return new IterationSpy<>(concurrentIter,
 				stmt -> stmt.getPredicate().equals(OWL.IMPORTS)
-						|| (stmt.getPredicate().equals(RDF.TYPE) && stmt.getObject().equals(OWL.ONTOLOGY)),
+						|| (stmt.getPredicate().equals(RDF.TYPE) && stmt.getObject().equals(OWL.ONTOLOGY))
+						|| (stmt.getPredicate().equals(OWL.VERSIONIRI)),
 				stmt -> caputeredImports.add(stmt));
-		return spyConcurrentIter;
 	}
 
 	private void notifiedAddedOntologyImport(ImportMethod method, String baseURI, String sourcePath,
@@ -430,33 +556,78 @@ public class OntologyManagerImpl implements OntologyManager {
 
 			Set<IRI> declOnts = Models
 					.subjectIRIs(capturedOntologyMetadata.filter(null, RDF.TYPE, OWL.ONTOLOGY));
-			// the import ont does not contain the declaration of itself as an ont and it contains at
-			// least one declaration (probably its own one)
-			if (!declOnts.contains(ont) && !declOnts.isEmpty()) {
-				// extracting the real baseURI of the imported ontology
-				IRI realURI = declOnts.iterator().next();
-				// checking that the realURI has not already been imported, by checking the existence of
-				// its NG in the current data
-				if (getImportStatus(conn, realURI.stringValue()).getValue() != ImportStatus.Values.FAILED) {
-					// if realURI is already imported, then remove the data imported in the wrong URI
-					conn.clear(ValidationUtilities.getAddGraphIfValidatonEnabled(validationEnabled, ont));
-					// and throw an exception
-					throw new OntologyManagerException("the real URI for the imported ontology: " + ont
-							+ " is actually: " + realURI + " which, however, has already been imported");
-				} else {
-					// Only if updateImportStatement is true, renamed the ontology graph
-					// Otherwise, the inconsistency between owl:imports and the named graph would be
-					// interpreted as a failed import
-					if (updateImportStatement) {
-						// we have to move imported data to the correct baseuri
-						conn.clear(ValidationUtilities.getAddGraphIfValidatonEnabled(validationEnabled, ont));
+			Set<IRI> ontVers = Models.objectIRIs(capturedOntologyMetadata.filter(null, OWL.VERSIONIRI, null));
 
-						// Throws a mismatch action so that the caller can retry the import with the real URI
-						throw new ImportAndOntologyMismatchException(ont, realURI);
+			// If there is at least one ontology declaration...
+			if (!declOnts.isEmpty()) {
+				// If the imported ont does not match any ontology declaration nor does it match any version
+				// declaration
+				if (!declOnts.contains(ont) && !ontVers.contains(ont)) {
+					// extracting the real baseURI of the imported ontology
+					IRI declaredOntURI = declOnts.iterator().next();
+
+					// extracting, if any, the real version URI of the imported ontology
+					Optional<IRI> declaredVersionURI = ontVers.stream().findFirst();
+
+					IRI realURI; // real ontology URI (either ontology URI or version URI)
+					boolean redirectable; // tells whether the difference is so small that an implicit
+											// redirect is possible (e.g. trailing #)
+
+					// determines the real URI (matching the declared ontology IRI or version IRI)
+					if (OntologyManager.computeURIVariants(declaredOntURI.stringValue())
+							.contains(ont.stringValue())) {
+						realURI = declaredOntURI;
+						redirectable = true;
+					} else if (declaredVersionURI.isPresent()) {
+						IRI realVersionURI2 = declaredVersionURI.get();
+						OntologyManager.computeURIVariants(realVersionURI2.stringValue())
+								.contains(ont.stringValue());
+						realURI = realVersionURI2;
+						redirectable = true;
+					} else {
+						realURI = declaredOntURI;
+						redirectable = false;
+					}
+
+					// removes data already loaded in the wrong context
+					conn.clear(ValidationUtilities.getClearThroughGraphIfValidationEnabled(validationEnabled,
+							ont));
+
+					if (getImportStatus(conn, realURI.stringValue(), false)
+							.getValue() != ImportStatus.Values.FAILED) { // real ontology is already imported
+
+						if (updateImportStatement) { // if a first-level import, ask for a retry
+							throw new ImportAndOntologyMismatchException(ont, realURI);
+						} else { // otherwise, return or throw an exception if redirect is not allowed.
+									// Indeed, if the imported ont were not redirectable to realURI, the the
+									// import would be considered broken
+							if (redirectable) {
+								importedOntologies.add(ont);
+								return;
+							} else {
+								// and throw an exception
+								throw new OntologyManagerException(
+										"the real URI for the imported ontology: " + ont + " is actually: "
+												+ realURI + " which, however, has already been imported");
+							}
+						}
+					} else { // real ontology is not already imported
+						if (updateImportStatement) { // if a first-level import, abort and request a retry
+							throw new ImportAndOntologyMismatchException(ont, realURI);
+						} else { // otherwise, return or throw an exception if redirect is not allowed.
+									// Indeed, if the imported ont were not redirectable to realURI, the the
+									// import would be considered broken
+							if (redirectable) {
+								throw new ImportAndOntologyMismatchException(ont, realURI);
+							} else {
+								// and throw an exception
+								throw new OntologyManagerException("The indirectly imported ontology: " + ont
+										+ " has a not matching real URI: " + realURI);
+							}
+						}
 					}
 				}
 			}
-
 			// ***************************
 
 			if (method == fromWebToMirror) {
@@ -468,12 +639,10 @@ public class OntologyManagerImpl implements OntologyManager {
 				OntologiesMirror.addCachedOntologyEntry(baseURI, (MirroredOntologyFile) localFile);
 
 			// if the import is explicitly asked by the user, then the import statement is explicitly
-			// added to
-			// the ontology
+			// added to the ontology
 			if (updateImportStatement) {
 				logger.debug("adding import statement for uri: " + baseURI);
-				IRI projBaseURI = conn.getValueFactory().createIRI(getBaseURI());
-				conn.add(projBaseURI, OWL.IMPORTS, conn.getValueFactory().createIRI(baseURI), projBaseURI);
+				declareOntologyImport(conn, baseURI, mod);
 			}
 
 			// updates the related import set with the loaded ontology
@@ -547,38 +716,61 @@ public class OntologyManagerImpl implements OntologyManager {
 		// new ImportStatus(ImportStatus.Values.NG, null));
 		// }
 
-		Values importStatus = getImportStatus(conn, baseURI, importedOntologies).getValue();
+		Values importStatus = OntologyManager.computeURIVariants(baseURI).stream()
+				.map(uri -> getImportStatus(conn, uri, importedOntologies))
+				.filter(is -> !Values.FAILED.equals(is.getValue())).findFirst().map(ImportStatus::getValue)
+				.orElse(Values.FAILED);
 
 		boolean ontologyImported = false;
 
 		if (importStatus == Values.FAILED) {
 			for (ImportMethod method : transitiveImportAllowance.getAllowedMethods()) {
 				try {
-					if (method == ImportMethod.fromWeb) {
-						addOntologyImportFromWeb(baseURI, baseURI, null, mod, false, conn,
-								transitiveImportAllowance, failedImports, importedOntologies);
-					} else if (method == ImportMethod.fromOntologyMirror) {
-						String mirrorEntry = OntologiesMirror.getMirroredOntologyEntry(baseURI);
-						if (mirrorEntry != null) {
-							addOntologyImportFromMirror(baseURI, mirrorEntry, mod, false, conn,
-									transitiveImportAllowance, failedImports, importedOntologies);
+					try {
+						doImport(conn, mod, transitiveImportAllowance, failedImports, importedOntologies,
+								baseURI, method);
+					} catch (ImportAndOntologyMismatchException e) {
+						if (e.getOnt().stringValue().equals(baseURI)) {
+							doImport(conn, mod, transitiveImportAllowance, failedImports, importedOntologies,
+									e.getRealOnt().stringValue(), method);
 						}
 					}
-
 					ontologyImported = true;
 					break;
 				} catch (OntologyManagerException e) {
-					e.printStackTrace();
+					// e.printStackTrace();
 					// Swallow exception, and tries with the next method
 				}
 			}
 		} else if (importStatus == Values.OK) {
 			ontologyImported = true;
 		}
+
 		if (ontologyImported) {
 			failedImports.remove(conn.getValueFactory().createIRI(baseURI));
 		} else {
 			failedImports.add(conn.getValueFactory().createIRI(baseURI));
+		}
+	}
+
+	protected void doImport(RepositoryConnection conn, ImportModality mod,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports,
+			Set<IRI> importedOntologies, String baseURI, ImportMethod method)
+			throws OntologyManagerException {
+		if (method == ImportMethod.fromWeb) {
+			addOntologyImportFromWeb(baseURI, baseURI, null, mod, false, conn, transitiveImportAllowance,
+					failedImports, importedOntologies);
+		} else if (method == ImportMethod.fromOntologyMirror) {
+			String mirrorEntry = OntologyManager.computeURIVariants(baseURI).stream()
+					.map(OntologiesMirror::getMirroredOntologyEntry).filter(Objects::nonNull).findAny()
+					.orElse(null);
+
+			if (mirrorEntry != null) {
+				addOntologyImportFromMirror(baseURI, mirrorEntry, mod, false, conn, transitiveImportAllowance,
+						failedImports, importedOntologies);
+			} else {
+				throw new OntologyManagerException("Ontology not cached: " + baseURI);
+			}
 		}
 	}
 
@@ -626,46 +818,91 @@ public class OntologyManagerImpl implements OntologyManager {
 	public void removeOntologyImport(RepositoryConnection conn, String uriToBeRemoved, ImportModality mod)
 			throws IOException {
 		IRI ont = conn.getValueFactory().createIRI(uriToBeRemoved);
-
-		if (getImportStatus(conn, uriToBeRemoved).getValue() != Values.OK) {
+		IRI canonicalOnt = OntologyManager.computeCanonicalURI(ont);
+		IRI canonicalBaseURI = OntologyManager
+				.computeCanonicalURI(conn.getValueFactory().createIRI(getBaseURI()));
+		if (getImportStatus(conn, uriToBeRemoved, true).getValue() != Values.OK) {
 			throw new OntologyManagerException(
 					"Could not remove import to ontology which is not persistently imported: "
 							+ uriToBeRemoved);
 		}
 
-		Set<IRI> toBeRemovedOntologies = computeImportsClosure(conn, ont);
+		Model importAxioms = QueryResults.asModel(conn.getStatements(null, OWL.IMPORTS, null));
+		Set<IRI> toBeRemovedOntologies = computeImportsClosure(importAxioms, ont);
+
 		logger.debug("transitive closure of imports to be removed: " + toBeRemovedOntologies);
 
-		// removes the ontology from the import set
-		logger.debug("removing import declaration for ontology: " + ont + ". Modality: " + mod);
-		removeDeclaredImport(conn, ont, mod);
+		Set<IRI> toBeSavedOntologies = computeImportsClosure(conn, importAxioms,
+				ImportModality.getModalities(), ont, mod);
 
-		Set<IRI> toBeSavedOntologies = computeImportsClosure(conn, ImportModality.getModalities(), ont);
 		logger.debug("transitive closure of other imports: " + toBeSavedOntologies);
 
 		toBeRemovedOntologies.removeAll(toBeSavedOntologies);
 		logger.debug("computed difference between the two sets: " + toBeRemovedOntologies);
 
-		// deletes ontology content and its entry from the input status only if this ontology is not
-		// imported
-		// by any other modality
+		// // deletes ontology content and its entry from the input status only if this ontology is not
+		// // imported by any other modality
+		//
+		// IRI baseURIasIRI = SimpleValueFactory.getInstance().createIRI(getBaseURI());
+		// Optional<Statement> removedImport = Optional.ofNullable(mod == ImportModality.USER
+		// ? SimpleValueFactory.getInstance().createStatement(baseURIasIRI, OWL.IMPORTS, ont,
+		// baseURIasIRI)
+		// : null);
 
-		IRI baseURIasIRI = SimpleValueFactory.getInstance().createIRI(getBaseURI());
-		Statement removedImport = SimpleValueFactory.getInstance().createStatement(baseURIasIRI, OWL.IMPORTS,
-				ont, baseURIasIRI);
-		// Here we check that an ontology to be saved is not exclusively imported by staged ontologies
+		// Here we check the saved ontologies are potentially dangling (because of validation)
+
 		for (IRI ontToBeSaved : toBeSavedOntologies) {
-			Model liveImportsForOnt = new LinkedHashModel(
-					QueryResults.stream(conn.getStatements(null, OWL.IMPORTS, ontToBeSaved, false))
-							.filter(stmt -> !toBeRemovedOntologies.contains(stmt.getSubject()))
-							.filter(stmt -> !removedImport.equals(stmt)).collect(Collectors.toList()));
 
-			// if liveImportsForOnt.isEmpty(), then the ontology has been saved by a non-user import
-			// declaration
-			if (!liveImportsForOnt.isEmpty() && liveImportsForOnt.stream()
+			// // If there is an explicit import other than a user import, then there is no problem
+			// if (Sets.difference(ImportModality.getModalities(), Collections.singleton(ImportModality.USER))
+			// .stream().flatMap(m -> this.getDeclaredImports(conn, m, false).stream())
+			// .map(this::OntologyManager.computeCanonicalURI).anyMatch(ontToBeSaved::equals)) {
+			// continue;
+			// }
+
+			// Otherwise, check that the ontology is not exclusively imported by staged ontologies
+
+			Model savingImports = new LinkedHashModel(importAxioms.stream()
+					.filter(stmt -> stmt.getObject() instanceof IRI && OntologyManager
+							.computeCanonicalURI((IRI) stmt.getObject()).equals(ontToBeSaved))
+					.collect(toList()));
+			if (mod == ImportModality.USER) {
+				savingImports.removeIf(stmt -> stmt.getSubject() instanceof IRI
+						&& OntologyManager.computeCanonicalURI((IRI) stmt.getSubject()).stringValue()
+								.equals(getBaseURI())
+						&& OntologyManager.computeCanonicalURI((IRI) stmt.getObject()).equals(canonicalOnt));
+			}
+			for (ImportModality otherMod : ImportModality.getModalities()) {
+				if (otherMod != ImportModality.USER) {
+					Collection<IRI> imports = getDeclaredImports(conn, otherMod, false);
+					if (otherMod == mod) {
+						imports.removeIf(
+								uri -> OntologyManager.computeCanonicalURI(uri).equals(canonicalOnt));
+					}
+					imports.stream()
+							.filter(uri -> OntologyManager.computeCanonicalURI(uri).equals(canonicalOnt))
+							.map(uri -> conn.getValueFactory().createStatement(canonicalBaseURI, OWL.IMPORTS,
+									uri, canonicalBaseURI))
+							.forEach(savingImports::add);
+				}
+			}
+
+			// If the ontology to be saved was not imported by an ontology that we are going to remove and it
+			// is not equal to the explicit import we are going to remove, then there is no problem
+			if (Sets.intersection(savingImports.subjects(), toBeRemovedOntologies).isEmpty()
+					&& !canonicalOnt.equals(ontToBeSaved)) {
+				continue;
+			}
+
+			// Otherwise, check at there is at least a non-staged (for addition/removal) import to the saved
+			// ontology
+
+			if (savingImports.stream()
+					.filter(stmt -> stmt.getSubject() instanceof IRI && !toBeRemovedOntologies
+							.contains(OntologyManager.computeCanonicalURI((IRI) stmt.getSubject())))
 					.filter(stmt -> !VALIDATION.isAddGraph(stmt.getContext())
 							&& !VALIDATION.isRemoveGraph(stmt.getContext()))
-					.allMatch(stmt -> liveImportsForOnt.contains(stmt.getSubject(), stmt.getPredicate(),
+					.allMatch(stmt -> savingImports.contains(stmt.getSubject(), stmt.getPredicate(),
 							stmt.getObject(), VALIDATION.stagingAddGraph(stmt.getContext()),
 							VALIDATION.stagingRemoveGraph(stmt.getContext())))) {
 				throw new OntologyManagerException(
@@ -681,40 +918,73 @@ public class OntologyManagerImpl implements OntologyManager {
 			logger.debug("clearing all RDF data associated to named graphs: " + toBeRemovedOntologies);
 			conn.clear(toBeRemovedOntologies.toArray(new IRI[toBeRemovedOntologies.size()]));
 		}
+
+		// removes the ontology from the import set
+		logger.debug("removing import declaration for ontology: " + ont + ". Modality: " + mod);
+		removeDeclaredImport(conn, ont, mod);
 	}
 
 	@Override
-	public ImportStatus getImportStatus(RepositoryConnection conn, String baseURI) {
-		return getImportStatus(conn, baseURI, Collections.emptySet());
+	public ImportStatus getImportStatus(RepositoryConnection conn, String baseURI,
+			boolean canonicalComparison) {
+		if (canonicalComparison) {
+			return OntologyManager.computeURIVariants(baseURI).stream()
+					.map(uri -> getImportStatus(conn, uri, Collections.emptySet()))
+					.filter(is -> !Values.FAILED.equals(is.getValue())).findAny()
+					.orElse(new ImportStatus(Values.FAILED, null));
+		} else {
+			return getImportStatus(conn, baseURI, Collections.emptySet());
+		}
 	}
 
 	private ImportStatus getImportStatus(RepositoryConnection conn, String baseURI,
 			Set<IRI> importedOntologies) {
+
 		IRI ont = SimpleValueFactory.getInstance().createIRI(baseURI);
+		List<Resource> contexts = QueryResults.asList(conn.getContextIDs());
+
+		if (importedOntologies.contains(ont) || contexts.contains(ont)) {
+			return new ImportStatus(ImportStatus.Values.OK, null);
+		}
+
+		BooleanQuery ctxQuery = conn.prepareBooleanQuery("ASK { GRAPH ?g { ?s ?p ?o } }");
+		ctxQuery.setIncludeInferred(false);
 
 		if (validationEnabled) {
-			if (conn.hasStatement(null, null, null, false,
-					ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont))) {
+			ctxQuery.setBinding("g", ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont));
+			if (ctxQuery.evaluate()) {
+				// if (contexts.contains(ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont))) {
 				return new ImportStatus(ImportStatus.Values.STAGED_ADDITION, null);
 			}
 
-			if (conn.hasStatement(null, null, null, false,
-					ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont))) {
+			ctxQuery.setBinding("g", ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont));
+			if (ctxQuery.evaluate()) {
+				// if (contexts.contains(ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont))) {
 				return new ImportStatus(ImportStatus.Values.STAGED_REMOVAL, null);
 			}
-		}
-
-		if (importedOntologies.contains(ont) || QueryResults.asSet(conn.getContextIDs()).contains(ont)) {
-			return new ImportStatus(ImportStatus.Values.OK, null);
 		}
 
 		return new ImportStatus(ImportStatus.Values.FAILED, null);
 	}
 
-	private void checkOntologyNotExplicitlyImported(RepositoryConnection conn, String baseURI)
-			throws OntologyManagerException {
-		if (getDeclaredImports(conn, ImportModality.USER, false)
-				.contains(SimpleValueFactory.getInstance().createIRI(baseURI))) {
+	private void checkOntologyNotExplicitlyImported(RepositoryConnection conn, String baseURI,
+			ImportModality modality) throws OntologyManagerException {
+		boolean alreadyImported;
+		if (modality == ImportModality.USER) {
+			if (getDeclaredImports(conn, ImportModality.USER, false).stream()
+					.map(OntologyManager::computeCanonicalURI).anyMatch(OntologyManager.computeCanonicalURI(
+							SimpleValueFactory.getInstance().createIRI(baseURI))::equals)) {
+				alreadyImported = true;
+			} else {
+				alreadyImported = false;
+			}
+		} else {
+			alreadyImported = importModalityMap.get(modality).stream()
+					.map(OntologyManager::computeCanonicalURI).anyMatch(OntologyManager.computeCanonicalURI(
+							SimpleValueFactory.getInstance().createIRI(baseURI))::equals);
+		}
+
+		if (alreadyImported) {
 			throw new OntologyManagerException("Ontology already imported explicitly: " + baseURI);
 		}
 	}
@@ -750,7 +1020,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 			return importedOntologies;
 		} else
-			return importModalityMap.get(mod);
+			return new HashSet<>(importModalityMap.get(mod));
 	}
 
 	@Override
@@ -767,7 +1037,7 @@ public class OntologyManagerImpl implements OntologyManager {
 					.add(ModelUtilities.createDefaultNamespaceFromBaseURI(ont.stringValue()));
 		}
 	}
-	
+
 	@Override
 	public void declareSupportOntology(IRI ont, boolean declareImport, boolean ng, boolean ns) {
 		if (declareImport) {
@@ -816,7 +1086,7 @@ public class OntologyManagerImpl implements OntologyManager {
 			String altURL, String toLocalFile, RDFFormat rdfFormat,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, MalformedURLException, IOException {
-		
+
 		MirroredOntologyFile mirFile = getMirFile(toLocalFile, rdfFormat);
 
 		checkImportFailed(conn, baseURI);
@@ -959,20 +1229,68 @@ public class OntologyManagerImpl implements OntologyManager {
 		}
 	}
 
-	private Set<IRI> computeImportsClosure(RepositoryConnection conn, Set<ImportModality> modalities,
-			@Nullable IRI justRemovedOnt) {
+	/**
+	 * Returns all the imported ontologies as canonical URIs (i.e. stripping the terminating hash fragment)
+	 * 
+	 * @param conn
+	 * @param importAxioms
+	 * @param modalities
+	 * @param justRemovedOnt
+	 * @param removedModality
+	 * @return
+	 */
+	private Set<IRI> computeImportsClosure(RepositoryConnection conn, Model importAxioms,
+			Set<ImportModality> modalities, @Nullable IRI justRemovedOnt, ImportModality removedModality) {
 		Set<IRI> importClosure = new HashSet<IRI>();
 		logger.debug("computing global import closure on modalities: " + modalities);
+
+		justRemovedOnt = justRemovedOnt != null ? OntologyManager.computeCanonicalURI(justRemovedOnt) : null;
+
 		for (ImportModality otherMod : modalities) {
 			logger.debug("checking declared " + otherMod + " imports for establishing import closure");
 			for (IRI ont : getDeclaredImports(conn, otherMod, true)) {
-				if (Objects.equals(justRemovedOnt, ont))
+				if (otherMod.equals(removedModality)
+						&& Objects.equals(justRemovedOnt, OntologyManager.computeCanonicalURI(ont)))
 					continue;
 				logger.debug("\timport: " + ont);
-				importClosure.addAll(computeImportsClosure(conn, ont));
+				importClosure.addAll(computeImportsClosure(importAxioms, ont));
 			}
 		}
 		return importClosure;
+	}
+
+	private Set<IRI> computeImportsClosure(Model importStatements, IRI ont) {
+		logger.debug("computing imports closure for import: " + ont);
+
+		Set<IRI> importedOntologiesCollector = new HashSet<>();
+		computeImportsClosureHelper(importStatements, ont, importedOntologiesCollector);
+
+		return importedOntologiesCollector;
+	}
+
+	private void computeImportsClosureHelper(Model importStatements, IRI ont,
+			Set<IRI> importedOntologiesCollector) {
+		logger.debug("computing imports closure for import (helper): " + ont);
+
+		IRI canonicalOnt = OntologyManager.computeCanonicalURI(ont);
+
+		if (importedOntologiesCollector.contains(canonicalOnt)) {
+			return;
+		} else {
+			importedOntologiesCollector.add(canonicalOnt);
+		}
+
+		for (IRI ontVariant : OntologyManager.computeURIVariants(ont.stringValue()).stream()
+				.map(uri -> SimpleValueFactory.getInstance().createIRI(uri)).collect(toSet())) {
+			Set<IRI> directImports = Models.objectIRIs(importStatements.filter(ontVariant, OWL.IMPORTS, null))
+					.stream().map(OntologyManager::computeCanonicalURI).collect(toSet());
+
+			Set<IRI> ontologiesPendingProcessing = Sets.difference(directImports, importedOntologiesCollector)
+					.immutableCopy();
+			for (IRI importedOnt : ontologiesPendingProcessing) {
+				computeImportsClosureHelper(importStatements, importedOnt, importedOntologiesCollector);
+			}
+		}
 	}
 
 	private void removeDeclaredImport(RepositoryConnection conn, IRI ont, ImportModality mod) {
@@ -982,14 +1300,6 @@ public class OntologyManagerImpl implements OntologyManager {
 		} else {
 			importModalityMap.get(mod).remove(ont);
 		}
-	}
-
-	private Set<IRI> computeImportsClosure(RepositoryConnection conn, IRI ont) {
-		logger.debug("computing imports closure for import: " + ont);
-		GraphQuery query = conn
-				.prepareGraphQuery("CONSTRUCT WHERE {?ont <http://www.w3.org/2002/07/owl#imports>* ?x }");
-		query.setBinding("ont", ont);
-		return Models.objectIRIs(QueryResults.asModel(query.evaluate()));
 	}
 
 	@Override

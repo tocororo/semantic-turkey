@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.metadata;
+package it.uniroma2.art.semanticturkey.ontology;
 
 import static java.util.stream.Collectors.toList;
 
