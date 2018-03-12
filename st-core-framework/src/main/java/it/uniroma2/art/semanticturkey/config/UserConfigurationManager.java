@@ -35,4 +35,10 @@ public interface UserConfigurationManager<CONFTYPE extends Configuration>
 				identifier, configuration);
 	}
 
+	default void deleteUserConfiguration(STUser user, String identifier)
+			throws ConfigurationNotFoundException {
+		ConfigurationSupport.deleteConfiguration(ConfigurationSupport.getConfigurationFolder(this, user),
+				identifier);
+	}
+
 }

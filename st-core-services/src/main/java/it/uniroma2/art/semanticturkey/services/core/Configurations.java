@@ -34,11 +34,23 @@ public class Configurations extends STServiceAdapter {
 	@Autowired
 	private ExtensionPointManager exptManager;
 
+	/**
+	 * Returns the available configuration managers
+	 * 
+	 * @return
+	 */
 	@STServiceOperation
 	public Collection<ConfigurationManager<?>> getConfigurationManagers() {
 		return exptManager.getConfigurationManagers();
 	}
 
+	/**
+	 * Returns a specific configuration manager
+	 * 
+	 * @param componentID
+	 * @return
+	 * @throws NoSuchConfigurationManager
+	 */
 	@STServiceOperation
 	public ConfigurationManager<?> getConfigurationManager(String componentID)
 			throws NoSuchConfigurationManager {
@@ -94,6 +106,20 @@ public class Configurations extends STServiceAdapter {
 			Map<String, Object> configuration) throws NoSuchConfigurationManager, IOException,
 			WrongPropertiesException, STPropertyUpdateException {
 		exptManager.storeConfiguration(componentID, parseReference(relativeReference), configuration);
+	}
+
+	/**
+	 * Deletes a previously stored configuration
+	 * 
+	 * @param componentID
+	 * @param relativeReference
+	 * @throws NoSuchConfigurationManager
+	 * @throws ConfigurationNotFoundException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void deleteConfiguration(String componentID, String relativeReference)
+			throws NoSuchConfigurationManager, ConfigurationNotFoundException {
+		exptManager.deleteConfiguraton(componentID, parseReference(relativeReference));
 	}
 
 	private Reference parseReference(String relativeReference) {

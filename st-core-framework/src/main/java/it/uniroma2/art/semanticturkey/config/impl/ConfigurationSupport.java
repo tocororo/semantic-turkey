@@ -141,6 +141,14 @@ public abstract class ConfigurationSupport {
 		}
 	}
 
+	public static void deleteConfiguration(File folder, String identifier)
+			throws ConfigurationNotFoundException {
+		File configFile = new File(folder, configurationFilename(identifier));
+		if (!configFile.exists())
+			throw new ConfigurationNotFoundException("Unable to find configuration: " + identifier);
+		configFile.delete();
+	}
+
 	public static Configuration createConfiguration(ConfigurationManager<?> configurationManager,
 			Map<String, Object> properties) throws WrongPropertiesException {
 		@Nullable

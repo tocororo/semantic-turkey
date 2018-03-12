@@ -35,4 +35,10 @@ public interface ProjectConfigurationManager<CONFTYPE extends Configuration>
 				identifier, configuration);
 	}
 
+	default void deleteProjectConfiguration(Project project, String identifier)
+			throws ConfigurationNotFoundException {
+		ConfigurationSupport.deleteConfiguration(ConfigurationSupport.getConfigurationFolder(this, project),
+				identifier);
+	}
+
 }

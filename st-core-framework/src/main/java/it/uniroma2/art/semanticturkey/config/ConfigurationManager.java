@@ -38,7 +38,6 @@ public interface ConfigurationManager<CONFTYPE extends Configuration> extends Id
 		return scopes;
 	}
 
-	
 	default Collection<Reference> getConfigurationReferences(Project project, STUser user) {
 		Collection<Reference> rv = new ArrayList<>();
 		if (this instanceof SystemConfigurationManager) {
@@ -105,6 +104,28 @@ public interface ConfigurationManager<CONFTYPE extends Configuration> extends Id
 			} else { // system
 				((SystemConfigurationManager<CONFTYPE>) this).storeSystemConfiguration(identifier,
 						configuration);
+			}
+		}
+	}
+
+	default void deleteConfiguration(Reference reference) throws ConfigurationNotFoundException {
+		Optional<Project> project = reference.getProject();
+		Optional<STUser> user = reference.getUser();
+		String identifier = reference.getIdentifier();
+
+		if (project.isPresent()) {
+			if (user.isPresent()) { // project-user
+				((PUConfigurationManager<CONFTYPE>) this).deleteProjectConfiguration(project.get(),
+						user.get(), identifier);
+			} else { // project
+				((ProjectConfigurationManager<CONFTYPE>) this).deleteProjectConfiguration(project.get(),
+						identifier);
+			}
+		} else {
+			if (user.isPresent()) { // user
+				((UserConfigurationManager<CONFTYPE>) this).deleteUserConfiguration(user.get(), identifier);
+			} else { // system
+				((SystemConfigurationManager<CONFTYPE>) this).deleteSystemConfiguration(identifier);
 			}
 		}
 	}

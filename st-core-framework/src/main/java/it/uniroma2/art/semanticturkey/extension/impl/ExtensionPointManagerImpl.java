@@ -181,7 +181,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 		throw new NoSuchConfigurationManager("Unrecognized configuration manager: " + componentIdentifier);
 	}
-	
+
 	@Override
 	public Collection<ConfigurationManager<?>> getConfigurationManagers() {
 		return Arrays.stream(configurationManagerTracker.getServices()).map(o -> (ConfigurationManager<?>) o)
@@ -230,6 +230,13 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
 		((ConfigurationManager) configurationManager).storeConfiguration(reference,
 				ConfigurationSupport.createConfiguration(configurationManager, configuration));
+	}
+
+	@Override
+	public void deleteConfiguraton(String componentIdentifier, Reference reference)
+			throws NoSuchConfigurationManager, ConfigurationNotFoundException {
+		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
+		((ConfigurationManager) configurationManager).deleteConfiguration(reference);
 	}
 
 	@Override

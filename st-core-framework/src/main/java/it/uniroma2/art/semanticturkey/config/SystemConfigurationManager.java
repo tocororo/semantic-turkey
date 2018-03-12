@@ -35,4 +35,9 @@ public interface SystemConfigurationManager<CONFTYPE extends Configuration>
 				configuration);
 	}
 
+	default void deleteSystemConfiguration(String identifier) throws ConfigurationNotFoundException {
+		ConfigurationSupport.deleteConfiguration(ConfigurationSupport.getConfigurationFolder(this),
+				identifier);
+	}
+
 }

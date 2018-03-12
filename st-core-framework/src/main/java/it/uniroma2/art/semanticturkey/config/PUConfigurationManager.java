@@ -36,4 +36,10 @@ public interface PUConfigurationManager<CONFTYPE extends Configuration>
 				ConfigurationSupport.getConfigurationFolder(this, project, user), identifier, configuration);
 	}
 
+	default void deleteProjectConfiguration(Project project, STUser user, String identifier)
+			throws ConfigurationNotFoundException {
+		ConfigurationSupport.deleteConfiguration(
+				ConfigurationSupport.getConfigurationFolder(this, project, user), identifier);
+	}
+
 }

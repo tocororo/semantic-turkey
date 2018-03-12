@@ -59,6 +59,7 @@ public interface ExtensionPointManager {
 	URIGeneratorExtensionPoint getURIGenerator();
 
 	Collection<ConfigurationManager<?>> getConfigurationManagers();
+
 	ConfigurationManager<?> getConfigurationManager(String componentID) throws NoSuchConfigurationManager;
 
 	/**
@@ -91,6 +92,9 @@ public interface ExtensionPointManager {
 	void storeConfiguration(String componentIdentifier, Reference reference,
 			Map<String, Object> configuration) throws IOException, WrongPropertiesException,
 			NoSuchConfigurationManager, STPropertyUpdateException;
+
+	void deleteConfiguraton(String componentIdentifier, Reference reference)
+			throws NoSuchConfigurationManager, ConfigurationNotFoundException;
 
 	Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
 			throws STPropertyAccessException, NoSuchSettingsManager;
