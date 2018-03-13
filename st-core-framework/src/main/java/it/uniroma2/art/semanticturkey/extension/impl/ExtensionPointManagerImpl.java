@@ -244,8 +244,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 			Map<String, Object> settings)
 			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException {
 		SettingsManager settingsManager = getSettingsManager(componentIdentifier);
-		settingsManager.storeSettings(project, user, scope,
-				SettingsSupport.createSettings(settingsManager, scope, settings));
+		Settings settingsObj = SettingsSupport.createSettings(settingsManager, scope, settings);
+		settingsManager.storeSettings(project, user, scope, settingsObj);
 	}
 
 	@Override

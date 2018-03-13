@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,6 +66,19 @@ public interface STProperties {
 		} catch (IllegalArgumentException e) {
 			throw new PropertyNotFoundException(e);
 		} catch (IllegalAccessException e) {
+			throw new PropertyNotFoundException(e);
+		}
+	}
+	
+	default Type getPropertyType(String id) throws PropertyNotFoundException {
+		try {
+			Field property = this.getClass().getField(id);
+			return property.getGenericType();
+		} catch (SecurityException e) {
+			throw new PropertyNotFoundException(e);
+		} catch (NoSuchFieldException e) {
+			throw new PropertyNotFoundException(e);
+		} catch (IllegalArgumentException e) {
 			throw new PropertyNotFoundException(e);
 		}
 	}

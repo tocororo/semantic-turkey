@@ -15,16 +15,8 @@ import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 public interface SystemSettingsManager<T extends Settings> extends SettingsManager {
 
 	default T getSystemSettings() throws STPropertyAccessException {
-		try {
-			@SuppressWarnings("unchecked")
-			T settings = (T) ReflectionUtilities
-					.getInterfaceArgumentTypeAsClass(getClass(), SystemSettingsManager.class, 0)
-					.newInstance();
-			STPropertiesManager.getSystemSettings(settings, getId());
-			return settings;
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new STPropertyAccessException(e);
-		}
+		return STPropertiesManager.getSystemSettings(ReflectionUtilities
+				.getInterfaceArgumentTypeAsClass(getClass(), SystemSettingsManager.class, 0), getId());
 	}
 
 	default void storeSystemSettings(T settings) throws STPropertyUpdateException {

@@ -16,15 +16,9 @@ import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 public interface PUSettingsManager<T extends Settings> extends SettingsManager {
 
 	default T getProjectSettings(Project project, STUser user) throws STPropertyAccessException {
-		try {
-			@SuppressWarnings("unchecked")
-			T settings = (T) ReflectionUtilities
-					.getInterfaceArgumentTypeAsClass(getClass(), PUSettingsManager.class, 0).newInstance();
-			STPropertiesManager.getProjectPreferences(settings, project, user, getId());
-			return settings;
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new STPropertyAccessException(e);
-		}
+		return STPropertiesManager.getProjectPreferences(
+				ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), PUSettingsManager.class, 0),
+				project, user, getId());
 	}
 
 	default void storeProjectSettings(Project project, STUser user, T settings)

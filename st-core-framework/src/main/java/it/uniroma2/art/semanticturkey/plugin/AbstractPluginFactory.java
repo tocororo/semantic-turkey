@@ -50,25 +50,27 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 	 * it.uniroma2.art.semanticturkey.plugin.PluginFactory#getProjectSettings(it.uniroma2.art.semanticturkey.
 	 * project.Project)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public R getProjectSettings(Project project) throws STPropertyAccessException {
 		R projectSettings = buildProjectSettingsInternal();
-		STPropertiesManager.getProjectSettings(projectSettings, project, getID());
-		return projectSettings;
-	};
+		return (R) STPropertiesManager.getProjectSettings(projectSettings.getClass(), project, getID());
+	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Q getExtensonPointProjectSettings(Project project) throws STPropertyAccessException {
 		Q projectSettings = buildExtensionPointProjectSettingsInternal();
-		STPropertiesManager.getProjectSettings(projectSettings, project, extensionPointId);
-		return projectSettings;
+		return (Q) STPropertiesManager.getProjectSettings(projectSettings.getClass(), project,
+				extensionPointId);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public S getProjectPreferences(Project project, STUser user) throws STPropertyAccessException {
 		S projectPreferences = buildProjectPreferencesInternal();
-		STPropertiesManager.getProjectPreferences(projectPreferences, project, user, getID());
-		return projectPreferences;
+		return (S) STPropertiesManager.getProjectPreferences(projectPreferences.getClass(), project, user,
+				getID());
 	}
 
 	@Override

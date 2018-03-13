@@ -282,7 +282,8 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 
 	public synchronized void modifyAccessCredentials(String repositoryID, @Nullable String newUsername,
 			@Nullable String newPassword) {
-		RepositoryConfig repConfig = this.getRepositoryConfig(repositoryID);
+		RepositoryConfig repConfig = Objects.requireNonNull(this.getRepositoryConfig(repositoryID),
+				() -> "Not configured repository: " + repositoryID);
 
 		RepositoryImplConfig repImplConfig = getUnfoldedRepositoryImplConfig(repConfig);
 

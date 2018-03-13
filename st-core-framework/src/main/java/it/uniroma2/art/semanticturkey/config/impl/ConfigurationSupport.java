@@ -5,10 +5,8 @@ import static java.util.stream.Collectors.toList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -132,13 +130,8 @@ public abstract class ConfigurationSupport {
 		if (!checker.isValid()) {
 			throw new STPropertyUpdateException("Invalid configuration: " + checker.getErrorMessage());
 		}
-		Properties props = new Properties();
-		configuration.storeProperties(props);
-		props.setProperty(CONFIG_TYPE_PARAM, configuration.getClass().getName());
 		File configFile = new File(folder, configurationFilename(identifier));
-		try (OutputStream out = new FileOutputStream(configFile)) {
-			props.store(out, null);
-		}
+		STPropertiesManager.storeSTPropertiesInYAML(configuration, configFile);
 	}
 
 	public static void deleteConfiguration(File folder, String identifier)

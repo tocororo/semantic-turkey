@@ -2,9 +2,23 @@ package it.uniroma2.art.semanticturkey.properties;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -131,18 +145,12 @@ public class STPropertiesManager {
 	 * @param pluginId
 	 * @throws STPropertyAccessException
 	 */
-	public static void getProjectPreferences(STProperties projectPreferences, Project project, STUser user,
-			String pluginID) throws STPropertyAccessException {
-		Properties defaultStoredProperties = loadProperties(
-				getProjectPreferencesDefaultsFile(project, pluginID));
-		Properties storedProperties = loadProperties(getPUBindingsPreferencesFile(project, user, pluginID));
+	public static <T extends STProperties> T getProjectPreferences(Class<T> valueType, Project project,
+			STUser user, String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getProjectPreferencesDefaultsFile(project, pluginID);
+		File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
 
-		try {
-			projectPreferences.setProperties(defaultStoredProperties);
-			projectPreferences.setProperties(storedProperties);
-		} catch (WrongPropertiesException e) {
-			throw new STPropertyAccessException(e);
-		}
+		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
 	}
 
 	/**
@@ -202,8 +210,8 @@ public class STPropertiesManager {
 				}
 			}
 			File propFile = getPUBindingsPreferencesFile(project, user, pluginID);
-			preferences.storeProperties(propFile);
-		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
+			storeSTPropertiesInYAML(preferences, propFile);
+		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -450,16 +458,11 @@ public class STPropertiesManager {
 		return value;
 	}
 
-	public static void getSystemPreferences(STProperties settings, STUser user, String pluginID)
-			throws STPropertyAccessException {
+	public static <T extends STProperties> T getSystemPreferences(Class<T> valueType, STUser user,
+			String pluginID) throws STPropertyAccessException {
 		File propFile = getUserSystemPreferencesFile(user, pluginID);
 		File defaultPropFile = getSystemPreferencesDefaultsFile(pluginID);
-		try {
-			settings.loadProperties(defaultPropFile);
-			settings.loadProperties(propFile);
-		} catch (WrongPropertiesException | IOException e) {
-			throw new STPropertyAccessException(e);
-		}
+		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
 	}
 
 	/**
@@ -501,6 +504,105 @@ public class STPropertiesManager {
 		setSystemPreferences(preferences, user, pluginID);
 	}
 
+	private static ObjectMapper createObjectMapper() {
+		YAMLFactory fact = new YAMLFactory();
+		fact.enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
+		fact.disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+
+		SimpleModule stPropsModule = new SimpleModule();
+		stPropsModule.setMixInAnnotation(STProperties.class,
+				it.uniroma2.art.semanticturkey.properties.yaml.STPropertiesPersistenceMixin.class);
+		ObjectMapper mapper = new ObjectMapper(fact);
+		mapper.registerModule(stPropsModule);
+		return mapper;
+	}
+
+	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile)
+			throws JsonGenerationException, JsonMappingException, IOException {
+		ObjectMapper mapper = createObjectMapper();
+		mapper.writeValue(propertiesFile, properties);
+	}
+
+	private static <T extends STProperties> T loadSTPropertiesFromYAMLFiles(Class<T> valueType,
+			File... propFiles) throws STPropertyAccessException {
+		try {
+			T props = valueType.newInstance();
+
+			ObjectMapper mapper = createObjectMapper();
+			ObjectReader objReader = mapper.readerForUpdating(props);
+
+			for (int i = 0; i < propFiles.length; i++) {
+				File propFile = propFiles[i];
+				if (!propFile.exists())
+					continue;
+
+				try (Reader reader = new InputStreamReader(new FileInputStream(propFile),
+						StandardCharsets.UTF_8)) {
+					objReader.readValue(reader);
+				} catch (JsonMappingException e) {
+					// Swallow exception due to empty property files
+					if (!(e.getPath().isEmpty() && e.getMessage().contains("end-of-input"))) {
+						throw e;
+					}
+				}
+
+			}
+			return props;
+		} catch (IOException | InstantiationException | IllegalAccessException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+
+	private static <T extends STProperties> T loadExistingSTPropertiesFromYAMLFile(Class<T> valueType,
+			File propFile) throws STPropertyAccessException {
+		try {
+			if (!propFile.exists()) {
+				throw new FileNotFoundException(propFile.getAbsolutePath());
+			}
+
+			ObjectMapper mapper = createObjectMapper();
+
+			Class<?> deserialiationType;
+
+			JsonNode tree = null;
+			try (Reader reader = new InputStreamReader(new FileInputStream(propFile),
+					StandardCharsets.UTF_8)) {
+				tree = mapper.readTree(reader);
+				JsonNode typeNode = tree.get("@type");
+				if (typeNode != null) {
+					String specificTypeName = typeNode.asText();
+					Class<?> specificClass = valueType.getClassLoader().loadClass(specificTypeName);
+
+					if (valueType.isAssignableFrom(specificClass)) {
+						deserialiationType = specificClass;
+					} else {
+						throw new STPropertyAccessException(
+								"Not an appropriate configuration type: " + specificTypeName);
+					}
+				} else {
+					deserialiationType = valueType;
+				}
+			} catch (JsonMappingException e) {
+				// Swallow exception due to empty property files
+				if (!(e.getPath().isEmpty() && e.getMessage().contains("end-of-input"))) {
+					throw e;
+				}
+				deserialiationType = valueType;
+			}
+
+			if (tree == null) {
+				return (T) deserialiationType.newInstance();
+			} else {
+				((ObjectNode)tree).remove("@type");
+			}
+			
+			return (T) mapper.treeToValue(tree, deserialiationType);
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException e) {
+			throw new STPropertyAccessException(e);
+		}
+
+	}
+
 	public static void setSystemPreferences(STProperties preferences, STUser user, String pluginID,
 			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
 		try {
@@ -512,9 +614,9 @@ public class STPropertiesManager {
 							"Preferences not valid: " + preferencesChecker.getErrorMessage());
 				}
 			}
-			File propFile = getUserSystemPreferencesFile(user, pluginID);
-			preferences.storeProperties(propFile);
-		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
+			File settingsFile = getUserSystemPreferencesFile(user, pluginID);
+			storeSTPropertiesInYAML(preferences, settingsFile);
+		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -636,17 +738,12 @@ public class STPropertiesManager {
 	 * @param pluginId
 	 * @throws STPropertyAccessException
 	 */
-	public static void getProjectSettings(STProperties projectSettings, Project project, String pluginID)
-			throws STPropertyAccessException {
-		Properties defaultStoredProperties = loadProperties(getSystemProjectSettingsDefaultsFile(pluginID));
-		Properties storedProperties = loadProperties(getProjectSettingsFile(project, pluginID));
+	public static <T extends STProperties> T getProjectSettings(Class<T> valueType, Project project,
+			String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getSystemProjectSettingsDefaultsFile(pluginID);
+		File propFile = getProjectSettingsFile(project, pluginID);
 
-		try {
-			projectSettings.setProperties(defaultStoredProperties);
-			projectSettings.setProperties(storedProperties);
-		} catch (WrongPropertiesException e) {
-			throw new STPropertyAccessException(e);
-		}
+		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
 	}
 
 	/**
@@ -702,9 +799,9 @@ public class STPropertiesManager {
 							"Settings not valid: " + settingsChecker.getErrorMessage());
 				}
 			}
-			File propFile = getProjectSettingsFile(project, pluginID);
-			settings.storeProperties(propFile);
-		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
+			File settingsFile = getProjectSettingsFile(project, pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile);
+		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -816,13 +913,9 @@ public class STPropertiesManager {
 		return loadProperties(getSystemSettingsFile(pluginID)).getProperty(propName);
 	}
 
-	public static void getSystemSettings(STProperties settings, String pluginID)
+	public static <T extends STProperties> T getSystemSettings(Class<T> valueType, String pluginID)
 			throws STPropertyAccessException {
-		try {
-			settings.loadProperties(getSystemSettingsFile(pluginID));
-		} catch (WrongPropertiesException | IOException e) {
-			throw new STPropertyAccessException(e);
-		}
+		return loadSTPropertiesFromYAMLFiles(valueType, getSystemSettingsFile(pluginID));
 	}
 
 	/**
@@ -872,9 +965,9 @@ public class STPropertiesManager {
 							"Settings not valid: " + settingsChecker.getErrorMessage());
 				}
 			}
-			File propFile = getSystemSettingsFile(pluginID);
-			settings.storeProperties(propFile);
-		} catch (STPropertyAccessException | IOException | WrongPropertiesException e) {
+			File settingsFile = getSystemSettingsFile(pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile);
+		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
