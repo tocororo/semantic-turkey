@@ -587,6 +587,8 @@ public abstract class Project extends AbstractProject {
 			return SKOSRenderingEngineFactory.class.getName();
 		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2008/05/skos-xl")) {
 			return SKOSXLRenderingEngineFactory.class.getName();
+		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2000/01/rdf-schema")) {
+			return RDFSRenderingEngineFactory.class.getName();
 		} else if (lexicalizationModel.stringValue().equals(ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING)) {
 			return SKOSXLRenderingEngineFactory.class.getName();
 		} else {
