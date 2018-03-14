@@ -368,20 +368,20 @@ public class Resources {
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-					STPropertiesManager.getSystemProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+					STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
 			);
-			//project preferences default
+			//pu_settings - system default
 			// * core plugin
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-preferences-defaults.props"),
-					STPropertiesManager.getSystemProjectPreferencesDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
+					STPropertiesManager.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
 			);
 			// * rendering engine
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/project-preferences-defaults.props"),
-					STPropertiesManager.getSystemProjectPreferencesDefaultsFile(RenderingEngine.class.getName())
+							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
+					STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName())
 			);
 		} catch (IOException | STPropertyAccessException e) {
 			throw new STInitializationException(e);

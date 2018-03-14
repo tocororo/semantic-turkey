@@ -233,7 +233,7 @@ public class ServiceForSearches {
 	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode, 
 			Project project) throws IllegalStateException, STPropertyAccessException{
 		//it can be null, * or a list of languages
-		String languagesPropValue = STPropertiesManager.getProjectPreference(
+		String languagesPropValue = STPropertiesManager.getPUSetting(
 			       STPropertiesManager.PREF_LANGUAGES, project, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 		if(languagesPropValue == null){
 			langArray = new String[]{"*"};

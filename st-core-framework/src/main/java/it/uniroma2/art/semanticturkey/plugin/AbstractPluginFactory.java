@@ -69,7 +69,7 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 	@Override
 	public S getProjectPreferences(Project project, STUser user) throws STPropertyAccessException {
 		S projectPreferences = buildProjectPreferencesInternal();
-		return (S) STPropertiesManager.getProjectPreferences(projectPreferences.getClass(), project, user,
+		return (S) STPropertiesManager.getPUSettings(projectPreferences.getClass(), project, user,
 				getID());
 	}
 
@@ -137,7 +137,7 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 
 	public void storeProjectPreferencesInternal(Project project, STUser user, STProperties settings,
 			String pluginId) throws STPropertyUpdateException {
-		STPropertiesManager.setProjectPreferences(settings, project, user, pluginId);
+		STPropertiesManager.setPUSettings(settings, project, user, pluginId);
 	}
 
 	public void storeProjectPreferencesInternal(Project project, STUser user, Map<String, Object> preferences,
@@ -153,7 +153,7 @@ public abstract class AbstractPluginFactory<T extends STProperties, Q extends ST
 				preferencesObject.setPropertyValue(key, value);
 			}
 
-			STPropertiesManager.setProjectPreferences(preferencesObject, project, user, pluginId);
+			STPropertiesManager.setPUSettings(preferencesObject, project, user, pluginId);
 		} catch (WrongPropertiesException e) {
 			throw new STPropertyUpdateException(e);
 		}

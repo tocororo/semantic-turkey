@@ -65,7 +65,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		} else if (languages.size() > 1) {
 			value = String.join(",", languages);
 		}
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_LANGUAGES, value, getProject(),	
+		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_LANGUAGES, value, getProject(),	
 				UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 	}
 	
@@ -76,7 +76,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void setShowFlags(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_FLAGS, show+"", getProject(),
+		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_SHOW_FLAGS, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
 	
@@ -88,7 +88,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void setShowInstancesNumb(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, show+"", getProject(),
+		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
 	
@@ -107,10 +107,10 @@ public class PreferencesSettings extends STServiceAdapter {
 				value += s.stringValue() + ",";
 			}
 			value = value.substring(0, value.length()-1);
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES, value, getProject(),
+			STPropertiesManager.setPUSetting(STPropertiesManager.PREF_ACTIVE_SCHEMES, value, getProject(),
 					UsersManager.getLoggedUser());
 		} else { // no scheme mode
-			STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES, null, getProject(),
+			STPropertiesManager.setPUSetting(STPropertiesManager.PREF_ACTIVE_SCHEMES, null, getProject(),
 					UsersManager.getLoggedUser());
 		}
 	}
@@ -122,7 +122,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void setProjectTheme(int themeId) throws STPropertyUpdateException {
-		STPropertiesManager.setProjectPreference(STPropertiesManager.PREF_PROJ_THEME, themeId+"", getProject(),
+		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_PROJ_THEME, themeId+"", getProject(),
 				UsersManager.getLoggedUser());
 	}
 	
@@ -143,7 +143,7 @@ public class PreferencesSettings extends STServiceAdapter {
 			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName 
 					+ ". It could be closed or not existing.");
 		}
-		String value = STPropertiesManager.getProjectPreference(STPropertiesManager.PREF_ACTIVE_SCHEMES,
+		String value = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_ACTIVE_SCHEMES,
 				ProjectManager.getProject(projectName), UsersManager.getLoggedUser());
 		if (value != null) {
 			String[] splitted = value.split(",");
@@ -166,16 +166,16 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public JsonNode getProjectPreferences(List<String> properties, @Optional String pluginID)
+	public JsonNode getPUSettings(List<String> properties, @Optional String pluginID)
 			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
 		for (String prop: properties) {
 			String value;
 			if (pluginID == null) {
-				value = STPropertiesManager.getProjectPreference(prop, getProject(), UsersManager.getLoggedUser());
+				value = STPropertiesManager.getPUSetting(prop, getProject(), UsersManager.getLoggedUser());
 			} else {
-				value = STPropertiesManager.getProjectPreference(prop, getProject(), UsersManager.getLoggedUser(), pluginID);
+				value = STPropertiesManager.getPUSetting(prop, getProject(), UsersManager.getLoggedUser(), pluginID);
 			}
 			respNode.set(prop, jsonFactory.textNode(value));
 		}
@@ -194,9 +194,9 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws JSONException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setProjectPreference(String property, @Optional String value)
+	public void setPUSetting(String property, @Optional String value)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
-		STPropertiesManager.setProjectPreference(property, value, getProject(), UsersManager.getLoggedUser());
+		STPropertiesManager.setPUSetting(property, value, getProject(), UsersManager.getLoggedUser());
 	}
 	
 	/**

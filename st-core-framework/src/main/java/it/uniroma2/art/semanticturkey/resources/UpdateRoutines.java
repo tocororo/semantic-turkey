@@ -34,6 +34,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
@@ -80,6 +81,9 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(3, 0, 0)) < 0) {
 				alignFromPreviousTo3();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(4, 0, 0)) < 0) {
+				alignFrom3To4();
+			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
@@ -97,7 +101,17 @@ public class UpdateRoutines {
 		updateRoles(roles);
 
 		logger.debug("Version 3.0.0 added new properties to the default project preferences");
-		updateSystemProjectPreferencesDefaults();
+		updatePUSettingsSystemDefaults();
+	}
+	
+	private static void alignFrom3To4() throws IOException, STPropertyAccessException {
+		logger.debug("Version 4.0.0 renamed some settings files");
+		//users\<username>\plugins\<plugin>\system-preferences.cfg -> settings.cfg
+		File projectsDir = Resources.getProjectsDir();
+		
+		
+		logger.debug("Version 4.0.0 changed pu-settings-defaults files");
+		updatePUSettingsSystemDefaults();
 	}
 
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
@@ -137,18 +151,22 @@ public class UpdateRoutines {
 		}
 	}
 	
-	private static void updateSystemProjectPreferencesDefaults() throws IOException, STPropertyAccessException {
+	private static void updatePUSettingsSystemDefaults() throws IOException, STPropertyAccessException {
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
-				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-preferences-defaults.props"),
-				STPropertiesManager.getSystemProjectPreferencesDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
+				STPropertiesManager.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+		);
+		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
+				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
+				STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName())
 		);
 	}
 	
 	@SuppressWarnings("unused")
-	private static void updateSystemProjectSettingsDefaults() throws IOException, STPropertyAccessException {
+	private static void updateProjectSettingsDefaults() throws IOException, STPropertyAccessException {
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-				STPropertiesManager.getSystemProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+				STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
 		);
 	}
 	

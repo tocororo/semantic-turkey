@@ -112,7 +112,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		while (m.find()) {
 			if (languagesPropValue == null) {
 				try {
-					languagesPropValue = STPropertiesManager.getProjectPreference(
+					languagesPropValue = STPropertiesManager.getPUSetting(
 							STPropertiesManager.PREF_LANGUAGES, currentProject, UsersManager.getLoggedUser(),
 							RenderingEngine.class.getName());
 				} catch (STPropertyAccessException e) {
