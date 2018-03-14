@@ -35,6 +35,8 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 /**
@@ -48,7 +50,7 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
  */
 public enum RDFResourceRole {
 
-	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty, ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection;
+	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty, ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm;
 
 	static Map<RDFResourceRole, IRI> map;
 	static {
@@ -66,6 +68,9 @@ public enum RDFResourceRole {
 		map.put(xLabel, SKOSXL.LABEL);
 		map.put(skosCollection, SKOS.COLLECTION);
 		map.put(skosOrderedCollection, SKOS.ORDERED_COLLECTION);
+		map.put(limeLexicon, LIME.LEXICON);
+		map.put(ontolexLexicalEntry, ONTOLEX.LEXICAL_ENTRY);
+		map.put(ontolexForm, ONTOLEX.FORM);
 	}
 
 	public IRI getIRI() {

@@ -31,7 +31,8 @@ public class NatureRecognitionOrchestrator {
 				
 		" OPTIONAL { \n" +
 		"  values($st) {"
-		+ "		(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)(owl:Ontology)"
+		+ "		(<http://www.w3.org/ns/lemon/lime#Lexicon>)(<http://www.w3.org/ns/lemon/ontolex#LexicalEntry>)"
+		+ "     (<http://www.w3.org/ns/lemon/ontolex#Form>)(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)(owl:Ontology)"
 		+ "		(owl:ObjectProperty)(owl:DatatypeProperty)(owl:AnnotationProperty)(owl:OntologyProperty)"
 		+ "} \n" +
 		"  graph $go { \n" +
@@ -55,6 +56,9 @@ public class NatureRecognitionOrchestrator {
 		//convert type to role ?st (super type) to ?rt (role type)
 		" BIND("
 				+ "IF(!BOUND(?st), \"" + RDFResourceRole.individual + "\","
+				+ "IF(?st = <http://www.w3.org/ns/lemon/lime#Lexicon>, \"" + RDFResourceRole.limeLexicon + "\","
+				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalEntry>, \"" + RDFResourceRole.ontolexLexicalEntry + "\","
+				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#Form>, \"" + RDFResourceRole.ontolexForm + "\","
 				+ "IF(?st = skos:Concept, \"" + RDFResourceRole.concept + "\","
 				+ "IF(?st = skos:ConceptScheme, \"" + RDFResourceRole.conceptScheme + "\","
 				+ "IF(?st = skos:Collection, \"" + RDFResourceRole.skosCollection + "\","
@@ -69,7 +73,7 @@ public class NatureRecognitionOrchestrator {
 				+ "IF(?st = rdfs:Class, \"" + RDFResourceRole.cls + "\","
 				+ "IF(?st = rdfs:Datatype, \"" + RDFResourceRole.dataRange + "\","
 				+ "\"" + RDFResourceRole.individual + "\""
-				+ ")))))))))))))) as ?rt) \n" +
+				+ "))))))))))))))))) as ?rt) \n" +
 		" OPTIONAL { \n" +
 		"	   BIND( \n" +
 		"	     IF(EXISTS {"+varName+" owl:deprecated true}, \"true\", \n" +

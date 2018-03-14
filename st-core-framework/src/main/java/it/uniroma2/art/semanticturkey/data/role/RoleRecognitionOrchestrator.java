@@ -16,6 +16,8 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
@@ -43,24 +45,27 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	@Override
 	public GraphPattern getGraphPattern(Project currentProject) {
 		return GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE).prefix("rdfs", RDFS.NAMESPACE)
-				.prefix("owl", OWL.NAMESPACE).prefix("skos", SKOS.NAMESPACE)
+				.prefix("owl", OWL.NAMESPACE).prefix("skos", SKOS.NAMESPACE).prefix("ontolex", ONTOLEX.NAMESPACE).prefix("lime", LIME.NAMESPACE)
 				.prefix("skosxl", SKOSXL.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_role"))
 				.pattern(
 				// @formatter:off
-				"BIND(IF(EXISTS {?metaClass rdfs:subClassOf* skos:Concept . ?resource a ?metaClass .}, \"concept\", " +
-						"IF(EXISTS {?metaClass rdfs:subClassOf* skos:ConceptScheme . ?resource a ?metaClass . }, \"conceptScheme\", " + 
-							"IF(EXISTS {?metaClass rdfs:subClassOf* skosxl:Label . ?resource a ?metaClass . }, \"xLabel\", " +
-								"IF(EXISTS {?metaClass rdfs:subClassOf* skos:OrderedCollection . ?resource a ?metaClass . }, \"skosOrderedCollection\", " +
-									"IF(EXISTS {?metaClass rdfs:subClassOf* skos:Collection . ?resource a ?metaClass . }, \"skosCollection\", " +
-										"IF(EXISTS {?metaClass rdfs:subClassOf* rdfs:Datatype . ?resource a ?metaClass . }, \"dataRange\", " +
-											"IF(EXISTS {?metaClass rdfs:subClassOf* rdfs:Class . ?resource a ?metaClass . }, \"cls\", " +
-												"IF(EXISTS {?metaClass rdfs:subClassOf* owl:DatatypeProperty . ?resource a ?metaClass . }, \"datatypeProperty\", " +
-													"IF(EXISTS {?metaClass rdfs:subClassOf* owl:OntologyProperty . ?resource a ?metaClass . }, \"ontologyProperty\", " +
-														"IF(EXISTS {?metaClass rdfs:subClassOf* owl:AnnotationProperty . ?resource a ?metaClass . }, \"annotationProperty\", " +
-															"IF(EXISTS {?metaClass rdfs:subClassOf* owl:ObjectProperty . ?resource a ?metaClass . }, \"objectProperty\", " +
-																"IF(EXISTS {?metaClass rdfs:subClassOf* rdf:Property . ?resource a ?metaClass . }, \"property\", " +
-																	"IF(EXISTS {?metaClass rdfs:subClassOf* owl:Ontology . ?resource a ?metaClass . }, \"ontology\", " +
-							"\"individual\"))))))))))))) as ?attr_role)"		
+				"BIND(IF(EXISTS {?metaClass rdfs:subClassOf* lime:Lexicon . ?resource a ?metaClass .}, \"limeLexicon\", " +
+						"IF(EXISTS {?metaClass rdfs:subClassOf* ontolex:LexicalEntry . ?resource a ?metaClass .}, \"ontolexLexicalEntry\", " +
+							"IF(EXISTS {?metaClass rdfs:subClassOf* ontolex:Form . ?resource a ?metaClass .}, \"ontolexForm\", " +
+								"IF(EXISTS {?metaClass rdfs:subClassOf* skos:Concept . ?resource a ?metaClass .}, \"concept\", " +
+									"IF(EXISTS {?metaClass rdfs:subClassOf* skos:ConceptScheme . ?resource a ?metaClass . }, \"conceptScheme\", " + 
+										"IF(EXISTS {?metaClass rdfs:subClassOf* skosxl:Label . ?resource a ?metaClass . }, \"xLabel\", " +
+											"IF(EXISTS {?metaClass rdfs:subClassOf* skos:OrderedCollection . ?resource a ?metaClass . }, \"skosOrderedCollection\", " +
+												"IF(EXISTS {?metaClass rdfs:subClassOf* skos:Collection . ?resource a ?metaClass . }, \"skosCollection\", " +
+													"IF(EXISTS {?metaClass rdfs:subClassOf* rdfs:Datatype . ?resource a ?metaClass . }, \"dataRange\", " +
+														"IF(EXISTS {?metaClass rdfs:subClassOf* rdfs:Class . ?resource a ?metaClass . }, \"cls\", " +
+															"IF(EXISTS {?metaClass rdfs:subClassOf* owl:DatatypeProperty . ?resource a ?metaClass . }, \"datatypeProperty\", " +
+																"IF(EXISTS {?metaClass rdfs:subClassOf* owl:OntologyProperty . ?resource a ?metaClass . }, \"ontologyProperty\", " +
+																	"IF(EXISTS {?metaClass rdfs:subClassOf* owl:AnnotationProperty . ?resource a ?metaClass . }, \"annotationProperty\", " +
+																		"IF(EXISTS {?metaClass rdfs:subClassOf* owl:ObjectProperty . ?resource a ?metaClass . }, \"objectProperty\", " +
+																			"IF(EXISTS {?metaClass rdfs:subClassOf* rdf:Property . ?resource a ?metaClass . }, \"property\", " +
+																				"IF(EXISTS {?metaClass rdfs:subClassOf* owl:Ontology . ?resource a ?metaClass . }, \"ontology\", " +
+							"\"individual\")))))))))))))))) as ?attr_role)"		
 				// @formatter:on
 				).graphPattern();
 	}

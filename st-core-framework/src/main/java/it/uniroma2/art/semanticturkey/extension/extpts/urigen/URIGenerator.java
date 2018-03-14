@@ -20,6 +20,9 @@ public interface URIGenerator extends Extension {
 		public static final String xLabel = "xLabel";
 		public static final String xNote = "xNote";
 		public static final String skosCollection = "skosCollection";
+		public static final String limeLexicon = "limeLexicon";
+		public static final String ontolexLexicalEntry = "ontolexLexicalEntry";
+		public static final String ontolexForm = "ontolexForm";
 	}
 
 	public static final class Parameters {
@@ -31,6 +34,12 @@ public interface URIGenerator extends Extension {
 		public static final String noteProperty = "noteProperty";
 		public static final String value = "value";
 		public static final String annotatedResource = "annotatedResource";
+		public static final String title = "title";
+		public static final String canonicalForm = "canonicalForm";
+		public static final String lexicon = "lexicon";
+		public static final String entry = "entry";
+		public static final String writtenRep = "writtenRep";
+		public static final String formProperty = "formProperty";
 	}
 
 	/**
