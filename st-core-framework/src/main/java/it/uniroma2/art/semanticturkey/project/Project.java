@@ -32,10 +32,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +50,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -71,9 +73,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
@@ -82,6 +86,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.RepositoryNotExistingException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
@@ -110,17 +115,34 @@ import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 public abstract class Project extends AbstractProject {
 
-	public static final IRI OWL_MODEL = SimpleValueFactory.getInstance()
-			.createIRI("http://www.w3.org/2002/07/owl");
-	public static final IRI SKOS_MODEL = SimpleValueFactory.getInstance()
-			.createIRI("http://www.w3.org/2004/02/skos/core");
+	public static final String RDFS_MODEL_STRING = "http://www.w3.org/2000/01/rdf-schema";
+	public static final IRI RDFS_MODEL = SimpleValueFactory.getInstance().createIRI(RDFS_MODEL_STRING);
 
+	public static final String OWL_MODEL_STRING = "http://www.w3.org/2002/07/owl";
+	public static final IRI OWL_MODEL = SimpleValueFactory.getInstance().createIRI(OWL_MODEL_STRING);
+
+	public static final String SKOS_MODEL_STRING = "http://www.w3.org/2004/02/skos/core";
+	public static final IRI SKOS_MODEL = SimpleValueFactory.getInstance().createIRI(SKOS_MODEL_STRING);
+
+	public static final String ONTOLEXLEMON_MODEL_STRING = "http://www.w3.org/ns/lemon/ontolex";
+	public static final IRI ONTOLEXLEMON_MODEL = SimpleValueFactory.getInstance()
+			.createIRI(ONTOLEXLEMON_MODEL_STRING);
+
+	public static final String RDFS_LEXICALIZATION_MODEL_STRING = "http://www.w3.org/2000/01/rdf-schema";
 	public static final IRI RDFS_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
-			.createIRI("http://www.w3.org/2000/01/rdf-schema");
+			.createIRI(RDFS_LEXICALIZATION_MODEL_STRING);
+
+	public static final String SKOS_LEXICALIZATION_MODEL_STRING = "http://www.w3.org/2004/02/skos/core";
 	public static final IRI SKOS_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
-			.createIRI("http://www.w3.org/2004/02/skos/core");
+			.createIRI(SKOS_LEXICALIZATION_MODEL_STRING);
+
+	public static final String SKOSXL_LEXICALIZATION_MODEL_STRING = "http://www.w3.org/2008/05/skos-xl";
 	public static final IRI SKOSXL_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
-			.createIRI("http://www.w3.org/2008/05/skos-xl");
+			.createIRI(SKOSXL_LEXICALIZATION_MODEL_STRING);
+
+	public static final String ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING = "http://www.w3.org/ns/lemon/ontolex";
+	public static final IRI ONTOLEXLEMON_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
+			.createIRI(ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING);
 
 	protected File infoSTPFile;
 	protected File renderingConfigFile;
@@ -224,6 +246,7 @@ public abstract class Project extends AbstractProject {
 	 * @param projectName
 	 * @param projectDir
 	 * @throws ProjectCreationException
+	 * @throws UnsupportedModelException
 	 */
 	Project(String projectName, File projectDir) throws ProjectCreationException {
 		super(projectName, projectDir);
@@ -241,15 +264,12 @@ public abstract class Project extends AbstractProject {
 			model = SimpleValueFactory.getInstance()
 					.createIRI(Objects.requireNonNull(stp_properties.getProperty(MODEL_PROP),
 							"Project property \"" + MODEL_PROP + "\" must not be null"));
+
 			lexicalizationModel = SimpleValueFactory.getInstance()
 					.createIRI(Objects.requireNonNull(stp_properties.getProperty(LEXICALIZATION_MODEL_PROP),
 							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
-			if (!Arrays
-					.asList(RDFS_LEXICALIZATION_MODEL, SKOS_LEXICALIZATION_MODEL, SKOSXL_LEXICALIZATION_MODEL)
-					.contains(lexicalizationModel)) {
-				throw new UnsupportedLexicalizationModelException(
-						lexicalizationModel.stringValue() + " is not a valid lexicalization model");
-			}
+
+			checkModels(model, lexicalizationModel);
 
 			String updateForRolesString = com.google.common.base.Objects
 					.firstNonNull(stp_properties.getProperty(UPDATE_FOR_ROLES_PROP), "resource");
@@ -262,9 +282,41 @@ public abstract class Project extends AbstractProject {
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
 					.map(RepositoryLocation::fromString).orElse(null);
-		} catch (IOException | UnsupportedLexicalizationModelException e1) {
+		} catch (IOException | UnsupportedLexicalizationModelException | UnsupportedModelException | ProjectInconsistentException e1) {
 			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
 			throw new ProjectCreationException(e1);
+		}
+	}
+
+	public static void checkModels(IRI model, IRI lexicalizationModel) throws UnsupportedModelException,
+			UnsupportedLexicalizationModelException, ProjectInconsistentException {
+		try {
+			checkModel(model);
+			checkLexicalizationModel(lexicalizationModel);
+
+			if (model.equals(ONTOLEXLEMON_MODEL)
+					^ lexicalizationModel.equals(ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+				throw new ProjectInconsistentException(
+						"W3C OntoLex Lemon Model should be used as a model and as lexicalization model");
+			}
+		} catch (UnsupportedModelException | UnsupportedLexicalizationModelException e) {
+			throw e;
+		}
+	}
+
+	public static void checkModel(IRI model) throws UnsupportedModelException {
+		if (!Arrays.asList(RDFS_MODEL, SKOS_MODEL, OWL_MODEL, SKOS_LEXICALIZATION_MODEL,
+				ONTOLEXLEMON_LEXICALIZATION_MODEL).contains(model)) {
+			throw new UnsupportedModelException(model.stringValue() + " is not a valid model");
+		}
+	}
+
+	public static void checkLexicalizationModel(IRI lexicalizationModel)
+			throws UnsupportedLexicalizationModelException {
+		if (!Arrays.asList(RDFS_LEXICALIZATION_MODEL, SKOS_LEXICALIZATION_MODEL, SKOSXL_LEXICALIZATION_MODEL,
+				ONTOLEXLEMON_LEXICALIZATION_MODEL).contains(lexicalizationModel)) {
+			throw new UnsupportedLexicalizationModelException(
+					lexicalizationModel.stringValue() + " is not a valid lexicalization model");
 		}
 	}
 
@@ -432,69 +484,31 @@ public abstract class Project extends AbstractProject {
 			Set<Resource> contexts = QueryResults.stream(conn.getContextIDs()).filter(IRI.class::isInstance)
 					.map(r -> OntologyManager.computeCanonicalURI((IRI) r)).collect(toSet());
 
-			ValueFactory vf = conn.getValueFactory();
-			IRI rdfBaseURI = vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns");
-			IRI rdfsBaseURI = vf.createIRI("http://www.w3.org/2000/01/rdf-schema");
-			IRI owlBaseURI = vf.createIRI("http://www.w3.org/2002/07/owl");
-			IRI skosBaseURI = vf.createIRI("http://www.w3.org/2004/02/skos/core");
-			IRI skosxlBaseURI = vf.createIRI("http://www.w3.org/2008/05/skos-xl");
+			Map<IRI, ImmutablePair<URL, RDFFormat>> coreVocabularies = new HashMap<>();
 
-			boolean isSKOSXL = Objects.equals(getLexicalizationModel(), SKOSXL_LEXICALIZATION_MODEL);
+			coreVocabularies.putAll(getCoreVocabulariesForLexicalizationModel());
+			coreVocabularies.putAll(getCoreVocabulariesForModel());
 
 			MutableBoolean anyWritten = new MutableBoolean(false);
 
 			ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 				logger.debug("Loading core vocabularies");
 
-				newOntManager.declareSupportOntology(rdfBaseURI, true, false, false);
-				if (!contexts.contains(rdfBaseURI)) {
+				for (Map.Entry<IRI, ImmutablePair<URL, RDFFormat>> entry : coreVocabularies.entrySet()) {
+					IRI coreOnt = entry.getKey();
+					URL coreOntDocumentURL = entry.getValue().getKey();
+					RDFFormat coreOntDocumentFormat = entry.getValue().getValue();
 
-					logger.debug("Loading RDF vocabulary...");
-					conn.add(OntologyManager.class.getResource("rdf.rdf"), rdfBaseURI.stringValue(),
-							RDFFormat.RDFXML, rdfBaseURI);
-					anyWritten.setValue(true);
-				}
+					logger.debug("Declaring core vocabulary: " + coreOnt);
+					newOntManager.declareSupportOntology(coreOnt, true, false, false);
 
-				newOntManager.declareSupportOntology(rdfsBaseURI, true, false, false);
-				if (!contexts.contains(rdfsBaseURI)) {
-					logger.debug("Loading RDFS vocabulary...");
-					conn.add(OntologyManager.class.getResource("rdf-schema.rdf"), rdfsBaseURI.stringValue(),
-							RDFFormat.RDFXML, rdfsBaseURI);
-					anyWritten.setValue(true);
-				}
-
-				newOntManager.declareSupportOntology(owlBaseURI, true, false, false);
-				if (!contexts.contains(owlBaseURI)) {
-					logger.debug("Loading OWL vocabulary...");
-					conn.add(OntologyManager.class.getResource("owl.rdf"), owlBaseURI.stringValue(),
-							RDFFormat.RDFXML, owlBaseURI);
-					anyWritten.setValue(true);
-				}
-
-				boolean isSKOS = isSKOSXL
-						|| Objects.equals(getLexicalizationModel(), SKOS_LEXICALIZATION_MODEL)
-						|| Objects.equals(getModel(), SKOS_MODEL);
-
-				if (isSKOS) {
-					newOntManager.declareSupportOntology(skosBaseURI, true, false, false);
-					if (!contexts.contains(skosBaseURI)) {
-						logger.debug("Loading SKOS vocabulary...");
-						conn.add(OntologyManager.class.getResource("skos.rdf"), skosBaseURI.stringValue(),
-								RDFFormat.RDFXML, skosBaseURI);
+					if (!contexts.contains(OntologyManager.computeCanonicalURI(coreOnt))) {
+						logger.debug("Loading vocabulary: " + coreOnt);
+						conn.add(coreOntDocumentURL, coreOnt.stringValue(), coreOntDocumentFormat, coreOnt);
 						anyWritten.setValue(true);
 					}
-				}
 
-				if (isSKOSXL) {
-					newOntManager.declareSupportOntology(skosxlBaseURI, true, false, false);
-					if (!contexts.contains(skosxlBaseURI)) {
-						logger.debug("Loading SKOS-XL vocabulary...");
-						conn.add(OntologyManager.class.getResource("skos-xl.rdf"),
-								skosxlBaseURI.stringValue(), RDFFormat.RDFXML, skosxlBaseURI);
-						anyWritten.setValue(true);
-					}
 				}
-
 			});
 
 			logger.debug("About to commit the loaded triples");
@@ -512,11 +526,60 @@ public abstract class Project extends AbstractProject {
 				conn.commit();
 			}
 
-			if (isSKOSXL && !contexts.contains(skosxlBaseURI)) {
+			if (contexts.contains(OntologyManager
+					.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(SKOSXL.NAMESPACE)))) {
 				conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
 			}
 			logger.debug("Core vocabularies loaded");
 		}
+	}
+
+	protected Map<IRI, ImmutablePair<URL, RDFFormat>> getCoreVocabulariesForLexicalizationModel() {
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+
+		Map<IRI, ImmutablePair<URL, RDFFormat>> coreVocabularies = new HashMap<>();
+
+		// Note: deliberate cascade from OntoLex-Lemon model to RDFS lexicalization model
+		switch (getLexicalizationModel().stringValue()) {
+		case ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING:
+			coreVocabularies.put(vf.createIRI("http://www.w3.org/ns/lemon/ontolex"),
+					ImmutablePair.of(ONTOLEX.class.getResource("ontolex.rdf"), RDFFormat.RDFXML));
+		case SKOSXL_LEXICALIZATION_MODEL_STRING:
+			coreVocabularies.put(vf.createIRI("http://www.w3.org/2008/05/skos-xl"),
+					ImmutablePair.of(OntologyManager.class.getResource("skos-xl.rdf"), RDFFormat.RDFXML));
+		case SKOS_LEXICALIZATION_MODEL_STRING:
+			coreVocabularies.put(vf.createIRI("http://www.w3.org/2004/02/skos/core"),
+					ImmutablePair.of(OntologyManager.class.getResource("skos.rdf"), RDFFormat.RDFXML));
+		case RDFS_LEXICALIZATION_MODEL_STRING:
+			coreVocabularies.put(vf.createIRI("http://www.w3.org/2000/01/rdf-schema"),
+					ImmutablePair.of(OntologyManager.class.getResource("rdf-schema.rdf"), RDFFormat.RDFXML));
+		}
+
+		return coreVocabularies;
+	}
+
+	protected Map<IRI, ImmutablePair<URL, RDFFormat>> getCoreVocabulariesForModel() {
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+
+		Map<IRI, ImmutablePair<URL, RDFFormat>> coreVocabularies = new HashMap<>();
+		coreVocabularies.put(vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns"),
+				ImmutablePair.of(OntologyManager.class.getResource("rdf.rdf"), RDFFormat.RDFXML));
+		coreVocabularies.put(vf.createIRI("http://www.w3.org/2000/01/rdf-schema"),
+				ImmutablePair.of(OntologyManager.class.getResource("rdf-schema.rdf"), RDFFormat.RDFXML));
+		coreVocabularies.put(vf.createIRI("http://www.w3.org/2002/07/owl"),
+				ImmutablePair.of(OntologyManager.class.getResource("owl.rdf"), RDFFormat.RDFXML));
+
+		// Note: deliberate cascade from OntoLex-Lemon model to SKOS model
+		switch (getLexicalizationModel().stringValue()) {
+		case ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING:
+			coreVocabularies.put(vf.createIRI("http://www.w3.org/ns/lemon/ontolex"),
+					ImmutablePair.of(ONTOLEX.class.getResource("ontolex.rdf"), RDFFormat.RDFXML));
+		case SKOS_MODEL_STRING:
+			coreVocabularies.put(vf.createIRI("http://www.w3.org/2004/02/skos/core"),
+					ImmutablePair.of(OntologyManager.class.getResource("skos.rdf"), RDFFormat.RDFXML));
+		}
+
+		return coreVocabularies;
 	}
 
 	public static String determineBestRenderingEngine(IRI lexicalizationModel) {
@@ -524,8 +587,10 @@ public abstract class Project extends AbstractProject {
 			return SKOSRenderingEngineFactory.class.getName();
 		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2008/05/skos-xl")) {
 			return SKOSXLRenderingEngineFactory.class.getName();
+		} else if (lexicalizationModel.stringValue().equals(ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING)) {
+			return SKOSXLRenderingEngineFactory.class.getName();
 		} else {
-			return RDFSRenderingEngineFactory.class.getName();
+			throw new IllegalArgumentException("Unsupported lexicalization model: " + lexicalizationModel);
 		}
 	}
 
@@ -1022,6 +1087,24 @@ public abstract class Project extends AbstractProject {
 	 */
 	public File getProjectDirectory() {
 		return _projectDir;
+	}
+
+	public static void checkProjectName(String projectName) throws InvalidProjectNameException {
+		ProjectManager.logger.debug("checking if name: " + projectName + " is a valid project name");
+		if (projectName == null) {
+			throw new InvalidProjectNameException("Project name may not be null", null);
+		}
+
+		if (ProjectConsumer.SYSTEM.getName().equalsIgnoreCase(projectName)) {
+			throw new InvalidProjectNameException("Project name may not be equal (ignoring case) to SYSTEM",
+					projectName);
+		}
+
+		if (projectName.matches(".*[:\\\\/*?\"<>|].*")) {
+			throw new InvalidProjectNameException("Project name may not contain the characters \\/*?\"<>|",
+					projectName);
+		}
+		ProjectManager.logger.debug("name is valid");
 	}
 
 }

@@ -80,6 +80,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
@@ -147,13 +149,13 @@ public class ProjectManager {
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
 
 	private static volatile ExtensionPointManager exptManager;
-	
+
 	private static Set<Project> projectsLockedForAccess = ConcurrentHashMap.newKeySet();
-	
+
 	public static void setExtensionPointManager(ExtensionPointManager exptManager) {
 		ProjectManager.exptManager = exptManager;
 	}
-	
+
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
 	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain
@@ -280,10 +282,10 @@ public class ProjectManager {
 	 */
 	public static Project getProject(String projectName) {
 		return openProjects.getProject(projectName);
-		//TODO should check for existing project and valid project name
+		// TODO should check for existing project and valid project name
 	}
-	
-	public static Project getProject(String projectName, boolean descriptionAllowed) 
+
+	public static Project getProject(String projectName, boolean descriptionAllowed)
 			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
 		Project proj = openProjects.getProject(projectName);
 		if (proj == null && descriptionAllowed) {
@@ -337,7 +339,7 @@ public class ProjectManager {
 
 		logger.debug("cloning project: " + projectName + " to project: " + newProjectName);
 
-		checkProjectName(newProjectName);
+		Project.checkProjectName(newProjectName);
 
 		if (isOpen(projectName)) {
 			throw new ProjectAccessException(
@@ -387,7 +389,7 @@ public class ProjectManager {
 	 * @throws InvalidProjectNameException
 	 */
 	public static File resolveProjectNameToDir(String projectName) throws InvalidProjectNameException {
-		checkProjectName(projectName);
+		Project.checkProjectName(projectName);
 		return new File(Resources.getProjectsDir(), projectName);
 	}
 
@@ -503,24 +505,6 @@ public class ProjectManager {
 		} catch (Exception e) {
 			throw new ProjectAccessException(e);
 		}
-	}
-
-	public static void checkProjectName(String projectName) throws InvalidProjectNameException {
-		logger.debug("checking if name: " + projectName + " is a valid project name");
-		if (projectName == null) {
-			throw new InvalidProjectNameException("Project name may not be null", null);
-		}
-
-		if (ProjectConsumer.SYSTEM.getName().equalsIgnoreCase(projectName)) {
-			throw new InvalidProjectNameException("Project name may not be equal (ignoring case) to SYSTEM",
-					projectName);
-		}
-
-		if (projectName.matches(".*[:\\\\/*?\"<>|].*")) {
-			throw new InvalidProjectNameException("Project name may not contain the characters \\/*?\"<>|",
-					projectName);
-		}
-		logger.debug("name is valid");
 	}
 
 	/**
@@ -906,7 +890,7 @@ public class ProjectManager {
 		if (projectsLockedForAccess.contains(project)) {
 			throw new ProjectAccessException("Project locked for access: " + project.getName());
 		}
-		
+
 		AccessResponse accessResponse = checkAccessibility(consumer, project, requestedAccessLevel,
 				requestedLockLevel);
 
@@ -1366,7 +1350,8 @@ public class ProjectManager {
 			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
 			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			WrongPropertiesException, PUBindingException, RBACException {
+			WrongPropertiesException, PUBindingException, RBACException, UnsupportedModelException,
+			UnsupportedLexicalizationModelException, ProjectInconsistentException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1375,8 +1360,11 @@ public class ProjectManager {
 		File projectDir = resolveProjectNameToDir(projectName);
 
 		// Checks the suitability of the project name
-		checkProjectName(projectName);
-		
+		Project.checkProjectName(projectName);
+
+		// Checks the provided models
+		Project.checkModels(model, lexicalizationModel);
+
 		if (projectDir.exists()) {
 			throw new DuplicatedResourceException("Project: " + projectName
 					+ " already exists; choose a different project name for a new project");

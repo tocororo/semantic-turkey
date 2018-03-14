@@ -85,6 +85,19 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
+	
+	<!-- Publishes the OntoLex-Lemon-based implementation of the extension point RenderingEngine -->
+	<bean id="ontolexLemonRenderingEngineFactory"
+		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory" />
+
+	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+		ref="ontolexLemonRenderingEngineFactory">
+		<osgi:service-properties>
+			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
+				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
+		</osgi:service-properties>
+	</osgi:service>
+
 
 	<!-- Publishes the SPARQL-based implementation of the extension point ExportFilter -->
 	<bean id="SPARQLExportFilterFactory"
@@ -321,6 +334,12 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineFactory" />
 	</osgi:service>
 
+	<!-- Publishes the OntoLexLemonRenderingEngine extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineFactory" />
+	</osgi:service>
 	
 	<!-- Publishes the RDFTransformer extension point -->
 
