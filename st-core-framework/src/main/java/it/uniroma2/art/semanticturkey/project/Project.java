@@ -295,9 +295,9 @@ public abstract class Project extends AbstractProject {
 			checkLexicalizationModel(lexicalizationModel);
 
 			if (model.equals(ONTOLEXLEMON_MODEL)
-					^ lexicalizationModel.equals(ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+					&& !lexicalizationModel.equals(ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 				throw new ProjectInconsistentException(
-						"W3C OntoLex Lemon Model should be used as a model and as lexicalization model");
+						"When OntoLex Lemon is used as model, it is shall also be used as lexicalization model");
 			}
 		} catch (UnsupportedModelException | UnsupportedLexicalizationModelException e) {
 			throw e;
