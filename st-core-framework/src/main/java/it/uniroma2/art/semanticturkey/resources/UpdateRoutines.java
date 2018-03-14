@@ -24,7 +24,10 @@
 package it.uniroma2.art.semanticturkey.resources;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,14 +109,56 @@ public class UpdateRoutines {
 	
 	private static void alignFrom3To4() throws IOException, STPropertyAccessException {
 		logger.debug("Version 4.0.0 renamed some settings files");
-		//users\<username>\plugins\<plugin>\system-preferences.cfg -> settings.cfg
-		File projectsDir = Resources.getProjectsDir();
+		//users\<username>\plugins\<plugin>\system-preferences.props -> settings.props
+		//users\<username>\plugins\<plugin>\project-preference-defaults.props -> pu-settings-defaults.props
+		List<File> userDirectories = listSubFolders(Resources.getUsersDir());
+		for (File userDirectory : userDirectories) {
+			File pluginsFolder = new File(userDirectory, "plugins");
+			if (pluginsFolder.exists()) {
+				List<File> pluginsFolders = listSubFolders(pluginsFolder);
+				for (File pluginFolder : pluginsFolders) {
+					renameFile(pluginFolder, "system-preferences.props", "settings.props");
+					renameFile(pluginFolder, "project-preferences-defaults.props", "pu-settings-defaults.props");
+				}
+			}
+		}
 		
+		//system\plugins\<plugin>\system-preferences-defaults.props -> user-settings-defaults.props
+		//system\plugins\<plugin>\project-preferences-defaults.props -> pu-settings-defaults.cfg
+		List<File> sysPluginFolders = listSubFolders(new File(Resources.getSystemDir(), "plugins"));
+		for (File pluginFolder : sysPluginFolders) {
+			renameFile(pluginFolder, "system-preferences-defaults", "user-settings-defaults.props");
+			renameFile(pluginFolder, "project-preferences-defaults.props", "pu-settings-defaults.props");
+		}
 		
-		logger.debug("Version 4.0.0 changed pu-settings-defaults files");
-		updatePUSettingsSystemDefaults();
+		//projects\<projectname>\plugins\<plugin>\preferences-defaults.props -> pu-settings-defaults.props
+		List<File> projDirectories = listSubFolders(Resources.getProjectsDir());
+		for (File projDirectory : projDirectories) {
+			File pluginsFolder = new File(projDirectory, "plugins");
+			if (pluginsFolder.exists()) {
+				List<File> pluginsFolders = listSubFolders(pluginsFolder);
+				for (File pluginFolder : pluginsFolders) {
+					renameFile(pluginFolder, "preferences-defaults.props", "pu-settings-defaults.props");
+				}
+			}
+		}
+		
+		//pu_binding\<projectname>\<username>\plugins\<plugin>\preferences.props -> settings.props
+		List<File> puProjectDirectories = listSubFolders(Resources.getProjectUserBindingsDir());
+		for (File puProjDir : puProjectDirectories) {
+			List<File> puUserDirectories = listSubFolders(puProjDir);
+			for (File puUserDir : puUserDirectories) {
+				File pluginsFolder = new File(puUserDir, "plugins");
+				if (pluginsFolder.exists()) {
+					List<File> pluginsFolders = listSubFolders(pluginsFolder);
+					for (File pluginFolder : pluginsFolders) {
+						renameFile(pluginFolder, "preferences.props", "settings.props");
+					}
+				}
+			}
+		}
 	}
-
+	
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectInconsistentException {
 //		// ADDING PROJECT_MODEL_TYPE WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
@@ -195,6 +240,39 @@ public class UpdateRoutines {
 						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
 				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml")
 		);
+	}
+	
+	/**
+	 * Lists the subfolders of a given folder
+	 * @param parentFolder
+	 * @return
+	 */
+	private static List<File> listSubFolders(File parentFolder) {
+		String[] subFoldersNames = parentFolder.list(new FilenameFilter() {
+			public boolean accept(File current, String name) {
+				return new File(current, name).isDirectory();
+			}
+		});
+		List<File> subFolders = new ArrayList<>();
+		for (String subFolderName : subFoldersNames) {
+			subFolders.add(new File(parentFolder, subFolderName));
+		}
+		return subFolders;
+	}
+	
+	/**
+	 * Renames a file from fromName to toName
+	 * The rename is performed only if source file exists and target file doesn't
+	 * @param parentFolder
+	 * @param fromName
+	 * @param toName
+	 */
+	private static void renameFile(File parentFolder, String fromName, String toName) {
+		File fromFile = new File(parentFolder, fromName);
+		File toFile = new File(parentFolder, toName);
+		if (fromFile.exists() && !toFile.exists()) {
+			fromFile.renameTo(toFile);
+		}
 	}
 
 }
