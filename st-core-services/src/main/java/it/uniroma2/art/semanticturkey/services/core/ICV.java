@@ -965,7 +965,8 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of different <resources> with same lexicalization
+	 * Return a list of different <resources> where each <resource> bolong to the same scheme as another <resource>
+	 * and these two <resoruces> have the same skos:prefLabel or skosxl:prefLabel/skosxl:literalForm
 	 * @param rolesArray
 	 * @return
 	 * @throws UnsupportedLexicalizationModelException 
@@ -977,27 +978,30 @@ public class ICV extends STServiceAdapter {
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
-		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
+		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
 				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
 			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
 			throw new UnsupportedLexicalizationModelException(msg);
-		}*/
+		}
 		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label \n"
 				+ "WHERE {\n";
 		
 		query+=rolePartForQuery(rolesArray, "?resource");
 		query+=rolePartForQuery(rolesArray, "?resource2");
+		query+="?propScheme "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+				NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" .";
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			query += "?resource "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel .\n"
+			query += "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?attr_xlabel .\n"
 					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
-					+ "?resource2 "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel2 .\n"
-					+ "?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n";
-		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
-			query += "?resource "+getSkosPrefOrAltOrHidden()+" ?attr_label .\n"
-					+ "?resource2 "+getSkosPrefOrAltOrHidden()+" ?attr_label .\n";
-		} else {
-			query += "?resource "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label .\n"
-					+ "?resource2 "+NTriplesUtil.toNTriplesString(RDFS.LABEL)+" ?attr_label .\n";
+					+ "?resource2 "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?attr_xlabel2 .\n"
+					+ "?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
+					+ "?resource ?propScheme ?scheme . \n "
+					+ "?resource2 ?propScheme ?scheme . \n ";
+		} else { //if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
+			query += "?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?attr_label .\n"
+					+ "?resource2 "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?attr_label .\n"
+					+ "?resource ?propScheme ?scheme . \n "
+					+ "?resource2 ?propScheme ?scheme . \n ";
 		}
 		
 		query += "FILTER(?resource != ?resource2) \n"
