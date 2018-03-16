@@ -1,8 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -14,6 +18,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -39,8 +44,11 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -53,7 +61,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -156,6 +166,7 @@ public class OntoLexLemon extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.processQName();
+		qb.process(LexiconRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
 
@@ -177,7 +188,8 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(lexicalEntry)', 'C')")
-	public AnnotatedValue<IRI> createLexicalEntry(@Optional @NotLocallyDefined IRI newLexicalEntry, @Optional(defaultValue="http://www.w3.org/ns/lemon/ontolex#LexicalEntry") @SubClassOf(superClassIRI="http://www.w3.org/ns/lemon/ontolex#LexicalEntry") IRI lexicalEntryCls,
+	public AnnotatedValue<IRI> createLexicalEntry(@Optional @NotLocallyDefined IRI newLexicalEntry,
+			@Optional(defaultValue = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") @SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") IRI lexicalEntryCls,
 			@LanguageTaggedString Literal canonicalForm, @LocallyDefined @Modified IRI lexicon,
 			@Optional CustomFormValue customFormValue)
 			throws ProjectInconsistentException, CODAException, CustomFormException, URIGenerationException {
@@ -283,20 +295,23 @@ public class OntoLexLemon extends STServiceAdapter {
 			" prefix ontolex: <http://www.w3.org/ns/lemon/ontolex#>                             \n" +
 			" prefix lime: <http://www.w3.org/ns/lemon/lime#>                                   \n" +
             "                                                                                   \n" +
-			" SELECT ?resource ?attr_show " + generateNatureSPARQLSelectPart() +" WHERE {       \n" +
+			" SELECT ?resource " + generateNatureSPARQLSelectPart() +" WHERE {                  \n" +
 			"   ?lexicon lime:entry ?resource .                                                 \n" +
-			"   ?resource ontolex:canonicalForm [                                               \n" +
-			"     ontolex:writtenRep ?attr_show                                                 \n" +
-			"   ]                                                                               \n" +
-			"   .                                                                               \n" +
-			"   FILTER(REGEX(STR(?attr_show), \"^" + index + "\", \"i\"))                       \n" +
+			"   FILTER EXISTS {                                                                 \n" +
+			"     ?resource ontolex:canonicalForm [                                             \n" +
+			"       ontolex:writtenRep ?cf                                                      \n" +
+			"     ]                                                                             \n" +
+			"     .                                                                             \n" +
+			"     FILTER(REGEX(STR(?cf), \"^" + index + "\", \"i\"))                            \n" +
+			"   }                                                                               \n" +
 			generateNatureSPARQLWherePart("?resource") +
 			" }                                                                                 \n" +
-			" GROUP BY ?resource ?attr_show                                                     \n"
+			" GROUP BY ?resource                                                                \n"
 			// @formatter:on
 		);
 		qb.setBinding("lexicon", lexicon);
 		qb.processQName();
+		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
 
@@ -381,6 +396,64 @@ public class OntoLexLemon extends STServiceAdapter {
 			args.put(URIGenerator.Parameters.formProperty, formProperty);
 		}
 		return generateIRI(URIGenerator.Roles.ontolexForm, args);
+	}
+
+}
+
+class LexiconRenderer extends BaseRenderingEngine {
+
+	private static AbstractLabelBasedRenderingEngineConfiguration conf;
+
+	static {
+		conf = new AbstractLabelBasedRenderingEngineConfiguration() {
+
+			@Override
+			public String getShortName() {
+				return "foo";
+			}
+
+		};
+	}
+
+	private LexiconRenderer() {
+		super(conf);
+	}
+
+	public static final LexiconRenderer INSTANCE = new LexiconRenderer();
+
+	@Override
+	protected void getGraphPatternInternal(StringBuilder gp) {
+		gp.append(
+				"?resource <http://purl.org/dc/terms/title> ?labelInternal .\n");
+	}
+
+}
+class LexicalEntryRenderer extends BaseRenderingEngine {
+
+	private static AbstractLabelBasedRenderingEngineConfiguration conf;
+
+	static {
+		conf = new AbstractLabelBasedRenderingEngineConfiguration() {
+
+			@Override
+			public String getShortName() {
+				return "foo";
+			}
+
+		};
+		conf.languages = null;
+	}
+
+	private LexicalEntryRenderer() {
+		super(conf);
+	}
+
+	public static final LexicalEntryRenderer INSTANCE = new LexicalEntryRenderer();
+
+	@Override
+	protected void getGraphPatternInternal(StringBuilder gp) {
+		gp.append(
+				"?resource <http://www.w3.org/ns/lemon/ontolex#canonicalForm> [<http://www.w3.org/ns/lemon/ontolex#writtenRep> ?labelInternal ] .\n");
 	}
 
 }

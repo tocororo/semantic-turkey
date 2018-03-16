@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Class
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.InSchemeStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LabelRelationsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalFormsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalizationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OntologyImportsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
@@ -62,6 +63,8 @@ public class StatementConsumerProvider {
 				customFormManager);
 		SKOSNotesStatementConsumer skosNotesStatementConsumer = new SKOSNotesStatementConsumer(
 				customFormManager);
+		LexicalFormsStatementConsumer lexicalFormsStatementConsumer = new LexicalFormsStatementConsumer(
+				customFormManager);
 
 		role2template = new HashMap<RDFResourceRole, List<StatementConsumer>>();
 		role2template.put(RDFResourceRole.cls,
@@ -94,6 +97,10 @@ public class StatementConsumerProvider {
 		role2template.put(RDFResourceRole.xLabel,
 				Arrays.asList(typesStatementConsumer, labelRelationStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
+
+		role2template.put(RDFResourceRole.ontolexLexicalEntry, Arrays.asList(typesStatementConsumer,
+				lexicalFormsStatementConsumer, otherPropertiesStatementConsumer));
+
 	}
 
 	public List<StatementConsumer> getTemplateForResourceRole(RDFResourceRole role) {
