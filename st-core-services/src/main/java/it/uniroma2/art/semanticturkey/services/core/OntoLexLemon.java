@@ -27,6 +27,7 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -176,7 +177,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(lexicalEntry)', 'C')")
-	public AnnotatedValue<IRI> createLexicalEntry(@Optional @NotLocallyDefined IRI newLexicalEntry,
+	public AnnotatedValue<IRI> createLexicalEntry(@Optional @NotLocallyDefined IRI newLexicalEntry, @Optional(defaultValue="http://www.w3.org/ns/lemon/ontolex#LexicalEntry") @SubClassOf(superClassIRI="http://www.w3.org/ns/lemon/ontolex#LexicalEntry") IRI lexicalEntryCls,
 			@LanguageTaggedString Literal canonicalForm, @LocallyDefined @Modified IRI lexicon,
 			@Optional CustomFormValue customFormValue)
 			throws ProjectInconsistentException, CODAException, CustomFormException, URIGenerationException {
@@ -206,7 +207,7 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		IRI canonicalFormIRI = generateFormIRI(newLexicalEntryIRI, canonicalForm, ONTOLEX.CANONICAL_FORM);
 
-		modelAdditions.add(newLexicalEntryIRI, RDF.TYPE, ONTOLEX.LEXICAL_ENTRY);
+		modelAdditions.add(newLexicalEntryIRI, RDF.TYPE, lexicalEntryCls);
 		modelAdditions.add(newLexicalEntryIRI, ONTOLEX.CANONICAL_FORM, canonicalFormIRI);
 		modelAdditions.add(lexicon, LIME.ENTRY, newLexicalEntryIRI);
 
@@ -283,13 +284,12 @@ public class OntoLexLemon extends STServiceAdapter {
 			" prefix lime: <http://www.w3.org/ns/lemon/lime#>                                   \n" +
             "                                                                                   \n" +
 			" SELECT ?resource ?attr_show " + generateNatureSPARQLSelectPart() +" WHERE {       \n" +
-			"   ?resource a ontolex:LexicalEntry ;                                              \n" +
-			"   ontolex:canonicalForm [                                                         \n" +
+			"   ?lexicon lime:entry ?resource .                                                 \n" +
+			"   ?resource ontolex:canonicalForm [                                               \n" +
 			"     ontolex:writtenRep ?attr_show                                                 \n" +
 			"   ]                                                                               \n" +
 			"   .                                                                               \n" +
 			"   FILTER(REGEX(STR(?attr_show), \"^" + index + "\", \"i\"))                       \n" +
-			"   ?lexicon lime:entry ?resource                                                   \n" +
 			generateNatureSPARQLWherePart("?resource") +
 			" }                                                                                 \n" +
 			" GROUP BY ?resource ?attr_show                                                     \n"

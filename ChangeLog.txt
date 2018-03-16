@@ -9,6 +9,7 @@ date: dd/mm/yyyy
   * Enabled the possibility to edit the credentials for the repositories associated with a project
   * New Extension Management framework (partial release)
   * Introduction of a SPARQL store (e.g. saved queries/updates)
+  * Support for the W3C OntoLex-Lemon Model
 
 version 3.0
 date: 08/02/2018
