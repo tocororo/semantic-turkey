@@ -103,7 +103,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public Map<String, ResourceViewSection> getGraphObjectDescription(Resource resource, IRI predicate) 
 			throws ProjectInconsistentException, RDFModelNotSetException, PRParserException {
 		
