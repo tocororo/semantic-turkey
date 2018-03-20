@@ -82,10 +82,11 @@ public class ICV extends STServiceAdapter {
 	//-----ICV ON CONCEPTS STRUCTURE-----
 	
 	/**
-	 * Returns a list of records <concept>, where concept is a dangling skos:Concept in the given
-	 * skos:ConceptScheme
+	 * Returns a list of concepts, where each concept is a dangling concept in the given
+	 * scheme
 	 * @param scheme scheme where the concepts are dangling
-	 * @return
+	 * @return a list of concepts, where each concept is a dangling concept in the given
+	 * scheme
 	 */
 	@STServiceOperation
 	@Read
@@ -163,8 +164,8 @@ public class ICV extends STServiceAdapter {
 //	}
 	
 	/**
-	 * Returns a list of skos:ConceptScheme that have no top concept
-	 * @return
+	 * Returns a list of schemes that have no top concept
+	 * @return a list of schemes that have no top concept
 	 */
 	@STServiceOperation
 	@Read
@@ -186,7 +187,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns a list of skos:Concept that don't belong to any scheme 
+	 * Returns a list of concepts that don't belong to any scheme 
 	 * @return
 	 */
 	@STServiceOperation
@@ -206,8 +207,8 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns a list of skos:Concept that are topConcept but have a broader 
-	 * @return
+	 * Returns a list of concepts that are topConcept but have a broader in the same scheme 
+	 * @return a list of concepts that are topConcept but have a broader in the same scheme
 	 */
 	@STServiceOperation
 	@Read
@@ -360,7 +361,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Returns a list of concepts or schemes that have no skos:prefLabel
-	 * @return
+	 * @return a list of concepts or schemes that have no skos:prefLabel
 	 * @throws QueryEvaluationException 
 	 * @throws MalformedQueryException 
 	 * @throws ModelAccessException 
@@ -391,7 +392,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Returns a list of concepts/schemes/collections that have no skosxl:prefLabel
-	 * @return
+	 * @return a list of concepts/schemes/collections that have no skosxl:prefLabel
 	 */
 	@STServiceOperation
 	@Read
@@ -609,8 +610,8 @@ public class ICV extends STServiceAdapter {
 //	}
 	
 	/**
-	 * Returns a list of dangling skosxl:Label, namely the skosxl:Label not linked with any concept
-	 * @return
+	 * Returns a list of dangling labels, namely the labels not linked with any concept
+	 * @return a list of dangling labels, namely the labels not linked with any concept
 	 */
 	@STServiceOperation
 	@Read
@@ -639,10 +640,11 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <resources> with skos:altLabel(s) (or skosxl:altLabel) but not a corresponding 
+	 * Return a list of resources with skos:altLabel(s) (or skosxl:altLabel) but not a corresponding 
 	 * skos:prefLabel (or skos:prefLabel) for the same language locale. 
-	 * @param rolesArray
-	 * @return
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to 
+	 * @return a list of resources with skos:altLabel(s) (or skosxl:altLabel) but not a corresponding 
+	 * skos:prefLabel (or skos:prefLabel) for the same language locale. 
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -692,12 +694,13 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <resources> with no lexicalization (rdfs:label, skos:prefLabel or skosxl:prefLabel)
+	 * Return a list of resources with no lexicalization (rdfs:label, skos:prefLabel or skosxl:prefLabel)
 	 *  in one or more input languages
-	 * @param rolesArray
-	 * @param languagesArray 
-	 * @return
-	 */
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @param languagesArray an array containing all languages in which to look for no lexicalization 
+	 * @return a list of resources with no lexicalization (rdfs:label, skos:prefLabel or skosxl:prefLabel)
+	 *  in one or more input languages
+ 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
@@ -760,10 +763,12 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <concept> mapped to each other using both skos:exactMatch and one of skos:broadMatch 
+	 * Return a list of concepts mapped to each other using both skos:exactMatch and one of skos:broadMatch 
 	 * or skos:relatedMatch mapping properties as the exactMatch relation is disjoint with both broadMatch 
 	 * and relatedMatch
-	 * @return
+	 * @return a list of concepts mapped to each other using both skos:exactMatch and one of skos:broadMatch 
+	 * or skos:relatedMatch mapping properties as the exactMatch relation is disjoint with both broadMatch 
+	 * and relatedMatch
 	 */
 	@STServiceOperation
 	@Read
@@ -796,9 +801,10 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <concept> connected to each other with both the skos:related and the 
+	 * Return a list of concepts connected to each other with both the skos:related and the 
 	 * skos:broaderTransitive as the related relation is disjoint with broaderTransitive
-	 * @return
+	 * @return a list of concepts connected to each other with both the skos:related and the 
+	 * skos:broaderTransitive as the related relation is disjoint with broaderTransitive
 	 */
 	@STServiceOperation
 	@Read
@@ -827,9 +833,9 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <resources> that have more than one skosxl:prefLabel for the same language locale
-	 * @param rolesArray
-	 * @return
+	 * Return a list of resources that have more than one skosxl:prefLabel for the same language locale
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of resources that have more than one skosxl:prefLabel for the same language locale
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -874,9 +880,9 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <resources> that have a SKOS/SKOSXL label without any language tag 
-	 * @param rolesArray
-	 * @return
+	 * Return a list of resources that have a SKOS/SKOSXL label without any language tag 
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of resources that have a SKOS/SKOSXL label without any language tag 
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -919,9 +925,9 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <resources> with extra whitespace(s) in skos(xl):label(s) annotation properties
-	 * @param rolesArray
-	 * @return
+	 * Return a list of resources with extra whitespace(s) in skos(xl):label(s) annotation properties
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of resources with extra whitespace(s) in skos(xl):label(s) annotation properties
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -965,10 +971,11 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of different <resources> where each <resource> bolong to the same scheme as another <resource>
-	 * and these two <resoruces> have the same skos:prefLabel or skosxl:prefLabel/skosxl:literalForm
-	 * @param rolesArray
-	 * @return
+	 * Return a list of different resources where each resource belong to the same scheme as another resource
+	 * and these two resources have the same skos:prefLabel or skosxl:prefLabel/skosxl:literalForm
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of different resources where each resource belong to the same scheme as another resource
+	 * and these two resources have the same skos:prefLabel or skosxl:prefLabel/skosxl:literalForm
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -1018,9 +1025,9 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <resources> with overlapped lexicalization (resource with same label multiple times)
-	 * @param rolesArray
-	 * @return
+	 * Return a list of resources with overlapped lexicalization (resource with same label multiple times)
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of resources with overlapped lexicalization (resource with same label multiple times)
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -1064,10 +1071,10 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <resources> not having the property skos:definition for the given languages
-	 * @param rolesArray
-	 * @param languagesArray
-	 * @return
+	 * Return a list of resources not having the property skos:definition for the given languages
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @param languagesArray an array containing all languages in which to look for the definitions
+	 * @return a list of resources not having the property skos:definition for the given languages
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -1120,8 +1127,8 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <concepts> belong to  hierarchical cyclic
-	 * @return
+	 * Return a list of concepts belong to  hierarchical cyclic
+	 * @return a list of concepts belong to  hierarchical cyclic
 	 */
 	@STServiceOperation
 	@Read
@@ -1259,8 +1266,10 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	/**
-	 * Return a list of <triples> that are redundant from the hierarchical point of view
-	 * @return
+	 * Return a list of triples that are redundant from the hierarchical point of view
+	 * @param sameScheme true to look only on the same scheme (optional value, its default value is true), 
+	 * false otherwise
+	 * @return a list of triples that are redundant from the hierarchical point of view
 	 * @throws UnsupportedLexicalizationModelException 
 	 */
 	@STServiceOperation
@@ -1392,8 +1401,8 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Return a list of namespaces of alignments concepts with the number of alignments per namespace
-	 * @param rolesArray
-	 * @return
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of namespaces of alignments concepts with the number of alignments per namespace
 	 * @throws ProjectAccessException 
 	 */
 	@STServiceOperation
@@ -1572,10 +1581,10 @@ public class ICV extends STServiceAdapter {
 	}
 
 	/**
-	 * Return a list of <triples> of broken alignments
-	 * @param nsToLocationMap
-	 * @param rolesArray
-	 * @return
+	 * Return a list of triples of broken alignments
+	 * @param nsToLocationMap a map to link namespace to location
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @return a list of triples of broken alignments
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
@@ -1866,10 +1875,12 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <triples> of broken definitions 
-	 * @param nsToLocationMap
-	 * @param rolesArray
-	 * @return
+	 * Return a list of triples of broken definitions (definition that are not defined in the local repository nor 
+	 * can be resolved with a remote one using http dereferenciation )
+	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
+	 * @param property the subProperty of skos:note to consider
+	 * @return a list of triples of broken definitions (definition that are not defined in the local repository nor 
+	 * can be resolved with a remote one using http dereferenciation )
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
@@ -1916,8 +1927,8 @@ public class ICV extends STServiceAdapter {
 		//execute the query
 		Collection<AnnotatedValue<Resource>> annotatedValueList = qb.runQuery();
 		
-		//now iterate over the response of the SPARQL query to consctruct the structure which will contain the
-		// the triples wit the definition
+		//now iterate over the response of the SPARQL query to construct the structure which will contain the
+		// the triples with the definition
 		Map <String, TripleForAnnotatedValue> tripleForAnnotatedValueMap = new HashMap<>();
 		for(AnnotatedValue<Resource> annotatedValue : annotatedValueList) {
 			String subj = annotatedValue.getAttributes().get("subj").stringValue();
@@ -1943,7 +1954,7 @@ public class ICV extends STServiceAdapter {
 		}
 		
 		
-		//prepare the empty response, which will be fill everytime a broken alignment is found
+		//prepare the empty response, which will be fill every time a broken alignment is found
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode response = jsonFactory.arrayNode();
 		
@@ -2003,8 +2014,8 @@ public class ICV extends STServiceAdapter {
 	
 	
 	/**
-	 * Return a list of <resources> having an invalid URI according to complex regex 
-	 * @return
+	 * Return a list of resources having an invalid URI according to complex regex 
+	 * @return a list of resources having an invalid URI according to complex regex
 	 */
 	@STServiceOperation
 	@Read
@@ -2072,7 +2083,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Quick fix for dangling concepts. Set all dangling concepts as topConceptOf the given scheme
-	 * @param scheme
+	 * @param scheme the scheme to which all dangling concept will set as top concept of
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2103,8 +2114,8 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Quick fix for dangling concepts. Set the given broader for all dangling concepts in the given scheme 
-	 * @param scheme
-	 * @param broader
+	 * @param scheme the scheme to which all dangling concept will be associated to
+	 * @param broader the concept to which all dangling concept will be set as broader of
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2135,7 +2146,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Quick fix for dangling concepts. Removes all dangling concepts from the given scheme
-	 * @param scheme
+	 * @param scheme the scheme which will be removed from all dangling concept
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2165,7 +2176,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Quick fix for dangling concepts. Delete all the dangling concepts of the given scheme
-	 * @param scheme
+	 * @param scheme the scheme from which all dangling concept will be be deleted from the ontology  
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2207,7 +2218,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Quick fix for concepts in no scheme. Add all concepts without scheme to the given scheme
-	 * @param scheme
+	 * @param scheme the scheme to which all concepts having no scheme will be added to 
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2228,7 +2239,7 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Fix for topConcept with broader. Remove all the broader relation in the given scheme of the given concept.
-	 * @param concept
+	 * @param concept the concept which will be no longer the broader of the top concept of the given scheme
 	 * @param scheme
 	 * @return
 	 */
@@ -2342,9 +2353,9 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Fix for dangling xLabel. Links the dangling xLabel to the given concept through the given predicate 
-	 * @param concept
-	 * @param xlabelPred
-	 * @param xlabel
+	 * @param concept the concept which will be linked with the given xlabelPred to the input xlabel
+	 * @param xlabelPred the property which will be used to link the given concept to the input xlabel
+	 * @param xlabel the xlabel which will be linked to the given concept using the input xlabelPred
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
