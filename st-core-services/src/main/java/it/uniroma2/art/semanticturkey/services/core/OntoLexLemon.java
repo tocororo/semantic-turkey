@@ -1,12 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -18,8 +17,8 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -33,6 +32,7 @@ import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
+import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -42,15 +42,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
-import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
-import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
@@ -60,10 +52,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -96,7 +87,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(lexicon)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'C')")
 	public AnnotatedValue<IRI> createLexicon(@Optional @NotLocallyDefined IRI newLexicon, String language,
 			@Optional @LanguageTaggedString Literal title, @Optional CustomFormValue customFormValue)
 			throws ProjectInconsistentException, CODAException, CustomFormException, URIGenerationException {
@@ -147,7 +138,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(lexicon)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getLexicons() {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
@@ -170,12 +161,25 @@ public class OntoLexLemon extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	/**
+	 * Deletes a lexicon.
+	 * 
+	 * @param lexicon
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'D')")
+	public void deleteLexicon(@LocallyDefined IRI lexicon) {
+		throw new RuntimeException("To be implemented");
+	}
+
 	/* --- Lexical entries --- */
 
 	/**
 	 * Creates a new ontolex:LexicalEntry.
 	 * 
 	 * @param newLexicalEntry
+	 * @param lexicalEntryCls
 	 * @param canonicalForm
 	 * @param lexicon
 	 * @param customFormValue
@@ -187,7 +191,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(lexicalEntry)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'C')")
 	public AnnotatedValue<IRI> createLexicalEntry(@Optional @NotLocallyDefined IRI newLexicalEntry,
 			@Optional(defaultValue = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") @SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") IRI lexicalEntryCls,
 			@LanguageTaggedString Literal canonicalForm, @LocallyDefined @Modified IRI lexicon,
@@ -282,7 +286,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(lexicalEntry)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getLexicalEntriesByAlphabeticIndex(Character index,
 			IRI lexicon) {
 		QueryBuilder qb = createQueryBuilder(
@@ -313,6 +317,150 @@ public class OntoLexLemon extends STServiceAdapter {
 		qb.processQName();
 		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
+	}
+
+	/**
+	 * Sets the canonical form of a given lexical entry.
+	 * 
+	 * @param lexicalEntry
+	 * @param newForm
+	 * @param writtenRep
+	 * @param customFormValue
+	 * @throws URIGenerationException
+	 * @throws ProjectInconsistentException
+	 * @throws CODAException
+	 * @throws CustomFormException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'U')")
+	public void setCanonicalForm(@Modified @LocallyDefined IRI lexicalEntry,
+			@Optional @NotLocallyDefined IRI newForm, @LanguageTaggedString Literal writtenRep,
+			@Optional CustomFormValue customFormValue)
+			throws URIGenerationException, ProjectInconsistentException, CODAException, CustomFormException {
+		addFormInternal(newForm, writtenRep, lexicalEntry, customFormValue, ONTOLEX.CANONICAL_FORM, true);
+	}
+
+	/**
+	 * Adds an other form of a given lexical entry.
+	 * 
+	 * @param lexicalEntry
+	 * @param newForm
+	 * @param writtenRep
+	 * @param customFormValue
+	 * @throws URIGenerationException
+	 * @throws ProjectInconsistentException
+	 * @throws CODAException
+	 * @throws CustomFormException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'U')")
+	public void addOtherForm(@Modified @LocallyDefined IRI lexicalEntry,
+			@Optional @NotLocallyDefined IRI newForm, @LanguageTaggedString Literal writtenRep,
+			@Optional CustomFormValue customFormValue)
+			throws URIGenerationException, ProjectInconsistentException, CODAException, CustomFormException {
+		addFormInternal(newForm, writtenRep, lexicalEntry, customFormValue, ONTOLEX.OTHER_FORM, false);
+	}
+
+	// Annotations are not interpreted on non-service methods. Left for documentation purpose.
+	protected void addFormInternal(@Optional @NotLocallyDefined IRI newForm,
+			@LanguageTaggedString Literal writtenRep, @LocallyDefined IRI lexicalEntry,
+			@Optional CustomFormValue customFormValue, IRI property, boolean replaces)
+			throws URIGenerationException, ProjectInconsistentException, CODAException, CustomFormException {
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		IRI newFormIRI;
+
+		if (newForm == null) {
+			newFormIRI = generateFormIRI(lexicalEntry, writtenRep, property);
+		} else {
+			newFormIRI = newForm;
+		}
+
+		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newFormIRI,
+				RDFResourceRole.ontolexForm); // set created for versioning
+
+		modelAdditions.add(newFormIRI, RDF.TYPE, ONTOLEX.FORM);
+		modelAdditions.add(newFormIRI, ONTOLEX.WRITTEN_REP, writtenRep);
+
+		modelAdditions.add(lexicalEntry, property, newFormIRI);
+
+		VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+				RDFResourceRole.ontolexLexicalEntry);
+
+		RepositoryConnection repoConnection = getManagedConnection();
+
+		if (replaces) {
+			Model previousFormStatements = QueryResults
+					.asModel(repoConnection.getStatements(lexicalEntry, property, null, getWorkingGraph()));
+
+			modelRemovals.addAll(previousFormStatements);
+
+			Set<Resource> deletedForms = previousFormStatements.objects().stream()
+					.filter(Resource.class::isInstance).map(Resource.class::cast).collect(toSet());
+
+			deletedForms.stream().filter(Resource.class::isInstance).map(form -> {
+				Model removedStatements = new LinkedHashModel();
+				removedStatements.addAll(QueryResults.asModel(
+						repoConnection.getStatements((Resource) form, null, null, false, getWorkingGraph())));
+				removedStatements.addAll(QueryResults.asModel(
+						repoConnection.getStatements(null, null, (Resource) form, false, getWorkingGraph())));
+
+				return removedStatements;
+			}).forEach(modelRemovals::addAll);
+		}
+
+		// enrich with custom form
+		if (customFormValue != null) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, newFormIRI.stringValue());
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
+					customFormValue.getUserPromptMap(), stdForm);
+		}
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+
+	/**
+	 * Removes a form of a lexical entry, and deletes it.
+	 * 
+	 * @param lexicalEntry
+	 * @param property
+	 * @param form
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'U')")
+	public void removeForm(@LocallyDefined @Modified Resource lexicalEntry,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#lexicalForm") IRI property,
+			@LocallyDefined Resource form) {
+		RepositoryConnection repConn = getManagedConnection();
+
+		if (!repConn.hasStatement(lexicalEntry, property, form, false, getWorkingGraph())) {
+			throw new IllegalArgumentException("Not a form of the indicated lexical entry");
+		}
+
+		// Removes ingoing links
+		repConn.remove((Resource) null, null, form, getWorkingGraph());
+
+		// Removes outgoing links
+		repConn.remove(form, null, null, getWorkingGraph());
+	}
+
+	/**
+	 * Deletes a lexical entry.
+	 * 
+	 * @param lexicalEntry
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'D')")
+	public void deleteLexicalEntry(@LocallyDefined IRI lexicalEntry) {
+		throw new RuntimeException("To be implemented");
 	}
 
 	/**
@@ -396,64 +544,6 @@ public class OntoLexLemon extends STServiceAdapter {
 			args.put(URIGenerator.Parameters.formProperty, formProperty);
 		}
 		return generateIRI(URIGenerator.Roles.ontolexForm, args);
-	}
-
-}
-
-class LexiconRenderer extends BaseRenderingEngine {
-
-	private static AbstractLabelBasedRenderingEngineConfiguration conf;
-
-	static {
-		conf = new AbstractLabelBasedRenderingEngineConfiguration() {
-
-			@Override
-			public String getShortName() {
-				return "foo";
-			}
-
-		};
-	}
-
-	private LexiconRenderer() {
-		super(conf);
-	}
-
-	public static final LexiconRenderer INSTANCE = new LexiconRenderer();
-
-	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
-		gp.append(
-				"?resource <http://purl.org/dc/terms/title> ?labelInternal .\n");
-	}
-
-}
-class LexicalEntryRenderer extends BaseRenderingEngine {
-
-	private static AbstractLabelBasedRenderingEngineConfiguration conf;
-
-	static {
-		conf = new AbstractLabelBasedRenderingEngineConfiguration() {
-
-			@Override
-			public String getShortName() {
-				return "foo";
-			}
-
-		};
-		conf.languages = null;
-	}
-
-	private LexicalEntryRenderer() {
-		super(conf);
-	}
-
-	public static final LexicalEntryRenderer INSTANCE = new LexicalEntryRenderer();
-
-	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
-		gp.append(
-				"?resource <http://www.w3.org/ns/lemon/ontolex#canonicalForm> [<http://www.w3.org/ns/lemon/ontolex#writtenRep> ?labelInternal ] .\n");
 	}
 
 }

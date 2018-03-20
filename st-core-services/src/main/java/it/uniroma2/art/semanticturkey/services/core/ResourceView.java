@@ -102,6 +102,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
@@ -187,7 +190,7 @@ public class ResourceView extends STServiceAdapter {
 					java.util.Optional.ofNullable(annotatedResource.getAttributes().get("nature"))
 							.map(Value::stringValue).orElse(""));
 
-			AbstractStatementConsumer.addShowOrRenderXLabelOrCRE(annotatedResource, resource2attributes,
+			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedResource, resource2attributes,
 					predicate2resourceCreShow, null, retrievedStatements);
 			AbstractStatementConsumer.addQName(annotatedResource, resource2attributes);
 			description.put("resource", new ResourceSection(annotatedResource));
@@ -456,6 +459,9 @@ public class ResourceView extends STServiceAdapter {
 			qb.processRendering();
 			qb.processQName();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
+			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
+			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexLexicalEntryRendering");
+			qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_limeLexiconRendering");
 			qb.setBinding("subjectResource", resource);
 			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
 													// nature to inferred objects

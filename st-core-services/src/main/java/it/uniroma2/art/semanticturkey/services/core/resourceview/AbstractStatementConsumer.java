@@ -126,7 +126,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 
 	}
 
-	public static void addShowOrRenderXLabelOrCRE(AnnotatedValue<? extends Resource> annotatedResource,
+	public static void addShowViaDedicatedOrGenericRendering(
+			AnnotatedValue<? extends Resource> annotatedResource,
 			Map<Resource, Map<String, Value>> resource2attributes,
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, IRI predicate, Model statements) {
 		Resource resource = annotatedResource.getValue();
@@ -134,24 +135,44 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 		Map<String, Value> resourceAttributes = resource2attributes.get(resource);
 
 		if (resourceAttributes != null) {
-			Value literalForm = resourceAttributes.get("literalForm");
-			if (literalForm != null) {
-				Literal literalFormAsLiteral = (Literal) literalForm;
-				annotatedResource.setAttribute("show", literalFormAsLiteral.getLabel());
-				literalFormAsLiteral.getLanguage().ifPresent(v -> annotatedResource.setAttribute("lang", v));
+			Value lexicalEntryRendering = resourceAttributes.get("ontolexLexicalEntryRendering");
+
+			if (lexicalEntryRendering != null) {
+				annotatedResource.setAttribute("show", lexicalEntryRendering.stringValue());
 				return;
 			} else {
-				if (predicate != null) {
-					Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow
-							.getOrDefault(predicate, Collections.emptyMap());
-					Literal creShow = resource2CreShow.get(resource);
-
-					if (creShow != null) {
-						Literal creShowAsLiteral = (Literal) creShow;
-						annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
-						creShowAsLiteral.getLanguage()
-								.ifPresent(v -> annotatedResource.setAttribute("lang", v));
+				Value lexiconRendering = resourceAttributes.get("limeLexiconRendering");
+				if (lexiconRendering != null) {
+					annotatedResource.setAttribute("show", lexiconRendering.stringValue());
+					return;
+				} else {
+					Value formRendering = resourceAttributes.get("ontolexFormRendering");
+					if (formRendering != null) {
+						annotatedResource.setAttribute("show", formRendering.stringValue());
 						return;
+					} else {
+						Value literalForm = resourceAttributes.get("literalForm");
+						if (literalForm != null) {
+							Literal literalFormAsLiteral = (Literal) literalForm;
+							annotatedResource.setAttribute("show", literalFormAsLiteral.getLabel());
+							literalFormAsLiteral.getLanguage()
+									.ifPresent(v -> annotatedResource.setAttribute("lang", v));
+							return;
+						} else {
+							if (predicate != null) {
+								Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow
+										.getOrDefault(predicate, Collections.emptyMap());
+								Literal creShow = resource2CreShow.get(resource);
+
+								if (creShow != null) {
+									Literal creShowAsLiteral = (Literal) creShow;
+									annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
+									creShowAsLiteral.getLanguage()
+											.ifPresent(v -> annotatedResource.setAttribute("lang", v));
+									return;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -168,26 +189,26 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	public static <T extends Resource> void addNature(AnnotatedValue<T> annotatedResource,
 			Map<Resource, Map<String, Value>> resource2attributes) {
 		Map<String, Value> attr2values = resource2attributes.get(annotatedResource.getValue());
-		
+
 		if (attr2values != null) {
 			Value nature = attr2values.get("nature");
 			if (nature != null) {
 				annotatedResource.setAttribute("nature", nature);
 			}
-			
+
 		}
 	}
-	
+
 	public static <T extends Resource> void addQName(AnnotatedValue<T> annotatedResource,
 			Map<Resource, Map<String, Value>> resource2attributes) {
 		Map<String, Value> attr2values = resource2attributes.get(annotatedResource.getValue());
-		
+
 		if (attr2values != null) {
 			Value qname = attr2values.get("qname");
 			if (qname != null) {
 				annotatedResource.setAttribute("qname", qname);
 			}
-			
+
 		}
 	}
 

@@ -84,14 +84,20 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	private AbstractLabelBasedRenderingEngineConfiguration config;
 	protected String languages;
+	protected boolean fallbackToTerm;
 
 	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config) {
+		this(config, true);
+	}
+	
+	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config, boolean fallbackToTerm) {
 		this.config = config;
 		this.languages = config.languages;
 
 		if (this.languages == null) {
 			this.languages = "*";
 		}
+		this.fallbackToTerm = fallbackToTerm;
 	}
 
 	private static final Pattern propPattern = Pattern
@@ -191,6 +197,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			Literal rawLabelLiteral = ((Literal) bindingSet.getValue("label"));
 			String show;
 			if (rawLabelLiteral == null || rawLabelLiteral.getLabel().isEmpty()) {
+				
+				if (!fallbackToTerm) return;
+				
 				show = resource.toString();
 				if (resource instanceof IRI) {
 					IRI resourceIRI = (IRI) resource;
