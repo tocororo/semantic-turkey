@@ -136,7 +136,7 @@ public class Search extends STServiceAdapter {
 			@Optional List<IRI> schemesIRI, 
 			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root,
 			@Optional @LocallyDefined IRI broaderProp, @Optional @LocallyDefined IRI narrowerProp,
-			@Optional(defaultValue="true") boolean useSubProperties) 
+			@Optional(defaultValue="true") boolean includeSubProperties) 
 					throws InvalidParameterException {
 
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
@@ -149,7 +149,7 @@ public class Search extends STServiceAdapter {
 
 		String broaderNarrowerPath = it.uniroma2.art.semanticturkey.services.core.SKOS
 				.preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, 
-				getManagedConnection(), useSubProperties);
+				getManagedConnection(), includeSubProperties);
 		
 		String query = null;
 		String superResourceVar = null, superSuperResourceVar = null;
@@ -166,7 +166,7 @@ public class Search extends STServiceAdapter {
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 					.combinePathWithVarOrIri(resourceURI, "?broader", broaderNarrowerPath, true);
 					//.preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp,
-					//		resourceURI, "?broader", getManagedConnection(), true, useSubProperties);
+					//		resourceURI, "?broader", getManagedConnection(), true, includeSubProperties);
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
@@ -194,7 +194,7 @@ public class Search extends STServiceAdapter {
 						"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 						.combinePathWithVarOrIri(resourceURI, "?broader", broaderNarrowerPath, false)+
 							//.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, "?broader", 
-							//	"?broaderOfBroader", false, useSubProperties) +
+							//	"?broaderOfBroader", false, includeSubProperties) +
 						"\n}" +
 						"\n}";
 			}
@@ -203,7 +203,7 @@ public class Search extends STServiceAdapter {
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 					.combinePathWithVarOrIri("?broader", "?broaderOfBroader", broaderNarrowerPath, false);
 					//	.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, "?broader", 
-					//		"?broaderOfBroader", false, useSubProperties);
+					//		"?broaderOfBroader", false, includeSubProperties);
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
@@ -245,7 +245,7 @@ public class Search extends STServiceAdapter {
 						it.uniroma2.art.semanticturkey.services.core.SKOS
 						.combinePathWithVarOrIri(resourceURI, "?genericConcept", broaderNarrowerPath, false)+"\n" +
 						//	.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, resourceURI, 
-						//		"?genericConcept", false, useSubProperties) +
+						//		"?genericConcept", false, includeSubProperties) +
 						"\n}" +
 						"\nFILTER (NOT EXISTS{ <"+resourceURI.stringValue()+"> "
 								+ "(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+"> ) ?genericScheme})" +

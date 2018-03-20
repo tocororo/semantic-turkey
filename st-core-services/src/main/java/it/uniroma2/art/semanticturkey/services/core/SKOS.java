@@ -95,7 +95,7 @@ public class SKOS extends STServiceAdapter {
 	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
 	 * @param narrowerProp an optional property used as narrower. if skos:broader is passed as broaderProp 
 	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
-	 * @param useSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
+	 * @param includeSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
 	 * used in the concept hierarchy
 	 * @return
 	 */
@@ -104,7 +104,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes,
 			@Optional @LocallyDefined IRI broaderProp , @Optional @LocallyDefined IRI narrowerProp,
-			@Optional(defaultValue="true") boolean useSubProperties) {
+			@Optional(defaultValue="true") boolean includeSubProperties) {
 		QueryBuilder qb;
 		
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -113,7 +113,7 @@ public class SKOS extends STServiceAdapter {
 		narrowerProp = getInverseOfHierachicalProp(broaderProp , narrowerProp);
 		
 		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, 
-				getManagedConnection(), useSubProperties);
+				getManagedConnection(), includeSubProperties);
 		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -143,12 +143,12 @@ public class SKOS extends STServiceAdapter {
 			}		
 			query += ") 																				 \n" +
 					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					//		"?resource", false, useSubProperties) +
+					//		"?resource", false, includeSubProperties) +
 					"     \nOPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {															 \n" +
 					//"					?aNarrowerConcept skos:broader|^skos:narrower ?resource .    	 \n" + OLD
 					//prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					//		"?resource", false, useSubProperties) +										"\n" +
+					//		"?resource", false, includeSubProperties) +										"\n" +
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
 					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
 					"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
@@ -183,21 +183,21 @@ public class SKOS extends STServiceAdapter {
 					
 					" FILTER NOT EXISTS { 																 \n"+
 					//preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
-					//		"?aNarrowerConcept", getManagedConnection(), false, useSubProperties) +		 "\n" +	
+					//		"?aNarrowerConcept", getManagedConnection(), false, includeSubProperties) +		 "\n" +	
 					combinePathWithVarOrIri("?resource", "?aNarrowerConcept", broaderNarrowerPath, false)+"\n" +
 					"}																					  \n" +
 					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?resource", 
-					//		"?aNarrowerConcept", false, useSubProperties) +
+					//		"?aNarrowerConcept", false, includeSubProperties) +
 					/*"\nFILTER NOT EXISTS {																 \n" +
 					prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?resource", 
-							"?aNarrowerConcept", false, useSubProperties) +
+							"?aNarrowerConcept", false, includeSubProperties) +
 					"\n}																				 \n" +*/
 					
 					"     OPTIONAL {                                                                     \n" +
 					"         BIND( EXISTS {															 \n" +
 						//"?aNarrowerConcept skos:broader|^skos:narrower ?resource . 					 \n" + OLD
 					//prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?aNarrowerConcept2", 
-					//			"?resource", false, useSubProperties) +
+					//			"?resource", false, includeSubProperties) +
 					combinePathWithVarOrIri("?aNarrowerConcept2", "?resource", broaderNarrowerPath, false)+"\n" +
 						"} as ?attr_more ) \n" +
 					"     }                                                                              \n" +
@@ -225,7 +225,7 @@ public class SKOS extends STServiceAdapter {
 	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
 	 * @param narrowerProp an optional property used as narrower. If skos:broader is passed as broaderProp 
 	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
-	 * @param useSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
+	 * @param includeSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
 	 * used in the concept hierarchy
 	 * @return
 	 */
@@ -234,7 +234,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
 			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI broaderProp ,
-			@Optional @LocallyDefined IRI narrowerProp, @Optional(defaultValue="true") boolean useSubProperties) {
+			@Optional @LocallyDefined IRI narrowerProp, @Optional(defaultValue="true") boolean includeSubProperties) {
 		QueryBuilder qb;
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -243,7 +243,7 @@ public class SKOS extends STServiceAdapter {
 		narrowerProp = getInverseOfHierachicalProp(broaderProp , narrowerProp);
 		
 		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, 
-				getManagedConnection(), useSubProperties);
+				getManagedConnection(), includeSubProperties);
 		// @formatter:off
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -261,7 +261,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
-					//		(IRI)concept, false, useSubProperties) +
+					//		(IRI)concept, false, includeSubProperties) +
 					combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+"\n" +
 					"\n     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                         \n" +
 					"     ?resource ?subPropInScheme ?scheme .                                           \n" +
@@ -279,7 +279,7 @@ public class SKOS extends STServiceAdapter {
 					"         BIND( EXISTS {															 \n" +
 					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					//		"?resource", true, useSubProperties) + 										 "\n"+
+					//		"?resource", true, includeSubProperties) + 										 "\n"+
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
 					"         			?subPropInScheme2 rdfs:subPropertyOf* skos:inScheme .         	 \n" +
 					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme . } as ?attr_more )   \n" +
@@ -311,9 +311,9 @@ public class SKOS extends STServiceAdapter {
 					
 					
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
-					//		"?concept", false, useSubProperties) +
+					//		"?concept", false, includeSubProperties) +
 					//preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
-					//		(IRI)concept, getManagedConnection(), false, useSubProperties) +	 	    "\n" +
+					//		(IRI)concept, getManagedConnection(), false, includeSubProperties) +	 	    "\n" +
 					combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+		"\n" +
 					
 					"     OPTIONAL {                                                                     \n" +
@@ -321,7 +321,7 @@ public class SKOS extends STServiceAdapter {
 					"         BIND( EXISTS {															 \n" +
 					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					//		"?resource", false, useSubProperties) + " } as ?attr_more )					 \n" +
+					//		"?resource", false, includeSubProperties) + " } as ?attr_more )					 \n" +
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
 					" } as ?attr_more ) 																 \n" +
 					"     }                                                                              \n" +
@@ -349,7 +349,7 @@ public class SKOS extends STServiceAdapter {
 	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
 	 * @param narrowerProp an optional property used as narrower. If skos:broader is passed as broaderProp 
 	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
-	 * @param useSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
+	 * @param includeSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
 	 * used in the concept hierarchy
 	 * @return
 	 */
@@ -359,7 +359,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getBroaderConcepts(@LocallyDefined Resource concept,
 			@Optional @LocallyDefinedResources List<IRI> schemes, @Optional @LocallyDefined IRI broaderProp ,
-			@Optional @LocallyDefined IRI narrowerProp, @Optional(defaultValue="true") boolean useSubProperties) {
+			@Optional @LocallyDefined IRI narrowerProp, @Optional(defaultValue="true") boolean includeSubProperties) {
 		QueryBuilder qb;
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -368,7 +368,7 @@ public class SKOS extends STServiceAdapter {
 		narrowerProp = getInverseOfHierachicalProp(broaderProp , narrowerProp);
 		
 		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, 
-				getManagedConnection(), useSubProperties);
+				getManagedConnection(), includeSubProperties);
 		
 		// @formatter:off
 		if (schemes != null && !schemes.isEmpty()) {
@@ -385,7 +385,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?concept", 
-					//		"?resource", false, useSubProperties) +
+					//		"?resource", false, includeSubProperties) +
 					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+		"\n" +
 					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
 					"     ?resource ?subPropInScheme ?scheme .                                           \n" +
@@ -418,7 +418,7 @@ public class SKOS extends STServiceAdapter {
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?", 
-					//		"?resource", false, useSubProperties) +
+					//		"?resource", false, includeSubProperties) +
 					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+		"\n" +
 					generateNatureSPARQLWherePart("?resource") +
 					" }                                                                                  \n" +
@@ -2152,12 +2152,12 @@ public class SKOS extends STServiceAdapter {
 	
 	
 	public static String preparePropPathForHierarchicalForQuery(IRI broaderProp , IRI inverseHierachicalProp, 
-			RepositoryConnection repoConnection, boolean useSubProperties) {
+			RepositoryConnection repoConnection, boolean includeSubProperties) {
 		
 		List<IRI> subPropList = new ArrayList<>();
 		List<IRI> inverseSubPropList = new ArrayList<>();
 		
-		if(useSubProperties) {
+		if(includeSubProperties) {
 			// @formatter:off
 			String query = "SELECT ?subProp ?subInverseProp"
 					+ "\nWHERE{";
