@@ -24,12 +24,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -38,7 +34,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 @STService
@@ -50,13 +45,13 @@ public class Search extends STServiceAdapter {
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
 
-	protected SearchStrategy instantiateSearchStrategy() {
+	/*protected SearchStrategy instantiateSearchStrategy() {
 		SearchStrategies searchStrategy = STRepositoryInfoUtils
 				.getSearchStrategy(getProject().getRepositoryManager()
 						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
 
 		return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy);
-	}
+	}*/
 
 	@STServiceOperation
 	@Write

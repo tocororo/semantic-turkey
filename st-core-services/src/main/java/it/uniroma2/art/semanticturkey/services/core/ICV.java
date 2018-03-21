@@ -81,6 +81,7 @@ public class ICV extends STServiceAdapter {
 	
 	//-----ICV ON CONCEPTS STRUCTURE-----
 	
+	//ST-87
 	/**
 	 * Returns a list of concepts, where each concept is a dangling concept in the given
 	 * scheme
@@ -609,6 +610,7 @@ public class ICV extends STServiceAdapter {
 //		return response;
 //	}
 	
+	//ST-264
 	/**
 	 * Returns a list of dangling labels, namely the labels not linked with any concept
 	 * @return a list of dangling labels, namely the labels not linked with any concept
@@ -639,6 +641,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	
+	//ST-101 FR-O-112
 	/**
 	 * Return a list of resources with skos:altLabel(s) (or skosxl:altLabel) but not a corresponding 
 	 * skos:prefLabel (or skos:prefLabel) for the same language locale. 
@@ -693,6 +696,8 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	
+	//ST-834
 	/**
 	 * Return a list of resources with no lexicalization (rdfs:label, skos:prefLabel or skosxl:prefLabel)
 	 *  in one or more input languages
@@ -832,6 +837,8 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	
+	//ST-735 FR-O-114
 	/**
 	 * Return a list of resources that have more than one skosxl:prefLabel for the same language locale
 	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
@@ -879,6 +886,8 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	
+	//ST-739 FR-New-ICV.1
 	/**
 	 * Return a list of resources that have a SKOS/SKOSXL label without any language tag 
 	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
@@ -1265,6 +1274,7 @@ public class ICV extends STServiceAdapter {
 		return true;
 	}
 	
+	//ST-194
 	/**
 	 * Return a list of triples that are redundant from the hierarchical point of view
 	 * @param sameScheme true to look only on the same scheme (optional value, its default value is true), 
@@ -1399,6 +1409,8 @@ public class ICV extends STServiceAdapter {
 		}
 	}
 	
+	
+	//ST-776 FR-O-98
 	/**
 	 * Return a list of namespaces of alignments concepts with the number of alignments per namespace
 	 * @param rolesArray an array containing all the roles to which the desired resource should belong to
@@ -1580,6 +1592,7 @@ public class ICV extends STServiceAdapter {
 		return query;
 	}
 
+	//ST-776 FR-O-98
 	/**
 	 * Return a list of triples of broken alignments
 	 * @param nsToLocationMap a map to link namespace to location
@@ -2013,6 +2026,7 @@ public class ICV extends STServiceAdapter {
 	}
 	
 	
+	//ST-779 FR-New-ICVS.1
 	/**
 	 * Return a list of resources having an invalid URI according to complex regex 
 	 * @return a list of resources having an invalid URI according to complex regex

@@ -49,8 +49,12 @@ import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.servlet.Response;
@@ -371,6 +375,14 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		} else {
 			return RDFResourceRole.valueOf(roleRaw);
 		}
+	}
+	
+	protected SearchStrategy instantiateSearchStrategy() {
+		SearchStrategies searchStrategy = STRepositoryInfoUtils
+				.getSearchStrategy(getProject().getRepositoryManager()
+						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
+
+		return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy);
 	}
 
 }

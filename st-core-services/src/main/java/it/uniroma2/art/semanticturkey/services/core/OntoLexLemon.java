@@ -43,6 +43,7 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
@@ -306,7 +307,9 @@ public class OntoLexLemon extends STServiceAdapter {
 			"       ontolex:writtenRep ?cf                                                      \n" +
 			"     ]                                                                             \n" +
 			"     .                                                                             \n" +
-			"     FILTER(REGEX(STR(?cf), \"^" + index + "\", \"i\"))                            \n" +
+			//"     FILTER(REGEX(STR(?cf), \"^" + index + "\", \"i\"))                            \n" +
+			instantiateSearchStrategy().searchSpecificModePrepareQuery("?cf", index+"", SearchMode.startsWith, 
+					null, null, false) +
 			"   }                                                                               \n" +
 			generateNatureSPARQLWherePart("?resource") +
 			" }                                                                                 \n" +

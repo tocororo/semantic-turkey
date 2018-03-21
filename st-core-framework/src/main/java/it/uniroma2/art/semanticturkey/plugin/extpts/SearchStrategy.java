@@ -20,7 +20,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
  * Common interface abstracting different search mechanisms.
  */
 public interface SearchStrategy {
-
+	
 	/**
 	 * Performs initialization steps, such as the creation of indexes. It may be a no-op method, if no
 	 * specific initialization is required.
@@ -52,4 +52,7 @@ public interface SearchStrategy {
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Nullable List<String> langs, boolean includeLocales) throws IllegalStateException, 
 			STPropertyAccessException;
+	
+	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
+			String indexToUse, List<String> langs, boolean includeLocales);
 }
