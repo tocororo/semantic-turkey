@@ -31,8 +31,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	// private final static String INDEX_NAME="vocbenchIndex";
 	final static private String LUCENEIMPORT = "http://www.ontotext.com/owlim/lucene#";
 	//final static private String LUCENEINDEX = "http://www.ontotext.com/owlim/lucene#vocbench";
-	final static private String LUCENEINDEXLITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
-	final static private String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
+	final static public String LUCENEINDEXLITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
+	final static public String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
 
 	@Override
 	public void initialize(RepositoryConnection connection) throws Exception {
@@ -188,7 +188,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
-					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
+					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
 							LUCENEINDEXLOCALNAME, null, false)+
 					"\n}"+
 					"\nUNION";
@@ -201,7 +201,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
+		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
 				includeLocales);
 		
 		//search in the rdfs:label
@@ -336,7 +336,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
-					searchModePrepareQueryWithIndexes("?resource", searchString, searchMode,
+					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
 							LUCENEINDEXLOCALNAME, null, false)+
 					"\n}"+
 					"\nUNION";
@@ -358,7 +358,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchModePrepareQueryWithIndexes("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
+		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
 				includeLocales);
 		
 		
@@ -391,9 +391,14 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	}
 	
 	
-	private String searchModePrepareQueryWithIndexes(String variable, String value, SearchMode searchMode, 
+	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
 			String indexToUse, List<String> langs, boolean includeLocales){
 		String query ="";
+		
+		if(indexToUse==null || indexToUse.length()==0) {
+			//if no lucene index is specified, then assume it is the Index_Literal
+			indexToUse = LUCENEINDEXLITERAL;
+		}
 		
 		if(searchMode == SearchMode.startsWith){
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
