@@ -35,12 +35,10 @@ import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -74,7 +72,6 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-import it.uniroma2.art.semanticturkey.utilities.OptionalUtils;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
@@ -87,7 +84,6 @@ public class MetadataRegistryBackend {
 	private static final RDFFormat CATALOG_FORMAT = RDFFormat.TURTLE;
 
 	public static final String DEFAULTNS = "http://semanticturkey.uniroma2.it/metadataregistry/";
-	private static final String XROLE_CATALOG = "catalog";
 
 	private File registryDirectory;
 	private File catalogFile;
@@ -211,7 +207,7 @@ public class MetadataRegistryBackend {
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
 	 */
-	public IRI addDataset(@Nullable IRI dataset, String uriSpace, @Nullable String title,
+	public synchronized IRI addDataset(@Nullable IRI dataset, String uriSpace, @Nullable String title,
 			@Nullable Boolean dereferenceable, @Nullable IRI sparqlEndpoint)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
@@ -296,7 +292,7 @@ public class MetadataRegistryBackend {
 	 * @throws IllegalArgumentException
 	 * @throws IOException
 	 */
-	public void addDatasetVersion(IRI catalogRecord, @Nullable IRI dataset, String versionInfo)
+	public synchronized void addDatasetVersion(IRI catalogRecord, @Nullable IRI dataset, String versionInfo)
 			throws IllegalArgumentException, IOException {
 		try (RepositoryConnection conn = getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
@@ -366,7 +362,7 @@ public class MetadataRegistryBackend {
 	 * @throws IllegalArgumentException
 	 * @throws IOException
 	 */
-	public void setDereferenciability(IRI dataset, @Nullable Boolean value)
+	public synchronized void setDereferenciability(IRI dataset, @Nullable Boolean value)
 			throws IllegalArgumentException, IOException {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
@@ -413,7 +409,7 @@ public class MetadataRegistryBackend {
 	 * @throws IllegalArgumentException
 	 * @throws IOException
 	 */
-	public void setSPARQLEndpoint(IRI dataset, @Nullable IRI endpoint)
+	public synchronized void setSPARQLEndpoint(IRI dataset, @Nullable IRI endpoint)
 			throws IllegalArgumentException, IOException {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
@@ -449,7 +445,7 @@ public class MetadataRegistryBackend {
 		}
 	}
 
-	public Collection<CatalogRecord> getCatalogRecords() {
+	public synchronized Collection<CatalogRecord> getCatalogRecords() {
 		try (RepositoryConnection conn = getConnection()) {
 			TupleQuery query = conn.prepareTupleQuery(
 			// @formatter:off
@@ -525,8 +521,6 @@ public class MetadataRegistryBackend {
 								.toGregorianCalendar());
 					}
 
-					IRI dataset = (IRI) bs.getValue("dataset");
-
 					Value datasetRole = bs.getValue("datasetRole");
 
 					boolean primary;
@@ -537,33 +531,16 @@ public class MetadataRegistryBackend {
 						primary = false;
 					}
 
-					@Nullable
-					String uriSpace = Optional.ofNullable(bs.getValue("datasetUriSpace"))
-							.map(Value::stringValue).orElse(null);
-					@Nullable
-					String title = Optional.ofNullable(bs.getValue("datasetTitle")).map(Value::stringValue)
-							.orElse(null);
-					@Nullable
-					IRI dereferenciationSystem = Optional
-							.ofNullable(bs.getValue("datasetDereferenciationSystem")).map(IRI.class::cast)
-							.orElse(null);
-					@Nullable
-					IRI sparqlEndpoint = Optional.ofNullable(bs.getValue("datasetSPARQLEndpoint"))
-							.map(IRI.class::cast).orElse(null);
-					@Nullable
-					String versionInfo = Optional.ofNullable(bs.getValue("datasetVersionInfo"))
-							.map(Value::stringValue).orElse(null);
-
-					DatasetMetadata datasetMetadata = new DatasetMetadata(uriSpace, title,
-							dereferenciationSystem, sparqlEndpoint, versionInfo);
+					DatasetMetadata datasetMetadata = bindingset2datasetmetadata(bs);
 
 					if (primary) {
-						if (uriSpace == null || versionInfo != null) {
+						if (!datasetMetadata.getUriSpace().isPresent()
+								|| datasetMetadata.getVersionInfo().isPresent()) {
 							continue;
 						}
 						record2primary.put(record, datasetMetadata);
 					} else {
-						if (versionInfo == null) {
+						if (!datasetMetadata.getVersionInfo().isPresent()) {
 							continue;
 						}
 						record2version.put(record, datasetMetadata);
@@ -594,41 +571,101 @@ public class MetadataRegistryBackend {
 		// -------------------------------------------------------------------------------------------
 		// The following resolution strategy might be subject to ambiguity in some rare circumstances
 
-		DatasetMetadata datasetMetadata;
+		try (RepositoryConnection conn = getConnection()) {
+			ValueFactory vf = conn.getValueFactory();
 
-		// -----------------------------------------
-		// Case 1: The provided URI is the base URI
+			TupleQuery query = conn.prepareTupleQuery(
+			// @formatter:off
+					" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                           \n" +
+					" PREFIX dcterms: <http://purl.org/dc/terms/>                                         \n" +
+					" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                           \n" +
+					" PREFIX void: <http://rdfs.org/ns/void#>                                             \n" +
+					" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                         \n" +
+	                "                                                                                     \n" +
+					" SELECT * {                                                                          \n" +
+					"   ?dataset void:uriSpace ?datasetUriSpace.                                          \n" +
+					"   OPTIONAL {                                                                        \n" +
+					" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
+					"   }                                                                                 \n" +
+					"   OPTIONAL {                                                                        \n" +
+					" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n" +
+					"   }                                                                                 \n" +
+					"   OPTIONAL {                                                                        \n" +
+					" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                             \n" +
+					"   }                                                                                 \n" +
+					"   OPTIONAL {                                                                        \n" +
+					" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n" +
+					"   }                                                                                 \n" +
+					"                                                                                     \n" +
+					" }                                                                                   \n" +
+					" LIMIT 1                                                                             \n"
+					// @formatter:on
+			);
+			query.setIncludeInferred(false);
 
-		// datasetMetadata = base2meta.get(iriResource.stringValue());
-		//
-		// if (datasetMetadata != null) {
-		// return datasetMetadata;
-		// }
-		//
-		// // ------------------------------------------
-		// // Case 2: The namespace is the base URI
-		// // e.g., [http://example.org/]Person
-		//
-		// String namespace = iriResource.getNamespace();
-		//
-		// datasetMetadata = base2meta.get(namespace);
-		//
-		// if (datasetMetadata != null) {
-		// return datasetMetadata;
-		// }
-		//
-		// // --------------------------------------------
-		// // Case 2: The namespace is the base URI + "#"
-		// // e.g., [http://example.org]#Person
-		//
-		// if (namespace.endsWith("#")) {
-		// datasetMetadata = base2meta.get(namespace.substring(0, namespace.length() - 1));
-		// return datasetMetadata;
-		// } else {
-		// return null;
-		// }
+			// -----------------------------------------
+			// Case 1: The provided URI is the base URI
+
+			query.setBinding("dataset", vf.createLiteral(iriResource.stringValue()));
+			BindingSet bs = QueryResults.singleResult(query.evaluate());
+
+			if (bs != null) {
+				return bindingset2datasetmetadata(bs);
+			}
+
+			// ------------------------------------------
+			// Case 2: The namespace is the base URI
+			// e.g., [http://example.org/]Person
+
+			String namespace = iriResource.getNamespace();
+
+			query.setBinding("dataset", vf.createLiteral(namespace));
+			bs = QueryResults.singleResult(query.evaluate());
+
+			if (bs != null) {
+				return bindingset2datasetmetadata(bs);
+			}
+
+			// --------------------------------------------
+			// Case 2: The namespace is the base URI + "#"
+			// e.g., [http://example.org]#Person
+
+			if (namespace.endsWith("#")) {
+				query.setBinding("dataset", vf.createLiteral(namespace.substring(0, namespace.length() - 1)));
+
+				bs = QueryResults.singleResult(query.evaluate());
+
+				if (bs != null) {
+					return bindingset2datasetmetadata(bs);
+				}
+			} else {
+				return null;
+			}
+		}
 
 		return null;
+	}
+
+	private DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
+		IRI dataset = (IRI) bs.getValue("dataset");
+
+		@Nullable
+		String uriSpace = Optional.ofNullable(bs.getValue("datasetUriSpace")).map(Value::stringValue)
+				.orElse(null);
+		@Nullable
+		String title = Optional.ofNullable(bs.getValue("datasetTitle")).map(Value::stringValue).orElse(null);
+		@Nullable
+		IRI dereferenciationSystem = Optional.ofNullable(bs.getValue("datasetDereferenciationSystem"))
+				.map(IRI.class::cast).orElse(null);
+		@Nullable
+		IRI sparqlEndpoint = Optional.ofNullable(bs.getValue("datasetSPARQLEndpoint")).map(IRI.class::cast)
+				.orElse(null);
+		@Nullable
+		String versionInfo = Optional.ofNullable(bs.getValue("datasetVersionInfo")).map(Value::stringValue)
+				.orElse(null);
+
+		return new DatasetMetadata(dataset, uriSpace, title, dereferenciationSystem, sparqlEndpoint,
+				versionInfo);
 	}
 
 }

@@ -29,10 +29,10 @@ import javax.annotation.Nullable;
 import org.eclipse.rdf4j.model.IRI;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.MoreObjects;
 
+import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
 import it.uniroma2.art.semanticturkey.utilities.Optional2StringConverter;
 
 /**
@@ -41,15 +41,17 @@ import it.uniroma2.art.semanticturkey.utilities.Optional2StringConverter;
  */
 public class DatasetMetadata {
 
+	private final IRI identity;
 	private final Optional<String> uriSpace;
 	private final Optional<String> title;
 	private final Optional<IRI> dereferenciationSystem;
 	private final Optional<IRI> sparqlEndpoint;
 	private final Optional<String> versionInfo;
 
-	public DatasetMetadata(@Nullable String uriSpace, @Nullable String title,
+	public DatasetMetadata(IRI identity, @Nullable String uriSpace, @Nullable String title,
 			@Nullable IRI dereferenciationSystem, @Nullable IRI sparqlEndpoint,
 			@Nullable String versionInfo) {
+		this.identity = identity;
 		this.uriSpace = Optional.ofNullable(uriSpace);
 		this.title = Optional.ofNullable(title);
 		this.dereferenciationSystem = Optional.ofNullable(dereferenciationSystem);
@@ -57,6 +59,11 @@ public class DatasetMetadata {
 		this.versionInfo = Optional.ofNullable(versionInfo);
 	}
 
+	@JsonSerialize(converter=IRI2StringConverter.class)
+	public IRI getIdentity() {
+		return identity;
+	}
+	
 	@JsonSerialize(converter=Optional2StringConverter.class)
 	public Optional<String> getUriSpace() {
 		return uriSpace;
