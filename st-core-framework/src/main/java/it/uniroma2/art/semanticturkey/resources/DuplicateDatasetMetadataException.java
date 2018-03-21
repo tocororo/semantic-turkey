@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.resources;
 
-public class DuplicateDatasetMetadataException extends DatasetMetadataRepositoryException {
+public class DuplicateDatasetMetadataException extends MetadataRegistryException {
 
 	private static final long serialVersionUID = 4073728812818804556L;
 

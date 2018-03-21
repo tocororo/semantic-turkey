@@ -10,6 +10,7 @@ date: dd/mm/yyyy
   * New Extension Management framework (partial release)
   * Introduction of a SPARQL store (e.g. saved queries/updates)
   * Support for the W3C OntoLex-Lemon Model
+  * New Metadata Registry
 
 version 3.0
 date: 08/02/2018

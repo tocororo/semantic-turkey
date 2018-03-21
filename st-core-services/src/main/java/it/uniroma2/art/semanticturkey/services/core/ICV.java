@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -1528,9 +1529,9 @@ public class ICV extends STServiceAdapter {
 						locationNode.put("type", RepositoryLocation.Location.remote.toString());
 						RemoteResourcePosition remoteResourcePosition = (RemoteResourcePosition) resourcePosition;
 						DatasetMetadata datasetMetadata = remoteResourcePosition.getDatasetMetadata();
-						locationNode.put("title", datasetMetadata.getTitle());
-						locationNode.put("sparqlEndpoint", datasetMetadata.getSparqlEndpoint());
-						locationNode.put("dereferenceable", datasetMetadata.isDereferenceable());
+						locationNode.put("title", datasetMetadata.getTitle().orElse(null));
+						locationNode.put("sparqlEndpoint", datasetMetadata.getSparqlEndpoint().map(Value::stringValue).orElse(null));
+						locationNode.put("dereferenceable", datasetMetadata.getDereferenciationSystem().map(ds -> true).orElse(false));
 					}
 					locationsNode.add(locationNode);
 				}

@@ -12,9 +12,9 @@
 	<osgi:reference id="resourceLocator"
 		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
 
-	<!-- Retrieves the DatasetMetadataRepository -->
-	<osgi:reference id="datasetMetadataRepository"
-		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
+	<!-- Retrieves the MetadataRegistry -->
+	<osgi:reference id="metadataRegistryBackend"
+		interface="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend" />
 
 	<!-- Overrides the default entry point of authentication. As default Spring-Security 
 		redirects to login page -->
@@ -95,7 +95,7 @@
 
 				<beans:bean id="StringToResourcePositionConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
-					<beans:constructor-arg ref="datasetMetadataRepository" />
+					<beans:constructor-arg ref="metadataRegistryBackend" />
 				</beans:bean>
 
 				<beans:bean id="StringToRDF4JBNodeConverter"

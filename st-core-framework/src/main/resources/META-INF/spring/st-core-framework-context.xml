@@ -242,13 +242,13 @@
 	</osgi:service>
 
 
-	<!-- Publishes the DatasetMetadataRepository as an OSGi service -->
-	<bean id="datasetMetadataRepository"
-		class="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository" />
+	<!-- Publishes the MetadataRegistry as an OSGi service -->
+	<bean id="metadataRegistry"
+		class="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend" />
 
 	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository"
-		ref="datasetMetadataRepository">
+		interface="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend"
+		ref="metadataRegistry">
 	</osgi:service>
 
 	<!-- Publishes the ResourceLocator as an OSGi service -->

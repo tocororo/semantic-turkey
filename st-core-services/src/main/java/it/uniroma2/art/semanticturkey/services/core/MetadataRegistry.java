@@ -1,21 +1,22 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.IOException;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
+import org.eclipse.rdf4j.model.IRI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepositoryWritingException;
-import it.uniroma2.art.semanticturkey.resources.DuplicateDatasetMetadataException;
-import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
+import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.metadata.DatasetInfo;
 
 /**
  * This service class allows the management of the metadata about remote datasets.
@@ -23,125 +24,131 @@ import it.uniroma2.art.semanticturkey.services.core.metadata.DatasetInfo;
 @STService
 public class MetadataRegistry extends STServiceAdapter {
 
-	private DatasetMetadataRepository datasetMetadataRepository;
+	private MetadataRegistryBackend metadataRegistryBackend;
 
 	@Autowired
-	public void setDatasetMetadataRepository(DatasetMetadataRepository datasetMetadataRepository) {
-		this.datasetMetadataRepository = datasetMetadataRepository;
+	public void setMetadataRegistry(MetadataRegistryBackend metadataRegistryBackend) {
+		this.metadataRegistryBackend = metadataRegistryBackend;
 	}
 
 	/**
-	 * Adds the metadata describing the (remote) dataset identified by the given base URI.
+	 * Adds a abstract version of a void:Dataset together with the dcat:CatalogRecord.
 	 * 
-	 * @param baseURI
+	 * @param dataset
+	 *            if not passed, a local IRI is created
+	 * @param uriSpace
 	 * @param title
-	 * @param sparqlEndpoint
 	 * @param dereferenceable
-	 * @throws DuplicateDatasetMetadataException
-	 * @throws DatasetMetadataRepositoryWritingException
+	 *            if {@code true}, set to {@code mdreg:standardDereferenciation}; if {@code false}, set to
+	 *            {@code mdreg:noDereferenciation}
+	 * @param sparqlEndpoint
+	 * @return the IRI of the dcat:CatalogRecord created for it
+	 * @throws MetadataRegistryStateException
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
 	 */
-	@STServiceOperation(method=RequestMethod.POST)
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
-	public void addDatasetMetadata(String baseURI, String title, String sparqlEndpoint,
-			boolean dereferenceable)
-			throws DuplicateDatasetMetadataException, DatasetMetadataRepositoryWritingException {
-
-		DatasetMetadata meta = new DatasetMetadata(baseURI, title, null, sparqlEndpoint, dereferenceable,
-				null);
-
-		if (meta.getBaseURI() == null) {
-			throw new IllegalArgumentException("Invalid base URI: " + baseURI);
-		}
-		synchronized (datasetMetadataRepository) {
-			datasetMetadataRepository.addDatasetMetadata(meta);
-			datasetMetadataRepository.writeBackToFile();
-		}
+	public AnnotatedValue<IRI> addDataset(@Optional IRI dataset, String uriSpace, @Optional String title,
+			@Optional Boolean dereferenceable, @Optional IRI sparqlEndpoint) throws IllegalArgumentException,
+			MetadataRegistryStateException, MetadataRegistryWritingException {
+		IRI catalogRecord = metadataRegistryBackend.addDataset(dataset, uriSpace, title, dereferenceable,
+				sparqlEndpoint);
+		return new AnnotatedValue<>(catalogRecord);
 	}
 
 	/**
-	 * Deletes the metadata about the dataset identified by the given base URI.
+	 * Adds {@code dataset} to the specified {@code catalogRecord} as a specific {@code versionInfo}.
 	 * 
-	 * @param baseURI
-	 * @throws DatasetMetadataRepositoryWritingException
-	 * @throws NoSuchDatasetMetadataException
+	 * @param catalogRecord
+	 * @param dataset
+	 *            if not passed, a local IRI is created
+	 * @param versionInfo
+	 * @throws IOException
+	 * @throws IllegalArgumentException
 	 */
-	@STServiceOperation(method=RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
-	public void deleteDatasetMetadata(String baseURI)
-			throws DatasetMetadataRepositoryWritingException, NoSuchDatasetMetadataException {
-
-		synchronized (datasetMetadataRepository) {
-			datasetMetadataRepository.deleteDatasetMetadata(baseURI);
-			datasetMetadataRepository.writeBackToFile();
-		}
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public void addDatasetVersion(IRI catalogRecord, @Optional IRI dataset, String versionInfo)
+			throws IllegalArgumentException, IOException {
+		metadataRegistryBackend.addDatasetVersion(catalogRecord, dataset, versionInfo);
 	}
 
 	/**
-	 * Edits the metadata describing the (remote) dataset identified by the given base URI.
+	 * Sets whether a dataset is derefereanceable or not. If {@code value} is {@code true}, then sets
+	 * {@code mdreg:standardDereferenciation} and if {@code false} sets {@code mdreg:noDereferenciation}. If
+	 * {@value} is not passed, the dereferenciation system is left unspecified.
 	 * 
-	 * @param baseURI
-	 * @param newBaseURI
-	 * @param newTitle
-	 * @param newSparqlEndpoint
-	 * @param newDereferenceable
-	 * @throws NoSuchDatasetMetadataException
-	 * @throws DatasetMetadataRepositoryWritingException
-	 * @throws DuplicateDatasetMetadataException
+	 * @param dataset
+	 * @param value
+	 * @throws IOException
+	 * @throws IllegalArgumentException
 	 */
-	@STServiceOperation(method=RequestMethod.POST)
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
-	public void editDatasetMetadata(String baseURI, String newBaseURI, String newTitle,
-			String newSparqlEndpoint, boolean newDereferenceable) throws NoSuchDatasetMetadataException,
-			DatasetMetadataRepositoryWritingException, DuplicateDatasetMetadataException {
-
-		if (newTitle.equals("")) {
-			newTitle = null;
-		}
-
-		if (newSparqlEndpoint.equals("")) {
-			newSparqlEndpoint = null;
-		}
-
-		DatasetMetadata meta = new DatasetMetadata(newBaseURI, newTitle, null, newSparqlEndpoint,
-				newDereferenceable, null);
-
-		synchronized (datasetMetadataRepository) {
-			datasetMetadataRepository.replaceDatasetMetadata(baseURI, meta);
-			datasetMetadataRepository.writeBackToFile();
-		}
+	public void setDereferenciability(IRI dataset, @Optional Boolean value)
+			throws IllegalArgumentException, IOException {
+		metadataRegistryBackend.setDereferenciability(dataset, value);
 	}
 
 	/**
-	 * Returns the metadata describing the (remote) dataset identified by the given base URI.
+	 * Sets the SPARQL endpoint of a dataset.
 	 * 
-	 * @param baseURI
-	 * @return
-	 * @throws NoSuchDatasetMetadataException
+	 * @param dataset
+	 * @param endpoint
+	 *            if {@code null}, the endpoint is left unspecified
+	 * @throws IllegalArgumentException
+	 * @throws IOException
 	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
-	public DatasetMetadata getDatasetMetadata(String baseURI) throws NoSuchDatasetMetadataException {
-
-		DatasetMetadata meta = datasetMetadataRepository.getDatasetMetadata(baseURI);
-
-		if (meta == null) {
-			throw new NoSuchDatasetMetadataException(baseURI);
-		}
-
-		return meta;
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void setSPARQLEndpoint(IRI dataset, @Optional IRI endpoint)
+			throws IllegalArgumentException, IOException {
+		metadataRegistryBackend.setSPARQLEndpoint(dataset, endpoint);
 	}
 
 	/**
-	 * Lists the (remote) datasets having associated metadata.
+	 * Deletes a catalog record
 	 * 
-	 * @return
+	 * @param catalogRecord
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
+	public void deleteCatalogRecord(IRI catalogRecord) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Deletes a dataset version
+	 * 
+	 * @param dataset
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
+	public void deleteDatasetVersions(IRI dataset) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Returns the catalog records
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
-	public Collection<DatasetInfo> listDatasets() {
-		return datasetMetadataRepository.getAllDatasetMetadata().stream()
-				.map(meta -> new DatasetInfo(meta.getBaseURI(), meta.getTitle()))
-				.collect(Collectors.toList());
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")	
+	public Collection<CatalogRecord> getCatalogRecords() {
+		return metadataRegistryBackend.getCatalogRecords();
+	}
+
+	/**
+	 * Consults the dataset (in the best possible way going from more to less noble availabilities:
+	 * localProject --> SPARQLendpoint --> http-dereferenciation) in order to assess its lexicalization model.
+	 * 
+	 * @param dataset
+	 * @return the lexicalization model
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public IRI assessLexicalizationModel(IRI dataset) {
+		throw new UnsupportedOperationException();
 	}
 
 }

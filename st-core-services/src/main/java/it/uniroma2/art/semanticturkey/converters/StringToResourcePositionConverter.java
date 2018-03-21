@@ -10,7 +10,7 @@ import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 
 public class StringToResourcePositionConverter implements Converter<String, ResourcePosition> {
 
@@ -18,9 +18,9 @@ public class StringToResourcePositionConverter implements Converter<String, Reso
 	public static final String REMOTE_PREFIX = "remote:";
 	public static final String UNKNOWN_PREFIX = "unknown:";
 
-	private DatasetMetadataRepository datasetMetadataRepository;
+	private MetadataRegistryBackend datasetMetadataRepository;
 	
-	public StringToResourcePositionConverter(DatasetMetadataRepository datasetMetadataRepository) {
+	public StringToResourcePositionConverter(MetadataRegistryBackend datasetMetadataRepository) {
 		this.datasetMetadataRepository = datasetMetadataRepository;
 	}
 	

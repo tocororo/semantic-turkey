@@ -117,6 +117,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -190,8 +191,8 @@ public class ResourceView extends STServiceAdapter {
 					java.util.Optional.ofNullable(annotatedResource.getAttributes().get("nature"))
 							.map(Value::stringValue).orElse(""));
 
-			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedResource, resource2attributes,
-					predicate2resourceCreShow, null, retrievedStatements);
+			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedResource,
+					resource2attributes, predicate2resourceCreShow, null, retrievedStatements);
 			AbstractStatementConsumer.addQName(annotatedResource, resource2attributes);
 			description.put("resource", new ResourceSection(annotatedResource));
 
@@ -310,7 +311,7 @@ public class ResourceView extends STServiceAdapter {
 					((LocalResourcePosition) resourcePosition).getProject());
 
 			QueryBuilder qb = createQueryBuilder(String.format(
-				// @formatter:off  
+			// @formatter:off  
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
@@ -382,7 +383,7 @@ public class ResourceView extends STServiceAdapter {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 			StringBuilder sb = new StringBuilder();
 			sb.append(
-				// @formatter:off
+			// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
@@ -424,7 +425,7 @@ public class ResourceView extends STServiceAdapter {
 				String showChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
 
 				sb.append(
-					// @formatter:off
+				// @formatter:off
 					"     OPTIONAL {                                                          \n" +
 					"        ?subjectResource ?predicate ?resource .                          \n" +
 					"        FILTER(?predicate IN " + selectorCollection + ")                 \n" + 	
@@ -449,7 +450,7 @@ public class ResourceView extends STServiceAdapter {
 			}
 
 			sb.append(
-				// @formatter:off
+			// @formatter:off
 				" }                                                                           \n" +
 				" GROUP BY ?resource ?predicate                                               \n"
 				// @formatter:on
@@ -460,7 +461,8 @@ public class ResourceView extends STServiceAdapter {
 			qb.processQName();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
 			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
-			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexLexicalEntryRendering");
+			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+					"attr_ontolexLexicalEntryRendering");
 			qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_limeLexiconRendering");
 			qb.setBinding("subjectResource", resource);
 			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
@@ -543,7 +545,7 @@ public class ResourceView extends STServiceAdapter {
 			Model retrievedStatements = new LinkedHashModel();
 
 			TupleQuery tupleQuery = managedConnection.prepareTupleQuery(
-					// @formatter:off
+			// @formatter:off
 					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
 					" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
 					"     GRAPH ?g {                                                         \n" +
@@ -607,7 +609,8 @@ public class ResourceView extends STServiceAdapter {
 			Model retrievedStatements = new LinkedHashModel();
 
 			RemoteResourcePosition remotePosition = (RemoteResourcePosition) resourcePosition;
-			String sparqlEndpoint = remotePosition.getDatasetMetadata().getSparqlEndpoint();
+			String sparqlEndpoint = remotePosition.getDatasetMetadata().getSparqlEndpoint()
+					.map(Value::stringValue).orElse(null);
 
 			if (sparqlEndpoint != null) {
 				Repository sparqlRepository = new SPARQLRepository(sparqlEndpoint);
@@ -615,7 +618,7 @@ public class ResourceView extends STServiceAdapter {
 				try {
 					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
 						TupleQuery tupleQuery = conn.prepareTupleQuery(
-							// @formatter:off
+						// @formatter:off
 							" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
 							" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
 							"     ?s ?p ?o .                                                         \n" +
@@ -675,9 +678,10 @@ public class ResourceView extends STServiceAdapter {
 				} finally {
 					sparqlRepository.shutDown();
 				}
-			} else if (!remotePosition.getDatasetMetadata().isDereferenceable()) {
+			} else if (!remotePosition.getDatasetMetadata().getDereferenciationSystem()
+					.map(METADATAREGISTRY.STANDARD_DEREFERENCIATION::equals).orElse(false)) {
 				throw new IllegalArgumentException(
-						"Could not dereference dataset:" + remotePosition.getDatasetMetadata().getBaseURI());
+						"Could not dereference dataset:" + remotePosition.getDatasetMetadata().getUriSpace());
 			}
 		}
 

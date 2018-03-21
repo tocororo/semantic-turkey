@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.history;
+package it.uniroma2.art.semanticturkey.utilities;
 
 import org.eclipse.rdf4j.model.IRI;
 

@@ -19,7 +19,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadataRepository;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 /**
@@ -29,7 +29,7 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 public class ResourceLocator {
 
 	@Autowired
-	private DatasetMetadataRepository datasetMetadataRepository;
+	private MetadataRegistryBackend datasetMetadataRepository;
 
 	public static final UnknownResourcePosition UNKNOWN_RESOURCE_POSITION = new UnknownResourcePosition();
 

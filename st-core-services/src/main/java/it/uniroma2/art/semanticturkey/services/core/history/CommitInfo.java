@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
 
 /**
  * Resuming metadata about a commit.
