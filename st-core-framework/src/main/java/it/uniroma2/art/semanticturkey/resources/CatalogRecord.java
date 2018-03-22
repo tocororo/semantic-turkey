@@ -3,6 +3,8 @@ package it.uniroma2.art.semanticturkey.resources;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.eclipse.rdf4j.model.IRI;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -21,7 +23,7 @@ public class CatalogRecord {
 	private final DatasetMetadata abstractDataset;
 	private final List<DatasetMetadata> versions;
 	
-	public CatalogRecord(IRI identity, GregorianCalendar issued, GregorianCalendar modified,
+	public CatalogRecord(IRI identity, GregorianCalendar issued, @Nullable GregorianCalendar modified,
 			DatasetMetadata abstractDataset, List<DatasetMetadata> versions) {
 		this.identity = identity;
 		this.issued = issued;
@@ -41,7 +43,7 @@ public class CatalogRecord {
 	}
 	
 	@JsonFormat(shape=Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-	public GregorianCalendar getModified() {
+	@Nullable public GregorianCalendar getModified() {
 		return modified;
 	}
 	

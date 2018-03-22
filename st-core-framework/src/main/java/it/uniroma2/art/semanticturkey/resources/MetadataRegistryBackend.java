@@ -460,8 +460,8 @@ public class MetadataRegistryBackend {
 				"     ?catalog a dcat:Catalog ;                                                       \n" +
 				"       dcat:record ?record .                                                         \n" +
                 "                                                                                     \n" +
-				"     ?record dcterms:issued ?recordIssued ;                                          \n" +
-				"     dcterms:modified ?recordModified .                                              \n" +
+				"     ?record dcterms:issued ?recordIssued .                                          \n" +
+				"     OPTIONAL { ?record dcterms:modified ?recordModified . }                         \n" +
 				"                                                                                     \n" +
 				"     FILTER EXISTS {                                                                 \n" +
 				"       ?record foaf:primaryTopic [] .                                                \n" +
@@ -516,7 +516,7 @@ public class MetadataRegistryBackend {
 								.toGregorianCalendar());
 					}
 
-					if (!record2modified.containsKey(record)) {
+					if (!record2modified.containsKey(record) && bs.hasBinding("recordModified")) {
 						record2modified.put(record, ((Literal) bs.getValue("recordModified")).calendarValue()
 								.toGregorianCalendar());
 					}
@@ -547,9 +547,7 @@ public class MetadataRegistryBackend {
 					}
 				}
 			}
-			return records.stream()
-					.filter(r -> record2issued.containsKey(r) && record2modified.containsKey(r)
-							&& record2primary.containsKey(r))
+			return records.stream().filter(r -> record2issued.containsKey(r) && record2primary.containsKey(r))
 					.map(r -> new CatalogRecord(r, record2issued.get(r), record2modified.get(r),
 							record2primary.get(r),
 							record2version.get(r).stream()
