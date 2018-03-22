@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -32,7 +33,12 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessor;
+import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
@@ -130,7 +136,29 @@ public class Resources extends STServiceAdapter {
 		qb.setBinding("resource", resource);
 		qb.processRendering();
 		qb.processQName();
-		return qb.runQuery().iterator().next();
+		qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexiconRendering");
+		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
+		qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
+		
+		AnnotatedValue<Resource> annotatedResource = qb.runQuery().iterator().next();
+		
+		Map<String, Value> attrs = annotatedResource.getAttributes();
+		Literal lexiconRendering = (Literal)attrs.remove("lexiconRendering");
+		Literal lexicalEntryRendering = (Literal)attrs.remove("lexicalEntryRendering");
+		Literal formRendering = (Literal)attrs.remove("formRendering");
+
+		if (lexiconRendering != null) {
+			attrs.put("show", lexiconRendering);
+		} else {
+			if (lexicalEntryRendering != null) {
+				attrs.put("show", lexicalEntryRendering);
+			} else {
+				if (formRendering != null) {
+					attrs.put("show", formRendering);
+				}
+			}
+		}
+		return annotatedResource;
 	}
 
 	

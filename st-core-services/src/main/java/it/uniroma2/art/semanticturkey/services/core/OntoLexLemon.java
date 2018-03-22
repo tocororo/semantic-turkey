@@ -194,7 +194,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'C')")
 	public AnnotatedValue<IRI> createLexicalEntry(@Optional @NotLocallyDefined IRI newLexicalEntry,
-			@Optional(defaultValue = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") @SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") IRI lexicalEntryCls,
+			@Optional(defaultValue = "<http://www.w3.org/ns/lemon/ontolex#LexicalEntry>") @SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalEntry") IRI lexicalEntryCls,
 			@LanguageTaggedString Literal canonicalForm, @LocallyDefined @Modified IRI lexicon,
 			@Optional CustomFormValue customFormValue)
 			throws ProjectInconsistentException, CODAException, CustomFormException, URIGenerationException {
