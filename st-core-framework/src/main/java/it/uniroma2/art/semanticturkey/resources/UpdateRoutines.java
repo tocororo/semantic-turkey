@@ -270,7 +270,7 @@ public class UpdateRoutines {
 	private static void renameFile(File parentFolder, String fromName, String toName) {
 		File fromFile = new File(parentFolder, fromName);
 		File toFile = new File(parentFolder, toName);
-		if (fromFile.exists() && !toFile.exists()) {
+		if (fromFile.exists()) {
 			fromFile.renameTo(toFile);
 		}
 	}
