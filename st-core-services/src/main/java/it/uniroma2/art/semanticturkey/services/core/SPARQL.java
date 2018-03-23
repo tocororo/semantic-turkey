@@ -50,6 +50,7 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -58,6 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -79,6 +81,9 @@ import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResul
  */
 @STService
 public class SPARQL extends STServiceAdapter {
+
+	@Autowired
+	private ExtensionPointManager exptManager;
 
 	private static Logger logger = LoggerFactory.getLogger(SPARQL.class);
 
@@ -365,7 +370,10 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs,
 			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
-			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat) throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException, WrongPropertiesException, ExportPreconditionViolationException {
+			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
+			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, WrongPropertiesException,
+			ExportPreconditionViolationException {
 
 		RepositoryConnection conn = getManagedConnection();
 
@@ -390,8 +398,8 @@ public class SPARQL extends STServiceAdapter {
 								SimpleValueFactory.getInstance().createIRI("urn:uuid:" + UUID.randomUUID()));
 						QueryResults.report(result, rdfInserter);
 
-						Export.exportHelper(oRes, sourceConnection, new IRI[0], filteringPipeline,
-								includeInferred, outputFormat, false);
+						Export.exportHelper(exptManager, oRes, sourceConnection, new IRI[0],
+								filteringPipeline, includeInferred, outputFormat, false);
 					}
 				} finally {
 					tempSourceRepository.shutDown();

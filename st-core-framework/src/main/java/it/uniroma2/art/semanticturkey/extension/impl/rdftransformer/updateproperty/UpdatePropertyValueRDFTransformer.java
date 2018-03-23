@@ -41,7 +41,7 @@ public class UpdatePropertyValueRDFTransformer implements RDFTransformer {
 	}
 
 	@Override
-	public void filter(RepositoryConnection sourceRepositoryConnection,
+	public void transform(RepositoryConnection sourceRepositoryConnection,
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException {
 		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
 		

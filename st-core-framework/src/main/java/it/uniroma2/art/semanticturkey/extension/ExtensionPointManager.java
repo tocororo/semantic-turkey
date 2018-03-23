@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -107,6 +108,27 @@ public interface ExtensionPointManager {
 
 	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 
-	ExtensionFactory<?> getExtension(String componentIdentifier);
+	/**
+	 * Returns the {@link ExtensionFactory} matching the given <em>component identifier</code>
+	 * 
+	 * @param componentID
+	 * @return
+	 * @throws NoSuchExtensionException
+	 */
+	ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException;
+
+	/**
+	 * Create an instance of an extension that conforms to {@code targetInterface}, following the provided
+	 * {@code spec}
+	 * 
+	 * @param targetInterface
+	 * @param spec
+	 * @return
+	 * @throws IllegalArgumentException
+	 * @throws NoSuchExtensionException
+	 * @throws WrongPropertiesException
+	 */
+	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException;
 
 }

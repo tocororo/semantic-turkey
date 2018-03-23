@@ -14,7 +14,7 @@ import it.uniroma2.art.semanticturkey.extension.Extension;
  */
 public interface RDFTransformer extends Extension {
 	/**
-	 * Apply a (possibly destructive) filter on a <i>working copy</i> of the <i>source repository<i>.
+	 * Apply a (possibly destructive) transformation on a <i>working copy</i> of the <i>source repository<i>.
 	 * 
 	 * @param sourceRepositoryConnection
 	 *            a connection to the source (unmodified) repository
@@ -25,6 +25,6 @@ public interface RDFTransformer extends Extension {
 	 *            the <code>workingRepository</code> is filtered
 	 * @throws RDF4JException
 	 */
-	void filter(RepositoryConnection sourceRepositoryConnection,
+	void transform(RepositoryConnection sourceRepositoryConnection,
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException;
 }

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -22,6 +23,8 @@ import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
@@ -29,6 +32,7 @@ import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionPointException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
@@ -46,6 +50,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtens
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -262,14 +267,54 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	}
 
 	@Override
-	public ExtensionFactory<?> getExtension(String componentIdentifier) {
+	public ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException {
 		for (Object extFactory : extensionFactoryTracker.getServices()) {
-			if (((ExtensionFactory<?>) extFactory).getId().equals(componentIdentifier)) {
+			if (((ExtensionFactory<?>) extFactory).getId().equals(componentID)) {
 				return (ExtensionFactory<?>) extFactory;
 			}
 		}
 
-		throw new NoSuchExtensionException("Unrecognized extension: " + componentIdentifier);
+		throw new NoSuchExtensionException("Unrecognized extension: " + componentID);
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException {
+		@SuppressWarnings("unchecked")
+		ExtensionFactory<?> extFactory = this.getExtension(spec.getFactoryId());
+		if (!targetInterface.isAssignableFrom(extFactory.getExtensionType())) {
+			throw new IllegalArgumentException("Extension \"" + spec.getFactoryId()
+					+ "\" is not assignable to interface \"" + targetInterface.getName() + "\"");
+		}
+
+		java.util.Properties props = spec.getProperties();
+
+		T obj;
+
+		if (props == null || props.isEmpty()) {
+			if (extFactory instanceof NonConfigurableExtensionFactory) {
+				obj = ((NonConfigurableExtensionFactory<T>) extFactory).createInstance();
+			} else {
+				throw new IllegalArgumentException("Missing configuration");
+			}
+		} else {
+			if (extFactory instanceof ConfigurableExtensionFactory) {
+				Map<String, Object> args = new HashMap<>();
+				props.forEach((k, v) -> args.put((String) k, v));
+
+				if (spec.getConfigType() != null) {
+					args.put("@type", spec.getConfigType());
+				}
+
+				obj = (T) ((ConfigurableExtensionFactory<T, Configuration>) extFactory).createInstance(
+						ConfigurationSupport.createConfiguration((ConfigurationManager<?>) extFactory, args));
+			} else {
+				throw new IllegalArgumentException(
+						"Provided configuration for a non configurable extension factory");
+			}
+		}
+		return obj;
+
+	}
 }
