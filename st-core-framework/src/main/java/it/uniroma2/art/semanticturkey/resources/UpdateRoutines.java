@@ -262,7 +262,7 @@ public class UpdateRoutines {
 	
 	/**
 	 * Renames a file from fromName to toName
-	 * The rename is performed only if source file exists and target file doesn't
+	 * The rename is performed only if source file exists
 	 * @param parentFolder
 	 * @param fromName
 	 * @param toName
@@ -271,6 +271,9 @@ public class UpdateRoutines {
 		File fromFile = new File(parentFolder, fromName);
 		File toFile = new File(parentFolder, toName);
 		if (fromFile.exists()) {
+			if (toFile.exists()) {
+				toFile.delete();
+			}
 			fromFile.renameTo(toFile);
 		}
 	}
