@@ -111,7 +111,7 @@ public class Projects extends STServiceAdapter {
 		if (renderingEngineSpecification == null) {
 			String renderingEngineFactoryID = Project.determineBestRenderingEngine(lexicalizationModel);
 			renderingEngineSpecification = new PluginSpecification(renderingEngineFactoryID, null,
-					new Properties());
+					new Properties(), null);
 		}
 
 		uriGeneratorSpecification.expandDefaults();

@@ -17,6 +17,9 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
@@ -92,7 +95,7 @@ public abstract class ConfigurationSupport {
 
 	}
 
-	protected static Class<?> getConfigurationClass(ConfigurationManager<?> systemConfigurationManager,
+	public static Class<?> getConfigurationClass(ConfigurationManager<?> systemConfigurationManager,
 			@Nullable String configType) throws ConfigurationReflectionException {
 		Class<?> configClass;
 		Class<?> baseConfigurationClass = ReflectionUtilities.getInterfaceArgumentTypeAsClass(

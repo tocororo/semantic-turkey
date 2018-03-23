@@ -127,8 +127,9 @@ public interface ExtensionPointManager {
 	 * @throws IllegalArgumentException
 	 * @throws NoSuchExtensionException
 	 * @throws WrongPropertiesException
+	 * @throws STPropertyAccessException
 	 */
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException;
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException;
 
 }

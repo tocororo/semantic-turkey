@@ -2,15 +2,22 @@ package it.uniroma2.art.semanticturkey.properties;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +28,11 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JResourceDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueDeserializer;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.STUser;
 
@@ -33,16 +45,15 @@ public class STPropertiesManager {
 	private static final String PU_SETTINGS_FILE_NAME = "settings.props";
 	private static final String PROJECT_SETTINGS_FILE_NAME = "settings.props";
 	private static final String SYSTEM_SETTINGS_FILE_NAME = "settings.props";
-	
+
 	private static final String USER_SETTINGS_DEFAULTS_FILE_NAME = "user-settings-defaults.props";
-	
+
 	private static final String PU_SETTINGS_USER_DEFAULTS_FILE_NAME = "pu-settings-defaults.props";
 	private static final String PU_SETTINGS_PROJECT_DEFAULTS_FILE_NAME = "pu-settings-defaults.props";
 	private static final String PU_SETTINGS_SYSTEM_DEFAULTS_FILE_NAME = "pu-settings-defaults.props";
-	
+
 	private static final String PROJECT_SETTINGS_DEFAULTS_FILE_NAME = "project-settings-defaults.props";
 
-	
 	public static final String PREF_LANGUAGES = "languages";
 	public static final String PREF_SHOW_FLAGS = "show_flags";
 	public static final String PREF_SHOW_INSTANCES_NUMBER = "show_instances_number";
@@ -59,6 +70,7 @@ public class STPropertiesManager {
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
 	public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
 
+	public static final String SETTINGS_TYPE_PROPERTY = "@type";
 
 	/*
 	 * Getter/Setter <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/settings.props
@@ -66,11 +78,11 @@ public class STPropertiesManager {
 
 	/**
 	 * Returns the value of a pu_setting for the given project-user pair. If the setting has no value for the
-	 * user, it looks for the value in the following order: 
+	 * user, it looks for the value in the following order:
 	 * <ul>
-	 * 	<li>the default value at project level</li>
-	 * 	<li>the default value at user level</li>
-	 * 	<li>the default value at system level.</li>
+	 * <li>the default value at project level</li>
+	 * <li>the default value at user level</li>
+	 * <li>the default value at system level.</li>
 	 * </ul>
 	 * Returns null if no value is defined at all
 	 * 
@@ -86,12 +98,12 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the value of a pu_setting about the given project-user-plugin. If the setting has no
-	 * value for the user, it looks for the value in the following order:
+	 * Returns the value of a pu_setting about the given project-user-plugin. If the setting has no value for
+	 * the user, it looks for the value in the following order:
 	 * <ul>
-	 * 	<li>the default value at project level</li>
-	 * 	<li>the default value at user level</li>
-	 * 	<li>the default value at system level.</li>
+	 * <li>the default value at project level</li>
+	 * <li>the default value at user level</li>
+	 * <li>the default value at system level.</li>
 	 * </ul>
 	 * Returns null if no value is defined at all
 	 * 
@@ -119,8 +131,8 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the pu_settings about a plugin. See
-	 * {@link #getPUSetting(String, Project, STUser, String)} for details about the lookup procedure.
+	 * Returns the pu_settings about a plugin. See {@link #getPUSetting(String, Project, STUser, String)} for
+	 * details about the lookup procedure.
 	 * 
 	 * @param projectPreferences
 	 * @param project
@@ -128,8 +140,8 @@ public class STPropertiesManager {
 	 * @param pluginId
 	 * @throws STPropertyAccessException
 	 */
-	public static <T extends STProperties> T getPUSettings(Class<T> valueType, Project project,
-			STUser user, String pluginID) throws STPropertyAccessException {
+	public static <T extends STProperties> T getPUSettings(Class<T> valueType, Project project, STUser user,
+			String pluginID) throws STPropertyAccessException {
 		File defaultPropFile = getPUSettingsProjectDefaultsFile(project, pluginID);
 		File propFile = getPUSettingsFile(project, user, pluginID);
 
@@ -181,8 +193,8 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @param allowIncompletePropValueSet
 	 */
-	public static void setPUSettings(STProperties preferences, Project project, STUser user,
-			String pluginID, boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+	public static void setPUSettings(STProperties preferences, Project project, STUser user, String pluginID,
+			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
 		try {
 			if (!allowIncompletePropValueSet) {
 				STPropertiesChecker preferencesChecker = STPropertiesChecker
@@ -200,8 +212,8 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Convenience overload of {@link #setPUSettings(STProperties, Project, STUser, String, boolean)}
-	 * that disallows the storage of incomplete settings (i.e. missing values for required property).
+	 * Convenience overload of {@link #setPUSettings(STProperties, Project, STUser, String, boolean)} that
+	 * disallows the storage of incomplete settings (i.e. missing values for required property).
 	 * 
 	 * @param settings
 	 * @param project
@@ -209,8 +221,8 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setPUSettings(STProperties settings, Project project, STUser user,
-			String pluginID) throws STPropertyUpdateException {
+	public static void setPUSettings(STProperties settings, Project project, STUser user, String pluginID)
+			throws STPropertyUpdateException {
 		setPUSettings(settings, project, user, pluginID, false);
 	}
 
@@ -355,7 +367,8 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the value of a default default pu_setting-system about a plugin. Returns null if no value is defined
+	 * Returns the value of a default default pu_setting-system about a plugin. Returns null if no value is
+	 * defined
 	 * 
 	 * @param pluginID
 	 * @param propName
@@ -368,7 +381,7 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Sets the value of a default pu_setting-system 
+	 * Sets the value of a default pu_setting-system
 	 * 
 	 * @param propName
 	 * @param propValue
@@ -380,7 +393,7 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Sets the value of a default pu_setting-system 
+	 * Sets the value of a default pu_setting-system
 	 * 
 	 * @param propName
 	 * @param propValue
@@ -404,8 +417,8 @@ public class STPropertiesManager {
 	 */
 
 	/**
-	 * Returns the value of a user setting for the given user. If the preference has no value for the
-	 * user, it returns the value at system level. Returns null if no value is defined at all
+	 * Returns the value of a user setting for the given user. If the preference has no value for the user, it
+	 * returns the value at system level. Returns null if no value is defined at all
 	 * 
 	 * @param user
 	 * @param propName
@@ -417,8 +430,8 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the value of a user setting about a plugin for the given user. If the preference has no
-	 * value for the user, it returns the value at system level. Returns null if no value is defined at all
+	 * Returns the value of a user setting about a plugin for the given user. If the preference has no value
+	 * for the user, it returns the value at system level. Returns null if no value is defined at all
 	 * 
 	 * @param pluginID
 	 * @param user
@@ -437,8 +450,8 @@ public class STPropertiesManager {
 		return value;
 	}
 
-	public static <T extends STProperties> T getUserSettings(Class<T> valueType, STUser user,
-			String pluginID) throws STPropertyAccessException {
+	public static <T extends STProperties> T getUserSettings(Class<T> valueType, STUser user, String pluginID)
+			throws STPropertyAccessException {
 		File propFile = getUserSettingsFile(user, pluginID);
 		File defaultPropFile = getUserSettingsDefaultsFile(pluginID);
 		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
@@ -482,7 +495,7 @@ public class STPropertiesManager {
 			throws STPropertyUpdateException {
 		setUserSettings(preferences, user, pluginID, false);
 	}
-	
+
 	private static ObjectMapper createObjectMapper() {
 		YAMLFactory fact = new YAMLFactory();
 		fact.enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
@@ -491,6 +504,12 @@ public class STPropertiesManager {
 		SimpleModule stPropsModule = new SimpleModule();
 		stPropsModule.setMixInAnnotation(STProperties.class,
 				it.uniroma2.art.semanticturkey.properties.yaml.STPropertiesPersistenceMixin.class);
+		stPropsModule.addDeserializer(Value.class, new RDF4JValueDeserializer());
+		stPropsModule.addDeserializer(Resource.class, new RDF4JResourceDeserializer());
+		stPropsModule.addDeserializer(BNode.class, new RDF4JBNodeDeserializer());
+		stPropsModule.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
+		stPropsModule.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
+
 		ObjectMapper mapper = new ObjectMapper(fact);
 		mapper.registerModule(stPropsModule);
 		return mapper;
@@ -502,13 +521,15 @@ public class STPropertiesManager {
 		mapper.writeValue(propertiesFile, properties);
 	}
 
-	private static <T extends STProperties> T loadSTPropertiesFromYAMLFiles(Class<T> valueType,
+	public static <T extends STProperties> T loadSTPropertiesFromYAMLFiles(Class<T> valueType,
 			File... propFiles) throws STPropertyAccessException {
 		try {
 			T props = valueType.newInstance();
 
-			ObjectMapper mapper = createObjectMapper();
-			ObjectReader objReader = mapper.readerForUpdating(props);
+			ObjectMapper objectMapper = createObjectMapper();
+			ObjectReader objReader = objectMapper.reader();
+
+			ObjectNode obj = objectMapper.createObjectNode();
 
 			for (int i = 0; i < propFiles.length; i++) {
 				File propFile = propFiles[i];
@@ -517,7 +538,11 @@ public class STPropertiesManager {
 
 				try (Reader reader = new InputStreamReader(new FileInputStream(propFile),
 						StandardCharsets.UTF_8)) {
-					objReader.readValue(reader);
+					JsonNode jsonNode = objReader.readTree(reader);
+					if (!(jsonNode instanceof ObjectNode))
+						throw new STPropertyAccessException(
+								"YAML file not cotaining an object node: " + propFile);
+					obj.setAll((ObjectNode) jsonNode);
 				} catch (JsonMappingException e) {
 					// Swallow exception due to empty property files
 					if (!(e.getPath().isEmpty() && e.getMessage().contains("end-of-input"))) {
@@ -526,8 +551,50 @@ public class STPropertiesManager {
 				}
 
 			}
-			return props;
+
+			return loadSTPropertiesFromObjectNode(valueType, obj, objectMapper);
 		} catch (IOException | InstantiationException | IllegalAccessException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+
+	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
+			ObjectNode obj) throws STPropertyAccessException {
+		return loadSTPropertiesFromObjectNode(valueType, obj, createObjectMapper());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
+			ObjectNode obj, ObjectMapper objectMapper) throws STPropertyAccessException {
+		try {
+			Class<?> effectveValueType = valueType;
+
+			if (obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
+				String specificClassName = obj.get(SETTINGS_TYPE_PROPERTY).asText();
+				Class<?> specificClass = valueType.getClassLoader().loadClass(specificClassName);
+				if (!valueType.isAssignableFrom(specificClass)) {
+					throw new STPropertyAccessException("Specific type \"" + specificClassName
+							+ "\" is not assignable to generic type \"" + valueType.getName() + "\"");
+				}
+				effectveValueType = specificClass;
+			}
+
+			STProperties properties = (STProperties) effectveValueType.newInstance();
+
+			for (String prop : properties.getProperties()) {
+				Type propType = properties.getPropertyType(prop);
+				JavaType jacksonPropType = objectMapper.getTypeFactory().constructType(propType);
+
+				if (obj.hasNonNull(prop)) {
+					Object propValue = objectMapper.readValue(objectMapper.treeAsTokens(obj.get(prop)),
+							jacksonPropType);
+					properties.setPropertyValue(prop, propValue);
+				}
+			}
+
+			return (T) properties;
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+				| PropertyNotFoundException | IOException | WrongPropertiesException e) {
 			throw new STPropertyAccessException(e);
 		}
 	}
@@ -898,16 +965,16 @@ public class STPropertiesManager {
 	}
 
 	/*
-	 * Methods to retrieve the following Properties files
-	 * User Settings Defaults: 			<STData>/system/plugins/<plugin>/user-settings-defaults.props
-	 * PU SettingsSystem Defaults: 		<STData>/system/plugins/<plugin>/pu-settings-defaults.props
-	 * Project Settings Defaults: 		<STData>/system/plugins/<plugin>/project-settings-defaults.props
-	 * System Settings: 				<STData>/system/plugins/<plugin>/settings.props
-	 * PU Settings Project Defaults: 	<STData>/projects/<projName>/plugins/<plugin>/pu-settings-defaults.props
-	 * Project Settings: 				<STData>/projects/<projName>/plugins/<plugin>/settings.props
-	 * PU Settings User Defaults: 		<STData>/users/<user>/plugins/<plugin>/pu-settings-defaults.props
-	 * User Settings: 					<STData>/users/<user>/plugins/<plugin>/settings.props
-	 * PU Settings: 					<STData>/pu_bindings/<projName>/<user>/plugins/<plugin>/settings.props
+	 * Methods to retrieve the following Properties files User Settings Defaults:
+	 * <STData>/system/plugins/<plugin>/user-settings-defaults.props PU SettingsSystem Defaults:
+	 * <STData>/system/plugins/<plugin>/pu-settings-defaults.props Project Settings Defaults:
+	 * <STData>/system/plugins/<plugin>/project-settings-defaults.props System Settings:
+	 * <STData>/system/plugins/<plugin>/settings.props PU Settings Project Defaults:
+	 * <STData>/projects/<projName>/plugins/<plugin>/pu-settings-defaults.props Project Settings:
+	 * <STData>/projects/<projName>/plugins/<plugin>/settings.props PU Settings User Defaults:
+	 * <STData>/users/<user>/plugins/<plugin>/pu-settings-defaults.props User Settings:
+	 * <STData>/users/<user>/plugins/<plugin>/settings.props PU Settings:
+	 * <STData>/pu_bindings/<projName>/<user>/plugins/<plugin>/settings.props
 	 */
 
 	/**
@@ -919,8 +986,8 @@ public class STPropertiesManager {
 	 */
 	private static File getUserSettingsDefaultsFile(String pluginID) throws STPropertyAccessException {
 		try {
-			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator
-					+ USER_SETTINGS_DEFAULTS_FILE_NAME);
+			File propFile = new File(
+					getSystemPropertyFolder(pluginID) + File.separator + USER_SETTINGS_DEFAULTS_FILE_NAME);
 			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
@@ -932,14 +999,13 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/pu-settings-defaults.props
-	 * * @param pluginID
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/pu-settings-defaults.props * @param
+	 * pluginID
 	 * 
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static File getPUSettingsSystemDefaultsFile(String pluginID)
-			throws STPropertyAccessException {
+	public static File getPUSettingsSystemDefaultsFile(String pluginID) throws STPropertyAccessException {
 		try {
 			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator
 					+ PU_SETTINGS_SYSTEM_DEFAULTS_FILE_NAME);
@@ -960,11 +1026,10 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static File getProjectSettingsDefaultsFile(String pluginID)
-			throws STPropertyAccessException {
+	public static File getProjectSettingsDefaultsFile(String pluginID) throws STPropertyAccessException {
 		try {
-			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator
-					+ PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
+			File propFile = new File(
+					getSystemPropertyFolder(pluginID) + File.separator + PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
 			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
@@ -1043,8 +1108,7 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the Properties file
-	 * <STData>/users/<user>/plugins/<plugin>/pu-settings-defaults.props
+	 * Returns the Properties file <STData>/users/<user>/plugins/<plugin>/pu-settings-defaults.props
 	 * 
 	 * @param user
 	 * @param pluginID
@@ -1074,11 +1138,10 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getUserSettingsFile(STUser user, String pluginID)
-			throws STPropertyAccessException {
+	private static File getUserSettingsFile(STUser user, String pluginID) throws STPropertyAccessException {
 		try {
-			File propFile = new File(getUserPropertyFolder(user, pluginID) + File.separator
-					+ USER_SETTINGS_FILE_NAME);
+			File propFile = new File(
+					getUserPropertyFolder(user, pluginID) + File.separator + USER_SETTINGS_FILE_NAME);
 			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
 				Properties properties = new Properties();
 				updatePropertyFile(properties, propFile);
@@ -1090,8 +1153,7 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the Properties file
-	 * <STData>/pu_bindings/<projName>/<user>/plugins/<plugin>/settings.props
+	 * Returns the Properties file <STData>/pu_bindings/<projName>/<user>/plugins/<plugin>/settings.props
 	 * 
 	 * @param project
 	 * @param user

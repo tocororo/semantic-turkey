@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -18,6 +17,8 @@ import javax.annotation.PreDestroy;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
@@ -53,6 +54,7 @@ import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -280,7 +282,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException {
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+			STPropertyAccessException {
 		@SuppressWarnings("unchecked")
 		ExtensionFactory<?> extFactory = this.getExtension(spec.getFactoryId());
 		if (!targetInterface.isAssignableFrom(extFactory.getExtensionType())) {
@@ -288,11 +291,11 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 					+ "\" is not assignable to interface \"" + targetInterface.getName() + "\"");
 		}
 
-		java.util.Properties props = spec.getProperties();
+		ObjectNode config = spec.getConfiguration();
 
 		T obj;
 
-		if (props == null || props.isEmpty()) {
+		if (config == null || !config.fieldNames().hasNext()) {
 			if (extFactory instanceof NonConfigurableExtensionFactory) {
 				obj = ((NonConfigurableExtensionFactory<T>) extFactory).createInstance();
 			} else {
@@ -300,15 +303,11 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 			}
 		} else {
 			if (extFactory instanceof ConfigurableExtensionFactory) {
-				Map<String, Object> args = new HashMap<>();
-				props.forEach((k, v) -> args.put((String) k, v));
-
-				if (spec.getConfigType() != null) {
-					args.put("@type", spec.getConfigType());
-				}
+				Class<? extends Configuration> configBaseClass = (Class<? extends Configuration>) ConfigurationSupport
+						.getConfigurationClass((ConfigurationManager<Configuration>) extFactory, null);
 
 				obj = (T) ((ConfigurableExtensionFactory<T, Configuration>) extFactory).createInstance(
-						ConfigurationSupport.createConfiguration((ConfigurationManager<?>) extFactory, args));
+						STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, config));
 			} else {
 				throw new IllegalArgumentException(
 						"Provided configuration for a non configurable extension factory");

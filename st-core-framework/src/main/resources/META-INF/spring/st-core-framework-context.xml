@@ -85,8 +85,9 @@
 				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
 		</osgi:service-properties>
 	</osgi:service>
-	
-	<!-- Publishes the OntoLex-Lemon-based implementation of the extension point RenderingEngine -->
+
+	<!-- Publishes the OntoLex-Lemon-based implementation of the extension point 
+		RenderingEngine -->
 	<bean id="ontolexLemonRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory" />
 
@@ -312,7 +313,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RDFSRenderingEngine extension -->
 
 	<osgi:service auto-export="interfaces">
@@ -326,7 +327,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the SKOSXLRenderingEngine extension -->
 
 	<osgi:service auto-export="interfaces">
@@ -340,7 +341,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RDFTransformer extension point -->
 
 	<osgi:service auto-export="interfaces">
@@ -361,7 +362,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the UpdatePropertyValueRDFTranformerFactory extension -->
 
 	<osgi:service auto-export="interfaces">
@@ -381,6 +382,13 @@
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the PropertyNormalizerRDFTransformerFactory extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerFactory" />
 	</osgi:service>
 
 	<!-- Publishes the CollaborationBackend extension point -->
@@ -452,14 +460,14 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the GraphDBSearchStrategy extension -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategyFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the Regex extension -->
 
 	<osgi:service auto-export="interfaces">

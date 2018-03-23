@@ -56,6 +56,7 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -128,9 +129,10 @@ public class Export extends STServiceAdapter {
 	public static void exportHelper(ExtensionPointManager exptManager, HttpServletResponse oRes,
 			RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
 			FilteringPipeline filteringPipeline, boolean includeInferred, RDFFormat outputFormat,
-			boolean force) throws IOException, ClassNotFoundException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			WrongPropertiesException, ExportPreconditionViolationException {
+			boolean force)
+			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, WrongPropertiesException,
+			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException {
 		Set<Resource> sourceGraphs = QueryResults.asSet(sourceRepositoryConnection.getContextIDs());
 
 		if (!force) {
