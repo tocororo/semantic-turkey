@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.Extension;
@@ -54,6 +55,7 @@ import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -282,7 +284,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+			throws IllegalArgumentException, InvalidConfigurationException, NoSuchExtensionException, WrongPropertiesException,
 			STPropertyAccessException {
 		@SuppressWarnings("unchecked")
 		ExtensionFactory<?> extFactory = this.getExtension(spec.getFactoryId());
@@ -304,10 +306,17 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		} else {
 			if (extFactory instanceof ConfigurableExtensionFactory) {
 				Class<? extends Configuration> configBaseClass = (Class<? extends Configuration>) ConfigurationSupport
-						.getConfigurationClass((ConfigurationManager<Configuration>) extFactory, null);
+						.getConfigurationClass((ConfigurationManager<Configuration>) extFactory,
+								spec.getConfigType());
 
+				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, config);
+				STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configObj);
+				if (!checker.isValid()) {
+					throw new InvalidConfigurationException(checker.getErrorMessage());
+				}
+				
 				obj = (T) ((ConfigurableExtensionFactory<T, Configuration>) extFactory).createInstance(
-						STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, config));
+						configObj);
 			} else {
 				throw new IllegalArgumentException(
 						"Provided configuration for a non configurable extension factory");

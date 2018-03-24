@@ -59,6 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -361,6 +362,7 @@ public class SPARQL extends STServiceAdapter {
 	 * @throws ExportPreconditionViolationException
 	 * @throws STPropertyAccessException
 	 * @throws IllegalArgumentException
+	 * @throws InvalidConfigurationException
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -376,7 +378,7 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
-			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException {
+			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException, InvalidConfigurationException {
 
 		RepositoryConnection conn = getManagedConnection();
 

@@ -7,6 +7,7 @@ import java.util.Map;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
@@ -128,8 +129,9 @@ public interface ExtensionPointManager {
 	 * @throws NoSuchExtensionException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyAccessException
+	 * @throws InvalidConfigurationException
 	 */
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException;
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException;
 
 }

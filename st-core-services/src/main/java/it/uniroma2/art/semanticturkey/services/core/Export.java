@@ -45,6 +45,7 @@ import com.google.common.collect.Lists;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
@@ -132,7 +133,8 @@ public class Export extends STServiceAdapter {
 			boolean force)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
-			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException {
+			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
+			InvalidConfigurationException {
 		Set<Resource> sourceGraphs = QueryResults.asSet(sourceRepositoryConnection.getContextIDs());
 
 		if (!force) {
