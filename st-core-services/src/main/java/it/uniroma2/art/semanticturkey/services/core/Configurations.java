@@ -8,11 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
@@ -100,11 +103,12 @@ public class Configurations extends STServiceAdapter {
 	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
 	 * @throws STPropertyUpdateException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void storeConfiguration(String componentID, String relativeReference,
-			Map<String, Object> configuration) throws NoSuchConfigurationManager, IOException,
-			WrongPropertiesException, STPropertyUpdateException {
+	public void storeConfiguration(String componentID, String relativeReference, ObjectNode configuration)
+			throws NoSuchConfigurationManager, IOException, WrongPropertiesException,
+			STPropertyUpdateException, STPropertyAccessException {
 		exptManager.storeConfiguration(componentID, parseReference(relativeReference), configuration);
 	}
 

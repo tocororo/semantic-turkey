@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
@@ -92,8 +94,8 @@ public interface ExtensionPointManager {
 			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager;
 
 	void storeConfiguration(String componentIdentifier, Reference reference,
-			Map<String, Object> configuration) throws IOException, WrongPropertiesException,
-			NoSuchConfigurationManager, STPropertyUpdateException;
+			ObjectNode configuration) throws IOException, WrongPropertiesException,
+			NoSuchConfigurationManager, STPropertyUpdateException, STPropertyAccessException;
 
 	void deleteConfiguraton(String componentIdentifier, Reference reference)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException;

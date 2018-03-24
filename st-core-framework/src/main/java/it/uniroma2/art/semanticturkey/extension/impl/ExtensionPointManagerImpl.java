@@ -233,12 +233,16 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void storeConfiguration(String componentIdentifier, Reference reference,
-			Map<String, Object> configuration) throws IOException, WrongPropertiesException,
-			NoSuchConfigurationManager, STPropertyUpdateException {
+	public void storeConfiguration(String componentIdentifier, Reference reference, ObjectNode configuration)
+			throws IOException, WrongPropertiesException, NoSuchConfigurationManager,
+			STPropertyUpdateException, STPropertyAccessException {
 		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
-		((ConfigurationManager) configurationManager).storeConfiguration(reference,
-				ConfigurationSupport.createConfiguration(configurationManager, configuration));
+		Class<? extends Configuration> configBaseClass = (Class<? extends Configuration>) ConfigurationSupport
+				.getConfigurationClass(configurationManager,null);
+
+		Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass,
+				configuration);
+		((ConfigurationManager) configurationManager).storeConfiguration(reference,configObj);
 	}
 
 	@Override
@@ -284,8 +288,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, InvalidConfigurationException, NoSuchExtensionException, WrongPropertiesException,
-			STPropertyAccessException {
+			throws IllegalArgumentException, InvalidConfigurationException, NoSuchExtensionException,
+			WrongPropertiesException, STPropertyAccessException {
 		@SuppressWarnings("unchecked")
 		ExtensionFactory<?> extFactory = this.getExtension(spec.getFactoryId());
 		if (!targetInterface.isAssignableFrom(extFactory.getExtensionType())) {
@@ -309,14 +313,15 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 						.getConfigurationClass((ConfigurationManager<Configuration>) extFactory,
 								spec.getConfigType());
 
-				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, config);
+				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass,
+						config);
 				STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configObj);
 				if (!checker.isValid()) {
 					throw new InvalidConfigurationException(checker.getErrorMessage());
 				}
-				
-				obj = (T) ((ConfigurableExtensionFactory<T, Configuration>) extFactory).createInstance(
-						configObj);
+
+				obj = (T) ((ConfigurableExtensionFactory<T, Configuration>) extFactory)
+						.createInstance(configObj);
 			} else {
 				throw new IllegalArgumentException(
 						"Provided configuration for a non configurable extension factory");

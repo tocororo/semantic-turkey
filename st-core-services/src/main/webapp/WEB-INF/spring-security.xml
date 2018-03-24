@@ -109,6 +109,8 @@
 				<beans:bean id="StringToRDF4JValueConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter" />
 
+				<beans:bean id="StringToObjectNodeConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToObjectNodeConverter" />
 				<beans:bean id="StringToPluginSpecificationConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter" />
 				<beans:bean id="StringToFilteringStepConverter"

@@ -33,6 +33,7 @@ import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JResourceDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueSerializer;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.STUser;
 
@@ -509,6 +510,7 @@ public class STPropertiesManager {
 		stPropsModule.addDeserializer(BNode.class, new RDF4JBNodeDeserializer());
 		stPropsModule.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
 		stPropsModule.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
+		stPropsModule.addSerializer(new RDF4JValueSerializer());
 
 		ObjectMapper mapper = new ObjectMapper(fact);
 		mapper.registerModule(stPropsModule);
