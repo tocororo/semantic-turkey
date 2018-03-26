@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
@@ -23,8 +24,8 @@ public interface SystemConfigurationManager<CONFTYPE extends Configuration>
 		return ConfigurationSupport.listConfigurationIdentifiers(folder);
 	}
 
-	default CONFTYPE getSystemConfiguration(String identifier)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException {
+	default CONFTYPE getSystemConfiguration(String identifier) throws IOException,
+			ConfigurationNotFoundException, WrongPropertiesException, STPropertyAccessException {
 		return ConfigurationSupport.loadConfiguration(this, ConfigurationSupport.getConfigurationFolder(this),
 				identifier);
 	}

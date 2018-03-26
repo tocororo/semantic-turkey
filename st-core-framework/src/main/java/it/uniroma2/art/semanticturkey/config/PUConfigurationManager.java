@@ -6,7 +6,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -26,7 +26,8 @@ public interface PUConfigurationManager<CONFTYPE extends Configuration>
 	}
 
 	default CONFTYPE getProjectConfiguration(Project project, STUser user, String identifier)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException {
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+			STPropertyAccessException {
 		return ConfigurationSupport.loadConfiguration(this,
 				ConfigurationSupport.getConfigurationFolder(this, project, user), identifier);
 	}

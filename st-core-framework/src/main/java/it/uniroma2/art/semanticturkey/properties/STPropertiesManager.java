@@ -146,7 +146,7 @@ public class STPropertiesManager {
 		File defaultPropFile = getPUSettingsProjectDefaultsFile(project, pluginID);
 		File propFile = getPUSettingsFile(project, user, pluginID);
 
-		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
+		return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
 	}
 
 	/**
@@ -206,7 +206,7 @@ public class STPropertiesManager {
 				}
 			}
 			File propFile = getPUSettingsFile(project, user, pluginID);
-			storeSTPropertiesInYAML(preferences, propFile);
+			storeSTPropertiesInYAML(preferences, propFile, false);
 		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -455,7 +455,7 @@ public class STPropertiesManager {
 			throws STPropertyAccessException {
 		File propFile = getUserSettingsFile(user, pluginID);
 		File defaultPropFile = getUserSettingsDefaultsFile(pluginID);
-		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
+		return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
 	}
 
 	/**
@@ -517,17 +517,15 @@ public class STPropertiesManager {
 		return mapper;
 	}
 
-	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile)
-			throws JsonGenerationException, JsonMappingException, IOException {
+	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
+			boolean storeObjType) throws JsonGenerationException, JsonMappingException, IOException {
 		ObjectMapper mapper = createObjectMapper();
 		mapper.writeValue(propertiesFile, properties);
 	}
 
 	public static <T extends STProperties> T loadSTPropertiesFromYAMLFiles(Class<T> valueType,
-			File... propFiles) throws STPropertyAccessException {
+			boolean loadObjType, File... propFiles) throws STPropertyAccessException {
 		try {
-			T props = valueType.newInstance();
-
 			ObjectMapper objectMapper = createObjectMapper();
 			ObjectReader objReader = objectMapper.reader();
 
@@ -554,24 +552,24 @@ public class STPropertiesManager {
 
 			}
 
-			return loadSTPropertiesFromObjectNode(valueType, obj, objectMapper);
-		} catch (IOException | InstantiationException | IllegalAccessException e) {
+			return loadSTPropertiesFromObjectNode(valueType, loadObjType, obj, objectMapper);
+		} catch (IOException e) {
 			throw new STPropertyAccessException(e);
 		}
 	}
 
 	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
-			ObjectNode obj) throws STPropertyAccessException {
-		return loadSTPropertiesFromObjectNode(valueType, obj, createObjectMapper());
+			boolean loadObjType, ObjectNode obj) throws STPropertyAccessException {
+		return loadSTPropertiesFromObjectNode(valueType, loadObjType, obj, createObjectMapper());
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
-			ObjectNode obj, ObjectMapper objectMapper) throws STPropertyAccessException {
+			boolean loadObjType, ObjectNode obj, ObjectMapper objectMapper) throws STPropertyAccessException {
 		try {
 			Class<?> effectveValueType = valueType;
 
-			if (obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
+			if (loadObjType && obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
 				String specificClassName = obj.get(SETTINGS_TYPE_PROPERTY).asText();
 				Class<?> specificClass = valueType.getClassLoader().loadClass(specificClassName);
 				if (!valueType.isAssignableFrom(specificClass)) {
@@ -580,7 +578,7 @@ public class STPropertiesManager {
 				}
 				effectveValueType = specificClass;
 			}
-
+			
 			STProperties properties = (STProperties) effectveValueType.newInstance();
 
 			for (String prop : properties.getProperties()) {
@@ -613,7 +611,7 @@ public class STPropertiesManager {
 				}
 			}
 			File settingsFile = getUserSettingsFile(user, pluginID);
-			storeSTPropertiesInYAML(preferences, settingsFile);
+			storeSTPropertiesInYAML(preferences, settingsFile, false);
 		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -737,7 +735,7 @@ public class STPropertiesManager {
 		File defaultPropFile = getProjectSettingsDefaultsFile(pluginID);
 		File propFile = getProjectSettingsFile(project, pluginID);
 
-		return loadSTPropertiesFromYAMLFiles(valueType, defaultPropFile, propFile);
+		return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
 	}
 
 	/**
@@ -794,7 +792,7 @@ public class STPropertiesManager {
 				}
 			}
 			File settingsFile = getProjectSettingsFile(project, pluginID);
-			storeSTPropertiesInYAML(settings, settingsFile);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
 		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
@@ -909,7 +907,7 @@ public class STPropertiesManager {
 
 	public static <T extends STProperties> T getSystemSettings(Class<T> valueType, String pluginID)
 			throws STPropertyAccessException {
-		return loadSTPropertiesFromYAMLFiles(valueType, getSystemSettingsFile(pluginID));
+		return loadSTPropertiesFromYAMLFiles(valueType, false, getSystemSettingsFile(pluginID));
 	}
 
 	/**
@@ -960,7 +958,7 @@ public class STPropertiesManager {
 				}
 			}
 			File settingsFile = getSystemSettingsFile(pluginID);
-			storeSTPropertiesInYAML(settings, settingsFile);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
 		} catch (STPropertyAccessException | IOException e) {
 			throw new STPropertyUpdateException(e);
 		}

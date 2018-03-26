@@ -84,11 +84,12 @@ public class Configurations extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation
 	public Configuration getConfiguration(String componentID, String relativeReference)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException {
+			WrongPropertiesException, STPropertyAccessException {
 		return exptManager.getConfiguration(componentID, parseReference(relativeReference));
 	}
 

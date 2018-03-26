@@ -3,10 +3,7 @@ package it.uniroma2.art.semanticturkey.config.impl;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -16,9 +13,6 @@ import java.util.Properties;
 import javax.annotation.Nullable;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
@@ -31,6 +25,7 @@ import it.uniroma2.art.semanticturkey.config.UserConfigurationManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -63,36 +58,15 @@ public abstract class ConfigurationSupport {
 	}
 
 	public static <CONFTYPE extends Configuration> CONFTYPE loadConfiguration(
-			ConfigurationManager<?> systemConfigurationManager, File folder, String identifier)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException {
+			ConfigurationManager<CONFTYPE> configurationManager, File folder, String identifier)
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+			STPropertyAccessException {
 		File configFile = new File(folder, configurationFilename(identifier));
-		Properties props = new Properties();
-		try (InputStream is = new FileInputStream(configFile)) {
-			props.load(is);
-		} catch (FileNotFoundException e) {
-			throw new ConfigurationNotFoundException(
-					String.format("Unable to find system configuration %s for component %s", identifier,
-							systemConfigurationManager.getId()));
-		}
 
-		@Nullable
-		String configType = props.getProperty(CONFIG_TYPE_PARAM);
-		if (configType != null) {
-			props.remove(CONFIG_TYPE_PARAM);
-		}
+		Class<CONFTYPE> configBaseClass = ReflectionUtilities.getInterfaceArgumentTypeAsClass(
+				configurationManager.getClass(), ConfigurationManager.class, 0);
 
-		Class<?> configClass = getConfigurationClass(systemConfigurationManager, configType);
-
-		try {
-			Configuration configObj = (Configuration) configClass.newInstance();
-			configObj.setProperties(props);
-			@SuppressWarnings("unchecked")
-			CONFTYPE castedConfigObj = (CONFTYPE) configObj;
-			return castedConfigObj;
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new ConfigurationReflectionException(e);
-		}
-
+		return STPropertiesManager.loadSTPropertiesFromYAMLFiles(configBaseClass, true, configFile);
 	}
 
 	public static Class<?> getConfigurationClass(ConfigurationManager<?> systemConfigurationManager,
@@ -134,7 +108,7 @@ public abstract class ConfigurationSupport {
 			throw new STPropertyUpdateException("Invalid configuration: " + checker.getErrorMessage());
 		}
 		File configFile = new File(folder, configurationFilename(identifier));
-		STPropertiesManager.storeSTPropertiesInYAML(configuration, configFile);
+		STPropertiesManager.storeSTPropertiesInYAML(configuration, configFile, true);
 	}
 
 	public static void deleteConfiguration(File folder, String identifier)

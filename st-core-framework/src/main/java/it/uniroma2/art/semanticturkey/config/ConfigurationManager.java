@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import it.uniroma2.art.semanticturkey.extension.IdentifiableComponent;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
@@ -59,8 +60,8 @@ public interface ConfigurationManager<CONFTYPE extends Configuration> extends Id
 		return rv;
 	}
 
-	default CONFTYPE getConfiguration(Reference reference)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException {
+	default CONFTYPE getConfiguration(Reference reference) throws IOException, ConfigurationNotFoundException,
+			WrongPropertiesException, STPropertyAccessException {
 		Optional<Project> project = reference.getProject();
 		Optional<STUser> user = reference.getUser();
 		String identifier = reference.getIdentifier();

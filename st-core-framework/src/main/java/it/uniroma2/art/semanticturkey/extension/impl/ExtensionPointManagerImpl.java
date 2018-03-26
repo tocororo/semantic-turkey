@@ -24,7 +24,6 @@ import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
@@ -63,6 +62,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
 public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
@@ -205,7 +205,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 	@Override
 	public Configuration getConfiguration(String componentIdentifier, Reference reference) throws IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager {
+			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager,
+			STPropertyAccessException {
 		return getConfigurationManager(componentIdentifier).getConfiguration(reference);
 	}
 
@@ -237,12 +238,13 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 			throws IOException, WrongPropertiesException, NoSuchConfigurationManager,
 			STPropertyUpdateException, STPropertyAccessException {
 		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
-		Class<? extends Configuration> configBaseClass = (Class<? extends Configuration>) ConfigurationSupport
-				.getConfigurationClass(configurationManager,null);
+		Class<? extends Configuration> configBaseClass = ReflectionUtilities
+				.<Configuration>getInterfaceArgumentTypeAsClass(configurationManager.getClass(), ConfigurationManager.class,
+						0);
 
-		Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass,
+		Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, true,
 				configuration);
-		((ConfigurationManager) configurationManager).storeConfiguration(reference,configObj);
+		((ConfigurationManager) configurationManager).storeConfiguration(reference, configObj);
 	}
 
 	@Override
@@ -309,11 +311,11 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 			}
 		} else {
 			if (extFactory instanceof ConfigurableExtensionFactory) {
-				Class<? extends Configuration> configBaseClass = (Class<? extends Configuration>) ConfigurationSupport
-						.getConfigurationClass((ConfigurationManager<Configuration>) extFactory,
-								spec.getConfigType());
+				Class<? extends Configuration> configBaseClass = ReflectionUtilities
+						.getInterfaceArgumentTypeAsClass(extFactory.getClass(),
+								ConfigurationManager.class, 0);
 
-				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass,
+				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, true,
 						config);
 				STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configObj);
 				if (!checker.isValid()) {

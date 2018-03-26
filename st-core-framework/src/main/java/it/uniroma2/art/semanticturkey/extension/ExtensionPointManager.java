@@ -89,13 +89,15 @@ public interface ExtensionPointManager {
 	 * @throws WrongPropertiesException
 	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
+	 * @throws STPropertyAccessException
 	 */
-	Configuration getConfiguration(String componentIdentifier, Reference reference) throws IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager;
+	Configuration getConfiguration(String componentIdentifier, Reference reference)
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+			NoSuchConfigurationManager, STPropertyAccessException;
 
-	void storeConfiguration(String componentIdentifier, Reference reference,
-			ObjectNode configuration) throws IOException, WrongPropertiesException,
-			NoSuchConfigurationManager, STPropertyUpdateException, STPropertyAccessException;
+	void storeConfiguration(String componentIdentifier, Reference reference, ObjectNode configuration)
+			throws IOException, WrongPropertiesException, NoSuchConfigurationManager,
+			STPropertyUpdateException, STPropertyAccessException;
 
 	void deleteConfiguraton(String componentIdentifier, Reference reference)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException;
@@ -134,6 +136,7 @@ public interface ExtensionPointManager {
 	 * @throws InvalidConfigurationException
 	 */
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException;
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+			STPropertyAccessException, InvalidConfigurationException;
 
 }
