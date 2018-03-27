@@ -29,6 +29,7 @@ public class RBACManager {
 	
 	public static final class DefaultRole {
 		public static final Role LEXICOGRAPHER = new Role("lexicographer", RoleLevel.system);
+		public static final Role LURKER = new Role("lurker", RoleLevel.system);
 		public static final Role MAPPER = new Role("mapper", RoleLevel.system);
 		public static final Role ONTOLOGIST = new Role("ontologist", RoleLevel.system);
 		public static final Role PROJECTMANAGER = new Role("projectmanager", RoleLevel.system);

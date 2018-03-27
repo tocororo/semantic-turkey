@@ -336,10 +336,10 @@ public class Resources {
 	private static void initializeRoles() throws STInitializationException {
 		try {
 			Role[] roles = {
-					RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
-					RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER, 
-					RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR,
-					RBACManager.DefaultRole.VALIDATOR
+					RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.LURKER, 
+					RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.ONTOLOGIST,
+					RBACManager.DefaultRole.PROJECTMANAGER, RBACManager.DefaultRole.RDF_GEEK,
+					RBACManager.DefaultRole.THESAURUS_EDITOR, RBACManager.DefaultRole.VALIDATOR
 			};
 			File rolesDir = RBACManager.getRolesDir(null);
 			if (!rolesDir.exists()) {

@@ -157,6 +157,10 @@ public class UpdateRoutines {
 				}
 			}
 		}
+		
+		logger.debug("Version 4.0.0 added lurker role");
+		Role[] roles = { RBACManager.DefaultRole.LURKER };
+		updateRoles(roles);
 	}
 	
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
