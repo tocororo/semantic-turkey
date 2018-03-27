@@ -566,7 +566,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
-	public JsonNode getRange(@LocallyDefined IRI property) {
+	public JsonNode getRange(IRI property) {
 		logger.debug(
 				"request to get any named class which is relevant in the range of " + property.stringValue());
 

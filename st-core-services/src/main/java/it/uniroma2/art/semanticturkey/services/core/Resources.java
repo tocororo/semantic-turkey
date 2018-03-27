@@ -87,7 +87,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
-	public void removeValue(@LocallyDefined @Modified Resource subject, @LocallyDefined IRI property,
+	public void removeValue(@LocallyDefined @Modified Resource subject, IRI property,
 			Value value) {
 		getManagedConnection().remove(subject, property, value, getWorkingGraph());
 	}
@@ -95,7 +95,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
-	public void addValue(@LocallyDefined @Modified Resource subject, @LocallyDefined IRI property,
+	public void addValue(@LocallyDefined @Modified Resource subject, IRI property,
 			SpecialValue value) throws ProjectInconsistentException, CODAException {
 		addValue(getManagedConnection(), subject, property, value);
 	}
