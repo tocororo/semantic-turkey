@@ -204,9 +204,9 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	}
 
 	@Override
-	public Configuration getConfiguration(String componentIdentifier, Reference reference) throws IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, NoSuchConfigurationManager,
-			STPropertyAccessException {
+	public Configuration getConfiguration(String componentIdentifier, Reference reference)
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+			NoSuchConfigurationManager, STPropertyAccessException {
 		return getConfigurationManager(componentIdentifier).getConfiguration(reference);
 	}
 
@@ -239,8 +239,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 			STPropertyUpdateException, STPropertyAccessException {
 		ConfigurationManager<?> configurationManager = getConfigurationManager(componentIdentifier);
 		Class<? extends Configuration> configBaseClass = ReflectionUtilities
-				.<Configuration>getInterfaceArgumentTypeAsClass(configurationManager.getClass(), ConfigurationManager.class,
-						0);
+				.<Configuration>getInterfaceArgumentTypeAsClass(configurationManager.getClass(),
+						ConfigurationManager.class, 0);
 
 		Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, true,
 				configuration);
@@ -301,6 +301,10 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 		ObjectNode config = spec.getConfiguration();
 
+		if (spec.getConfigType() != null && !config.hasNonNull(STPropertiesManager.SETTINGS_TYPE_PROPERTY)) {
+			config = config.deepCopy();
+			config.put(STPropertiesManager.SETTINGS_TYPE_PROPERTY, spec.getConfigType());
+		}
 		T obj;
 
 		if (config == null || !config.fieldNames().hasNext()) {
@@ -312,11 +316,11 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		} else {
 			if (extFactory instanceof ConfigurableExtensionFactory) {
 				Class<? extends Configuration> configBaseClass = ReflectionUtilities
-						.getInterfaceArgumentTypeAsClass(extFactory.getClass(),
-								ConfigurationManager.class, 0);
+						.getInterfaceArgumentTypeAsClass(extFactory.getClass(), ConfigurationManager.class,
+								0);
 
-				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, true,
-						config);
+				Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass,
+						true, config);
 				STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configObj);
 				if (!checker.isValid()) {
 					throw new InvalidConfigurationException(checker.getErrorMessage());
