@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
@@ -7,6 +9,7 @@ import java.util.Optional;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -28,6 +31,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.google.common.base.Strings;
+
 import static org.junit.Assert.assertTrue;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
@@ -35,6 +40,7 @@ import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.tx.ThrowingReadOnlyRDF4JRepositoryConnectionInterceptor;
 
 /**
@@ -137,15 +143,23 @@ public abstract class AbstractRDFTransformerTest {
 				Element configElement = Optional
 						.ofNullable(testCaseElement.getElementsByTagName("Config").item(0))
 						.map(Element.class::cast).orElse(null);
-
 				String configType;
 				Element paramsElement = null;
+				Element yamlConfigElement = null;
 
 				if (configElement != null) {
 					configType = Optional.ofNullable(configElement.getElementsByTagName("ConfigType").item(0))
 							.map(n -> ((Element) n).getTextContent()).orElse(null);
 					paramsElement = Optional.ofNullable(configElement.getElementsByTagName("Params").item(0))
 							.map(Element.class::cast).orElse(null);
+					yamlConfigElement = Optional
+							.ofNullable(testCaseElement.getElementsByTagName("YAMLConfig").item(0))
+							.map(Element.class::cast).orElse(null);
+
+					if (paramsElement != null && yamlConfigElement != null) {
+						throw new IllegalArgumentException(
+								"A test case should not provide both a <Params> element and a <YAMLConfig> element");
+					}
 				} else {
 					configType = null;
 				}
@@ -164,7 +178,6 @@ public abstract class AbstractRDFTransformerTest {
 							.filter(c -> c.getClass().getName().equals(configType)).findAny()
 							.orElseThrow(() -> new IllegalArgumentException(
 									"Unknown configuration type: " + configType));
-
 					if (paramsElement != null) {
 						NodeList childNodes = paramsElement.getChildNodes();
 						for (int i = 0; i < childNodes.getLength(); i++) {
@@ -175,6 +188,12 @@ public abstract class AbstractRDFTransformerTest {
 										childElement.getTextContent());
 							}
 						}
+					} else if (yamlConfigElement != null) {
+						File cfg = new File("target/testdata/test.cfg");
+						FileUtils.write(cfg, yamlConfigElement.getTextContent(),
+								StandardCharsets.UTF_8.name(), false);
+						config = STPropertiesManager.loadSTPropertiesFromYAMLFiles(config.getClass(), false,
+								cfg);
 					}
 
 					exportFilter = configurableFactory.createInstance(config);
