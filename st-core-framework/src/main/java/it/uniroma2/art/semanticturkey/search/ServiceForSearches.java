@@ -23,6 +23,7 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -45,6 +46,7 @@ public class ServiceForSearches {
 	private boolean isInstanceWanted = false;
 	private boolean isPropertyWanted = false;
 	private boolean isCollectionWanted = false;
+	private boolean isLexicalEntryWanted = false;
 	
 	String [] langArray;
 	
@@ -71,6 +73,10 @@ public class ServiceForSearches {
 	public boolean isCollectionWanted() {
 		return isCollectionWanted;
 	}
+	
+	public boolean isLexicalEntryWanted() {
+		return isLexicalEntryWanted;
+	}
 
 	public String [] getLangArray(){
 		return langArray;
@@ -78,7 +84,8 @@ public class ServiceForSearches {
 	
 	public String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
 			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isConceptSchemeWanted, boolean isCollectionWanted, List<IRI> schemes, IRI cls){
+			boolean isConceptSchemeWanted, boolean isCollectionWanted, boolean isLexicalEntryWanted, 
+			List<IRI> schemes, IRI cls){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
@@ -166,6 +173,17 @@ public class ServiceForSearches {
 				filterQuery += "\n{\n"+resource+" a <"+cls.stringValue()+"> . } ";
 				otherWanted = true;
 			}
+		}
+		if(isLexicalEntryWanted) {
+			if(otherWanted) {
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+resource+" a "+type+" . " +
+					 "\nFILTER("+type+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
+			
+			filterQuery += "\n}";
+			
+			otherWanted = true;
 		}
 		
 		return filterQuery;
@@ -260,12 +278,14 @@ public class ServiceForSearches {
 					isPropertyWanted = true;
 				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
 					isCollectionWanted = true;
-				} 
+				} else if (rolesArray[i].toLowerCase().equals(RDFResourceRole.ontolexLexicalEntry.name().toLowerCase())){
+					isLexicalEntryWanted = true;
+				}
 			}	
 		}
 		//@formatter:off
 		if(rolesArray!= null && !isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
-				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted){
+				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted && !isLexicalEntryWanted){
 			
 			String msg = "the serch roles should be at least one of: "+
 					RDFResourceRole.cls.name()+", "+

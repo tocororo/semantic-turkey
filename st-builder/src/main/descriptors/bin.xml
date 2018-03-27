@@ -113,7 +113,7 @@
 			<source>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}/bin/karaf.bat
 			</source>
 			<outputDirectory>bin/</outputDirectory>
-			<destName>st_server_run.bat</destName>
+			<destName>karaf.bat</destName>
 			<fileMode>0755</fileMode>
 		</file>
 		

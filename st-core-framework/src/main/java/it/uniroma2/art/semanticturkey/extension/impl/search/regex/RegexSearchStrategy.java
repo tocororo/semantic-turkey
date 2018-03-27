@@ -12,6 +12,8 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
@@ -60,7 +62,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes, null);
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, null);
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
@@ -125,6 +127,80 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
 		//		getThreadBoundTransaction(stServiceContext));
 	}
+	
+	@Override
+	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
+			String searchString, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
+			boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
+
+		//since we are interested just in the LexicalEntry, add this type automatically
+		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
+		
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+
+		// create the query to be executed for the search
+		//@formatter:off
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+ 
+			"\nWHERE{"; // +
+		//get the candidate resources
+		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
+				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
+				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), null, null);
+		
+		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
+		//see if the localName and/or URI should be used in the query or not
+		
+		//search in the rdfs:label
+		query+="\n{" +
+				"\n?resource <"+RDFS.LABEL+"> ?rdfsLabel ." +
+				searchSpecificModePrepareQuery("?rdfsLabel", searchString, searchMode, null, langs, includeLocales) +
+				"\n}"+
+		//search in skos:prefLabel and skos:altLabel
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?skosLabel ."+
+				searchSpecificModePrepareQuery("?skosLabel", searchString, searchMode, null, langs, includeLocales) +
+				"\n}" +
+				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?literalForm ." +
+				searchSpecificModePrepareQuery("?literalForm", searchString, searchMode, null, langs, includeLocales) +
+				"\n}"+
+				//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}";
+		
+		//add the information about the lexicon
+		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resoruce . }";
+		
+		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!		
+		//add the show part according to the Lexicalization Model
+		//		ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
+		//		"\n}";
+
+		query+="\n}"+
+				"\nGROUP BY ?resource ";
+		//@formatter:on
+		
+
+		logger.debug("query = " + query);
+		
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+		//return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
+		//		getThreadBoundTransaction(stServiceContext));
+	}
 
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
@@ -142,7 +218,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes, cls);
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, cls);
 		
 		//check if the request want to search in the local name
 		if(useLocalName){
@@ -200,7 +276,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes, cls) +
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, cls) +
 				"\n}" +
 				"\n}";
 		} else {

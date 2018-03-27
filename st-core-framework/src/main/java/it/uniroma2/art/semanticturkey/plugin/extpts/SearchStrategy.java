@@ -55,4 +55,8 @@ public interface SearchStrategy {
 	
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
 			String indexToUse, List<String> langs, boolean includeLocales);
+
+	Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
+			String searchString, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
+			boolean includeLocales) throws IllegalStateException, STPropertyAccessException;
 }

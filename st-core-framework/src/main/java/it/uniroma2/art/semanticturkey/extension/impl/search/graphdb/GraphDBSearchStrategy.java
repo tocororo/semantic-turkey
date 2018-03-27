@@ -13,6 +13,8 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
@@ -150,7 +152,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes, null);
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, null);
 
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -171,6 +173,54 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
 		//		getThreadBoundTransaction(stServiceContext));
+	}
+	
+	@Override
+	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
+			String searchString, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
+			boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
+		
+		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString);
+		
+		//since we are interested just in the LexicalEntry, add this type automatically
+		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
+		
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+
+		//@formatter:off
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+ 
+			"\nWHERE{";
+		
+		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
+		// the useLocalName and useURI
+		query+=prepareQueryforResource(searchString, searchMode, false, false, langs, includeLocales);
+		
+		//filter the resource according to its type
+		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
+				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
+				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), null, null);
+
+		//add the information about the lexicon
+		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resoruce . }";
+		
+		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
+		//add the show part according to the Lexicalization Model
+		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
+		//		"\n}";
+
+		query+="\n}"+
+				"\nGROUP BY ?resource ";
+		//@formatter:on
+		
+		logger.debug("query = " + query);
+
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
 	}
 
 	@Override
@@ -229,7 +279,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes, cls);
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, cls);
 		}
 		query+="\n}";
 		//@formatter:on
@@ -258,7 +308,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
 				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
 				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), schemes, cls) +
+				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, cls) +
 				"\n}" +
 				"\n}";
 		} else {
@@ -328,7 +378,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String query="";
 		
 		
-		//prepare an inner query, which seesm to be working faster (since it executed by GraphDB before the
+		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
 		// rest of the query and it uses the Lucene indexes)
 		query+="\n{SELECT ?resource ?type "+
 				"\nWHERE{";
@@ -376,7 +426,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\n{" +
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				"\n}";		
+				"\n}" +
+		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				"\n}";
 		
 		if(useLocalName || useURI){
 			query+="\n}";
@@ -390,7 +446,16 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 	}
 	
-	
+	/**
+	 * It uses the lucene indexes
+	 * @param variable
+	 * @param value
+	 * @param searchMode
+	 * @param indexToUse
+	 * @param langs
+	 * @param includeLocales
+	 * @return
+	 */
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
 			String indexToUse, List<String> langs, boolean includeLocales){
 		String query ="";
@@ -452,4 +517,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		return query;
 	}
+
+	
 }
