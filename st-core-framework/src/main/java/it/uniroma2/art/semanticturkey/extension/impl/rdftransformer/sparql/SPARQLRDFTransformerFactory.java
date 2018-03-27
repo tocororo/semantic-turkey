@@ -7,7 +7,7 @@ import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
 
 /**
- * Factory for the instantiation of {@link SPARQLExportFilterTest}.
+ * Factory for the instantiation of {@link SPARQLRDFTransformer}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */

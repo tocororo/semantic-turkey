@@ -8,19 +8,18 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
-import it.uniroma2.art.semanticturkey.plugin.impls.exportfilter.DatasetMetadataExporterConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 
 /**
- * Factory for the instantiation of {@link ADMSDatasetMetadataExporter}.
+ * Factory for the instantiation of {@link JiraBackend}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class JiraBackendFactory extends
-		AbstractPluginFactory<DatasetMetadataExporterConfiguration, STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences>
+		AbstractPluginFactory<JiraBackendConfiguration, STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences>
 		implements
-		PluginFactory<DatasetMetadataExporterConfiguration, STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences> {
+		PluginFactory<JiraBackendConfiguration, STProperties, JiraBackendSettings, STProperties, JiraBackendPreferences> {
 
 	public JiraBackendFactory() {
 		super(DatasetMetadataExporter.class.getName());
@@ -28,26 +27,26 @@ public class JiraBackendFactory extends
 
 	@Override
 	public Collection<STProperties> getPluginConfigurations() {
-		return Arrays.asList(new DatasetMetadataExporterConfiguration());
+		return Arrays.asList(new JiraBackendConfiguration());
 	}
 
 	@Override
-	public DatasetMetadataExporterConfiguration createDefaultPluginConfiguration() {
-		return new DatasetMetadataExporterConfiguration();
+	public JiraBackendConfiguration createDefaultPluginConfiguration() {
+		return new JiraBackendConfiguration();
 	}
 
 	@Override
-	public DatasetMetadataExporterConfiguration createPluginConfiguration(String configType)
+	public JiraBackendConfiguration createPluginConfiguration(String configType)
 			throws UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
 			ClassNotFoundException {
 		Class<?> clazz = Class.forName(configType);
 
-		if (!DatasetMetadataExporterConfiguration.class.isAssignableFrom(clazz)) {
+		if (!JiraBackendConfiguration.class.isAssignableFrom(clazz)) {
 			throw new UnsupportedPluginConfigurationException();
 		}
 
 		try {
-			return (DatasetMetadataExporterConfiguration) clazz.newInstance();
+			return (JiraBackendConfiguration) clazz.newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new UnloadablePluginConfigurationException(e);
 		}

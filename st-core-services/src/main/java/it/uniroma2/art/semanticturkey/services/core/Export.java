@@ -10,15 +10,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.BNode;
@@ -43,20 +40,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.collect.Lists;
 
-import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
-import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.ExportFilter;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -130,11 +119,10 @@ public class Export extends STServiceAdapter {
 	public static void exportHelper(ExtensionPointManager exptManager, HttpServletResponse oRes,
 			RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
 			FilteringPipeline filteringPipeline, boolean includeInferred, RDFFormat outputFormat,
-			boolean force)
-			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException,
-			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
-			InvalidConfigurationException {
+			boolean force) throws IOException, ClassNotFoundException,
+			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			WrongPropertiesException, ExportPreconditionViolationException, IllegalArgumentException,
+			STPropertyAccessException, InvalidConfigurationException {
 		Set<Resource> sourceGraphs = QueryResults.asSet(sourceRepositoryConnection.getContextIDs());
 
 		if (!force) {
@@ -180,16 +168,10 @@ public class Export extends STServiceAdapter {
 						IRI[] stepGraphs = step2graphs[i];
 						FilteringStep filteringStep = filteringSteps[i];
 						PluginSpecification filterSpec = filteringStep.getFilter();
-						try {
-							RDFTransformer transformer = exptManager
-									.instantiateExtension(RDFTransformer.class, filterSpec);
-							transformer.transform(sourceRepositoryConnection, workingRepositoryConnection,
-									stepGraphs);
-						} catch (NoSuchExtensionException e) {
-							ExportFilter exportFilter = (ExportFilter) filterSpec.instatiatePlugin();
-							exportFilter.filter(sourceRepositoryConnection, workingRepositoryConnection,
-									stepGraphs);
-						}
+						RDFTransformer transformer = exptManager.instantiateExtension(RDFTransformer.class,
+								filterSpec);
+						transformer.transform(sourceRepositoryConnection, workingRepositoryConnection,
+								stepGraphs);
 					}
 					// Dumps the working repository (i.e. the filtered repository)
 					dumpRepository(oRes, workingRepositoryConnection, graphs, includeInferred, outputFormat);
