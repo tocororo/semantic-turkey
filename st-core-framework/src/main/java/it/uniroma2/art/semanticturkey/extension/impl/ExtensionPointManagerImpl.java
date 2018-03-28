@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -256,8 +255,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 	@Override
 	public void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
-			Map<String, Object> settings)
-			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException {
+			ObjectNode settings)
+			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException, STPropertyAccessException {
 		SettingsManager settingsManager = getSettingsManager(componentIdentifier);
 		Settings settingsObj = SettingsSupport.createSettings(settingsManager, scope, settings);
 		settingsManager.storeSettings(project, user, scope, settingsObj);

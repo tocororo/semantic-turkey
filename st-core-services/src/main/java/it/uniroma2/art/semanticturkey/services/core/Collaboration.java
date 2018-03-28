@@ -81,8 +81,8 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void activateCollaboratioOnProject(String backendId, Map<String, Object> projectSettings,
-			Map<String, Object> currentUserPreferences) throws STPropertyAccessException,
+	public void activateCollaboratioOnProject(String backendId, ObjectNode projectSettings,
+			ObjectNode currentUserPreferences) throws STPropertyAccessException,
 			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException,
 			CollaborationBackendException, NoSuchSettingsManager, WrongPropertiesException {
@@ -99,7 +99,7 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void addPreferencesForCurrentUser(String backendId, Map<String, Object> currentUserPreferences)
+	public void addPreferencesForCurrentUser(String backendId, ObjectNode currentUserPreferences)
 			throws STPropertyAccessException, STPropertyUpdateException, ProjectUpdateException,
 			ReservedPropertyUpdateException, NoSuchSettingsManager, WrongPropertiesException {
 		Project project = getProject();

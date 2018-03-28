@@ -2,7 +2,6 @@ package it.uniroma2.art.semanticturkey.extension;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -108,8 +107,9 @@ public interface ExtensionPointManager {
 	Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
 
 	void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
-			Map<String, Object> settings)
-			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException;
+			ObjectNode settings)
+			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException,
+			STPropertyAccessException;
 
 	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 

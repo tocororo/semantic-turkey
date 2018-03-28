@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -69,7 +71,7 @@ public class Settings extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void storeSettings(String componentID, Scope scope, Map<String, Object> settings)
+	public void storeSettings(String componentID, Scope scope, ObjectNode settings)
 			throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
 			STPropertyUpdateException, WrongPropertiesException {
 		exptManager.storeSettings(componentID, getProject(), UsersManager.getLoggedUser(), scope, settings);
