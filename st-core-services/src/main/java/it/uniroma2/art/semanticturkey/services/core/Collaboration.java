@@ -24,8 +24,6 @@ import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendException;
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
@@ -56,14 +54,16 @@ public class Collaboration extends STServiceAdapter {
 	private ExtensionPointManager exptManager;
 
 	@STServiceOperation
-	public JsonNode getCollaborationSystemStatus(String backendId) throws STPropertyAccessException {
-		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(backendId);
+	public JsonNode getCollaborationSystemStatus(String backendId)
+			throws STPropertyAccessException, NoSuchSettingsManager {
+
+		STUser user = UsersManager.getLoggedUser();
 		Project project = getProject();
 
-		STProperties settings = pluginFactory.getProjectSettings(project);
+		STProperties settings = exptManager.getSettings(project, user, backendId, Scope.PROJECT);
 		boolean settingsConfigured = STPropertiesChecker.getModelConfigurationChecker(settings).isValid();
 
-		STProperties preferences = pluginFactory.getProjectPreferences(project, UsersManager.getLoggedUser());
+		STProperties preferences = exptManager.getSettings(project, user, backendId, Scope.PROJECT_USER);
 		boolean preferencesConfigured = STPropertiesChecker.getModelConfigurationChecker(preferences)
 				.isValid();
 
