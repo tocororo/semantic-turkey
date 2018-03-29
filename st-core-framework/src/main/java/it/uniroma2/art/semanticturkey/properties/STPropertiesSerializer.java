@@ -70,6 +70,15 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 			gen.writeStringField("@type", value.getClass().getName());
 			gen.writeStringField("shortName", value.getShortName());
 			gen.writeBooleanField("editRequired", value.hasRequiredProperties());
+
+			if (value.getHTMLDescription() != null) {
+				gen.writeStringField("htmlDescription", value.getHTMLDescription());
+			}
+
+			if (value.getHTMLWarning() != null) {
+				gen.writeStringField("htmlWarning", value.getHTMLWarning());
+			}
+
 			gen.writeArrayFieldStart("properties");
 
 			Collection<String> props = value.getProperties();
@@ -149,8 +158,8 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 		List<Annotation> constraints = selectConstraints(annotatedType.getAnnotations());
 
-		boolean isComplexType = type instanceof ParameterizedType || TypeUtils.isArrayType(type)
-				|| !constraints.isEmpty();
+		boolean isParametricType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
+		boolean isComplexType = isParametricType || !constraints.isEmpty();
 
 		if (!isComplexType) {
 			gen.writeString(reducedTypeName);
@@ -158,21 +167,24 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 			gen.writeStartObject();
 			gen.writeStringField("name", reducedTypeName);
 			appendConstraints(constraints, gen, provider);
-			gen.writeArrayFieldStart("typeArguments");
 
-			if (annotatedType instanceof AnnotatedParameterizedType) {
-				AnnotatedType[] annotatedTypeArguments = ((AnnotatedParameterizedType) annotatedType)
-						.getAnnotatedActualTypeArguments();
-				for (AnnotatedType arg : annotatedTypeArguments) {
-					writeTypeDescription(arg, gen, provider);
+			if (isParametricType) {
+				gen.writeArrayFieldStart("typeArguments");
+
+				if (annotatedType instanceof AnnotatedParameterizedType) {
+					AnnotatedType[] annotatedTypeArguments = ((AnnotatedParameterizedType) annotatedType)
+							.getAnnotatedActualTypeArguments();
+					for (AnnotatedType arg : annotatedTypeArguments) {
+						writeTypeDescription(arg, gen, provider);
+					}
+				} else if (TypeUtils.isArrayType(type)) {
+					AnnotatedType componentType = ((AnnotatedArrayType) annotatedType)
+							.getAnnotatedGenericComponentType();
+					writeTypeDescription(componentType, gen, provider);
 				}
-			} else if (TypeUtils.isArrayType(type)) {
-				AnnotatedType componentType = ((AnnotatedArrayType) annotatedType)
-						.getAnnotatedGenericComponentType();
-				writeTypeDescription(componentType, gen, provider);
-			}
 
-			gen.writeEndArray();
+				gen.writeEndArray();
+			}
 
 			gen.writeEndObject();
 		}

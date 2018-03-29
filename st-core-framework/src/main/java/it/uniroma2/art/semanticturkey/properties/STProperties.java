@@ -31,6 +31,26 @@ public interface STProperties {
 	String getShortName();
 
 	/**
+	 * An optional HTML description of this type of propertySet
+	 * 
+	 * @return an HTML description of this type of propertySet. It may be <code>null</code>, if no description
+	 *         is available
+	 */
+	default String getHTMLDescription() {
+		return null;
+	}
+
+	/**
+	 * An optional HTML warning related to this type of propertySet
+	 * 
+	 * @return An optional HTML warning related to this type of propertySet. It may be <code>null</code>, if
+	 *         no warning is available
+	 */
+	default String getHTMLWarning() {
+		return null;
+	}
+
+	/**
 	 * returns all the properties of the class implementing this interface, which have been annotated as
 	 * {@link STProperty}
 	 * 
