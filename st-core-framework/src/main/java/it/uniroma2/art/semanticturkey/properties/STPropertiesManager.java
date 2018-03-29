@@ -497,7 +497,8 @@ public class STPropertiesManager {
 		setUserSettings(preferences, user, pluginID, false);
 	}
 
-	private static ObjectMapper createObjectMapper() {
+	// package-private
+	static ObjectMapper createObjectMapper() {
 		YAMLFactory fact = new YAMLFactory();
 		fact.enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
 		fact.disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);

@@ -5,6 +5,8 @@ import java.util.Set;
 import org.eclipse.rdf4j.model.IRI;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.constraints.Role;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -25,6 +27,7 @@ public class PropertyNormalizerTransformerConfiguration implements Configuration
 	public IRI normalizingProperty;
 
 	@STProperty(description = "Properties that are replaced in the output")
+	@Role(role=RDFResourceRole.property)
 	@Required
 	public Set<IRI> propertiesBeingNormalized;
 }

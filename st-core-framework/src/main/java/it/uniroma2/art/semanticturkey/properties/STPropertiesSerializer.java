@@ -1,11 +1,27 @@
 package it.uniroma2.art.semanticturkey.properties;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.URL;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
@@ -26,10 +42,18 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		super(t);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.fasterxml.jackson.databind.ser.std.StdSerializer#serialize(java.lang.Object,
+	 * com.fasterxml.jackson.core.JsonGenerator, com.fasterxml.jackson.databind.SerializerProvider)
+	 */
 	@Override
 	public void serialize(STProperties value, JsonGenerator gen, SerializerProvider provider)
 			throws IOException {
 		try {
+			ObjectMapper propertiesObjectMapper = STPropertiesManager.createObjectMapper();
+
 			gen.writeStartObject();
 
 			gen.writeStringField("@type", value.getClass().getName());
@@ -44,6 +68,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				gen.writeStartObject();
 
 				String parDescr = value.getPropertyDescription(prop);
+				Type parType = value.getPropertyType(prop);
 				String parDispName = value.getPropertyDisplayName(prop);
 
 				gen.writeStringField("name", prop);
@@ -53,6 +78,9 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				String contentType = value.getPropertyContentType(prop);
 				if (contentType != null) {
 					gen.writeStringField("type", contentType);
+				} else {
+					gen.writeFieldName("type");
+					writeTypeDescription(parType, gen, provider);
 				}
 
 				Optional<Collection<String>> enumerationHolder = value.getEnumeration(prop);
@@ -64,12 +92,20 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 					for (String val : enumeration) {
 						gen.writeString(val);
 					}
-					
+
 					gen.writeEndArray();
 				}
 				Object parValue = value.getPropertyValue(prop);
 				if (parValue != null) {
-					gen.writeStringField("value", parValue.toString());
+					// Serializes property values using the ObjectMapper specific for STProperties
+					ObjectCodec oldCodec = gen.getCodec();
+					try {
+						gen.setCodec(propertiesObjectMapper);
+						gen.writeStringField("value", parValue.toString());
+						gen.writeObjectField("jsonValue", parValue);
+					} finally {
+						gen.setCodec(oldCodec);
+					}
 				}
 
 				gen.writeEndObject();
@@ -81,6 +117,117 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		} catch (PropertyNotFoundException e) {
 			throw new IOException(e);
 		}
+	}
+
+	/**
+	 * Writes down a type. If a type is neither an array type {@link TypeUtils#isArrayType(Type)} nor a
+	 * parameterized type {@link ParameterizedType}, then the type is simply serialized as a string
+	 * corresponding to its name after applying some reductions (see {@link #computeReducedTypeName(Type)}).
+	 * Otherwise, a JSON object is introduced, which have the field {@code name} holding the the reduced type
+	 * name, and an additional field among {@code typeArguments} containing the type arguments of a
+	 * parameterized type or the element type of an array type.
+	 * 
+	 * @param type
+	 * @param gen
+	 * @param provider
+	 * @throws IOException
+	 */
+	private void writeTypeDescription(Type type, JsonGenerator gen, SerializerProvider provider)
+			throws IOException {
+		String reducedTypeName = computeReducedTypeName(type);
+		boolean isComplexType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
+
+		if (!isComplexType) {
+			gen.writeString(reducedTypeName);
+		} else {
+			gen.writeStartObject();
+			gen.writeStringField("name", reducedTypeName);
+			gen.writeArrayFieldStart("typeArguments");
+
+			if (type instanceof ParameterizedType) {
+				Type[] typeArguments = ((ParameterizedType) type).getActualTypeArguments();
+				for (Type arg : typeArguments) {
+					writeTypeDescription(arg, gen, provider);
+				}
+			} else if (TypeUtils.isArrayType(type)) {
+				Type componentType = TypeUtils.getArrayComponentType(type);
+				writeTypeDescription(componentType, gen, provider);
+			}
+
+			gen.writeEndArray();
+
+			gen.writeEndObject();
+		}
+
+	}
+
+	/**
+	 * Given a {@link Type}, computes its name applying some shortening rules: e.g. java.lang.Boolean --&gt;
+	 * boolean
+	 * 
+	 * @param parType
+	 * @return
+	 */
+	private String computeReducedTypeName(Type parType) {
+		String typeName = parType.getTypeName();
+		switch (typeName) {
+		case "java.lang.Boolean":
+			return "boolean";
+		case "java.lang.Integer":
+			return "integer";
+		case "java.lang.Short":
+			return "short";
+		case "java.lang.Long":
+			return "long";
+		case "java.lang.Float":
+			return "float";
+		case "java.lang.Double":
+			return "double";
+		}
+
+		if (Objects.equals(parType, IRI.class)) {
+			return "IRI";
+		}
+
+		if (Objects.equals(parType, BNode.class)) {
+			return "BNode";
+		}
+
+		if (Objects.equals(parType, Resource.class)) {
+			return "BNode";
+		}
+
+		if (Objects.equals(parType, Literal.class)) {
+			return "Literal";
+		}
+
+		if (Objects.equals(parType, Value.class)) {
+			return "RDFValue";
+		}
+		
+		if (Objects.equals(parType, URL.class)) {
+			return "URL";
+		}
+
+		Class<?> rawParType = TypeUtils.getRawType(parType, null);
+
+		if (Objects.equals(rawParType, Set.class)) {
+			return "Set";
+		}
+
+		if (Objects.equals(rawParType, Map.class)) {
+			return "Map";
+		}
+
+		if (Objects.equals(rawParType, List.class)) {
+			return "List";
+		}
+
+		if (TypeUtils.isArrayType(parType)) {
+			return "Array";
+		}
+
+		return typeName;
 	}
 
 }
