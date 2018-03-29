@@ -618,20 +618,20 @@ public class Classes extends STServiceAdapter {
 			throws ManchesterParserException{
 		//iterate over the list, using its first element, collectionBNode, to get all the elements to 
 		// remove them
-		BNode elemInList = collectionBNode;
+		Resource elemInList = collectionBNode;
 		while(!elemInList.equals(RDF.NIL)){
 			modelRemovals.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.TYPE, RDF.LIST));
 			try(RepositoryResult<Statement> repositoryResult = 
 					repoConnection.getStatements(elemInList, RDF.FIRST, null, getWorkingGraph())){
-				Resource first = (Resource) repositoryResult.next();
+				Resource first = (Resource) repositoryResult.next().getObject();
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.FIRST, first));
 				
 			}
 			try(RepositoryResult<Statement> repositoryResult = 
 					repoConnection.getStatements(elemInList, RDF.REST, null, getWorkingGraph())){
-				Resource next = (Resource) repositoryResult.next();
+				Resource next = (Resource) repositoryResult.next().getObject();
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(elemInList, RDF.REST, next));
-				elemInList = (BNode) next;
+				elemInList = next;
 			}
 		}
 		//remove the triple linking the cls to the list
