@@ -11,17 +11,17 @@ public class JiraBackendProjectSettings implements Settings {
 		return "Jira Project Settings";
 	}
 
-	@STProperty(description = "Server URL")
+	@STProperty(description = "Server URL", displayName = "Server URL")
 	@Required
 	public String serverURL;
 	
-	@STProperty(description = "Jira Project Name")
+	@STProperty(description = "Jira Project Name", displayName = "Jira Project Name")
 	public String jiraPrjName;
 	
-	@STProperty(description = "Jira Project Key")
+	@STProperty(description = "Jira Project Key", displayName = "Jira Project Key")
 	public String jiraPrjKey;
 	
-	@STProperty(description = "Jira Project Id")
+	@STProperty(description = "Jira Project Id", displayName = "Jira Project Id")
 	public String jiraPrjId;
 	
 }

@@ -11,11 +11,11 @@ public class JiraBackendPUSettings implements Settings {
 		return "Jira Backened Project User Settings";
 	}
 
-	@STProperty(description = "Username")
+	@STProperty(description = "Username", displayName = "Username")
 	@Required
 	public String username;
 
-	@STProperty(description = "Password")
+	@STProperty(description = "Password", displayName = "Password")
 	@Required
 	public String password;
 

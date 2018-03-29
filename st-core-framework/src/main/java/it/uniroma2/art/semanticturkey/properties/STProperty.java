@@ -14,4 +14,5 @@ import java.lang.annotation.RetentionPolicy;
 @Documented
 public @interface STProperty {
 	String description();
+	String displayName() default "";
 }

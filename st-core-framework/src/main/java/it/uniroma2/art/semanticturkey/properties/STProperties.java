@@ -265,6 +265,31 @@ public interface STProperties {
 			throw new PropertyNotFoundException(e);
 		}
 	}
+	
+	/**
+	 * this method returns the displayName of a property. If not provided, return the property name
+	 * @param id
+	 * @return
+	 * @throws PropertyNotFoundException
+	 */
+	default String getPropertyDisplayName(String id) throws PropertyNotFoundException {
+		try {
+			Field field = this.getClass().getField(id);
+			if (field.isAnnotationPresent(STProperty.class)) {
+				String propValue = ((STProperty) field.getAnnotation(STProperty.class)).displayName();
+				if (propValue.equals("")) { //not provided, empty string is the default
+					return id;
+				} else {
+					return propValue;
+				}
+			} else
+				throw new PropertyNotFoundException("Property: " + id + " not found");
+		} catch (SecurityException e) {
+			throw new PropertyNotFoundException(e);
+		} catch (NoSuchFieldException e) {
+			throw new PropertyNotFoundException(e);
+		}
+	}
 
 	default Object convertToPropertValue(Field prop, Object value) {
 		if (prop.getGenericType() == Boolean.class || prop.getGenericType() == boolean.class) {

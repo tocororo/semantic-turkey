@@ -44,9 +44,11 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				gen.writeStartObject();
 
 				String parDescr = value.getPropertyDescription(prop);
+				String parDispName = value.getPropertyDisplayName(prop);
 
 				gen.writeStringField("name", prop);
 				gen.writeStringField("description", parDescr);
+				gen.writeStringField("displayName", parDispName);
 				gen.writeBooleanField("required", value.isRequiredProperty(prop));
 				String contentType = value.getPropertyContentType(prop);
 				if (contentType != null) {
