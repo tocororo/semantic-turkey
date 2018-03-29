@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
@@ -145,20 +145,21 @@ public class Search extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getPathFromRoot(RDFResourceRole role, IRI resourceURI,
 			@Optional List<IRI> schemesIRI, 
 			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root,
-			@Optional @LocallyDefined IRI broaderProp, @Optional @LocallyDefined IRI narrowerProp,
+			@Optional @LocallyDefinedResources List<IRI> broaderProps, 
+			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
 			@Optional(defaultValue="true") boolean includeSubProperties) 
 					throws InvalidParameterException {
 
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
-		broaderProp = it.uniroma2.art.semanticturkey.services.core.SKOS.checkHierachicalProp(broaderProp);
+		broaderProps = it.uniroma2.art.semanticturkey.services.core.SKOS.checkHierachicalProps(broaderProps);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
-		narrowerProp = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.getInverseOfHierachicalProp(broaderProp, narrowerProp);
+		narrowerProps = it.uniroma2.art.semanticturkey.services.core.SKOS
+				.getInverseOfHierachicalProp(broaderProps, narrowerProps);
 
 		String broaderNarrowerPath = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, 
+				.preparePropPathForHierarchicalForQuery(broaderProps, narrowerProps, 
 				getManagedConnection(), includeSubProperties);
 		
 		String query = null;
