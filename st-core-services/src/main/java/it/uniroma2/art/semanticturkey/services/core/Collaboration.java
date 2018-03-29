@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
@@ -54,28 +53,34 @@ public class Collaboration extends STServiceAdapter {
 	private ExtensionPointManager exptManager;
 
 	@STServiceOperation
-	public JsonNode getCollaborationSystemStatus(String backendId)
+	public JsonNode getCollaborationSystemStatus()
 			throws STPropertyAccessException, NoSuchSettingsManager {
 
 		STUser user = UsersManager.getLoggedUser();
 		Project project = getProject();
+		
+		String csBackendId = project.getProperty(PROJ_PROP_BACKEND);
+		
+		boolean csEnabled = csBackendId != null; //CS factoryID assigned to project
+		boolean csSettingsConfigured = false; //settings of the CS configured
+		boolean csPreferencesConfigured = false; //user settings of the CS configured
+		boolean csLinked = csEnabled ? getCollaborationBackend().isProjectLinked() : false; //CS project linked
+		
+		if (csEnabled) {
+			STProperties settings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT);
+			csSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(settings).isValid();
 
-		STProperties settings = exptManager.getSettings(project, user, backendId, Scope.PROJECT);
-		boolean settingsConfigured = STPropertiesChecker.getModelConfigurationChecker(settings).isValid();
-
-		STProperties preferences = exptManager.getSettings(project, user, backendId, Scope.PROJECT_USER);
-		boolean preferencesConfigured = STPropertiesChecker.getModelConfigurationChecker(preferences)
-				.isValid();
-
-		boolean collaborationEnabled = project.getProperty(PROJ_PROP_BACKEND) != null;
+			STProperties preferences = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT_USER);
+			csPreferencesConfigured = STPropertiesChecker.getModelConfigurationChecker(preferences).isValid();
+		}
 
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		respNode.set("enabled", jf.booleanNode(collaborationEnabled));
-		respNode.set("settingsConfigured", jf.booleanNode(settingsConfigured));
-		respNode.set("preferencesConfigured", jf.booleanNode(preferencesConfigured));
-		boolean projectLinked = collaborationEnabled ? getCollaborationBackend().isProjectLinked() : false;
-		respNode.set("linked", jf.booleanNode(projectLinked));
+		respNode.set("enabled", jf.booleanNode(csEnabled));
+		respNode.set("backendId", jf.textNode(csBackendId));
+		respNode.set("settingsConfigured", jf.booleanNode(csSettingsConfigured));
+		respNode.set("preferencesConfigured", jf.booleanNode(csPreferencesConfigured));
+		respNode.set("linked", jf.booleanNode(csLinked));
 
 		return respNode;
 	}
