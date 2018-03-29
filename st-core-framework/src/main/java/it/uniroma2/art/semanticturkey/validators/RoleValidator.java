@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.Role;
+import it.uniroma2.art.semanticturkey.constraints.HasRole;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -20,15 +20,15 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class RoleValidator implements ConstraintValidator<Role, Resource> {
+public class RoleValidator implements ConstraintValidator<HasRole, Resource> {
 
-	private Role annotation;
+	private HasRole annotation;
 
 	@Autowired
 	private STServiceContext serviceContext;
 
 	@Override
-	public void initialize(Role value) {
+	public void initialize(HasRole value) {
 		this.annotation = value;
 	}
 
@@ -39,7 +39,7 @@ public class RoleValidator implements ConstraintValidator<Role, Resource> {
 				return true;
 			}
 
-			RDFResourceRole requiredRole = annotation.role();
+			RDFResourceRole requiredRole = annotation.value();
 
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
 					.getConnection(STServiceContextUtils.getRepostory(serviceContext))) {

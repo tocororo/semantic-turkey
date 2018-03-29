@@ -1,15 +1,26 @@
 package it.uniroma2.art.semanticturkey.properties;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedArrayType;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+
+import javax.validation.Constraint;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.BNode;
@@ -68,7 +79,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				gen.writeStartObject();
 
 				String parDescr = value.getPropertyDescription(prop);
-				Type parType = value.getPropertyType(prop);
+				AnnotatedType parType = value.getPropertyAnnotatedType(prop);
 				String parDispName = value.getPropertyDisplayName(prop);
 
 				gen.writeStringField("name", prop);
@@ -101,8 +112,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 					ObjectCodec oldCodec = gen.getCodec();
 					try {
 						gen.setCodec(propertiesObjectMapper);
-						gen.writeStringField("value", parValue.toString());
-						gen.writeObjectField("jsonValue", parValue);
+						gen.writeObjectField("value", parValue);
 					} finally {
 						gen.setCodec(oldCodec);
 					}
@@ -127,30 +137,38 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	 * name, and an additional field among {@code typeArguments} containing the type arguments of a
 	 * parameterized type or the element type of an array type.
 	 * 
-	 * @param type
+	 * @param annotatedType
 	 * @param gen
 	 * @param provider
 	 * @throws IOException
 	 */
-	private void writeTypeDescription(Type type, JsonGenerator gen, SerializerProvider provider)
-			throws IOException {
+	private void writeTypeDescription(AnnotatedType annotatedType, JsonGenerator gen,
+			SerializerProvider provider) throws IOException {
+		Type type = annotatedType.getType();
 		String reducedTypeName = computeReducedTypeName(type);
-		boolean isComplexType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
+
+		List<Annotation> constraints = selectConstraints(annotatedType.getAnnotations());
+
+		boolean isComplexType = type instanceof ParameterizedType || TypeUtils.isArrayType(type)
+				|| !constraints.isEmpty();
 
 		if (!isComplexType) {
 			gen.writeString(reducedTypeName);
 		} else {
 			gen.writeStartObject();
 			gen.writeStringField("name", reducedTypeName);
+			appendConstraints(constraints, gen, provider);
 			gen.writeArrayFieldStart("typeArguments");
 
-			if (type instanceof ParameterizedType) {
-				Type[] typeArguments = ((ParameterizedType) type).getActualTypeArguments();
-				for (Type arg : typeArguments) {
+			if (annotatedType instanceof AnnotatedParameterizedType) {
+				AnnotatedType[] annotatedTypeArguments = ((AnnotatedParameterizedType) annotatedType)
+						.getAnnotatedActualTypeArguments();
+				for (AnnotatedType arg : annotatedTypeArguments) {
 					writeTypeDescription(arg, gen, provider);
 				}
 			} else if (TypeUtils.isArrayType(type)) {
-				Type componentType = TypeUtils.getArrayComponentType(type);
+				AnnotatedType componentType = ((AnnotatedArrayType) annotatedType)
+						.getAnnotatedGenericComponentType();
 				writeTypeDescription(componentType, gen, provider);
 			}
 
@@ -158,6 +176,38 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 			gen.writeEndObject();
 		}
+
+	}
+
+	private List<Annotation> selectConstraints(Annotation[] annotations) {
+		return Arrays.stream(annotations)
+				.filter(a -> a.annotationType().isAnnotationPresent(Constraint.class)).collect(toList());
+	}
+
+	private void appendConstraints(Collection<? extends Annotation> constraints, JsonGenerator gen,
+			SerializerProvider provider) throws IOException {
+		if (constraints == null || constraints.isEmpty())
+			return;
+
+		gen.writeArrayFieldStart("constraints");
+
+		for (Annotation c : constraints) {
+			gen.writeStartObject();
+			Class<? extends Annotation> annotationType = c.annotationType();
+			gen.writeStringField("@type", annotationType.getName());
+			for (Method m : annotationType.getDeclaredMethods()) {
+				try {
+					gen.writeObjectField(m.getName(), m.invoke(c, (Object[]) null));
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					provider.reportMappingProblem(e,
+							"Could not serialize attribute \"%s\" in annotation \"%s\"", m.getName(),
+							m.getDeclaringClass().getSimpleName());
+				}
+			}
+			gen.writeEndObject();
+		}
+
+		gen.writeEndArray();
 
 	}
 
@@ -204,7 +254,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		if (Objects.equals(parType, Value.class)) {
 			return "RDFValue";
 		}
-		
+
 		if (Objects.equals(parType, URL.class)) {
 			return "URL";
 		}

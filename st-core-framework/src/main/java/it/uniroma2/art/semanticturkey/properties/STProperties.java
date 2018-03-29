@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -28,8 +29,7 @@ public interface STProperties {
 	 * @return a humanly understandable short name representing the type of this property set
 	 */
 	String getShortName();
-	
-	
+
 	/**
 	 * returns all the properties of the class implementing this interface, which have been annotated as
 	 * {@link STProperty}
@@ -69,11 +69,15 @@ public interface STProperties {
 			throw new PropertyNotFoundException(e);
 		}
 	}
-	
+
 	default Type getPropertyType(String id) throws PropertyNotFoundException {
+		return getPropertyAnnotatedType(id).getType();
+	}
+
+	default AnnotatedType getPropertyAnnotatedType(String id) throws PropertyNotFoundException {
 		try {
 			Field property = this.getClass().getField(id);
-			return property.getGenericType();
+			return property.getAnnotatedType();
 		} catch (SecurityException e) {
 			throw new PropertyNotFoundException(e);
 		} catch (NoSuchFieldException e) {
@@ -132,7 +136,6 @@ public interface STProperties {
 		}
 	}
 
-	
 	/**
 	 * invokes {@link #setPropertyValue(String, Object)} on each of the property/value pairs found in
 	 * <code>propertyFile</code>
@@ -149,7 +152,6 @@ public interface STProperties {
 		fileReader.close();
 	}
 
-	
 	/**
 	 * stores the properties in this instance in file <code>propertyFile</code>
 	 * 
@@ -165,7 +167,6 @@ public interface STProperties {
 		}
 	}
 
-	
 	/**
 	 * stores the properties in this instance in the given {@link Properties} object <code>properties</code>
 	 * 
@@ -188,7 +189,6 @@ public interface STProperties {
 
 	}
 
-	
 	/**
 	 * get the expected type of content for the property. Can be used by external tools to drive the
 	 * acquisition of that value or to check
@@ -230,7 +230,6 @@ public interface STProperties {
 		}
 	}
 
-	
 	/**
 	 * tells if this set of properties needs to be explicitly set by the user or if it can be used in its
 	 * default settings
@@ -265,9 +264,10 @@ public interface STProperties {
 			throw new PropertyNotFoundException(e);
 		}
 	}
-	
+
 	/**
 	 * this method returns the displayName of a property. If not provided, return the property name
+	 * 
 	 * @param id
 	 * @return
 	 * @throws PropertyNotFoundException
@@ -277,7 +277,7 @@ public interface STProperties {
 			Field field = this.getClass().getField(id);
 			if (field.isAnnotationPresent(STProperty.class)) {
 				String propValue = ((STProperty) field.getAnnotation(STProperty.class)).displayName();
-				if (propValue.equals("")) { //not provided, empty string is the default
+				if (propValue.equals("")) { // not provided, empty string is the default
 					return id;
 				} else {
 					return propValue;
@@ -325,7 +325,7 @@ public interface STProperties {
 	 * 
 	 * @param id
 	 * @return
-	 * @throws PropertyNotFoundException 
+	 * @throws PropertyNotFoundException
 	 */
 	default boolean isEnumerated(String id) throws PropertyNotFoundException {
 		try {

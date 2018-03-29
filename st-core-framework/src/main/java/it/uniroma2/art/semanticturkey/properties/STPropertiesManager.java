@@ -512,7 +512,6 @@ public class STPropertiesManager {
 		stPropsModule.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
 		stPropsModule.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
 		stPropsModule.addSerializer(new RDF4JValueSerializer());
-
 		ObjectMapper mapper = new ObjectMapper(fact);
 		mapper.registerModule(stPropsModule);
 		return mapper;
