@@ -10,6 +10,12 @@ public class JiraBackendPUSettings implements Settings {
 	public String getShortName() {
 		return "Jira Backened Project User Settings";
 	}
+	
+	@Override
+	public String getHTMLWarning() {
+		return "Warning: the credentials are stored wihtout encryption on the server. " + 
+				"Be aware that the system administration could be able to see them.";
+	}
 
 	@STProperty(description = "Username", displayName = "Username")
 	@Required
