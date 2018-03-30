@@ -323,14 +323,14 @@ public class Classes extends STServiceAdapter {
 		String query =
 			// @formatter:off
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>		\n" +
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  \n" +
 			"ASK {														\n" +
-			"	{ [] rdfs:subClassOf ?cls }								\n" +
-			"	UNION 													\n" +
-			"	{ [] rdf:type ?cls }									\n" +
+			"  [] rdfs:subClassOf|rdf:type ?cls  					    \n" +
 			"}															\n";
 			// @formatter:on
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setBinding("cls", cls);
+		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
 			throw new DeniedOperationException(
 					"Class: " + cls.stringValue() + " has sub class(es) or instance(s); delete them before");
