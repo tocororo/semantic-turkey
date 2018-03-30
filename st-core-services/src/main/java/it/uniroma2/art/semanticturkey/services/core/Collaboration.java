@@ -86,21 +86,10 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void activateCollaboratioOnProject(String backendId, ObjectNode projectSettings,
-			ObjectNode currentUserPreferences) throws STPropertyAccessException,
-			STPropertyUpdateException, ProjectUpdateException, ReservedPropertyUpdateException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException,
-			CollaborationBackendException, NoSuchSettingsManager, WrongPropertiesException {
+	public void activateCollaboratioOnProject(String backendId)
+			throws ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = getProject();
-		STUser user = UsersManager.getLoggedUser();
-
-		exptManager.storeSettings(backendId, project, user, Scope.PROJECT, projectSettings);
-		exptManager.storeSettings(backendId, project, user, Scope.PROJECT_USER, currentUserPreferences);
-
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
-
-		// TODO check the parameters (url sbagliato, credenziali sbagliate, parametri progetto sbagliati)
-		getCollaborationBackend().checkPrjConfiguration();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
