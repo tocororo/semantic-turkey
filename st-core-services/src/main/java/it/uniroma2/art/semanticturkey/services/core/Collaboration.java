@@ -62,24 +62,24 @@ public class Collaboration extends STServiceAdapter {
 		String csBackendId = project.getProperty(PROJ_PROP_BACKEND);
 		
 		boolean csEnabled = csBackendId != null; //CS factoryID assigned to project
-		boolean csSettingsConfigured = false; //settings of the CS configured
-		boolean csPreferencesConfigured = false; //user settings of the CS configured
+		boolean csProjSettingsConfigured = false; //proj settings of the CS configured
+		boolean csUserSettingsConfigured = false; //user settings of the CS configured
 		boolean csLinked = csEnabled ? getCollaborationBackend().isProjectLinked() : false; //CS project linked
 		
 		if (csEnabled) {
-			STProperties settings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT);
-			csSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(settings).isValid();
+			STProperties projSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT);
+			csProjSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(projSettings).isValid();
 
-			STProperties preferences = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT_USER);
-			csPreferencesConfigured = STPropertiesChecker.getModelConfigurationChecker(preferences).isValid();
+			STProperties userSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT_USER);
+			csUserSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(userSettings).isValid();
 		}
 
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
 		respNode.set("enabled", jf.booleanNode(csEnabled));
 		respNode.set("backendId", jf.textNode(csBackendId));
-		respNode.set("settingsConfigured", jf.booleanNode(csSettingsConfigured));
-		respNode.set("preferencesConfigured", jf.booleanNode(csPreferencesConfigured));
+		respNode.set("projSettingsConfigured", jf.booleanNode(csProjSettingsConfigured));
+		respNode.set("userSettingsConfigured", jf.booleanNode(csUserSettingsConfigured));
 		respNode.set("linked", jf.booleanNode(csLinked));
 
 		return respNode;
