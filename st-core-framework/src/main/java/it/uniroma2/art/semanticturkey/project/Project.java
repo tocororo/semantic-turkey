@@ -70,6 +70,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
@@ -271,7 +272,7 @@ public abstract class Project extends AbstractProject {
 
 			checkModels(model, lexicalizationModel);
 
-			String updateForRolesString = com.google.common.base.Objects
+			String updateForRolesString = MoreObjects
 					.firstNonNull(stp_properties.getProperty(UPDATE_FOR_ROLES_PROP), "resource");
 
 			updateForRoles = Arrays.stream(updateForRolesString.split(",")).map(String::trim)
@@ -282,7 +283,8 @@ public abstract class Project extends AbstractProject {
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
 					.map(RepositoryLocation::fromString).orElse(null);
-		} catch (IOException | UnsupportedLexicalizationModelException | UnsupportedModelException | ProjectInconsistentException e1) {
+		} catch (IOException | UnsupportedLexicalizationModelException | UnsupportedModelException
+				| ProjectInconsistentException e1) {
 			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
 			throw new ProjectCreationException(e1);
 		}
@@ -526,8 +528,10 @@ public abstract class Project extends AbstractProject {
 				conn.commit();
 			}
 
-			if (contexts.contains(OntologyManager
-					.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(SKOSXL.NAMESPACE)))) {
+			IRI skoxlOnt = OntologyManager
+					.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(SKOSXL.NAMESPACE));
+			if (coreVocabularies.entrySet().stream().anyMatch(
+					entry -> OntologyManager.computeCanonicalURI(entry.getKey()).equals(skoxlOnt))) {
 				conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
 			}
 			logger.debug("Core vocabularies loaded");
