@@ -1217,15 +1217,20 @@ public class OntologyManagerImpl implements OntologyManager {
 		try {
 			nsPrefixMappings.removeNSPrefixMapping(namespace);
 			Repositories.consume(repository, conn -> {
-				Set<String> prefixesToDelete = QueryResults.stream(conn.getNamespaces())
-						.filter(ns -> ns.getName().equals(namespace)).map(Namespace::getPrefix)
-						.collect(toSet());
-				for (String prefix : prefixesToDelete) {
-					conn.removeNamespace(prefix);
-				}
+				removeNamespaceInternal(conn, namespace);
 			});
 		} catch (RDF4JException e) {
 			throw new NSPrefixMappingUpdateException(e);
+		}
+	}
+
+	private void removeNamespaceInternal(RepositoryConnection conn, String namespace)
+			throws RepositoryException {
+		Set<String> prefixesToDelete = QueryResults.stream(conn.getNamespaces())
+				.filter(ns -> ns.getName().equals(namespace)).map(Namespace::getPrefix)
+				.collect(toSet());
+		for (String prefix : prefixesToDelete) {
+			conn.removeNamespace(prefix);
 		}
 	}
 
@@ -1329,7 +1334,10 @@ public class OntologyManagerImpl implements OntologyManager {
 
 	// TODO Pay attention this is not being invoked by any method! check metadata ones!
 	public void setNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException {
-		Repositories.consume(repository, conn -> conn.setNamespace(prefix, namespace));
+		Repositories.consume(repository, conn -> {
+			removeNamespaceInternal(conn, namespace);
+			conn.setNamespace(prefix, namespace);
+		});
 		nsPrefixMappings.setNSPrefixMapping(namespace, prefix);
 	}
 
