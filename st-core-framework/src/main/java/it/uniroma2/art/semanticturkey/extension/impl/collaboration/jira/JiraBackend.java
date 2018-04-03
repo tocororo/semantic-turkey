@@ -730,7 +730,16 @@ public class JiraBackend
 		
 		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response.toString());
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ArrayNode prjResponseArray = jsonFactory.arrayNode();
+		
+		ObjectNode respNode = jsonFactory.objectNode();
+		
+		ArrayNode headerArray = jsonFactory.arrayNode();
+		respNode.set("headers", headerArray);
+		headerArray.add("key");
+		headerArray.add("name");
+		
+		ArrayNode prjArray = jsonFactory.arrayNode();
+		respNode.set("projects", prjArray);
 		for(JsonNode prjFromJiraNode : prjFromJiraArray) {
 			String prjId = prjFromJiraNode.get("id").asText();
 			String prjKey = prjFromJiraNode.get("key").asText();
@@ -739,9 +748,10 @@ public class JiraBackend
 			issueRedux.set("id", jsonFactory.textNode(prjId));
 			issueRedux.set("key", jsonFactory.textNode(prjKey));
 			issueRedux.set("name", jsonFactory.textNode(prjName));
-			prjResponseArray.add(issueRedux);
-		}		
-		return prjResponseArray;
+			prjArray.add(issueRedux);
+		}
+		
+		return respNode;
 	}
 	
 	@Override
