@@ -13,7 +13,7 @@ public class JiraBackendPUSettings implements Settings {
 	
 	@Override
 	public String getHTMLWarning() {
-		return "Warning: the credentials are stored wihtout encryption on the server. " + 
+		return "The credentials are stored wihtout encryption on the server. " + 
 				"Be aware that the system administration could be able to see them.";
 	}
 
