@@ -50,7 +50,12 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.DCAT;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.VOID;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -131,8 +136,17 @@ public class MetadataRegistryBackend {
 		metadataRegistry = new SailRepository(new MemoryStore());
 		metadataRegistry.initialize();
 
-		if (catalogFile.exists()) {
-			try (RepositoryConnection conn = metadataRegistry.getConnection()) {
+		try (RepositoryConnection conn = metadataRegistry.getConnection()) {
+			conn.setNamespace(DCAT.NS.getPrefix(), DCAT.NS.getName());
+			conn.setNamespace(VOID.NS.getPrefix(), VOID.NS.getName());
+			conn.setNamespace(DCTERMS.NS.getPrefix(), DCTERMS.NS.getName());
+			conn.setNamespace(XMLSchema.NS.getPrefix(), XMLSchema.NS.getName());
+			conn.setNamespace(FOAF.NS.getPrefix(), FOAF.NS.getName());
+			conn.setNamespace(OWL.NS.getPrefix(), OWL.NS.getName());
+			conn.setNamespace(METADATAREGISTRY.NS.getPrefix(), METADATAREGISTRY.NS.getName());
+			conn.setNamespace("", DEFAULTNS);
+
+			if (catalogFile.exists()) {
 				try {
 					conn.add(catalogFile, null, CATALOG_FORMAT);
 				} catch (RDFParseException | RepositoryException | IOException e) {
