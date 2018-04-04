@@ -14,11 +14,13 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -527,7 +529,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		definedQuery.setBinding("subject", reference);
 		boolean referenceLocallyDefined = definedQuery.evaluate();
 
-//		BooleanQuery checkQuery = conn.prepareBooleanQuery(
+		// BooleanQuery checkQuery = conn.prepareBooleanQuery(
 //		// @formatter:off
 //			" PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>                           \n" +
 //			" SELECT (COALESCE(?plainT) as ?plain) (COALESCE(?reifiedT) as ?reified) {        \n" +
@@ -539,7 +541,7 @@ public class OntoLexLemon extends STServiceAdapter {
 //			"   }                                                                             \n" +
 //			" }                                                                               \n"
 //			// @formatter:on
-//		);
+		// );
 
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -600,6 +602,98 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		conn.remove(modelRemovals, getWorkingGraph());
 		conn.add(modelAdditions, getWorkingGraph());
+	}
+
+	/**
+	 * Removes a plain lexicalization. This operation removes the triples connecting the lexical entry and the
+	 * reference in both directions.
+	 * 
+	 * @param lexicalEntry
+	 * @param reference
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#reference)+ ', lexicalization)', 'D')")
+	public void removePlainLexicalization(Resource lexicalEntry, Resource reference) {
+		RepositoryConnection conn = getManagedConnection();
+		boolean tripleRemoved = false;
+
+		if (conn.hasStatement(lexicalEntry, ONTOLEX.DENOTES, reference, false, getWorkingGraph())) {
+			tripleRemoved = true;
+			conn.remove(lexicalEntry, ONTOLEX.DENOTES, reference, getWorkingGraph());
+			VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry);
+		}
+
+		if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, false, getWorkingGraph())) {
+			tripleRemoved = true;
+			conn.remove(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
+			VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+		}
+
+		if (!tripleRemoved) {
+			throw new IllegalArgumentException(
+					"Unable to delete a plain lexicalization because neither the lexical entry nor the reference are locally defined");
+		}
+	}
+
+	/**
+	 * Removes a reified lexicalization expressed as an {@code ontolex:LexicalSense}. Optionally, it is
+	 * possible to remove the corresponding plain lexicalization(s).
+	 * 
+	 * @param lexicalSense
+	 * @param removePlain
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf('resource', lexicalization)', 'D')")
+	public void removeReifiedLexicalization(Resource lexicalSense, boolean removePlain) {
+		RepositoryConnection conn = getManagedConnection();
+
+		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.IS_SENSE_OF, null, false, getWorkingGraph())));
+		Set<Resource> references = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.REFERENCE, null, false, getWorkingGraph())));
+
+		conn.remove(lexicalSense, null, null, getWorkingGraph());
+
+		for (Resource lexicalEntry : lexicalEntries) {
+			if (conn.hasStatement(lexicalEntry, ONTOLEX.SENSE, lexicalSense, false, getWorkingGraph())) {
+				conn.remove(lexicalEntry, ONTOLEX.SENSE, lexicalSense, getWorkingGraph());
+				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+						RDFResourceRole.ontolexLexicalEntry);
+			}
+		}
+
+		for (Resource reference : references) {
+			if (conn.hasStatement(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, false,
+					getWorkingGraph())) {
+				conn.remove(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, getWorkingGraph());
+				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+			}
+		}
+
+		conn.remove(lexicalSense, null, null, getWorkingGraph());
+		conn.remove((Resource)null, null, lexicalSense, getWorkingGraph());
+
+		if (removePlain) {
+			for (Resource lexicalEntry : lexicalEntries) {
+				for (Resource reference : references) {
+					if (conn.hasStatement(lexicalEntry, ONTOLEX.DENOTES, reference, false,
+							getWorkingGraph())) {
+						conn.remove(lexicalEntry, ONTOLEX.DENOTES, reference, getWorkingGraph());
+						VersioningMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(lexicalEntry);
+					}
+
+					if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, false,
+							getWorkingGraph())) {
+						conn.remove(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
+						VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+					}
+				}
+			}
+		}
+
 	}
 
 	/**
