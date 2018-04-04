@@ -225,9 +225,14 @@ public class JiraBackend
 		executeAndCheckError(httpcon);
 		
 	}
-
+	
+	/**
+	 * In this implementation, projectJson is a json object with attributes key, id and name.
+	 * Note that the attributes of this object, are the same of the projects json objects returned by 
+	 * listProjects() 
+	 */
 	@Override
-	public void assignProject(String projectName, String projectKey, String projectId) 
+	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException {
 		if (stProject == null) {
 			throw new NullPointerException("Jira Backend not bound to a project");
@@ -281,9 +286,9 @@ public class JiraBackend
 		}*/
 		
 		//now save all the information related to the Jira project
-		projectSettings.jiraPrjId = projectId;
-		projectSettings.jiraPrjKey = projectKey;
-		projectSettings.jiraPrjName = projectName;
+		projectSettings.jiraPrjId = projectJson.get("id").textValue();
+		projectSettings.jiraPrjKey = projectJson.get("key").textValue();
+		projectSettings.jiraPrjName = projectJson.get("name").textValue();
 		factory.storeProjectSettings(stProject, projectSettings);
 	}
 		

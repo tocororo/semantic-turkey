@@ -128,10 +128,10 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void assignProject(String projectName, String projectKey, String projectId)
+	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException,
 			STPropertyUpdateException {
-		getCollaborationBackend().assignProject(projectName, projectKey, projectId);
+		getCollaborationBackend().assignProject(projectJson);
 		// TODO check the parameters (url sbagliato, credenziali sbagliate, parametri progetto sbagliati)
 		getCollaborationBackend().checkPrjConfiguration();
 	}

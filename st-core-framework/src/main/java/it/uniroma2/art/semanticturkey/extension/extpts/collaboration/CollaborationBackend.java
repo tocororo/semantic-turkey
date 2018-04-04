@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.IRI;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -23,7 +24,7 @@ public interface CollaborationBackend extends Extension {
 	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
-	public void assignProject(String projectName, String projectKey, String ProjectId)
+	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException;
 
 	public void createProject(String projectName, String projectKey)
