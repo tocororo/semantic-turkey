@@ -117,7 +117,7 @@ public class Collaboration extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public STProperties getIssueCreationForm() {
-		return getCollaborationBackend().getCreateIssueform();
+		return getCollaborationBackend().getCreateIssueForm();
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)

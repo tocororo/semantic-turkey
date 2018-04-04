@@ -22,7 +22,7 @@ public interface CollaborationBackend extends Extension {
 
 	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, CollaborationBackendException ;
 	
-	public STProperties getCreateIssueform();
+	public STProperties getCreateIssueForm();
 	
 	public void createIssue(String resource, ObjectNode issueCreationForm) 
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
