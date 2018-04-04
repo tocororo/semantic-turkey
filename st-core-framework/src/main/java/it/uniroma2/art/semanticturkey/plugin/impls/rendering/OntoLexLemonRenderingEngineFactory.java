@@ -7,7 +7,6 @@ import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.OntoLexLemonRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
 /**
@@ -23,7 +22,7 @@ public class OntoLexLemonRenderingEngineFactory implements
 
 	@Override
 	public Collection<STProperties> getPluginConfigurations() {
-		return Arrays.<STProperties>asList(new SKOSXLRenderingEngineConfiguration());
+		return Arrays.<STProperties>asList(new OntoLexLemonRenderingEngineConfiguration());
 	}
 
 	@Override

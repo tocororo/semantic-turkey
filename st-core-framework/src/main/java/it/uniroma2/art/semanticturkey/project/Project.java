@@ -101,6 +101,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
@@ -594,7 +595,7 @@ public abstract class Project extends AbstractProject {
 		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2000/01/rdf-schema")) {
 			return RDFSRenderingEngineFactory.class.getName();
 		} else if (lexicalizationModel.stringValue().equals(ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING)) {
-			return SKOSXLRenderingEngineFactory.class.getName();
+			return OntoLexLemonRenderingEngineFactory.class.getName();
 		} else {
 			throw new IllegalArgumentException("Unsupported lexicalization model: " + lexicalizationModel);
 		}
