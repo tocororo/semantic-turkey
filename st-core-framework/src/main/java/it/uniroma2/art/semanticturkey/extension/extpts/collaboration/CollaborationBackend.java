@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 
@@ -21,7 +22,9 @@ public interface CollaborationBackend extends Extension {
 
 	public void checkPrjConfiguration() throws STPropertyAccessException, IOException, CollaborationBackendException ;
 	
-	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
+	public STProperties getCreateIssueform();
+	
+	public void createIssue(String resource, ObjectNode issueCreationForm) 
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
 	public void assignProject(ObjectNode projectJson)

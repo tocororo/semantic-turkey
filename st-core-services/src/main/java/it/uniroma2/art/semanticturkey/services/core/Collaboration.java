@@ -29,7 +29,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -116,12 +115,15 @@ public class Collaboration extends STServiceAdapter {
 		return instance;
 	}
 
+	@STServiceOperation(method = RequestMethod.GET)
+	public STProperties getIssueCreationForm() {
+		return getCollaborationBackend().getCreateIssueform();
+	}
+	
 	@STServiceOperation(method = RequestMethod.POST)
-	public void createIssue(IRI resource, String summary, @Optional String description,
-			@Optional String assignee, @Optional String issueId)
+	public void createIssue(IRI resource, ObjectNode issueCreationForm)
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		getCollaborationBackend().createIssue(resource.stringValue(), summary, description, assignee,
-				issueId);
+		getCollaborationBackend().createIssue(resource.stringValue(), issueCreationForm);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -129,7 +131,6 @@ public class Collaboration extends STServiceAdapter {
 			throws STPropertyAccessException, IOException, CollaborationBackendException,
 			STPropertyUpdateException {
 		getCollaborationBackend().assignProject(projectJson);
-		// TODO check the parameters (url sbagliato, credenziali sbagliate, parametri progetto sbagliati)
 		getCollaborationBackend().checkPrjConfiguration();
 	}
 

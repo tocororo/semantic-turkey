@@ -34,10 +34,10 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 /**
  * A {@link CollaborationBackend} for the <a href="https://jira.atlassian.com/">Atlassian Jira</a>
+ * @author Andrea Turbati &lt;turbati@info.uniroma2.it&gt;
  *
  */
-public class JiraBackend
-		implements CollaborationBackend {
+public class JiraBackend implements CollaborationBackend {
 
 	private Project stProject;
 	
@@ -117,6 +117,7 @@ public class JiraBackend
 		
 		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response.toString());
 		Map<String, String> prjIdToPrjKeyMap = new HashMap<>();
+		//add all the couple id-key to a map
 		for(JsonNode prjFromJiraNode : prjFromJiraArray) {
 			String currentPrjId = prjFromJiraNode.get("id").asText();
 			String currentPrjKey = prjFromJiraNode.get("key").asText();
@@ -135,30 +136,36 @@ public class JiraBackend
 	}
 	
 	@Override
-	public void createIssue(String resource, String summary, String description, String assignee, String issueId) 
+	public JiraIssueCreationForm getCreateIssueform() {
+		return new JiraIssueCreationForm();
+	}
+	
+	
+	@Override
+	public void createIssue(String resource, ObjectNode issueCreationForm) 
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
+
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//first of all, do the login
+		//do the login
 		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
 				projectSettings.serverURL);
 		
-		//if String issueId is null, then get all the possibile issueId for the desired project and select one 
+		//if String issueId is null, then get all the possible issueId for the desired project and select one 
 		//according to a specific list
 		String issueTypeId = "";
-		if(issueId==null) {
+		/*if(issueId==null) {
 			issueTypeId = getIssueIdToCreate(cookieManager);
 		} else {
 			issueTypeId = issueId;
-		}
+		}*/
+		issueTypeId = getIssueIdToCreate(cookieManager);
 		
 		//now create the issue
-
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"issue";
 
 		URL url = new URL(urlString);
@@ -170,7 +177,8 @@ public class JiraBackend
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
 
-		
+		String summary = issueCreationForm.get("summary").textValue();
+		// @formatter:off
 		String postJsonData = "{"
 				+"\n\"fields\": {"
 				//summary
@@ -189,17 +197,18 @@ public class JiraBackend
 				//+"\n\"reporter\": {"
 				//+"\n\"name\":\""+projectPreferences.username+"\""
 				//+"\n},";
-		if(assignee!=null && assignee.length()!=0) {
+		/*if(assignee!=null && assignee.length()!=0) {
 			postJsonData +=
 				//assignee
 				"\n\"assignee\": {"
 				+"\n\"name\":\""+assignee+"\""
 				+"\n},";
-		}
-		if(description!=null && description.length() !=0) {
+		}*/
+		if(issueCreationForm.get("description")!=null && 
+				issueCreationForm.get("description").textValue().length() !=0) {
 			postJsonData +=
 				//description
-				"\n\"description\":\""+description+"\",";
+				"\n\"description\":\""+issueCreationForm.get("description").textValue()+"\",";
 		}
 		postJsonData +=
 				//labels
@@ -209,7 +218,7 @@ public class JiraBackend
 				//+"\n\"labels\":\"http://test.it/c_42\""
 				+ "\n}"
 				+ "\n}"; 
-		
+		// @formatter:on
 		// Add the cookie
 		if (cookieManager.getCookieStore().getCookies().size() > 0) {
 			httpcon.setRequestProperty("Cookie",
@@ -235,57 +244,7 @@ public class JiraBackend
 	@Override
 	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
-		
-		//not used anymore, since projectId is mandatory, so there is no reason to get it from the projectKey
-		/*if(projectId==null) {
-			// since the projectId is not passed, ask Jira for the id associated to the project Key
-			//first of all, do the login
-			//the project ID is missing, so consult Jira to obtain such parameter
-			JiraBackendPreferences projectPreferences = factory.getProjectSettings(stProject,
-					UsersManager.getLoggedUser());
-			
-			CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-					projectSettings.serverURL);
-			
-			String urlString = projectSettings.serverURL+"/rest/api/2/"+"project/"+projectKey;
-
-			URL url = new URL(urlString);
-			HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-
-			// By default it is GET request
-			httpcon.setRequestMethod("GET");
-
-			// add request header
-			httpcon.setRequestProperty("User-Agent", USER_AGENT);
-
-			// Add the cookie
-			if (cookieManager.getCookieStore().getCookies().size() > 0) {
-				httpcon.setRequestProperty("Cookie",
-						cookieManager.getCookieStore().getCookies().get(0).toString());
-			}
-
-			executeAndCheckError(httpcon);
-
-			// Reading response from input Stream
-			BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-			String output;
-			StringBuffer response = new StringBuffer();
-
-			while ((output = in.readLine()) != null) {
-				response.append(output);
-			}
-			in.close();
-
-			// analyze the json response to get the ID of the desired project
-			ObjectMapper objectMapper = new ObjectMapper();
-			JsonNode rootNode = objectMapper.readTree(response.toString());
-			projectId = rootNode.get("id").asText();
-		}*/
-		
 		//now save all the information related to the Jira project
 		JsonNode idNode = projectJson.get("id");
 		if (idNode == null || idNode instanceof NullNode) {
@@ -301,22 +260,22 @@ public class JiraBackend
 		}
 		projectSettings.jiraPrjId = idNode.textValue();
 		projectSettings.jiraPrjKey = keyNode.textValue();
-		projectSettings.jiraPrjName = nameNode.textValue();
+		//projectSettings.jiraPrjName = nameNode.textValue();
 		factory.storeProjectSettings(stProject, projectSettings);
 	}
-		
+	
 	@Override
 	public void createProject(ObjectNode projectJson) 
 			throws STPropertyAccessException, JsonProcessingException, IOException, CollaborationBackendException, 
 			STPropertyUpdateException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
+
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
-		//first of all, do the login
+		//do the login
 		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
 				projectSettings.serverURL);
 		
@@ -385,15 +344,15 @@ public class JiraBackend
 		String projectId = rootNode.get("id").asText();
 		projectSettings.jiraPrjId = projectId;
 		projectSettings.jiraPrjKey = projectKey;
-		projectSettings.jiraPrjName = projectName;
+		//projectSettings.jiraPrjName = projectName;
 		factory.storeProjectSettings(stProject, projectSettings);
 	}
 
 	@Override
 	public void assignResourceToIssue(String issueKey, IRI resource) throws STPropertyAccessException, IOException, CollaborationBackendException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
+				
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
@@ -444,15 +403,14 @@ public class JiraBackend
 	@Override
 	public JsonNode listIssuesAssignedToResource(IRI resource) throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
 		
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//first of all, do the login
+		//do the login
 		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
 				projectSettings.serverURL);
 		
@@ -532,9 +490,8 @@ public class JiraBackend
 	@Override
 	public JsonNode listIssues() throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
 		
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
@@ -625,26 +582,14 @@ public class JiraBackend
 			resToIssuesCompleteResponse.add(issueRedux);
 		}
 		
-		/*for(String res : resToIssuesMap.keySet()) {
-			ObjectNode singleResToIssue = jsonFactory.objectNode();
-			singleResToIssue.set("resource", jsonFactory.textNode(res));
-			issuesArray = jsonFactory.arrayNode();
-			for(ObjectNode issue : resToIssuesMap.get(res)) {
-				issuesArray.add(issue);
-			}
-			singleResToIssue.set("issues", issuesArray);
-			resToIssuesCompleteResponse.add(singleResToIssue);
-			
-		}*/
 		return resToIssuesCompleteResponse;
 	}
 	
 	@Override
 	public JsonNode listUsers() throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
-		if (stProject == null) {
-			throw new NullPointerException("Jira Backend not bound to a project");
-		}
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
 		
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
@@ -654,11 +599,9 @@ public class JiraBackend
 		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
 				projectSettings.serverURL);
 		
-		//now ask jira for all the issue asosciated to the desired Resource
-		
+		//now ask JIRA for all the issue associated to the desired Resource
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"user/assignable/search?";
 
-		
 		urlString += "project="+projectSettings.jiraPrjKey;
 		
 		URL url = new URL(urlString);
@@ -790,15 +733,15 @@ public class JiraBackend
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
-		return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null 
-				&& projectSettings.jiraPrjId!=null;
+		//return projectSettings.jiraPrjName != null && projectSettings.jiraPrjKey != null 
+		//		&& projectSettings.jiraPrjId!=null;
+		return projectSettings.jiraPrjKey != null && projectSettings.jiraPrjId!=null;
 	}
 
 	
 	/*** PRVATE METHODS ***/
 	private CookieManager login(String username, String password, String urlString) throws IOException, 
 			CollaborationBackendException{
-		
 
 		String url = urlString+"/rest/auth/1/session";
 		URL obj = new URL(url);
@@ -817,7 +760,6 @@ public class JiraBackend
 		wr.writeBytes(postJsonData);
 		wr.flush();
 		wr.close();
-
 
 		executeAndCheckError(httpcon);
 
