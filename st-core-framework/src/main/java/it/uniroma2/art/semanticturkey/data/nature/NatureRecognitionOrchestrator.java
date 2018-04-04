@@ -59,6 +59,7 @@ public class NatureRecognitionOrchestrator {
 				+ "IF(?st = <http://www.w3.org/ns/lemon/lime#Lexicon>, \"" + RDFResourceRole.limeLexicon + "\","
 				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalEntry>, \"" + RDFResourceRole.ontolexLexicalEntry + "\","
 				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#Form>, \"" + RDFResourceRole.ontolexForm + "\","
+				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalSense>, \"" + RDFResourceRole.ontolexLexicalSense + "\","
 				+ "IF(?st = skos:Concept, \"" + RDFResourceRole.concept + "\","
 				+ "IF(?st = skos:ConceptScheme, \"" + RDFResourceRole.conceptScheme + "\","
 				+ "IF(?st = skos:Collection, \"" + RDFResourceRole.skosCollection + "\","
@@ -73,7 +74,7 @@ public class NatureRecognitionOrchestrator {
 				+ "IF(?st = rdfs:Class, \"" + RDFResourceRole.cls + "\","
 				+ "IF(?st = rdfs:Datatype, \"" + RDFResourceRole.dataRange + "\","
 				+ "\"" + RDFResourceRole.individual + "\""
-				+ "))))))))))))))))) as ?rt) \n" +
+				+ ")))))))))))))))))) as ?rt) \n" +
 		" OPTIONAL { \n" +
 		"	   BIND( \n" +
 		"	     IF(EXISTS {"+varName+" owl:deprecated true}, \"true\", \n" +

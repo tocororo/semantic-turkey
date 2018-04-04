@@ -50,7 +50,7 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
  */
 public enum RDFResourceRole {
 
-	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty, ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm;
+	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty, ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm, ontolexLexicalSense;
 
 	static Map<RDFResourceRole, IRI> map;
 	static {
@@ -71,6 +71,7 @@ public enum RDFResourceRole {
 		map.put(limeLexicon, LIME.LEXICON);
 		map.put(ontolexLexicalEntry, ONTOLEX.LEXICAL_ENTRY);
 		map.put(ontolexForm, ONTOLEX.FORM);
+		map.put(ontolexLexicalSense, ONTOLEX.LEXICAL_SENSE);
 	}
 
 	public IRI getIRI() {

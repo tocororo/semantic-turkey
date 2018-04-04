@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.coda.util.OntoUtils;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -46,6 +47,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -467,6 +469,140 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
+	 * Adds a lexicalization of the RDF resource {@code reference} using the {@code ontolex:LexicalEntry}
+	 * {@code lexicalEntry}. If {@code createPlain} is {@code true}, then a plain lexicalization directly
+	 * connecting the lexical entry and the reference is created as follows:
+	 * <ul>
+	 * <li>If {@code lexicalEntry} is defined in the working graph (see {@link STServiceContext#getWGraph()},
+	 * then a triple with the property {@code ontolex:evokes} is asserted;</li>
+	 * <li>If {@code reference} is defined in the working graph, then a triple with the property
+	 * {@code ontolex:isEvokedBy} is asserted;</li>
+	 * <li>If neither is defined in the working graph, then an exception is thrown.</li>
+	 * </ul>
+	 * If {@code createSense} is {@code true}, then an {@code ontolex:LexicalSense} is created (possibly in
+	 * addition to the plain lexicalization) and connected to the lexical entry and the reference following a
+	 * policy analogous to the one already described. Differently from the case above, the creation of a sense
+	 * does not fail if both the lexical entry and the reference aren't locally defined. Indeed, the service
+	 * will just create a sense and connect it to both.
+	 * 
+	 * @param lexicalEntry
+	 * @param reference
+	 * @param createPlain
+	 * @param createSense
+	 * @param lexicaSenseCls
+	 * @param customFormValue
+	 * @throws URIGenerationException
+	 * @throws CustomFormException
+	 * @throws CODAException
+	 * @throws ProjectInconsistentException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#reference)+ ', lexicalization)', 'D')")
+	public void addLexicalization(Resource lexicalEntry, Resource reference, boolean createPlain,
+			boolean createSense,
+			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional IRI lexicalSenseCls,
+			@Optional CustomFormValue customFormValue)
+			throws URIGenerationException, ProjectInconsistentException, CODAException, CustomFormException {
+		if (!createPlain && !createSense) {
+			throw new IllegalArgumentException("Either <createPlain> or <createSense> shall be enabled");
+		}
+		RepositoryConnection conn = getManagedConnection();
+
+		BooleanQuery definedQuery = conn.prepareBooleanQuery(
+		// @formatter:off
+			" ASK {                             \n" +
+			"   GRAPH ?g {                      \n" +
+			"     ?subject ?p ?o .              \n" +
+			"   }                               \n" +
+			" }                                 \n"
+			// @formatter:on
+		);
+		definedQuery.setIncludeInferred(false);
+		definedQuery.setBinding("g", getWorkingGraph());
+
+		definedQuery.setBinding("subject", lexicalEntry);
+		boolean lexicalEntryLocallyDefined = definedQuery.evaluate();
+
+		definedQuery.setBinding("subject", reference);
+		boolean referenceLocallyDefined = definedQuery.evaluate();
+
+//		BooleanQuery checkQuery = conn.prepareBooleanQuery(
+//		// @formatter:off
+//			" PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>                           \n" +
+//			" SELECT (COALESCE(?plainT) as ?plain) (COALESCE(?reifiedT) as ?reified) {        \n" +
+//			"   {                                                                             \n" +
+//			"     ?lexicalEntry ontolex:evokes|^ontolex:isEvokedBy ?reference .               \n" +
+//			"   } UNION {                                                                     \n" +
+//			"     ?lexicalSense ontolex:reference|^ontolex:isReferenceOf ?reference ;         \n" +
+//			"       ^ontolex:sense|ontolex:isSenseOf ?lexicalEntry .                          \n" +
+//			"   }                                                                             \n" +
+//			" }                                                                               \n"
+//			// @formatter:on
+//		);
+
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		if (createPlain) {
+			boolean tripleAdded = false;
+
+			if (lexicalEntryLocallyDefined) {
+				modelAdditions.add(lexicalEntry, ONTOLEX.DENOTES, reference);
+				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+						RDFResourceRole.ontolexLexicalEntry);
+				tripleAdded = true;
+			}
+
+			if (referenceLocallyDefined) {
+				modelAdditions.add(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
+				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+				tripleAdded = true;
+			}
+
+			if (!tripleAdded) {
+				throw new IllegalArgumentException(
+						"Unable to create a plain lexicalization because neither the lexical entry nor the reference are locally defined");
+			}
+		}
+
+		if (createSense) {
+			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, reference);
+
+			VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
+					RDFResourceRole.ontolexLexicalSense);
+
+			modelAdditions.add(lexicalSenseIRI, RDF.TYPE, ONTOLEX.LEXICAL_SENSE);
+			modelAdditions.add(lexicalSenseIRI, ONTOLEX.IS_SENSE_OF, lexicalEntry);
+			modelAdditions.add(lexicalSenseIRI, ONTOLEX.REFERENCE, reference);
+
+			if (lexicalEntryLocallyDefined) {
+				modelAdditions.add(lexicalEntry, ONTOLEX.SENSE, lexicalSenseIRI);
+				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+						RDFResourceRole.ontolexLexicalEntry);
+			}
+
+			if (referenceLocallyDefined) {
+				modelAdditions.add(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSenseIRI);
+				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+			}
+			// enrich with custom form
+			if (customFormValue != null) {
+				StandardForm stdForm = new StandardForm();
+				stdForm.addFormEntry(StandardForm.Prompt.resource, lexicalSenseIRI.stringValue());
+
+				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+				enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
+						customFormValue.getUserPromptMap(), stdForm);
+			}
+
+		}
+
+		conn.remove(modelRemovals, getWorkingGraph());
+		conn.add(modelAdditions, getWorkingGraph());
+	}
+
+	/**
 	 * Generates a new URI for an ontolex:LexicalEntry, optionally given its accompanying canonicalForm and
 	 * the lexicon it was attached to. The actual generation of the URI is delegated to
 	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
@@ -547,6 +683,37 @@ public class OntoLexLemon extends STServiceAdapter {
 			args.put(URIGenerator.Parameters.formProperty, formProperty);
 		}
 		return generateIRI(URIGenerator.Roles.ontolexForm, args);
+	}
+
+	/**
+	 * Generates a new URI for an ontolex:LexicalSense, given its lexical entry and reference. The actual
+	 * generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the
+	 * current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will
+	 * be provided with the following:
+	 * <ul>
+	 * <li><code>ontolexLexicalSense</code> as the <code>xRole</code></li>
+	 * <li>a map of additional parameters consisting of <code>lexicalEntry</code> and
+	 * <code>reference</code></li>
+	 * </ul>
+	 * 
+	 * @param lexicalEntry
+	 * @param writtenRep
+	 * @param formProperty
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	private IRI generateLexicalSenseIRI(Resource lexicalEntry, Resource reference)
+			throws URIGenerationException {
+		Map<String, Value> args = new HashMap<>();
+		if (lexicalEntry != null) {
+			args.put(URIGenerator.Parameters.entry, lexicalEntry);
+		}
+
+		if (reference != null) {
+			args.put(URIGenerator.Parameters.lexicalizedResource, reference);
+		}
+
+		return generateIRI(URIGenerator.Roles.ontolexLexicalSense, args);
 	}
 
 }

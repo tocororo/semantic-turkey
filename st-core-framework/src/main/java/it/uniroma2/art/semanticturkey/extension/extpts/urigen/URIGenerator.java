@@ -23,6 +23,7 @@ public interface URIGenerator extends Extension {
 		public static final String limeLexicon = "limeLexicon";
 		public static final String ontolexLexicalEntry = "ontolexLexicalEntry";
 		public static final String ontolexForm = "ontolexForm";
+		public static String ontolexLexicalSense = "ontolexLexicalSense";
 	}
 
 	public static final class Parameters {

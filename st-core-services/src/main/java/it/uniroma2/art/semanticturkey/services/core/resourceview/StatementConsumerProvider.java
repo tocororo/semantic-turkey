@@ -11,10 +11,12 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.InSchemeStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LabelRelationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalFormsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalSensesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalizationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OntologyImportsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
@@ -65,6 +67,10 @@ public class StatementConsumerProvider {
 				customFormManager);
 		LexicalFormsStatementConsumer lexicalFormsStatementConsumer = new LexicalFormsStatementConsumer(
 				customFormManager);
+		LexicalSensesStatementConsumer lexicalSensesStatementConsumer = new LexicalSensesStatementConsumer(
+				customFormManager);
+		DenotationsStatementConsumer denotationsStatementConsumer = new DenotationsStatementConsumer(
+				customFormManager);
 
 		role2template = new HashMap<RDFResourceRole, List<StatementConsumer>>();
 		role2template.put(RDFResourceRole.cls,
@@ -98,8 +104,10 @@ public class StatementConsumerProvider {
 				Arrays.asList(typesStatementConsumer, labelRelationStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 
-		role2template.put(RDFResourceRole.ontolexLexicalEntry, Arrays.asList(typesStatementConsumer,
-				lexicalFormsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.ontolexLexicalEntry,
+				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer,
+						lexicalSensesStatementConsumer, denotationsStatementConsumer,
+						otherPropertiesStatementConsumer));
 
 	}
 
