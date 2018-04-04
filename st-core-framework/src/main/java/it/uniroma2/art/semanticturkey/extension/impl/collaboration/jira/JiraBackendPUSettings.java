@@ -8,7 +8,7 @@ public class JiraBackendPUSettings implements Settings {
 
 	@Override
 	public String getShortName() {
-		return "Jira Backened Project User Settings";
+		return "JIRA User Information";
 	}
 	
 	@Override
