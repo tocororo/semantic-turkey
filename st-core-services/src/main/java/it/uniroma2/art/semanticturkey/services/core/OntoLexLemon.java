@@ -645,7 +645,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf('resource', lexicalization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, lexicalization)', 'D')")
 	public void removeReifiedLexicalization(Resource lexicalSense, boolean removePlain) {
 		RepositoryConnection conn = getManagedConnection();
 
