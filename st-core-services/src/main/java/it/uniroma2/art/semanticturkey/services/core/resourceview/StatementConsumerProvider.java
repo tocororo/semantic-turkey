@@ -13,6 +13,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Broad
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EvokedLexicalConcepts;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.InSchemeStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LabelRelationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalFormsStatementConsumer;
@@ -71,6 +72,7 @@ public class StatementConsumerProvider {
 				customFormManager);
 		DenotationsStatementConsumer denotationsStatementConsumer = new DenotationsStatementConsumer(
 				customFormManager);
+		EvokedLexicalConcepts evokedLexicalConcepts = new EvokedLexicalConcepts(customFormManager);
 
 		role2template = new HashMap<RDFResourceRole, List<StatementConsumer>>();
 		role2template.put(RDFResourceRole.cls,
@@ -106,7 +108,7 @@ public class StatementConsumerProvider {
 
 		role2template.put(RDFResourceRole.ontolexLexicalEntry,
 				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer,
-						lexicalSensesStatementConsumer, denotationsStatementConsumer,
+						lexicalSensesStatementConsumer, denotationsStatementConsumer, evokedLexicalConcepts,
 						otherPropertiesStatementConsumer));
 
 	}
