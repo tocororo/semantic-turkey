@@ -74,7 +74,7 @@ public class StatementConsumerProvider {
 				customFormManager);
 		EvokedLexicalConcepts evokedLexicalConcepts = new EvokedLexicalConcepts(customFormManager);
 
-		role2template = new HashMap<RDFResourceRole, List<StatementConsumer>>();
+		role2template = new HashMap<>();
 		role2template.put(RDFResourceRole.cls,
 				Arrays.asList(typesStatementConsumer, classAxiomsStatementConsumer,
 						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));

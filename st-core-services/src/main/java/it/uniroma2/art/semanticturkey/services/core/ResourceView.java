@@ -81,6 +81,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -248,10 +249,11 @@ public class ResourceView extends STServiceAdapter {
 
 		HashSet<IRI> annotationProps = Sets.newHashSet(RDFS.LABEL, SKOS.PREF_LABEL, SKOS.ALT_LABEL,
 				SKOS.HIDDEN_LABEL);
-		HashSet<IRI> objectProps = Sets.newHashSet(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
+		HashSet<IRI> objectProps = Sets.newHashSet(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL,
+				ONTOLEX.IS_DENOTED_BY);
 
 		for (IRI pred : getLexicalizationPropertiesHelper(resource, resourcePosition)) {
-			AnnotatedValue<IRI> annotatedPred = new AnnotatedValue<IRI>(pred);
+			AnnotatedValue<IRI> annotatedPred = new AnnotatedValue<>(pred);
 			Map<String, Value> predAttrs = annotatedPred.getAttributes();
 
 			String prefix = ns2prefixMap.get(pred.getNamespace());
@@ -287,6 +289,9 @@ public class ResourceView extends STServiceAdapter {
 				return Arrays.asList(SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL);
 			} else if (hostingProject.getLexicalizationModel().equals(Project.SKOS_LEXICALIZATION_MODEL)) {
 				return Arrays.asList(SKOS.PREF_LABEL, SKOS.ALT_LABEL, SKOS.HIDDEN_LABEL);
+			} else if (hostingProject.getLexicalizationModel()
+					.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+				return Arrays.asList(ONTOLEX.IS_DENOTED_BY);
 			} else {
 				return Arrays.asList(RDFS.LABEL);
 			}
