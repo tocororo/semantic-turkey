@@ -13,9 +13,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
@@ -137,9 +134,9 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void createProject(String projectName, String projectKey) throws STPropertyAccessException,
+	public void createProject(ObjectNode projectJson) throws STPropertyAccessException,
 			JsonProcessingException, IOException, CollaborationBackendException, STPropertyUpdateException {
-		getCollaborationBackend().createProject(projectName, projectKey);
+		getCollaborationBackend().createProject(projectJson);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)

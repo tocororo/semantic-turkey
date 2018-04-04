@@ -27,7 +27,7 @@ public interface CollaborationBackend extends Extension {
 	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException, STPropertyUpdateException;
 
-	public void createProject(String projectName, String projectKey)
+	public void createProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, JsonProcessingException, CollaborationBackendException,
 			STPropertyUpdateException;
 

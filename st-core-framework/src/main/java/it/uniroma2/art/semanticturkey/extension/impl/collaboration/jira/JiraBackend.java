@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackend;
@@ -286,14 +287,26 @@ public class JiraBackend
 		}*/
 		
 		//now save all the information related to the Jira project
-		projectSettings.jiraPrjId = projectJson.get("id").textValue();
-		projectSettings.jiraPrjKey = projectJson.get("key").textValue();
-		projectSettings.jiraPrjName = projectJson.get("name").textValue();
+		JsonNode idNode = projectJson.get("id");
+		if (idNode == null || idNode instanceof NullNode) {
+			throw new CollaborationBackendException("'id' attribute is missing in the project Json object.");
+		}
+		JsonNode keyNode = projectJson.get("key");
+		if (keyNode == null || keyNode instanceof NullNode) {
+			throw new CollaborationBackendException("'key' attribute is missing in the project Json object.");
+		}
+		JsonNode nameNode = projectJson.get("name");
+		if (nameNode == null || nameNode instanceof NullNode) {
+			throw new CollaborationBackendException("'name' attribute is missing in the project Json object.");
+		}
+		projectSettings.jiraPrjId = idNode.textValue();
+		projectSettings.jiraPrjKey = keyNode.textValue();
+		projectSettings.jiraPrjName = nameNode.textValue();
 		factory.storeProjectSettings(stProject, projectSettings);
 	}
 		
 	@Override
-	public void createProject(String projectName, String projectKey) 
+	public void createProject(ObjectNode projectJson) 
 			throws STPropertyAccessException, JsonProcessingException, IOException, CollaborationBackendException, 
 			STPropertyUpdateException {
 		if (stProject == null) {
@@ -318,6 +331,20 @@ public class JiraBackend
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		
+		JsonNode keyNode = projectJson.get("key");
+		if (keyNode == null || keyNode instanceof NullNode) {
+			throw new CollaborationBackendException("'key' attribute is missing in the project Json object.");
+		}
+		JsonNode nameNode = projectJson.get("name");
+		if (nameNode == null || nameNode instanceof NullNode) {
+			throw new CollaborationBackendException("'name' attribute is missing in the project Json object.");
+		}
+		
+		String projectName = nameNode.textValue();
+		String projectKey = keyNode.textValue();
+		System.out.println("projectName " + (nameNode instanceof NullNode) + " " + projectName);
+		System.out.println("projectKey " + projectKey);
 
 		String postJsonData = "{" + 
 				"\n\"name\": \"" + projectName + "\"," + 
