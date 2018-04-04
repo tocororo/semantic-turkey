@@ -136,7 +136,7 @@ public class JiraBackend implements CollaborationBackend {
 	}
 	
 	@Override
-	public JiraIssueCreationForm getCreateIssueform() {
+	public JiraIssueCreationForm getCreateIssueForm() {
 		return new JiraIssueCreationForm();
 	}
 	
