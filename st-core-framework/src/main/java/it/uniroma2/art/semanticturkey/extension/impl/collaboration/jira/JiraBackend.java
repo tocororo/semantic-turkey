@@ -343,8 +343,6 @@ public class JiraBackend
 		
 		String projectName = nameNode.textValue();
 		String projectKey = keyNode.textValue();
-		System.out.println("projectName " + (nameNode instanceof NullNode) + " " + projectName);
-		System.out.println("projectKey " + projectKey);
 
 		String postJsonData = "{" + 
 				"\n\"name\": \"" + projectName + "\"," + 
