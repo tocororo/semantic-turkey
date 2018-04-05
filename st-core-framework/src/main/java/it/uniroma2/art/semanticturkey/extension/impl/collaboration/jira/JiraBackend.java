@@ -177,7 +177,7 @@ public class JiraBackend implements CollaborationBackend {
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
 
-		String summary = issueCreationForm.get("summary").textValue();
+		String summary = escapeString(issueCreationForm.get("summary").textValue());
 		// @formatter:off
 		String postJsonData = "{"
 				+"\n\"fields\": {"
@@ -197,6 +197,12 @@ public class JiraBackend implements CollaborationBackend {
 				//+"\n\"reporter\": {"
 				//+"\n\"name\":\""+projectPreferences.username+"\""
 				//+"\n},";
+		//assign to the one who created it
+		postJsonData +=
+				//assignee
+				"\n\"assignee\": {"
+				+"\n\"name\":\""+projectPreferences.username+"\""
+				+"\n},";
 		/*if(assignee!=null && assignee.length()!=0) {
 			postJsonData +=
 				//assignee
@@ -206,9 +212,10 @@ public class JiraBackend implements CollaborationBackend {
 		}*/
 		if(issueCreationForm.get("description")!=null && 
 				issueCreationForm.get("description").textValue().length() !=0) {
-			postJsonData +=
+			String description = escapeString(issueCreationForm.get("description").textValue());
+			postJsonData += 
 				//description
-				"\n\"description\":\""+issueCreationForm.get("description").textValue()+"\",";
+				"\n\"description\":\""+description+"\",";
 		}
 		postJsonData +=
 				//labels
@@ -930,6 +937,15 @@ public class JiraBackend implements CollaborationBackend {
 			
 		
 		return issueId;
+	}
+	
+	private String escapeString(String text) {
+		String escaptedText = text.replace("\\", "\\\\");
+		escaptedText = escaptedText.replace("\"", "\\\"");
+		escaptedText = escaptedText.replace("\n", "\\n");
+		escaptedText = escaptedText.replace("\r", "\\r");
+		escaptedText = escaptedText.replace("\t", "\\t");
+		return escaptedText;
 	}
 
 }
