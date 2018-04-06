@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -61,6 +62,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -72,9 +75,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.Export.RDFReporter;
 import it.uniroma2.art.semanticturkey.services.core.export.FilteringPipeline;
 import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
 /**
  * This class provides services for SPARQL queries/updates.
@@ -354,6 +357,8 @@ public class SPARQL extends STServiceAdapter {
 	 * @param namedGraphs
 	 * @param filteringPipeline
 	 * @param outputFormat
+	 * @param deployerSpec
+	 * @param reformattingExporterSpec
 	 * @throws IOException
 	 * @throws WrongPropertiesException
 	 * @throws UnloadablePluginConfigurationException
@@ -374,11 +379,13 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs,
-			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
-			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
+			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline, @Optional String outputFormat,
+			@Optional PluginSpecification deployerSpec,
+			@Optional PluginSpecification reformattingExporterSpec)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
-			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException, InvalidConfigurationException {
+			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
+			InvalidConfigurationException {
 
 		RepositoryConnection conn = getManagedConnection();
 
@@ -391,8 +398,10 @@ public class SPARQL extends STServiceAdapter {
 				preparedQuery);
 
 		try (GraphQueryResult result = ((GraphQuery) preparedQuery).evaluate()) {
-			if (filteringPipeline.isEmpty()) {
-				Export.report2requestResponse(oRes, RDFReporter.fromGraphQueryResult(result), outputFormat);
+			if (filteringPipeline.isEmpty() && reformattingExporterSpec == null && deployerSpec == null) {
+				Objects.requireNonNull(outputFormat, "Output format must be specified");
+				Export.write2requestResponse(oRes, RDFReporter.fromGraphQueryResult(result),
+						RDF4JUtilities.getRDFFormat(outputFormat));
 			} else {
 				Repository tempSourceRepository = new SailRepository(new MemoryStore());
 				tempSourceRepository.initialize();
@@ -403,8 +412,8 @@ public class SPARQL extends STServiceAdapter {
 								SimpleValueFactory.getInstance().createIRI("urn:uuid:" + UUID.randomUUID()));
 						QueryResults.report(result, rdfInserter);
 
-						Export.exportHelper(exptManager, oRes, sourceConnection, new IRI[0],
-								filteringPipeline, includeInferred, outputFormat, false);
+						Export.exportHelper(exptManager, stServiceContext, oRes, sourceConnection, new IRI[0],
+								filteringPipeline, includeInferred, outputFormat, false, null, null);
 					}
 				} finally {
 					tempSourceRepository.shutDown();

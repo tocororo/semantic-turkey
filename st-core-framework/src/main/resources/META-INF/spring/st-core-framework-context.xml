@@ -402,4 +402,48 @@
 	<osgi:service auto-export="interfaces">
 		<bean class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore" />
 	</osgi:service>
+
+
+	<!-- Publishes the Deployer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.deployer.DeployerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the StreamSourcedDeployer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.deployer.StreamSourcedDeployerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the RepositorySourcedDeployer extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySourcedDeployerExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the GraphStore HTTP Deployer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerFactory" />
+	</osgi:service>
+
+	<!-- Publishes the ReformattingExporter extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporterExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the RDFSerializingExporter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterFactory" />
+	</osgi:service>
+
 </beans>

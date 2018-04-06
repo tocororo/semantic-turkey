@@ -2,34 +2,28 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.toList;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -38,11 +32,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.google.common.collect.Lists;
-
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Source;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.FormatCapabilityProvider;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporter;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -50,6 +52,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -57,6 +60,10 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.export.FilteringPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.FilteringStep;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
 /**
  * This class provides services for exporting the data managed by a project .
@@ -79,14 +86,42 @@ public class Export extends STServiceAdapter {
 				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toList());
 	}
 
+	/**
+	 * Gets {@link RDFFormat}s for which a writer is available
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
 	@STServiceOperation
 	@Read
 	public Collection<RDFFormat> getOutputFormats() throws Exception {
-		return RDFWriterRegistry.getInstance().getKeys();
+		return RDF4JUtilities.getOutputFormats();
 	}
 
 	/**
-	 * Exports the content of the currently used project.
+	 * Returns formats accepted by a {@link ReformattingExporter}.
+	 * 
+	 * @param reformattingExporterID
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	public Collection<String> getExportFormats(String reformattingExporterID) {
+		ExtensionFactory<?> extensionPoint = exptManager.getExtension(reformattingExporterID);
+
+		if (extensionPoint instanceof FormatCapabilityProvider) {
+			return ((FormatCapabilityProvider) extensionPoint).getFormats();
+		} else {
+			return Collections.emptyList();
+		}
+	}
+
+	/**
+	 * Exports the content of the currently used project. The RDF data can be transformed using a
+	 * {@link FilteringPipeline}, and optionally reformatted to a (usually non-RDF) format by means of a
+	 * {@link ReformattingExporter}. The response of this operation is the actual data, if no
+	 * {@code deployerSpec} is provided; otherwise, the standard response of a void service operation is
+	 * written to the output stream, while the data are deployed somewhere else.
 	 * 
 	 * @param oRes
 	 * @param graphs
@@ -101,6 +136,8 @@ public class Export extends STServiceAdapter {
 	 *            <code>true</code> tells the service to proceed despite the presence of triples in the null
 	 *            context or in graphs named by blank nodes. Otherwise, under this conditions the service
 	 *            would fail, so that available information is not silently ignored
+	 * @param deployerSpec
+	 *            an optional {@link Deployer} to export the data somewhere instead of simply downloading it
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -108,21 +145,23 @@ public class Export extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
 			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
-			@Optional(defaultValue = "false") boolean includeInferred,
-			@Optional(defaultValue = "TRIG") RDFFormat outputFormat,
-			@Optional(defaultValue = "false") boolean force) throws Exception {
+			@Optional(defaultValue = "false") boolean includeInferred, @Optional String outputFormat,
+			@Optional(defaultValue = "false") boolean force, @Optional PluginSpecification deployerSpec,
+			@Optional PluginSpecification reformattingExporterSpec) throws Exception {
 
-		exportHelper(exptManager, oRes, getManagedConnection(), graphs, filteringPipeline, includeInferred,
-				outputFormat, force);
+		exportHelper(exptManager, stServiceContext, oRes, getManagedConnection(), graphs, filteringPipeline,
+				includeInferred, outputFormat, force, deployerSpec, reformattingExporterSpec);
 	}
 
-	public static void exportHelper(ExtensionPointManager exptManager, HttpServletResponse oRes,
-			RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
-			FilteringPipeline filteringPipeline, boolean includeInferred, RDFFormat outputFormat,
-			boolean force) throws IOException, ClassNotFoundException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			WrongPropertiesException, ExportPreconditionViolationException, IllegalArgumentException,
-			STPropertyAccessException, InvalidConfigurationException {
+	public static void exportHelper(ExtensionPointManager exptManager, STServiceContext stServiceContext,
+			HttpServletResponse oRes, RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
+			FilteringPipeline filteringPipeline, boolean includeInferred, String outputFormat, boolean force,
+			@Nullable PluginSpecification deployerSpec,
+			@Nullable PluginSpecification reformattingExporterSpec)
+			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, WrongPropertiesException,
+			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
+			InvalidConfigurationException {
 		Set<Resource> sourceGraphs = QueryResults.asSet(sourceRepositoryConnection.getContextIDs());
 
 		if (!force) {
@@ -147,7 +186,8 @@ public class Export extends STServiceAdapter {
 
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy
-			dumpRepository(oRes, sourceRepositoryConnection, graphs, includeInferred, outputFormat);
+			formatAndThenDownloadOrDeploy(exptManager, stServiceContext, oRes, graphs, includeInferred,
+					outputFormat, deployerSpec, sourceRepositoryConnection, reformattingExporterSpec);
 		} else {
 			// Translates numeric graph references to graph names
 			IRI[][] step2graphs = computeGraphsForStep(graphs, filteringSteps);
@@ -173,11 +213,86 @@ public class Export extends STServiceAdapter {
 						transformer.transform(sourceRepositoryConnection, workingRepositoryConnection,
 								stepGraphs);
 					}
-					// Dumps the working repository (i.e. the filtered repository)
-					dumpRepository(oRes, workingRepositoryConnection, graphs, includeInferred, outputFormat);
+
+					formatAndThenDownloadOrDeploy(exptManager, stServiceContext, oRes, graphs,
+							includeInferred, outputFormat, deployerSpec, workingRepositoryConnection,
+							reformattingExporterSpec);
 				}
 			} finally {
 				workingRepository.shutDown();
+			}
+		}
+	}
+
+	/**
+	 * Depending on whether {@code deployerSpec} is non {@code null}, deploys the data or downloads it
+	 * 
+	 * @param exptManager
+	 * @param oRes
+	 * @param graphs
+	 * @param includeInferred
+	 * @param outputFormat
+	 * @param deployerSpec
+	 * @param workingRepositoryConnection
+	 * @param reformattingExporterSpec
+	 * @throws IllegalArgumentException
+	 * @throws NoSuchExtensionException
+	 * @throws WrongPropertiesException
+	 * @throws STPropertyAccessException
+	 * @throws InvalidConfigurationException
+	 * @throws IOException
+	 */
+	public static void formatAndThenDownloadOrDeploy(ExtensionPointManager exptManager,
+			STServiceContext stServiceContext, HttpServletResponse oRes, IRI[] graphs,
+			boolean includeInferred, String outputFormat, @Nullable PluginSpecification deployerSpec,
+			RepositoryConnection workingRepositoryConnection,
+			@Nullable PluginSpecification reformattingExporterSpec)
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+			STPropertyAccessException, InvalidConfigurationException, IOException {
+
+		// apply the given reformatting export, or if no deployer was specified force serialization to RDF
+
+		ReformattingExporter reformattingExporter;
+		if (reformattingExporterSpec != null) {
+			reformattingExporter = exptManager.instantiateExtension(ReformattingExporter.class,
+					reformattingExporterSpec);
+		} else if (deployerSpec == null) {
+			reformattingExporter = exptManager.instantiateExtension(ReformattingExporter.class,
+					new PluginSpecification(
+							"it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporter",
+							null, null, null));
+		} else {
+			reformattingExporter = null;
+		}
+
+		try (ClosableFormattedResource formattedResource = reformattingExporter == null ? null
+				: reformattingExporter.export(workingRepositoryConnection, graphs, outputFormat, false)) {
+
+			Source source;
+			if (formattedResource != null) {
+				source = new FormattedResourceSource(formattedResource);
+			} else {
+				source = new RepositorySource(workingRepositoryConnection, graphs);
+			}
+
+			if (deployerSpec != null) {
+				Deployer deployer = exptManager.instantiateExtension(Deployer.class, deployerSpec);
+				deployer.deploy(source);
+				String responseString = ServletUtilities.getService()
+						.createReplyResponse(stServiceContext.getRequest().getServiceMethod(),
+								RepliesStatus.ok, SerializationType.json)
+						.getResponseContent();
+				byte[] responseBytes = responseString.getBytes(StandardCharsets.UTF_8);
+				oRes.setHeader("Content-Type", "application/json;charset=UTF-8");
+				oRes.setHeader("Content-Length", Integer.toString(responseBytes.length));
+				try (OutputStream os = oRes.getOutputStream()) {
+					os.write(responseBytes, 0, responseBytes.length);
+					os.flush();
+				}
+			} else {
+				// Dumps the working repository (i.e. the filtered repository)
+				write2requestResponse(oRes, formattedResource); // if there is no deployer, then data are
+																// always reformatted
 			}
 		}
 	}
@@ -221,92 +336,32 @@ public class Export extends STServiceAdapter {
 	}
 
 	/**
-	 * An object able to report to an {@link RDFHandler}.
-	 *
+	 * Writes the provided <em>formatted resource</em> to the output stream of the <em>HTTP response</em>
+	 * 
+	 * @param oRes
+	 * @param source
+	 * @throws IOException
 	 */
-	@FunctionalInterface
-	public interface RDFReporter {
-		void export(RDFHandler handler);
-
-		static RDFReporter fromRepositoryConnection(RepositoryConnection conn, Resource subj, IRI pred,
-				Value obj, boolean includeInferred, Resource... contexts) {
-			return handler -> conn.exportStatements(subj, pred, obj, includeInferred, handler, contexts);
-		}
-
-		static RDFReporter fromGraphQueryResult(GraphQueryResult result) {
-			return handler -> QueryResults.report(result, handler);
-		}
-
-		RDFReporter EmptyReporter = new RDFReporter() {
-
-			@Override
-			public void export(RDFHandler handler) {
-				handler.startRDF();
-				handler.endRDF();
-			}
-		};
-
+	public static void write2requestResponse(HttpServletResponse oRes, ClosableFormattedResource source)
+			throws IOException {
+		oRes.setHeader("Content-Disposition",
+				"attachment; filename=save." + source.getDefaultFileExtension());
+		oRes.setContentType(source.getMIMEType());
+		source.writeTo(oRes.getOutputStream());
 	}
 
 	/**
-	 * Dumps the provided graphs to the servlet response. It is assumed that the array of graphs has already
-	 * been expanded, so an empty array is interpreted as a <i>no graph</i>. Additionally, if
-	 * {@code includeNullContext} is {@code true}, then also the {@code null} context is copied.
+	 * Writes the provided <em>formatted resource</em> to the output stream of the <em>HTTP response</em>
 	 * 
 	 * @param oRes
-	 * @param filteredRepositoryConnection
-	 * @param expandedGraphs
-	 * @param includeNullContext
-	 * @param outputFormat
+	 * @param source
 	 * @throws IOException
 	 */
-	private static void dumpRepository(HttpServletResponse oRes,
-			RepositoryConnection filteredRepositoryConnection, Resource[] expandedGraphs,
-			boolean includeNullContext, RDFFormat outputFormat) throws IOException {
-		if (expandedGraphs.length != 0) {
-			Resource[] outputGraphs;
-			if (includeNullContext) {
-				List<Resource> tempList = Lists.newArrayList(expandedGraphs);
-				tempList.add(null);
-				outputGraphs = tempList.toArray(new Resource[tempList.size()]);
-			} else {
-				outputGraphs = expandedGraphs;
-			}
-			report2requestResponse(oRes, RDFReporter.fromRepositoryConnection(filteredRepositoryConnection,
-					null, null, null, includeNullContext, outputGraphs), outputFormat);
-		} else { // the filtered repoitory is empty
-			report2requestResponse(oRes, RDFReporter.EmptyReporter, outputFormat);
-		}
-
-	}
-
-	/**
-	 * Reports RDF data to the request output stream
-	 * 
-	 * @param oRes
-	 * @param rdfReporter
-	 * @param outputFormat
-	 * @throws IOException
-	 */
-	public static void report2requestResponse(HttpServletResponse oRes, RDFReporter rdfReporter,
+	public static void write2requestResponse(HttpServletResponse oRes, RDFReporter source,
 			RDFFormat outputFormat) throws IOException {
-		File tempServerFile = File.createTempFile("save", "." + outputFormat.getDefaultFileExtension());
-		try {
-			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
-				rdfReporter.export(Rio.createWriter(outputFormat, tempServerFileStream));
-			}
-
-			oRes.setHeader("Content-Disposition",
-					"attachment; filename=save." + outputFormat.getDefaultFileExtension());
-			oRes.setContentType(outputFormat.getDefaultMIMEType());
-			oRes.setContentLength((int) tempServerFile.length());
-
-			try (InputStream is = new FileInputStream(tempServerFile)) {
-				IOUtils.copy(is, oRes.getOutputStream());
-			}
-			oRes.flushBuffer();
-		} finally {
-			tempServerFile.delete();
-		}
+		oRes.setHeader("Content-Disposition",
+				"attachment; filename=save." + outputFormat.getDefaultFileExtension());
+		oRes.setContentType(outputFormat.getDefaultMIMEType());
+		source.export(Rio.createWriter(outputFormat, oRes.getOutputStream()));
 	}
-};
+}
