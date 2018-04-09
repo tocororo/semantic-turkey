@@ -159,35 +159,30 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		List<Annotation> constraints = selectConstraints(annotatedType.getAnnotations());
 
 		boolean isParametricType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
-		boolean isComplexType = isParametricType || !constraints.isEmpty();
 
-		if (!isComplexType) {
-			gen.writeString(reducedTypeName);
-		} else {
-			gen.writeStartObject();
-			gen.writeStringField("name", reducedTypeName);
-			appendConstraints(constraints, gen, provider);
+		gen.writeStartObject();
+		gen.writeStringField("name", reducedTypeName);
+		appendConstraints(constraints, gen, provider);
 
-			if (isParametricType) {
-				gen.writeArrayFieldStart("typeArguments");
+		if (isParametricType) {
+			gen.writeArrayFieldStart("typeArguments");
 
-				if (annotatedType instanceof AnnotatedParameterizedType) {
-					AnnotatedType[] annotatedTypeArguments = ((AnnotatedParameterizedType) annotatedType)
-							.getAnnotatedActualTypeArguments();
-					for (AnnotatedType arg : annotatedTypeArguments) {
-						writeTypeDescription(arg, gen, provider);
-					}
-				} else if (TypeUtils.isArrayType(type)) {
-					AnnotatedType componentType = ((AnnotatedArrayType) annotatedType)
-							.getAnnotatedGenericComponentType();
-					writeTypeDescription(componentType, gen, provider);
+			if (annotatedType instanceof AnnotatedParameterizedType) {
+				AnnotatedType[] annotatedTypeArguments = ((AnnotatedParameterizedType) annotatedType)
+						.getAnnotatedActualTypeArguments();
+				for (AnnotatedType arg : annotatedTypeArguments) {
+					writeTypeDescription(arg, gen, provider);
 				}
-
-				gen.writeEndArray();
+			} else if (TypeUtils.isArrayType(type)) {
+				AnnotatedType componentType = ((AnnotatedArrayType) annotatedType)
+						.getAnnotatedGenericComponentType();
+				writeTypeDescription(componentType, gen, provider);
 			}
 
-			gen.writeEndObject();
+			gen.writeEndArray();
 		}
+
+		gen.writeEndObject();
 
 	}
 
@@ -256,7 +251,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		}
 
 		if (Objects.equals(parType, Resource.class)) {
-			return "BNode";
+			return "Resource";
 		}
 
 		if (Objects.equals(parType, Literal.class)) {
@@ -271,7 +266,15 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 			return "URL";
 		}
 
+		if (Objects.equals(parType, ExtensionSpecificationByRef.class)) {
+			return "ExtensionSpecificationByRef";
+		}
+
 		Class<?> rawParType = TypeUtils.getRawType(parType, null);
+
+		if (Pair.class.isAssignableFrom(rawParType)) {
+			return "Pair";
+		}
 
 		if (Objects.equals(rawParType, Set.class)) {
 			return "Set";

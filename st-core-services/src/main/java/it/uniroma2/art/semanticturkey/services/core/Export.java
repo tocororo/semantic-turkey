@@ -24,7 +24,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
@@ -126,9 +125,11 @@ public class Export extends STServiceAdapter {
 	 * @param oRes
 	 * @param graphs
 	 *            the graphs to be exported. An empty array means all graphs the name of which is an IRI
-	 * @param filteringSteps
+	 * @param filteringPipeline
 	 *            a JSON string representing an array of {@link FilteringStep}. Each filter is applied to a
 	 *            subset of the exported graphs. No graph means every exported graph
+	 * @param includeInferred
+	 *            tells if inferred triples should be included
 	 * @param outputFormat
 	 *            the output format. If it does not support graphs, the exported graph are merged into a
 	 *            single graph
@@ -136,6 +137,9 @@ public class Export extends STServiceAdapter {
 	 *            <code>true</code> tells the service to proceed despite the presence of triples in the null
 	 *            context or in graphs named by blank nodes. Otherwise, under this conditions the service
 	 *            would fail, so that available information is not silently ignored
+	 * @param reformattingExporterSpec
+	 *            an optional {@link ReformattingExporter} that reformats the data to a (usually non-RDF)
+	 *            format
 	 * @param deployerSpec
 	 *            an optional {@link Deployer} to export the data somewhere instead of simply downloading it
 	 * @throws Exception
@@ -146,8 +150,8 @@ public class Export extends STServiceAdapter {
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
 			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
 			@Optional(defaultValue = "false") boolean includeInferred, @Optional String outputFormat,
-			@Optional(defaultValue = "false") boolean force, @Optional PluginSpecification deployerSpec,
-			@Optional PluginSpecification reformattingExporterSpec) throws Exception {
+			@Optional(defaultValue = "false") boolean force, @Optional PluginSpecification reformattingExporterSpec,
+			@Optional PluginSpecification deployerSpec) throws Exception {
 
 		exportHelper(exptManager, stServiceContext, oRes, getManagedConnection(), graphs, filteringPipeline,
 				includeInferred, outputFormat, force, deployerSpec, reformattingExporterSpec);

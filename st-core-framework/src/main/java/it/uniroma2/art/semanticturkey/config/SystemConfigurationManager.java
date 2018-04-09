@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -19,6 +21,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 public interface SystemConfigurationManager<CONFTYPE extends Configuration>
 		extends ConfigurationManager<CONFTYPE> {
 
+	@JsonIgnore
 	default Collection<String> getSystemConfigurationIdentifiers() {
 		File folder = ConfigurationSupport.getConfigurationFolder(this);
 		return ConfigurationSupport.listConfigurationIdentifiers(folder);

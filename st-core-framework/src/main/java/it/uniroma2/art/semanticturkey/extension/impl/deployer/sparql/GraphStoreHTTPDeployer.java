@@ -36,6 +36,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 /**
  * Implementation of the {@link URIGenerator} extension point based on templates.
  * 
+ * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class GraphStoreHTTPDeployer implements RepositorySourcedDeployer {
 

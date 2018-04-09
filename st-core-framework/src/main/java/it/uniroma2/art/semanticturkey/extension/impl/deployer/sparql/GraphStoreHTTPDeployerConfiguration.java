@@ -10,6 +10,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
  * Configuration class for {@link GraphStoreHTTPDeployerFactory}.
+ * 
+ * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class GraphStoreHTTPDeployerConfiguration implements Configuration {
 

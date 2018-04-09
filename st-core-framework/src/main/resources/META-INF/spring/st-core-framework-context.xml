@@ -403,6 +403,11 @@
 		<bean class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore" />
 	</osgi:service>
 
+	<!-- Publishes the Exporter -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.config.exporter.Exporter" />
+	</osgi:service>
 
 	<!-- Publishes the Deployer extension point -->
 
