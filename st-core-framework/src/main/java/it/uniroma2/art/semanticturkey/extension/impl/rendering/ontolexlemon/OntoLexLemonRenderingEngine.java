@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon;
 
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 
@@ -13,13 +16,17 @@ public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements 
 	protected void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(
 			//@formatter:off
-			"\n{?resource <http://www.w3.org/ns/lemon/ontolex#isDenotedBy>|^<http://www.w3.org/ns/lemon/ontolex#denotes> ?entry.} "+
+			"\n{"+
+			"\n{?resource <"+ONTOLEX.IS_DENOTED_BY.stringValue()+">|^<"+ONTOLEX.DENOTES.stringValue()+"> ?entry.} "+
 			"\nUNION " +
-			"\n{?sense <http://www.w3.org/ns/lemon/ontolex#reference>|<http://www.w3.org/ns/lemon/ontolex#isReferenceOf> ?resource ." +
-			"\n?sense <http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense> ?entry . } " +
+			"\n{?sense <"+ONTOLEX.REFERENCE.stringValue()+">|<"+ONTOLEX.IS_REFERENCE_OF.stringValue()+"> ?resource ." +
+			"\n?sense <"+ONTOLEX.IS_SENSE_OF.stringValue()+">|^<"+ONTOLEX.SENSE.stringValue()+"> ?entry . } " +
 			"\nUNION" +
 			"\n{BIND(?resource AS ?entry )}"+
-			"\n?entry <http://www.w3.org/ns/lemon/ontolex#canonicalForm> [ <http://www.w3.org/ns/lemon/ontolex#writtenRep> ?labelInternal ] .\n");
+			"\n?entry <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> [ <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?labelInternal ] .\n" +
+			"\n}" +
+			"\nUNION" +
+			"\n{?resource <"+DCTERMS.TITLE+"> ?labelInternal . }");
 			//@formatter:on
 	}
 
