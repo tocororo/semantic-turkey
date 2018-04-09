@@ -136,8 +136,6 @@ public class Resources extends STServiceAdapter {
 		qb.setBinding("resource", resource);
 		qb.processRendering();
 		qb.processQName();
-		qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexiconRendering");
-		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
 		qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
 		
 		AnnotatedValue<Resource> annotatedResource = qb.runQuery().iterator().next();

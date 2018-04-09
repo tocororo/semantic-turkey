@@ -20,7 +20,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -28,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.coda.util.OntoUtils;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -162,7 +160,7 @@ public class OntoLexLemon extends STServiceAdapter {
 				// @formatter:on
 		);
 		qb.processQName();
-		qb.process(LexiconRenderer.INSTANCE, "resource", "attr_show");
+		qb.processRendering();
 		return qb.runQuery();
 	}
 
@@ -322,7 +320,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		);
 		qb.setBinding("lexicon", lexicon);
 		qb.processQName();
-		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
+		qb.processRendering();
 		return qb.runQuery();
 	}
 
