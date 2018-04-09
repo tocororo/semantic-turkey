@@ -11,7 +11,7 @@ public class RDFSRenderingEngine extends BaseRenderingEngine implements Renderin
 
 	@Override
 	protected void getGraphPatternInternal(StringBuilder gp) {
-		gp.append("?resource <http://www.w3.org/2000/01/rdf-schema#label> ?labelInternal .\n");
+		gp.append("\n?resource <http://www.w3.org/2000/01/rdf-schema#label> ?labelInternal .\n");
 	}
 
 }

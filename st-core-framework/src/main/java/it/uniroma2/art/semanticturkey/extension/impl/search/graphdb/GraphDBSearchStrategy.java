@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
@@ -135,7 +136,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 
-		logger.debug("searchResource in GraphDBSearchStrategy, useURI="+useURI+", useLocalName="+useLocalName);
+		logger.debug("searchResource in GraphDBSearchStrategy, searchString="+searchString +", "
+				+ "useURI="+useURI+", useLocalName="+useLocalName);
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
@@ -149,10 +151,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
 		
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
-				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
-				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, null);
+		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, null);
 
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -177,10 +176,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	@Override
 	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
-			boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
+			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, 
+			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
+					throws IllegalStateException, STPropertyAccessException {
 		
-		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString);
+		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString+", "
+				+ "useURI="+useURI+", useLocalName="+useLocalName);
 		
 		//since we are interested just in the LexicalEntry, add this type automatically
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
@@ -189,18 +190,16 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+ 
-			"\nWHERE{";
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
+				"(GROUP_CONCAT(DISTINCT ?index; separator=\",\") AS ?attr_index)"+ 
+				"\nWHERE{";
 		
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query+=prepareQueryforResource(searchString, searchMode, false, false, langs, includeLocales);
+		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
 		
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
-				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
-				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), null, null);
+		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", null, null);
 
 		//add the information about the lexicon
 		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resoruce . }";
@@ -268,7 +267,18 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\n{" +
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				"\n}";		
+				"\n}" +
+		//search in dct:title
+				"UNION" +
+				"\n{" +
+				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+				"\n}"+	
+		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				"\n}";
 		if(useLocalName ){
 			query+="\n}";
 		}
@@ -276,10 +286,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//if the user specify a role, filter the results according to the type
 		if(rolesArray!=null && rolesArray.length>0){
 			//filter the resource according to its type
-			query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
-				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
-				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, cls);
+			query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, cls);
 		}
 		query+="\n}";
 		//@formatter:on
@@ -305,10 +312,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(rolesArray!=null && rolesArray.length>0){
 			//filter the resource according to its type
 			query+= "\n{ SELECT ?resource \nWHERE {\n" +
-					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", serviceForSearches.isClassWanted(), 
-				serviceForSearches.isInstanceWanted(), serviceForSearches.isPropertyWanted(), 
-				serviceForSearches.isConceptWanted(), serviceForSearches.isConceptSchemeWanted(), 
-				serviceForSearches.isCollectionWanted(), serviceForSearches.isLexicalEntryWanted(), schemes, cls) +
+					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, cls) +
 				"\n}" +
 				"\n}";
 		} else {
@@ -411,7 +415,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
 				includeLocales);
 		
-		
+		//TODO, mabye this part should consider in some way the LexicalModel and/or the role
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?label ." +
@@ -427,6 +431,16 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 				"\n}" +
+		//search in dct:title
+				"UNION" +
+				"\n{" +
+				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+				"\n}"+
+		//search in dct:title
+				"UNION" +
+				"\n{" +
+				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+				"\n}"+	
 		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 				"\nUNION" +
 				"\n{" +

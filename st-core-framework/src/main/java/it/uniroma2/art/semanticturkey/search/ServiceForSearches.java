@@ -23,6 +23,7 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
@@ -46,6 +47,7 @@ public class ServiceForSearches {
 	private boolean isInstanceWanted = false;
 	private boolean isPropertyWanted = false;
 	private boolean isCollectionWanted = false;
+	private boolean isLexiconWanted = false;
 	private boolean isLexicalEntryWanted = false;
 	
 	String [] langArray;
@@ -74,6 +76,10 @@ public class ServiceForSearches {
 		return isCollectionWanted;
 	}
 	
+	public boolean isLexiconWanted() {
+		return isLexiconWanted;
+	}
+	
 	public boolean isLexicalEntryWanted() {
 		return isLexicalEntryWanted;
 	}
@@ -82,17 +88,14 @@ public class ServiceForSearches {
 		return langArray;
 	}
 	
-	public String filterResourceTypeAndScheme(String resource, String type, boolean isClassWanted, 
-			boolean isInstanceWanted, boolean isPropertyWanted, boolean isConceptWanted, 
-			boolean isConceptSchemeWanted, boolean isCollectionWanted, boolean isLexicalEntryWanted, 
-			List<IRI> schemes, IRI cls){
+	public String filterResourceTypeAndScheme(String varResource, String varType, List<IRI> schemes, IRI cls){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
 		if(isClassWanted){
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+" = <"+OWL.CLASS.stringValue()+"> || " +
-							type+" = <"+RDFS.CLASS.stringValue()+"> )" +
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					"\nFILTER("+varType+" = <"+OWL.CLASS.stringValue()+"> || " +
+							varType+" = <"+RDFS.CLASS.stringValue()+"> )" +
 					"\n}";
 			
 			otherWanted = true;
@@ -101,12 +104,12 @@ public class ServiceForSearches {
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					"\nFILTER("+type+ " = <"+RDF.PROPERTY.stringValue()+"> || "+
-					type+" = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "+
-					type+" = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "+
-					type+" = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
-					type+" = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					"\nFILTER("+varType+ " = <"+RDF.PROPERTY.stringValue()+"> || "+
+					varType+" = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "+
+					varType+" = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "+
+					varType+" = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
+					varType+" = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
 					"\n}";
 			otherWanted = true;
 		}
@@ -117,16 +120,16 @@ public class ServiceForSearches {
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.CONCEPT.stringValue()+">)";
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					 "\nFILTER("+varType+" = <"+SKOS.CONCEPT.stringValue()+">)";
 			if(schemes!=null && schemes.size()==1){
-				filterQuery += "\n"+resource+" "+schemeOrTopConcept+" <"+schemes.get(0).stringValue()+"> ."+
-						"\n"+resource+" "+schemeOrTopConcept+" ?scheme .";
+				filterQuery += "\n"+varResource+" "+schemeOrTopConcept+" <"+schemes.get(0).stringValue()+"> ."+
+						"\n"+varResource+" "+schemeOrTopConcept+" ?scheme .";
 			} else if(schemes!=null && schemes.size()>1){
-				filterQuery += "\n"+resource+" "+schemeOrTopConcept+" ?scheme . "+
+				filterQuery += "\n"+varResource+" "+schemeOrTopConcept+" ?scheme . "+
 						filterWithOrValues(schemes, "?scheme");
 			} else{ // schemes!=null
-				filterQuery +="\n"+resource+" "+schemeOrTopConcept+" ?scheme .";
+				filterQuery +="\n"+varResource+" "+schemeOrTopConcept+" ?scheme .";
 			}
 			
 			filterQuery += "\n}";
@@ -137,8 +140,8 @@ public class ServiceForSearches {
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					 "\nFILTER("+varType+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
 			
 			filterQuery += "\n}";
 			
@@ -148,9 +151,9 @@ public class ServiceForSearches {
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+SKOS.COLLECTION.stringValue()+"> || " +
-					 		 type+" = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> )" +
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					 "\nFILTER("+varType+" = <"+SKOS.COLLECTION.stringValue()+"> || " +
+					 		 varType+" = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> )" +
 					 "\n}";
 			
 			otherWanted = true;
@@ -160,7 +163,7 @@ public class ServiceForSearches {
 				filterQuery += "\nUNION ";
 			}
 			if(otherWanted || cls==null ) {
-				filterQuery += "\n{\n"+resource+" a "+type+" . " +
+				filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 						"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
 						//"\n?type a ?classType ." +
 						//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
@@ -170,23 +173,41 @@ public class ServiceForSearches {
 			} else {
 				//since only individuals are wanted and cls is not null, filter the individuals just for the 
 				// desired class
-				filterQuery += "\n{\n"+resource+" a <"+cls.stringValue()+"> . } ";
+				filterQuery += "\n{\n"+varResource+" a <"+cls.stringValue()+"> . } ";
 				otherWanted = true;
 			}
+		}
+		if(isLexiconWanted) {
+			if(otherWanted) {
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					 "\nFILTER("+varType+" = <"+LIME.LEXICON.stringValue()+">)" +
+					 "\n}";
+			otherWanted = true;
 		}
 		if(isLexicalEntryWanted) {
 			if(otherWanted) {
 				filterQuery += "\nUNION ";
 			}
-			filterQuery += "\n{\n"+resource+" a "+type+" . " +
-					 "\nFILTER("+type+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
-			
-			filterQuery += "\n}";
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)"+
+			//add the index to which this lexical entry belong to
+					"\n"+varResource+" <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> ?canonicalForm ."+
+					"\n?canonicalForm <"+ONTOLEX.WRITTEN_REP+"> ?writtenRep ." +
+					getFirstLetterForLiteral("?writtenRep", "?index");
+			filterQuery+="\n}";
 			
 			otherWanted = true;
 		}
 		
 		return filterQuery;
+	}
+	
+	private String getFirstLetterForLiteral(String varInput, String varOutput) {
+		String query;
+		query = "\nBIND(STR(LCASE(SUBSTR("+varInput+", 1, 1))) AS "+varOutput+")";
+		return query;
 	}
 	
 	/*public static String addShowPart(String variable, String[] langArray, Project project){
@@ -278,6 +299,8 @@ public class ServiceForSearches {
 					isPropertyWanted = true;
 				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
 					isCollectionWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.limeLexicon.name().toLowerCase())) {
+					isLexiconWanted = true;
 				} else if (rolesArray[i].toLowerCase().equals(RDFResourceRole.ontolexLexicalEntry.name().toLowerCase())){
 					isLexicalEntryWanted = true;
 				}
@@ -285,15 +308,18 @@ public class ServiceForSearches {
 		}
 		//@formatter:off
 		if(rolesArray!= null && !isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
-				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted && !isLexicalEntryWanted){
+				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted && !isLexiconWanted && 
+				!isLexicalEntryWanted){
 			
 			String msg = "the serch roles should be at least one of: "+
 					RDFResourceRole.cls.name()+", "+
 					RDFResourceRole.concept.name()+", "+
 					RDFResourceRole.conceptScheme.name()+", "+
 					RDFResourceRole.individual+", "+
-					RDFResourceRole.property.name() +" or "+
-					RDFResourceRole.skosCollection.name();
+					RDFResourceRole.property.name() +", "+
+					RDFResourceRole.skosCollection.name() +", "+
+					RDFResourceRole.limeLexicon + " or "+
+					RDFResourceRole.ontolexLexicalEntry;
 			//TODO change the exception (previously was a fail)
 			throw new IllegalArgumentException(msg);
 			
@@ -592,6 +618,10 @@ public class ServiceForSearches {
 			role = RDFResourceRole.xLabel;
 		} else if(typeURI.equals(SKOS.CONCEPT_SCHEME.stringValue())){
 			role = RDFResourceRole.conceptScheme;
+		} else if(typeURI.equals(LIME.LEXICON.stringValue())) {
+			role = RDFResourceRole.limeLexicon;
+		} else if(typeURI.equals(LIME.LEXICAL_ENTRIES)) {
+			role = RDFResourceRole.ontolexLexicalEntry;
 		} else {
 			role = RDFResourceRole.individual;
 		} 
