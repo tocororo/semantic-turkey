@@ -1488,7 +1488,7 @@ public class ICV extends STServiceAdapter {
 		
 		query += "?resource ?propMapping ?resource2 .\n";
 		
-		//now check the type of the ?resoruce
+		//now check the type of the ?resource
 		query += getTypesFromRoles("?resource", rolesArray);
 		
 		query += "BIND(REPLACE(str(?resource2), '[^(#|/)]+$', \"\") AS ?namespace)\n"

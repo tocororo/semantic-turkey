@@ -18,11 +18,11 @@ public class NonExistingPredicateBetweenResourcesExpcetion extends Exception {
 	 * @param uri
 	 */
 	public NonExistingPredicateBetweenResourcesExpcetion(Resource resourceA, Resource resourceB) {
-		super("There is no predicate between resource: " + resourceA.stringValue() + " and resoruce: "+resourceB.stringValue());
+		super("There is no predicate between resource: " + resourceA.stringValue() + " and resource: "+resourceB.stringValue());
 	}
 	
 	public NonExistingPredicateBetweenResourcesExpcetion(Resource resourceA, Resource resourceB, Resource[] graphs) {
-		super("There is no predicate between resource: " + resourceA.stringValue() + " and resoruce: "+
+		super("There is no predicate between resource: " + resourceA.stringValue() + " and resource: "+
 				resourceB.stringValue()+" in graphs: " + Arrays.toString(graphs));
 	}	
 	

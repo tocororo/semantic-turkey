@@ -301,7 +301,7 @@ public class Search extends STServiceAdapter {
 					"\n{" + 
 					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ."; 
 			
-			//if the input root is different from owl:Thing e rdfs:Resoruce the ?superClass should be 
+			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass should be 
 			// rdfs:subClass of such root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
 				query += "\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+root.stringValue()+"> ."; 	
@@ -313,7 +313,7 @@ public class Search extends STServiceAdapter {
 					
 					"\nOPTIONAL{" +
 					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass .";
-			//if the input root is different from owl:Thing e rdfs:Resoruce the ?superClass, in this OPTIONAL,
+			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass, in this OPTIONAL,
 			// should be different from the input root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
 				query += "\n FILTER(?superClass != <"+root.stringValue()+"> )"; 	
@@ -444,7 +444,7 @@ public class Search extends STServiceAdapter {
 		}
 		tupleQueryResult.close();
 
-		// iterate over the resoruceToResourceForHierarchyMap and look for the topConcept
+		// iterate over the resourceToResourceForHierarchyMap and look for the topConcept
 		// and construct a list of list containing all the possible paths
 		// exclude all the path having at least one element which is not a URI (so a BNode or a Literal)
 		List<List<String>> pathList = new ArrayList<List<String>>();
@@ -512,18 +512,18 @@ public class Search extends STServiceAdapter {
 				boolean first = true;
 				for (String resourceInPath : path) {
 					//if it is the first element, the role is cls, and the desired root is either 
-					// rdfs:Resoruce or owl:Thing, a special check should be perform, 
+					// rdfs:Resource or owl:Thing, a special check should be perform, 
 					//since it could be necessary to add rdfs:Resource and even owl:Thing
 					boolean addRdfsResource = false, addOwlThing=false;
 					if(first && role.equals(RDFResourceRole.cls) && 
 							(root.equals(OWL.THING) || root.equals(RDFS.RESOURCE))) {
 						if(root.equals(RDFS.RESOURCE) && !resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
-							//the desired first element should be rdfs:Resoruce, but it is not, 
+							//the desired first element should be rdfs:Resource, but it is not, 
 							// so add rdfs:Resource as first element
 							addRdfsResource=true;
 							if(!resourceInPath.equals(OWL.THING.stringValue())) {
 								//the first element in the list is not Thing, but it should be, since under
-								// rdfs:Resource there should be owl:Thing, so add it (after adding rdfs:Resoruce)
+								// rdfs:Resource there should be owl:Thing, so add it (after adding rdfs:Resource)
 								addOwlThing=true;
 							}
 						}

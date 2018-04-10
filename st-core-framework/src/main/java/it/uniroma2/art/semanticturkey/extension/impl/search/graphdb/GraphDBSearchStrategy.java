@@ -151,7 +151,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
 		
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null,
+				null);
 
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -199,10 +200,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
 		
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", null, null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
+				lexicons);
 
 		//add the information about the lexicon
-		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resoruce . }";
+		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resource . }";
 		
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
@@ -286,7 +288,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//if the user specify a role, filter the results according to the type
 		if(rolesArray!=null && rolesArray.length>0){
 			//filter the resource according to its type
-			query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, cls);
+			query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, 
+					cls, null);
 		}
 		query+="\n}";
 		//@formatter:on
@@ -312,7 +315,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(rolesArray!=null && rolesArray.length>0){
 			//filter the resource according to its type
 			query+= "\n{ SELECT ?resource \nWHERE {\n" +
-					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, cls) +
+					serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, 
+							cls, null) +
 				"\n}" +
 				"\n}";
 		} else {

@@ -60,7 +60,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 			"\nWHERE{"; // +
 		//get the candidate resources
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null, 
+				null);
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
@@ -157,7 +158,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				"(GROUP_CONCAT(DISTINCT ?index; separator=\",\") AS ?attr_index)"+ 
 				"\nWHERE{"; // +
 		//get the candidate resources
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", null, null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
+				lexicons);
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
@@ -195,7 +197,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				"\n}";
 		
 		//add the information about the lexicon
-		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resoruce . }";
+		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resource . }";
 		
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!		
 		//add the show part according to the Lexicalization Model
@@ -231,7 +233,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			"\nWHERE{";
 		
 		//get the candidate resources
-		query+=serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, cls);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, cls, 
+				null);
 		
 		//check if the request want to search in the local name
 		if(useLocalName){
@@ -299,7 +302,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		if(rolesArray!=null && rolesArray.length>0){
 			//filter the resource according to its type
 			query+= "\n{ SELECT ?resource \nWHERE {\n" +
-					serviceForSearches.filterResourceTypeAndScheme("?resource", "?type", schemes, cls) +
+					serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, 
+							cls, null) +
 				"\n}" +
 				"\n}";
 		} else {

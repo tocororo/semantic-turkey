@@ -88,7 +88,8 @@ public class ServiceForSearches {
 		return langArray;
 	}
 	
-	public String filterResourceTypeAndScheme(String varResource, String varType, List<IRI> schemes, IRI cls){
+	public String filterResourceTypeAndSchemeAndLexicons(String varResource, String varType, 
+			List<IRI> schemes, IRI cls, List<IRI> lexicons){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		
@@ -191,9 +192,15 @@ public class ServiceForSearches {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-					"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)"+
+					"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
+			if(lexicons!=null && lexicons.size()==1) {
+				filterQuery+="\n<"+lexicons.get(0).stringValue()+"> <"+LIME.ENTRY.stringValue()+"> "+varResource+" .";
+			} else if(lexicons!=null && lexicons.size()>1) {
+				filterQuery+="\n?filterLexicon <"+LIME.ENTRY.stringValue()+"> "+varResource+" ."+
+						filterWithOrValues(lexicons, "?filterLexicon");
+			}
 			//add the index to which this lexical entry belong to
-					"\n"+varResource+" <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> ?canonicalForm ."+
+			filterQuery+="\n"+varResource+" <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> ?canonicalForm ."+
 					"\n?canonicalForm <"+ONTOLEX.WRITTEN_REP+"> ?writtenRep ." +
 					getFirstLetterForLiteral("?writtenRep", "?index");
 			filterQuery+="\n}";
