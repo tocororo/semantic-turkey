@@ -35,10 +35,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessor;
-import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
@@ -46,7 +43,7 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 public class Resources extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Resources.class);
-	
+
 	@Autowired
 	private ResourceLocator resourceLocator;
 
@@ -61,20 +58,18 @@ public class Resources extends STServiceAdapter {
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?value .		\n"
 				+ "		}									\n"
-				+ "}										\n"
-				+ "INSERT  {							\n"
+				+ "}										\n" + "INSERT  {							\n"
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?newValue .	\n"
-				+ "		}									\n" 
+				+ "		}									\n"
 				+ "}										\n"
 				+ "WHERE{									\n"
 				+ "BIND(?g_input AS ?g )					\n"
 				+ "BIND(?subject_input AS ?subject )		\n"
 				+ "BIND(?property_input AS ?property )		\n"
 				+ "BIND(?value_input AS ?value )			\n"
-				+ "BIND(?newValue_input AS ?newValue )		\n"
-				+ "}";
-		
+				+ "BIND(?newValue_input AS ?newValue )		\n" + "}";
+
 		Update update = repoConnection.prepareUpdate(query);
 		update.setBinding("g_input", getWorkingGraph());
 		update.setBinding("subject_input", subject);
@@ -87,16 +82,15 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
-	public void removeValue(@LocallyDefined @Modified Resource subject, IRI property,
-			Value value) {
+	public void removeValue(@LocallyDefined @Modified Resource subject, IRI property, Value value) {
 		getManagedConnection().remove(subject, property, value, getWorkingGraph());
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
-	public void addValue(@LocallyDefined @Modified Resource subject, IRI property,
-			SpecialValue value) throws ProjectInconsistentException, CODAException {
+	public void addValue(@LocallyDefined @Modified Resource subject, IRI property, SpecialValue value)
+			throws ProjectInconsistentException, CODAException {
 		addValue(getManagedConnection(), subject, property, value);
 	}
 
@@ -120,7 +114,7 @@ public class Resources extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public AnnotatedValue<Resource> getResourceDescription(@LocallyDefined Resource resource) {
 		QueryBuilder qb = createQueryBuilder(
-			// @formatter:off
+		// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +
 			" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>							\n" +
 			" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
@@ -137,29 +131,24 @@ public class Resources extends STServiceAdapter {
 		qb.processRendering();
 		qb.processQName();
 		qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
-		
-		AnnotatedValue<Resource> annotatedResource = qb.runQuery().iterator().next();
-		
-		Map<String, Value> attrs = annotatedResource.getAttributes();
-		Literal lexiconRendering = (Literal)attrs.remove("lexiconRendering");
-		Literal lexicalEntryRendering = (Literal)attrs.remove("lexicalEntryRendering");
-		Literal formRendering = (Literal)attrs.remove("formRendering");
+		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
 
-		if (lexiconRendering != null) {
-			attrs.put("show", lexiconRendering);
+		AnnotatedValue<Resource> annotatedResource = qb.runQuery().iterator().next();
+
+		Map<String, Value> attrs = annotatedResource.getAttributes();
+		Literal lexicalEntryRendering = (Literal) attrs.remove("lexicalEntryRendering");
+		Literal formRendering = (Literal) attrs.remove("formRendering");
+
+		if (lexicalEntryRendering != null) {
+			attrs.put("show", lexicalEntryRendering);
 		} else {
-			if (lexicalEntryRendering != null) {
-				attrs.put("show", lexicalEntryRendering);
-			} else {
-				if (formRendering != null) {
-					attrs.put("show", formRendering);
-				}
+			if (formRendering != null) {
+				attrs.put("show", formRendering);
 			}
 		}
 		return annotatedResource;
 	}
 
-	
 	/**
 	 * Return the description of a list of resources, including show and nature
 	 * 
@@ -169,12 +158,12 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection <AnnotatedValue<Resource>> getResourcesInfo(IRI[] resources) {
-		
+	public Collection<AnnotatedValue<Resource>> getResourcesInfo(IRI[] resources) {
+
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
 		sb.append(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +                                      
 				" prefix owl: <http://www.w3.org/2002/07/owl#>							\n" +                                      
 				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +                                      
@@ -194,9 +183,10 @@ public class Resources extends STServiceAdapter {
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * Return the position of a resource (local/remote/unknown)
+	 * 
 	 * @param resource
 	 * @return
 	 * @throws ProjectAccessException

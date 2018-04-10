@@ -26,8 +26,6 @@ public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements 
 			"\nUNION " +
 			"\n{?sense <"+ONTOLEX.REFERENCE.stringValue()+">|<"+ONTOLEX.IS_REFERENCE_OF.stringValue()+"> ?resource ." +
 			"\n?sense <"+ONTOLEX.IS_SENSE_OF.stringValue()+">|^<"+ONTOLEX.SENSE.stringValue()+"> ?entry . } " +
-			"\nUNION" +
-			"\n{?resource <http://foo.it>* ?entry }"+
 			"\n?entry <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> [ <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?labelInternal ] .\n" +
 			"\n}" +
 			"\nUNION" +
