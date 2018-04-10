@@ -571,7 +571,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
 					RDFResourceRole.ontolexLexicalSense);
 
-			modelAdditions.add(lexicalSenseIRI, RDF.TYPE, ONTOLEX.LEXICAL_SENSE);
+			modelAdditions.add(lexicalSenseIRI, RDF.TYPE, lexicalSenseCls);
 			modelAdditions.add(lexicalSenseIRI, ONTOLEX.IS_SENSE_OF, lexicalEntry);
 			modelAdditions.add(lexicalSenseIRI, ONTOLEX.REFERENCE, reference);
 
@@ -793,7 +793,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * @return
 	 * @throws URIGenerationException
 	 */
-	private IRI generateLexicalSenseIRI(Resource lexicalEntry, Resource reference)
+	public IRI generateLexicalSenseIRI(Resource lexicalEntry, Resource reference)
 			throws URIGenerationException {
 		Map<String, Value> args = new HashMap<>();
 		if (lexicalEntry != null) {
