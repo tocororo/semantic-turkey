@@ -11,6 +11,9 @@ date: dd/mm/yyyy
   * Introduction of a SPARQL store (e.g. saved queries/updates)
   * Support for the W3C OntoLex-Lemon Model
   * New Metadata Registry
+  * Improvements to the Exporter subsystem:
+    * possibility to reformat the data to a (usually) non-RDF format
+    * possibility to deploy the (optionally reformatted) data somewhere, instead of simply downloading it
 
 version 3.0
 date: 08/02/2018
