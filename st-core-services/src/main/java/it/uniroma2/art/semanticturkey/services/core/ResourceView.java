@@ -81,6 +81,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -107,6 +108,8 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
@@ -181,7 +184,6 @@ public class ResourceView extends STServiceAdapter {
 			Set<Statement> processedStatements = new HashSet<>();
 
 			Map<String, ResourceViewSection> description = new LinkedHashMap<>();
-
 			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<Resource>(resource);
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);

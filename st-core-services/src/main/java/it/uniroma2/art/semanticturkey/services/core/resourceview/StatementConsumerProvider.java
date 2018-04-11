@@ -4,9 +4,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
@@ -14,6 +16,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Class
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EvokedLexicalConcepts;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormBasedPreviewStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.InSchemeStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LabelRelationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalFormsStatementConsumer;
@@ -35,7 +38,8 @@ public class StatementConsumerProvider {
 	private HashMap<RDFResourceRole, List<StatementConsumer>> role2template;
 
 	@Autowired
-	public StatementConsumerProvider(CustomFormManager customFormManager) {
+	public StatementConsumerProvider(CustomFormManager customFormManager,
+			ObjectFactory<CODACoreProvider> codaProvider) {
 		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer(customFormManager);
 
 		ClassAxiomsStatementConsumer classAxiomsStatementConsumer = new ClassAxiomsStatementConsumer(
@@ -73,41 +77,42 @@ public class StatementConsumerProvider {
 		DenotationsStatementConsumer denotationsStatementConsumer = new DenotationsStatementConsumer(
 				customFormManager);
 		EvokedLexicalConcepts evokedLexicalConcepts = new EvokedLexicalConcepts(customFormManager);
-
+		FormBasedPreviewStatementConsumer formBasedPreview = new FormBasedPreviewStatementConsumer(
+				customFormManager, codaProvider);
 		role2template = new HashMap<>();
 		role2template.put(RDFResourceRole.cls,
-				Arrays.asList(typesStatementConsumer, classAxiomsStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, classAxiomsStatementConsumer,
 						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.concept,
-				Arrays.asList(typesStatementConsumer, topConceptOfStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, topConceptOfStatementConsumer,
 						inSchemeStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.property,
-				Arrays.asList(typesStatementConsumer, subPropertyOfStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, subPropertyOfStatementConsumer,
 						propertyFactesStatementConsumer, domainsStatementConsumer, rangesStatementConsumer,
 						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.conceptScheme,
-				Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.ontology,
-				Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
 						ontologyImportsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.skosCollection,
-				Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, skosCollectionMemberStatementConsumer,
 						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.skosOrderedCollection,
-				Arrays.asList(typesStatementConsumer, lexicalizationsStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, skosOrderedCollectionMembersStatementConsumer,
 						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.individual, Arrays.asList(typesStatementConsumer,
+		role2template.put(RDFResourceRole.individual, Arrays.asList(typesStatementConsumer, formBasedPreview,
 				lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.xLabel,
-				Arrays.asList(typesStatementConsumer, labelRelationStatementConsumer,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, labelRelationStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 
 		role2template.put(RDFResourceRole.ontolexLexicalEntry,
-				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer,
+				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer, formBasedPreview,
 						lexicalSensesStatementConsumer, denotationsStatementConsumer, evokedLexicalConcepts,
 						otherPropertiesStatementConsumer));
 
