@@ -140,10 +140,7 @@ public class UsersManager {
 	 * @throws IOException
 	 */
 	public static STUser updateUserPassword(STUser user, String newPassword) throws UserException {
-		String crypted = new BCryptPasswordEncoder().encode(newPassword);
-		System.out.println("from " + newPassword + " to " + crypted);
-		user.setPassword(crypted);
-//		user.setPassword(new BCryptPasswordEncoder().encode(newPassword));
+		user.setPassword(new BCryptPasswordEncoder().encode(newPassword));
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}

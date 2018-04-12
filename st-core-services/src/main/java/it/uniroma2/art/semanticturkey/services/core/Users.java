@@ -26,6 +26,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -491,6 +492,18 @@ public class Users extends STServiceAdapter {
 			throw new DeniedOperationException("A user cannot delete himself");
 		}
 		UsersManager.deleteUser(user);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isLoggedUser(#email)")
+	public void changePassword(String email, String oldPassword, String newPassword) throws Exception {
+		STUser user = UsersManager.getUserByEmail(email);
+		BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+		if (passwordEncoder.matches(oldPassword, user.getPassword())) {
+			UsersManager.updateUserPassword(user, newPassword);
+		} else {
+			throw new DeniedOperationException("Old password is wrong");
+		}
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
