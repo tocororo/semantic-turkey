@@ -227,7 +227,6 @@ public class CustomForms extends STServiceAdapter {
 				bindings += "?" + ph + " ";
 			}
 			String query = "SELECT " + bindings + " WHERE { " + graphSection + " }";
-			System.out.println("@@query ="  + query);
 			logger.debug("query " + query);
 			TupleQuery tq = repoConnection.prepareTupleQuery(query);
 			tq.setIncludeInferred(includeInferred);
@@ -391,10 +390,6 @@ public class CustomForms extends STServiceAdapter {
 					queryBuilder.append(" }");
 					String query = queryBuilder.toString();
 					
-					if (cf.getId().equals(
-							"it.uniroma2.art.semanticturkey.customform.form.RelationalNounOntoLexLexicalEntry_generic")) {
-						System.out.println("##query" + query);
-					}
 					GraphQuery gq = repoConnection.prepareGraphQuery(query);
 					gq.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
 					gq.setIncludeInferred(includeInferred);
