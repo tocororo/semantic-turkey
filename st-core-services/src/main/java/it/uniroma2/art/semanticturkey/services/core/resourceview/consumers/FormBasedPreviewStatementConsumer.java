@@ -60,7 +60,7 @@ public class FormBasedPreviewStatementConsumer implements StatementConsumer {
 			try {
 				try {
 					return CustomForms.getResourceFormPreviewHelper(project, codaCore, cfManager, repConn,
-							resource, types);
+							resource, types, true);
 				} catch (ProjectInconsistentException | RDFModelNotSetException | PRParserException e) {
 					logger.error("Unexpected error", e);
 				}

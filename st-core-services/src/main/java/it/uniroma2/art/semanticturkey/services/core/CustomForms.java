@@ -118,7 +118,7 @@ public class CustomForms extends STServiceAdapter {
 		try {
 			// try to identify the CF which has generated the graph
 			CustomFormGraph cfGraph = getCustomFormGraphSeed(getProject(), codaCore, cfManager,
-					repoConnection, resource, Sets.newHashSet(predicate));
+					repoConnection, resource, Sets.newHashSet(predicate), false);
 			if (cfGraph != null) {
 				// retrieves, through a query, the values of those placeholders filled through a userPrompt in
 				// the CustomForm
@@ -200,6 +200,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @param repoConnection
 	 * @param resource
 	 * @param customFormBearingResources
+	 * @param includeInferred TODO
 	 * @return
 	 * @throws ProjectInconsistentException
 	 * @throws RDFModelNotSetException
@@ -207,14 +208,14 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	public static Map<String, ResourceViewSection> getResourceFormPreviewHelper(Project project,
 			CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection,
-			Resource resource, Set<IRI> customFormBearingResources)
+			Resource resource, Set<IRI> customFormBearingResources, boolean includeInferred)
 			throws ProjectInconsistentException, RDFModelNotSetException, PRParserException {
 
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
 
 		// try to identify the CF which has generated the graph
 		CustomFormGraph cfGraph = getCustomFormGraphSeed(project, codaCore, cfManager, repoConnection,
-				resource, customFormBearingResources);
+				resource, customFormBearingResources, includeInferred);
 		if (cfGraph != null) {
 			// retrieves, through a query, the values of those placeholders filled through a userPrompt in
 			// the CustomForm
@@ -226,9 +227,10 @@ public class CustomForms extends STServiceAdapter {
 				bindings += "?" + ph + " ";
 			}
 			String query = "SELECT " + bindings + " WHERE { " + graphSection + " }";
+			System.out.println("@@query ="  + query);
 			logger.debug("query " + query);
 			TupleQuery tq = repoConnection.prepareTupleQuery(query);
-			tq.setIncludeInferred(false);
+			tq.setIncludeInferred(includeInferred);
 			tq.setBinding(cfGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
 			try (TupleQueryResult result = tq.evaluate()) {
 				// iterate over the results and create a map <userPrompt, value>
@@ -318,7 +320,7 @@ public class CustomForms extends STServiceAdapter {
 
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
 		CustomFormGraph cf = getCustomFormGraphSeed(getProject(), codaCore, cfManager, repoConnection,
-				resource, Collections.singleton(predicate));
+				resource, Collections.singleton(predicate), false);
 		if (cf == null) { //
 			/*
 			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
@@ -358,10 +360,11 @@ public class CustomForms extends STServiceAdapter {
 	 * @param repoConnection
 	 * @param resource
 	 * @param predicateOrClasses
+	 * @param includeInferred TODO
 	 * @return
 	 * @throws RDFModelNotSetException
 	 */
-	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses) throws RDFModelNotSetException {
+	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) throws RDFModelNotSetException {
 		
 		if (predicateOrClasses.isEmpty()) { // edge case when no predicate or class is given
 			return null;
@@ -387,9 +390,14 @@ public class CustomForms extends STServiceAdapter {
 					queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
 					queryBuilder.append(" }");
 					String query = queryBuilder.toString();
+					
+					if (cf.getId().equals(
+							"it.uniroma2.art.semanticturkey.customform.form.RelationalNounOntoLexLexicalEntry_generic")) {
+						System.out.println("##query" + query);
+					}
 					GraphQuery gq = repoConnection.prepareGraphQuery(query);
 					gq.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
-					gq.setIncludeInferred(false);
+					gq.setIncludeInferred(includeInferred);
 
 					try (GraphQueryResult result = gq.evaluate()) {
 						int nStats = QueryResults.asModel(result).size();
