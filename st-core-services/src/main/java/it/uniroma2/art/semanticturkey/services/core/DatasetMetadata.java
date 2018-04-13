@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -18,23 +17,17 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter;
-import it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporterException;
-import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -42,7 +35,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.metadata.ExporterSettingsInfo;
 
 /**
  * This class provides services for exporting metadata about the dataset associated with the current project.
@@ -54,70 +46,8 @@ public class DatasetMetadata extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(DatasetMetadata.class);
 
-	/**
-	 * Returns the (project-level) settings for an exporter (including the part related to the extension
-	 * point).
-	 * 
-	 * @param exporterId
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('rdf(dataset, metadata)', 'R')")
-	public ExporterSettingsInfo getDatasetMetadata(String exporterId) throws STPropertyAccessException {
-		PluginFactory<?,?,?,?,?> pluginFactory = PluginManager
-				.getPluginFactory(exporterId);
-
-		STProperties extensionPointSettings = pluginFactory.getExtensonPointProjectSettings(getProject());
-		STProperties pluginSettings = pluginFactory.getProjectSettings(getProject());
-
-		return new ExporterSettingsInfo(extensionPointSettings, pluginSettings);
-	}
-
-	protected ObjectNode serializeSTPropertiesToJSON(STProperties settings) throws PropertyNotFoundException {
-		ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
-		objectNode.set("type", JsonNodeFactory.instance.textNode(settings.getClass().getName()));
-		objectNode.set("shortName", JsonNodeFactory.instance.textNode(settings.getShortName()));
-		ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
-		objectNode.set("parameters", parameters);
-
-		for (String prop : settings.getProperties()) {
-			String parDescr = settings.getPropertyDescription(prop);
-			ObjectNode newPar = JsonNodeFactory.instance.objectNode();
-			parameters.add(newPar);
-			newPar.set("name", JsonNodeFactory.instance.textNode(prop));
-			newPar.set("description", JsonNodeFactory.instance.textNode(parDescr));
-			newPar.set("required", JsonNodeFactory.instance.booleanNode(settings.isRequiredProperty(prop)));
-			String contentType = settings.getPropertyContentType(prop);
-			if (contentType != null)
-				newPar.set("type", JsonNodeFactory.instance.textNode(contentType));
-			Object parValue = settings.getPropertyValue(prop);
-			if (parValue != null) {
-				newPar.set("value", JsonNodeFactory.instance.textNode(parValue.toString()));
-			}
-		}
-		return objectNode;
-	}
-
-	/**
-	 * Stores (project-level) settings for an exporter (including the part related to the extension point).
-	 * 
-	 * @param exporterId
-	 * @param extensionPointProperties
-	 * @param pluginProperties
-	 * @throws STPropertyAccessException
-	 * @throws STPropertyUpdateException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rdf(dataset, metadata)', 'CU')")
-	public void setDatasetMetadata(String exporterId, Map<String, Object> extensionPointProperties,
-			Map<String, Object> pluginProperties)
-			throws STPropertyAccessException, STPropertyUpdateException {
-		PluginFactory<?,?,?,?,?> pluginFactory = PluginManager
-				.getPluginFactory(exporterId);
-		pluginFactory.storeExtensonPointProjectSettings(getProject(), extensionPointProperties);
-		pluginFactory.storeProjectSettings(getProject(), pluginProperties);
-	}
+	@Autowired
+	private ExtensionPointManager exptManager;
 
 	/**
 	 * Exports the metadata about the dataset associated with the currently used project.
@@ -134,18 +64,20 @@ public class DatasetMetadata extends STServiceAdapter {
 	 * @throws IOException
 	 * @throws DatasetMetadataExporterException
 	 * @throws STPropertyAccessException
+	 * @throws InvalidConfigurationException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	public void export(HttpServletResponse oRes, PluginSpecification exporterSpecification,
-			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat)
-			throws ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, IOException, DatasetMetadataExporterException,
-			STPropertyAccessException {
+			@Optional(defaultValue = "TURTLE") RDFFormat outputFormat) throws ClassNotFoundException,
+			WrongPropertiesException, IOException, STPropertyAccessException, IllegalArgumentException,
+			NoSuchExtensionException, InvalidConfigurationException, DatasetMetadataExporterException {
 
-		exporterSpecification.expandDefaults();
-		DatasetMetadataExporter exporter = (DatasetMetadataExporter) exporterSpecification.instatiatePlugin();
+		DatasetMetadataExporter exporter = exptManager.instantiateExtension(DatasetMetadataExporter.class,
+				exporterSpecification);
 
 		Model metadata = exporter.produceDatasetMetadata(getProject(), getManagedConnection(),
 				(IRI) getWorkingGraph());

@@ -99,59 +99,6 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the ADMS implementation of the extension point DatasetMetadataExporter -->
-	<bean id="ADMSDatasetMetadataExporterFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.ADMSDatasetMetadataExporterFactory" />
-
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="ADMSDatasetMetadataExporterFactory">
-
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter" />
-		</osgi:service-properties>
-	</osgi:service>
-
-
-	<!-- Publishes the DCAT implementation of the extension point DatasetMetadataExporter -->
-	<bean id="DCATDatasetMetadataExporterFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.DCATDatasetMetadataExporterFactory" />
-
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="DCATDatasetMetadataExporterFactory">
-
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter" />
-		</osgi:service-properties>
-	</osgi:service>
-
-	<!-- Publishes the DCAT-AP implementation of the extension point DatasetMetadataExporter -->
-	<bean id="DCATAPDatasetMetadataExporterFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.DCATAPDatasetMetadataExporterFactory" />
-
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="DCATAPDatasetMetadataExporterFactory">
-
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter" />
-		</osgi:service-properties>
-	</osgi:service>
-
-	<!-- Publishes the VOID/LIME implementation of the extension point DatasetMetadataExporter -->
-	<bean id="VOIDLIMEDatasetMetadataExporterFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.extpts.datasetmetadata.VOIDLIMEDatasetMetadataExporterFactory" />
-
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="VOIDLIMEDatasetMetadataExporterFactory">
-
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.DatasetMetadataExporter" />
-		</osgi:service-properties>
-	</osgi:service>
-
 	<!-- Publishes the Predefined Repository Impl Configurer implementation 
 		of the extension point RepositoryImplConfigurer -->
 	<bean id="PredefinedRepositoryImplConfigurerFactory"
