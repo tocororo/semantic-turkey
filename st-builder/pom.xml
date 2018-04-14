@@ -14,7 +14,9 @@
 	<description>Semantic turkey builder subproject. It creates the karaf archive with the application already deployed.</description>
 
 	<properties>
-		<karaf.version>4.0.4</karaf.version>
+		<!-- When updating the version of Karaf, remember to copy from the distribution and then modifiy the
+		files org.ops4j.pax.logging.cfg, org.ops4j.pax.web.cfg, org.apache.karaf.features.cfg -->
+		<karaf.version>4.2.0</karaf.version>
 		<maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
 		<!-- The following property definition is requred because of a bug described 
 			here: https://dzone.com/articles/stamping-version-number-and -->
@@ -28,13 +30,6 @@
 			<version>${karaf.version}</version>
 			<type>zip</type>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>org.apache.karaf.assemblies.features</groupId> -->
-		<!-- <artifactId>standard</artifactId> -->
-		<!-- <version>2.3.3</version> -->
-		<!-- <type>xml</type> -->
-		<!-- <classifier>features</classifier> -->
-		<!-- </dependency> -->
 	</dependencies>
 
 	<build>

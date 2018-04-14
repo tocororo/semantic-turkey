@@ -5,15 +5,8 @@
 	<formats>
 		<format>zip</format>
 	</formats>
-	
-	<fileSets>
 
-		<!-- Copy over bin/* separately to get the correct file mode -->
-		<fileSet>
-			<directory>src/main/distribution/bin</directory>
-			<outputDirectory>bin/</outputDirectory>
-			<fileMode>0755</fileMode>
-		</fileSet>
+	<fileSets>
 
 		<!-- Copy over etc/* separately to get the correct file mode -->
 		<fileSet>
@@ -67,10 +60,11 @@
 			</includes>
 			<fileMode>0644</fileMode>
 		</fileSet>
-	
+
 		<!-- Expanded Karaf Standard Distribution -->
 		<fileSet>
-			<directory>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}</directory>
+			<directory>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}
+			</directory>
 			<outputDirectory></outputDirectory>
 			<excludes>
 				<exclude>**/demos/**</exclude>
@@ -89,34 +83,11 @@
 			<directory>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}/bin
 			</directory>
 			<outputDirectory>bin/</outputDirectory>
-			<includes>
-				<include>*.bat</include>
-			</includes>
-			<excludes>
-				<exclude>karaf.bat</exclude>
-			</excludes>
 			<fileMode>0755</fileMode>
 		</fileSet>
 	</fileSets>
 
 	<files>
-
-		<file>
-			<source>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}/bin/karaf.bat
-			</source>
-			<outputDirectory>bin/</outputDirectory>
-			<destName>st_server_run.bat</destName>
-			<fileMode>0755</fileMode>
-		</file>
-
-		<file>
-			<source>${project.basedir}/target/dependencies/apache-karaf-${karaf.version}/bin/karaf.bat
-			</source>
-			<outputDirectory>bin/</outputDirectory>
-			<destName>karaf.bat</destName>
-			<fileMode>0755</fileMode>
-		</file>
-		
 		<!-- Copy the Semantic Turkey feature -->
 		<file>
 			<source>${project.basedir}/target/classes/semanticturkey.xml</source>

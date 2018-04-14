@@ -239,7 +239,7 @@
 							org.springframework.web.multipart.commons,
 							<!--org.apache.commons.fileupload;version="[1.2.0,2)", -->
 							org.apache.commons.io,
-							org.antlr.runtime.*
+							org.antlr.runtime.*,
 							*;resolution:=optional
 						</Import-Package>
 						<DynamicImport-Package>*</DynamicImport-Package>

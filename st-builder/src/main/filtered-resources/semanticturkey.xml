@@ -1,89 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="semantic_turkey-${project.version}">
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0"
+	name="semantic_turkey-${project.version}">
 
-	<repository>mvn:it.uniroma2.art.coda/coda-karaf/${coda.version}/xml/features</repository>
+	<repository>mvn:it.uniroma2.art.coda/coda-karaf/${coda.version}/xml/features
+	</repository>
 
 	<feature name="semantic_prereq" version="${project.version}">
 		<feature prerequisite="true" dependency="false">wrap</feature>
-	
+
+		<!-- Web-Console -->
+		<feature prerequisite="true" dependency="false">webconsole</feature>
+
+		<!-- Pax WAR -->
+		<feature prerequisite="true" dependency="false">pax-war</feature>
+
+		<!-- Note: coda usese uimafit which uses spring 3.1.X... check if it is 
+			possible to use just one version -->
+		<feature version="[3.2,4)" dependency="true">spring</feature>
+		<feature version="[3.2,4)" dependency="true">spring-web</feature>
+		<feature version="[3.2,4)" dependency="true">spring-tx</feature>
+		<feature version="[1.2.1,2)" dependency="true">spring-dm</feature>
+		<feature version="[1.2.1,2)" dependency="true">spring-dm-web</feature>
+		<feature version="[3.1,4)" dependency="true">spring-security</feature>
+		
 		<bundle dependency="true">mvn:org.antlr/antlr4-runtime/${antlr4.version}</bundle>
-	
-		<!-- These bundles provide optional dependencies for spring-web, in order to support multipart
-			resolver. It's important that these bundles are installed before spring-web, otherwise the latter
-			must be refreshed to pick the optional packages.
-			See http://fusesource.com/forums/thread.jspa?threadID=4139 -->
+
+		<!-- These bundles provide optional dependencies for spring-web, in order 
+			to support multipart resolver. It's important that these bundles are installed 
+			before spring-web, otherwise the latter must be refreshed to pick the optional 
+			packages. See http://fusesource.com/forums/thread.jspa?threadID=4139 -->
 		<!-- Commons io and fileupload -->
 		<bundle dependency="true">mvn:commons-io/commons-io/2.4</bundle>
 		<bundle dependency="true">mvn:commons-fileupload/commons-fileupload/1.3.1</bundle>
 
 		<bundle dependency="true">mvn:org.yaml/snakeyaml/1.15</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.8.2</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.8.2
+		</bundle>
 
 		<!-- CODA -->
 		<feature version="[1.3,2)">coda</feature>
 
-		<!-- Web-Console -->
-		<feature>webconsole</feature>
-
-		<!-- Pax WAR -->
-		<feature>pax-war</feature>
-
 		<!-- Spring/SpringDM -->
 		<bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/1.7.1_1</bundle>
 
-		<!-- Note: coda usese uimafit which uses spring 3.1.X... check if it is possible to use just one version -->
-		<feature version="[3.2,4)">spring</feature>
-		<feature version="[3.2,4)">spring-web</feature>
-		<feature version="[3.2,4)">spring-tx</feature>
-		<feature version="[1.2.1,2)">spring-dm</feature>
-		<feature version="[1.2.1,2)">spring-dm-web</feature>
-		<feature version="[3.1,4)">spring-security</feature>
-		
 		<!-- Javax Validation -->
-		<bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final</bundle>
+		<bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final
+		</bundle>
 
 		<!-- Support for Hibernate validation -->
 		<bundle dependency="true">mvn:org.jsoup/com.springsource.org.jsoup/1.5.2</bundle>
 		<bundle dependency="true">mvn:org.joda/com.springsource.org.joda.time/1.6.0</bundle>
 		<bundle dependency="true">mvn:org.hibernate/com.springsource.org.hibernate.validator/4.2.0.Final</bundle>
 		<bundle dependency="true">mvn:javax.persistence/com.springsource.javax.persistence/2.0.0</bundle>
-	
-		<!-- Support for RDF4J -->
-		<bundle dependency="true">mvn:org.eclipse.rdf4j/rdf4j-runtime-osgi/2.2</bundle>
-		<bundle dependency="true">mvn:ch.qos.logback/logback-classic/1.1.2</bundle>
-		<bundle dependency="true">mvn:ch.qos.logback/logback-core/1.1.2</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.8.2</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/2.8.2</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.8.2</bundle>
-		<bundle dependency="true">mvn:com.github.jsonld-java/jsonld-java/0.8.3</bundle>
-		<bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/4.4.4</bundle>
-		<bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.2</bundle>
-		<bundle dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
-		<bundle dependency="true">mvn:com.opencsv/opencsv/3.2</bundle>
-		<bundle dependency="true">mvn:com.spatial4j/spatial4j/0.4.1</bundle>
-		<bundle dependency="true">mvn:org.mapdb/mapdb/1.0.8</bundle>
-		<bundle dependency="true">wrap:mvn:org.apache.commons/commons-lang3/3.3.2</bundle>
-		<bundle dependency="true">wrap:mvn:commons-lang/commons-lang/2.6</bundle>
-<!-- 		<bundle dependency="true">mvn:commons-io/commons-io/2.4</bundle> -->
-		<bundle dependency="true">mvn:commons-codec/commons-codec/1.10</bundle>
-		
+
 		<bundle dependency="true">mvn:com.google.code.findbugs/annotations/${annotations.version}</bundle>
-	
+
 		<bundle dependency="true">wrap:mvn:it.unibo.alice.tuprolog/tuprolog/3.2.1</bundle>
 		<bundle dependency="true">mvn:it.uniroma2.art.lime/lime-model/${lime-api.version}</bundle>
 		<bundle dependency="true">mvn:it.uniroma2.art.lime/lime-profiler/${lime-api.version}</bundle>
-		
+
 		<bundle dependency="true">mvn:it.uniroma2.art.sheet2rdf/sheet2rdf-osgi-bundle/${sheet2rdf.version}</bundle>
-		
+
+		<bundle dependency="true">wrap:mvn:org.json/json/20090211</bundle>
+
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">
 			mvn:it.uniroma2.art.semanticturkey/st-console/${project.version}
 		</configfile>
-		
-        
-         <!-- Load all configuration files from mvn local repository -->
-		<configfile finalname="/etc/${project.groupId}.cfg" override="false">
+
+
+		<!-- Load all configuration files from mvn local repository -->
+		<configfile finalname="/etc/${project.groupId}.cfg"
+			override="false">
 			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/cfg/st
 		</configfile>
 	</feature>
@@ -91,12 +80,15 @@
 	<feature name="semantic_turkey" version="${project.version}">
 
 		<!-- First install all prerequisites -->
-		<feature>semantic_prereq</feature>
-		
+		<feature prerequisite="true">semantic_prereq</feature>
+
 		<!-- Finally install Semantic Turkey -->
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}
+		</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}
+		</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}
+		</bundle>
 	</feature>
 
 </features>
