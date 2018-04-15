@@ -246,11 +246,25 @@ public class CustomForms extends STServiceAdapter {
 			}
 
 			// fill the predicate object list structure
-			Map<IRI, AnnotatedValue<IRI>> propMap = new HashMap<>();
-			Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
 
 			SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
+			Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
+			Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
+
+			IRI cfNameProp = vf.createIRI(repoConnection.getNamespace(""), "@metadata-customFormName");
+
+			AnnotatedValue<IRI> CFNameAnnotatedProp = new AnnotatedValue<IRI>(cfNameProp);
+			CFNameAnnotatedProp.setAttribute("role", RDFResourceRole.property.toString());
+			CFNameAnnotatedProp.setAttribute("explicit", true);
+			CFNameAnnotatedProp.setAttribute("show", "Custom form name");
+
+			propMap.put(cfNameProp, CFNameAnnotatedProp);
+
+			AnnotatedValue<Literal> cfName = new AnnotatedValue<>(vf.createLiteral(cfGraph.getName()));
+
+			valueMultiMap.put(cfNameProp, cfName);
+			
 			for (Entry<String, Value> promptValue : promptValuesMap.entrySet()) {
 				// create a "fake" predicate to represent the userPrompt label
 				IRI predResource = vf.createIRI(repoConnection.getNamespace(""), promptValue.getKey());
@@ -275,19 +289,6 @@ public class CustomForms extends STServiceAdapter {
 				}
 				valueMultiMap.put(predResource, annotatedObject);
 			}
-
-			IRI cfNameProp = vf.createIRI(repoConnection.getNamespace(""), "@metadata-customFormName");
-
-			AnnotatedValue<IRI> CFNameAnnotatedProp = new AnnotatedValue<IRI>(cfNameProp);
-			CFNameAnnotatedProp.setAttribute("role", RDFResourceRole.property.toString());
-			CFNameAnnotatedProp.setAttribute("explicit", true);
-			CFNameAnnotatedProp.setAttribute("show", "Custom form name");
-
-			propMap.put(cfNameProp, CFNameAnnotatedProp);
-
-			AnnotatedValue<Literal> cfName = new AnnotatedValue<>(vf.createLiteral(cfGraph.getName()));
-
-			valueMultiMap.put(cfNameProp, cfName);
 
 			// use a PredicateObjectList (although this is not a pred-obj list, but a "userPrompt"-value)
 			// to exploit the serialization
