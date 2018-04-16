@@ -86,21 +86,29 @@ public class Administration extends STServiceAdapter {
 	}
 	
 	/**
-	 * Updates the administration config parameters
+	 * 
 	 * @param emailAdminAddress
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void updateAdministrator(String emailAdminAddress) throws STPropertyUpdateException {
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, emailAdminAddress);
+	}
+	
+	/**
+	 * 
 	 * @param emailFromAddress
 	 * @param emailFromPassword
 	 * @param emailFromAlias
 	 * @param emailFromHost
 	 * @param emailFromPort
-	 * @return
-	 * @throws STPropertyUpdateException 
+	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void updateAdministrationConfig(
-			String emailAdminAddress, String emailFromAddress, String emailFromPassword,
+	@PreAuthorize("@auth.isAdmin()")
+	public void updateEmailConfig(String emailFromAddress, String emailFromPassword,
 			String emailFromAlias, String emailFromHost, String emailFromPort) throws STPropertyUpdateException {
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, emailAdminAddress);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS, emailFromAddress);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD, emailFromPassword);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS, emailFromAlias);
