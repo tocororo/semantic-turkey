@@ -25,6 +25,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -78,10 +79,10 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String, ResourceViewSection> consumeStatements(Project project,
-			ResourcePosition resourcePosition, Resource resource, Model statements,
-			Set<Statement> processedStatements, Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes,
-			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
+			RepositoryConnection repoConn, ResourcePosition resourcePosition, Resource resource,
+			Model statements, Set<Statement> processedStatements,
+			Resource workingGraph,
+			Map<Resource, Map<String, Value>> resource2attributes, Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {

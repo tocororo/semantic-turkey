@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
@@ -53,10 +54,10 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 	@Override
 	public Map<String, ResourceViewSection> consumeStatements(Project project,
-			ResourcePosition resourcePosition, Resource resource, Model statements,
-			Set<Statement> processedStatements, Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes,
-			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
+			RepositoryConnection repoConn, ResourcePosition resourcePosition, Resource resource,
+			Model statements, Set<Statement> processedStatements,
+			Resource workingGraph,
+			Map<Resource, Map<String, Value>> resource2attributes, Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -149,8 +150,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 		}
 
 		Map<String, ResourceViewSection> nestedConsumer = inverseOfMatcher.consumeStatements(project,
-				resourcePosition, resource, statements, processedStatements, workingGraph,
-				resource2attributes, predicate2resourceCreShow, propertyModel);
+				null, resourcePosition, resource, statements, processedStatements,
+				workingGraph, resource2attributes, predicate2resourceCreShow, propertyModel);
 
 		PredicateObjectsListSection inverseOf = (PredicateObjectsListSection) nestedConsumer.get("inverseOf");
 

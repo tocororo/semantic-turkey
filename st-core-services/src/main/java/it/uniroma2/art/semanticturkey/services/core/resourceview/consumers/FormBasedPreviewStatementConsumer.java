@@ -29,7 +29,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.core.CustomForms;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 
 public class FormBasedPreviewStatementConsumer implements StatementConsumer {
 
@@ -45,7 +44,7 @@ public class FormBasedPreviewStatementConsumer implements StatementConsumer {
 	}
 
 	@Override
-	public Map<String, ResourceViewSection> consumeStatements(Project project,
+	public Map<String, ResourceViewSection> consumeStatements(Project project, RepositoryConnection repoConn,
 			ResourcePosition resourcePosition, Resource resource, Model statements,
 			Set<Statement> processedStatements, Resource workingGraph,
 			Map<Resource, Map<String, Value>> resource2attributes,
@@ -55,11 +54,10 @@ public class FormBasedPreviewStatementConsumer implements StatementConsumer {
 			Set<IRI> types = Models.objectIRIs(statements.filter(resource, RDF.TYPE, null));
 
 			CODACore codaCore = codaProvider.getObject().getCODACore();
-			RepositoryConnection repConn = RDF4JRepositoryUtils.getConnection(project.getRepository(), false);
-			codaCore.initialize(repConn);
+			codaCore.initialize(repoConn);
 			try {
 				try {
-					return CustomForms.getResourceFormPreviewHelper(project, codaCore, cfManager, repConn,
+					return CustomForms.getResourceFormPreviewHelper(project, codaCore, cfManager, repoConn,
 							resource, types, true);
 				} catch (ProjectInconsistentException | RDFModelNotSetException | PRParserException e) {
 					logger.error("Unexpected error", e);

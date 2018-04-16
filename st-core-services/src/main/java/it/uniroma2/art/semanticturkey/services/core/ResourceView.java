@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -81,7 +83,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -108,8 +109,6 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
@@ -213,8 +212,9 @@ public class ResourceView extends STServiceAdapter {
 
 			for (StatementConsumer aConsumer : viewTemplate) {
 				Map<String, ResourceViewSection> producedSections = aConsumer.consumeStatements(project,
-						resourcePosition, resource, retrievedStatements, processedStatements, workingGraph,
-						resource2attributes, predicate2resourceCreShow, propertyModel);
+						conditionalAcquireConnectionToProject(project, resourcePosition), resourcePosition,
+						resource, retrievedStatements, processedStatements, workingGraph, resource2attributes,
+						predicate2resourceCreShow, propertyModel);
 				description.putAll(producedSections);
 			}
 
@@ -228,6 +228,26 @@ public class ResourceView extends STServiceAdapter {
 				}
 			}
 			projectConnectionHolder.remove();
+		}
+	}
+
+	/**
+	 * Returns a connection to the repository associated with the provided <em>resource position</em>, if it
+	 * is a {@link LocalResourcePosition}.
+	 * 
+	 * @param consumer
+	 * @param resourcePosition
+	 * 
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	private @Nullable RepositoryConnection conditionalAcquireConnectionToProject(ProjectConsumer consumer,
+			ResourcePosition resourcePosition) throws ProjectAccessException {
+		if (resourcePosition instanceof LocalResourcePosition) {
+			return acquireManagedConnectionToProject(consumer,
+					((LocalResourcePosition) resourcePosition).getProject());
+		} else {
+			return null;
 		}
 	}
 
