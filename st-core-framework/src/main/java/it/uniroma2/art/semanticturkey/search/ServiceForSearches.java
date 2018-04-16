@@ -50,8 +50,6 @@ public class ServiceForSearches {
 	private boolean isLexiconWanted = false;
 	private boolean isLexicalEntryWanted = false;
 	
-	String [] langArray;
-	
 	public boolean isClassWanted() {
 		return isClassWanted;
 	}
@@ -84,9 +82,6 @@ public class ServiceForSearches {
 		return isLexicalEntryWanted;
 	}
 
-	public String [] getLangArray(){
-		return langArray;
-	}
 	
 	public String filterResourceTypeAndSchemeAndLexicons(String varResource, String varType, 
 			List<IRI> schemes, IRI cls, List<IRI> lexicons){
@@ -276,16 +271,8 @@ public class ServiceForSearches {
 		return schemesInFilter;
 	}
 	
-	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode, 
-			Project project) throws IllegalStateException, STPropertyAccessException{
-		//it can be null, * or a list of languages
-		String languagesPropValue = STPropertiesManager.getPUSetting(
-			       STPropertiesManager.PREF_LANGUAGES, project, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-		if(languagesPropValue == null){
-			langArray = new String[]{"*"};
-		} else{
-			langArray = languagesPropValue.split(",");
-		}
+	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode) 
+			throws IllegalStateException{
 		
 		if(searchString.isEmpty()){
 			//TODO change the exception (previously was a fail)
@@ -333,20 +320,12 @@ public class ServiceForSearches {
 		}
 		//@formatter:on
 		
-//		if(searchMode.equals(SearchMode.startsWith)){
-//			searchModeSelected = START_SEARCH_MODE;
-//		} else if(searchMode.toLowerCase().contains(CONTAINS_SEARCH_MODE)){
-//			searchModeSelected = CONTAINS_SEARCH_MODE;
-//		} else if(searchMode.toLowerCase().contains(END_SEARCH_MODE)){
-//			searchModeSelected = END_SEARCH_MODE;
-//		} else if(searchMode.toLowerCase().contains(EXACT_SEARCH_MODE)){
-//			searchModeSelected = EXACT_SEARCH_MODE;
-//		}
-		
-		if(searchMode != SearchMode.startsWith && searchMode != SearchMode.contains && 
-				searchMode != SearchMode.exact && searchMode != SearchMode.endsWith){
+		//if(searchMode != SearchMode.startsWith && searchMode != SearchMode.contains && 
+		//		searchMode != SearchMode.exact && searchMode != SearchMode.endsWith){
+		if(searchMode == null) {
 			String msg = "the serch mode should be one of: "+ SearchMode.startsWith +", "+
-					SearchMode.contains +", "+ SearchMode.endsWith +" or "+ SearchMode.exact;
+					SearchMode.contains +", "+ SearchMode.endsWith +", "+ SearchMode.exact +
+					" or "+SearchMode.fuzzy;
 			//TODO change the exception (previously was a fail)
 			throw new IllegalArgumentException(msg);
 		}

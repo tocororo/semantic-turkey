@@ -53,4 +53,8 @@ public interface SearchStrategy extends Extension {
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Nullable List<String> langs, boolean includeLocales) throws IllegalStateException, 
 			STPropertyAccessException;
+	
+	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
+			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
+
 }

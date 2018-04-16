@@ -140,7 +140,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
@@ -188,7 +188,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
@@ -230,7 +230,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -240,7 +240,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME, null, false)+
+							LUCENEINDEXLOCALNAME, null, false, true)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -253,7 +253,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//use the indexes to search in the literals, and then get the associated resource
 		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
-				includeLocales);
+				includeLocales, false);
 		
 		//search in the rdfs:label
 		query+="\n{" +
@@ -305,7 +305,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional String[] rolesArray, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -341,7 +341,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -395,7 +395,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME, null, false)+
+							LUCENEINDEXLOCALNAME, null, false, true)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -417,7 +417,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//use the indexes to search in the literals, and then get the associated resource
 		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
-				includeLocales);
+				includeLocales, false);
 		
 		//TODO, mabye this part should consider in some way the LexicalModel and/or the role
 		//search in the rdfs:label
@@ -475,7 +475,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	 * @return
 	 */
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
-			String indexToUse, List<String> langs, boolean includeLocales){
+			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName){
 		String query ="";
 		
 		if(indexToUse==null || indexToUse.length()==0) {
@@ -484,15 +484,25 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		if(searchMode == SearchMode.startsWith){
-			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
+			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' .";
 				// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 				//single word, so filter them afterward
-				"\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
+				if(forLocalName) {
+					query+= "\nBIND(REPLACE(str("+variable+"), '^.*(#|/)', \"\") AS "+variable+"_locName )"+
+							"\nFILTER regex(str("+variable+"_locName), '^"+value+"', 'i')";
+				} else {
+					query+="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
+				}
 		} else if(searchMode == SearchMode.endsWith){
-			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
+			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' .";
 			// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 			//single word, so filter them afterward
-			"\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
+			if(forLocalName) {
+				query+= "\nBIND(REPLACE(str("+variable+"), '^.*(#|/)', \"\") AS "+variable+"_locName )"+
+						"\nFILTER regex(str("+variable+"_locName), '"+value+"$', 'i')";
+			} else {
+				query+="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
+			}
 		} else if(searchMode == SearchMode.contains){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' .";
 		} else { // searchMode.equals(exact)

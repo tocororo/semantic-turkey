@@ -16,6 +16,8 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 
+//TODO delete the class
+
 /**
  * Common interface abstracting different search mechanisms.
  */
@@ -54,7 +56,7 @@ public interface SearchStrategy {
 			STPropertyAccessException;
 	
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
-			String indexToUse, List<String> langs, boolean includeLocales);
+			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
 
 	Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, List<IRI> lexicons, List<String> langs,

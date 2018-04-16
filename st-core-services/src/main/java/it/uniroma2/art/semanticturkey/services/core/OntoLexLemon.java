@@ -310,7 +310,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			"     .                                                                             \n" +
 			//"     FILTER(REGEX(STR(?cf), \"^" + index + "\", \"i\"))                            \n" +
 			instantiateSearchStrategy().searchSpecificModePrepareQuery("?cf", index+"", SearchMode.startsWith, 
-					null, null, false) +
+					null, null, false, false) +
 			"   }                                                                               \n" +
 			generateNatureSPARQLWherePart("?resource") +
 			" }                                                                                 \n" +

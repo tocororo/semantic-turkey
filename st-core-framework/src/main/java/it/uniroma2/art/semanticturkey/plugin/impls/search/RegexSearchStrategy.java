@@ -52,7 +52,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		// create the query to be executed for the search
 		//@formatter:off
@@ -149,7 +149,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//since we are interested just in the LexicalEntry, add this type automatically
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
 		
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		// create the query to be executed for the search
 		//@formatter:off
@@ -225,7 +225,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -291,7 +291,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			@Optional String[] rolesArray, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -327,7 +327,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, stServiceContext.getProject());
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -419,6 +419,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List <String> langs, boolean includeLocales) {
+		return searchSpecificModePrepareQuery(variable, value, searchMode, indexToUse, langs, includeLocales, false);
+	}
+	
+	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
+			String indexToUse, List <String> langs, boolean includeLocales, boolean forLocalName) {
 		String query = "";
 
 		if (searchMode == SearchMode.startsWith) {

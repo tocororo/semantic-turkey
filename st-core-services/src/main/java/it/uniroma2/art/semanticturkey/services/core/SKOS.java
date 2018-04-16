@@ -109,11 +109,11 @@ public class SKOS extends STServiceAdapter {
 		QueryBuilder qb;
 		
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
-		broaderProps  = checkHierachicalProps(broaderProps );
+		List<IRI>broaderPropsToUse  = checkHierachicalProps(broaderProps );
 		//narrowerProp could be null if the broaderProp  has no inverse
-		narrowerProps = getInverseOfHierachicalProp(broaderProps , narrowerProps);
+		List<IRI>narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps , narrowerProps);
 		
-		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProps, narrowerProps, 
+		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
 				getManagedConnection(), includeSubProperties);
 		
 		if (schemes != null && !schemes.isEmpty()) {
@@ -241,11 +241,11 @@ public class SKOS extends STServiceAdapter {
 		QueryBuilder qb;
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
-		broaderProps = checkHierachicalProps(broaderProps);
+		List<IRI>broaderPropsToUse = checkHierachicalProps(broaderProps);
 		//narrowerProp could be null if the broaderProp  has no inverse
-		narrowerProps = getInverseOfHierachicalProp(broaderProps, narrowerProps);
+		List<IRI>narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps, narrowerProps);
 		
-		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProps, narrowerProps, 
+		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
 				getManagedConnection(), includeSubProperties);
 		// @formatter:off
 		if (schemes != null && !schemes.isEmpty()) {
@@ -368,11 +368,11 @@ public class SKOS extends STServiceAdapter {
 		QueryBuilder qb;
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
-		broaderProps = checkHierachicalProps(broaderProps);
+		List<IRI>broaderPropsToUse = checkHierachicalProps(broaderProps);
 		//narrowerProp could be null if the broaderProp  has no inverse
-		narrowerProps = getInverseOfHierachicalProp(broaderProps, narrowerProps);
+		List<IRI>narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps, narrowerProps);
 		
-		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProps, narrowerProps, 
+		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
 				getManagedConnection(), includeSubProperties);
 		
 		// @formatter:off
@@ -1196,9 +1196,9 @@ public class SKOS extends STServiceAdapter {
 		Model modelRemovals = new LinkedHashModel();
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
-		broaderProps  = checkHierachicalProps(broaderProps);
+		List<IRI>broaderPropsToUse  = checkHierachicalProps(broaderProps);
 		//narrowerProp could be null if the broaderProp  has no inverse
-		narrowerProps = getInverseOfHierachicalProp(broaderProps, narrowerProps);
+		List<IRI>narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps, narrowerProps);
 		
 		/* OLD
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
@@ -1206,11 +1206,11 @@ public class SKOS extends STServiceAdapter {
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER, concept));
 		 */
-		for(IRI broaderProp : broaderProps) {
+		for(IRI broaderProp : broaderPropsToUse) {
 			modelRemovals.add(repoConnection.getValueFactory().createStatement(concept,
 				broaderProp, broaderConcept));
 		}
-		for(IRI narrowerProp : narrowerProps) {
+		for(IRI narrowerProp : narrowerPropsToUse) {
 			modelRemovals.add(repoConnection.getValueFactory().createStatement(broaderConcept,
 				narrowerProp, concept));
 		}
@@ -1311,11 +1311,11 @@ public class SKOS extends STServiceAdapter {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
-		List<IRI> broaderProps  = checkHierachicalProps(null);
+		List<IRI> broaderPropsToUse  = checkHierachicalProps(null);
 		//narrowerProp could be null if the broaderProp  has no inverse
-		List<IRI> narrowerProps = getInverseOfHierachicalProp(broaderProps, null);
+		List<IRI> narrowerPropsToUse = getInverseOfHierachicalProp(broaderPropsToUse, null);
 		
-		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderProps, narrowerProps, 
+		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
 				getManagedConnection(), true);
 		
 		//first check if the concept has any narrower (or is it broader to any other concept)
@@ -2102,13 +2102,13 @@ public class SKOS extends STServiceAdapter {
 		if (narrowerProps != null) {
 			return narrowerProps;
 		}
-		//if the hierachical property is null or BROADER, then its inverse is NARROWER, so return it immediatelly
-		else if(broaderProps  == null || (broaderProps.size()==1 
-				&& broaderProps.get(0).equals(org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER))){
+		//if the hierachical property is null or empty, then return NARROWER
+		else if(broaderProps  == null || broaderProps.size()==0){
 			narrowerProps = new ArrayList<>();
 			narrowerProps.add(org.eclipse.rdf4j.model.vocabulary.SKOS.NARROWER);
 			return narrowerProps;
 		}
+		//in all other case, return null
 		else {
 			return null;
 		}
