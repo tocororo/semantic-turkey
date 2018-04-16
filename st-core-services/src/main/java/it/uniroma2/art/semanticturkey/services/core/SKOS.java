@@ -2186,7 +2186,7 @@ public class SKOS extends STServiceAdapter {
 			String query = "SELECT ?subProp ?subInverseProp"
 					+ "\nWHERE{";
 			
-			for(IRI broaderProp : subPropList) {
+			for(IRI broaderProp : broaderProps) {
 				if(!first) {
 					query+="\nUNION";
 				}
