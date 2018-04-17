@@ -34,8 +34,7 @@
 		<bundle dependency="true">mvn:commons-fileupload/commons-fileupload/1.3.1</bundle>
 
 		<bundle dependency="true">mvn:org.yaml/snakeyaml/1.15</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.8.2
-		</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.8.2</bundle>
 
 		<!-- CODA -->
 		<feature version="[1.3,2)">coda</feature>
@@ -80,7 +79,7 @@
 	<feature name="semantic_turkey" version="${project.version}">
 
 		<!-- First install all prerequisites -->
-		<feature prerequisite="true">semantic_prereq</feature>
+		<feature>semantic_prereq</feature>
 
 		<!-- Finally install Semantic Turkey -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}
