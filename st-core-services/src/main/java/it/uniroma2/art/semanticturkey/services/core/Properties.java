@@ -17,6 +17,8 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
@@ -52,6 +54,7 @@ import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -1280,6 +1283,42 @@ public class Properties extends STServiceAdapter {
 		return literalList;
 	}
 
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getInverseProperties(List<IRI> properties) {
+		String q = " PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " 
+				+ " \nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " 
+				+ " \nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " 
+				+ " \nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " 
+				+ " \nPREFIX owl: <http://www.w3.org/2002/07/owl#>	"
+				+ "SELECT DISTINCT ?resource ?attr_inverseOf "+generateNatureSPARQLSelectPart()
+				+ "\nWHERE {\n"
+				+ "\n?resource <"+OWL.INVERSEOF+"> ?attr_inverseOf ." 
+				+ "\nFILTER(";
+		boolean first = true;
+		for(IRI prop : properties) {
+			if(!first) {
+				q += " || ";
+			} else {
+				first = false;
+			}
+			q += "?attr_inverseOf = <"+prop.stringValue()+">";
+		}
+		q += ")"
+				//adding the nature in the query (will be replaced by the appropriate processor), 
+				//remember to change the SELECT as well
+				+ generateNatureSPARQLWherePart("?resource")
+				+ "\n}"
+				+ "\nGROUP BY ?resource ?attr_inverseOf";
+				
+		logger.debug("query [getInverseProperties]:\n" + q);
+		QueryBuilder qb = createQueryBuilder(q);
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
 	protected TypesAndRanges getRangeOnlyClasses(IRI property) {
 
 		String selectQuery =
