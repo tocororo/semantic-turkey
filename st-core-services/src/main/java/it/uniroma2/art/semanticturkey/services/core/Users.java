@@ -661,7 +661,7 @@ public class Users extends STServiceAdapter {
 			});
 			
 			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(emailAddress, "VocBench"));
+			message.setFrom(new InternetAddress(emailAddress, emailAlias));
 			message.setSubject("VocBench3 registration");
 			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
 			message.setText(text);
