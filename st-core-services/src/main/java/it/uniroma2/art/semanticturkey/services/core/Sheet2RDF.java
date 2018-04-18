@@ -50,6 +50,8 @@ import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.interfaces.ParserPR;
+import it.uniroma2.art.coda.interfaces.annotations.converters.RDFCapabilityType;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
@@ -223,8 +225,8 @@ public class Sheet2RDF extends STServiceAdapter {
 	public void updateHeader(String headerId, 
 //			RDFTypesEnum rangeType,
 			@Optional IRI headerResource,
-//			@Optional RDFCapabilityType converterType,
-//			@Optional String converterMention, 
+			@Optional RDFCapabilityType converterType,
+			@Optional String converterMention, 
 //			@Optional String lang, 
 //			@Optional IRI rangeClass, 
 //			@Optional IRI rangeDatatype, 
@@ -240,30 +242,30 @@ public class Sheet2RDF extends STServiceAdapter {
 		}
 		RepositoryConnection connection = getManagedConnection();
 		ConverterResolver converterResolver = new ConverterResolver(connection);
-		for (Header h : headers){
+		/*
+		 * apply the change to the collected headers (In most of the case there is just one header,
+		 * there are multiple headers only if there are more with the same name and applyToAll was true)
+		 */
+		for (Header h : headers){ 
 			h.setHeaderResource(headerResource);
-			//TODO add a static method somewhere in order to run an update routine to the header?
+			
 			//update isClass
-			h.setIsClass(S2RDFUtils.isClass(headerResource, connection)); 
+			h.setIsClass(S2RDFUtils.isClass(headerResource, connection));
+			
 			//update converter
-			CODAConverter converter = converterResolver.getConverter(headerResource);
-			header.setConverter(converter);
+			CODAConverter converter;
+			if (converterMention != null && converterType != null) { //converter is provided by the client
+				//set converter contract description retrieving the ConverterContractDescription object from its uri
+				ConverterMention mention = ctx.getCodaCore().parseConverterMention(converterMention, ctx.getSheet2RDFCore().getMergedPrefixMapping());
+				String convUri = mention.getURI();
+				converter = new CODAConverter(converterType, convUri);
+			} else { 
+				//resolve the converter with the default choice for the resource assigned to the header
+				converter = converterResolver.getConverter(headerResource);
+			}
+			h.setConverter(converter);
 			
 //			h.setRangeType(rangeType);
-			
-			//set converter contract description retrieving the ConverterContractDescription object from its uri
-//			ConverterMention mention = ctx.getCodaCore().parseConverterMention(converterMention, ctx.getSheet2RDFCore().getMergedPrefixMapping());
-//			String convUri = mention.getURI();
-//			CODAConverter converter = new CODAConverter(converterType, convUri);
-//			h.setConverter(converter);
-			
-//			Collection<ConverterContractDescription> codaConvList = ctx.getCodaCore().listConverterContracts();
-//			for (ConverterContractDescription convDescr : codaConvList) {
-//				if (convDescr.getContractURI().equals(converter)) {
-//					h.setConverterContract(convDescr);
-//					break;
-//				}
-//			}
 			
 //			//independently from range type, set all the optional fields, so that if not passed
 //			//they will be set to null
