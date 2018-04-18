@@ -153,7 +153,8 @@ public class Search extends STServiceAdapter {
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 
 		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
-		List<IRI>broaderPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS.checkHierachicalProps(broaderProps);
+		List<IRI>broaderPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS.
+				getHierachicalProps(broaderProps, narrowerProps);
 		//inversHierachicalProp could be null if the hierachicalProp has no inverse
 		List<IRI>narrowerPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
 				.getInverseOfHierachicalProp(broaderProps, narrowerProps);
