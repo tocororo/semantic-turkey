@@ -43,6 +43,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Source;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.FormatCapabilityProvider;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporter;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -150,7 +151,8 @@ public class Export extends STServiceAdapter {
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
 			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
 			@Optional(defaultValue = "false") boolean includeInferred, @Optional String outputFormat,
-			@Optional(defaultValue = "false") boolean force, @Optional PluginSpecification reformattingExporterSpec,
+			@Optional(defaultValue = "false") boolean force,
+			@Optional PluginSpecification reformattingExporterSpec,
 			@Optional PluginSpecification deployerSpec) throws Exception {
 
 		exportHelper(exptManager, stServiceContext, oRes, getManagedConnection(), graphs, filteringPipeline,
@@ -165,7 +167,7 @@ public class Export extends STServiceAdapter {
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
 			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
-			InvalidConfigurationException {
+			InvalidConfigurationException, NoSuchExtensionException, ReformattingException {
 		Set<Resource> sourceGraphs = QueryResults.asSet(sourceRepositoryConnection.getContextIDs());
 
 		if (!force) {
@@ -245,6 +247,7 @@ public class Export extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 * @throws InvalidConfigurationException
 	 * @throws IOException
+	 * @throws ReformattingException
 	 */
 	public static void formatAndThenDownloadOrDeploy(ExtensionPointManager exptManager,
 			STServiceContext stServiceContext, HttpServletResponse oRes, IRI[] graphs,
@@ -252,7 +255,7 @@ public class Export extends STServiceAdapter {
 			RepositoryConnection workingRepositoryConnection,
 			@Nullable PluginSpecification reformattingExporterSpec)
 			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
-			STPropertyAccessException, InvalidConfigurationException, IOException {
+			STPropertyAccessException, InvalidConfigurationException, IOException, ReformattingException {
 
 		// apply the given reformatting export, or if no deployer was specified force serialization to RDF
 
@@ -270,7 +273,7 @@ public class Export extends STServiceAdapter {
 		}
 
 		try (ClosableFormattedResource formattedResource = reformattingExporter == null ? null
-				: reformattingExporter.export(workingRepositoryConnection, graphs, outputFormat, false)) {
+				: reformattingExporter.export(workingRepositoryConnection, graphs, outputFormat)) {
 
 			Source source;
 			if (formattedResource != null) {

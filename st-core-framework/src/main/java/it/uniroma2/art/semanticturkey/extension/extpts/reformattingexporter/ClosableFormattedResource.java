@@ -8,8 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Consumer;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -19,10 +17,7 @@ import org.apache.commons.io.FileUtils;
  */
 public class ClosableFormattedResource implements AutoCloseable {
 
-	// Only one between backingFile and outputStreamConsumer should be non null initially
-	private @Nullable File backingFile;
-	private @Nullable Consumer<OutputStream> outputStreamConsumer;
-
+	private File backingFile;
 	private String defaultFileExtension;
 	private String mimeType;
 
@@ -32,26 +27,19 @@ public class ClosableFormattedResource implements AutoCloseable {
 		this.mimeType = mimeType;
 	}
 
-	public ClosableFormattedResource(Consumer<OutputStream> outputStreamConsumer, String defaultFileExtension,
-			String mimeType) {
-		this.outputStreamConsumer = outputStreamConsumer;
-		this.defaultFileExtension = defaultFileExtension;
-		this.mimeType = mimeType;
+	public String getDefaultFileExtension() {
+		return defaultFileExtension;
+	}
+
+	public String getMIMEType() {
+		return mimeType;
 	}
 
 	public void writeTo(OutputStream outputStream) throws IOException {
-		if (backingFile != null) {
-			FileUtils.copyFile(backingFile, outputStream);
-		} else {
-			outputStreamConsumer.accept(outputStream);
-		}
+		FileUtils.copyFile(backingFile, outputStream);
 	}
 
 	public InputStream getInputStream() throws IOException {
-		if (backingFile == null) {
-			backingFile = File.createTempFile("reformattingexporter", null);
-		}
-
 		return new FileInputStream(backingFile);
 	}
 
@@ -63,23 +51,12 @@ public class ClosableFormattedResource implements AutoCloseable {
 	}
 
 	public static ClosableFormattedResource build(Consumer<OutputStream> outputStreamConsumer,
-			String defaultFileExtension, String mimeType, boolean eager) throws IOException {
-		if (eager) {
-			File backingFile = File.createTempFile("reformattingexporter", null);
-			try (OutputStream os = new FileOutputStream(backingFile)) {
-				outputStreamConsumer.accept(os);
-			}
-			return new ClosableFormattedResource(backingFile, defaultFileExtension, mimeType);
-		} else {
-			return new ClosableFormattedResource(outputStreamConsumer, defaultFileExtension, mimeType);
+			String defaultFileExtension, String mimeType) throws IOException {
+		File backingFile = File.createTempFile("reformattingexporter", null);
+		try (OutputStream os = new FileOutputStream(backingFile)) {
+			outputStreamConsumer.accept(os);
 		}
+		return new ClosableFormattedResource(backingFile, defaultFileExtension, mimeType);
 	}
 
-	public String getDefaultFileExtension() {
-		return defaultFileExtension;
-	}
-
-	public String getMIMEType() {
-		return mimeType;
-	}
 }

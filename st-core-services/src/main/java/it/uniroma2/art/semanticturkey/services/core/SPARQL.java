@@ -63,7 +63,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -369,6 +371,8 @@ public class SPARQL extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 * @throws IllegalArgumentException
 	 * @throws InvalidConfigurationException
+	 * @throws ReformattingException
+	 * @throws NoSuchExtensionException
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -386,7 +390,7 @@ public class SPARQL extends STServiceAdapter {
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
 			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
-			InvalidConfigurationException {
+			InvalidConfigurationException, NoSuchExtensionException, ReformattingException {
 
 		RepositoryConnection conn = getManagedConnection();
 
