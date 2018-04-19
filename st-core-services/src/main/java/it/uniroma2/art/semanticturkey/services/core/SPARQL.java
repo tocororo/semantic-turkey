@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -147,7 +148,7 @@ public class SPARQL extends STServiceAdapter {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			((TupleQuery) preparedQuery).evaluate(new SPARQLResultsJSONWriter(baos));
 			ObjectMapper mapper = new ObjectMapper();
-			JsonNode sparqlObj = mapper.readTree(baos.toString());
+			JsonNode sparqlObj = mapper.readTree(baos.toString(StandardCharsets.UTF_8.name()));
 
 			ObjectNode wrapObj = JsonNodeFactory.instance.objectNode();
 			wrapObj.set("resultType", JsonNodeFactory.instance.textNode("tuple"));
