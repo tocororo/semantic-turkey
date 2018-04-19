@@ -45,7 +45,9 @@
 							javax.inject,
 							javax.servlet.http,
 							it.uniroma2.art.coda.converters.impl;implementation=true,
-							*;resolution:=optional
+							!org.apache.xerces.*,
+							!org.mortbay.http.*,
+							*
 						</Import-Package>
 
 						<Export-Package>{local-packages}</Export-Package>

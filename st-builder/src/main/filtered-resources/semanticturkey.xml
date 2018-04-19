@@ -23,8 +23,6 @@
 		<feature version="[1.2.1,2)" dependency="true">spring-dm-web</feature>
 		<feature version="[3.1,4)" dependency="true">spring-security</feature>
 		
-		<bundle dependency="true">mvn:org.antlr/antlr4-runtime/${antlr4.version}</bundle>
-
 		<!-- These bundles provide optional dependencies for spring-web, in order 
 			to support multipart resolver. It's important that these bundles are installed 
 			before spring-web, otherwise the latter must be refreshed to pick the optional 
@@ -37,14 +35,13 @@
 		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.8.2</bundle>
 
 		<!-- CODA -->
-		<feature version="[1.3,2)">coda</feature>
+		<feature dependency="true" version="[1.3,2)">coda</feature>
 
 		<!-- Spring/SpringDM -->
 		<bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/1.7.1_1</bundle>
 
 		<!-- Javax Validation -->
-		<bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final
-		</bundle>
+		<bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final</bundle>
 
 		<!-- Support for Hibernate validation -->
 		<bundle dependency="true">mvn:org.jsoup/com.springsource.org.jsoup/1.5.2</bundle>
@@ -82,12 +79,9 @@
 		<feature>semantic_prereq</feature>
 
 		<!-- Finally install Semantic Turkey -->
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}
-		</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}
-		</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}
-		</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
 	</feature>
 
 </features>
