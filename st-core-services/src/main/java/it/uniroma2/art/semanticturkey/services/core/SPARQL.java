@@ -163,7 +163,7 @@ public class SPARQL extends STServiceAdapter {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				QueryResults.report(queryResult, new SPARQLResultsJSONWriter(baos));
 				ObjectMapper mapper = new ObjectMapper();
-				sparqlObj = mapper.readTree(baos.toString());
+				sparqlObj = mapper.readTree(baos.toString(StandardCharsets.UTF_8.name()));
 			}
 
 			ObjectNode wrapObj = JsonNodeFactory.instance.objectNode();
