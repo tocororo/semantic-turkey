@@ -33,7 +33,6 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -864,13 +863,9 @@ public class AlignmentModel {
 		}
 		RepositoryResult<Statement> stmts = repoConnection.getStatements(null, null, null, false);
 		Model model = Iterations.addAll(stmts, new LinkedHashModel());
+		model.setNamespace("", Alignment.NAMESPACE);
 		try (FileOutputStream out = new FileOutputStream(outputFile)) {
-			RDFWriter writer = Rio.createWriter(RDFFormat.RDFXML, out);
-			writer.startRDF();
-			for (Statement st : model) {
-				writer.handleStatement(st);
-			}
-			writer.endRDF();
+			Rio.write(model, out, RDFFormat.RDFXML);
 		}
 	}
 	
