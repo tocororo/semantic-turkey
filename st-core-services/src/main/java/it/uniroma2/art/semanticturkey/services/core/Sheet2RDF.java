@@ -222,13 +222,12 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	public void updateHeader(String headerId, 
-//			RDFTypesEnum rangeType,
-			@Optional IRI headerResource,
+	public void updateHeader(String headerId, IRI headerResource, 
+			@Optional RDFTypesEnum rangeType,
+			@Optional IRI rangeClass,
 			@Optional RDFCapabilityType converterType,
 			@Optional String converterMention, 
-//			@Optional String lang, 
-//			@Optional IRI rangeClass, 
+//			@Optional String lang,
 //			@Optional IRI rangeDatatype, 
 			@Optional (defaultValue = "false") boolean applyToAll) throws PRParserException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
@@ -265,12 +264,13 @@ public class Sheet2RDF extends STServiceAdapter {
 			}
 			h.setConverter(converter);
 			
-//			h.setRangeType(rangeType);
+			if (rangeType != null) {
+				h.setRangeType(rangeType);
+			}
 			
-//			//independently from range type, set all the optional fields, so that if not passed
-//			//they will be set to null
+//			//Set the optional fields, so that if not passed they will be set to null
 //			h.setRangeLanguage(lang);
-//			h.setRangeClass(rangeClass);
+			h.setRangeClass(rangeClass);
 //			h.setRangeDatatype(rangeDatatype);
 		}
 	}
