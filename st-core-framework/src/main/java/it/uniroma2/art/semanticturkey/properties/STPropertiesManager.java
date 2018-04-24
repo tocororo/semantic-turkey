@@ -61,13 +61,15 @@ public class STPropertiesManager {
 	public static final String PREF_ACTIVE_SCHEMES = "active_schemes";
 	public static final String PREF_PROJ_THEME = "project_theme";
 
-	public static final String SETTING_EMAIL_ADMIN_ADDRESS = "mail.admin.address";
-	public static final String SETTING_EMAIL_FROM_ADDRESS = "mail.from.address";
-	public static final String SETTING_EMAIL_FROM_PASSWORD = "mail.from.password";
-	public static final String SETTING_EMAIL_FROM_ALIAS = "mail.from.alias";
-	public static final String SETTING_EMAIL_FROM_HOST = "mail.from.host";
-	public static final String SETTING_EMAIL_FROM_PORT = "mail.from.port";
-
+	public static final String SETTING_ADMIN_ADDRESS = "mail.admin.address";
+	
+	public static final String SETTING_MAIL_SMTP_AUTH = "mail.smtp.auth";
+	public static final String SETTING_MAIL_SMTP_HOST= "mail.smtp.host";
+	public static final String SETTING_MAIL_SMTP_PORT = "mail.smtp.port";
+	public static final String SETTING_MAIL_FROM_ADDRESS = "mail.from.address";
+	public static final String SETTING_MAIL_FROM_PASSWORD = "mail.from.password";
+	public static final String SETTING_MAIL_FROM_ALIAS = "mail.from.alias";
+	
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
 	public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
 

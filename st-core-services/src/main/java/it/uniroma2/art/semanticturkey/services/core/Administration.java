@@ -70,18 +70,20 @@ public class Administration extends STServiceAdapter {
 	public JsonNode getAdministrationConfig() throws JSONException, STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode configNode = jsonFactory.objectNode();
-		configNode.set("emailAdminAddress", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS)));
-		configNode.set("emailFromAddress", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS)));
-		configNode.set("emailFromPassword", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD)));
-		configNode.set("emailFromAlias", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS)));
-		configNode.set("emailFromHost", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST)));
-		configNode.set("emailFromPort", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT)));
+		configNode.set("adminAddress", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS)));
+		configNode.set("mailFromAddress", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS)));
+		configNode.set("mailFromPassword", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD)));
+		configNode.set("mailFromAlias", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS)));
+		configNode.set("mailSmtpAuth", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH)));
+		configNode.set("mailSmtpHost", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST)));
+		configNode.set("mailSmtpPort", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT)));
 		return configNode;
 	}
 	
@@ -92,28 +94,29 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateAdministrator(String emailAdminAddress) throws STPropertyUpdateException {
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, emailAdminAddress);
+	public void updateAdministrator(String adminEmailAddress) throws STPropertyUpdateException {
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, adminEmailAddress);
 	}
 	
 	/**
 	 * 
-	 * @param emailFromAddress
-	 * @param emailFromPassword
-	 * @param emailFromAlias
-	 * @param emailFromHost
-	 * @param emailFromPort
+	 * @param mailFromAddress
+	 * @param mailFromPassword
+	 * @param mailFromAlias
+	 * @param mailSmtpHost
+	 * @param mailSmtpPort
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateEmailConfig(String emailFromAddress, String emailFromPassword,
-			String emailFromAlias, String emailFromHost, String emailFromPort) throws STPropertyUpdateException {
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS, emailFromAddress);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD, emailFromPassword);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS, emailFromAlias);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST, emailFromHost);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT, emailFromPort);
+	public void updateEmailConfig(String mailSmtpHost, String mailSmtpPort, String mailSmtpAuth,
+			String mailFromAddress, String mailFromPassword, String mailFromAlias) throws STPropertyUpdateException {
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST, mailSmtpHost);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT, mailSmtpPort);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH, mailSmtpAuth);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS, mailFromAddress);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD, mailFromPassword);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS, mailFromAlias);
 	}
 	
 	

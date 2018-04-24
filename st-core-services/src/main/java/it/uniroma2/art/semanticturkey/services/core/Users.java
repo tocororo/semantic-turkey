@@ -232,7 +232,7 @@ public class Users extends STServiceAdapter {
 		}
 		//if this is the first registered user, it means that it is the first access, so set it as admin 
 		if (UsersManager.listUsers().isEmpty()) {
-			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, email);
+			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, email);
 			user.setStatus(UserStatus.ACTIVE);
 		}
 		UsersManager.registerUser(user);
@@ -298,7 +298,7 @@ public class Users extends STServiceAdapter {
 		boolean wasAdmin = user.isAdmin(); 
 		user = UsersManager.updateUserEmail(user, newEmail);
 		if (wasAdmin) { //if user was admin, update the admin email in the configuration file
-			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS, user.getEmail());
+			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, user.getEmail());
 		}
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -524,7 +524,7 @@ public class Users extends STServiceAdapter {
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
 			String emailAdminAddress = STPropertiesManager.getSystemSetting(
-					STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
+					STPropertiesManager.SETTING_ADMIN_ADDRESS);
 			throw new Exception("Failed to send an e-mail for resetting the password. Please contact the "
 					+ "system administration at " + emailAdminAddress);
 		}
@@ -579,7 +579,7 @@ public class Users extends STServiceAdapter {
 		public static void sendRegistrationMailToUser(String toEmail, String givenName, String familyName) 
 				throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
 			String emailAdminAddress = STPropertiesManager.getSystemSetting(
-					STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
+					STPropertiesManager.SETTING_ADMIN_ADDRESS);
 			String text = "Dear " + givenName + " " + familyName + ","
 					+ "\nthank you for registering as a user of VocBench 3."
 					+ " Your request has been received. Please wait for the administrator to approve it."
@@ -600,7 +600,7 @@ public class Users extends STServiceAdapter {
 		public static void sendRegistrationMailToAdmin(String userEmail, String userGivenName, String userFamilyName)
 				throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 			String emailAdminAddress = STPropertiesManager.getSystemSetting(
-					STPropertiesManager.SETTING_EMAIL_ADMIN_ADDRESS);
+					STPropertiesManager.SETTING_ADMIN_ADDRESS);
 			String text = "Dear VocBench administrator,"
 					+ "\nthere is a new user registration request for VocBench."
 					+ "\nGiven Name: " + userGivenName
@@ -637,31 +637,38 @@ public class Users extends STServiceAdapter {
 		
 		private static void sendMail(String toEmail, String subject, String text) 
 				throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-			String emailAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ADDRESS);
-			String emailPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PASSWORD);
-			String emailAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_ALIAS);
-			String emailHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_HOST);
-			String emailPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_EMAIL_FROM_PORT);
+			String mailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS);
+			String mailFromPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD);
+			String mailFromAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS);
 			
-			if (emailAddress == null || emailPassword == null || emailAlias == null || emailHost == null || emailPort == null) {
+			String mailSmtpHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST);
+			String mailSmtpPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT);
+			boolean mailSmtpAuth = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH));
+			
+			if (mailFromAddress == null || mailSmtpHost == null || mailSmtpPort == null) {
 				throw new MessagingException("Wrong mail configuration, impossible to send a confirmation e-mail");
 			}
 			
 			Properties props = new Properties();
-			props.put("mail.smtp.host", emailHost);
-			props.put("mail.smtp.socketFactory.port", emailPort);
+			props.put("mail.smtp.host", mailSmtpHost);
+			props.put("mail.smtp.port", mailSmtpPort);
+			props.put("mail.smtp.auth", mailSmtpAuth+"");
+			props.put("mail.smtp.socketFactory.port", mailSmtpPort);
 			props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-			props.put("mail.smtp.auth", "true");
-			props.put("mail.smtp.port", emailPort);
 			
-			Session session = Session.getInstance(props, new javax.mail.Authenticator() {
-				protected PasswordAuthentication getPasswordAuthentication() {
-					return new PasswordAuthentication(emailAddress, emailPassword);
-				}
-			});
+			Session session;
+			if (mailSmtpAuth) {
+				session = Session.getInstance(props, new javax.mail.Authenticator() {
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(mailFromAddress, mailFromPassword);
+					}
+				});
+			} else {
+				session = Session.getInstance(props);
+			}
 			
 			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(emailAddress, emailAlias));
+			message.setFrom(new InternetAddress(mailFromAddress, mailFromAlias));
 			message.setSubject("VocBench3 registration");
 			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
 			message.setText(text);
