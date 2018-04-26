@@ -257,7 +257,6 @@ public class MetadataRegistryBackend {
 				"     ?catalogT a dcat:Catalog .                                             \n" +
 				"   }                                                                        \n" +
 				"   BIND(IF(BOUND(?catalogT), ?catalogT, ?catalogExt) as ?catalog)           \n" +
-				"   BIND(IRI(STRUUID()) as ?record)                                          \n" +
 				"   BIND(NOW() AS ?now)                                                      \n" +
 				" }                                                                          \n"
 				// @formatter:on
@@ -618,7 +617,7 @@ public class MetadataRegistryBackend {
 			// -----------------------------------------
 			// Case 1: The provided URI is the base URI
 
-			query.setBinding("dataset", vf.createLiteral(iriResource.stringValue()));
+			query.setBinding("datasetUriSpace", vf.createLiteral(iriResource.stringValue()));
 			BindingSet bs = QueryResults.singleResult(query.evaluate());
 
 			if (bs != null) {
@@ -631,7 +630,7 @@ public class MetadataRegistryBackend {
 
 			String namespace = iriResource.getNamespace();
 
-			query.setBinding("dataset", vf.createLiteral(namespace));
+			query.setBinding("datasetUriSpace", vf.createLiteral(namespace));
 			bs = QueryResults.singleResult(query.evaluate());
 
 			if (bs != null) {
@@ -643,7 +642,7 @@ public class MetadataRegistryBackend {
 			// e.g., [http://example.org]#Person
 
 			if (namespace.endsWith("#")) {
-				query.setBinding("dataset", vf.createLiteral(namespace.substring(0, namespace.length() - 1)));
+				query.setBinding("datasetUriSpace", vf.createLiteral(namespace.substring(0, namespace.length() - 1)));
 
 				bs = QueryResults.singleResult(query.evaluate());
 

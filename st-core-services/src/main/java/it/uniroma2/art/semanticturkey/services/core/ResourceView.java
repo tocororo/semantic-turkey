@@ -702,6 +702,7 @@ public class ResourceView extends STServiceAdapter {
 							retrievedStatements.add(subject, predicate, object);
 						});
 					}
+					return retrievedStatements;
 				} finally {
 					sparqlRepository.shutDown();
 				}
