@@ -15,6 +15,7 @@ date: dd/mm/yyyy
     * possibility to reformat the data to a (usually) non-RDF format
     * possibility to deploy the (optionally reformatted) data somewhere, instead of simply downloading it
   * Update to Apache Karaf 4.2.0
+  * Update to RDF4J 2.2.4
 
 version 3.0
 date: 08/02/2018

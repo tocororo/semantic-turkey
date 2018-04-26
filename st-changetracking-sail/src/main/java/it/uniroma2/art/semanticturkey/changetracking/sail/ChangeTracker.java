@@ -16,7 +16,6 @@ import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
 import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.sail.config.RepositoryResolver;
 import org.eclipse.rdf4j.repository.sail.config.RepositoryResolverClient;
@@ -77,8 +76,7 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class ChangeTracker extends NotifyingSailWrapper
-		implements RepositoryResolverClient, org.eclipse.rdf4j.repository.RepositoryResolverClient {
+public class ChangeTracker extends NotifyingSailWrapper implements RepositoryResolverClient {
 
 	public static final Optional<Boolean> OPTIONAL_TRUE = Optional.of(true);
 	public static final Optional<Boolean> OPTIONAL_FALSE = Optional.of(false);
@@ -114,6 +112,8 @@ public class ChangeTracker extends NotifyingSailWrapper
 			if (version == null || version.equals("") || version.contains("$"))
 				throw new IllegalStateException("Wrong version number detected: " + version);
 		} catch (IOException e) {
+			logger.error(
+					"Exception preventing initialization of class " + ChangeTracker.class.getSimpleName(), e);
 			throw new IllegalStateException(e);
 		}
 	}
@@ -211,19 +211,9 @@ public class ChangeTracker extends NotifyingSailWrapper
 		}
 	}
 
+	@Override
 	public void setRepositoryResolver(RepositoryResolver repositoryResolver) {
 		this.repositoryResolver = repositoryResolver;
-	}
-
-	public void setRepositoryResolver(org.eclipse.rdf4j.repository.RepositoryResolver repositoryResolver) {
-		this.repositoryResolver = new RepositoryResolver() {
-
-			@Override
-			public Repository getRepository(String memberID)
-					throws RepositoryException, RepositoryConfigException {
-				return repositoryResolver.getRepository(memberID);
-			}
-		};
 	}
 
 	public static String getVersion() {
