@@ -46,6 +46,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.client.SPARQLProtocolSession;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -120,6 +121,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
@@ -640,7 +642,7 @@ public class ResourceView extends STServiceAdapter {
 					.map(Value::stringValue).orElse(null);
 
 			if (sparqlEndpoint != null) {
-				Repository sparqlRepository = new SPARQLRepository(sparqlEndpoint);
+				Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint);
 				sparqlRepository.initialize();
 				try {
 					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
@@ -689,9 +691,9 @@ public class ResourceView extends STServiceAdapter {
 							}
 						}
 
+						// At this point, we know that resource is an IRI
 						GraphQuery describeQuery = conn
-								.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
-						describeQuery.setBinding("y", resource);
+								.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(resource));
 						QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
 							Resource subject = stmt.getSubject();
 							IRI predicate = stmt.getPredicate();
@@ -714,10 +716,25 @@ public class ResourceView extends STServiceAdapter {
 		}
 
 		Model retrievedStatements = new LinkedHashModel();
-		RDFLoader rdfLoader = new RDFLoader(new ParserConfig(), SimpleValueFactory.getInstance());
+		RDFLoader rdfLoader = createRDFLoader();
 		StatementCollector statementCollector = new StatementCollector(retrievedStatements);
 		rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
 		return retrievedStatements;
+	}
+
+	public RDFLoader createRDFLoader() {
+		return new RDFLoader(new ParserConfig(), ErrorRecoveringValueFactory.getInstance());
+	}
+
+	public Repository createSPARQLRepository(String sparqlEndpoint) {
+		return new SPARQLRepository(sparqlEndpoint) {
+			@Override
+			protected SPARQLProtocolSession createHTTPClient() {
+				SPARQLProtocolSession rv = super.createHTTPClient();
+				rv.setValueFactory(ErrorRecoveringValueFactory.getInstance());
+				return rv;
+			}
+		};
 	}
 
 	private RepositoryConnection acquireManagedConnectionToProject(ProjectConsumer consumer,
