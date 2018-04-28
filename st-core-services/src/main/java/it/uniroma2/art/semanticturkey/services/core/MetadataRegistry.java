@@ -4,10 +4,15 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
+import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
@@ -26,9 +31,16 @@ public class MetadataRegistry extends STServiceAdapter {
 
 	private MetadataRegistryBackend metadataRegistryBackend;
 
+	private ResourceLocator resourceLocator;
+
 	@Autowired
 	public void setMetadataRegistry(MetadataRegistryBackend metadataRegistryBackend) {
 		this.metadataRegistryBackend = metadataRegistryBackend;
+	}
+
+	@Autowired
+	public void setResourceLocator(ResourceLocator resourceLocator) {
+		this.resourceLocator = resourceLocator;
 	}
 
 	/**
@@ -133,7 +145,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * Returns the catalog records
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")	
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public Collection<CatalogRecord> getCatalogRecords() {
 		return metadataRegistryBackend.getCatalogRecords();
 	}
@@ -149,6 +161,19 @@ public class MetadataRegistry extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
 	public IRI assessLexicalizationModel(IRI dataset) {
 		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Find a dataset matching the given IRI.
+	 * 
+	 * @param iri
+	 * @return
+	 * @throws ProjectAccessException 
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public ResourcePosition findDataset(IRI iri) throws ProjectAccessException {
+		return resourceLocator.locateResource(getProject(), getRepository(), iri);
 	}
 
 }

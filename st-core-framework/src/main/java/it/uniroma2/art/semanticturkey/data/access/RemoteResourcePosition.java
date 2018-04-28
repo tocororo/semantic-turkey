@@ -15,6 +15,11 @@ public class RemoteResourcePosition extends ResourcePosition {
 	}
 
 	@Override
+	public String getPosition() {
+		return "remote:" + meta.getIdentity();
+	}
+
+	@Override
 	public String toString() {
 		return "remote:" + meta.getUriSpace();
 	}
