@@ -13,6 +13,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Objects;
+
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import static org.hamcrest.Matchers.empty;
@@ -21,6 +24,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+
+import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
  * A test suite for {@link MetadataRegistryBackend}.
@@ -90,7 +95,7 @@ public class MetadataRegistryBackendTest {
 		// Add a fictional version of the Agrovoc dataset
 
 		metadataRegistryBackend.addDatasetVersion(agrovocCatalogRecordIRI, null, "999.99");
-		
+
 		records = metadataRegistryBackend.getCatalogRecords();
 
 		assertThat(records, hasSize(1));
@@ -109,4 +114,114 @@ public class MetadataRegistryBackendTest {
 		assertThat(agrovoc999_99.getVersionInfo().orElseThrow(() -> new AssertionError("Empty optional")),
 				is(equalTo("999.99")));
 	}
+
+	@Test
+	public void testDiscoverAgrovocFromResource() throws MetadataDiscoveryException {
+		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
+				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/c_12332"));
+
+		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
+				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
+				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
+
+		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		assertAgrovocDataset(agrovocDataset);
+	}
+
+	@Test
+	public void testDiscoverAgrovocFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException {
+		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
+				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc"));
+
+		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
+				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
+				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
+
+		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		assertAgrovocDataset(agrovocDataset);
+	}
+
+	@Test
+	public void testDiscoverAgrovocFromURISpace() throws MetadataDiscoveryException {
+		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
+				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/"));
+		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
+				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
+				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
+
+		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		assertAgrovocDataset(agrovocDataset);
+
+	}
+
+	public static void assertAgrovocDataset(DatasetMetadata agrovocDataset) throws AssertionError {
+		assertThat(agrovocDataset.getIdentity(), equalTo(SimpleValueFactory.getInstance()
+				.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc")));
+		assertThat(agrovocDataset.getUriSpace().orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo("http://aims.fao.org/aos/agrovoc/"));
+		assertThat(agrovocDataset.getTitle().orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo("Agrovoc"));
+		assertThat(
+				agrovocDataset.getDereferenciationSystem()
+						.orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo(METADATAREGISTRY.STANDARD_DEREFERENCIATION));
+		assertThat(agrovocDataset.getSparqlEndpoint().orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo(SimpleValueFactory.getInstance()
+						.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc")));
+	}
+
+	@Test
+	public void testDiscoverFOAFFromResource() throws MetadataDiscoveryException {
+		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
+				SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/Person"));
+
+		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
+				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
+				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
+
+		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		assertFOAFDataset(agrovocDataset);
+	}
+
+	@Test
+	public void testDiscoverFOAFFromURISpace() throws MetadataDiscoveryException {
+		IRI catalogRecordIRI = metadataRegistryBackend
+				.discoverDataset(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/"));
+
+		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
+				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
+				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
+
+		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		assertFOAFDataset(agrovocDataset);
+	}
+
+	@Test
+	public void testDiscoverFOAFFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException {
+		IRI catalogRecordIRI = metadataRegistryBackend
+				.discoverDataset(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1"));
+
+		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
+				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
+				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
+
+		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		assertFOAFDataset(agrovocDataset);
+
+	}
+
+	public static void assertFOAFDataset(DatasetMetadata foafDataset) throws AssertionError {
+		assertThat(foafDataset.getIdentity(),
+				equalTo(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/")));
+		assertThat(foafDataset.getUriSpace().orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo("http://xmlns.com/foaf/0.1/"));
+		assertThat(foafDataset.getTitle().orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo("Friend of a Friend (FOAF) vocabulary"));
+		assertThat(
+				foafDataset.getDereferenciationSystem()
+						.orElseThrow(() -> new AssertionError("Empty optional")),
+				equalTo(METADATAREGISTRY.STANDARD_DEREFERENCIATION));
+		assertFalse(foafDataset.getSparqlEndpoint().isPresent());
+	}
+
 }

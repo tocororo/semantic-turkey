@@ -5,14 +5,18 @@ import java.util.Collection;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
@@ -168,12 +172,37 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * 
 	 * @param iri
 	 * @return
-	 * @throws ProjectAccessException 
+	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public ResourcePosition findDataset(IRI iri) throws ProjectAccessException {
 		return resourceLocator.locateResource(getProject(), getRepository(), iri);
+	}
+
+	/**
+	 * Discover the metadata for a dataset given an IRI. If discovery is unsuccessful, an exception is thrown.
+	 * 
+	 * @param iri
+	 * @return the newly created dcat:CatalogRecord for the discovered dataset
+	 * @throws ProjectAccessException
+	 * @throws DeniedOperationException
+	 * @throws MetadataDiscoveryException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public AnnotatedValue<IRI> discoverDataset(IRI iri)
+			throws ProjectAccessException, DeniedOperationException, MetadataDiscoveryException {
+		ResourcePosition rp = resourceLocator.locateResource(getProject(), getRepository(), iri);
+
+		if (!(rp instanceof UnknownResourcePosition)) {
+			throw new DeniedOperationException("A position for the provided IRI " + RenderUtils.toSPARQL(iri)
+					+ " is already known: " + rp.getPosition());
+		}
+
+		IRI catalogRecord = metadataRegistryBackend.discoverDataset(iri);
+		
+		return new AnnotatedValue<>(catalogRecord);
 	}
 
 }

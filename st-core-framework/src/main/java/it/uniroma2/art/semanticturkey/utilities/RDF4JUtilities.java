@@ -5,6 +5,9 @@ import java.lang.reflect.Modifier;
 import java.util.Objects;
 import java.util.Set;
 
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
@@ -25,7 +28,7 @@ public abstract class RDF4JUtilities {
 	 */
 	public static RDFFormat getRDFFormat(String format) throws IllegalArgumentException {
 		Objects.requireNonNull(format);
-		
+
 		for (Field field : RDFFormat.class.getDeclaredFields()) {
 			if ((field.getModifiers() & Modifier.STATIC) == 0)
 				continue; // skip non static fields
@@ -57,6 +60,19 @@ public abstract class RDF4JUtilities {
 	 */
 	public static Set<RDFFormat> getOutputFormats() {
 		return RDFWriterRegistry.getInstance().getKeys();
+	}
+
+	/**
+	 * Creates a new {@link RDFLoader} configured for being robust to errors. Currenlty, the provided loader
+	 * uses an {@link ErrorRecoveringValueFactory} to tolerates some errors in {@code rdf:langString}
+	 * literals.
+	 * 
+	 * @return an {@link RDFLoader}
+	 */
+	public static RDFLoader createRobustRDFLoader() {
+		ParserConfig parserConfig = new ParserConfig();
+		ValueFactory valueFactory = ErrorRecoveringValueFactory.getInstance();
+		return new RDFLoader(parserConfig, valueFactory);
 	}
 
 }

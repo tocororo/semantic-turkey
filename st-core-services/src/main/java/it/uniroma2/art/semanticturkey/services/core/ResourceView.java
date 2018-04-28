@@ -122,6 +122,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
@@ -716,14 +717,10 @@ public class ResourceView extends STServiceAdapter {
 		}
 
 		Model retrievedStatements = new LinkedHashModel();
-		RDFLoader rdfLoader = createRDFLoader();
+		RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
 		StatementCollector statementCollector = new StatementCollector(retrievedStatements);
 		rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
 		return retrievedStatements;
-	}
-
-	public RDFLoader createRDFLoader() {
-		return new RDFLoader(new ParserConfig(), ErrorRecoveringValueFactory.getInstance());
 	}
 
 	public Repository createSPARQLRepository(String sparqlEndpoint) {
