@@ -87,17 +87,20 @@ public class PluginSpecification {
 			UnloadablePluginConfigurationException {
 		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
 
-		if (!configTypeHolder.isPresent()) {
-			configTypeHolder = Optional
-					.of(pluginFactory.createDefaultPluginConfiguration().getClass().getName());
-		}
+		if (pluginFactory != null) {
+			if (!configTypeHolder.isPresent()) {
+				configTypeHolder = Optional
+						.of(pluginFactory.createDefaultPluginConfiguration().getClass().getName());
+			}
 
-		if (properties == null || properties.isEmpty()) {
-			properties = new Properties();
-			try {
-				pluginFactory.createPluginConfiguration(configTypeHolder.get()).storeProperties(properties);
-			} catch (IOException | WrongPropertiesException e) {
-				throw new UnloadablePluginConfigurationException(e);
+			if (properties == null || properties.isEmpty()) {
+				properties = new Properties();
+				try {
+					pluginFactory.createPluginConfiguration(configTypeHolder.get())
+							.storeProperties(properties);
+				} catch (IOException | WrongPropertiesException e) {
+					throw new UnloadablePluginConfigurationException(e);
+				}
 			}
 		}
 	}

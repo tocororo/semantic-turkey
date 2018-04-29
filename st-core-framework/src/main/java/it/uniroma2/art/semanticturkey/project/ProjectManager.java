@@ -67,6 +67,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -81,14 +82,16 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
@@ -1347,7 +1350,7 @@ public class ProjectManager {
 			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
 			WrongPropertiesException, PUBindingException, RBACException, UnsupportedModelException,
-			UnsupportedLexicalizationModelException, ProjectInconsistentException {
+			UnsupportedLexicalizationModelException, ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1395,8 +1398,7 @@ public class ProjectManager {
 			}
 
 			if (repositoryAccess.isLocal()) { // Local repositories
-				RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
-						.instatiatePlugin();
+				RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(coreRepoSailConfigurerSpecification);
 				RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
 						.buildRepositoryImplConfig(backendSailImplConfig -> {
 							if (supportRepositoryConfig == null)
@@ -1418,8 +1420,7 @@ public class ProjectManager {
 				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 				if (supportRepositoryConfig != null) {
-					RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
-							.instatiatePlugin();
+					RepositoryImplConfigurer supportRepoSailConfigurer = instantiateRepositoryImplConfigurer(supportRepoSailConfigurerSpecification);
 					RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
 							.buildRepositoryImplConfig(null);
 					supportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
@@ -1430,8 +1431,7 @@ public class ProjectManager {
 				if (remoteRepositoryAccess instanceof CreateRemote) {
 					RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID,
 							"Core repository for project " + projectName);
-					RepositoryImplConfigurer coreRepoSailConfigurer = (RepositoryImplConfigurer) coreRepoSailConfigurerSpecification
-							.instatiatePlugin();
+					RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(coreRepoSailConfigurerSpecification);
 					RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
 							.buildRepositoryImplConfig(backendSailImplConfig -> {
 								if (supportRepositoryConfig == null)
@@ -1458,8 +1458,7 @@ public class ProjectManager {
 					if (supportRepositoryConfig != null) {
 						newSupportRepositoryConfig = new RepositoryConfig(supportRepoID,
 								"Support repository for project " + projectName);
-						RepositoryImplConfigurer supportRepoSailConfigurer = (RepositoryImplConfigurer) supportRepoSailConfigurerSpecification
-								.instatiatePlugin();
+						RepositoryImplConfigurer supportRepoSailConfigurer = instantiateRepositoryImplConfigurer(supportRepoSailConfigurerSpecification);
 						RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
 								.buildRepositoryImplConfig(null);
 						newSupportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
@@ -1642,6 +1641,17 @@ public class ProjectManager {
 				Utilities.deleteDir(projectDir); // if something fails, deletes everything
 			}
 			throw e;
+		}
+	}
+
+	private static RepositoryImplConfigurer instantiateRepositoryImplConfigurer(PluginSpecification spec)
+			throws ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, WrongPropertiesException, IllegalArgumentException,
+			STPropertyAccessException, InvalidConfigurationException {
+		try {
+			return exptManager.instantiateExtension(RepositoryImplConfigurer.class, spec);
+		} catch (NoSuchExtensionException e) {
+			return (RepositoryImplConfigurer) spec.instatiatePlugin();
 		}
 	}
 

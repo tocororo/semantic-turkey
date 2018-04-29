@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -62,6 +63,7 @@ import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
@@ -88,9 +90,9 @@ public class Projects extends STServiceAdapter {
 	public void createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			RepositoryAccess repositoryAccess, String coreRepoID,
-			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification coreRepoSailConfigurerSpecification,
+			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification coreRepoSailConfigurerSpecification,
 			@Optional String coreBackendType, String supportRepoID,
-			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory\"}") PluginSpecification supportRepoSailConfigurerSpecification,
+			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional String supportBackendType,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
 			@Optional PluginSpecification renderingEngineSpecification,
@@ -101,7 +103,8 @@ public class Projects extends STServiceAdapter {
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, PUBindingException, RBACException,
-			UnsupportedModelException, UnsupportedLexicalizationModelException {
+			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
+			STPropertyAccessException {
 
 		// Expands defaults in the specification of sail configurers
 		coreRepoSailConfigurerSpecification.expandDefaults();
