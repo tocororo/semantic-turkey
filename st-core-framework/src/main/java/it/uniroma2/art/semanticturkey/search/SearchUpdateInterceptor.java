@@ -11,6 +11,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
@@ -29,6 +30,9 @@ public class SearchUpdateInterceptor implements MethodInterceptor {
 
 	@Autowired
 	private STServiceContext stServiceContext;
+
+	@Autowired
+	private ExtensionPointManager exptManager;
 
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
@@ -73,7 +77,8 @@ public class SearchUpdateInterceptor implements MethodInterceptor {
 							ValidationUtilities.executeWithoutValidation(
 									ValidationUtilities.isValidationEnabled(stServiceContext), connection,
 									conn -> {
-										SearchStrategyUtils.instantiateSearchStrategy(searchStrategy)
+										SearchStrategyUtils
+												.instantiateSearchStrategy(exptManager, searchStrategy)
 												.update(connection);
 									});
 							connection.commit();

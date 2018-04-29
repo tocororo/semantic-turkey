@@ -88,6 +88,8 @@ import it.uniroma2.art.semanticturkey.exceptions.RepositoryNotExistingException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
@@ -99,7 +101,6 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
-import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
@@ -233,6 +234,7 @@ public abstract class Project extends AbstractProject {
 	private STLocalRepositoryManager repositoryManager;
 	private VersionManager versionManager;
 	private RepositoryLocation defaultRepositoryLocation;
+	private ExtensionPointManager exptManager;
 
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
@@ -323,8 +325,9 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	void activate() throws ProjectIncompatibleException, ProjectInconsistentException, RDF4JException,
+	void activate(ExtensionPointManager exptManager) throws ProjectIncompatibleException, ProjectInconsistentException, RDF4JException,
 			ProjectUpdateException, ProjectAccessException {
+		this.exptManager = exptManager;
 		try {
 			repositoryManager = new STLocalRepositoryManager(_projectDir);
 			repositoryManager.initialize();
@@ -521,7 +524,7 @@ public abstract class Project extends AbstractProject {
 			if (anyWritten.isTrue()) {
 				conn.begin();
 				SearchStrategy searchStrategy = SearchStrategyUtils
-						.instantiateSearchStrategy(STRepositoryInfoUtils
+						.instantiateSearchStrategy(exptManager, STRepositoryInfoUtils
 								.getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
 				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
 					searchStrategy.initialize(conn);

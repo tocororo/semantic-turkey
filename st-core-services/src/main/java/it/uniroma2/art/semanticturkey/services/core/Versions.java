@@ -19,8 +19,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -37,7 +37,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 
 /**
  * This class provides services for handling versions of a repository.
@@ -126,9 +125,9 @@ public class Versions extends STServiceAdapter {
 				outConn.begin();
 
 				SearchStrategyUtils
-						.instantiateSearchStrategy(STRepositoryInfoUtils
-								.getSearchStrategy(getProject().getRepositoryManager().getSTRepositoryInfo(
-										STServiceContextUtils.getRepostoryId(stServiceContext))))
+						.instantiateSearchStrategy(exptManager,
+								STRepositoryInfoUtils.getSearchStrategy(getProject().getRepositoryManager()
+										.getSTRepositoryInfo(localRepostoryId)))
 						.initialize(delegateWritableConnection);
 
 				outConn.commit();

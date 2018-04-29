@@ -49,7 +49,9 @@ import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.SearchStrategy;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
@@ -84,9 +86,12 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
-	
+
 	@Autowired
 	private CustomFormManager cfManager;
+
+	@Autowired
+	protected ExtensionPointManager exptManager;
 
 	private final ValueFactory sesVf;
 	private final ServletUtilities servletUtilities;
@@ -258,65 +263,74 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			shutDownCodaCore(codaCore);
 		}
 	}
-	
-	protected void addValue(RepositoryConnection repoConn, Resource subject, IRI predicate, SpecialValue value)
-			throws ProjectInconsistentException, CODAException {
+
+	protected void addValue(RepositoryConnection repoConn, Resource subject, IRI predicate,
+			SpecialValue value) throws ProjectInconsistentException, CODAException {
 		if (value.isRdf4jValue()) {
 			repoConn.add(subject, predicate, value.getRdf4jValue(), getWorkingGraph());
-		} else { //value.isCustomFormValue()
+		} else { // value.isCustomFormValue()
 			CustomFormValue cfValue = value.getCustomFormValue();
 			CODACore codaCore = getInitializedCodaCore(repoConn);
 			try {
 				Model modelAdditions = new LinkedHashModel();
 				Model modelRemovals = new LinkedHashModel();
-				
+
 				CustomForm cForm = cfManager.getCustomForm(getProject(), cfValue.getCustomFormId());
-				if (cForm.isTypeGraph()){
+				if (cForm.isTypeGraph()) {
 					CustomFormGraph cfGraph = cForm.asCustomFormGraph();
 					SessionFormData sessionData = new SessionFormData();
-					sessionData.addSessionParameter(SessionFormData.Data.user, UsersManager.getLoggedUser().getIRI().stringValue());
-					UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore, cfValue.getUserPromptMap(), sessionData);
-					//link the generated graph with the resource
+					sessionData.addSessionParameter(SessionFormData.Data.user,
+							UsersManager.getLoggedUser().getIRI().stringValue());
+					UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore,
+							cfValue.getUserPromptMap(), sessionData);
+					// link the generated graph with the resource
 					List<ARTTriple> insertTriples = updates.getInsertTriples();
 					if (!insertTriples.isEmpty()) {
 						Resource graphEntry = detectGraphEntry(insertTriples);
-						VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set created for versioning
+						VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set
+																												// created
+																												// for
+																												// versioning
 						modelAdditions.add(subject, predicate, graphEntry);
-						for (ARTTriple t : insertTriples){
+						for (ARTTriple t : insertTriples) {
 							modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
 						}
 					}
-					for (ARTTriple t : updates.getDeleteTriples()){
+					for (ARTTriple t : updates.getDeleteTriples()) {
 						modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject());
 					}
-				} else if (cForm.isTypeNode()){
-					String nodeValue = cfValue.getUserPromptMap().entrySet().iterator().next().getValue().toString();//get the only value
-					ProjectionOperator projOperator = CustomFormParseUtils.getProjectionOperator(codaCore, cForm.getRef());
+				} else if (cForm.isTypeNode()) {
+					String nodeValue = cfValue.getUserPromptMap().entrySet().iterator().next().getValue()
+							.toString();// get the only value
+					ProjectionOperator projOperator = CustomFormParseUtils.getProjectionOperator(codaCore,
+							cForm.getRef());
 					Value generatedValue = codaCore.executeProjectionOperator(projOperator, nodeValue);
-					//link the generated value with the resource
+					// link the generated value with the resource
 					modelAdditions.add(subject, predicate, generatedValue);
 				}
 				repoConn.add(modelAdditions, getWorkingGraph());
 				repoConn.remove(modelRemovals, getWorkingGraph());
-			} catch (PRParserException | ComponentProvisioningException | ConverterException |
-					ProjectionRuleModelNotSet | UnassignableFeaturePathException e){
+			} catch (PRParserException | ComponentProvisioningException | ConverterException
+					| ProjectionRuleModelNotSet | UnassignableFeaturePathException e) {
 				throw new CODAException(e);
 			} finally {
 				shutDownCodaCore(codaCore);
 			}
 		}
 	}
-	
+
 	/**
-	 * This method detects the entry of a graph (list of triples) based on an heuristic: entry is that subject that never appears as object
+	 * This method detects the entry of a graph (list of triples) based on an heuristic: entry is that subject
+	 * that never appears as object
+	 * 
 	 * @param triples
 	 * @return
 	 */
 	private Resource detectGraphEntry(List<ARTTriple> triples) {
-		for (ARTTriple t1 : triples){
+		for (ARTTriple t1 : triples) {
 			Resource subj = t1.getSubject();
 			boolean neverObj = true;
-			for (ARTTriple t2 : triples){
+			for (ARTTriple t2 : triples) {
 				if (subj.equals(t2.getObject()))
 					neverObj = false;
 			}
@@ -376,13 +390,13 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			return RDFResourceRole.valueOf(roleRaw);
 		}
 	}
-	
+
 	protected SearchStrategy instantiateSearchStrategy() {
 		SearchStrategies searchStrategy = STRepositoryInfoUtils
 				.getSearchStrategy(getProject().getRepositoryManager()
 						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
 
-		return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy);
+		return SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy);
 	}
 
 }

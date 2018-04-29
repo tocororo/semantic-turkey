@@ -245,7 +245,7 @@ public class ProjectManager {
 		try {
 			logger.debug("project " + projectName + " initialized");
 
-			proj.activate();
+			proj.activate(exptManager);
 
 			CustomFormManager.getInstance().registerCustomFormModelOfProject(proj);
 
