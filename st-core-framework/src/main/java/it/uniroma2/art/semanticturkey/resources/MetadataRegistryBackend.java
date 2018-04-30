@@ -873,8 +873,9 @@ public class MetadataRegistryBackend {
 			}
 
 			if (datasetUriSpace != null) {
-				return addDataset(voidDataset, datasetUriSpace, datasetTitle.stringValue(),
-						datasetDeferenceable, datasetSPARQLEndpoint);
+				return addDataset(voidDataset, datasetUriSpace,
+						datasetTitle != null ? datasetTitle.stringValue() : null, datasetDeferenceable,
+						datasetSPARQLEndpoint);
 			} else {
 				throw new MetadataDiscoveryException(
 						"Could not discover a dataset from " + RenderUtils.toSPARQL(iri));
