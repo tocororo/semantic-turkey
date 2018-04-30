@@ -274,12 +274,12 @@ public class AdvancedSearch {
 		} else if(searchMode == searchMode.fuzzy){
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
 			//having just letter different form the input one
-			List<String> wordForIndex = wordsForFuzzySearch(searchTerm, "*");
-			String wordForIndexAsString = listToStringForQuery(wordForIndex, "", "");
+			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(searchTerm, "*");
+			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
 			query+="\n"+varToUse+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
 			
-			List<String> wordForNoIndex = wordsForFuzzySearch(searchTerm, ".");
-			String wordForNoIndexAsString = listToStringForQuery(wordForNoIndex, "^", "$");
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchTerm, ".");
+			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
 			
 		}else { // searchMode.equals(exact)
@@ -318,8 +318,8 @@ public class AdvancedSearch {
 		} else if(searchMode == SearchMode.contains){
 			query="\nFILTER regex(str("+varToUse+"), '"+searchTerm+"', 'i')";
 		} else if(searchMode == SearchMode.fuzzy){
-			List<String> wordForNoIndex = wordsForFuzzySearch(searchTerm, ".");
-			String wordForNoIndexAsString = listToStringForQuery(wordForNoIndex, "^", "$");
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchTerm, ".");
+			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
 		} else{ // searchMode.equals(exact)
 			query="\nFILTER regex(str("+varToUse+"), '^"+searchTerm+"$', 'i')";
@@ -344,31 +344,6 @@ public class AdvancedSearch {
 		}
 		
 		return query;
-	}
-	
-	private List<String> wordsForFuzzySearch(String text, String replaceChar){
-		List<String> wordsList = new ArrayList<>();
-		wordsList.add(replaceChar+text);
-		for(int i=0; i<text.length(); ++i) {
-			wordsList.add(text.substring(0, i)+replaceChar+text.substring(i+1));
-		}
-		wordsList.add(text+replaceChar);
-		return wordsList;
-	}
-	
-	private String listToStringForQuery(List<String> wordsList, String startSymbol, String endSymbol) {
-		String textForQuery="";
-		boolean first = true;
-		for(int i=0; i<wordsList.size(); ++i) {
-			if(!first) {
-				textForQuery+="|";
-			}
-			else {
-				first = false;
-			}
-			textForQuery+="("+startSymbol+wordsList.get(i)+endSymbol+")";
-		}
-		return textForQuery;
 	}
 	
 	private String calculateShow(String varResource, String varSingleShow, WhatToShow whatToShow) {

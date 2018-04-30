@@ -439,11 +439,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"UNION" +
 				"\n{" +
 				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-				"\n}"+
-		//search in dct:title
-				"UNION" +
-				"\n{" +
-				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
 				"\n}"+	
 		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 				"\nUNION" +
@@ -483,28 +478,46 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			indexToUse = LUCENEINDEXLITERAL;
 		}
 		
+		String varToUse;
+		String queryPart;
+		
+		if(forLocalName) {
+			varToUse = variable+"_locName";
+			//since it should be considered the localname, but in "variable" there is the complete uri 
+			//(returned by the lucene search, possibily by using the right index, e.g. LUCENEINDEXLOCALNAME)
+			// create a new variable containing the local name
+			queryPart="\nBIND(REPLACE(str("+variable+"), '^.*(#|/)', \"\") AS "+varToUse+" )";
+		} else {
+			varToUse = variable;
+			queryPart="";
+		}
+		
 		if(searchMode == SearchMode.startsWith){
-			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' .";
-				// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
-				//single word, so filter them afterward
-				if(forLocalName) {
-					query+= "\nBIND(REPLACE(str("+variable+"), '^.*(#|/)', \"\") AS "+variable+"_locName )"+
-							"\nFILTER regex(str("+variable+"_locName), '^"+value+"', 'i')";
-				} else {
-					query+="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
-				}
+			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
+					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
+					//single word, so filter them afterward
+					queryPart+
+					"\nFILTER regex(str("+varToUse+"), '^"+value+"', 'i')";
 		} else if(searchMode == SearchMode.endsWith){
-			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' .";
-			// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
-			//single word, so filter them afterward
-			if(forLocalName) {
-				query+= "\nBIND(REPLACE(str("+variable+"), '^.*(#|/)', \"\") AS "+variable+"_locName )"+
-						"\nFILTER regex(str("+variable+"_locName), '"+value+"$', 'i')";
-			} else {
-				query+="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
-			}
+			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
+					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
+					//single word, so filter them afterward
+					queryPart+
+					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')";
 		} else if(searchMode == SearchMode.contains){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' .";
+		} else if(searchMode == SearchMode.fuzzy){
+			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
+			//having just letter different form the input one
+			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(value, "*");
+			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
+			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
+			
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
+			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
+			query += queryPart+
+					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
+			
 		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' .";
 		}
@@ -539,6 +552,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
 		} else if(searchMode == SearchMode.contains){
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
+		} else if(searchMode == SearchMode.fuzzy){
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
+			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
+			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
 		} else { // searchMode.equals(exact)
 			query="\nFILTER regex(str("+variable+"), '^"+value+"$', 'i')";
 		}

@@ -434,6 +434,10 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')";
 		} else if (searchMode == SearchMode.contains) {
 			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')";
+		} else if (searchMode == SearchMode.fuzzy) {
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
+			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
+			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
 		} else { // searchMode.equals(contains)
 			query = "\nFILTER regex(str(" + variable + "), '^" + value + "$', 'i')";
 		}

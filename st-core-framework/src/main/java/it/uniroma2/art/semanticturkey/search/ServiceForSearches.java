@@ -333,6 +333,31 @@ public class ServiceForSearches {
 //		return searchModeSelected;
 	}
 	
+	public static List<String> wordsForFuzzySearch(String text, String replaceChar){
+		List<String> wordsList = new ArrayList<>();
+		wordsList.add(replaceChar+text);
+		for(int i=0; i<text.length(); ++i) {
+			wordsList.add(text.substring(0, i)+replaceChar+text.substring(i+1));
+		}
+		wordsList.add(text+replaceChar);
+		return wordsList;
+	}
+	
+	public static String listToStringForQuery(List<String> wordsList, String startSymbol, String endSymbol) {
+		String textForQuery="";
+		boolean first = true;
+		for(int i=0; i<wordsList.size(); ++i) {
+			if(!first) {
+				textForQuery+="|";
+			}
+			else {
+				first = false;
+			}
+			textForQuery+="("+startSymbol+wordsList.get(i)+endSymbol+")";
+		}
+		return textForQuery;
+	}
+	
 	/*public Collection<AnnotatedValue<Resource>> executeGenericSearchQuery(String query, Resource[] namedGraphs,
 			RepositoryConnection repositoryConnection){
 		

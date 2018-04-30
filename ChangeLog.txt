@@ -16,7 +16,8 @@ date: dd/mm/yyyy
     * possibility to deploy the (optionally reformatted) data somewhere, instead of simply downloading it
   * Update to Apache Karaf 4.2.0
   * Update to RDF4J 2.2.4
-
+  * implemented the fuzzy search
+  
 version 3.0
 date: 08/02/2018
   * Changed license to BSD-3-Clause.
