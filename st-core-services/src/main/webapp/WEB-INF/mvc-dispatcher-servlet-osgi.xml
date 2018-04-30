@@ -25,6 +25,9 @@
 	<osgi:reference id="extensionPointManager"
 		interface="it.uniroma2.art.semanticturkey.extension.ExtensionPointManager" />
 
+	<!-- Imports the MAPALE façade -->
+	<osgi:reference id="mediationFramework"
+		interface="it.uniroma2.art.maple.orchestration.MediationFramework" />
 
 	<osgi:service ref="stSpecificRandomIDGenerator"
 		interface="it.uniroma2.art.coda.interfaces.Converter">

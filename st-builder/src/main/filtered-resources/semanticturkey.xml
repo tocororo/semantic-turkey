@@ -2,8 +2,8 @@
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0"
 	name="semantic_turkey-${project.version}">
 
-	<repository>mvn:it.uniroma2.art.coda/coda-karaf/${coda.version}/xml/features
-	</repository>
+	<repository>mvn:it.uniroma2.art.coda/coda-karaf/${coda.version}/xml/features</repository>
+	<repository>mvn:it.uniroma2.art.maple/maple-karaf-distribution/${maple.version}/xml/features</repository>
 
 	<feature name="semantic_prereq" version="${project.version}">
 		<feature prerequisite="true" dependency="false">wrap</feature>
@@ -22,7 +22,7 @@
 		<feature version="[1.2.1,2)" dependency="true">spring-dm</feature>
 		<feature version="[1.2.1,2)" dependency="true">spring-dm-web</feature>
 		<feature version="[3.1,4)" dependency="true">spring-security</feature>
-		
+
 		<!-- These bundles provide optional dependencies for spring-web, in order 
 			to support multipart resolver. It's important that these bundles are installed 
 			before spring-web, otherwise the latter must be refreshed to pick the optional 
@@ -36,6 +36,9 @@
 
 		<!-- CODA -->
 		<feature dependency="true" version="[1.3,2)">coda</feature>
+
+		<!-- MAPLE -->
+		<feature dependency="true" version="${maple.version}">maple</feature>
 
 		<!-- Spring/SpringDM -->
 		<bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/1.7.1_1</bundle>

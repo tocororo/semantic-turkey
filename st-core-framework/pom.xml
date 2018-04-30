@@ -115,7 +115,6 @@
 			<artifactId>antlr4-runtime</artifactId>
 			<version>${antlr4.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.apache.felix</groupId>
 			<artifactId>org.apache.felix.main</artifactId>
@@ -245,11 +244,15 @@
 			<artifactId>lime-profiler</artifactId>
 			<version>${lime-api.version}</version>
 		</dependency>
-		
 		<dependency>
 			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>annotations</artifactId>
 			<version>${annotations.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.maple</groupId>
+			<artifactId>maple-core</artifactId>
+			<version>${maple.version}</version>
 		</dependency>
 		
 		<dependency>
