@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,7 +14,6 @@ import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
@@ -201,7 +199,7 @@ public class MetadataRegistry extends STServiceAdapter {
 		}
 
 		IRI catalogRecord = metadataRegistryBackend.discoverDataset(iri);
-		
+
 		return new AnnotatedValue<>(catalogRecord);
 	}
 

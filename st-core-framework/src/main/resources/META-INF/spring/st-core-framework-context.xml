@@ -21,6 +21,10 @@
 			value="it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperFactory.registerFactory" />
 	</bean>
 
+	<!-- Imports the MAPALE façade -->
+	<osgi:reference id="mediationFramework"
+		interface="it.uniroma2.art.maple.orchestration.MediationFramework" />
+
 	<!-- Retrieves coda osgi factory -->
 	<osgi:reference id="codaOSGiFactory"
 		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
@@ -114,7 +118,9 @@
 
 	<!-- Publishes the MetadataRegistry as an OSGi service -->
 	<bean id="metadataRegistry"
-		class="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend" />
+		class="it.uniroma2.art.semanticturkey.resources.impl.MetadataRegistryBackendImpl">
+		<constructor-arg ref="mediationFramework" />
+	</bean>
 
 	<osgi:service
 		interface="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend"
@@ -383,6 +389,14 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerFactory" />
 	</osgi:service>
+
+	<!-- Publishes the HTTP Deployer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerFactory" />
+	</osgi:service>
+
 
 	<!-- Publishes the ReformattingExporter extension point -->
 

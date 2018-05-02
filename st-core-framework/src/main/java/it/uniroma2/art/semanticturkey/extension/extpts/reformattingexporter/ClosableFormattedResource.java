@@ -51,7 +51,7 @@ public class ClosableFormattedResource implements AutoCloseable {
 	}
 
 	public static ClosableFormattedResource build(Consumer<OutputStream> outputStreamConsumer,
-			String defaultFileExtension, String mimeType) throws IOException {
+			String mimeType, String defaultFileExtension) throws IOException {
 		File backingFile = File.createTempFile("reformattingexporter", null);
 		try (OutputStream os = new FileOutputStream(backingFile)) {
 			outputStreamConsumer.accept(os);

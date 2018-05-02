@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFrameworkRule;
+import it.uniroma2.art.semanticturkey.resources.impl.MetadataRegistryBackendImpl;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
@@ -45,7 +46,7 @@ public class MetadataRegistryBackendTest {
 
 	protected final static String TEST_REGISTRY_BASE = "target/testbase/mdreg";
 
-	protected MetadataRegistryBackend metadataRegistryBackend;
+	protected MetadataRegistryBackendImpl metadataRegistryBackend;
 	protected ValueFactory vf;
 
 	public final OsgiContext osgiContext = new OsgiContext();
@@ -62,7 +63,8 @@ public class MetadataRegistryBackendTest {
 		baseDir.mkdirs();
 		FileUtils.cleanDirectory(baseDir);
 
-		metadataRegistryBackend = new MetadataRegistryBackend(baseDir, mediationFrameworkRule.getObject());
+		metadataRegistryBackend = new MetadataRegistryBackendImpl(baseDir,
+				mediationFrameworkRule.getObject());
 		metadataRegistryBackend.initialize(); // invoke @PostConstruct
 
 		vf = SimpleValueFactory.getInstance();

@@ -10,7 +10,7 @@ import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;;
 
 public class StringToResourcePositionConverter implements Converter<String, ResourcePosition> {
 

@@ -14,6 +14,9 @@ date: dd/mm/yyyy
   * Improvements to the Exporter subsystem:
     * possibility to reformat the data to a (usually) non-RDF format
     * possibility to deploy the (optionally reformatted) data somewhere, instead of simply downloading it
+  * New concrete deployers:
+    * HTTP Deployer
+    * SPARQL 1.1 HTTP Graph Store API Deployer
   * Update to Apache Karaf 4.2.0
   * Update to RDF4J 2.2.4
   * implemented the fuzzy search

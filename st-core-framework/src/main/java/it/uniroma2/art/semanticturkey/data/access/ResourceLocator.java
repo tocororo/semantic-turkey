@@ -66,9 +66,8 @@ public class ResourceLocator {
 	 * @throws ModelAccessException
 	 * @throws ProjectAccessException
 	 */
-	public ResourcePosition locateResource(Project project, Repository projectRepository,
-			Resource resource, AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
-			throws ProjectAccessException {
+	public ResourcePosition locateResource(Project project, Repository projectRepository, Resource resource,
+			AccessLevel requestedAccessLevel, LockLevel requestedLockLevel) throws ProjectAccessException {
 		if (resource instanceof BNode) {
 			return new LocalResourcePosition(project); // TODOprojectRepository: implement a better condition
 		}
@@ -115,8 +114,8 @@ public class ResourceLocator {
 	}
 
 	/**
-	 * An overload of {@link #locateResource(Project, Repository, Resource)}, with the last two
-	 * parameters set to {@link AccessLevel#R} and {@link LockLevel#NO}, respectively.
+	 * An overload of {@link #locateResource(Project, Repository, Resource)}, with the last two parameters set
+	 * to {@link AccessLevel#R} and {@link LockLevel#NO}, respectively.
 	 * 
 	 * @param project
 	 * @param projectRepository
@@ -125,11 +124,11 @@ public class ResourceLocator {
 	 * @throws ProjectAccessException
 	 * @throws ModelAccessException
 	 */
-	public ResourcePosition locateResource(Project project, Repository projectRepository,
-			Resource resource) throws ProjectAccessException {
+	public ResourcePosition locateResource(Project project, Repository projectRepository, Resource resource)
+			throws ProjectAccessException {
 		return locateResource(project, projectRepository, resource, AccessLevel.R, LockLevel.NO);
 	}
-	
+
 	/**
 	 * Locate a resource. The locator implements the following algorithm:
 	 * <ol>
@@ -167,11 +166,12 @@ public class ResourceLocator {
 			Resource resource, AccessLevel requestedAccessLevel, LockLevel requestedLockLevel)
 			throws ProjectAccessException {
 		List<ResourcePosition> resourcePositionList = new ArrayList<>();
-		
+
 		if (resource instanceof BNode) {
 			resourcePositionList.add(new LocalResourcePosition(project));
 			return resourcePositionList;
-			//return new LocalResourcePosition(project); // TODOprojectRepository: implement a better condition
+			// return new LocalResourcePosition(project); // TODOprojectRepository: implement a better
+			// condition
 		}
 
 		IRI iriResource = (IRI) resource;
@@ -179,7 +179,7 @@ public class ResourceLocator {
 		try {
 			if (Objects.equals(repoConn.getNamespace(""), iriResource.getNamespace())
 					|| repoConn.hasStatement(iriResource, null, null, false)) {
-				//return new LocalResourcePosition(project);
+				// return new LocalResourcePosition(project);
 				resourcePositionList.add(new LocalResourcePosition(project));
 			}
 
@@ -192,7 +192,7 @@ public class ResourceLocator {
 				continue;
 
 			Project proj = ProjectManager.getProject(abstrProj.getName());
-			
+
 			AccessResponse accessResponse = ProjectManager.checkAccessibility(project, proj,
 					requestedAccessLevel, requestedLockLevel);
 
@@ -202,7 +202,7 @@ public class ResourceLocator {
 			String ns = proj.getDefaultNamespace();
 
 			if (iriResource.getNamespace().startsWith(ns)) {
-				//return new LocalResourcePosition((Project) proj);
+				// return new LocalResourcePosition((Project) proj);
 				resourcePositionList.add(new LocalResourcePosition(proj));
 			}
 		}
@@ -210,15 +210,15 @@ public class ResourceLocator {
 		DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(iriResource);
 
 		if (meta != null) {
-			//return new RemoteResourcePosition(meta);
+			// return new RemoteResourcePosition(meta);
 			resourcePositionList.add(new RemoteResourcePosition(meta));
 		} else {
-			//return UNKNOWN_RESOURCE_POSITION;
+			// return UNKNOWN_RESOURCE_POSITION;
 		}
-		
+
 		return resourcePositionList;
 	}
-	
+
 	/**
 	 * An overload of {@link #listResourceLocations(Project, Repository, Resource)}, with the last two
 	 * parameters set to {@link AccessLevel#R} and {@link LockLevel#NO}, respectively.
