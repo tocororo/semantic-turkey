@@ -6,12 +6,18 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import com.google.common.base.Objects;
 
@@ -25,6 +31,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFrameworkRule;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
@@ -40,14 +48,21 @@ public class MetadataRegistryBackendTest {
 	protected MetadataRegistryBackend metadataRegistryBackend;
 	protected ValueFactory vf;
 
+	public final OsgiContext osgiContext = new OsgiContext();
+
+	public final MediationFrameworkRule mediationFrameworkRule = new MediationFrameworkRule(osgiContext);
+
+	@Rule
+	public final RuleChain ruleChain = RuleChain.outerRule(osgiContext).around(mediationFrameworkRule);
+
 	@Before
-	public void setup()
-			throws IOException, MetadataRegistryCreationException, MetadataRegistryIntializationException {
+	public void setup() throws Exception {
+
 		File baseDir = new File(TEST_REGISTRY_BASE);
 		baseDir.mkdirs();
 		FileUtils.cleanDirectory(baseDir);
 
-		metadataRegistryBackend = new MetadataRegistryBackend(baseDir);
+		metadataRegistryBackend = new MetadataRegistryBackend(baseDir, mediationFrameworkRule.getObject());
 		metadataRegistryBackend.initialize(); // invoke @PostConstruct
 
 		vf = SimpleValueFactory.getInstance();
@@ -222,6 +237,38 @@ public class MetadataRegistryBackendTest {
 						.orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo(METADATAREGISTRY.STANDARD_DEREFERENCIATION));
 		assertFalse(foafDataset.getSparqlEndpoint().isPresent());
+	}
+
+	@Test
+	public void testAssessmentOfDBPediaLexicalizationModel()
+			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
+		IRI dbpediaDataset = vf.createIRI("http://dbpedia.org/void/Dataset");
+		metadataRegistryBackend.addDataset(dbpediaDataset, "http://dbpedia.org/resource/", "DBpedia", true,
+				vf.createIRI("http://dbpedia.org/sparql"));
+
+		metadataRegistryBackend.assessLexicalizationModel(dbpediaDataset);
+
+		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
+			conn.export(
+					RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).orElse(null).getWriter(System.out));
+		}
+
+	}
+
+	@Test
+	public void testAssessmentOfAgrovocLexicalizationModel()
+			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
+		IRI dbpediaDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
+		metadataRegistryBackend.addDataset(dbpediaDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
+				true, vf.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"));
+
+		metadataRegistryBackend.assessLexicalizationModel(dbpediaDataset);
+
+		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
+			conn.export(
+					RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).orElse(null).getWriter(System.out));
+		}
+
 	}
 
 }

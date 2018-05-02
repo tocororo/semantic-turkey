@@ -91,6 +91,8 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
@@ -109,14 +111,17 @@ public class MetadataRegistryBackend {
 	private File registryDirectory;
 	private File catalogFile;
 	private SailRepository metadataRegistry;
+	private MediationFramework mediationFramework;
 
 	/**
 	 * Constructs a {@link MetadataRegistryBackend} whose base is {@link Config#getDataDir()}.
 	 * 
+	 * @param mediationFramework
 	 * @throws MetadataRegistryCreationException
 	 */
-	public MetadataRegistryBackend() throws MetadataRegistryCreationException {
-		this(Config.getDataDir());
+	public MetadataRegistryBackend(MediationFramework mediationFramework)
+			throws MetadataRegistryCreationException {
+		this(Config.getDataDir(), mediationFramework);
 	}
 
 	/**
@@ -124,9 +129,11 @@ public class MetadataRegistryBackend {
 	 * <code>$baseDir/metadataRegistry/catalog.ttl</code>.
 	 * 
 	 * @param baseDir
+	 * @param mediationFramework
 	 * @throws MetadataRegistryCreationException
 	 */
-	public MetadataRegistryBackend(File baseDir) throws MetadataRegistryCreationException {
+	public MetadataRegistryBackend(File baseDir, MediationFramework mediationFramework)
+			throws MetadataRegistryCreationException {
 		try {
 			this.registryDirectory = new File(baseDir, METADATA_REGISTRY_DIRECTORY);
 			this.catalogFile = new File(registryDirectory, METADATA_REGISTRY_FILE);
@@ -137,6 +144,7 @@ public class MetadataRegistryBackend {
 						"Cannot create the folder hierarchy associated with the metadata registry");
 			}
 
+			this.mediationFramework = mediationFramework;
 		} catch (FactoryConfigurationError e) {
 			throw new MetadataRegistryCreationException(e);
 		}
@@ -882,6 +890,18 @@ public class MetadataRegistryBackend {
 			}
 		} catch (Exception e) {
 			throw new MetadataDiscoveryException(e);
+		}
+	}
+
+	/**
+	 * Assess the lexicalization model of the given {@code dataset}
+	 * 
+	 * @param dataset
+	 * @throws MetadataDiscoveryException
+	 */
+	public void assessLexicalizationModel(IRI dataset) throws AssessmentException {
+		try (RepositoryConnection metadataConn = metadataRegistry.getConnection()) {
+			mediationFramework.assessLexicalizationModel(metadataConn, dataset);
 		}
 	}
 
