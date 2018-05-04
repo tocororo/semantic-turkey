@@ -75,6 +75,7 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -89,6 +90,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
@@ -100,7 +103,6 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
@@ -108,6 +110,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.repository.ReadOnlyRepositoryWrapper;
 import it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperConfig;
@@ -325,8 +328,8 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	void activate(ExtensionPointManager exptManager) throws ProjectIncompatibleException, ProjectInconsistentException, RDF4JException,
-			ProjectUpdateException, ProjectAccessException {
+	void activate(ExtensionPointManager exptManager) throws ProjectIncompatibleException,
+			ProjectInconsistentException, RDF4JException, ProjectUpdateException, ProjectAccessException {
 		this.exptManager = exptManager;
 		try {
 			repositoryManager = new STLocalRepositoryManager(_projectDir);
@@ -523,8 +526,8 @@ public abstract class Project extends AbstractProject {
 			// If anything has been written, assumes a newly created project, so initialize search
 			if (anyWritten.isTrue()) {
 				conn.begin();
-				SearchStrategy searchStrategy = SearchStrategyUtils
-						.instantiateSearchStrategy(exptManager, STRepositoryInfoUtils
+				SearchStrategy searchStrategy = SearchStrategyUtils.instantiateSearchStrategy(exptManager,
+						STRepositoryInfoUtils
 								.getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
 				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
 					searchStrategy.initialize(conn);
@@ -1001,8 +1004,8 @@ public abstract class Project extends AbstractProject {
 						repositoryAccess2.getPassword());
 
 				if (repositoryAccess instanceof CreateRemote) { // Create remote
-					RepositoryImplConfigurer repoConfigurer = (RepositoryImplConfigurer) repoConfigurerSpecification
-							.instatiatePlugin();
+					RepositoryImplConfigurer repoConfigurer = exptManager.instantiateExtension(
+							RepositoryImplConfigurer.class, repoConfigurerSpecification);
 					RepositoryImplConfig remoteRepositoryImplConfig = repoConfigurer
 							.buildRepositoryImplConfig(null);
 					if (backendType == null) {
@@ -1033,8 +1036,8 @@ public abstract class Project extends AbstractProject {
 				localRepositoryImplConfig2.setPassword(repositoryAccess2.getPassword());
 				localRepositoryImplConfig = localRepositoryImplConfig2;
 			} else {
-				RepositoryImplConfigurer repoConfigurer = (RepositoryImplConfigurer) repoConfigurerSpecification
-						.instatiatePlugin();
+				RepositoryImplConfigurer repoConfigurer = exptManager
+						.instantiateExtension(RepositoryImplConfigurer.class, repoConfigurerSpecification);
 				localRepositoryImplConfig = repoConfigurer.buildRepositoryImplConfig(null);
 			}
 
@@ -1046,8 +1049,8 @@ public abstract class Project extends AbstractProject {
 					localRepositoryImplConfig);
 			repositoryManager.addRepositoryConfig(localRepositoryConfig, backendType, customizeSearch);
 			return repositoryManager.getRepository(localRepostoryId);
-		} catch (ClassCastException | ClassNotFoundException | UnsupportedPluginConfigurationException
-				| UnloadablePluginConfigurationException | WrongPropertiesException e) {
+		} catch (ClassCastException | WrongPropertiesException | IllegalArgumentException
+				| NoSuchExtensionException | STPropertyAccessException | InvalidConfigurationException e) {
 			throw new RepositoryException(e);
 		}
 	}

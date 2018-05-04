@@ -103,19 +103,6 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the Predefined Repository Impl Configurer implementation 
-		of the extension point RepositoryImplConfigurer -->
-	<bean id="PredefinedRepositoryImplConfigurerFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.repositoryimplconfigurer.PredefinedRepositoryImplConfigurerFactory" />
-
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="PredefinedRepositoryImplConfigurerFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.RepositoryImplConfigurer" />
-		</osgi:service-properties>
-	</osgi:service>
-
 	<!-- Publishes the MetadataRegistry as an OSGi service -->
 	<bean id="metadataRegistry"
 		class="it.uniroma2.art.semanticturkey.resources.impl.MetadataRegistryBackendImpl">

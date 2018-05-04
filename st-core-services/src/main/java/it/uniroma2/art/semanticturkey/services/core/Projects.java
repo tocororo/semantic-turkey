@@ -106,10 +106,6 @@ public class Projects extends STServiceAdapter {
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
 			STPropertyAccessException {
 
-		// Expands defaults in the specification of sail configurers
-		coreRepoSailConfigurerSpecification.expandDefaults();
-		supportRepoSailConfigurerSpecification.expandDefaults();
-
 		// If no rendering engine has been configured, guess the best one based on the model type
 		if (renderingEngineSpecification == null) {
 			String renderingEngineFactoryID = Project.determineBestRenderingEngine(lexicalizationModel);
