@@ -66,7 +66,7 @@ public class ${generatedClassSimpleName}
 	Process annotations on the service parameter
 *###
 #*
-	Handle @Optional
+	Handle @Optional / @JsonSerialized
 *###
 #if ($tools.isOptionalParameter($parameter))
 #set( $arguments = "${arguments}, required=false" )
@@ -75,6 +75,9 @@ public class ${generatedClassSimpleName}
 #end
 #end
 #set( $arguments = "${arguments}" + ')' )
+#end
+#if ($tools.isJsonSerializedParameter($parameter))
+#set( $arguments = "${arguments} @it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized")
 #end#*
 	Add the parameter name to the signature
 *###
