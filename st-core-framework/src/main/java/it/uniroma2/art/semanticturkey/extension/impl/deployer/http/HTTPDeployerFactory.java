@@ -16,7 +16,7 @@ public class HTTPDeployerFactory implements ExtensionFactory<HTTPDeployer>,
 
 	@Override
 	public String getName() {
-		return "Graph Store HTTP Deployer";
+		return "HTTP Deployer";
 	}
 
 	@Override
