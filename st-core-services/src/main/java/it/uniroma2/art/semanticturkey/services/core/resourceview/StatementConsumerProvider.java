@@ -31,6 +31,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSC
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSNotesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSOrderedCollectionMembersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SubPropertyOfStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SubtermsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TopConceptOfStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TypesStatementConsumer;
 
@@ -80,6 +81,8 @@ public class StatementConsumerProvider {
 		EvokedLexicalConcepts evokedLexicalConcepts = new EvokedLexicalConcepts(customFormManager);
 		FormBasedPreviewStatementConsumer formBasedPreview = new FormBasedPreviewStatementConsumer(
 				customFormManager, codaProvider);
+		SubtermsStatementConsumer subtermsStatementConsumer = new SubtermsStatementConsumer(
+				customFormManager);
 
 		FormRepresentationsStatementConsumer representationsStatementConsumer = new FormRepresentationsStatementConsumer(
 				customFormManager);
@@ -117,8 +120,9 @@ public class StatementConsumerProvider {
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 
 		role2template.put(RDFResourceRole.ontolexLexicalEntry,
-				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer, formBasedPreview,
-						lexicalSensesStatementConsumer, denotationsStatementConsumer, evokedLexicalConcepts,
+				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer,
+						subtermsStatementConsumer, formBasedPreview, lexicalSensesStatementConsumer,
+						denotationsStatementConsumer, evokedLexicalConcepts,
 						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.ontolexForm, Arrays.asList(typesStatementConsumer,
 				representationsStatementConsumer, formBasedPreview, otherPropertiesStatementConsumer));

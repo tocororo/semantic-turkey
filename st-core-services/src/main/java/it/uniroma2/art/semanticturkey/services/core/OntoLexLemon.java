@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -335,6 +336,34 @@ public class OntoLexLemon extends STServiceAdapter {
 		throw new RuntimeException("To be implemented");
 	}
 
+	/**
+	 * Adds a subterm to an {@code ontolex:LexicalEntry}.
+	 * 
+	 * @param lexicalEntry
+	 * @param sublexicalEntry
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, subterms)', 'C')")
+	public void addSubterm(@LocallyDefined @Modified IRI lexicalEntry, IRI sublexicalEntry) {
+		RepositoryConnection repConn = getManagedConnection();
+		repConn.add(lexicalEntry, DECOMP.SUBTERM, sublexicalEntry, getWorkingGraph());
+	}
+
+	/**
+	 * Removes a subterm from an {@code ontolex:LexicalEntry}.
+	 * 
+	 * @param lexicalEntry
+	 * @param sublexicalEntry
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, subterms)', 'D')")
+	public void removeSubterm(@LocallyDefined @Modified IRI lexicalEntry, IRI sublexicalEntry) {
+		RepositoryConnection repConn = getManagedConnection();
+		repConn.remove(lexicalEntry, DECOMP.SUBTERM, sublexicalEntry, getWorkingGraph());
+	}
+
 	/* --- Forms --- */
 
 	/**
@@ -469,6 +498,13 @@ public class OntoLexLemon extends STServiceAdapter {
 		repConn.remove(form, null, null, getWorkingGraph());
 	}
 
+	/**
+	 * Adds a representation to an {@code ontolex:Form}.
+	 * 
+	 * @param form
+	 * @param representation
+	 * @param property
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'C')")
@@ -478,6 +514,13 @@ public class OntoLexLemon extends STServiceAdapter {
 		repConn.add(form, property, representation, getWorkingGraph());
 	}
 
+	/**
+	 * Removes a representations from an {@code ontolex:Form}.
+	 * 
+	 * @param form
+	 * @param representation
+	 * @param property
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'D')")
