@@ -341,13 +341,15 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * 
 	 * @param lexicalEntry
 	 * @param sublexicalEntry
+	 * @param property
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, subterms)', 'C')")
-	public void addSubterm(@LocallyDefined @Modified IRI lexicalEntry, IRI sublexicalEntry) {
+	public void addSubterm(@LocallyDefined @Modified IRI lexicalEntry, IRI sublexicalEntry,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/decomp#subterm") @Optional(defaultValue = "<http://www.w3.org/ns/lemon/decomp#subterm>") IRI property) {
 		RepositoryConnection repConn = getManagedConnection();
-		repConn.add(lexicalEntry, DECOMP.SUBTERM, sublexicalEntry, getWorkingGraph());
+		repConn.add(lexicalEntry, property, sublexicalEntry, getWorkingGraph());
 	}
 
 	/**
@@ -355,13 +357,15 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * 
 	 * @param lexicalEntry
 	 * @param sublexicalEntry
+	 * @param property
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, subterms)', 'D')")
-	public void removeSubterm(@LocallyDefined @Modified IRI lexicalEntry, IRI sublexicalEntry) {
+	public void removeSubterm(@LocallyDefined @Modified IRI lexicalEntry, IRI sublexicalEntry,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/decomp#subterm") @Optional(defaultValue = "<http://www.w3.org/ns/lemon/decomp#subterm>") IRI property) {
 		RepositoryConnection repConn = getManagedConnection();
-		repConn.remove(lexicalEntry, DECOMP.SUBTERM, sublexicalEntry, getWorkingGraph());
+		repConn.remove(lexicalEntry, property, sublexicalEntry, getWorkingGraph());
 	}
 
 	/* --- Forms --- */
