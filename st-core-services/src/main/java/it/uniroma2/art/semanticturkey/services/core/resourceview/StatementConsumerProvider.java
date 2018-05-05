@@ -26,6 +26,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Ontol
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.RangesStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormRepresentationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSCollectionMembersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSNotesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSOrderedCollectionMembersStatementConsumer;
@@ -79,6 +80,10 @@ public class StatementConsumerProvider {
 		EvokedLexicalConcepts evokedLexicalConcepts = new EvokedLexicalConcepts(customFormManager);
 		FormBasedPreviewStatementConsumer formBasedPreview = new FormBasedPreviewStatementConsumer(
 				customFormManager, codaProvider);
+
+		FormRepresentationsStatementConsumer representationsStatementConsumer = new FormRepresentationsStatementConsumer(
+				customFormManager);
+
 		role2template = new HashMap<>();
 		role2template.put(RDFResourceRole.cls,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, classAxiomsStatementConsumer,
@@ -115,6 +120,8 @@ public class StatementConsumerProvider {
 				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer, formBasedPreview,
 						lexicalSensesStatementConsumer, denotationsStatementConsumer, evokedLexicalConcepts,
 						otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.ontolexForm, Arrays.asList(typesStatementConsumer,
+				representationsStatementConsumer, formBasedPreview, otherPropertiesStatementConsumer));
 
 	}
 
