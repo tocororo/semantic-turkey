@@ -324,6 +324,20 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
+	 * Deletes a lexical entry.
+	 * 
+	 * @param lexicalEntry
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'D')")
+	public void deleteLexicalEntry(@LocallyDefined IRI lexicalEntry) {
+		throw new RuntimeException("To be implemented");
+	}
+
+	/* --- Forms --- */
+
+	/**
 	 * Sets the canonical form of a given lexical entry.
 	 * 
 	 * @param lexicalEntry
@@ -337,7 +351,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, lexicalForms)', 'C')")
 	public void setCanonicalForm(@Modified @LocallyDefined IRI lexicalEntry,
 			@Optional @NotLocallyDefined IRI newForm, @LanguageTaggedString Literal writtenRep,
 			@Optional CustomFormValue customFormValue)
@@ -359,7 +373,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, lexicalForms)', 'C')")
 	public void addOtherForm(@Modified @LocallyDefined IRI lexicalEntry,
 			@Optional @NotLocallyDefined IRI newForm, @LanguageTaggedString Literal writtenRep,
 			@Optional CustomFormValue customFormValue)
@@ -438,7 +452,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, lexicalForms)', 'D')")
 	public void removeForm(@LocallyDefined @Modified Resource lexicalEntry,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#lexicalForm") IRI property,
 			@LocallyDefined Resource form) {
@@ -455,17 +469,25 @@ public class OntoLexLemon extends STServiceAdapter {
 		repConn.remove(form, null, null, getWorkingGraph());
 	}
 
-	/**
-	 * Deletes a lexical entry.
-	 * 
-	 * @param lexicalEntry
-	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'D')")
-	public void deleteLexicalEntry(@LocallyDefined IRI lexicalEntry) {
-		throw new RuntimeException("To be implemented");
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'C')")
+	public void addFormRepresentation(@LocallyDefined @Modified Resource form, Literal representation,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#representation") IRI property) {
+		RepositoryConnection repConn = getManagedConnection();
+		repConn.add(form, property, representation, getWorkingGraph());
 	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'D')")
+	public void removeFormRepresentation(@LocallyDefined @Modified Resource form, Literal representation,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#representation") IRI property) {
+		RepositoryConnection repConn = getManagedConnection();
+		repConn.remove(form, property, representation, getWorkingGraph());
+	}
+
+	/* --- Lexicalizations --- */
 
 	/**
 	 * Adds a lexicalization of the RDF resource {@code reference} using the {@code ontolex:LexicalEntry}
@@ -670,7 +692,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		conn.remove(lexicalSense, null, null, getWorkingGraph());
-		conn.remove((Resource)null, null, lexicalSense, getWorkingGraph());
+		conn.remove((Resource) null, null, lexicalSense, getWorkingGraph());
 
 		if (removePlain) {
 			for (Resource lexicalEntry : lexicalEntries) {
