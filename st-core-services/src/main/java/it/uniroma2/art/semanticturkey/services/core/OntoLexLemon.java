@@ -22,6 +22,7 @@ import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.hibernate.validator.constraints.Length;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -281,7 +282,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the entries in a given lexicon that starts with the supplied character.
+	 * Returns the entries in a given lexicon that starts with the supplied index consisting of two charaters.
 	 * 
 	 * @param index
 	 * @param lexicon
@@ -290,8 +291,8 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getLexicalEntriesByAlphabeticIndex(Character index,
-			IRI lexicon) {
+	public Collection<AnnotatedValue<Resource>> getLexicalEntriesByAlphabeticIndex(
+			@Length(min = 2, max = 2) String index, IRI lexicon) {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					        \n" +
@@ -304,15 +305,12 @@ public class OntoLexLemon extends STServiceAdapter {
             "                                                                                   \n" +
 			" SELECT ?resource " + generateNatureSPARQLSelectPart() +" WHERE {                  \n" +
 			"   ?lexicon lime:entry ?resource .                                                 \n" +
-			"   FILTER EXISTS {                                                                 \n" +
-			"     ?resource ontolex:canonicalForm [                                             \n" +
-			"       ontolex:writtenRep ?cf                                                      \n" +
-			"     ]                                                                             \n" +
-			"     .                                                                             \n" +
-			//"     FILTER(REGEX(STR(?cf), \"^" + index + "\", \"i\"))                            \n" +
+			"   ?resource ontolex:canonicalForm [                                               \n" +
+			"     ontolex:writtenRep ?cf                                                        \n" +
+			"   ]                                                                               \n" +
+			"   .                                                                               \n" +
 			instantiateSearchStrategy().searchSpecificModePrepareQuery("?cf", index+"", SearchMode.startsWith, 
 					null, null, false, false) +
-			"   }                                                                               \n" +
 			generateNatureSPARQLWherePart("?resource") +
 			" }                                                                                 \n" +
 			" GROUP BY ?resource                                                                \n"
