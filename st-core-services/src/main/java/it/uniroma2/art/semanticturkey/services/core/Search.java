@@ -11,6 +11,7 @@ import java.util.Map;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -19,10 +20,12 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.properties.Pair;
@@ -37,6 +40,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 @STService
@@ -48,13 +52,13 @@ public class Search extends STServiceAdapter {
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
 
-	/*
-	 * protected SearchStrategy instantiateSearchStrategy() { SearchStrategies searchStrategy =
-	 * STRepositoryInfoUtils .getSearchStrategy(getProject().getRepositoryManager()
-	 * .getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
-	 * 
-	 * return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy); }
-	 */
+	/*protected SearchStrategy instantiateSearchStrategy() {
+		SearchStrategies searchStrategy = STRepositoryInfoUtils
+				.getSearchStrategy(getProject().getRepositoryManager()
+						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
+
+		return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy);
+	}*/
 
 	@STServiceOperation
 	@Write
@@ -85,11 +89,15 @@ public class Search extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> advancedSearch(StatusFilter statusFilter,
+	public Collection<AnnotatedValue<Resource>> advancedSearch(String searchString,
+			boolean useLocalName, boolean useURI, SearchMode searchMode, 
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales,
+			StatusFilter statusFilter,
 			@Optional @JsonSerialized List<List<IRI>> types,
 			@Optional @JsonSerialized List<List<IRI>> schemes,
 			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> outgoingLinks,
-			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks) {
+			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks) 
+					throws IllegalStateException, STPropertyAccessException {
 		if (!ValidationUtilities.isValidationEnabled(stServiceContext)) {
 			if (statusFilter == StatusFilter.UNDER_VALIDATION
 					|| statusFilter == StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION) {
@@ -98,38 +106,126 @@ public class Search extends STServiceAdapter {
 			}
 		}
 
-		System.out.println("schems = " + schemes);
-		schemes.forEach(System.out::println);
+		String query= "SELECT DISTINCT ?resource" +
+				"\nWHERE{" +
+				"\n{";
+		
+		//use the searchInstancesOfClasse to contruct the first part of the query (the subquery)
+		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
+				useLocalName, useURI, searchMode, langs, includeLocales);
+		//use the other parameters to filter the results
+		query+="\n}";
+		// the statusFilter
+		if(statusFilter.equals(StatusFilter.ANYTHING)) {
+			//do nothing in this case
+		} else if(statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
+			//check that the resource is not marked as deprecated
+			query += "\nFILTER NOT EXISTS{" +
+					"\n{?resource owl:deprecated true }" +
+					"\nUNION"+
+					"\n{?resource a owl:DeprecatedClass }" +
+					"\nUNION"+
+					"\n{?resource owl:DeprecatedProperty }" +
+					"\n}";
+					
+		} else if(statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
+			//check that the resource is marked as deprecated
+			query += 
+			"\n{?resource owl:deprecated true }" +
+			"\nUNION"+
+			"\n{?resource a owl:DeprecatedClass }" +
+			"\nUNION"+
+			"\n{?resource owl:DeprecatedProperty }";
+			
+		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION)) {
+			//check that in the validation graph there is the triple 
+			// ?resource a ?type
+			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
+					.createIRI(getProject().getBaseURI()));
+			query+="\nGRAPH "+NTriplesUtil.toNTriplesString(validationGraph)+" { "+
+					"?resource a ?type_for_validation ." +
+					"}";
+		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION)) {
+			//check that in the validation graph the resource is marked as deprecated
+			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
+					.createIRI(getProject().getBaseURI()));
+			String valGraph = NTriplesUtil.toNTriplesString(validationGraph);
+			query += "\nFILTER NOT EXISTS{" +
+					"\n{GRAPH {"+valGraph+"}?resource owl:deprecated true }" +
+					"\nUNION"+
+					"\n{GRAPH {"+valGraph+"}?resource a owl:DeprecatedClass }" +
+					"\nUNION"+
+					"\n{GRAPH {"+valGraph+"}?resource owl:DeprecatedProperty }" +
+					"\n}";
+		}
+		
+		//the schemes part
+		if(schemes !=null && schemes.size()>0) {
+			String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
+					+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
+			if(schemes.size()==1 && schemes.get(0).size()==1){
+				query += "\n?resource "+schemeOrTopConcept+" "+NTriplesUtil.toNTriplesString(schemes.get(0).get(0))+" .";
+			} else if(schemes!=null && schemes.size()>1){
+				query += "\n?resource "+schemeOrTopConcept+" ?scheme . "+
+						ServiceForSearches.filterWithOrOfAndValues(schemes, "?scheme");
+			}
+		}
+		//the outgoingLinks part
+		if(outgoingLinks!=null && outgoingLinks.size()>0) {
+			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource");
+		}
+		//the ingoingLinks part	
+		if(ingoingLinks!=null && ingoingLinks.size()>0) {
+			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource");
+			
+		}
+		query+="}" +
+			"GROUP BY ?resource";
+		logger.debug("query = " + query);
 
-		return Collections.emptyList();
+		
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
 	}
-
+	
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String[] rolesArray,
 			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<IRI> schemes,
-			@Optional List<String> langs, @Optional(defaultValue = "false") boolean includeLocales)
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
-		return instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
+		String query = instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
 				useLocalName, useURI, searchMode, schemes, langs, includeLocales);
 
+		logger.debug("query = " + query);
+
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+		
 	}
+	
+
 
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<String> searchStringList(String searchString, @Optional String[] rolesArray,
-			boolean useLocalName, SearchMode searchMode, @Optional List<IRI> schemes,
-			@Optional List<String> langs, @Optional IRI cls,
-			@Optional(defaultValue = "false") boolean includeLocales)
+			boolean useLocalName, SearchMode searchMode, @Optional List<IRI> schemes, 
+			@Optional List<String> langs, @Optional IRI cls, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
 		return instantiateSearchStrategy().searchStringList(stServiceContext, searchString, rolesArray,
 				useLocalName, searchMode, schemes, langs, cls, includeLocales);
 	}
-
+	
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
@@ -146,50 +242,72 @@ public class Search extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString,
 			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<String> langs,
-			@Optional(defaultValue = "false") boolean includeLocales)
+			@Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
-		return instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, cls, searchString,
+		List<IRI> clsList = new ArrayList<>();
+		clsList.add(cls);
+		List<List<IRI>> clsListList = new ArrayList<>();
+		clsListList.add(clsList);
+		String query = instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList, searchString,
 				useLocalName, useURI, searchMode, langs, includeLocales);
 
-	}
+		logger.debug("query = " + query);
 
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
+
+	}
+	
+	
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'R')")
-	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(String searchString, boolean useLocalName,
-			boolean useURI, SearchMode searchMode, @Optional List<IRI> lexicons, @Optional List<String> langs,
-			@Optional(defaultValue = "false") boolean includeLocales)
+	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(String searchString, boolean useLocalName, 
+			boolean useURI, SearchMode searchMode, @Optional List<IRI> lexicons, @Optional List<String> langs, 
+			@Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
-		return instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName,
+		String query = instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName, 
 				useURI, searchMode, lexicons, langs, includeLocales);
 
+		logger.debug("query = " + query);
+		
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processRole();
+		qb.processRendering();
+		return qb.runQuery();
 	}
+	
 
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resourceURI)+ ')', 'R')")
 	public Collection<AnnotatedValue<Resource>> getPathFromRoot(RDFResourceRole role, IRI resourceURI,
-			@Optional List<IRI> schemesIRI,
-			@Optional(defaultValue = "<http://www.w3.org/2002/07/owl#Thing>") IRI root,
-			@Optional @LocallyDefinedResources List<IRI> broaderProps,
+			@Optional List<IRI> schemesIRI, 
+			@Optional(defaultValue="<http://www.w3.org/2002/07/owl#Thing>") IRI root,
+			@Optional @LocallyDefinedResources List<IRI> broaderProps, 
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
-			@Optional(defaultValue = "true") boolean includeSubProperties) throws InvalidParameterException {
+			@Optional(defaultValue="true") boolean includeSubProperties) 
+					throws InvalidParameterException {
 
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 
-		// check if the client passed a hierachicalProp, otherwise, set it as skos:broader
-		List<IRI> broaderPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.getHierachicalProps(broaderProps, narrowerProps);
-		// inversHierachicalProp could be null if the hierachicalProp has no inverse
-		List<IRI> narrowerPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
+		//check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+		List<IRI>broaderPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS.
+				getHierachicalProps(broaderProps, narrowerProps);
+		//inversHierachicalProp could be null if the hierachicalProp has no inverse
+		List<IRI>narrowerPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
 				.getInverseOfHierachicalProp(broaderProps, narrowerProps);
 
 		String broaderNarrowerPath = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse,
-						getManagedConnection(), includeSubProperties);
-
+				.preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
+				getManagedConnection(), includeSubProperties);
+		
 		String query = null;
 		String superResourceVar = null, superSuperResourceVar = null;
 		if (role.equals(RDFResourceRole.concept)) {
@@ -403,15 +521,14 @@ public class Search extends STServiceAdapter {
 		}
 		tupleQuery.setDataset(dataset);
 
-		// execute the query
+		//execute the query
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-		// the map containing the resource with all the added values taken from the response of the query
+		//the map containing the resource with all the added values taken from the response of the query
 		Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = new HashMap<String, ResourceForHierarchy>();
 		boolean isTopResource = false;
 		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
-			// get the value of the superResource (broader for concepts, superClass for classes, etc). This is
-			// not
+			//get the value of the superResource (broader for concepts, superClass for classes, etc). This is not
 			// just the direct super type, but it uses the transitive closure in SPARQL
 			if (bindingSet.hasBinding(superResourceVar)) {
 				Value superNode = bindingSet.getBinding(superResourceVar).getValue();
@@ -425,8 +542,8 @@ public class Search extends STServiceAdapter {
 					superResourceId = "NOT URI " + superNode.stringValue();
 					isResNotURI = true;
 				}
-
-				// get the superSuperResource
+				
+				//get the superSuperResource
 				String superSuperResourceId = null;
 				String superSuperResourceShow = null;
 				Value superSuperResNode = null;
@@ -441,8 +558,8 @@ public class Search extends STServiceAdapter {
 						isSuperResABNode = true;
 					}
 				}
-
-				// now add the information about superResource and superSuperResource to the map
+				
+				//now add the information about superResource and superSuperResource to the map
 				if (!resourceToResourceForHierarchyMap.containsKey(superResourceId)) {
 					resourceToResourceForHierarchyMap.put(superResourceId,
 							new ResourceForHierarchy(superNode, superResourceShow, isResNotURI));
@@ -456,13 +573,13 @@ public class Search extends STServiceAdapter {
 						resourceToResourceForHierarchyMap.put(superSuperResourceId, new ResourceForHierarchy(
 								superSuperResNode, superSuperResourceShow, isSuperResABNode));
 					}
-					// get the structure in the map for the superResource to add the superSuperResource
-					// (the superResource is added to the structure containing the superSuperResource as
+					//get the structure in the map for the superResource to add the superSuperResource
+					//(the superResource is added to the structure containing the superSuperResource as
 					// its subResource)
 					ResourceForHierarchy resourceForHierarchy = resourceToResourceForHierarchyMap
 							.get(superSuperResourceId);
 					resourceForHierarchy.addSubResource(superResourceId);
-
+					
 					resourceToResourceForHierarchyMap.get(superResourceId).setHasNoSuperResource(false);
 				}
 			}
@@ -491,19 +608,19 @@ public class Search extends STServiceAdapter {
 				}
 			}
 			List<String> currentList = new ArrayList<String>();
-			// currentList.add(resourceForHierarchy.getValue().stringValue());
-			addSubResourcesListUsingResourceFroHierarchy(resourceURI.stringValue(), resourceForHierarchy,
+			//currentList.add(resourceForHierarchy.getValue().stringValue());
+			addSubResourcesListUsingResourceFroHierarchy(resourceURI.stringValue(), resourceForHierarchy, 
 					currentList, pathList, resourceToResourceForHierarchyMap);
 		}
-
-		// if the input resource is a topResource, then add it to the pathList as a list containing just one
+		
+		//if the input resource is a topResource, then add it to the pathList as a list containing just one 
 		// element
 		if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) {
 			List<String> listWithOneElem = new ArrayList<>();
 			listWithOneElem.add(resourceURI.stringValue());
 			pathList.add(listWithOneElem);
 		}
-
+		
 		// now construct the response
 		// to order the path (from the shortest to the longest) first find the maximum length
 		int maxLength = -1;
@@ -519,17 +636,18 @@ public class Search extends STServiceAdapter {
 
 		// if it is explicitly a topResource or if no path is returned while there was at least one
 		// result from the SPARQL query (this mean that all the paths contained at least one non-URI resource)
-		/*
-		 * if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) { // the
-		 * input resource is a top resource for its role (concept, class or property) pathFound = true;
-		 * AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
-		 * annotatedValue.setAttribute("explicit", true); annotatedValue.setAttribute("show",
-		 * resourceURI.getLocalName()); results.add(annotatedValue); }
-		 */
+		/*if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) {
+			// the input resource is a top resource for its role (concept, class or property)
+			pathFound = true;
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
+			annotatedValue.setAttribute("explicit", true);
+			annotatedValue.setAttribute("show", resourceURI.getLocalName());
+			results.add(annotatedValue);
+		}*/
 
-		// iterate over all possible found path
+		//iterate over all possible found path
 		for (int currentLength = 1; currentLength <= maxLength && !pathFound; ++currentLength) {
-			// for the given path length, get all the path (having such length)
+			//for the given path length, get all the path (having such length)
 			for (List<String> path : pathList) {
 				boolean targetResNotPresent = true;
 				if (currentLength != path.size()) {
@@ -539,54 +657,50 @@ public class Search extends STServiceAdapter {
 
 				boolean first = true;
 				for (String resourceInPath : path) {
-					// if it is the first element, the role is cls, and the desired root is either
-					// rdfs:Resource or owl:Thing, a special check should be perform,
-					// since it could be necessary to add rdfs:Resource and even owl:Thing
-					boolean addRdfsResource = false, addOwlThing = false;
-					if (first && role.equals(RDFResourceRole.cls)
-							&& (root.equals(OWL.THING) || root.equals(RDFS.RESOURCE))) {
-						if (root.equals(RDFS.RESOURCE)
-								&& !resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
-							// the desired first element should be rdfs:Resource, but it is not,
+					//if it is the first element, the role is cls, and the desired root is either 
+					// rdfs:Resource or owl:Thing, a special check should be perform, 
+					//since it could be necessary to add rdfs:Resource and even owl:Thing
+					boolean addRdfsResource = false, addOwlThing=false;
+					if(first && role.equals(RDFResourceRole.cls) && 
+							(root.equals(OWL.THING) || root.equals(RDFS.RESOURCE))) {
+						if(root.equals(RDFS.RESOURCE) && !resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
+							//the desired first element should be rdfs:Resource, but it is not, 
 							// so add rdfs:Resource as first element
-							addRdfsResource = true;
-							if (!resourceInPath.equals(OWL.THING.stringValue())) {
-								// the first element in the list is not Thing, but it should be, since under
-								// rdfs:Resource there should be owl:Thing, so add it (after adding
-								// rdfs:Resource)
-								addOwlThing = true;
+							addRdfsResource=true;
+							if(!resourceInPath.equals(OWL.THING.stringValue())) {
+								//the first element in the list is not Thing, but it should be, since under
+								// rdfs:Resource there should be owl:Thing, so add it (after adding rdfs:Resource)
+								addOwlThing=true;
 							}
-						} else if (root.equals(OWL.THING)
-								&& resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
-							// do not consider this path, since the root should be owl:Thing and the current
-							// found root is rdfs:Resource, which is a superClass of owl:Thing
-
-							// analyze the next path
-							break;
-						} else if (root.equals(OWL.THING)
-								&& !resourceInPath.equals(OWL.THING.stringValue())) {
-							// the desired first element should be owl:Thing, but it is not,
-							// so add owl:Thing as first element
-							addOwlThing = true;
 						}
-
-						if (addRdfsResource) {
-							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
-									RDFS.RESOURCE);
+						else if(root.equals(OWL.THING) && resourceInPath.equals(RDFS.RESOURCE.stringValue())) {
+							//do not consider this path, since the root should be owl:Thing and the current
+							// found root is rdfs:Resource, which is a superClass of owl:Thing
+							
+							//analyze the next path
+							break;
+						}
+						else if(root.equals(OWL.THING) && !resourceInPath.equals(OWL.THING.stringValue())) {
+							//the desired first element should be owl:Thing, but it is not, 
+							// so add owl:Thing as first element
+							addOwlThing=true;
+						} 
+						
+						if(addRdfsResource) {
+							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(RDFS.RESOURCE);
 							annotatedValue.setAttribute("explicit", true);
 							annotatedValue.setAttribute("show", RDFS.RESOURCE.getLocalName());
 							results.add(annotatedValue);
-						}
-						if (addOwlThing) {
+						} if(addOwlThing) {
 							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(OWL.THING);
 							annotatedValue.setAttribute("explicit", true);
 							annotatedValue.setAttribute("show", OWL.THING.getLocalName());
 							results.add(annotatedValue);
 						}
 					}
-
+					
 					first = false;
-					if (resourceURI.stringValue().equals(resourceInPath)) {
+					if(resourceURI.stringValue().equals(resourceInPath)) {
 						targetResNotPresent = false;
 					}
 					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
@@ -597,17 +711,17 @@ public class Search extends STServiceAdapter {
 					results.add(annotatedValue);
 				}
 				// add, if necessary, at the end, the input concept
-				if (results.size() != 0 && targetResNotPresent) {
+				if(results.size()!=0 && targetResNotPresent) {
 					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
 					annotatedValue.setAttribute("explicit", true);
 					annotatedValue.setAttribute("show", resourceURI.getLocalName());
 					results.add(annotatedValue);
 				}
-
-				// the first path having such length was found, so, do not do the next iteration
+				
+				//the first path having such length was found, so, do not do the next iteration 
 				pathFound = true;
-
-				// since a minimal path was found, stop looking for another minimal path
+				
+				//since a minimal path was found, stop looking for another minimal path
 				break;
 
 			}
@@ -684,29 +798,29 @@ public class Search extends STServiceAdapter {
 			return;
 		}
 
-		// check if the current element is already in the path, in this case do nothing and return, since
+		//check if the current element is already in the path, in this case do nothing and return, since
 		// it is a cycle
-		if (currentPathList.contains(resource.getValue().stringValue())) {
+		if(currentPathList.contains(resource.getValue().stringValue())) {
 			return;
-		}
-
-		// add the current resource to the current path
+		} 
+		
+		//add the current resource to the current path
 		currentPathList.add(resource.getValue().stringValue());
-
-		// check if the current resource (the one just added) is the target element, in this case add the
+		
+		//check if the current resource (the one just added) is the target element, in this case add the 
 		// current path to the list of the possible path and return
-		if (targetRes.equals(resource.getValue().stringValue())) {
+		if(targetRes.equals(resource.getValue().stringValue())) {
 			pathList.add(currentPathList);
 			return;
 		}
-
-		// iterate over subResources of the current resource
-		for (String subResource : resource.getSubResourcesList()) {
-			// create a copy of the currentList
+		
+		//iterate over subResources of the current resource
+		for(String subResource : resource.getSubResourcesList()) {
+			//create a copy of the currentList
 			List<String> updatedPath = new ArrayList<String>(currentPathList);
-			// call getSubResourcesListUsingResourceFroHierarchy on subResource
-			addSubResourcesListUsingResourceFroHierarchy(targetRes,
-					resourceToResourceForHierarchyMap.get(subResource), updatedPath, pathList,
+			//call getSubResourcesListUsingResourceFroHierarchy on subResource
+			addSubResourcesListUsingResourceFroHierarchy(targetRes, 
+					resourceToResourceForHierarchyMap.get(subResource), updatedPath, pathList, 
 					resourceToResourceForHierarchyMap);
 		}
 	}

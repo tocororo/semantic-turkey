@@ -33,7 +33,7 @@ public interface SearchStrategy extends Extension {
 	 */
 	void update(RepositoryConnection connection) throws Exception;
 
-	Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
+	String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI,
 			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs, boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException;
@@ -49,7 +49,7 @@ public interface SearchStrategy extends Extension {
 			@Nullable List<IRI> schemes, @Nullable IRI cls) throws IllegalStateException, 
 			STPropertyAccessException;
 	
-	Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext, IRI cls,
+	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Nullable List<String> langs, boolean includeLocales) throws IllegalStateException, 
 			STPropertyAccessException;
@@ -57,7 +57,7 @@ public interface SearchStrategy extends Extension {
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
 
-	Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
+	String searchLexicalEntry(STServiceContext stServiceContext,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
 			boolean includeLocales) throws IllegalStateException, STPropertyAccessException;
 }

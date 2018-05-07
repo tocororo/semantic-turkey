@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.impl.search.graphdb;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -131,7 +132,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	}
 
 	@Override
-	public Collection<AnnotatedValue<Resource>> searchResource(STServiceContext stServiceContext,
+	public String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
@@ -163,20 +164,14 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\nGROUP BY ?resource ";
 		//@formatter:on
 		
-		logger.debug("query = " + query);
-
-		QueryBuilder qb;
-		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
-		qb.processRendering();
-		return qb.runQuery();
+		return query;
 		
 		//return serviceForSearches.executeGenericSearchQuery(query, stServiceContext.getRGraphs(),
 		//		getThreadBoundTransaction(stServiceContext));
 	}
 	
 	@Override
-	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(STServiceContext stServiceContext,
+	public String searchLexicalEntry(STServiceContext stServiceContext,
 			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, 
 			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
@@ -215,13 +210,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\nGROUP BY ?resource ";
 		//@formatter:on
 		
-		logger.debug("query = " + query);
-
-		QueryBuilder qb;
-		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
-		qb.processRendering();
-		return qb.runQuery();
+		return query;
 	}
 
 	@Override
@@ -334,8 +323,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	}
 
 	@Override
-	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(STServiceContext stServiceContext,
-			IRI cls, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
+	public String searchInstancesOfClass(STServiceContext stServiceContext,
+			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional List<String> langs, boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -348,12 +337,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			"\nWHERE{"; // +
 
 		//do a subquery to get the candidate resources
-		query+="\nSELECT DISTINCT ?resource ?type" +
-			"\nWHERE{" + 
-			"\n ?resource a <"+cls.stringValue()+"> . " +
-			"\n ?resource a ?type . " +
-			"\n}" +
-			"\n}";
+		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource")+
+				"\n}";
 
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
@@ -367,14 +352,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+="\n}"+
 				"\nGROUP BY ?resource ";
 		//@formatter:on
-		
-		logger.debug("query = " + query);
 
-		QueryBuilder qb;
-		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
-		qb.processRendering();
-		return qb.runQuery();
+		return query;
 		
 		//return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(), getThreadBoundTransaction(stServiceContext));
 	}

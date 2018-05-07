@@ -28,6 +28,7 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -254,21 +255,95 @@ public class ServiceForSearches {
 		return query;
 	}
 	
-	public static String filterWithOrValues(List<IRI> IRIList, String variable){
+	public static String filterWithOrValues(List<IRI> iriList, String variable){
 		if(!variable.startsWith("?")){
 			variable+="?"+variable;
 		}
-		String schemesInFilter = "\nFILTER (";
-		boolean first=true;
-		for(IRI iri : IRIList){
-			if(!first){
-				schemesInFilter+=" || ";
-			}
-			first=false;
-			schemesInFilter+=variable+"="+NTriplesUtil.toNTriplesString(iri);
+		List<List<IRI>> iriListList = new ArrayList<>();
+		iriListList.add(iriList);
+		return filterWithOrOfAndValues(iriListList, variable);
+	}
+	
+	public static String filterWithOrOfAndValues(List<List<IRI>> IRIListList, String variable){
+		if(!variable.startsWith("?")){
+			variable+="?"+variable;
 		}
-		schemesInFilter+= ") \n";
-		return schemesInFilter;
+		String irisInFilter = "\nFILTER (";
+		boolean firstOR=true;
+		for(List<IRI> iriList : IRIListList){
+			if(!firstOR){
+				irisInFilter+=" || ";
+			}
+			firstOR=false;
+			boolean firstAND = true;
+			if(iriList.size()>0) {
+				irisInFilter += " ( ";
+			}
+			for(IRI iri : iriList) {
+				if(!firstAND) {
+					irisInFilter +=" && ";
+				}
+				firstAND=false;
+				irisInFilter+=variable+"="+NTriplesUtil.toNTriplesString(iri);
+			}
+			if(iriList.size()>0) {
+				irisInFilter += " ) ";
+			}
+			
+		}
+		irisInFilter+= ") \n";
+		return irisInFilter;
+	}
+	
+	public static String filterWithOrOfAndPairValues(List<Pair<IRI, List<Value>>> valueListPairList,
+			String variable) {
+		if(!variable.startsWith("?")){
+			variable+="?"+variable;
+		}
+		String queryPart="";
+		int count = 1;
+		for(Pair<IRI, List<Value>> iriListValuePair : valueListPairList) {
+			String objVar = variable+"_o"+(count++);
+			IRI pred = iriListValuePair.getFirst();
+			List<Value> valueList = iriListValuePair.getSecond();
+			queryPart+="\n"+variable+" "+NTriplesUtil.toNTriplesString(pred)+" "+objVar+" .";
+			boolean first = true;
+			queryPart+="\nFILTER(";
+			for(Value value : valueList) {
+				if(first) {
+					queryPart+=" || ";
+				} else {
+					first = false;
+				}
+				queryPart+=objVar+" = "+NTriplesUtil.toNTriplesString(value);
+			}
+			queryPart+=")";
+		}
+		return queryPart;
+	}
+	
+	
+	public static String getResourceshavingTypes(List<List<IRI>> typesListOfList, String varToUse) {
+		String query = "\nSELECT "+varToUse
+				+"\nWHERE{";
+		
+		if (typesListOfList == null || typesListOfList.size() ==0) {
+			query+="\n"+varToUse+" a ?genericType .";
+		}else if(typesListOfList.size()==1 && typesListOfList.get(0).size()==1) {
+			IRI type = typesListOfList.get(0).get(0);
+			query+="\n"+varToUse+" a "+NTriplesUtil.toNTriplesString(type)+" .";
+		} else {
+			//the input type list of list is more complicate than a single value, so behave according 
+			// (an OR of AND)
+			String typeOfVarToUse = varToUse+"_type";
+			query+="\n"+varToUse+" a "+typeOfVarToUse+" .";
+			query+=filterWithOrOfAndValues(typesListOfList, typeOfVarToUse);
+		}
+		query+= "\n}";
+		
+		
+		
+		return query;
 	}
 	
 	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode) 
@@ -751,5 +826,7 @@ public class ServiceForSearches {
 			return false;
 		}
 	}
+
+	
 }
 
