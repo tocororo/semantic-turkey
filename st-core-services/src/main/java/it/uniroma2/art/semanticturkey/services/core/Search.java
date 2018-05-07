@@ -40,6 +40,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
@@ -279,7 +280,8 @@ public class Search extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
 		qb.processRole();
-		qb.processRendering();
+		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
+		qb.processQName();
 		return qb.runQuery();
 	}
 	
