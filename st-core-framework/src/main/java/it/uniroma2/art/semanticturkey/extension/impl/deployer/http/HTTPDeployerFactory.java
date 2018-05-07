@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
 
 /**
  * The {@link ExtensionFactory} for the the {@link HTTPDeployer}.
@@ -12,7 +13,8 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class HTTPDeployerFactory implements ExtensionFactory<HTTPDeployer>,
-		ConfigurableExtensionFactory<HTTPDeployer, HTTPDeployerConfiguration> {
+		ConfigurableExtensionFactory<HTTPDeployer, HTTPDeployerConfiguration>,
+		PUScopedConfigurableComponent<HTTPDeployerConfiguration> {
 
 	@Override
 	public String getName() {
