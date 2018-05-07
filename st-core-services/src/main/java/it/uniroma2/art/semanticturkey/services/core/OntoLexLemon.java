@@ -282,7 +282,8 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the entries in a given lexicon that starts with the supplied index consisting of two charaters.
+	 * Returns the entries in a given lexicon that starts with the supplied index consisting of two
+	 * characters.
 	 * 
 	 * @param index
 	 * @param lexicon
