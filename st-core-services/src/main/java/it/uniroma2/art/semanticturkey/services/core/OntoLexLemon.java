@@ -293,7 +293,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getLexicalEntriesByAlphabeticIndex(
-			@Length(min = 2, max = 2) String index, IRI lexicon) {
+			@Length(min = 1) String index, IRI lexicon) {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					        \n" +
