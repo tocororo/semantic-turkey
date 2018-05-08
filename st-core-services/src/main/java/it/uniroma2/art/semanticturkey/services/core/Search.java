@@ -43,6 +43,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -122,22 +123,21 @@ public class Search extends STServiceAdapter {
 		} else if(statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
 			//check that the resource is not marked as deprecated
 			query += "\nFILTER NOT EXISTS{" +
-					"\n{?resource owl:deprecated true }" +
+					"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
 					"\nUNION"+
-					"\n{?resource a owl:DeprecatedClass }" +
+					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
 					"\nUNION"+
-					"\n{?resource owl:DeprecatedProperty }" +
+					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }" +
 					"\n}";
 					
 		} else if(statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
 			//check that the resource is marked as deprecated
 			query += 
-			"\n{?resource owl:deprecated true }" +
-			"\nUNION"+
-			"\n{?resource a owl:DeprecatedClass }" +
-			"\nUNION"+
-			"\n{?resource owl:DeprecatedProperty }";
-			
+				"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+				"\nUNION"+
+				"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
+				"\nUNION"+
+				"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }";
 		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION)) {
 			//check that in the validation graph there is the triple 
 			// ?resource a ?type
@@ -151,26 +151,19 @@ public class Search extends STServiceAdapter {
 			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
 					.createIRI(getProject().getBaseURI()));
 			String valGraph = NTriplesUtil.toNTriplesString(validationGraph);
-			query += "\nFILTER NOT EXISTS{" +
-					"\n{GRAPH {"+valGraph+"}?resource owl:deprecated true }" +
+			query +="\n{GRAPH "+valGraph+"{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }}" +
 					"\nUNION"+
-					"\n{GRAPH {"+valGraph+"}?resource a owl:DeprecatedClass }" +
+					"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }}" +
 					"\nUNION"+
-					"\n{GRAPH {"+valGraph+"}?resource owl:DeprecatedProperty }" +
-					"\n}";
+					"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }}";
 		}
 		
 		//the schemes part
-		if(schemes !=null && schemes.size()>0) {
-			String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
-					+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
-			if(schemes.size()==1 && schemes.get(0).size()==1){
-				query += "\n?resource "+schemeOrTopConcept+" "+NTriplesUtil.toNTriplesString(schemes.get(0).get(0))+" .";
-			} else if(schemes!=null && schemes.size()>1){
-				query += "\n?resource "+schemeOrTopConcept+" ?scheme . "+
-						ServiceForSearches.filterWithOrOfAndValues(schemes, "?scheme");
-			}
-		}
+		String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
+				+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
+		query += ServiceForSearches.filterWithOrOfAndValues("?resource", schemeOrTopConcept, schemes);
+		
+		
 		//the outgoingLinks part
 		if(outgoingLinks!=null && outgoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource");
@@ -180,8 +173,8 @@ public class Search extends STServiceAdapter {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource");
 			
 		}
-		query+="}" +
-			"GROUP BY ?resource";
+		query+="\n}" +
+			"\nGROUP BY ?resource";
 		logger.debug("query = " + query);
 
 		

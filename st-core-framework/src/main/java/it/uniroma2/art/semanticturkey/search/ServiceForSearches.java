@@ -247,8 +247,10 @@ public class ServiceForSearches {
 				//iterate over the languages
 				if(!first){
 					query += " || ";
-				} query += "lang("+variable+") = \""+lang+"\"";
-				first = false;
+				} else {
+					first = false;
+				} 
+				query += "lang("+variable+") = \""+lang+"\"";
 			}
 			query += ")";
 		}
@@ -261,40 +263,57 @@ public class ServiceForSearches {
 		}
 		List<List<IRI>> iriListList = new ArrayList<>();
 		iriListList.add(iriList);
-		return filterWithOrOfAndValues(iriListList, variable);
+		String queryFilter = "\nFILTER (";
+		boolean first=true;
+		for(IRI iri : iriList) {
+			if(!first) {
+				queryFilter+= " || ";
+			} else {
+				first = false;
+			}
+			queryFilter+=variable +" = "+NTriplesUtil.toNTriplesString(iri);
+		}
+		
+		queryFilter+=")";
+		
+		return queryFilter;
 	}
 	
-	public static String filterWithOrOfAndValues(List<List<IRI>> IRIListList, String variable){
-		if(!variable.startsWith("?")){
-			variable+="?"+variable;
+	
+	 public static <T extends Value> String filterWithOrOfAndValues(String variable, IRI pred, List<List<T>> iriListList) {
+		return filterWithOrOfAndValues(variable, NTriplesUtil.toNTriplesString(pred), iriListList);
+	}
+	
+	public static <T extends Value> String filterWithOrOfAndValues(String variable, String predInNTForm,
+			List<List<T>> valueListList) {
+		String queryPart = "";
+		if(valueListList==null || valueListList.size()==0) {
+			//the list of list is null or empty, so just return an empty string
+			return queryPart;
 		}
-		String irisInFilter = "\nFILTER (";
-		boolean firstOR=true;
-		for(List<IRI> iriList : IRIListList){
-			if(!firstOR){
-				irisInFilter+=" || ";
+		
+		/*if(!pred.startsWith("<")) {
+			pred = "<"+pred+">";
+		}*/
+		
+		boolean first=true;
+		for(List<T> andValueList : valueListList) {
+			if(!first) {
+				queryPart+="\nUNION";
+			} else {
+				first = false;
 			}
-			firstOR=false;
-			boolean firstAND = true;
-			if(iriList.size()>0) {
-				irisInFilter += " ( ";
+			queryPart+="\n{";
+			for(T value : andValueList) {
+				queryPart+="\n"+variable+" "+predInNTForm+" "+NTriplesUtil.toNTriplesString(value)+" .";			
 			}
-			for(IRI iri : iriList) {
-				if(!firstAND) {
-					irisInFilter +=" && ";
-				}
-				firstAND=false;
-				irisInFilter+=variable+"="+NTriplesUtil.toNTriplesString(iri);
-			}
-			if(iriList.size()>0) {
-				irisInFilter += " ) ";
-			}
+			queryPart+="\n}";
 			
 		}
-		irisInFilter+= ") \n";
-		return irisInFilter;
+		
+		return queryPart;
 	}
-	
+
 	public static String filterWithOrOfAndPairValues(List<Pair<IRI, List<Value>>> valueListPairList,
 			String variable) {
 		if(!variable.startsWith("?")){
@@ -310,7 +329,7 @@ public class ServiceForSearches {
 			boolean first = true;
 			queryPart+="\nFILTER(";
 			for(Value value : valueList) {
-				if(first) {
+				if(!first) {
 					queryPart+=" || ";
 				} else {
 					first = false;
@@ -335,9 +354,7 @@ public class ServiceForSearches {
 		} else {
 			//the input type list of list is more complicate than a single value, so behave according 
 			// (an OR of AND)
-			String typeOfVarToUse = varToUse+"_type";
-			query+="\n"+varToUse+" a "+typeOfVarToUse+" .";
-			query+=filterWithOrOfAndValues(typesListOfList, typeOfVarToUse);
+			query+=filterWithOrOfAndValues(varToUse, "a", typesListOfList);
 		}
 		query+= "\n}";
 		
