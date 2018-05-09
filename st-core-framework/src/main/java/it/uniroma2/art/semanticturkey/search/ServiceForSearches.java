@@ -88,7 +88,7 @@ public class ServiceForSearches {
 			List<IRI> schemes, IRI cls, List<IRI> lexicons){
 		boolean otherWanted = false;
 		String filterQuery = "";
-		
+		// @formatter:off
 		if(isClassWanted){
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					"\nFILTER("+varType+" = <"+OWL.CLASS.stringValue()+"> || " +
@@ -117,8 +117,13 @@ public class ServiceForSearches {
 			if(otherWanted){
 				filterQuery += "\nUNION ";
 			}
+			
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-					 "\nFILTER("+varType+" = <"+SKOS.CONCEPT.stringValue()+">)";
+					//consider the classes that are subclasses of SKOS.CONCEPT
+						varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+								+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .";
+					
+					 //"\nFILTER("+varType+" = <"+SKOS.CONCEPT.stringValue()+">)";
 			if(schemes!=null && schemes.size()==1){
 				filterQuery += "\n"+varResource+" "+schemeOrTopConcept+" <"+schemes.get(0).stringValue()+"> ."+
 						"\n"+varResource+" "+schemeOrTopConcept+" ?scheme .";
@@ -138,9 +143,11 @@ public class ServiceForSearches {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-					 "\nFILTER("+varType+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
-			
-			filterQuery += "\n}";
+					//consider the classes that are subclasses of SKOS.CONCEPT_SCHEME
+					varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+							+NTriplesUtil.toNTriplesString(SKOS.CONCEPT_SCHEME)+" ." +
+							//"\nFILTER("+varType+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
+							"\n}";
 			
 			otherWanted = true;
 		}
@@ -179,7 +186,10 @@ public class ServiceForSearches {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-					 "\nFILTER("+varType+" = <"+LIME.LEXICON.stringValue()+">)" +
+					//consider the classes that are subclasses of LIME.LECIXON
+					varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+							+NTriplesUtil.toNTriplesString(LIME.LEXICON)+" ." +
+					 //"\nFILTER("+varType+" = <"+LIME.LEXICON.stringValue()+">)" +
 					 "\n}";
 			otherWanted = true;
 		}
@@ -188,7 +198,10 @@ public class ServiceForSearches {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-					"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
+					//consider the classes that are subclasses of ONTOLEX.LEXICAL_ENTRY
+					varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+							+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+" ." ;
+					//"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
 			if(lexicons!=null && lexicons.size()==1) {
 				filterQuery+="\n<"+lexicons.get(0).stringValue()+"> <"+LIME.ENTRY.stringValue()+"> "+varResource+" .";
 			} else if(lexicons!=null && lexicons.size()>1) {
@@ -203,6 +216,7 @@ public class ServiceForSearches {
 			
 			otherWanted = true;
 		}
+		// @formatter:on
 		
 		return filterQuery;
 	}

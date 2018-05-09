@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
@@ -58,7 +59,14 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		// create the query to be executed for the search
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
+		String query = 
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
+				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
+				
+				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
+				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{"; // +
 		//get the candidate resources
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null, 
@@ -126,7 +134,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//		ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
 		//		"\n}";
 
-		query+="\n}"+
+		//adding the nature in the query (will be replaced by the appropriate processor), 
+		//remember to change the SELECT as well
+		query+=NatureRecognitionOrchestrator.getNatureSPARQLWherePart("?resource") +
+		
+				"\n}"+
 				"\nGROUP BY ?resource ";
 		//@formatter:on
 
@@ -150,8 +162,16 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		// create the query to be executed for the search
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
+		String query = 
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
+				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
+
+				
+				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
 				"(GROUP_CONCAT(DISTINCT ?index; separator=\",\") AS ?attr_index)"+ 
+				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 				"\nWHERE{"; // +
 		//get the candidate resources
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
@@ -200,7 +220,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//		ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
 		//		"\n}";
 
-		query+="\n}"+
+		//adding the nature in the query (will be replaced by the appropriate processor), 
+		//remember to change the SELECT as well
+		query+=NatureRecognitionOrchestrator.getNatureSPARQLWherePart("?resource") +
+		
+				"\n}"+
 				"\nGROUP BY ?resource ";
 		//@formatter:on
 		
@@ -321,7 +345,14 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource "+ 
+		String query = 
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
+				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
+				
+				"SELECT DISTINCT ?resource "+ 
+				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
@@ -387,7 +418,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject());
 		//query+="\n}";
 
-		query+="\n}"+
+		//adding the nature in the query (will be replaced by the appropriate processor), 
+		//remember to change the SELECT as well
+		query+=NatureRecognitionOrchestrator.getNatureSPARQLWherePart("?resource") +
+		
+				"\n}"+
 				"\nGROUP BY ?resource ";
 		//@formatter:on
 		

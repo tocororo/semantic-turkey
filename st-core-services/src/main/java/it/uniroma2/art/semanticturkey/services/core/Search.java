@@ -180,7 +180,6 @@ public class Search extends STServiceAdapter {
 		
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
 	}
@@ -200,7 +199,6 @@ public class Search extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
 		
@@ -250,7 +248,6 @@ public class Search extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
 		qb.processRendering();
 		return qb.runQuery();
 
@@ -272,7 +269,6 @@ public class Search extends STServiceAdapter {
 		
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
-		qb.processRole();
 		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		qb.processQName();
 		return qb.runQuery();
