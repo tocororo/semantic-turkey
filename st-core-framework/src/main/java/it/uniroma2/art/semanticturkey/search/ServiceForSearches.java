@@ -120,7 +120,7 @@ public class ServiceForSearches {
 			
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					//consider the classes that are subclasses of SKOS.CONCEPT
-						varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+						"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
 								+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .";
 					
 					 //"\nFILTER("+varType+" = <"+SKOS.CONCEPT.stringValue()+">)";
@@ -131,7 +131,9 @@ public class ServiceForSearches {
 				filterQuery += "\n"+varResource+" "+schemeOrTopConcept+" ?scheme . "+
 						filterWithOrValues(schemes, "?scheme");
 			} else{ // schemes!=null
-				filterQuery +="\n"+varResource+" "+schemeOrTopConcept+" ?scheme .";
+				//since no scheme restriction is passed, then also concepts not belonging to any concepts 
+				//should be returned (this means to put the triples in an OPTIONAL) 
+				filterQuery +="\nOPTIONAL{"+varResource+" "+schemeOrTopConcept+" ?scheme . }";
 			}
 			
 			filterQuery += "\n}";
@@ -144,7 +146,7 @@ public class ServiceForSearches {
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					//consider the classes that are subclasses of SKOS.CONCEPT_SCHEME
-					varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+					"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
 							+NTriplesUtil.toNTriplesString(SKOS.CONCEPT_SCHEME)+" ." +
 							//"\nFILTER("+varType+" = <"+SKOS.CONCEPT_SCHEME.stringValue()+">)";
 							"\n}";
@@ -187,7 +189,7 @@ public class ServiceForSearches {
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					//consider the classes that are subclasses of LIME.LECIXON
-					varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+					"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
 							+NTriplesUtil.toNTriplesString(LIME.LEXICON)+" ." +
 					 //"\nFILTER("+varType+" = <"+LIME.LEXICON.stringValue()+">)" +
 					 "\n}";
@@ -199,7 +201,7 @@ public class ServiceForSearches {
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					//consider the classes that are subclasses of ONTOLEX.LEXICAL_ENTRY
-					varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+					"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
 							+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+" ." ;
 					//"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
 			if(lexicons!=null && lexicons.size()==1) {
