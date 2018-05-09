@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		// create the query to be executed for the search
 		//@formatter:off
 		String query = 
-				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
 				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
 				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
@@ -97,6 +99,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					"\nUNION";
 		}
 		
+		
+		//construct the complex path from a resource to a LexicalEntry
+				String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+						"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
+						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
+				String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+						"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+						"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+						"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+				String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
+		
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?label ." +
@@ -121,10 +137,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
 				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 				"\n}"+	
-		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep		
+		//search in allResToLexicalEntry?/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 				"\nUNION" +
 				"\n{" +
-				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?resource ("+allResToLexicalEntry+")?/"+
+				" (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
 				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 				"\n}";
@@ -163,7 +180,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		// create the query to be executed for the search
 		//@formatter:off
 		String query = 
-				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
 				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
 				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
@@ -346,7 +364,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		//@formatter:off
 		String query = 
-				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
 				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
 				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +

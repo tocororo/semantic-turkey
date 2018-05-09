@@ -376,7 +376,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	// TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
 	// variables being used: $st, $go, $t, $dep
-	// prefixes needed: skos, owl, skosxl, rdfs
+	// prefixes needed: skos, owl, skosxl, rdfs, rdf
 	protected String generateNatureSPARQLWherePart(String varName) {
 		return NatureRecognitionOrchestrator.getNatureSPARQLWherePart(varName);
 	}
