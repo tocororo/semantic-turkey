@@ -254,6 +254,11 @@
 			<artifactId>maple-core</artifactId>
 			<version>${maple.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.sshd</groupId>
+			<artifactId>sshd-core</artifactId>
+			<version>${sshd.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.hamcrest</groupId>

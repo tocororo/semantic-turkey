@@ -384,6 +384,12 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerFactory" />
 	</osgi:service>
 
+	<!-- Publishes the SFTP Deployer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerFactory" />
+	</osgi:service>
 
 	<!-- Publishes the ReformattingExporter extension point -->
 
