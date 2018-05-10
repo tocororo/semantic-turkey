@@ -159,17 +159,23 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 									.ifPresent(v -> annotatedResource.setAttribute("lang", v));
 							return;
 						} else {
-							if (predicate != null) {
-								Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow
-										.getOrDefault(predicate, Collections.emptyMap());
-								Literal creShow = resource2CreShow.get(resource);
+							Value componentRendering = resourceAttributes.get("decompComponentRendering");
+							if (componentRendering != null) {
+								annotatedResource.setAttribute("show", componentRendering.stringValue());
+								return;
+							} else {
+								if (predicate != null) {
+									Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow
+											.getOrDefault(predicate, Collections.emptyMap());
+									Literal creShow = resource2CreShow.get(resource);
 
-								if (creShow != null) {
-									Literal creShowAsLiteral = (Literal) creShow;
-									annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
-									creShowAsLiteral.getLanguage()
-											.ifPresent(v -> annotatedResource.setAttribute("lang", v));
-									return;
+									if (creShow != null) {
+										Literal creShowAsLiteral = (Literal) creShow;
+										annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
+										creShowAsLiteral.getLanguage()
+												.ifPresent(v -> annotatedResource.setAttribute("lang", v));
+										return;
+									}
 								}
 							}
 						}

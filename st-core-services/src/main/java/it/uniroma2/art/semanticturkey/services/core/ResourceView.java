@@ -42,9 +42,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.client.SPARQLProtocolSession;
 import org.eclipse.rdf4j.model.IRI;
@@ -79,10 +81,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -99,6 +103,8 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -154,7 +160,8 @@ public class ResourceView extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public Map<String, ResourceViewSection> getResourceView(Resource resource,
 			@Optional ResourcePosition resourcePosition,
-			@Optional(defaultValue = "false") boolean includeInferred) throws Exception {
+			@Optional(defaultValue = "false") boolean includeInferred,
+			@Optional(defaultValue = "false") boolean ignorePropertyExclusions) throws Exception {
 		try {
 			Project project = getProject();
 			Resource workingGraph = getWorkingGraph();
@@ -163,7 +170,10 @@ public class ResourceView extends STServiceAdapter {
 				resourcePosition = resourceLocator.locateResource(getProject(), getRepository(), resource);
 			}
 
-			Model retrievedStatements = retrieveStatements(resourcePosition, resource, includeInferred);
+			MutableLong excludedObjectsCount = new MutableLong();
+
+			Model retrievedStatements = retrieveStatements(resourcePosition, resource, includeInferred,
+					ignorePropertyExclusions, excludedObjectsCount);
 
 			// A resource is editable iff it is a locally defined resource (i.e. it is the subject of at least
 			// one triple in the working graph)
@@ -177,7 +187,8 @@ public class ResourceView extends STServiceAdapter {
 			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
 
 			SubjectAndObjectsInfos subjectAndObjectsAddtionalInfo = retrieveSubjectAndObjectsAddtionalInformation(
-					resourcePosition, resource, includeInferred, resourcePredicates);
+					resourcePosition, resource, includeInferred, resourcePredicates,
+					ignorePropertyExclusions);
 
 			Map<Resource, Map<String, Value>> resource2attributes = subjectAndObjectsAddtionalInfo.resource2attributes;
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = subjectAndObjectsAddtionalInfo.predicate2resourceCreShow;
@@ -188,7 +199,7 @@ public class ResourceView extends STServiceAdapter {
 			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<Resource>(resource);
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
-
+			annotatedResource.setAttribute("excludedObjectsCount", excludedObjectsCount.longValue());
 			AbstractStatementConsumer.addNature(annotatedResource, resource2attributes);
 
 			RDFResourceRole resourceRole = getRoleFromNature(
@@ -407,9 +418,13 @@ public class ResourceView extends STServiceAdapter {
 
 	private SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 			ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-			Set<IRI> resourcePredicates) throws ProjectAccessException {
+			Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) throws ProjectAccessException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
+
+			String propertyExclusionFilterWithVarPredicate = getPropertyExclusionFilter(resourcePosition,
+					"predicate", ignorePropertyExclusions);
+
 			StringBuilder sb = new StringBuilder();
 			sb.append(
 			// @formatter:off
@@ -420,7 +435,10 @@ public class ResourceView extends STServiceAdapter {
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
 				" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
 				"   {                                                                               \n" +
-				"     ?subjectResource ?predicate ?tempResource .                                   \n" +
+				"       {                                                                           \n" +
+				"         ?subjectResource ?predicate ?tempResource .                               \n" +
+				"         " + propertyExclusionFilterWithVarPredicate +
+				"       }                                                                           \n" +
 				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
 				"   } UNION {                                                                       \n" +
 				"     bind(?subjectResource as ?resource)                                           \n" +
@@ -457,6 +475,7 @@ public class ResourceView extends STServiceAdapter {
 				// @formatter:off
 					"     OPTIONAL {                                                          \n" +
 					"        ?subjectResource ?predicate ?resource .                          \n" +
+					"        " + propertyExclusionFilterWithVarPredicate +
 					"        FILTER(?predicate IN " + selectorCollection + ")                 \n" + 	
 					"        ?resource " +  showChain + " ?attr_creShowTemp" + (i++) + " .    \n" +
 					"     }                                                                   \n"
@@ -489,6 +508,8 @@ public class ResourceView extends STServiceAdapter {
 			qb.processRendering();
 			qb.processQName();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
+			qb.process(DecompComponentRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+					"attr_decompComponentRendering");
 			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
 			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
 					"attr_ontolexLexicalEntryRendering");
@@ -562,7 +583,8 @@ public class ResourceView extends STServiceAdapter {
 	}
 
 	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
-			boolean includeInferred) throws ProjectAccessException, RDF4JException, IOException {
+			boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
+			throws ProjectAccessException, RDF4JException, IOException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 
@@ -579,12 +601,14 @@ public class ResourceView extends STServiceAdapter {
 					" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
 					"     GRAPH ?g {                                                         \n" +
 					"       ?s ?p ?o .                                                       \n" +
+					"       " + getPropertyExclusionFilter(localResourcePosition, "p", ignorePropertyExclusions ) +
 					"     }                                                                  \n" +
 					"     OPTIONAL {                                                         \n" +
 					"       ?o rdf:rest* ?s2                                                 \n" +
 					"       FILTER(isBLANK(?o))                                              \n" +
 					"       GRAPH ?g2 {                                                      \n" +
 					"         ?s2 ?p2 ?o2 .                                                  \n" +
+					"         " + getPropertyExclusionFilter(localResourcePosition, "p2", ignorePropertyExclusions ) +
 					"       }                                                                \n" +
 					"     }                                                                  \n" +
 					" }	                                                                     \n"
@@ -616,10 +640,21 @@ public class ResourceView extends STServiceAdapter {
 					.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
 			describeQuery.setBinding("y", resource);
 			describeQuery.setIncludeInferred(includeInferred);
+
+			Set<IRI> excludedProperties = getExcludedProperties(localResourcePosition);
+
 			QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
 				Resource subject = stmt.getSubject();
 				IRI predicate = stmt.getPredicate();
 				Value object = stmt.getObject();
+
+				if (excludedProperties.contains(predicate)) {
+					if (subject.equals(resource)) {
+						excludedObjectsCount.increment();
+					}
+					return;
+				}
+
 				if (retrievedStatements.contains(subject, predicate, object))
 					return;
 
@@ -722,6 +757,67 @@ public class ResourceView extends STServiceAdapter {
 		return retrievedStatements;
 	}
 
+	/**
+	 * Returns a set of properties that should be excluded from the Resource View, unless
+	 * {@code ignorePropertyExclusons} is {@code false}. Currently, the property {@link LIME#ENTRY} is always
+	 * excluded.
+	 * 
+	 * @param resourcePosition
+	 * @return
+	 */
+	protected Set<IRI> getExcludedProperties(ResourcePosition resourcePosition,
+			boolean ignorePropertyExclusons) {
+		return ignorePropertyExclusons ? Collections.emptySet() : Collections.singleton(LIME.ENTRY);
+	}
+
+	/**
+	 * Returns a set of properties that should be excluded from the Resource View. Currently, the property
+	 * {@link LIME#ENTRY} is always excluded.
+	 * 
+	 * @param resourcePosition
+	 * @return
+	 */
+	protected Set<IRI> getExcludedProperties(ResourcePosition resourcePosition) {
+		return Collections.singleton(LIME.ENTRY);
+	}
+
+	/**
+	 * Returns a {@code FILTER} that can be used to exclude the properties returned by
+	 * {@link #getExcludedProperties(ResourcePosition)} only if {@code ignorePropertyExclusions} is
+	 * {@code false}.
+	 * 
+	 * @param resourcePosition
+	 * @param varName
+	 * @param ignorePropertyExclusions
+	 * @return
+	 */
+	protected String getPropertyExclusionFilter(ResourcePosition resourcePosition, String varName,
+			boolean ignorePropertyExclusions) {
+		if (ignorePropertyExclusions) {
+			return "";
+		} else {
+			return getPropertyExclusionFilter(resourcePosition, varName);
+		}
+	}
+
+	/**
+	 * Returns a {@code FILTER} that can be used to exclude the properties returned by
+	 * {@link #getExcludedProperties(ResourcePosition)}.
+	 * 
+	 * @param resourcePosition
+	 * @param varName
+	 * @return
+	 */
+	protected String getPropertyExclusionFilter(ResourcePosition resourcePosition, String varName) {
+		Set<IRI> props = getExcludedProperties(resourcePosition);
+
+		if (props.isEmpty())
+			return "";
+
+		return "FILTER ( ?" + varName + " NOT IN "
+				+ props.stream().map(RenderUtils::toSPARQL).collect(joining(", ", "(", ")")) + ")\n";
+	}
+
 	public Repository createSPARQLRepository(String sparqlEndpoint) {
 		return new SPARQLRepository(sparqlEndpoint) {
 			@Override
@@ -777,6 +873,49 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 	@Override
 	public String getBindingVariable() {
 		return "resource";
+	}
+
+}
+
+class DecompComponentRenderer extends BaseRenderingEngine {
+
+	private static AbstractLabelBasedRenderingEngineConfiguration conf;
+
+	static {
+		conf = new AbstractLabelBasedRenderingEngineConfiguration() {
+
+			@Override
+			public String getShortName() {
+				return "foo";
+			}
+
+		};
+		conf.languages = null;
+	}
+
+	private DecompComponentRenderer() {
+		super(conf, true);
+	}
+
+	private DecompComponentRenderer(boolean fallbackToTerm) {
+		super(conf, fallbackToTerm);
+	}
+
+	public static final DecompComponentRenderer INSTANCE = new DecompComponentRenderer();
+	public static final DecompComponentRenderer INSTANCE_WITHOUT_FALLBACK = new DecompComponentRenderer(
+			false);
+
+	@Override
+	protected void getGraphPatternInternal(StringBuilder gp) {
+		gp.append(
+		// @formatter:off
+			"?resource <http://www.w3.org/ns/lemon/decomp#correspondsTo> [ \n" +
+			"  <http://www.w3.org/ns/lemon/ontolex#canonicalForm> [ \n" +
+			"    <http://www.w3.org/ns/lemon/ontolex#writtenRep> ?labelInternal \n" +
+			"  ] \n" +
+			"] \n"
+			// @formatter:on
+		);
 	}
 
 }

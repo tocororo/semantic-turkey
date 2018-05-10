@@ -71,4 +71,7 @@ public class AnnotatedValue<T extends Value> {
 		this.attributes.put(name, SimpleValueFactory.getInstance().createLiteral(value));
 	}
 
+	public void setAttribute(String name, long value) {
+		this.attributes.put(name, SimpleValueFactory.getInstance().createLiteral(value));
+	}
 }
