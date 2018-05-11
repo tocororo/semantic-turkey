@@ -56,6 +56,8 @@ import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.Repository;
@@ -468,6 +470,15 @@ public abstract class Project extends AbstractProject {
 				newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
 
 				loadingCoreVocabularies();
+
+				// in case of OWL models, checks that there is an owl:Ontology resource
+				if (Objects.equals(OWL_MODEL, model)) {
+					IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
+
+					if (!conn.hasStatement(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, false, baseURIasIRI)) {
+						conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
+					}
+				}
 
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
 			}
