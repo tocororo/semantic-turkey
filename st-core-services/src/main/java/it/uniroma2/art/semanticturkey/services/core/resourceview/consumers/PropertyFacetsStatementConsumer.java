@@ -2,18 +2,22 @@ package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
 import static java.util.stream.Collectors.groupingBy;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -25,14 +29,26 @@ import com.google.common.collect.Sets.SetView;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsSection.FacetStructure;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
+
+	private static List<Pair<IRI, String>> facetClassAndNameList = Arrays.asList(
+			new ImmutablePair<>(OWL.SYMMETRICPROPERTY, "symmetric"),
+			new ImmutablePair<>(OWL2Fragment.ASYMMETRICPROPERTY, "asymmetric"),
+			new ImmutablePair<>(OWL.FUNCTIONALPROPERTY, "functional"),
+			new ImmutablePair<>(OWL.INVERSEFUNCTIONALPROPERTY, "inverseFunctional"),
+			new ImmutablePair<>(OWL2Fragment.REFLEXIVEPROPERTY, "reflexive"),
+			new ImmutablePair<>(OWL2Fragment.IRREFLEXIVEPROPERTY, "irreflexive"),
+			new ImmutablePair<>(OWL.TRANSITIVEPROPERTY, "transitive"));
 
 	private AbstractPropertyMatchingStatementConsumer inverseOfMatcher;
 
@@ -53,11 +69,11 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 	}
 
 	@Override
-	public Map<String, ResourceViewSection> consumeStatements(Project project,
-			RepositoryConnection repoConn, ResourcePosition resourcePosition, Resource resource,
-			Model statements, Set<Statement> processedStatements,
-			Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes, Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
+	public Map<String, ResourceViewSection> consumeStatements(Project project, RepositoryConnection repoConn,
+			ResourcePosition resourcePosition, Resource resource, Model statements,
+			Set<Statement> processedStatements, Resource workingGraph,
+			Map<Resource, Map<String, Value>> resource2attributes,
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -68,99 +84,54 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 				propertyModel.filter(null, RDFS.SUBPROPERTYOF, RDF.TYPE).subjects(),
 				Collections.singleton(RDF.TYPE));
 
-		boolean symmetric = false;
-		boolean symmetricExplicit = true;
-
-		boolean asymmetric = false;
-		boolean asymmetricExplicit = true;
-
-		boolean functional = false;
-		boolean functionalExplicit = true;
-
-		boolean inverseFunctional = false;
-		boolean inverseFunctionalExplicit = true;
-
-		boolean reflexive = false;
-		boolean reflexiveExplicit = true;
-
-		boolean irreflexive = false;
-		boolean irreflexiveExplicit = true;
-
-		boolean transitive = false;
-		boolean transitiveExplicit = true;
-
 		Map<Value, List<Statement>> propTypes2stmts = statements.stream()
 				.filter(s -> typingProps.contains(s.getPredicate()))
 				.collect(groupingBy(Statement::getObject));
 
-		if (propTypes2stmts.containsKey(OWL.SYMMETRICPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL.SYMMETRICPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			symmetric = true;
-			symmetricExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
+		Map<String, FacetStructure> facets = new LinkedHashMap<>();
+
+		String propertyNature = resource2attributes.getOrDefault(resource, Collections.emptyMap())
+				.getOrDefault("nature", SimpleValueFactory.getInstance().createLiteral("")).stringValue();
+		RDFResourceRole propertyRole = STServiceAdapter.getRoleFromNature(propertyNature);
+		boolean propertyExplicitness = currentProject && STServiceAdapter.getGraphFromNature(propertyNature)
+				.filter(workingGraph::equals).isPresent();
+
+		for (Pair<IRI, String> facetClassAndName : facetClassAndNameList) {
+			IRI facetClass = facetClassAndName.getLeft();
+			String facetName = facetClassAndName.getRight();
+
+			boolean value = propTypes2stmts.containsKey(facetClass);
+			List<Statement> relevantStmts = propTypes2stmts.get(facetClass);
+			boolean explicit = propertyExplicitness && (!value
+					|| relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals));
+
+			/*
+			 * A facet is reported if it is true, or (despite being fale) it can be applied to the given type
+			 * of property. "symmetric" can be applied to both object and data property, while the other
+			 * facets can be applied to object properties only, and by extension to RDF properties (which by
+			 * side-effect becomes object properties)
+			 */
+
+			if (value
+					|| (OWL.FUNCTIONALPROPERTY.equals(facetClass)
+							&& propertyRole != RDFResourceRole.annotationProperty
+							&& propertyRole != RDFResourceRole.ontologyProperty)
+					|| (propertyRole != RDFResourceRole.datatypeProperty
+							&& propertyRole != RDFResourceRole.annotationProperty
+							&& propertyRole != RDFResourceRole.ontologyProperty)) {
+				facets.put(facetName, new FacetStructure(value, explicit));
+			}
+
 		}
 
-		if (propTypes2stmts.containsKey(OWL2Fragment.ASYMMETRICPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL2Fragment.ASYMMETRICPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			asymmetric = true;
-			asymmetricExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
-		}
-
-		if (propTypes2stmts.containsKey(OWL.FUNCTIONALPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL.FUNCTIONALPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			functional = true;
-			functionalExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
-		}
-
-		if (propTypes2stmts.containsKey(OWL.INVERSEFUNCTIONALPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL.INVERSEFUNCTIONALPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			inverseFunctional = true;
-			inverseFunctionalExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
-		}
-
-		if (propTypes2stmts.containsKey(OWL2Fragment.REFLEXIVEPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL2Fragment.REFLEXIVEPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			reflexive = true;
-			reflexiveExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
-		}
-
-		if (propTypes2stmts.containsKey(OWL2Fragment.IRREFLEXIVEPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL2Fragment.IRREFLEXIVEPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			irreflexive = true;
-			irreflexiveExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
-		}
-
-		if (propTypes2stmts.containsKey(OWL.TRANSITIVEPROPERTY)) {
-			List<Statement> relevantStmts = propTypes2stmts.get(OWL.TRANSITIVEPROPERTY);
-			processedStatements.addAll(relevantStmts);
-			transitive = true;
-			transitiveExplicit = currentProject
-					&& relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals);
-		}
-
-		Map<String, ResourceViewSection> nestedConsumer = inverseOfMatcher.consumeStatements(project,
-				null, resourcePosition, resource, statements, processedStatements,
-				workingGraph, resource2attributes, predicate2resourceCreShow, propertyModel);
+		Map<String, ResourceViewSection> nestedConsumer = inverseOfMatcher.consumeStatements(project, null,
+				resourcePosition, resource, statements, processedStatements, workingGraph,
+				resource2attributes, predicate2resourceCreShow, propertyModel);
 
 		PredicateObjectsListSection inverseOf = (PredicateObjectsListSection) nestedConsumer.get("inverseOf");
 
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
-		rv.put("facets",
-				new PropertyFacetsSection(symmetric, symmetricExplicit, asymmetric, asymmetricExplicit,
-						functional, functionalExplicit, inverseFunctional, inverseFunctionalExplicit,
-						reflexive, reflexiveExplicit, irreflexive, irreflexiveExplicit, transitive,
-						transitiveExplicit, inverseOf));
+		rv.put("facets", new PropertyFacetsSection(facets, inverseOf));
 
 		return rv;
 	}

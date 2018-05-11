@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,13 +50,12 @@ import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
@@ -381,13 +381,27 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		return NatureRecognitionOrchestrator.getNatureSPARQLWherePart(varName);
 	}
 
-	protected RDFResourceRole getRoleFromNature(String nature) {
+	public static RDFResourceRole getRoleFromNature(String nature) {
 		String roleRaw = nature.split(",")[0];
 
 		if (roleRaw.isEmpty()) {
 			return RDFResourceRole.undetermined;
 		} else {
 			return RDFResourceRole.valueOf(roleRaw);
+		}
+	}
+
+	public static Optional<IRI> getGraphFromNature(String nature) {
+		String[] parts = nature.split(",");
+
+		if (parts.length < 2) {
+			return Optional.empty();
+		}
+
+		if (parts[1].isEmpty()) {
+			return Optional.empty();
+		} else {
+			return Optional.of(SimpleValueFactory.getInstance().createIRI(parts[1]));
 		}
 	}
 
