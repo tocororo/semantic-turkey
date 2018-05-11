@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Broad
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EquivalentPropertyStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EvokedLexicalConcepts;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormBasedPreviewStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.InSchemeStatementConsumer;
@@ -50,6 +51,8 @@ public class StatementConsumerProvider {
 		LexicalizationsStatementConsumer lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer(
 				customFormManager);
 		BroadersStatementConsumer broaderStatementConsumer = new BroadersStatementConsumer(customFormManager);
+		EquivalentPropertyStatementConsumer equivalentPropertyStatementConsumer = new EquivalentPropertyStatementConsumer(
+				customFormManager);
 		SubPropertyOfStatementConsumer subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer(
 				customFormManager);
 		PropertyFacetsStatementConsumer propertyFactesStatementConsumer = new PropertyFacetsStatementConsumer(
@@ -96,9 +99,10 @@ public class StatementConsumerProvider {
 						inSchemeStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.property,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, subPropertyOfStatementConsumer,
-						propertyFactesStatementConsumer, domainsStatementConsumer, rangesStatementConsumer,
-						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
+				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
+						subPropertyOfStatementConsumer, propertyFactesStatementConsumer,
+						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
+						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.conceptScheme,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));

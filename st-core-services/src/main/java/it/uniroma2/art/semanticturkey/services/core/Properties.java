@@ -17,8 +17,6 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
@@ -54,7 +52,6 @@ import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -100,7 +97,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -165,7 +162,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -199,7 +196,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -233,7 +230,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -267,7 +264,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -301,7 +298,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -338,7 +335,7 @@ public class Properties extends STServiceAdapter {
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
 		sb.append(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -371,7 +368,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
@@ -400,7 +397,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
@@ -435,7 +432,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
@@ -475,7 +472,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
@@ -514,7 +511,7 @@ public class Properties extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
@@ -548,7 +545,7 @@ public class Properties extends STServiceAdapter {
 				"request to get any named class which is relevant in the range of " + property.stringValue());
 		QueryBuilder qb;
 		qb = createQueryBuilder(
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
@@ -578,7 +575,7 @@ public class Properties extends STServiceAdapter {
 		boolean replace = cfManager.getReplace(getProject(), property, true);
 		if (!replace) {
 			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
-			
+
 			ObjectNode rangesObjectNode = JsonNodeFactory.instance.objectNode();
 			rangesObjectNode.set("type",
 					JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
@@ -623,26 +620,22 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property, range)', 'R')")
 	public Boolean areSubPropertiesUsed(@LocallyDefined IRI property) {
-		logger.debug(
-				"request to check whether at least one of the subproperties of the property " 
-						+ property.stringValue()+" is used");
+		logger.debug("request to check whether at least one of the subproperties of the property "
+				+ property.stringValue() + " is used");
 
 		ObjectNode response = JsonNodeFactory.instance.objectNode();
 
-		String query = "ASK"
-				+ "\nWHERE{"
-				+ "\n ?subProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">+ <"
-					+property .stringValue()+ "> ."
-				+ "\n ?subj ?subProp ?obj ."
-				+ "\n}";
-		
+		String query = "ASK" + "\nWHERE{" + "\n ?subProp <"
+				+ org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue() + ">+ <"
+				+ property.stringValue() + "> ." + "\n ?subj ?subProp ?obj ." + "\n}";
+
 		BooleanQuery booleanQuery = getManagedConnection().prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		boolean result = booleanQuery.evaluate();
-		
+
 		return result;
 	}
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
@@ -673,8 +666,8 @@ public class Properties extends STServiceAdapter {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newProperty.stringValue());
 			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(),
-					stdForm);
+			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm,
+					customFormValue.getUserPromptMap(), stdForm);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -714,7 +707,7 @@ public class Properties extends STServiceAdapter {
 
 		// first check if the property has any sub property
 		String query =
-			// @formatter:off
+		// @formatter:off
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>	\n" +
 			"ASK {													\n" +
 			"	[] rdfs:subPropertyOf ?property						\n" +
@@ -728,7 +721,7 @@ public class Properties extends STServiceAdapter {
 		}
 
 		query =
-				// @formatter:off
+		// @formatter:off
 				"DELETE {																\n"
 				+ "	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {	\n"
 				+ "		?s1 ?p1 ?property .												\n"
@@ -750,8 +743,37 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
-	public void addSuperProperty(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void addEquivalentProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+			@LocallyDefined IRI equivalentProperty,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
+				equivalentProperty));
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
+	public void removeEquivalentProperty(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI equivalentProperty,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
+				equivalentProperty));
+
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
+	public void addSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@LocallyDefined IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -765,8 +787,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
-	public void removeSuperProperty(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void removeSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			IRI superProperty) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -780,8 +801,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addPropertyDomain(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void addPropertyDomain(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@LocallyDefined Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -794,8 +814,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removePropertyDomain(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void removePropertyDomain(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			Resource domain) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -808,8 +827,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public void addPropertyRange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void addPropertyRange(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			Resource range) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
@@ -822,8 +840,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removePropertyRange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void removePropertyRange(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			Resource range) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
@@ -871,8 +888,8 @@ public class Properties extends STServiceAdapter {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
 				modelAdditions.add(
 						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.TYPE, 
-						RDF.LIST));
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(newTempList, RDF.TYPE, RDF.LIST));
 				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
 						literals.get(i)));
 				tempList = newTempList;
@@ -893,15 +910,14 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void removeDataranges(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+	public void removeDataranges(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			@LocallyDefined BNode datarange) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		
+
 		removeDatarangesTriples(repoConnection, property, datarange);
 	}
-	
-	private void removeDatarangesTriples(RepositoryConnection repoConnection, IRI property, BNode datarange){
+
+	private void removeDatarangesTriples(RepositoryConnection repoConnection, IRI property, BNode datarange) {
 		// prepare a SPARQL update to remove
 		// @formatter:off 
 		String query="DELETE {"+
@@ -933,7 +949,7 @@ public class Properties extends STServiceAdapter {
 		// @formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.setBinding("workingGraph", getWorkingGraph());
-		if(property!=null){
+		if (property != null) {
 			update.setBinding("property", property);
 		}
 		update.setBinding("datarange", datarange);
@@ -950,12 +966,11 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'U')")
-	public void updateDataranges(
-			@Modified(role = RDFResourceRole.property) @LocallyDefined BNode datarange,
+	public void updateDataranges(@Modified(role = RDFResourceRole.property) @LocallyDefined BNode datarange,
 			List<Literal> literals) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		
-		//first remove the old datarange
+
+		// first remove the old datarange
 		removeDatarangesTriples(repoConnection, null, datarange);
 
 		// now add the new list
@@ -978,8 +993,8 @@ public class Properties extends STServiceAdapter {
 				BNode newTempList = repoConnection.getValueFactory().createBNode();
 				modelAdditions.add(
 						repoConnection.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
-				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.TYPE, 
-						RDF.LIST));
+				modelAdditions.add(
+						repoConnection.getValueFactory().createStatement(newTempList, RDF.TYPE, RDF.LIST));
 				modelAdditions.add(repoConnection.getValueFactory().createStatement(newTempList, RDF.FIRST,
 						literals.get(i)));
 				tempList = newTempList;
@@ -993,8 +1008,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public void addValueToDatarange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange,
-			Literal literal) {
+			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -1171,8 +1185,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
 	public void removeValueFromDatarange(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange,
-			Literal literal) {
+			@LocallyDefined @Modified(role = RDFResourceRole.property) Resource datarange, Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -1287,42 +1300,38 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getInverseProperties(List<IRI> properties) {
-		String q = " PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " 
-				+ " \nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " 
-				+ " \nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " 
-				+ " \nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " 
+		String q = " PREFIX skos: <http://www.w3.org/2004/02/skos/core#> "
+				+ " \nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+				+ " \nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+				+ " \nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> "
 				+ " \nPREFIX owl: <http://www.w3.org/2002/07/owl#>	"
-				+ "SELECT DISTINCT ?resource ?attr_inverseOf "+generateNatureSPARQLSelectPart()
-				+ "\nWHERE {\n"
-				+ "\n?resource <"+OWL.INVERSEOF+"> ?attr_inverseOf ." 
-				+ "\nFILTER(";
+				+ "SELECT DISTINCT ?resource ?attr_inverseOf " + generateNatureSPARQLSelectPart()
+				+ "\nWHERE {\n" + "\n?resource <" + OWL.INVERSEOF + "> ?attr_inverseOf ." + "\nFILTER(";
 		boolean first = true;
-		for(IRI prop : properties) {
-			if(!first) {
+		for (IRI prop : properties) {
+			if (!first) {
 				q += " || ";
 			} else {
 				first = false;
 			}
-			q += "?attr_inverseOf = <"+prop.stringValue()+">";
+			q += "?attr_inverseOf = <" + prop.stringValue() + ">";
 		}
 		q += ")"
-				//adding the nature in the query (will be replaced by the appropriate processor), 
-				//remember to change the SELECT as well
-				+ generateNatureSPARQLWherePart("?resource")
-				+ "\n}"
-				+ "\nGROUP BY ?resource ?attr_inverseOf";
-				
+				// adding the nature in the query (will be replaced by the appropriate processor),
+				// remember to change the SELECT as well
+				+ generateNatureSPARQLWherePart("?resource") + "\n}" + "\nGROUP BY ?resource ?attr_inverseOf";
+
 		logger.debug("query [getInverseProperties]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRendering();
 		qb.processQName();
 		return qb.runQuery();
 	}
-	
+
 	protected TypesAndRanges getRangeOnlyClasses(IRI property) {
 
 		String selectQuery =
-			// @formatter:off
+		// @formatter:off
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
 			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
 			"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
@@ -1379,46 +1388,40 @@ public class Properties extends STServiceAdapter {
 			}
 		}
 		tupleQueryResult.close();
-		
-		//If the desired property has only a range, then do a specific check, since its normalizedType 
+
+		// If the desired property has only a range, then do a specific check, since its normalizedType
 		// could be a 'literal', in particular set it as 'isLiteral' in one of the following conditions:
-		//	range with namespace == XMLSchema namespace
-	    //	range being a rdfs:subClassOf rdfs:Literal
-	    //	range being an instance of rdfs:Datatype
-		if(typesAndRanges.getRanges() != null && typesAndRanges.getRanges().size() == 1) {
+		// range with namespace == XMLSchema namespace
+		// range being a rdfs:subClassOf rdfs:Literal
+		// range being an instance of rdfs:Datatype
+		if (typesAndRanges.getRanges() != null && typesAndRanges.getRanges().size() == 1) {
 			Range range = typesAndRanges.getRanges().iterator().next();
-			if(range instanceof IRIRange) {
-				IRIRange iriRange = (IRIRange)range;
+			if (range instanceof IRIRange) {
+				IRIRange iriRange = (IRIRange) range;
 				IRI rangeIRI = iriRange.getIRI();
-				if(rangeIRI.getNamespace().equals(XMLSchema.NAMESPACE)) {
-					//range with namespace == XMLSchema namespace
+				if (rangeIRI.getNamespace().equals(XMLSchema.NAMESPACE)) {
+					// range with namespace == XMLSchema namespace
 					typesAndRanges.setIsLiteral(true);
 				} else {
-					//do an ASK SPARQL to see if the iriRange is a subClass of rdfs:Literal
-					String query = "ASK WHERE{"+
-							"\n{" +
-							// range being a rdfs:subClassOf rdfs:Literal
-						    "\n"+NTriplesUtil.toNTriplesString(rangeIRI)+" "+
-							NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "+
-							NTriplesUtil.toNTriplesString(RDFS.LITERAL)+" "+
-							"\n}" +
-							"\nUNION" +
-							"\n{" +
+					// do an ASK SPARQL to see if the iriRange is a subClass of rdfs:Literal
+					String query = "ASK WHERE{" + "\n{" +
+					// range being a rdfs:subClassOf rdfs:Literal
+							"\n" + NTriplesUtil.toNTriplesString(rangeIRI) + " "
+							+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+							+ NTriplesUtil.toNTriplesString(RDFS.LITERAL) + " " + "\n}" + "\nUNION" + "\n{" +
 							// range being an instance of rdfs:Datatype
-							"\n"+NTriplesUtil.toNTriplesString(rangeIRI)+" "+
-							NTriplesUtil.toNTriplesString(RDF.TYPE)+"* "+
-							NTriplesUtil.toNTriplesString(RDFS.DATATYPE)+" "+
-							"\n}" +
-							
-							"\n}"
-							;
+							"\n" + NTriplesUtil.toNTriplesString(rangeIRI) + " "
+							+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "* "
+							+ NTriplesUtil.toNTriplesString(RDFS.DATATYPE) + " " + "\n}" +
+
+							"\n}";
 					BooleanQuery booleanQuery = getManagedConnection().prepareBooleanQuery(query);
 					booleanQuery.setIncludeInferred(false);
 					typesAndRanges.setIsLiteral(booleanQuery.evaluate());
 				}
 			}
 		}
-		
+
 		return typesAndRanges;
 
 	}
@@ -1435,7 +1438,7 @@ class IRIRange extends Range {
 	public IRIRange(IRI iri) {
 		this.iri = iri;
 	}
-	
+
 	public IRI getIRI() {
 		return iri;
 	}
@@ -1508,7 +1511,7 @@ class TypesAndRanges {
 	private Set<Range> ranges;
 
 	private boolean isLiteral = false;
-	
+
 	public TypesAndRanges() {
 		types = new HashSet<>();
 		ranges = new HashSet<>();
@@ -1521,7 +1524,7 @@ class TypesAndRanges {
 	public void setIsLiteral(boolean isLiteral) {
 		this.isLiteral = isLiteral;
 	}
-	
+
 	public void addRange(Range range) {
 		ranges.add(range);
 	}
@@ -1531,14 +1534,14 @@ class TypesAndRanges {
 	}
 
 	public String getTypeNormalized() {
-		
-		//check if it was said that it type is literal, in this case no other checks are required,
+
+		// check if it was said that it type is literal, in this case no other checks are required,
 		// return immediately 'literal'
-		if(isLiteral) {
+		if (isLiteral) {
 			return "literal";
 		}
-		
-		//since its type was not set to be literal, do the other checks
+
+		// since its type was not set to be literal, do the other checks
 		if (types.contains(OWL.OBJECTPROPERTY.stringValue())) {
 			return "resource";
 		} else if (types.contains(OWL.DATATYPEPROPERTY.stringValue())) {
