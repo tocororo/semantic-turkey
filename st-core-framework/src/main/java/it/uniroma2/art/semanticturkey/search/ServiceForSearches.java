@@ -15,7 +15,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -26,13 +25,8 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.Pair;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 public class ServiceForSearches {
 
@@ -225,7 +219,7 @@ public class ServiceForSearches {
 	
 	private String getFirstLetterForLiteral(String varInput, String varOutput) {
 		String query;
-		query = "\nBIND(STR(LCASE(SUBSTR("+varInput+", 1, 1))) AS "+varOutput+")";
+		query = "\nBIND(STR(LCASE(SUBSTR("+varInput+", 1, 2))) AS "+varOutput+")";
 		return query;
 	}
 	
@@ -374,15 +368,23 @@ public class ServiceForSearches {
 		}
 		query+= "\n}";
 		
-		
-		
 		return query;
 	}
 	
-	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode) 
+	public static String getPrefixes() {
+		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
+				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> ";
+		return query;
+	}
+	
+	public void checksPreQuery(String searchString, String [] rolesArray, SearchMode searchMode, 
+			boolean searchStringCanBeNull) 
 			throws IllegalStateException{
 		
-		if(searchString.isEmpty()){
+		if(!searchStringCanBeNull && (searchString ==null || searchString.isEmpty()) ){
 			//TODO change the exception (previously was a fail)
 			throw new IllegalArgumentException("the serchString cannot be empty");
 		}
@@ -430,7 +432,7 @@ public class ServiceForSearches {
 		
 		//if(searchMode != SearchMode.startsWith && searchMode != SearchMode.contains && 
 		//		searchMode != SearchMode.exact && searchMode != SearchMode.endsWith){
-		if(searchMode == null) {
+		if(!searchStringCanBeNull  && searchMode == null) {
 			String msg = "the serch mode should be one of: "+ SearchMode.startsWith +", "+
 					SearchMode.contains +", "+ SearchMode.endsWith +", "+ SearchMode.exact +
 					" or "+SearchMode.fuzzy;

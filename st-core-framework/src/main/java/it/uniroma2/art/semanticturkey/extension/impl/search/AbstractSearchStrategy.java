@@ -12,5 +12,6 @@ public abstract class AbstractSearchStrategy implements SearchStrategy {
 		return RDF4JRepositoryUtils.getConnection(STServiceContextUtils.getRepostory(stServiceContext),
 				false);
 	}
+	
 
 }

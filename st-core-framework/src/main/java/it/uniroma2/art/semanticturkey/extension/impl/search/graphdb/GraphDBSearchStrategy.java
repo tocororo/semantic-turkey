@@ -1,12 +1,11 @@
 package it.uniroma2.art.semanticturkey.extension.impl.search.graphdb;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
@@ -25,10 +24,8 @@ import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrate
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
 public class GraphDBSearchStrategy extends AbstractSearchStrategy implements SearchStrategy {
 
@@ -143,24 +140,17 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
-		String query = 
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-				
-				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{";
 		
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
-		
+		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+				false, langs, includeLocales);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null,
 				null);
@@ -197,25 +187,18 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
-		String query = 
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-				
-				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
+		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
 				"(GROUP_CONCAT(DISTINCT ?index; separator=\",\") AS ?attr_index)"+
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 				"\nWHERE{";
 		
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query+=prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
-		
+		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+				false, langs, includeLocales);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
 				lexicons);
@@ -245,7 +228,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -320,7 +303,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional String[] rolesArray, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -350,23 +333,18 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public String searchInstancesOfClass(STServiceContext stServiceContext,
-			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<String> langs, boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
+			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
+			boolean useNotes, SearchMode searchMode, @Optional List<String> langs, boolean includeLocales,
+			boolean searchStringCanBeNull) 
+					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, searchStringCanBeNull);
 
 		//@formatter:off
-		String query = 
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-				
-				"SELECT DISTINCT ?resource "+ 
+		String query = "SELECT DISTINCT ?resource "+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{"; // +
 
@@ -376,8 +354,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query += prepareQueryforResource(searchString, searchMode, useLocalName, useURI, langs, includeLocales);
-				
+		if(searchString!=null && searchString.length()>0) {
+			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+				useNotes, langs, includeLocales);
+		}
+		
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part according to the Lexicalization Model
 		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
@@ -398,8 +379,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	
-	private String prepareQueryforResource(String searchString, SearchMode searchMode, boolean useLocalName, 
-			boolean useURI, List<String> langs, boolean includeLocales) {
+	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode, 
+			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, boolean includeLocales) {
 		String query="";
 		
 		
@@ -425,10 +406,24 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\n}"+
 					"\nUNION";
 		}
+		//check if the request want to search in the notes as well (plain or reified)
+		if(useNotes) {
+			query+="\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?label ." +
+					"\n}" + 
+					"\nUNION" +
+					"\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?refNobel ." +
+					"\n?refNote <"+RDF.VALUE+"> ?label ." +
+					"\n}";
+		}
+		
 		
 		//if there is a part related to the localName or the URI, then the part related to the label
 		// is inside { and } and linked to the previous part with an UNION
-		if(useLocalName || useURI){
+		if(useLocalName || useURI || useNotes){
 			query+="\n{";
 		}
 		
@@ -479,7 +474,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 				"\n}";
 		
-		if(useLocalName || useURI){
+		if(useLocalName || useURI || useNotes){
 			query+="\n}";
 		}
 		

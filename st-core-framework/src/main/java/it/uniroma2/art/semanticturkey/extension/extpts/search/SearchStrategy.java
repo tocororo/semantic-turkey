@@ -50,8 +50,9 @@ public interface SearchStrategy extends Extension {
 			STPropertyAccessException;
 	
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
-			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Nullable List<String> langs, boolean includeLocales) throws IllegalStateException, 
+			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
+			@Nullable List<String> langs, boolean includeLocales, boolean searchStringCanBeNull) 
+					throws IllegalStateException, 
 			STPropertyAccessException;
 	
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 

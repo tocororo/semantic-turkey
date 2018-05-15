@@ -1,12 +1,11 @@
 package it.uniroma2.art.semanticturkey.extension.impl.search.regex;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
@@ -24,10 +23,8 @@ import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrate
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
 public class RegexSearchStrategy extends AbstractSearchStrategy implements SearchStrategy {
 
@@ -56,17 +53,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		// create the query to be executed for the search
 		//@formatter:off
 		String query = 
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-				
 				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{"; // +
@@ -175,18 +166,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//since we are interested just in the LexicalEntry, add this type automatically
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
 		
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		// create the query to be executed for the search
 		//@formatter:off
 		String query = 
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-
-				
 				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lexicon; separator=\",\") AS ?attr_lexicons)"+
 				"(GROUP_CONCAT(DISTINCT ?index; separator=\",\") AS ?attr_index)"+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
@@ -258,7 +242,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource ?label"+ 
@@ -324,7 +308,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			@Optional String[] rolesArray, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -354,22 +338,18 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public String searchInstancesOfClass(STServiceContext stServiceContext,
-			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<String> langs, boolean includeLocales) throws IllegalStateException, STPropertyAccessException {
+			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
+			boolean useNotes, SearchMode searchMode,@Optional List<String> langs, boolean includeLocales,
+			boolean searchStringCanBeNull) 
+					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
 		String[] rolesArray = { RDFResourceRole.individual.name() };
-		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode);
+		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, searchStringCanBeNull);
 
 		//@formatter:off
 		String query = 
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-				"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-				
 				"SELECT DISTINCT ?resource "+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{" +
@@ -382,56 +362,72 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//see if the localName and/or URI should be used in the query or not
 		
 		
-		//check if the request want to search in the local name
-		if(useLocalName){
+		if(searchString!=null && searchString.length()>0) {
+			//check if the request want to search in the local name
+			if(useLocalName){
+				query+="\n{" +
+						"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
+						searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, false) +
+						"\n}"+
+						"\nUNION";
+			}
+			
+			//check if the request want to search in the complete URI
+			if(useURI){
+				query+="\n{" +
+						"\nBIND(str(?resource) AS ?complURI)"+
+						searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, false) +
+						"\n}"+
+						"\nUNION";
+			}
+			//check if the request want to search in the notes as well (plain or reified)
+			if(useNotes) {
+				query+="\n{" +
+						"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
+						"\n?resource ?propNote ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}" + 
+						"\nUNION" +
+						"\n{" +
+						"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
+						"\n?resource ?propNote ?refNobel ." +
+						"\n?refNote <"+RDF.VALUE+"> ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}";
+			}
+			
+			//search in the rdfs:label
 			query+="\n{" +
-					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, false) +
+					"\n?resource <"+RDFS.LABEL+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 					"\n}"+
-					"\nUNION";
-		}
-		
-		//check if the request want to search in the complete URI
-		if(useURI){
-			query+="\n{" +
-					"\nBIND(str(?resource) AS ?complURI)"+
-					searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, false) +
+			//search in skos:prefLabel and skos:altLabel
+					"\nUNION" +
+					"\n{" +
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}" +
+			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+					"\nUNION" +
+					"\n{" +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 					"\n}"+
-					"\nUNION";
+			//search in dct:title
+					"UNION" +
+					"\n{" +
+					"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}"+	
+			//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep		
+					"\nUNION" +
+					"\n{" +
+					"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}";
 		}
-		
-		//search in the rdfs:label
-		query+="\n{" +
-				"\n?resource <"+RDFS.LABEL+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-		//search in skos:prefLabel and skos:altLabel
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}" +
-		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-		//search in dct:title
-				"UNION" +
-				"\n{" +
-				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+	
-		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep		
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}";
-		
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part in SPARQL query
 		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject());

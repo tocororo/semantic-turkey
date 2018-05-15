@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -91,13 +91,17 @@ public class Search extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> advancedSearch(String searchString,
-			boolean useLocalName, boolean useURI, SearchMode searchMode, 
+	public Collection<AnnotatedValue<Resource>> advancedSearch(@Optional String searchString,
+			@Optional(defaultValue="false") boolean useLocalName, 
+			@Optional(defaultValue="false") boolean useURI, 
+			@Optional SearchMode searchMode, 
+			@Optional(defaultValue="false") boolean useNotes,
 			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales,
 			StatusFilter statusFilter,
 			@Optional @JsonSerialized List<List<IRI>> types,
 			@Optional @JsonSerialized List<List<IRI>> schemes,
 			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> outgoingLinks,
+			@Optional @JsonSerialized List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks) 
 					throws IllegalStateException, STPropertyAccessException {
 		if (!ValidationUtilities.isValidationEnabled(stServiceContext)) {
@@ -108,13 +112,14 @@ public class Search extends STServiceAdapter {
 			}
 		}
 
-		String query= "SELECT DISTINCT ?resource" +
+		String query= ServiceForSearches.getPrefixes() +
+				"\nSELECT DISTINCT ?resource ?attr_nature ?attr_scheme" +
 				"\nWHERE{" +
 				"\n{";
 		
 		//use the searchInstancesOfClasse to contruct the first part of the query (the subquery)
 		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
-				useLocalName, useURI, searchMode, langs, includeLocales);
+				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true);
 		//use the other parameters to filter the results
 		query+="\n}";
 		// the statusFilter
@@ -168,13 +173,24 @@ public class Search extends STServiceAdapter {
 		if(outgoingLinks!=null && outgoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource");
 		}
+		//the outgoingSearch part
+		int cont=1;
+		if(outgoingSearch!=null && outgoingSearch.size()>0) {
+			String valueOfProp = "?valueOfProp_"+cont;
+			for(TripleForSearch<IRI, String, SearchMode> tripleForSearch : outgoingSearch) {
+				query += "\n?resource "+NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate())+" "+valueOfProp+" ." +
+						instantiateSearchStrategy().searchSpecificModePrepareQuery(valueOfProp, 
+								tripleForSearch.getSearchString(), tripleForSearch.getMode(), null, null, 
+								includeLocales, false);
+			}
+		}
+		
 		//the ingoingLinks part	
 		if(ingoingLinks!=null && ingoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource");
-			
 		}
 		query+="\n}" +
-			"\nGROUP BY ?resource";
+			"\nGROUP BY ?resource ?attr_nature ?attr_scheme";
 		logger.debug("query = " + query);
 
 		
@@ -192,7 +208,8 @@ public class Search extends STServiceAdapter {
 			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
-		String query = instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
+		String query = ServiceForSearches.getPrefixes() +
+				"\n"+instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
 				useLocalName, useURI, searchMode, schemes, langs, includeLocales);
 
 		logger.debug("query = " + query);
@@ -241,8 +258,9 @@ public class Search extends STServiceAdapter {
 		clsList.add(cls);
 		List<List<IRI>> clsListList = new ArrayList<>();
 		clsListList.add(clsList);
-		String query = instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList, searchString,
-				useLocalName, useURI, searchMode, langs, includeLocales);
+		String query = ServiceForSearches.getPrefixes() +
+				"\n"+instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList, searchString,
+				useLocalName, useURI, false, searchMode, langs, includeLocales, false);
 
 		logger.debug("query = " + query);
 
@@ -262,7 +280,8 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
-		String query = instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName, 
+		String query = ServiceForSearches.getPrefixes() +
+				"\n"+instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName, 
 				useURI, searchMode, lexicons, langs, includeLocales);
 
 		logger.debug("query = " + query);

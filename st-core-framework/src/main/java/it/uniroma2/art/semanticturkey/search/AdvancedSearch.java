@@ -35,7 +35,7 @@ public class AdvancedSearch {
 			searchModeTemp = searchModeList.get(0);
 		}
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
-		serviceForSearches.checksPreQuery(inputText, rolesArray, searchModeTemp);
+		serviceForSearches.checksPreQuery(inputText, rolesArray, searchModeTemp, false);
 		
 		String varResource = "?resource";
 		String varType = "?type";

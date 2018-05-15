@@ -21,6 +21,7 @@ date: dd/mm/yyyy
   * Update to Apache Karaf 4.2.0
   * Update to RDF4J 2.2.4
   * implemented the fuzzy search
+  * implemented advanced search
   
 version 3.0
 date: 08/02/2018
