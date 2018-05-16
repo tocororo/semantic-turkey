@@ -37,6 +37,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
@@ -88,7 +89,7 @@ public class Search extends STServiceAdapter {
 		NOT_DEPRECATED, ONLY_DEPRECATED, UNDER_VALIDATION, UNDER_VALIDATION_FOR_DEPRECATION, ANYTHING
 	}
 
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> advancedSearch(@Optional String searchString,
@@ -189,7 +190,8 @@ public class Search extends STServiceAdapter {
 		if(ingoingLinks!=null && ingoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource");
 		}
-		query+="\n}" +
+		query+= "\nFILTER(BOUND(?resource))" + //used only to not have problem with the OPTIONAL in qb.processRendering(); 
+				"\n}" +
 			"\nGROUP BY ?resource ?attr_nature ?attr_scheme";
 		logger.debug("query = " + query);
 
