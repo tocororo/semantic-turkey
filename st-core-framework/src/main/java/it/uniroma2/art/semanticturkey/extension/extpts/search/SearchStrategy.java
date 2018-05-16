@@ -34,7 +34,7 @@ public interface SearchStrategy extends Extension {
 	void update(RepositoryConnection connection) throws Exception;
 
 	String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI,
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
 			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs, boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException;
 
@@ -59,6 +59,7 @@ public interface SearchStrategy extends Extension {
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
 
 	String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
-			boolean includeLocales) throws IllegalStateException, STPropertyAccessException;
+			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
+			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
+					throws IllegalStateException, STPropertyAccessException;
 }

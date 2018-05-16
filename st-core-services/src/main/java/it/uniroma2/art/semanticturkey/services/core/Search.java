@@ -206,13 +206,14 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String[] rolesArray,
-			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<IRI> schemes,
+			boolean useLocalName, boolean useURI, SearchMode searchMode, 
+			@Optional(defaultValue="false") boolean useNotes, @Optional List<IRI> schemes, 
 			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
 		String query = ServiceForSearches.getPrefixes() +
 				"\n"+instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
-				useLocalName, useURI, searchMode, schemes, langs, includeLocales);
+				useLocalName, useURI, useNotes, searchMode, schemes, langs, includeLocales);
 
 		logger.debug("query = " + query);
 
@@ -252,7 +253,8 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString,
-			boolean useLocalName, boolean useURI, SearchMode searchMode, @Optional List<String> langs,
+			boolean useLocalName, boolean useURI, SearchMode searchMode, 
+			@Optional(defaultValue="false") boolean useNotes, @Optional List<String> langs,
 			@Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
@@ -262,7 +264,7 @@ public class Search extends STServiceAdapter {
 		clsListList.add(clsList);
 		String query = ServiceForSearches.getPrefixes() +
 				"\n"+instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList, searchString,
-				useLocalName, useURI, false, searchMode, langs, includeLocales, false);
+				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, false);
 
 		logger.debug("query = " + query);
 
@@ -278,13 +280,14 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(String searchString, boolean useLocalName, 
-			boolean useURI, SearchMode searchMode, @Optional List<IRI> lexicons, @Optional List<String> langs, 
-			@Optional(defaultValue="false") boolean includeLocales)
+			boolean useURI, SearchMode searchMode, 
+			@Optional(defaultValue="false") boolean useNotes, @Optional List<IRI> lexicons, 
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
 		String query = ServiceForSearches.getPrefixes() +
 				"\n"+instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName, 
-				useURI, searchMode, lexicons, langs, includeLocales);
+				useURI, useNotes, searchMode, lexicons, langs, includeLocales);
 
 		logger.debug("query = " + query);
 		

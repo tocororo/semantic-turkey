@@ -132,8 +132,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes, 
+			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		logger.debug("searchResource in GraphDBSearchStrategy, searchString="+searchString +", "
@@ -150,7 +150,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
-				false, langs, includeLocales);
+				useNotes, langs, includeLocales);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null,
 				null);
@@ -176,7 +176,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, 
+			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
 			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 		
@@ -198,7 +198,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
-				false, langs, includeLocales);
+				useNotes, langs, includeLocales);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
 				lexicons);
@@ -406,24 +406,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\n}"+
 					"\nUNION";
 		}
-		//check if the request want to search in the notes as well (plain or reified)
-		if(useNotes) {
-			query+="\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
-					"\n?resource ?propNote ?label ." +
-					"\n}" + 
-					"\nUNION" +
-					"\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
-					"\n?resource ?propNote ?refNobel ." +
-					"\n?refNote <"+RDF.VALUE+"> ?label ." +
-					"\n}";
-		}
 		
 		
 		//if there is a part related to the localName or the URI, then the part related to the label
 		// is inside { and } and linked to the previous part with an UNION
-		if(useLocalName || useURI || useNotes){
+		if(useLocalName || useURI){
 			query+="\n{";
 		}
 		
@@ -444,6 +431,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
 				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
 		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
+		
+		//check if the request want to search in the notes as well (plain or reified)
+		if(useNotes) {
+			query+="\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?label ." +
+					"\n}" + 
+					"\nUNION" +
+					"\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?refNobel ." +
+					"\n?refNote <"+RDF.VALUE+"> ?label ." +
+					"\n}" +
+					"\nUNION";
+		}
 		
 		//TODO, mabye this part should consider in some way the LexicalModel and/or the role
 		//search in the rdfs:label

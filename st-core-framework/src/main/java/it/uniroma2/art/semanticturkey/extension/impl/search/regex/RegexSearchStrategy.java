@@ -47,8 +47,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
+			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
+			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -89,20 +89,36 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					"\n}"+
 					"\nUNION";
 		}
+		//check if the request want to search in the notes as well (plain or reified)
+		if(useNotes) {
+			query+="\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}" + 
+					"\nUNION" +
+					"\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?refNobel ." +
+					"\n?refNote <"+RDF.VALUE+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
 		
 		
 		//construct the complex path from a resource to a LexicalEntry
-				String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
-						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
-						"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
-						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
-				String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
-						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
-						"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
-						"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
-						"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
-						"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
-				String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
+		String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
+		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
 		
 		//search in the rdfs:label
 		query+="\n{" +
@@ -158,7 +174,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useURI, SearchMode searchMode, 
+			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
 			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -179,9 +195,42 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
 				lexicons);
 		
-		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
-		//see if the localName and/or URI should be used in the query or not
+		//check if the request want to search in the local name
+		if(useLocalName){
+			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the localName is not computed
+					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
+					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
+							includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
 		
+		//check if the request want to search in the complete URI
+		if(useURI){
+			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the completeURI is not computed
+					"\nBIND(str(?resource) AS ?complURI)"+
+					searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
+		//check if the request want to search in the notes as well (plain or reified)
+		if(useNotes) {
+			query+="\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}" + 
+					"\nUNION" +
+					"\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?refNobel ." +
+					"\n?refNote <"+RDF.VALUE+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
 		//search in the rdfs:label
 		query+="\n{" +
 				"\n?resource <"+RDFS.LABEL+"> ?label ." +
@@ -383,17 +432,18 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			//check if the request want to search in the notes as well (plain or reified)
 			if(useNotes) {
 				query+="\n{" +
-						"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
+						"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
 						"\n?resource ?propNote ?label ." +
 						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 						"\n}" + 
 						"\nUNION" +
 						"\n{" +
-						"\n?propNote <"+RDFS.SUBPROPERTYOF+"> <"+SKOS.NOTE+"> ." +
+						"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
 						"\n?resource ?propNote ?refNobel ." +
 						"\n?refNote <"+RDF.VALUE+"> ?label ." +
 						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-						"\n}";
+						"\n}"+
+						"\nUNION";
 			}
 			
 			//search in the rdfs:label
