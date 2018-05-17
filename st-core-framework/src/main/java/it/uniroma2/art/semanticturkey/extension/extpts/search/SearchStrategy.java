@@ -35,7 +35,9 @@ public interface SearchStrategy extends Extension {
 
 	String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
-			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs, boolean includeLocales)
+			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs, 
+			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
+			boolean searchInSKOSXLLabel, boolean searchInOntolex)
 			throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
@@ -51,7 +53,9 @@ public interface SearchStrategy extends Extension {
 	
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
 			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
-			@Nullable List<String> langs, boolean includeLocales, boolean searchStringCanBeNull) 
+			@Nullable List<String> langs, boolean includeLocales, boolean searchStringCanBeNull,
+			boolean searchInSubTypes,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
+			boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, 
 			STPropertyAccessException;
 	
@@ -60,6 +64,8 @@ public interface SearchStrategy extends Extension {
 
 	String searchLexicalEntry(STServiceContext stServiceContext,
 			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
-			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
+			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI iri, 
+			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, 
+			boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException;
 }

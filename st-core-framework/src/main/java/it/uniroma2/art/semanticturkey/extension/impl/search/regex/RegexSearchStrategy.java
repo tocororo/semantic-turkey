@@ -20,6 +20,7 @@ import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
@@ -48,7 +49,9 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
-			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
+			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, 
+			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, 
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -67,96 +70,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
+		query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
+				searchInSKOSXLLabel, searchInOntolex, true);
 		
 		
-		//check if the request want to search in the local name
-		if(useLocalName){
-			query+="\n{" +
-					"\n?resource a ?type . " + // otherwise the localName is not computed
-					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
-							includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
 		
-		//check if the request want to search in the complete URI
-		if(useURI){
-			query+="\n{" +
-					"\n?resource a ?type . " + // otherwise the completeURI is not computed
-					"\nBIND(str(?resource) AS ?complURI)"+
-					searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
-		//check if the request want to search in the notes as well (plain or reified)
-		if(useNotes) {
-			query+="\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
-					"\n?resource ?propNote ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}" + 
-					"\nUNION" +
-					"\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
-					"\n?resource ?propNote ?refNobel ." +
-					"\n?refNote <"+RDF.VALUE+"> ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
-		
-		
-		//construct the complex path from a resource to a LexicalEntry
-		String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
-		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
-				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
-		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
-		
-		//search in the rdfs:label
-		query+="\n{" +
-				"\n?resource <"+RDFS.LABEL+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-		//search in skos:prefLabel and skos:altLabel
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}" +
-		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-		//search in dct:title
-				"UNION" +
-				"\n{" +
-				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+	
-		//search in allResToLexicalEntry?/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
-				"\nUNION" +
-				"\n{" +
-				"\n?resource ("+allResToLexicalEntry+")?/"+
-				" (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}";
-				
-		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!		
-		//add the show part according to the Lexicalization Model
-		//		ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-		//		"\n}";
 
 		//adding the nature in the query (will be replaced by the appropriate processor), 
 		//remember to change the SELECT as well
@@ -175,7 +94,9 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
 			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
-			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
+			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel, 
+			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, 
+			boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -195,81 +116,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
 				lexicons);
 		
-		//check if the request want to search in the local name
-		if(useLocalName){
-			query+="\n{" +
-					"\n?resource a ?type . " + // otherwise the localName is not computed
-					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
-							includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
-		
-		//check if the request want to search in the complete URI
-		if(useURI){
-			query+="\n{" +
-					"\n?resource a ?type . " + // otherwise the completeURI is not computed
-					"\nBIND(str(?resource) AS ?complURI)"+
-					searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
-		//check if the request want to search in the notes as well (plain or reified)
-		if(useNotes) {
-			query+="\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
-					"\n?resource ?propNote ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}" + 
-					"\nUNION" +
-					"\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
-					"\n?resource ?propNote ?refNobel ." +
-					"\n?refNote <"+RDF.VALUE+"> ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
-		//search in the rdfs:label
-		query+="\n{" +
-				"\n?resource <"+RDFS.LABEL+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-		//search in skos:prefLabel and skos:altLabel
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}" +
-		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-		//search in dct:title
-				"UNION" +
-				"\n{" +
-				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+	
-		//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep		
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}";
+		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
+				searchInSKOSXLLabel, searchInOntolex, false);
 		
 		//add the information about the lexicon
 		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resource . }";
-		
-		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!		
-		//add the show part according to the Lexicalization Model
-		//		ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-		//		"\n}";
 
 		//adding the nature in the query (will be replaced by the appropriate processor), 
 		//remember to change the SELECT as well
@@ -389,7 +241,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	public String searchInstancesOfClass(STServiceContext stServiceContext,
 			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
 			boolean useNotes, SearchMode searchMode,@Optional List<String> langs, boolean includeLocales,
-			boolean searchStringCanBeNull) 
+			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel, 
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -404,7 +257,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
-		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource")+
+		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
 				"\n}";
 			
 		//now examine the rdf:label and/or skos:xlabel/skosxl:label
@@ -412,71 +265,9 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		
 		
 		if(searchString!=null && searchString.length()>0) {
-			//check if the request want to search in the local name
-			if(useLocalName){
-				query+="\n{" +
-						"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
-						searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, false) +
-						"\n}"+
-						"\nUNION";
-			}
-			
-			//check if the request want to search in the complete URI
-			if(useURI){
-				query+="\n{" +
-						"\nBIND(str(?resource) AS ?complURI)"+
-						searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, false) +
-						"\n}"+
-						"\nUNION";
-			}
-			//check if the request want to search in the notes as well (plain or reified)
-			if(useNotes) {
-				query+="\n{" +
-						"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
-						"\n?resource ?propNote ?label ." +
-						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-						"\n}" + 
-						"\nUNION" +
-						"\n{" +
-						"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
-						"\n?resource ?propNote ?refNobel ." +
-						"\n?refNote <"+RDF.VALUE+"> ?label ." +
-						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-						"\n}"+
-						"\nUNION";
-			}
-			
-			//search in the rdfs:label
-			query+="\n{" +
-					"\n?resource <"+RDFS.LABEL+"> ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}"+
-			//search in skos:prefLabel and skos:altLabel
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}" +
-			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}"+
-			//search in dct:title
-					"UNION" +
-					"\n{" +
-					"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}"+	
-			//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep		
-					"\nUNION" +
-					"\n{" +
-					"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}";
+			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+					useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
+					searchInSKOSXLLabel, searchInOntolex, true);
 		}
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part in SPARQL query
@@ -538,6 +329,128 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query+=")";
 		}
 
+		return query;
+	}
+	
+	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode, 
+			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, 
+			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
+			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry) {
+		String query="";
+	
+		//check if the request want to search in the local name
+		if(useLocalName){
+			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the localName is not computed
+					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
+					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
+							includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		//check if the request want to search in the complete URI
+		if(useURI){
+			query+="\n{" +
+					"\n?resource a ?type . " + // otherwise the completeURI is not computed
+					"\nBIND(str(?resource) AS ?complURI)"+
+					searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
+		//check if the request want to search in the notes as well (plain or reified)
+		if(useNotes) {
+			query+="\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}" + 
+					"\nUNION" +
+					"\n{" +
+					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n?resource ?propNote ?refNobel ." +
+					"\n?refNote <"+RDF.VALUE+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}"+
+					"\nUNION";
+		}
+		
+		
+		//construct the complex path from a resource to a LexicalEntry
+		String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
+		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
+		
+		boolean unionNeeded = false;
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
+			//search in the rdfs:label
+			query+="\n{" +
+				"\n?resource <"+RDFS.LABEL+"> ?label ." +
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}";
+			unionNeeded = true;
+		}
+		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
+			//search in skos:prefLabel and skos:altLabel
+			if(unionNeeded) {
+				query += "\nUNION";
+			}
+			unionNeeded = true;
+			//search in skos:prefLabel and skos:altLabel
+			query+="\n{" +
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}" ;
+		}
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
+			if(unionNeeded) {
+				query += "\nUNION";
+			}
+			unionNeeded = true;
+			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+			query+="\n{" +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}";
+		}
+		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
+			if(unionNeeded) {
+				query += "\nUNION";
+			}
+			unionNeeded = true;
+			//search in dct:title
+			query+="\n{" +
+				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}"+	
+				
+				
+				//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}"+
+				//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n?resource ("+allResToLexicalEntry+")/"+
+				"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+				"\n}";
+		}
+		
 		return query;
 	}
 

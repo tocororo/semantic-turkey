@@ -352,19 +352,25 @@ public class ServiceForSearches {
 	}
 	
 	
-	public static String getResourceshavingTypes(List<List<IRI>> typesListOfList, String varToUse) {
+	public static String getResourceshavingTypes(List<List<IRI>> typesListOfList, String varToUse, 
+			boolean searchInSubTypes) {
 		String query = "\nSELECT "+varToUse
 				+"\nWHERE{";
+		
+		String subClassWithA = "a";
+		if(searchInSubTypes) {
+			subClassWithA+="/"+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"*";
+		}
 		
 		if (typesListOfList == null || typesListOfList.size() ==0) {
 			query+="\n"+varToUse+" a ?genericType .";
 		}else if(typesListOfList.size()==1 && typesListOfList.get(0).size()==1) {
 			IRI type = typesListOfList.get(0).get(0);
-			query+="\n"+varToUse+" a "+NTriplesUtil.toNTriplesString(type)+" .";
+			query+="\n"+varToUse+" "+subClassWithA+" "+NTriplesUtil.toNTriplesString(type)+" .";
 		} else {
 			//the input type list of list is more complicate than a single value, so behave according 
 			// (an OR of AND)
-			query+=filterWithOrOfAndValues(varToUse, "a", typesListOfList);
+			query+=filterWithOrOfAndValues(varToUse, subClassWithA, typesListOfList);
 		}
 		query+= "\n}";
 		

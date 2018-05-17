@@ -21,6 +21,7 @@ import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
@@ -133,7 +134,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes, 
-			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, boolean includeLocales) 
+			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, 
+			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, 
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		logger.debug("searchResource in GraphDBSearchStrategy, searchString="+searchString +", "
@@ -150,7 +153,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
-				useNotes, langs, includeLocales);
+				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
+				searchInSKOSXLLabel, searchInOntolex, true);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null,
 				null);
@@ -177,7 +181,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
 			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
-			List<IRI> lexicons, List<String> langs, boolean includeLocales) 
+			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel, 
+			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, 
+			boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 		
 		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString+", "
@@ -198,7 +204,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
-				useNotes, langs, includeLocales);
+				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
+				searchInSKOSXLLabel, searchInOntolex, false);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
 				lexicons);
@@ -335,7 +342,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	public String searchInstancesOfClass(STServiceContext stServiceContext,
 			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
 			boolean useNotes, SearchMode searchMode, @Optional List<String> langs, boolean includeLocales,
-			boolean searchStringCanBeNull) 
+			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel, 
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -349,20 +357,16 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			"\nWHERE{"; // +
 
 		//do a subquery to get the candidate resources
-		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource")+
+		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
 				"\n}";
 
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		if(searchString!=null && searchString.length()>0) {
 			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
-				useNotes, langs, includeLocales);
+				useNotes, langs, includeLocales,  lexModel, searchInRDFSLabel, searchInSKOSLabel, 
+				searchInSKOSXLLabel, searchInOntolex, true);
 		}
-		
-		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
-		//add the show part according to the Lexicalization Model
-		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-		//		"\n}";
 		
 		//adding the nature in the query (will be replaced by the appropriate processor), 
 		//remember to change the SELECT as well
@@ -380,7 +384,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode, 
-			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, boolean includeLocales) {
+			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, 
+			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
+			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry) {
 		String query="";
 		
 		
@@ -446,35 +452,62 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\n}" +
 					"\nUNION";
 		}
-		
-		//TODO, mabye this part should consider in some way the LexicalModel and/or the role
-		//search in the rdfs:label
-		query+="\n{" +
-				"\n?resource <"+RDFS.LABEL+"> ?label ." +
-				"\n}"+
-		//search in skos:prefLabel and skos:altLabel
-				"\nUNION" +
-				"\n{" +
+
+		boolean unionNeeded = false;
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
+			//search in the rdfs:label
+			query+="\n{" +
+					"\n?resource <"+RDFS.LABEL+"> ?label ." +
+					"\n}";
+			unionNeeded = true;
+		}
+		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
+			//search in skos:prefLabel and skos:altLabel
+			if(unionNeeded) {
+				query += "\nUNION";
+			}
+			unionNeeded = true;
+			query +="\n{" +
 				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				"\n}" +
-		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-				"\nUNION" +
-				"\n{" +
+				"\n}";
+		}
+		
+		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
+			if(unionNeeded) {
+				query += "\nUNION";
+			}
+			unionNeeded = true;
+			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+			query +="\n{" +
 				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				"\n}" +
-		//search in dct:title
-				"UNION" +
-				"\n{" +
+				"\n}";
+		}
+		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
+			if(unionNeeded) {
+				query += "\nUNION";
+			}
+			unionNeeded = true;
+			//search in dct:title
+			query +="\n{" +
 				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
 				"\n}"+	
-		//search in allResToLexicalEntry?/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 				"\nUNION" +
 				"\n{" +
-				"\n?resource ("+allResToLexicalEntry+")?/"+
-				"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
 				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 				"\n}";
+			if(includeResToLexicalEntry) {
+				//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				query+="\nUNION" +
+					"\n{" +
+					"\n?resource ("+allResToLexicalEntry+")/"+
+					"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+					"\n}";
+			}
+		}
 		
 		if(useLocalName || useURI || useNotes){
 			query+="\n}";

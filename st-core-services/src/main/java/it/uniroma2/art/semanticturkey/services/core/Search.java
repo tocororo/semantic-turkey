@@ -103,8 +103,13 @@ public class Search extends STServiceAdapter {
 			@Optional @JsonSerialized List<List<IRI>> schemes,
 			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Optional @JsonSerialized List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
-			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks) 
+			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks,
+			@Optional(defaultValue="false") boolean searchInRDFSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSXLLabel,
+			@Optional(defaultValue="false") boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
+		IRI lexModel = getProject().getLexicalizationModel();
 		if (!ValidationUtilities.isValidationEnabled(stServiceContext)) {
 			if (statusFilter == StatusFilter.UNDER_VALIDATION
 					|| statusFilter == StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION) {
@@ -120,7 +125,8 @@ public class Search extends STServiceAdapter {
 		
 		//use the searchInstancesOfClasse to contruct the first part of the query (the subquery)
 		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
-				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true);
+				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true, true, lexModel,
+				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
 		//use the other parameters to filter the results
 		query+="\n}";
 		// the statusFilter
@@ -208,12 +214,17 @@ public class Search extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String[] rolesArray,
 			boolean useLocalName, boolean useURI, SearchMode searchMode, 
 			@Optional(defaultValue="false") boolean useNotes, @Optional List<IRI> schemes, 
-			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales,
+			@Optional(defaultValue="false") boolean searchInRDFSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSXLLabel,
+			@Optional(defaultValue="false") boolean searchInOntolex)
 			throws IllegalStateException, STPropertyAccessException {
-
+		IRI lexModel = getProject().getLexicalizationModel();
 		String query = ServiceForSearches.getPrefixes() +
 				"\n"+instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
-				useLocalName, useURI, useNotes, searchMode, schemes, langs, includeLocales);
+				useLocalName, useURI, useNotes, searchMode, schemes, langs, includeLocales, lexModel,
+				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
 
 		logger.debug("query = " + query);
 
@@ -258,13 +269,15 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue="false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
 
+		IRI lexModel = getProject().getLexicalizationModel();
 		List<IRI> clsList = new ArrayList<>();
 		clsList.add(cls);
 		List<List<IRI>> clsListList = new ArrayList<>();
 		clsListList.add(clsList);
 		String query = ServiceForSearches.getPrefixes() +
 				"\n"+instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList, searchString,
-				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, false);
+				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, false, false, lexModel, 
+				false, false, false, false);
 
 		logger.debug("query = " + query);
 
@@ -282,12 +295,18 @@ public class Search extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(String searchString, boolean useLocalName, 
 			boolean useURI, SearchMode searchMode, 
 			@Optional(defaultValue="false") boolean useNotes, @Optional List<IRI> lexicons, 
-			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales)
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales,
+			@Optional(defaultValue="false") boolean searchInRDFSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSXLLabel,
+			@Optional(defaultValue="false") boolean searchInOntolex)
 			throws IllegalStateException, STPropertyAccessException {
 
 		String query = ServiceForSearches.getPrefixes() +
 				"\n"+instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName, 
-				useURI, useNotes, searchMode, lexicons, langs, includeLocales);
+				useURI, useNotes, searchMode, lexicons, langs, includeLocales,
+				getProject().getLexicalizationModel(), searchInRDFSLabel, searchInSKOSLabel, 
+				searchInSKOSXLLabel, searchInOntolex);
 
 		logger.debug("query = " + query);
 		
