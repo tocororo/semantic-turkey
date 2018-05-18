@@ -441,12 +441,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//check if the request want to search in the notes as well (plain or reified)
 		if(useNotes) {
 			query+="\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
 					"\n?resource ?propNote ?label ." +
 					"\n}" + 
 					"\nUNION" +
 					"\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
 					"\n?resource ?propNote ?refNobel ." +
 					"\n?refNote <"+RDF.VALUE+"> ?label ." +
 					"\n}" +

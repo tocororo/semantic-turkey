@@ -361,13 +361,13 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//check if the request want to search in the notes as well (plain or reified)
 		if(useNotes) {
 			query+="\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n{SELECT ?propNote{?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
 					"\n?resource ?propNote ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 					"\n}" + 
 					"\nUNION" +
 					"\n{" +
-					"\n?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> ." +
+					"\n{SELECT?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
 					"\n?resource ?propNote ?refNote ." +
 					"\n?refNote <"+RDF.VALUE+"> ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
