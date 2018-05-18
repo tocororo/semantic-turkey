@@ -567,7 +567,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')";
 		} else if(searchMode == SearchMode.contains){
-			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' .";
+			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' ."+
+					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
+					//single word, so filter them afterward
+					queryPart+
+					"\nFILTER regex(str("+varToUse+"), '"+value+"', 'i')";
+			
 		} else if(searchMode == SearchMode.fuzzy){
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
 			//having just letter different form the input one
