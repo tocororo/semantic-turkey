@@ -1300,13 +1300,16 @@ public class Properties extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getInverseProperties(List<IRI> properties) {
+		//@formatter:off
 		String q = " PREFIX skos: <http://www.w3.org/2004/02/skos/core#> "
 				+ " \nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
 				+ " \nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
 				+ " \nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> "
 				+ " \nPREFIX owl: <http://www.w3.org/2002/07/owl#>	"
-				+ "SELECT DISTINCT ?resource ?attr_inverseOf " + generateNatureSPARQLSelectPart()
-				+ "\nWHERE {\n" + "\n?resource <" + OWL.INVERSEOF + "> ?attr_inverseOf ." + "\nFILTER(";
+				+ "\nSELECT DISTINCT ?resource ?attr_inverseOf " + generateNatureSPARQLSelectPart()
+				+ "\nWHERE {\n"  
+				+ "\n?resource <" + OWL.INVERSEOF + ">|^< "+ OWL.INVERSEOF +"> ?attr_inverseOf ."
+				+ "\nFILTER(";
 		boolean first = true;
 		for (IRI prop : properties) {
 			if (!first) {
@@ -1319,8 +1322,9 @@ public class Properties extends STServiceAdapter {
 		q += ")"
 				// adding the nature in the query (will be replaced by the appropriate processor),
 				// remember to change the SELECT as well
-				+ generateNatureSPARQLWherePart("?resource") + "\n}" + "\nGROUP BY ?resource ?attr_inverseOf";
-
+				+ generateNatureSPARQLWherePart("?resource") + "\n}" + 
+				"\nGROUP BY ?resource ?attr_inverseOf";
+		//@formatter:on
 		logger.debug("query [getInverseProperties]:\n" + q);
 		QueryBuilder qb = createQueryBuilder(q);
 		qb.processRendering();
