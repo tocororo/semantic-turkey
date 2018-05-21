@@ -1308,7 +1308,7 @@ public class Properties extends STServiceAdapter {
 				+ " \nPREFIX owl: <http://www.w3.org/2002/07/owl#>	"
 				+ "\nSELECT DISTINCT ?resource ?attr_inverseOf " + generateNatureSPARQLSelectPart()
 				+ "\nWHERE {\n"  
-				+ "\n?resource <" + OWL.INVERSEOF + ">|^< "+ OWL.INVERSEOF +"> ?attr_inverseOf ."
+				+ "\n?resource <" + OWL.INVERSEOF + ">|^<"+ OWL.INVERSEOF +"> ?attr_inverseOf ."
 				+ "\nFILTER(";
 		boolean first = true;
 		for (IRI prop : properties) {
