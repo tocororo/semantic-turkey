@@ -171,6 +171,10 @@ public class ProjectUserBindingsManager {
 		}
 	}
 	
+	/* =================================
+	 * Roles
+	 * ================================= */
+	
 	/**
 	 * Adds roles to the binding between the given project-user pair
 	 * @param userEmail
@@ -258,6 +262,24 @@ public class ProjectUserBindingsManager {
 	}
 	
 	/**
+	 * Returns true if user has right to access the project (if it has any role in the given project or if it is admin)
+	 * @param user
+	 * @param project
+	 * @return
+	 */
+	public static boolean hasUserAccessToProject(STUser user, Project project) {
+		if (user.isAdmin()) {
+			return true;
+		}
+		return !getPUBinding(user, project).getRoles().isEmpty();
+	}
+	
+	
+	/* =================================
+	 * Languages
+	 * ================================= */
+	
+	/**
 	 * Adds languages to the binding between the given project-user pair
 	 * @param userEmail
 	 * @param projectName
@@ -294,18 +316,60 @@ public class ProjectUserBindingsManager {
 		}
 	}
 	
+	/* =================================
+	 * Groups
+	 * ================================= */
+	
 	/**
-	 * Returns true if user has right to access the project (if it has any role in the given project or if it is admin)
+	 * Assigns a group to the binding between the given project-user pair
+	 * @param user
+	 * @param project
+	 * @param group
+	 * @throws PUBindingException
+	 */
+	public static void assignGroupToPUBinding(STUser user, AbstractProject project, UsersGroup group) throws PUBindingException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
+				pub.assignGroup(group);
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Remove the group assigned to the user in the given project-user pair
+	 * @param user
+	 * @param project
+	 * @throws PUBindingException
+	 */
+	public static void removeGroupFromPUBinding(STUser user, AbstractProject project) throws PUBindingException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
+				pub.removeGroup();
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Returns the UsersGroup which the given user belongs to
 	 * @param user
 	 * @param project
 	 * @return
 	 */
-	public static boolean hasUserAccessToProject(STUser user, Project project) {
-		if (user.isAdmin()) {
-			return true;
+	public static UsersGroup getUserGroup(STUser user, Project project) {
+		ProjectUserBinding pub = getPUBinding(user, project);
+		if (pub != null) {
+			return pub.getGroup();
 		}
-		return !getPUBinding(user, project).getRoles().isEmpty();
+		return null;
 	}
+	
+	/* =================================
+	 * Utils
+	 * ================================= */
 	
 	/**
 	 * Creates a folder for the given project-user bidning and serializes the details about it in a file.

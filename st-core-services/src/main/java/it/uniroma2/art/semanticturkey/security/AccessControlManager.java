@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.user.PUBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.UserException;
+import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @Component
@@ -32,8 +33,14 @@ public class AccessControlManager {
 		RBACManager.initRoles();
 		RBACManager.loadRBACProcessor(null);
 		
-		//init project-user binding manager so it loads bindings from ST data
-		//Note: this should be initialized strictly after UsersManager since ProjectUserBingingManager uses it
+		//init users groups
+		UsersGroupsManager.loadGroups();
+		
+		/*
+		 * init project-user binding manager so it loads bindings from ST data
+		 * Note: this should be initialized strictly after UsersManager and UsersGroupsManager 
+		 * since ProjectUserBingingManager uses them
+		 */
 		ProjectUserBindingsManager.loadPUBindings();
 	}
 	

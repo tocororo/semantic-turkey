@@ -64,7 +64,9 @@ public class Resources {
 	private static final String _projectsDirName = "projects";
 	private static final String _systemDirName = "system";
 	private static final String _usersDirName = "users";
+	private static final String _groupsDirName = "groups";
 	private static final String _projectUserBindingsDirName = "pu_bindings";
+	private static final String _projectGroupBindingsDirName = "pg_bindings";
 
 	/* new */
 	private static final String _karafEtcDir = "/etc";
@@ -88,7 +90,9 @@ public class Resources {
 	private static File projectsDir;
 	private static File systemDir;
 	private static File projectUserBindingsDir;
+	private static File projectGroupBindingsDir;
 	private static File usersDir;
+	private static File groupsDir;
 
 	protected static Logger logger = LoggerFactory.getLogger(Resources.class);
 
@@ -131,7 +135,9 @@ public class Resources {
 		projectsDir = new File(stDataDirectory, _projectsDirName);
 		systemDir = new File(stDataDirectory, _systemDirName);
 		usersDir = new File(stDataDirectory, _usersDirName);
+		groupsDir = new File(stDataDirectory, _groupsDirName);
 		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
+		projectGroupBindingsDir = new File(stDataDirectory, _projectGroupBindingsDirName);
 
 		if (!stDataDirectory.exists()) { //stData doens't exists => create from scratch
 			try {
@@ -208,8 +214,14 @@ public class Resources {
 	public static File getUsersDir() {
 		return usersDir;
 	}
+	public static File getGroupsDir() {
+		return groupsDir;
+	}
 	public static File getProjectUserBindingsDir() {
 		return projectUserBindingsDir;
+	}
+	public static File getProjectGroupBindingsDir() {
+		return projectGroupBindingsDir;
 	}
 
 	/**
@@ -242,12 +254,15 @@ public class Resources {
 					|| !new File(usrPath, _projectsDirName).mkdirs()
 					|| !new File(usrPath, _systemDirName).mkdirs()
 					|| !new File(usrPath, _usersDirName).mkdirs()
+					|| !new File(usrPath, _groupsDirName).mkdirs()
 					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
+					|| !new File(usrPath, _projectGroupBindingsDirName).mkdirs()
 					|| !new File(usrPath,_ontMirrorFileName).createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			initializeCustomFormFileStructure();
 			initializeRoles();
 			initializePUBindingFileStructure();
+			initializePGBindingFileStructure();
 			initializeSystemProperties();
 						
 		} else {
@@ -283,6 +298,17 @@ public class Resources {
 		} catch (ProjectAccessException | PUBindingException e) {
 			throw new STInitializationException(e);
 		}
+	}
+	
+	/**
+	 * Initializes a folders structure with a pg_binding folder 
+	 * Maybe there's no need to create
+	 * - a folder per project
+	 * 		- which in turn contains a folder for group
+	 * Since these should be created once the properties manager tries to access the settings into them
+	 */
+	public static void initializePGBindingFileStructure() {
+		projectGroupBindingsDir.mkdir();
 	}
 	
 	/**
@@ -354,6 +380,13 @@ public class Resources {
 		} catch (IOException e) {
 			throw new STInitializationException(e);
 		}
+	}
+	
+	/**
+	 * Initializes groups folder: simply creates an empty folder named "groups"
+	 */
+	public static void initializeGroups() {
+		groupsDir.mkdir();
 	}
 	
 	private static void initializeSystemProperties() throws STInitializationException {

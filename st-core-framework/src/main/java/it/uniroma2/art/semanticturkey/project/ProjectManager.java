@@ -97,6 +97,7 @@ import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
@@ -1633,6 +1634,7 @@ public class ProjectManager {
 						}
 					} finally {
 						ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+						ProjectGroupBindingsManager.deletePGBindingsOfProject(projectName);
 					}
 				} catch (IOException e1) {
 					logger.debug("Swallowed exception", e1);

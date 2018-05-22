@@ -21,6 +21,9 @@ public class UserVocabulary {
     //e.g. role administrator will be: "http://semanticturkey.uniroma2.it/roles/administrator"
     //custom roles local to project will be: http://semanticturkey.uniroma2.it/roles/<projectname>/<roleName>
     public static final String ROLESBASEURI = BASEURI + "/roles/";
+    
+    //e.g. group "st_group" will be: "http://semanticturkey.uniroma2.it/groups/st_group" 
+    public static final String GROUPSBASEURI = BASEURI + "/groups/";
 
 	public static final IRI USER;
 	public static final IRI PASSWORD;
@@ -32,10 +35,18 @@ public class UserVocabulary {
 	public static final IRI STATUS;
 	public static final IRI LANGUAGE_PROFICIENCIES;
 	
+	public static final IRI GROUP;
+	public static final IRI GROUP_SHORT_NAME;
+	public static final IRI GROUP_FULL_NAME;
+	public static final IRI GROUP_DESCRIPTION;
+	public static final IRI GROUP_LOGO_URL;
+	public static final IRI GROUP_WEB_PAGE;
+	
 	public static final IRI BINDING;
 	public static final IRI ROLE_PROP;
 	public static final IRI LANGUAGE_PROP;
 	public static final IRI USER_PROP;
+	public static final IRI GROUP_PROP;
 	public static final IRI PROJECT;
     
 	static {
@@ -50,9 +61,17 @@ public class UserVocabulary {
     	STATUS = fact.createIRI(UserVocabulary.PUVOC_NS, "status");
     	LANGUAGE_PROFICIENCIES = fact.createIRI(UserVocabulary.PUVOC_NS, "language_proficencies");
     	
+    	GROUP = fact.createIRI(UserVocabulary.NAMESPACE, "Group");
+    	GROUP_SHORT_NAME = fact.createIRI(UserVocabulary.PUVOC_NS, "short_name");
+    	GROUP_FULL_NAME = fact.createIRI(UserVocabulary.PUVOC_NS, "full_name");
+    	GROUP_DESCRIPTION = fact.createIRI(UserVocabulary.PUVOC_NS, "description");
+    	GROUP_LOGO_URL = fact.createIRI(UserVocabulary.PUVOC_NS, "logo_url");
+    	GROUP_WEB_PAGE = fact.createIRI(UserVocabulary.PUVOC_NS, "web_page");
+    	
     	BINDING = fact.createIRI(UserVocabulary.PUVOC_NS, "Binding");
     	ROLE_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "role");
     	LANGUAGE_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "language");
+    	GROUP_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "group");
     	USER_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "user");
     	PROJECT = fact.createIRI(UserVocabulary.PUVOC_NS, "project");
 	}

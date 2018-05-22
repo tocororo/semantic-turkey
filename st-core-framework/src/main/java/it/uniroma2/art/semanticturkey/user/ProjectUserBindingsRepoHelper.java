@@ -49,6 +49,7 @@ public class ProjectUserBindingsRepoHelper {
 	private static String BINDING_USER = "user";
 	private static String BINDING_ROLE = "role";
 	private static String BINDING_LANGUAGE = "language";
+	private static String BINDING_GROUP = "group";
 	private static String BINDING_PROJECT = "project";
 	
 	private Repository repository;
@@ -84,6 +85,10 @@ public class ProjectUserBindingsRepoHelper {
 		for (String lang : puBinding.getLanguages()) {
 			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " '" + lang + "' .";
 		}
+		if (puBinding.getGroup() != null) {
+			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " " 
+					+ NTriplesUtil.toNTriplesString(puBinding.getGroup().getIri()) + " .";
+		}
 		query += " }";
 		
 		//execute query
@@ -107,6 +112,7 @@ public class ProjectUserBindingsRepoHelper {
 				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.PROJECT) + " ?" + BINDING_PROJECT + " ."
 				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " ?" + BINDING_ROLE + " . }"
 				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " ?" + BINDING_LANGUAGE + " . }"
+				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " ?" + BINDING_GROUP + " . }"
 				+ " }";
 		// execute query
 		logger.debug(query);
@@ -175,7 +181,13 @@ public class ProjectUserBindingsRepoHelper {
 			if (lang != null) {
 				puBinding.addLanguage(lang);
 			}
-
+			
+			UsersGroup group = null;
+			if (tuple.getBinding(BINDING_GROUP) != null) {
+				group = UsersGroupsManager.getGroupByIRI((IRI) tuple.getBinding(BINDING_GROUP).getValue());
+				puBinding.assignGroup(group);
+			}
+			
 			list.add(puBinding);
 		}
 		return list;

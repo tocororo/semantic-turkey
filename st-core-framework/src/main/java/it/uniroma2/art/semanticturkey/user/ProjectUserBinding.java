@@ -11,6 +11,7 @@ public class ProjectUserBinding {
 	private STUser user;
 	private Collection<Role> roles;
 	private Collection<String> languages;
+	private UsersGroup group;
 	
 	public ProjectUserBinding(AbstractProject project, STUser user) {
 		this.project = project;;
@@ -63,6 +64,18 @@ public class ProjectUserBinding {
 		this.languages.remove(language);
 	}
 	
+	public void assignGroup(UsersGroup group) {
+		this.group = group;
+	}
+	
+	public void removeGroup() {
+		this.group = null;
+	}
+	
+	public UsersGroup getGroup() {
+		return this.group;
+	}
+	
 	@Override
 	public String toString() {
 		Collection<String> rolesAsStringList = new ArrayList<>();
@@ -71,7 +84,8 @@ public class ProjectUserBinding {
 		}
 		return "<" + this.project.getName() + "," + this.user.getIRI().stringValue() + ">:\n"
 				+ "\tRoles:" + this.roles
-				+ "\tLanguages:" + this.languages;
+				+ "\tLanguages:" + this.languages
+				+ "\tGroup:" + this.group.getShortName();
 	}
 
 }

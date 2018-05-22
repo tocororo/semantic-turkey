@@ -30,6 +30,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 @STService
@@ -171,12 +173,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
 		for (String prop: properties) {
-			String value;
-			if (pluginID == null) {
-				value = STPropertiesManager.getPUSetting(prop, getProject(), UsersManager.getLoggedUser());
-			} else {
-				value = STPropertiesManager.getPUSetting(prop, getProject(), UsersManager.getLoggedUser(), pluginID);
-			}
+			String value = STPropertiesManager.getPUSetting(prop, getProject(), UsersManager.getLoggedUser(), pluginID);
 			respNode.set(prop, jsonFactory.textNode(value));
 		}
 		return respNode;
@@ -194,9 +191,72 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws JSONException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setPUSetting(String property, @Optional String value)
+	public void setPUSetting(String property, @Optional String value, @Optional String pluginID)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
-		STPropertiesManager.setPUSetting(property, value, getProject(), UsersManager.getLoggedUser());
+		STPropertiesManager.setPUSetting(property, value, getProject(), UsersManager.getLoggedUser(), pluginID);
+	}
+	
+	/**
+	 * Returns the specified project preferences for the given group.
+	 * @param properties
+	 * @param projectName if not provided, returns the setting for the currently open project
+	 * @param groupIri
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation
+	public JsonNode getPGSettings(List<String> properties, @Optional String projectName, IRI groupIri, @Optional String pluginID)
+			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		Project project;
+		if (projectName != null) {
+			project = ProjectManager.getProjectDescription(projectName);
+		} else {
+			project = getProject();
+		}
+		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
+		if (group == null) {
+			throw new IllegalArgumentException("Group not found");
+		}
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode respNode = jsonFactory.objectNode();
+		for (String prop: properties) {
+			String value = STPropertiesManager.getPGSetting(prop, project, group, pluginID);
+			respNode.set(prop, jsonFactory.textNode(value));
+		}
+		return respNode;
+	}
+	
+	/**
+	 * 
+	 * @param property
+	 * @param value
+	 * @param pluginID
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws STPropertyUpdateException
+	 * @throws JSONException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setPGSetting(String property, @Optional String value, @Optional String pluginID, @Optional String projectName, IRI groupIri)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
+		Project project;
+		if (projectName != null) {
+			project = ProjectManager.getProjectDescription(projectName);
+		} else {
+			project = getProject();
+		}
+		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
+		if (group == null) {
+			throw new IllegalArgumentException("Group not found");
+		}
+		STPropertiesManager.setPGSetting(property, value, project, group, pluginID);
 	}
 	
 	/**

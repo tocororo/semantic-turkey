@@ -35,7 +35,9 @@ import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JResourceDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueSerializer;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 
 public class STPropertiesManager {
 
@@ -44,6 +46,7 @@ public class STPropertiesManager {
 
 	private static final String USER_SETTINGS_FILE_NAME = "settings.props";
 	private static final String PU_SETTINGS_FILE_NAME = "settings.props";
+	private static final String PG_SETTINGS_FILE_NAME = "settings.props";
 	private static final String PROJECT_SETTINGS_FILE_NAME = "settings.props";
 	private static final String SYSTEM_SETTINGS_FILE_NAME = "settings.props";
 
@@ -83,6 +86,7 @@ public class STPropertiesManager {
 	 * Returns the value of a pu_setting for the given project-user pair. If the setting has no value for the
 	 * user, it looks for the value in the following order:
 	 * <ul>
+	 * <li>the value for the group of the user (if any)</li>
 	 * <li>the default value at project level</li>
 	 * <li>the default value at user level</li>
 	 * <li>the default value at system level.</li>
@@ -101,14 +105,8 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the value of a pu_setting about the given project-user-plugin. If the setting has no value for
-	 * the user, it looks for the value in the following order:
-	 * <ul>
-	 * <li>the default value at project level</li>
-	 * <li>the default value at user level</li>
-	 * <li>the default value at system level.</li>
-	 * </ul>
-	 * Returns null if no value is defined at all
+	 * Returns the value of a pu_setting about the given project-user-plugin. 
+	 * See {@link #getPUSetting(String, Project, STUser)} for details about the lookup procedure.
 	 * 
 	 * @param pluginID
 	 * @param project
@@ -119,14 +117,24 @@ public class STPropertiesManager {
 	 */
 	public static String getPUSetting(String propName, Project project, STUser user, String pluginID)
 			throws STPropertyAccessException {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		String value;
 		value = loadProperties(getPUSettingsFile(project, user, pluginID)).getProperty(propName);
 		if (value == null) {
-			value = getPUSettingProjectDefault(propName, project, pluginID);
+			//check if the user belongs to a group in the given project
+			UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+			if (group != null) {
+				value = getPGSetting(propName, project, group, pluginID);
+			}
 			if (value == null) {
-				value = getPUSettingUserDefault(propName, user, pluginID);
+				value = getPUSettingProjectDefault(propName, project, pluginID);
 				if (value == null) {
-					value = getPUSettingSystemDefault(propName, pluginID);
+					value = getPUSettingUserDefault(propName, user, pluginID);
+					if (value == null) {
+						value = getPUSettingSystemDefault(propName, pluginID);
+					}
 				}
 			}
 		}
@@ -177,6 +185,9 @@ public class STPropertiesManager {
 	 */
 	public static void setPUSetting(String propName, String propValue, Project project, STUser user,
 			String pluginID) throws STPropertyUpdateException {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		try {
 			File propFile = getPUSettingsFile(project, user, pluginID);
 			Properties properties = loadProperties(propFile);
@@ -226,8 +237,138 @@ public class STPropertiesManager {
 	 */
 	public static void setPUSettings(STProperties settings, Project project, STUser user, String pluginID)
 			throws STPropertyUpdateException {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		setPUSettings(settings, project, user, pluginID, false);
 	}
+	
+	/*
+	 * Getter/Setter <STData>/pg_binding/<projectname>/<group>/plugins/<plugin>/settings.props
+	 */
+	
+	/**
+	 * Returns the value of a pg_setting for the given project-group pair
+	 * Returns null if no value is defined
+	 * 
+	 * @param project
+	 * @param user
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getPUGetting(String propName, Project project, UsersGroup group)
+			throws STPropertyAccessException {
+		return getPGSetting(propName, project, group, CORE_PLUGIN_ID);
+	}
+	
+
+	/**
+	 * Returns the value of a pg_setting about the given project-group-plugin. 
+	 * Returns null if no value is defined
+	 * 
+	 * @param pluginID
+	 * @param project
+	 * @param group
+	 * @param propName
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static String getPGSetting(String propName, Project project, UsersGroup group, String pluginID)
+			throws STPropertyAccessException {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
+		String value;
+		value = loadProperties(getPGSettingsFile(project, group, pluginID)).getProperty(propName);
+		return value;
+		
+	}
+
+	/**
+	 * Sets the value of a project pu_setting for the given project-group
+	 * 
+	 * @param project
+	 * @param group
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setPGSetting(String propName, String propValue, Project project, UsersGroup group)
+			throws STPropertyUpdateException {
+		setPGSetting(propName, propValue, project, group, CORE_PLUGIN_ID);
+	}
+
+	/**
+	 * Sets the value of a pg_setting for the given project-group-plugin
+	 * 
+	 * @param pluginID
+	 * @param project
+	 * @param group
+	 * @param propName
+	 * @param propValue
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setPGSetting(String propName, String propValue, Project project, UsersGroup group,
+			String pluginID) throws STPropertyUpdateException {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
+		try {
+			File propFile = getPGSettingsFile(project, group, pluginID);
+			Properties properties = loadProperties(propFile);
+			setProperty(properties, propName, propValue);
+			updatePropertyFile(properties, propFile);
+		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	/**
+	 * Sets the values of pg_setting related to the given project-group-plugin
+	 * 
+	 * @param preferences
+	 * @param project
+	 * @param group
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setPGSettings(STProperties preferences, Project project, UsersGroup group, String pluginID,
+			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker preferencesChecker = STPropertiesChecker
+						.getModelConfigurationChecker(preferences);
+				if (!preferencesChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Preferences not valid: " + preferencesChecker.getErrorMessage());
+				}
+			}
+			File propFile = getPGSettingsFile(project, group, pluginID);
+			storeSTPropertiesInYAML(preferences, propFile, false);
+		} catch (STPropertyAccessException | IOException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	/**
+	 * Convenience overload of {@link #setPGSettings(STProperties, Project, UsersGroup, String, boolean)} that
+	 * disallows the storage of incomplete settings (i.e. missing values for required property).
+	 * 
+	 * @param settings
+	 * @param project
+	 * @param group
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setPGSettings(STProperties settings, Project project, UsersGroup group, String pluginID)
+			throws STPropertyUpdateException {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
+		setPGSettings(settings, project, group, pluginID, false);
+	}
+	
 
 	/*
 	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/pu-settings-defaults.props
@@ -979,6 +1120,7 @@ public class STPropertiesManager {
 	 * <STData>/users/<user>/plugins/<plugin>/pu-settings-defaults.props User Settings:
 	 * <STData>/users/<user>/plugins/<plugin>/settings.props PU Settings:
 	 * <STData>/pu_bindings/<projName>/<user>/plugins/<plugin>/settings.props
+	 * <STData>/pg_bindings/<projName>/<group>/plugins/<plugin>/settings.props
 	 */
 
 	/**
@@ -1180,10 +1322,37 @@ public class STPropertiesManager {
 		}
 	}
 
+	/**
+	 * Returns the Properties file <STData>/pg_bindings/<projName>/<group>/plugins/<plugin>/settings.props
+	 * 
+	 * @param project
+	 * @param group
+	 * @param pluginID
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private static File getPGSettingsFile(Project project, UsersGroup group, String pluginID)
+			throws STPropertyAccessException {
+		try {
+			File propFile = new File(getPGBindingPropertyFolder(project, group, pluginID) + File.separator
+					+ PG_SETTINGS_FILE_NAME);
+			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
+				Properties properties = new Properties();
+				updatePropertyFile(properties, propFile);
+			}
+			return propFile;
+		} catch (STPropertyUpdateException e) {
+			throw new STPropertyAccessException(e);
+		}
+	}
+	
 	/*
-	 * Methods to retrieve the following folders: <STData>/system/plugins/<plugin>/
-	 * <STData>/projects/<projectname>/plugins/<plugin>/ <STData>/users/<username>/plugins/<plugin>/
+	 * Methods to retrieve the following folders: 
+	 * <STData>/system/plugins/<plugin>/
+	 * <STData>/projects/<projectname>/plugins/<plugin>/ 
+	 * <STData>/users/<username>/plugins/<plugin>/
 	 * <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/
+	 * <STData>/pg_binding/<projectname>/<group>/plugins/<plugin>/
 	 */
 
 	/**
@@ -1245,6 +1414,24 @@ public class STPropertiesManager {
 	public static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
 		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
+				+ File.separator + pluginID);
+		if (!prefFolder.exists()) {
+			prefFolder.mkdirs();
+		}
+		return prefFolder;
+	}
+	
+	/**
+	 * Returns the folder <STData>/pu_bindings/<projectName>/<group>/plugins/<plugin>/
+	 * 
+	 * @param project
+	 * @param group
+	 * @param pluginID
+	 * @return
+	 */
+	public static File getPGBindingPropertyFolder(Project project, UsersGroup group, String pluginID) {
+		File prefFolder = new File(Resources.getProjectGroupBindingsDir() + File.separator + project.getName()
+				+ File.separator + UsersGroup.encodeGroupIri(group.getIri()) + File.separator + "plugins"
 				+ File.separator + pluginID);
 		if (!prefFolder.exists()) {
 			prefFolder.mkdirs();
