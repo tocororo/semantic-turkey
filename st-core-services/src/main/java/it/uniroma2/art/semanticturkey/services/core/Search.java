@@ -178,7 +178,7 @@ public class Search extends STServiceAdapter {
 		
 		//the outgoingLinks part
 		if(outgoingLinks!=null && outgoingLinks.size()>0) {
-			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource");
+			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource", "out", false);
 		}
 		//the outgoingSearch part
 		int cont=1;
@@ -194,7 +194,7 @@ public class Search extends STServiceAdapter {
 		
 		//the ingoingLinks part	
 		if(ingoingLinks!=null && ingoingLinks.size()>0) {
-			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource");
+			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource", "in", true);
 		}
 		query+= "\nFILTER(BOUND(?resource))" + //used only to not have problem with the OPTIONAL in qb.processRendering(); 
 				"\n}" +

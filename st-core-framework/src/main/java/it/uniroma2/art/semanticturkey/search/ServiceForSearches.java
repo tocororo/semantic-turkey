@@ -325,17 +325,21 @@ public class ServiceForSearches {
 	}
 
 	public static String filterWithOrOfAndPairValues(List<Pair<IRI, List<Value>>> valueListPairList,
-			String variable) {
+			String variable, String suffix, boolean reverse) {
 		if(!variable.startsWith("?")){
 			variable+="?"+variable;
 		}
 		String queryPart="";
 		int count = 1;
 		for(Pair<IRI, List<Value>> iriListValuePair : valueListPairList) {
-			String objVar = variable+"_o"+(count++);
+			String otherVar = variable+"_"+suffix+""+(count++);
 			IRI pred = iriListValuePair.getFirst();
 			List<Value> valueList = iriListValuePair.getSecond();
-			queryPart+="\n"+variable+" "+NTriplesUtil.toNTriplesString(pred)+" "+objVar+" .";
+			if(reverse) {
+				queryPart+="\n"+otherVar+" "+NTriplesUtil.toNTriplesString(pred)+" "+variable+" .";
+			} else {
+				queryPart+="\n"+variable+" "+NTriplesUtil.toNTriplesString(pred)+" "+otherVar+" .";
+			}
 			boolean first = true;
 			queryPart+="\nFILTER(";
 			for(Value value : valueList) {
@@ -344,7 +348,7 @@ public class ServiceForSearches {
 				} else {
 					first = false;
 				}
-				queryPart+=objVar+" = "+NTriplesUtil.toNTriplesString(value);
+				queryPart+=otherVar+" = "+NTriplesUtil.toNTriplesString(value);
 			}
 			queryPart+=")";
 		}
