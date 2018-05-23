@@ -173,7 +173,7 @@ public class Administration extends STServiceAdapter {
 		bindingNode.set("languages", languagesArrayNode);
 		
 		if (puBinding.getGroup() != null) {
-			bindingNode.set("group", jsonFactory.textNode(puBinding.getGroup().getShortName()));
+			bindingNode.set("group", puBinding.getGroup().getAsJsonObject());
 		} else {
 			bindingNode.set("group", null);
 		}
