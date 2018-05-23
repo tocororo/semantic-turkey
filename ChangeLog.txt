@@ -22,6 +22,7 @@ date: dd/mm/yyyy
   * Update to RDF4J 2.2.4
   * implemented the fuzzy search
   * implemented advanced search
+  * implemented custom search (based on parameterizations of stored SPARQL queries)
   
 version 3.0
 date: 08/02/2018

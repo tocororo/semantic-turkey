@@ -343,6 +343,20 @@
 		<bean class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore" />
 	</osgi:service>
 
+	<!-- Publishes the SPARQLParameterizationStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore" />
+	</osgi:service>
+
+	<!-- Publishes the CustomSearchStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
+	</osgi:service>
+
 	<!-- Publishes the Exporter -->
 
 	<osgi:service auto-export="interfaces">

@@ -56,6 +56,8 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.resources.Reference;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
@@ -411,6 +413,29 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
 
 		return SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy);
+	}
+
+	protected Reference parseReference(String relativeReference) {
+		int colonPos = relativeReference.indexOf(":");
+	
+		if (colonPos == -1)
+			throw new IllegalArgumentException("Invalid reference: " + relativeReference);
+	
+		Scope scope = Scope.deserializeScope(relativeReference.substring(0, colonPos));
+		String identifier = relativeReference.substring(colonPos + 1);
+	
+		switch (scope) {
+		case SYSTEM:
+			return new Reference(null, null, identifier);
+		case PROJECT:
+			return new Reference(getProject(), null, identifier);
+		case USER:
+			return new Reference(null, UsersManager.getLoggedUser(), identifier);
+		case PROJECT_USER:
+			return new Reference(getProject(), UsersManager.getLoggedUser(), identifier);
+		default:
+			throw new IllegalArgumentException("Unsupported scope: " + scope);
+		}
 	}
 
 }

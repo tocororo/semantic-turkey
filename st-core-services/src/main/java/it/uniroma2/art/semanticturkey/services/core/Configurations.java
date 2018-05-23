@@ -18,7 +18,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
-import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -124,29 +123,6 @@ public class Configurations extends STServiceAdapter {
 	public void deleteConfiguration(String componentID, String relativeReference)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException {
 		exptManager.deleteConfiguraton(componentID, parseReference(relativeReference));
-	}
-
-	private Reference parseReference(String relativeReference) {
-		int colonPos = relativeReference.indexOf(":");
-
-		if (colonPos == -1)
-			throw new IllegalArgumentException("Invalid reference: " + relativeReference);
-
-		Scope scope = Scope.deserializeScope(relativeReference.substring(0, colonPos));
-		String identifier = relativeReference.substring(colonPos + 1);
-
-		switch (scope) {
-		case SYSTEM:
-			return new Reference(null, null, identifier);
-		case PROJECT:
-			return new Reference(getProject(), null, identifier);
-		case USER:
-			return new Reference(null, UsersManager.getLoggedUser(), identifier);
-		case PROJECT_USER:
-			return new Reference(getProject(), UsersManager.getLoggedUser(), identifier);
-		default:
-			throw new IllegalArgumentException("Unsupported scope: " + scope);
-		}
 	}
 
 }

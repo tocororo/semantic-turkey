@@ -45,6 +45,8 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 public class QueryBuilder {
 	private static final Logger logger = LoggerFactory.getLogger(QueryBuilder.class);
 
+	public static final String DEFAULT_RESOURCE_VARIABLE = "resource";
+
 	private final STServiceContext serviceContext;
 	private final String resourceQuery;
 	private RenderingEngine renderingEngine;
@@ -56,6 +58,8 @@ public class QueryBuilder {
 	private final Map<String, Value> bindingSet;
 
 	private boolean includeInferred;
+
+	private String resourceVariable;
 
 	/**
 	 * Constructs a {@code QueryBuilder} for a service backed by a given (tuple) query.
@@ -73,6 +77,20 @@ public class QueryBuilder {
 		this.qnameProcessor = null;
 		this.attachedProcessorsGraphPatternBinding = HashBiMap.create();
 		this.includeInferred = false;
+		this.resourceVariable = DEFAULT_RESOURCE_VARIABLE;
+	}
+
+	/**
+	 * Sets that name of the variable that holds the resource
+	 * 
+	 * @param variableName
+	 */
+	public void setResourceVariable(String variableName) throws QueryBuilderException {
+		if (!attachedProcessors.isEmpty()) {
+			throw new QueryBuilderException(
+					"Could not set the resource-holding variable after attaching some processor");
+		}
+		this.resourceVariable = variableName;
 	}
 
 	/**
@@ -85,7 +103,7 @@ public class QueryBuilder {
 			throw new QueryBuilderException("Rendering engine already configured");
 		}
 		renderingEngine = serviceContext.getProject().getRenderingEngine();
-		process(renderingEngine, "resource", "attr_show");
+		process(renderingEngine, resourceVariable, "attr_show");
 	}
 
 	/**
@@ -98,7 +116,7 @@ public class QueryBuilder {
 			throw new QueryBuilderException("Role recognizer already configured");
 		}
 		roleRecognitionOrchestrator = RoleRecognitionOrchestrator.getInstance();
-		process(roleRecognitionOrchestrator, "resource", "attr_role");
+		process(roleRecognitionOrchestrator, resourceVariable, "attr_role");
 	}
 
 	/**
@@ -111,7 +129,7 @@ public class QueryBuilder {
 			throw new QueryBuilderException("QName recognizer already configured");
 		}
 		qnameProcessor = new QNameQueryBuilderProcessor();
-		process(qnameProcessor, "resource", "attr_qname");
+		process(qnameProcessor, resourceVariable, "attr_qname");
 
 	}
 
@@ -227,7 +245,7 @@ public class QueryBuilder {
 		try (TupleQueryResult queryResults = query.evaluate()) {
 			bindingNames = queryResults.getBindingNames();
 			bindings = QueryResults.asList(queryResults).stream()
-					.filter(bs -> bs.getValue("resource") != null).collect(toList());
+					.filter(bs -> bs.getValue(resourceVariable) != null).collect(toList());
 		}
 
 		logger.debug("binding count = {}", bindings.size());
