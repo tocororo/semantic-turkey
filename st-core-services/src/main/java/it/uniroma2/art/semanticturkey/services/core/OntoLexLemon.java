@@ -17,9 +17,13 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.hibernate.validator.constraints.Length;
@@ -28,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -47,6 +50,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -344,7 +348,46 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
 	public String getLexicalEntryIndex(@LocallyDefined IRI lexicalEntry) {
-		throw new RuntimeException("To be implemented");
+		//@formatter:off
+		String index="";
+		
+		String indexVar = "?index";
+		String varType = "?type";
+		String resInNT = NTriplesUtil.toNTriplesString(lexicalEntry);
+		
+		String query = "SELECT "+indexVar +
+				"\nWHERE {" +
+				"\n"+resInNT+" a "+varType+" . " +
+						//consider the classes that are subclasses of ONTOLEX.LEXICAL_ENTRY
+						"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+								+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+" ." +
+						//"\nFILTER("+varType+" = <"+ONTOLEX.LEXICAL_ENTRY.stringValue()+">)";
+				//add the index to which this lexical entry belong to
+				"\n"+resInNT+" <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> ?canonicalForm ."+
+						"\n?canonicalForm <"+ONTOLEX.WRITTEN_REP+"> ?writtenRep ." +
+						ServiceForSearches.getFirstLetterForLiteral("?writtenRep", indexVar) +
+				"\n}";
+		logger.debug("query = " + query);
+		
+		TupleQuery tupleQuery;
+		tupleQuery = getManagedConnection().prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		//set the dataset to search just in the UserNamedGraphs
+		SimpleDataset dataset = new SimpleDataset();
+		for(Resource namedGraph : stServiceContext.getRGraphs()){
+			if(namedGraph instanceof IRI){
+				dataset.addDefaultGraph((IRI) namedGraph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
+		
+		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
+		if(tupleBindingsIterator.hasNext()) {
+			index = tupleBindingsIterator.next().getValue(indexVar.substring(1)).stringValue();
+		}
+		
+		return index;
+		//@formatter:on
 	}
 	
 	/**

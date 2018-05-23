@@ -217,7 +217,7 @@ public class ServiceForSearches {
 		return filterQuery;
 	}
 	
-	private String getFirstLetterForLiteral(String varInput, String varOutput) {
+	public static String getFirstLetterForLiteral(String varInput, String varOutput) {
 		String query;
 		query = "\nBIND(STR(LCASE(SUBSTR("+varInput+", 1, 2))) AS "+varOutput+")";
 		return query;
