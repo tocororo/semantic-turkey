@@ -123,7 +123,7 @@ public class Search extends STServiceAdapter {
 				"\nWHERE{" +
 				"\n{";
 		
-		//use the searchInstancesOfClasse to contruct the first part of the query (the subquery)
+		//use the searchInstancesOfClasse to construct the first part of the query (the subquery)
 		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
 				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true, true, lexModel,
 				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
@@ -205,6 +205,7 @@ public class Search extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
 		qb.processRendering();
+		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
 	

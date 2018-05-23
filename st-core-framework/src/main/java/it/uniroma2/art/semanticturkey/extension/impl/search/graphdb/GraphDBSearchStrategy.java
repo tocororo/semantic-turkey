@@ -354,8 +354,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
-			"\nWHERE{"; // +
-
+			"\nWHERE{" +
+			"\n{";
 		//do a subquery to get the candidate resources
 		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
 				"\n}";
