@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyDisjointWithStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EquivalentPropertyStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EvokedLexicalConcepts;
@@ -52,6 +53,8 @@ public class StatementConsumerProvider {
 				customFormManager);
 		BroadersStatementConsumer broaderStatementConsumer = new BroadersStatementConsumer(customFormManager);
 		EquivalentPropertyStatementConsumer equivalentPropertyStatementConsumer = new EquivalentPropertyStatementConsumer(
+				customFormManager);
+		PropertyDisjointWithStatementConsumer propertyDisjointWithStatementConsumer = new PropertyDisjointWithStatementConsumer(
 				customFormManager);
 		SubPropertyOfStatementConsumer subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer(
 				customFormManager);
@@ -101,7 +104,8 @@ public class StatementConsumerProvider {
 		role2template.put(RDFResourceRole.property,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
 						subPropertyOfStatementConsumer, propertyFactesStatementConsumer,
-						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
+						propertyDisjointWithStatementConsumer, domainsStatementConsumer,
+						rangesStatementConsumer, lexicalizationsStatementConsumer,
 						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.conceptScheme,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
