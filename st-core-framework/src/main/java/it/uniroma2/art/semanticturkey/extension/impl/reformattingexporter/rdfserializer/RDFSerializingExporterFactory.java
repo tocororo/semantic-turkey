@@ -4,10 +4,9 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 
-import org.eclipse.rdf4j.rio.RDFFormat;
-
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.FormatCapabilityProvider;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
 /**
@@ -34,8 +33,8 @@ public class RDFSerializingExporterFactory
 	}
 
 	@Override
-	public List<String> getFormats() {
-		return RDF4JUtilities.getOutputFormats().stream().map(RDFFormat::getName).collect(toList());
+	public List<DataFormat> getFormats() {
+		return RDF4JUtilities.getOutputFormats().stream().map(DataFormat::valueOf).collect(toList());
 	}
 
 }

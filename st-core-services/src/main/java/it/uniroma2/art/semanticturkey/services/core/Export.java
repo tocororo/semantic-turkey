@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -50,6 +51,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -106,7 +108,7 @@ public class Export extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Collection<String> getExportFormats(String reformattingExporterID) {
+	public List<DataFormat> getExportFormats(String reformattingExporterID) {
 		ExtensionFactory<?> extensionPoint = exptManager.getExtension(reformattingExporterID);
 
 		if (extensionPoint instanceof FormatCapabilityProvider) {

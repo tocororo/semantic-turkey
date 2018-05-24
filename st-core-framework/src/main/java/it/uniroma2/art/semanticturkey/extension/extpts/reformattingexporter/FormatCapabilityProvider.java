@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
+
 /**
  * Exposes the formats supported by an implementation of {@link ReformattingExporter}.
  * 
@@ -11,5 +13,5 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public interface FormatCapabilityProvider {
 	@JsonIgnore
-	List<String> getFormats();
+	List<DataFormat> getFormats();
 }
