@@ -10,7 +10,8 @@ public class LexicalFormsStatementConsumer extends AbstractPropertyMatchingState
 
 	public LexicalFormsStatementConsumer(CustomFormManager customFormManager) {
 		super(customFormManager, "lexicalForms", Collections.singleton(ONTOLEX.LEXICAL_FORM),
-				RootProprertiesBehavior.SHOW_IF_INFORMATIVE, CollectionBehavior.IGNORE);
+				RootProprertiesBehavior.SHOW_IF_INFORMATIVE, CollectionBehavior.IGNORE,
+				SubpropertiesBehavior.INCLUDE);
 	}
 
 }

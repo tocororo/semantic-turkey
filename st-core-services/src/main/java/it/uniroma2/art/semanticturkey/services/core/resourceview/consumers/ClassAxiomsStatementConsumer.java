@@ -21,7 +21,7 @@ public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatem
 
 	public ClassAxiomsStatementConsumer(CustomFormManager customFormManager) {
 		super(customFormManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
-				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE);
+				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE, SubpropertiesBehavior.INCLUDE);
 	}
 
 }

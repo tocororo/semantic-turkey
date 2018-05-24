@@ -12,7 +12,7 @@ public class SKOSOrderedCollectionMembersStatementConsumer extends AbstractPrope
 	public SKOSOrderedCollectionMembersStatementConsumer(CustomFormManager customFormManager) {
 		super(customFormManager, "membersOrdered", Collections.singleton(SKOS.MEMBER_LIST),
 				AbstractPropertyMatchingStatementConsumer.RootProprertiesBehavior.HIDE,
-				CollectionBehavior.ALWAYS_ASSUME_COLLECTION);
+				CollectionBehavior.ALWAYS_ASSUME_COLLECTION, SubpropertiesBehavior.INCLUDE);
 	}
 
 }

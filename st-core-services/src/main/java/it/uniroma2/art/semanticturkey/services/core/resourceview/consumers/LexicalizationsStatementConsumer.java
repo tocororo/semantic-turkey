@@ -19,7 +19,7 @@ public class LexicalizationsStatementConsumer extends AbstractPropertyMatchingSt
 				Sets.newLinkedHashSet(Arrays.asList(RDFS.LABEL, SKOS.PREF_LABEL, SKOS.ALT_LABEL,
 						SKOS.HIDDEN_LABEL, SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL,
 						ONTOLEX.IS_DENOTED_BY)),
-				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE);
+				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE, SubpropertiesBehavior.INCLUDE);
 	}
 
 }

@@ -43,10 +43,14 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 	public enum CollectionBehavior {
 		IGNORE, ALWAYS_ASSUME_COLLECTION
-	};
+	}
 
 	public enum RootProprertiesBehavior {
 		SHOW, SHOW_IF_INFORMATIVE, HIDE
+	}
+
+	public enum SubpropertiesBehavior {
+		INCLUDE, EXCLUDE
 	}
 
 	private CustomFormManager customFormManager;
@@ -54,21 +58,23 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 	private Set<IRI> matchedProperties;
 	private RootProprertiesBehavior rootProprertiesBehavior;
 	private CollectionBehavior collectionBehavior;
+	private SubpropertiesBehavior subpropertiesBehavior;
 
 	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
 			Set<IRI> matchedProperties, RootProprertiesBehavior rootProprertiesBehavior,
-			CollectionBehavior collectionBehavior) {
+			CollectionBehavior collectionBehavior, SubpropertiesBehavior subpropertiesBehavior) {
 		this.customFormManager = customFormManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
 		this.rootProprertiesBehavior = rootProprertiesBehavior;
 		this.collectionBehavior = collectionBehavior;
+		this.subpropertiesBehavior = subpropertiesBehavior;
 	}
 
 	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
 			Set<IRI> matchedProperties) {
 		this(customFormManager, sectionName, matchedProperties, RootProprertiesBehavior.HIDE,
-				CollectionBehavior.IGNORE);
+				CollectionBehavior.IGNORE, SubpropertiesBehavior.INCLUDE);
 	}
 
 	@Override
@@ -78,11 +84,11 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Map<String, ResourceViewSection> consumeStatements(Project project,
-			RepositoryConnection repoConn, ResourcePosition resourcePosition, Resource resource,
-			Model statements, Set<Statement> processedStatements,
-			Resource workingGraph,
-			Map<Resource, Map<String, Value>> resource2attributes, Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
+	public Map<String, ResourceViewSection> consumeStatements(Project project, RepositoryConnection repoConn,
+			ResourcePosition resourcePosition, Resource resource, Model statements,
+			Set<Statement> processedStatements, Resource workingGraph,
+			Map<Resource, Map<String, Value>> resource2attributes,
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -100,9 +106,13 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					.filter(stmt -> !processedStatements.contains(stmt)).collect(toList()));
 			relevantProperties = pendingDirectKnowledge.predicates();
 		} else {
-			relevantProperties = Sets.union(matchedProperties.stream()
-					.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
-					.map(stmt -> (IRI) stmt.getSubject()).collect(toSet()), matchedProperties);
+			if (subpropertiesBehavior == SubpropertiesBehavior.EXCLUDE) {
+				relevantProperties = matchedProperties;
+			} else {
+				relevantProperties = Sets.union(matchedProperties.stream()
+						.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
+						.map(stmt -> (IRI) stmt.getSubject()).collect(toSet()), matchedProperties);
+			}
 			pendingDirectKnowledge = new LinkedHashModel(statements.filter(resource, null, null).stream()
 					.filter(stmt -> !processedStatements.contains(stmt)
 							&& relevantProperties.contains(stmt.getPredicate()))
@@ -110,8 +120,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		}
 
 		for (IRI predicate : relevantProperties) {
-			if (STVocabUtilities.isHiddenResource(predicate,
-					project.getNewOntologyManager())) {
+			if (STVocabUtilities.isHiddenResource(predicate, project.getNewOntologyManager())) {
 				continue;
 			}
 
@@ -164,9 +173,11 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 										firstElement);
 
 								if (firstElement instanceof Resource) {
-									addNature((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
-									addShowViaDedicatedOrGenericRendering((AnnotatedValue<Resource>) annotatedMember,
-											resource2attributes, predicate2resourceCreShow, null, statements);
+									addNature((AnnotatedValue<Resource>) annotatedMember,
+											resource2attributes);
+									addShowViaDedicatedOrGenericRendering(
+											(AnnotatedValue<Resource>) annotatedMember, resource2attributes,
+											predicate2resourceCreShow, null, statements);
 									addQName((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
@@ -214,7 +225,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 				processedStatements.addAll(entry.getValue());
 			}
 
-			if (!valueMultiMap.containsKey(predicate) && !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
+			if (!valueMultiMap.containsKey(predicate)
+					&& !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
 				continue; // Skip irrelevant empty outer group
 			}
 
@@ -224,8 +236,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			if ("".equals(annotatedPredicate.getAttributes().get("nature"))) {
 				annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 			}
- 			addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes, predicate2resourceCreShow,
-					null, statements);
+			addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes,
+					predicate2resourceCreShow, null, statements);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customFormManager.existsCustomFormGraphForResource(project, predicate));
 
