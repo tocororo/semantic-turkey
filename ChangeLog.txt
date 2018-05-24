@@ -23,6 +23,7 @@ date: dd/mm/yyyy
   * implemented the fuzzy search
   * implemented advanced search
   * implemented custom search (based on parameterizations of stored SPARQL queries)
+  * automatic creation of an owl:Ontology resource
   
 version 3.0
 date: 08/02/2018
