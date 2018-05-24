@@ -737,7 +737,6 @@ public class Properties extends STServiceAdapter {
 				+ "}";
 				// @formatter:on
 		repoConnection.prepareUpdate(query).execute();
-		;
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -766,6 +765,37 @@ public class Properties extends STServiceAdapter {
 
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
 				equivalentProperty));
+
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
+	public void addPropertyDisjointWith(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
+			@LocallyDefined IRI disjointProperty,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelAdditions = new LinkedHashModel();
+
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
+				disjointProperty));
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
+	public void removePropertyDisjointWith(
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI disjointProperty,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Model modelRemovals = new LinkedHashModel();
+
+		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
+				disjointProperty));
 
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
