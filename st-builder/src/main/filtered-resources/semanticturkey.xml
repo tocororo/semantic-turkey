@@ -62,6 +62,8 @@
 
 		<bundle dependency="true">wrap:mvn:org.json/json/20090211</bundle>
 
+		<bundle dependency="true">mvn:net.bytebuddy/byte-buddy/${byte-buddy.version}</bundle>
+
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">

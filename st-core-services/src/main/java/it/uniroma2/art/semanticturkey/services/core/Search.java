@@ -1,8 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,9 +13,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -46,10 +51,15 @@ import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation;
 import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization;
 import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.ConstraintVariableBinding;
 import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.VariableBinding;
+import it.uniroma2.art.semanticturkey.constraints.HasDatatype;
+import it.uniroma2.art.semanticturkey.constraints.HasRole;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.Required;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STProperty;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -69,6 +79,16 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRen
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.description.annotation.AnnotationDescription;
+import net.bytebuddy.description.type.TypeDefinition;
+import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.description.type.TypeDescription.Generic;
+import net.bytebuddy.description.type.TypeDescription.Generic.Builder;
+import net.bytebuddy.dynamic.DynamicType.Builder.MethodDefinition.ReceiverTypeDefinition;
+import net.bytebuddy.dynamic.DynamicType.Unloaded;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.FixedValue;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -112,13 +132,89 @@ public class Search extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.GET)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> customSearch(String searchParamaterizationReference,
+	public STProperties getCustomSearchForm(String searchParameterizationReference)
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+			NoSuchConfigurationManager, STPropertyAccessException {
+
+		StoredSPARQLParameterization storedSparqlParameterization = (StoredSPARQLParameterization) exptManager
+				.getConfiguration(SPARQLParameterizationStore.class.getName(),
+						parseReference(searchParameterizationReference));
+
+		ReceiverTypeDefinition<STProperties> receiverTypeDefinition = new ByteBuddy()
+				.subclass(STProperties.class).defineMethod("getShortName", String.class, Modifier.PUBLIC)
+				.intercept(FixedValue.value("Test"))
+				.defineMethod("getDescription", String.class, Modifier.PUBLIC)
+				.intercept(FixedValue.value("Test Description"));
+		net.bytebuddy.dynamic.DynamicType.Builder.FieldDefinition.Optional<STProperties> valuableDefinition = null;
+
+		for (Entry<String, VariableBinding> entry : storedSparqlParameterization.variableBindings.entrySet()
+				.stream().filter(entry -> entry.getValue() instanceof ConstraintVariableBinding)
+				.collect(toList())) {
+			String varName = entry.getKey();
+			String propName = "var_" + varName;
+			ConstraintVariableBinding constraintVariableBinding = (ConstraintVariableBinding) entry
+					.getValue();
+			Class<?> propClazz = constraintVariableBinding.getDatatype() != null ? Literal.class : IRI.class;
+
+			List<AnnotationDescription> fieldAnnotations = new ArrayList<>();
+			fieldAnnotations.add(AnnotationDescription.Builder.ofType(STProperty.class)
+					.define("description", "Value bound to the variable \"" + varName + "\"")
+					.define("displayName", varName).build());
+			fieldAnnotations.add(AnnotationDescription.Builder.ofType(Required.class).build());
+
+			List<AnnotationDescription> fieldTypeAnnotations = new ArrayList<>();
+
+			if (constraintVariableBinding.getResourceRole() != null) {
+				fieldTypeAnnotations.add(AnnotationDescription.Builder.ofType(HasRole.class)
+						.define("value", constraintVariableBinding.getResourceRole()).build());
+			}
+
+			if (constraintVariableBinding.getDatatype() != null) {
+				fieldTypeAnnotations.add(AnnotationDescription.Builder.ofType(HasDatatype.class)
+						.define("value", constraintVariableBinding.getDatatype().stringValue()).build());
+			}
+
+			TypeDefinition propTypeDefinition = TypeDescription.Generic.Builder.rawType(propClazz).annotate(
+					fieldTypeAnnotations.toArray(new AnnotationDescription[fieldTypeAnnotations.size()]))
+					.build();
+
+			if (valuableDefinition != null) {
+				valuableDefinition = valuableDefinition.defineField(propName, propTypeDefinition,
+						Modifier.PUBLIC);
+			} else {
+				valuableDefinition = receiverTypeDefinition.defineField(propName, propTypeDefinition,
+						Modifier.PUBLIC);
+			}
+
+			valuableDefinition = valuableDefinition.annotateField(
+					fieldAnnotations.toArray(new AnnotationDescription[fieldAnnotations.size()]));
+		}
+
+		Unloaded<STProperties> unloadedClass = valuableDefinition != null ? valuableDefinition.make()
+				: receiverTypeDefinition.make();
+
+		// By using the wrapper strategy, we obtain that the generated class is unloaded, when its instances
+		// and the class loader are no longer reachable
+		Class<? extends STProperties> clazz = unloadedClass
+				.load(Search.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded();
+
+		try {
+			return clazz.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@STServiceOperation(method = RequestMethod.GET)
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<AnnotatedValue<Resource>> customSearch(String searchParameterizationReference,
 			@JsonSerialized Map<String, Value> boundValues)
 			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
 			NoSuchConfigurationManager, STPropertyAccessException {
 		StoredSPARQLParameterization storedSparqlParameterization = (StoredSPARQLParameterization) exptManager
 				.getConfiguration(SPARQLParameterizationStore.class.getName(),
-						parseReference(searchParamaterizationReference));
+						parseReference(searchParameterizationReference));
 		String relativeReference2quey = storedSparqlParameterization.relativeReference;
 		Map<String, VariableBinding> variableBindings = storedSparqlParameterization.variableBindings;
 		Set<String> variablesRequiringValues = variableBindings.entrySet().stream()

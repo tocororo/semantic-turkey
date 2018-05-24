@@ -116,7 +116,7 @@ public interface STProperties {
 			// System.out.println("generic type for Prop: " + prop.getGenericType());
 
 			if ((value.getClass() == String.class) && (prop.getGenericType() != String.class)) {
-				value = convertToPropertValue(prop, value);
+				value = convertToPropertValue(prop.getGenericType(), value);
 			}
 
 			it.uniroma2.art.semanticturkey.properties.Enumeration enumeration = prop
@@ -311,14 +311,14 @@ public interface STProperties {
 		}
 	}
 
-	default Object convertToPropertValue(Field prop, Object value) {
-		if (prop.getGenericType() == Boolean.class || prop.getGenericType() == boolean.class) {
+	default Object convertToPropertValue(Type type, Object value) {
+		if (type == Boolean.class || type == boolean.class) {
 			value = Boolean.parseBoolean((String) value);
-		} else if (prop.getGenericType() == Long.class || prop.getGenericType() == long.class)
+		} else if (type == Long.class || type == long.class)
 			value = Long.parseLong((String) value);
-		else if (prop.getGenericType() == Integer.class || prop.getGenericType() == int.class)
+		else if (type == Integer.class || type == int.class)
 			value = Integer.parseInt((String) value);
-		else if (prop.getGenericType() == Double.class || prop.getGenericType() == double.class)
+		else if (type == Double.class || type == double.class)
 			value = Double.parseDouble((String) value);
 		return value;
 	}

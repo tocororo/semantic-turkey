@@ -38,7 +38,7 @@
 			<artifactId>st-core-framework</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>it.uniroma2.art.sheet2rdf</groupId>
 			<artifactId>sheet2rdf-osgi-bundle</artifactId>
@@ -118,6 +118,11 @@
 			<groupId>javax.mail</groupId>
 			<artifactId>mail</artifactId>
 			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+			<version>${byte-buddy.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
