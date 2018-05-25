@@ -596,6 +596,17 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	@Override
+	public DatasetMetadata getDatasetMetadata(IRI dataset) {
+		return new DatasetMetadata(
+				SimpleValueFactory.getInstance()
+						.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
+				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", METADATAREGISTRY.STANDARD_DEREFERENCIATION,
+				SimpleValueFactory.getInstance()
+						.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"),
+				null);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 

@@ -71,6 +71,14 @@ public interface MetadataRegistryBackend {
 	Collection<CatalogRecord> getCatalogRecords();
 
 	/**
+	 * Returns the metadata associated with the given dataset
+	 * 
+	 * @param dataset
+	 * @return
+	 */
+	DatasetMetadata getDatasetMetadata(IRI dataset);
+
+	/**
 	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method
 	 * returns <code>null</code>.
 	 * 
