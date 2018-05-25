@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -108,6 +109,11 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 						return NTriplesUtil.toNTriplesString(v);
 					}
 				}).collect(joining(", ", "[", "]"));
+			} else if (statements.contains(resource, OWL.INVERSEOF, null)) {
+				Resource inverseProp = Models.getPropertyResource(statements, resource, OWL.INVERSEOF)
+						.orElse(null);
+
+				return "INVERSE " + computeShow(inverseProp, resource2attributes, statements);
 			}
 		} else {
 			Map<String, Value> resourceAttributes = resource2attributes.get(resource);

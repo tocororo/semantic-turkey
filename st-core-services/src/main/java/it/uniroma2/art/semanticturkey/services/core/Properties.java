@@ -20,10 +20,14 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +48,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
+import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
@@ -743,30 +748,71 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addEquivalentProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			@LocallyDefined IRI equivalentProperty,
+			@LocallyDefined IRI equivalentProperty, @Optional(defaultValue = "false") boolean inverse,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate) {
+		addPropertyAxiomHelper(property, equivalentProperty, inverse, linkingPredicate);
+	}
+
+	protected void addPropertyAxiomHelper(IRI property, IRI linkedProperty, boolean inverse,
+			IRI linkingPredicate)
+			throws RepositoryException, MalformedQueryException, UpdateExecutionException {
 		RepositoryConnection repoConnection = getManagedConnection();
-		Model modelAdditions = new LinkedHashModel();
 
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
-				equivalentProperty));
-
-		repoConnection.add(modelAdditions, getWorkingGraph());
+		if (inverse) {
+			Update update = repoConnection.prepareUpdate(
+			// @formatter:off
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                            \n" +
+				"INSERT {                                                                                \n" +
+				"  GRAPH " + RenderUtils.toSPARQL(getWorkingGraph()) + " {                               \n" +
+				"    ?property ?linkingPredicate [ a owl:ObjectProperty ; owl:inverseOf ?linkedProperty ]\n" +
+				"  }                                                                                     \n" +
+				"} WHERE {                                                                               \n" +
+				"}                                                                                       \n"
+				// @formatter:
+				);
+			update.setBinding("property", property);
+			update.setBinding("linkingPredicate", linkingPredicate);
+			update.setBinding("linkedProperty", linkedProperty);
+			update.execute();
+		} else {
+			repoConnection.add(property, linkingPredicate, linkedProperty, getWorkingGraph());
+		}
+	}
+	
+	protected void removePropertyAxiomHelper(Resource property, IRI linkingPredicate, Resource linkedProperty)
+			throws RepositoryException, MalformedQueryException, UpdateExecutionException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		Update update = repoConnection.prepareUpdate(
+			// @formatter:off
+			"PREFIX owl: <http://www.w3.org/2002/07/owl#>                            \n" +
+			"DELETE {                                                                \n" +
+			"  graph ?workingGraph  {                                                \n" +
+			"        ?property ?linkingPredicate ?linkedProperty .                   \n" +
+			"        ?linkedProperty ?p ?o .                                         \n" +
+			"    }                                                                   \n" +
+			"} WHERE {                                                               \n" +
+			"  OPTIONAL {                                                            \n" +
+			"    FILTER(isBlank(?linkedProperty))                                    \n" +
+			"    FILTER EXISTS { ?linkedProperty owl:inverseOf [] . }                \n" +
+			"    graph ?workingGraph { ?linkedProperty ?p ?o . }                     \n" +
+			"  }                                                                     \n" +
+			"}                                                                       \n"
+			// @formatter:
+			);
+		update.setBinding("workingGraph", getWorkingGraph());
+		update.setBinding("property", property);
+		update.setBinding("linkingPredicate", linkingPredicate);
+		update.setBinding("linkedProperty", linkedProperty);
+		update.execute();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removeEquivalentProperty(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI equivalentProperty,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource equivalentProperty,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate) {
-		RepositoryConnection repoConnection = getManagedConnection();
-		Model modelRemovals = new LinkedHashModel();
-
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
-				equivalentProperty));
-
-		repoConnection.remove(modelRemovals, getWorkingGraph());
+		removePropertyAxiomHelper(property, linkingPredicate, equivalentProperty);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -774,58 +820,48 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addPropertyDisjointWith(
 			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			@LocallyDefined IRI disjointProperty,
+			@LocallyDefined IRI disjointProperty, @Optional(defaultValue="false") boolean inverse,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) {
-		RepositoryConnection repoConnection = getManagedConnection();
-		Model modelAdditions = new LinkedHashModel();
-
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
-				disjointProperty));
-
-		repoConnection.add(modelAdditions, getWorkingGraph());
+		addPropertyAxiomHelper(property, disjointProperty, inverse, linkingPredicate);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removePropertyDisjointWith(
-			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI disjointProperty,
+			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource disjointProperty,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) {
-		RepositoryConnection repoConnection = getManagedConnection();
-		Model modelRemovals = new LinkedHashModel();
-
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, linkingPredicate,
-				disjointProperty));
-
-		repoConnection.remove(modelRemovals, getWorkingGraph());
+		removePropertyAxiomHelper(property, linkingPredicate, disjointProperty);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#property)+ ', values)','C')")
+	public void addInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI inverseProperty, @Optional(defaultValue="false") boolean inverse,  @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) {
+		addPropertyAxiomHelper(property, inverseProperty, inverse, linkingPredicate);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#property)+ ', values)','D')")
+	public void removeInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource inverseProperty, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) {
+		removePropertyAxiomHelper(property, inverseProperty, linkingPredicate);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			@LocallyDefined IRI superProperty) {
-		RepositoryConnection repoConnection = getManagedConnection();
-		Model modelAdditions = new LinkedHashModel();
-
-		modelAdditions.add(repoConnection.getValueFactory().createStatement(property, RDFS.SUBPROPERTYOF,
-				superProperty));
-
-		repoConnection.add(modelAdditions, getWorkingGraph());
+			@LocallyDefined IRI superProperty, @Optional(defaultValue="false") boolean inverse) {
+		addPropertyAxiomHelper(property, superProperty, inverse, RDFS.SUBPROPERTYOF);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removeSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			IRI superProperty) {
-		RepositoryConnection repoConnection = getManagedConnection();
-		Model modelRemovals = new LinkedHashModel();
-
-		modelRemovals.add(repoConnection.getValueFactory().createStatement(property, RDFS.SUBPROPERTYOF,
-				superProperty));
-
-		repoConnection.remove(modelRemovals, getWorkingGraph());
+			Resource superProperty) {
+		removePropertyAxiomHelper(property, RDFS.SUBPROPERTYOF, superProperty);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
