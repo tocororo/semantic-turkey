@@ -73,10 +73,6 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.InverseObjectProperty;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ObjectProperty;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ObjectPropertyExpression;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -762,23 +758,19 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addEquivalentProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			String equivalentProperty,
+			IRI equivalentProperty, @Optional(defaultValue = "false") boolean inverse,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate)
 			throws RepositoryException, MalformedQueryException, UpdateExecutionException,
 			ManchesterParserException {
-		addPropertyAxiomHelper(property, equivalentProperty, linkingPredicate);
+		addPropertyAxiomHelper(property, equivalentProperty, inverse, linkingPredicate);
 	}
 
-	protected void addPropertyAxiomHelper(IRI property, String linkedProperty, IRI linkingPredicate)
-			throws RepositoryException, MalformedQueryException, UpdateExecutionException,
-			ManchesterParserException {
+	protected void addPropertyAxiomHelper(IRI property, IRI linkedProperty, boolean inverse,
+			IRI linkingPredicate) throws RepositoryException, MalformedQueryException,
+			UpdateExecutionException, ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
-				.getNSPrefixMappings(false);
-		ObjectPropertyExpression ope = ManchesterSyntaxUtils.parseObjectPropertyExpression(linkedProperty,
-				repoConnection.getValueFactory(), prefixToNamespacesMap);
-		if (ope instanceof InverseObjectProperty) {
+		if (inverse) {
 			Update update = repoConnection.prepareUpdate(
 			// @formatter:off
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                            \n" +
@@ -792,10 +784,10 @@ public class Properties extends STServiceAdapter {
 				);
 			update.setBinding("property", property);
 			update.setBinding("linkingPredicate", linkingPredicate);
-			update.setBinding("linkedProperty", ((InverseObjectProperty) ope).getProperty());
+			update.setBinding("linkedProperty", linkedProperty);
 			update.execute();
 		} else {
-			repoConnection.add(property, linkingPredicate, ((ObjectProperty)ope).getProperty(), getWorkingGraph());
+			repoConnection.add(property, linkingPredicate, linkedProperty, getWorkingGraph());
 		}
 	}
 	
@@ -840,9 +832,9 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addPropertyDisjointWith(
 			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			String disjointProperty,
+			IRI disjointProperty, @Optional(defaultValue = "false") boolean inverse,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
-		addPropertyAxiomHelper(property, disjointProperty, linkingPredicate);
+		addPropertyAxiomHelper(property, disjointProperty, inverse, linkingPredicate);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -857,8 +849,8 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#property)+ ', values)','C')")
-	public void addInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, String inverseProperty,  @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
-		addPropertyAxiomHelper(property, inverseProperty, linkingPredicate);
+	public void addInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI inverseProperty,  @Optional(defaultValue = "false") boolean inverse, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
+		addPropertyAxiomHelper(property, inverseProperty, inverse, linkingPredicate);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
@@ -872,8 +864,8 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			String superProperty, @Optional(defaultValue = "<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
-		addPropertyAxiomHelper(property, superProperty, linkingPredicate);
+			IRI superProperty,@Optional(defaultValue = "false") boolean inverse, @Optional(defaultValue = "<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
+		addPropertyAxiomHelper(property, superProperty, inverse, linkingPredicate);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
