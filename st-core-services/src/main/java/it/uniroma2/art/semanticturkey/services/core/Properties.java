@@ -880,8 +880,8 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
 	public void removeSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			Resource superProperty) {
-		removePropertyAxiomHelper(property, RDFS.SUBPROPERTYOF, superProperty);
+			Resource superProperty, @Optional(defaultValue = "<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>") IRI linkingPredicate) {
+		removePropertyAxiomHelper(property, linkingPredicate, superProperty);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
